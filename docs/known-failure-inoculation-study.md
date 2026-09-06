@@ -1006,3 +1006,26 @@ moved to native objects and refs.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Step 3 now closes two subprocess-environment gaps found in
+its first audit round. Native relation, ancestry, guard and exact-zero Git
+reads receive a literal environment rather than every caller variable outside
+the `GIT_` namespace. Signature verification extends that closed base only
+with the explicit home and OpenPGP trust-store locators needed by its fixed
+verifier programs. The three native-graph test helpers likewise start from an
+empty environment and add only a private index or deterministic commit
+identity at the command that needs it. Hostile Git, loader, shell and language
+runtime variables must be absent from every captured child environment.
+
+**Why.** An absolute Git path does not close the trust boundary when the
+dynamic loader can inject caller-selected code into that executable. The new
+fixture graphs also cease to be disposable evidence if ambient object or ref
+variables can redirect their writes. A closed allowlist fixes both mechanisms
+without guessing every present or future injection-variable name.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

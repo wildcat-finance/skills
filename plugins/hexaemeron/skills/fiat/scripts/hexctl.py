@@ -3323,19 +3323,36 @@ def _native_git_executable() -> str:
 def _native_relation_environment() -> dict[str, str]:
     """A Git environment that cannot substitute for the repository relation."""
     environment = {
-        name: value
-        for name, value in os.environ.items()
-        if not name.startswith("GIT_")
+        "PATH": os.defpath,
+        "LANG": "C",
+        "LC_ALL": "C",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_SYSTEM": os.devnull,
+        "GIT_NO_LAZY_FETCH": "1",
+        "GIT_TERMINAL_PROMPT": "0",
     }
-    environment.update(
-        {
-            "PATH": os.defpath,
-            "GIT_CONFIG_GLOBAL": os.devnull,
-            "GIT_CONFIG_NOSYSTEM": "1",
-            "GIT_CONFIG_SYSTEM": os.devnull,
-            "GIT_NO_LAZY_FETCH": "1",
-            "GIT_TERMINAL_PROMPT": "0",
-        }
+    ssh_agent = os.environ.get("SSH_AUTH_SOCK")
+    if ssh_agent:
+        environment["SSH_AUTH_SOCK"] = ssh_agent
+    return environment
+
+
+def _native_signature_environment() -> dict[str, str]:
+    """Extend native Git only with explicit signature trust-store inputs."""
+    environment = _native_relation_environment()
+    for name in ("HOME", "GNUPGHOME"):
+        value = os.environ.get(name)
+        if value:
+            environment[name] = value
+    directories = [
+        *os.defpath.split(os.pathsep),
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+        "/opt/local/bin",
+    ]
+    environment["PATH"] = os.pathsep.join(
+        dict.fromkeys(path for path in directories if os.path.isabs(path))
     )
     return environment
 
@@ -3357,22 +3374,12 @@ def _native_signature_git(
     base_dir: str, argv: list[str], refusal: str
 ) -> bytes:
     """Verify a signature with pinned Git and a fixed verifier-only PATH."""
-    environment = _native_relation_environment()
-    directories = [
-        *os.defpath.split(os.pathsep),
-        "/usr/local/bin",
-        "/opt/homebrew/bin",
-        "/opt/local/bin",
-    ]
-    environment["PATH"] = os.pathsep.join(
-        dict.fromkeys(path for path in directories if os.path.isabs(path))
-    )
     return bounded_tool(
         base_dir,
         _native_git_executable(),
         ["--no-replace-objects", *argv],
         refusal,
-        environment=environment,
+        environment=_native_signature_environment(),
     )
 
 

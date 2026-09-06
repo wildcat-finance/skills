@@ -3598,3 +3598,104 @@ reader. Real local evidence restores their intended assertions.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R1-01`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py` may change only to replace
+the inherited native-Git environment with a literal relation/guard base and a
+signature-specific extension. The base fixes `PATH`, the C locale, Git's
+global and system configuration suppression, lazy-fetch refusal and terminal
+prompt refusal; it may pass through only a non-empty `SSH_AUTH_SOCK` for a
+native SSH remote read. The signature extension may additionally retain only
+non-empty `HOME` and `GNUPGHOME`, then sets the already declared fixed
+verification-only path. It must not inherit any other caller field.
+
+For `S3-R1-01` tests,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change to prove
+that relation, guard and signature calls exclude hostile Git, dynamic-loader,
+shell and language-runtime variables while preserving the exact allowed base
+and signature extension. For `S3-R1-02`, that file's `NativeGraphCase`,
+`plugins/hexaemeron/tests/test_hexctl.py` only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` only within
+`FrontierReceiptCase` may change to resolve Git from `os.defpath`, pass a fresh
+empty base environment to every native Git call, route remaining direct Git
+calls through the helper, and add only the private index and deterministic
+commit identity and dates at the commands that require them. All object and
+ref writes remain inside each disposable repository and local bare origin.
+Every other file boundary remains unchanged.
+
+Complete replacement Tests: Run every preceding deterministic Step 3 test.
+Before changing production code, overlay only the new hostile-environment
+production regression on exact candidate
+`8f3a491bfc2f90db0eb4d59774b480a126c04c32` and require it to fail because
+the injected variables survive. After the repair, require exact allowed-key
+sets for relation, guard and signature environments; retain the existing real
+signed-commit checks; and prove hostile ambient Git variables cannot redirect
+any of the three native fixture graphs, their objects, refs or local pushes.
+Run Warden's exact `unittest-json-v1` command and every preceding full-suite,
+Promise, frozen-byte, source, lint, Horos and diff gate. Elenchus may report the
+fixture-only part as `passed` because its changed helper bytes travel with the
+tests; do not misstate the production guard's result as independent red proof
+for that test-only repair. Never launch measurement, parity, a tokenizer, a
+recorded-family adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the literal child environments,
+absolute executables, explicit trust-store locators, private fixture indexes
+and local-only object and ref writes. elenchus owns the parent-red production
+regression and keeps a `passed` fixture-only result distinct from `guarded`.
+ephoros: none, the existing subprocess and receipt signals remain complete.
+metron: none, this is a trust-boundary repair with no performance claim.
+hypomnema: none, the audit findings apply the existing native-substitution
+decision without changing it. Every other Step 3 discipline requirement
+continues unchanged.
+
+**Why.** The first Step 3 audit proved that loader variables reached the Git
+trust root and that ambient Git variables could redirect newly added fixture
+objects and refs. Closing each child environment fixes the causes without a
+denylist, mock bypass, new authority or wider product surface.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R1-01`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py` may change only to replace
+the inherited native-Git environment with a literal relation/guard base and a
+signature-specific extension. The base fixes `PATH`, the C locale, Git's
+global and system configuration suppression, lazy-fetch refusal and terminal
+prompt refusal; it may pass through only a non-empty `SSH_AUTH_SOCK` for a
+native SSH remote read. The signature extension may additionally retain only
+non-empty `HOME` and `GNUPGHOME`, then sets the already declared fixed
+verification-only path. It must not inherit any other caller field.
+
+For `S3-R1-01` tests,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change to prove
+that relation, guard and signature calls exclude hostile Git, dynamic-loader,
+shell and language-runtime variables while preserving the exact allowed base
+and signature extension. For `S3-R1-02`, that file's `NativeGraphCase`,
+`plugins/hexaemeron/tests/test_hexctl.py` only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` only within
+`FrontierReceiptCase` may change to resolve Git from `os.defpath`, pass a fresh
+empty base environment to every native Git call, route remaining direct Git
+calls through the helper, and add only the private index and deterministic
+commit identity and dates at the commands that require them. All object and
+ref writes remain inside each disposable repository and local bare origin.
+Every other file boundary remains unchanged.
+
+**Why.** The parent-red regression exposed the inherited loader variables.
+The repaired tree excludes them, confines each native fixture graph, preserves
+real signed-commit verification, and passes the complete focused 199-test set.
+Those results close both first-round mechanisms without widening Step 3.
+
+**Steps touched.** Step 3's Files.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

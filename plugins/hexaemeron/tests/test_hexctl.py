@@ -2204,16 +2204,16 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("final recorded step merge", proc.stderr)
 
-    def native_git(self, *args, input_text=None, env=None):
+    def native_git(self, *args, input_text=None, extra_env=None, cwd=None):
         executable = shutil.which("git", path=os.defpath)
         self.assertIsNotNone(executable)
         proc = subprocess.run(
             [executable, *args],
-            cwd=self.target,
+            cwd=cwd or self.target,
             input=input_text,
             capture_output=True,
             text=True,
-            env=env,
+            env=dict(extra_env or {}),
         )
         if proc.returncode:
             self.fail(
@@ -2227,24 +2227,20 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         index = os.path.join(
             self.dir, f"native-sync-index-{self.native_commit_number}"
         )
-        environment = os.environ.copy()
-        environment.update(
-            {
-                "GIT_INDEX_FILE": index,
-                "GIT_AUTHOR_NAME": "Fixture",
-                "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-                "GIT_COMMITTER_NAME": "Fixture",
-                "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-                "GIT_AUTHOR_DATE": (
-                    f"{1000000000 + self.native_commit_number} +0000"
-                ),
-                "GIT_COMMITTER_DATE": (
-                    f"{1000000000 + self.native_commit_number} +0000"
-                ),
-            }
-        )
+        index_environment = {"GIT_INDEX_FILE": index}
+        timestamp = 1000000000 + self.native_commit_number
+        identity_environment = {
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+        }
         try:
-            self.native_git("read-tree", tree_parent, env=environment)
+            self.native_git(
+                "read-tree", tree_parent, extra_env=index_environment
+            )
             for path, content in sorted(changes.items()):
                 blob = self.native_git(
                     "hash-object", "-w", "--stdin", input_text=content
@@ -2256,9 +2252,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                     "100644",
                     blob,
                     path,
-                    env=environment,
+                    extra_env=index_environment,
                 )
-            tree = self.native_git("write-tree", env=environment)
+            tree = self.native_git(
+                "write-tree", extra_env=index_environment
+            )
             parent_args = [
                 value for parent in parents for value in ("-p", parent)
             ]
@@ -2267,7 +2265,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 tree,
                 *parent_args,
                 input_text=message + "\n",
-                env=environment,
+                extra_env=identity_environment,
             )
         finally:
             for suffix in ("", ".lock"):
@@ -2275,6 +2273,87 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                     os.unlink(index + suffix)
                 except FileNotFoundError:
                     pass
+
+    def test_native_git_fixture_ignores_hostile_ambient_environment(self):
+        base = self.native_git("rev-parse", "HEAD")
+        objects = self.native_git("rev-parse", "--git-path", "objects")
+        if not os.path.isabs(objects):
+            objects = os.path.join(self.target, objects)
+        decoy = os.path.join(self.dir, "ambient-decoy.git")
+        origin = os.path.join(self.dir, "confined-origin.git")
+        self.native_git("init", "--bare", "--quiet", decoy)
+        hostile = {
+            "GIT_DIR": decoy,
+            "GIT_WORK_TREE": self.target,
+            "GIT_OBJECT_DIRECTORY": os.path.join(decoy, "objects"),
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES": objects,
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.hooksPath",
+            "GIT_CONFIG_VALUE_0": os.path.join(self.dir, "ambient-hooks"),
+            "GIT_REPLACE_REF_BASE": "refs/ambient-replace",
+            "GIT_NO_REPLACE_OBJECTS": "0",
+            "GIT_NO_LAZY_FETCH": "0",
+            "LD_PRELOAD": "",
+            "LD_LIBRARY_PATH": "",
+            "DYLD_INSERT_LIBRARIES": "",
+            "DYLD_LIBRARY_PATH": "",
+            "PYTHONPATH": os.path.join(self.dir, "ambient-python"),
+        }
+        calls = []
+        native_run = subprocess.run
+
+        def record_run(*args, **kwargs):
+            calls.append((args[0][1], dict(kwargs["env"])))
+            return native_run(*args, **kwargs)
+
+        with mock.patch.dict(os.environ, hostile, clear=False), \
+                mock.patch.object(subprocess, "run", side_effect=record_run):
+            commit = self.native_commit(
+                base,
+                {"confined.txt": "confined\n"},
+                base,
+                message="confined fixture commit",
+            )
+            self.native_git("init", "--bare", "--quiet", origin)
+            self.native_git(
+                "push", "--quiet", origin,
+                f"{commit}:refs/heads/confined",
+            )
+
+        index_keys = {"GIT_INDEX_FILE"}
+        identity_keys = {
+            "GIT_AUTHOR_NAME",
+            "GIT_AUTHOR_EMAIL",
+            "GIT_COMMITTER_NAME",
+            "GIT_COMMITTER_EMAIL",
+            "GIT_AUTHOR_DATE",
+            "GIT_COMMITTER_DATE",
+        }
+        expected_keys = {
+            "read-tree": index_keys,
+            "hash-object": set(),
+            "update-index": index_keys,
+            "write-tree": index_keys,
+            "commit-tree": identity_keys,
+            "init": set(),
+            "push": set(),
+        }
+        self.assertTrue(calls)
+        for command, environment in calls:
+            self.assertEqual(set(environment), expected_keys[command])
+        self.assertEqual(self.native_git("cat-file", "-t", commit), "commit")
+        self.assertEqual(
+            self.native_git(
+                "--git-dir", origin, "rev-parse", "refs/heads/confined"
+            ),
+            commit,
+        )
+        self.assertEqual(
+            self.native_git(
+                "--git-dir", decoy, "for-each-ref", "--format=%(refname)"
+            ),
+            "",
+        )
 
     def publish_native_sync(self, state, sync_sha, base_sha):
         run_branch = state["run_branch"]
@@ -2342,13 +2421,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         return state, sync_sha, base_sha
 
     def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
-        starting_base = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=self.dir,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
+        starting_base = self.native_git("rev-parse", "HEAD", cwd=self.dir)
         _, sync_sha, base_sha = self.prepare_run_sync(
             starting_base=starting_base
         )

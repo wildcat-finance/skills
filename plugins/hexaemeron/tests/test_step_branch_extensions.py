@@ -19,6 +19,7 @@ import copy
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -82,15 +83,15 @@ class NativeGraphCase(unittest.TestCase):
         self.tmp.cleanup()
 
     def _git(self, *argv, input_text=None, extra_env=None):
-        environment = os.environ.copy()
-        environment.update(extra_env or {})
+        executable = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(executable)
         result = subprocess.run(
-            ["git", "-c", "commit.gpgsign=false", *argv],
+            [executable, "-c", "commit.gpgsign=false", *argv],
             cwd=self.repo,
             input=input_text,
             capture_output=True,
             text=True,
-            env=environment,
+            env=dict(extra_env or {}),
         )
         if result.returncode:
             self.fail(
@@ -240,14 +241,97 @@ class NativeGraphCase(unittest.TestCase):
         self.assertEqual(environment["GIT_NO_LAZY_FETCH"], "1")
         self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
 
+    def test_relation_guard_and_signature_git_use_closed_environments(self):
+        module = self.hexctl
+        hostile = {
+            "BASH_ENV": str(self.repo / "bash-env"),
+            "DYLD_FRAMEWORK_PATH": str(self.repo / "frameworks"),
+            "DYLD_INSERT_LIBRARIES": str(self.repo / "inject.dylib"),
+            "DYLD_LIBRARY_PATH": str(self.repo / "libraries"),
+            "ENV": str(self.repo / "shell-env"),
+            "GCONV_PATH": str(self.repo / "gconv"),
+            "GIT_DIR": str(self.repo / "foreign-git-dir"),
+            "GIT_OBJECT_DIRECTORY": str(self.repo / "foreign-objects"),
+            "HOME": str(self.repo / "home"),
+            "LD_AUDIT": str(self.repo / "audit.so"),
+            "LD_LIBRARY_PATH": str(self.repo / "ld-libraries"),
+            "LD_PRELOAD": str(self.repo / "preload.so"),
+            "GNUPGHOME": str(self.repo / "gnupg"),
+            "PYTHONHOME": str(self.repo / "python-home"),
+            "PYTHONPATH": str(self.repo / "python-path"),
+            "SSH_AUTH_SOCK": str(self.repo / "agent.sock"),
+        }
+        with mock.patch.dict(os.environ, hostile, clear=True), mock.patch.object(
+            module, "bounded_tool", return_value=b""
+        ) as runner:
+            module._native_relation_git(str(self.repo), ["status"], "relation")
+            module._guard_native_git(str(self.repo), ["status"], "guard")
+            module._guard_exact_git(str(self.repo), ["status"], "exact")
+            module._native_signature_git(
+                str(self.repo), ["verify-commit", "a" * 40], "signature"
+            )
+
+        base = {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_NO_LAZY_FETCH": "1",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+            "PATH": os.defpath,
+            "SSH_AUTH_SOCK": hostile["SSH_AUTH_SOCK"],
+        }
+        calls = runner.call_args_list
+        self.assertEqual(len(calls), 4)
+        for call in calls[:3]:
+            self.assertEqual(call.kwargs["environment"], base)
+        verifier_directories = [
+            *os.defpath.split(os.pathsep),
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "/opt/local/bin",
+        ]
+        signature = {
+            **base,
+            "GNUPGHOME": hostile["GNUPGHOME"],
+            "HOME": hostile["HOME"],
+            "PATH": os.pathsep.join(
+                dict.fromkeys(
+                    path for path in verifier_directories if os.path.isabs(path)
+                )
+            ),
+        }
+        self.assertEqual(calls[3].kwargs["environment"], signature)
+
+    def test_native_fixture_git_ignores_the_ambient_environment(self):
+        hostile = {
+            "GIT_DIR": str(self.repo / "foreign-git-dir"),
+            "GIT_OBJECT_DIRECTORY": str(self.repo / "foreign-objects"),
+            "LD_PRELOAD": str(self.repo / "preload.so"),
+        }
+        native_run = subprocess.run
+        calls = []
+
+        def record_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return native_run(*args, **kwargs)
+
+        with mock.patch.dict(os.environ, hostile, clear=False), mock.patch.object(
+            subprocess, "run", side_effect=record_run
+        ):
+            result = self._git("rev-parse", "HEAD")
+        self.assertEqual(result.stdout.strip(), self.descendant)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1]["env"], {})
+        self.assertTrue(os.path.isabs(calls[0][0][0][0]))
+
     def test_replacement_ref_cannot_manufacture_native_ancestry(self):
         # Replacing the unrelated tip with E makes ordinary Git report P as an
         # ancestor.  The controller must ask about native objects instead.
         self._git("replace", self.unrelated, self.descendant)
-        ordinary = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", self.recorded, self.unrelated],
-            cwd=self.repo,
-            capture_output=True,
+        ordinary = self._git(
+            "merge-base", "--is-ancestor", self.recorded, self.unrelated
         )
         self.assertEqual(ordinary.returncode, 0, ordinary.stderr)
         message = self._run_guard(self.unrelated)
