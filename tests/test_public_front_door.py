@@ -554,6 +554,21 @@ PROVOCATIONS = {
     "FD31": "rewritten-historical-figure",
     "FD32": "unbound-member-status",
     "FD33": "superseded-member-status",
+    # These two break a page that is not the front door and still stay in this
+    # module. A specimen is a fixture file rather than a test file, so it does
+    # not travel to the detached parent with the case that reads it, and a
+    # guard that cannot be replayed there proves nothing about what the fix
+    # changed. A callable returning overrides names its own page instead.
+    "FD34": lambda: broken(
+        "## WHAT A RESULT MEANS",
+        '<!-- front-door:historical captured="2026-01-01" figure="99" -->99'
+        " plugins were counted.\n\n## WHAT A RESULT MEANS",
+    ),
+    "FD35": lambda: {
+        "plugins/lantern/README.md": LANDING.format(
+            name="lantern", upper="LANTERN", version="{{version:lantern}}"
+        ).replace('skill="lantern"', 'skill="thicket"')
+    },
 }
 
 
@@ -993,6 +1008,107 @@ class AuditRoundTwoTests(unittest.TestCase):
 
 
 @unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
+class StepFiveAuditRoundOneTests(unittest.TestCase):
+    """One case per hole the step-5 audit found in the widened sweep.
+
+    Two of the three new rule families arrived with an exemption nobody had to
+    ask for. A `front-door:historical` marker took a number out of derivation
+    on any swept page, so a live count claim could be published as a dated
+    capture and never compared with the tree again. A generated region did the
+    same for every count and status claim between two comment markers, on any
+    page, whether or not that page's generator writes there. The member-status
+    marker named a version and nothing joined it to the member the sentence was
+    about. The rest are spellings: the status grammar read `yet` in one branch
+    and not another, and could not see the contraction this repository's own
+    voice mask calls normal.
+    """
+
+    def test_a_historical_marker_off_its_page_exempts_nothing(self):
+        """A live count published as a dated capture escaped both count rules."""
+        codes = body_codes(
+            broken(
+                "## WHAT A RESULT MEANS",
+                '<!-- front-door:historical captured="2026-01-01" figure="99" -->'
+                "99 plugins are installed.\n\n## WHAT A RESULT MEANS",
+            )
+        )
+        self.assertIn("FD34", codes)
+        self.assertIn("FD28", codes)
+
+    def test_a_historical_marker_may_not_replace_a_count_marker(self):
+        """Swapping the marker kind turned a derived claim into a literal."""
+        codes = body_codes(
+            broken(
+                '<!-- front-door:count key="domain" -->{{count:domain}} domain agents',
+                '<!-- front-door:historical captured="2026-01-01" figure="99" -->'
+                "99 domain agents",
+            )
+        )
+        self.assertIn("FD34", codes)
+        self.assertIn("FD28", codes)
+
+    def test_a_historical_marker_holds_on_the_page_that_records_the_capture(self):
+        """The exemption is real where a dated measurement is real."""
+        self.assertEqual(document_codes({}), [])
+
+    def test_a_generated_region_governs_nothing_away_from_its_own_page(self):
+        """Two comment markers around any prose exempted every claim in it."""
+        codes = document_codes(
+            {
+                "SHOGGOTH.md": COMPANIONS["SHOGGOTH.md"]
+                + "\n<!-- marketplace-context:start -->\n\n"
+                "The tree holds 99 plugins and this version has not shipped.\n"
+                "<!-- marketplace-context:end -->\n"
+            }
+        )
+        self.assertIn("FD30", codes)
+        self.assertIn("FD28", codes)
+        self.assertIn("FD32", codes)
+
+    def test_a_landing_status_marker_names_a_member_that_page_ships(self):
+        """The marker's skill and the sentence's subject were unrelated."""
+        codes = document_codes(
+            {
+                "plugins/lantern/README.md": LANDING.format(
+                    name="lantern", upper="LANTERN", version="{{version:thicket}}"
+                ).replace('skill="lantern"', 'skill="thicket"')
+            }
+        )
+        self.assertIn("FD35", codes)
+
+    def test_a_maintained_document_that_holds_nothing_is_refused(self):
+        """An empty page satisfied every rule by carrying none of them."""
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            records = plant(root)
+            install(root, records, {})
+            (root / "plugins" / "quarry" / "README.md").write_text("", encoding="utf-8")
+            findings, events = front_door.check(root)
+        self.assertEqual([finding.code for finding in findings], ["FD01"])
+        self.assertEqual(events, [])
+
+    def test_the_status_grammar_reads_yet_in_every_branch(self):
+        """`has not yet shipped` was read and `is not yet implemented` was not."""
+        codes = document_codes(
+            {
+                "FUTUREPROOFING.md": COMPANIONS["FUTUREPROOFING.md"]
+                + "\nThe compile path is not yet implemented.\n"
+            }
+        )
+        self.assertIn("FD32", codes)
+
+    def test_the_status_grammar_reads_a_contraction(self):
+        """The house voice mask calls contractions normal; the rule could not."""
+        codes = document_codes(
+            {
+                "FUTUREPROOFING.md": COMPANIONS["FUTUREPROOFING.md"]
+                + "\nThe compile path hasn't shipped.\n"
+            }
+        )
+        self.assertIn("FD32", codes)
+
+
+@unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
 class LiveFrontDoorTests(unittest.TestCase):
     """Agreement against the delivered tree, with no literal in sight."""
 
@@ -1231,7 +1347,12 @@ class CheckerBoundaryTests(unittest.TestCase):
                 elif isinstance(build, str):
                     reported = specimen_codes(build)
                 else:
-                    reported = body_codes(build())
+                    built = build()
+                    reported = (
+                        document_codes(built)
+                        if isinstance(built, dict)
+                        else body_codes(built)
+                    )
                 self.assertIn(code, reported)
 
     def test_the_refusal_prefix_stays_out_of_the_demonstration_namespace(self):

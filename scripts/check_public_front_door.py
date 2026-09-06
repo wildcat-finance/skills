@@ -55,12 +55,19 @@ module holds no count of its own to compare against.
 so it is not derivable and must not be rewritten to agree with today's tree.
 `INSTALL.md` records what two host installs did on one dated capture, and
 those figures are evidence. A `front-door:historical` marker names the capture
-and pins the figure's exact bytes, so the claim satisfies the marking rule
+and pins the figure's numeral, so the claim satisfies the marking rule
 without ever being compared with the tree, and rewriting the figure fails
 because the prose no longer says what the marker pinned. The two markers do
 opposite jobs on purpose: a count marker binds a number to something recomputed
 every run, and a historical marker binds one to something that already
 happened.
+
+That second job is an exemption, so the pages that may carry it are named here
+rather than decided by whoever writes the marker. Only a page carrying the
+history rule has a dated measurement to exempt; anywhere else the marker is a
+refusal and the number under it stays an ordinary count claim. The marker pins
+the numeral and not the noun beside it, so it establishes that the figure was
+not brought up to date and nothing about what the figure counts.
 
 **Member status.** A sentence saying what a member's current version does or
 does not do is a claim about that member's ledger. It carries a
@@ -70,6 +77,15 @@ on. This is how "the version implements source admission" outlived three
 anamnesis releases and "its compile path has not shipped" outlived the dokimasia
 release that shipped it: both sentences were true when written, and nothing was
 watching the ledger move underneath them.
+
+On a plugin landing page the marker must also name a member that page ships.
+Without that the marker's skill and the sentence's subject were unrelated, so a
+claim about one member passed under a marker naming another whose ledger
+happened to be current. Two gaps remain and are stated rather than implied: on
+the named pages, which belong to no plugin, nothing narrows the marker at all;
+and on a landing page a sentence about some other member still passes under
+that page's own marker. What a marked claim establishes is that the named
+ledger stands at the declared version, not that the sentence is about it.
 
 What it does not do: it never grades free-form voice, which belongs to
 Imprimatur, Vulgate, Brevitas and human review. It does not decide whether a
@@ -122,6 +138,13 @@ FRONT_DOOR_RULE = "front-door"
 HEADING_RULE = "headings"
 COUNT_RULE = "counts"
 STATUS_RULE = "status"
+# The one page that records a dated measurement. A historical marker exempts a
+# figure from derivation, so the pages that may carry one are named here rather
+# than left to whoever writes the marker: a rule every page can grant itself is
+# not a rule, and the count rules exist precisely to stop a literal being
+# published unchecked.
+HISTORY_RULE = "history"
+HISTORY_HOME = "INSTALL.md"
 
 # A public entry page a reader starts from. Everything the house style governs
 # applies to it.
@@ -151,7 +174,7 @@ class Maintained:
 # eighteen is exactly the literal this whole contract exists to remove.
 MAINTAINED_DOCUMENTS = (
     Maintained(FRONT_DOOR, ENTRY_RULES | {FRONT_DOOR_RULE}),
-    Maintained("INSTALL.md", ENTRY_RULES),
+    Maintained(HISTORY_HOME, ENTRY_RULES | {HISTORY_RULE}),
     Maintained("FUTUREPROOFING.md", ENTRY_RULES),
     Maintained("SHOGGOTH.md", ENTRY_RULES),
     Maintained("PROMISE_MACHINE.md", CONTRACT_RULES),
@@ -189,17 +212,32 @@ CHIRP = "Ask the Atlas for a number. Pick your harness. Finish what you start."
 # here. Naming only a few protected headings left every other one exemptible,
 # and a second opening marker widened the span the first one opened.
 #
-# `marketplace-context` is the same arrangement on every plugin landing page:
-# its bytes are written from the skill's own ledger and checked against it by
-# `tests/test_marketplace_prose.py`. A count or a status sentence inside it is
-# the ledger's, so the rules below read past it rather than asking an author to
-# mark prose they do not own.
+# `marketplace-context` is the landing-page arrangement. Its heading is written
+# for the marketplace rather than by an author, and `tests/test_marketplace_prose.py`
+# holds every copy of a plugin's block to one `**Current frontier.**` line. That
+# is presence and agreement, not derivation: nothing in `scripts/` writes these
+# bytes from the ledger, and no case compares a count or a status sentence
+# inside one with what the tree derives. The exclusion is kept because the
+# heading is the marketplace's, and its cost is named in the audit record.
+#
+# Each region also names where its generator writes. Without that, two comment
+# markers around any prose on any swept page exempted every count and status
+# claim between them, which is the author-granted exclusion the paragraph above
+# refuses. A region declared away from its own page is refused and not applied.
+FRONT_DOOR_HOST = "the root front door"
+LANDING_HOST = "a plugin landing page"
 GENERATED_REGIONS = (
-    ("<!-- contributors:start -->", "<!-- contributors:end -->", "## Thanks"),
+    (
+        "<!-- contributors:start -->",
+        "<!-- contributors:end -->",
+        "## Thanks",
+        FRONT_DOOR_HOST,
+    ),
     (
         "<!-- marketplace-context:start -->",
         "<!-- marketplace-context:end -->",
         "## In one line",
+        LANDING_HOST,
     ),
 )
 
@@ -339,13 +377,21 @@ COUNT_CLAIM_RE = re.compile(
 # halves matter: the positive form goes stale the same way the negative one
 # does, and the anamnesis page proved it by saying what v0.1.0 implemented for
 # three releases after v3.1.0 shipped the rest.
+#
+# `yet` and the apostrophe are the two spellings the first grammar split on.
+# "has not yet shipped" was read and "is not yet implemented" was not, because
+# only one branch carried the optional word; and this repository's own voice
+# mask calls contractions normal, so "hasn't shipped" was the phrasing the
+# house style encourages and the rule could not see. Both are closed here
+# rather than left as spellings a sentence can be rewritten into.
+NOT_RE = r"(?:n(?:'|’)t| not)"
 STATUS_CLAIM_RE = re.compile(
     r"(?i)(?:this version"
-    r"|ha(?:s|ve) not (?:yet )?shipped"
+    r"|ha(?:s|ve)" + NOT_RE + r" (?:yet )?shipped"
     r"|ha(?:s|ve) yet to ship"
-    r"|do(?:es)? not ship"
-    r"|(?:is|are) not (?:implemented|built)"
-    r"|ha(?:s|ve) not landed)"
+    r"|do(?:es)?" + NOT_RE + r" (?:yet )?ship"
+    r"|(?:is|are)" + NOT_RE + r" (?:yet )?(?:implemented|built)"
+    r"|ha(?:s|ve)" + NOT_RE + r" (?:yet )?landed)"
 )
 # The `- Current version:` row every governed ledger opens with. The value is
 # read from the ledger rather than declared here, so a release moves the whole
@@ -386,10 +432,12 @@ REFUSALS = {
     "FD27": "count claim names a derived quantity",
     "FD28": "every count claim is marked",
     "FD29": "count marker agrees with the quantity its prose names",
-    "FD30": "generated region is closed and governs no heading",
+    "FD30": "generated region is on its own page, closed, and governs no heading",
     "FD31": "historical figure still says what its marker pinned",
     "FD32": "every member-status claim is bound to a ledger",
     "FD33": "bound member status matches the ledger's current version",
+    "FD34": "historical marker only where a dated capture is recorded",
+    "FD35": "landing-page member status names a member that page ships",
 }
 
 
@@ -531,14 +579,26 @@ def word_index(display: str, offset: int) -> int:
     return len(display[:offset].split())
 
 
-def generated_spans(text: str) -> tuple[list[tuple[int, int]], list[str]]:
+def hosted(host: str, relative: str) -> bool:
+    """Whether the page named by `relative` is where this generator writes."""
+
+    if host == FRONT_DOOR_HOST:
+        return relative == FRONT_DOOR
+    return relative.startswith("plugins/") and relative.endswith(f"/{PLUGIN_LANDING}")
+
+
+def generated_spans(
+    text: str, relative: str | None = None
+) -> tuple[list[tuple[int, int]], list[str]]:
     """The half-open ranges another generator owns, and why any was refused.
 
     An unclosed region used to run to the end of the file, so deleting one
     marker exempted every heading below it from the heading rule. A region that
     reaches a heading this contract governs does the same thing with both
-    markers in place. Neither is an exclusion an author may grant themselves,
-    so both are refused and neither is applied.
+    markers in place. A region opened on a page its generator never writes did
+    it a third way, on any swept page and over any claim. None of the three is
+    an exclusion an author may grant themselves, so each is refused and none is
+    applied.
     """
 
     # A marker written inside a fenced block is a quoted example, not a region
@@ -546,9 +606,19 @@ def generated_spans(text: str) -> tuple[list[tuple[int, int]], list[str]]:
     outline = unfenced(text)
     spans: list[tuple[int, int]] = []
     refusals: list[str] = []
-    for opening, closing, owned in GENERATED_REGIONS:
+    for opening, closing, owned, host in GENERATED_REGIONS:
         start = outline.find(opening)
         if start < 0:
+            continue
+        # `relative` names the page under test. Omitting it reads the regions
+        # a page declares without deciding whether it is entitled to them,
+        # which is what an agreement check over the live tree wants; the sweep
+        # always supplies it.
+        if relative is not None and not hosted(host, relative):
+            refusals.append(
+                f"{opening} is written on {host} and this is not one, so the "
+                "region governs nothing here"
+            )
             continue
         for marker in (opening, closing):
             if outline.count(marker) > 1:
@@ -738,7 +808,7 @@ def check_regions(
     page, and the spans are handed to the rules that read them.
     """
 
-    spans, refused = generated_spans(text)
+    spans, refused = generated_spans(text, where)
     for reason in refused:
         _finding(findings, "FD30", f"{where}: {reason}")
     return spans
@@ -958,6 +1028,8 @@ def check_counts(
     counts: dict[str, int],
     spans: Sequence[tuple[int, int]],
     findings: list[Finding],
+    *,
+    history: bool = False,
 ) -> None:
     """Every current count claim names a derived quantity and agrees with it."""
 
@@ -965,6 +1037,20 @@ def check_counts(
 
     for marker in markers(text):
         if marker.kind != "historical":
+            continue
+        # The exemption is the whole risk in this marker: it takes a number out
+        # of derivation for good. A page that records no dated measurement has
+        # nothing to exempt, so the marker is refused there and the number it
+        # sits over stays an ordinary count claim rather than becoming a
+        # literal nothing reads.
+        if not history:
+            _finding(
+                findings,
+                "FD34",
+                f"{where}: a front-door:historical marker sits on a page that "
+                f"records no dated capture; only {HISTORY_HOME} exempts a "
+                "figure from derivation",
+            )
             continue
         claim, offset = claim_after(display, marker)
         missing = sorted({"captured", "figure"} - set(marker.attributes))
@@ -1060,6 +1146,9 @@ def check_status(
     versions: dict[str, str],
     spans: Sequence[tuple[int, int]],
     findings: list[Finding],
+    *,
+    plugin: str | None = None,
+    by_plugin: dict[str, str] | None = None,
 ) -> None:
     """Every member-status claim names the ledger version it describes.
 
@@ -1113,6 +1202,19 @@ def check_status(
                 "FD32",
                 f"{where}: the status marker binds skill {skill!r}, which is not "
                 "a governed skill",
+            )
+            continue
+        # A marker binds a version; the sentence is about a member. Nothing
+        # joined the two, so a claim about one member sat under a marker naming
+        # another whose ledger happened to be current, and the rule reported
+        # nothing. A landing page knows which plugin it belongs to, so that
+        # much of the join is free.
+        if plugin is not None and (by_plugin or {}).get(skill) != plugin:
+            _finding(
+                findings,
+                "FD35",
+                f"{where}: the status marker binds {skill!r}, which {plugin} "
+                "does not ship; a landing page states its own members' status",
             )
             continue
         if declared != current:
@@ -1332,9 +1434,23 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
     sources: dict[str, str] = {}
     for item in documents:
         try:
-            sources[item.relative] = read_document(root, item.relative)
+            body = read_document(root, item.relative)
         except FrontDoorError as exc:
             _finding(findings, "FD01", str(exc))
+            continue
+        # Present is not the same as readable content. A page holding nothing
+        # satisfies every rule below by carrying none of them, and the sweep
+        # then counts it among the documents that hold the contract, which is
+        # the reading a reader cannot tell from a clean one.
+        if not body.strip():
+            _finding(
+                findings,
+                "FD01",
+                f"{item.relative} is present and holds nothing; an empty page "
+                "passes every rule by carrying none of them",
+            )
+            continue
+        sources[item.relative] = body
     # A rule read against a set that is already incomplete reports on whatever
     # happened to be there, and a reader cannot tell that from a clean sweep.
     if findings:
@@ -1342,6 +1458,9 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
 
     by_skill = {
         directory.rsplit("/", 1)[-1]: directory for directory in topology.governed
+    }
+    by_plugin = {
+        skill: directory.split("/")[1] for skill, directory in by_skill.items()
     }
     versions = {
         skill: ledger_version(root, directory) for skill, directory in by_skill.items()
@@ -1353,12 +1472,34 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
         text = sources[item.relative]
         display = rendered(text)
         spans = check_regions(item.relative, text, findings)
+        owner = (
+            item.relative.split("/")[1]
+            if hosted(LANDING_HOST, item.relative)
+            else None
+        )
         if item.carries(HEADING_RULE):
             check_headings(item.relative, display, spans, findings)
         if item.carries(COUNT_RULE):
-            check_counts(item.relative, text, display, counts, spans, findings)
+            check_counts(
+                item.relative,
+                text,
+                display,
+                counts,
+                spans,
+                findings,
+                history=item.carries(HISTORY_RULE),
+            )
         if item.carries(STATUS_RULE):
-            check_status(item.relative, text, display, versions, spans, findings)
+            check_status(
+                item.relative,
+                text,
+                display,
+                versions,
+                spans,
+                findings,
+                plugin=owner,
+                by_plugin=by_plugin,
+            )
         if item.carries(FRONT_DOOR_RULE):
             records = demonstrations.load_records(root)
             check_structure(text, display, findings)
