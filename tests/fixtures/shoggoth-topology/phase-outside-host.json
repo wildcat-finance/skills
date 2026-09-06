@@ -1,0 +1,23 @@
+{
+  "schema": "shoggoth-topology-specimen/v1",
+  "description": "A plugin that is not the phase host carries a second governed skill. Phase skills belong to the host alone, so the extra skill is refused rather than absorbed into the phase count.",
+  "phase_host": "quarry",
+  "phase_host_entry": "chisel",
+  "plugins": [
+    {
+      "id": "quarry",
+      "skills": [
+        {"name": "chisel", "ledger": true, "entry": true},
+        {"name": "granite", "ledger": true, "entry": true}
+      ]
+    },
+    {
+      "id": "thicket",
+      "skills": [
+        {"name": "thicket", "ledger": true, "entry": true},
+        {"name": "bramble", "ledger": true, "entry": true}
+      ]
+    }
+  ],
+  "refusal": "phase-outside-host"
+}

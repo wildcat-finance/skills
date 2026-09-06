@@ -15,20 +15,22 @@ no specialist work, and owns no domain promise.
 
 Choose the runtime before routing. In a full source checkout,
 `../../../PROMISE_MACHINE.md` identifies `promise-machine/v1` and
-`../../../plugins/` holds all sixteen plugin contracts; read the [root runtime
-contract](../../../AGENTS.md) first. Otherwise this is an isolated Agent Skills
-install: read `PORTABLE.md`, verify its local runtime, and use the installed-path
-substitution it defines. A target repository's unrelated `AGENTS.md` never
-counts as the suite contract. Do not select a canonical skill until one of
-these two runtime paths has loaded the same law and the selected plugin
-contract.
+`../../../plugins/` holds all <!-- front-door:count key="plugins" -->18 plugin
+contracts; read the [root runtime contract](../../../AGENTS.md) first.
+Otherwise this is an isolated Agent Skills install: read `PORTABLE.md`,
+verify its local runtime, and use the installed-path substitution it
+defines. A target repository's unrelated `AGENTS.md` never counts as the
+suite contract. Do not select a canonical skill until one of these two
+runtime paths has loaded the same law and the selected plugin contract.
 
-The router sees the complete collective. Fifteen first-party specialists live
-in their own plugins. Hexaemeron contains Fiat, Kronos, six engineering phase
-disciplines, two prose masks, four Fiat worker briefs, and the untouched Pashov
-security suite. Together the distribution exposes 25 governed first-party
-skills. The worker briefs are packets Fiat may delegate; they are not
-canonical skills a user selects through this router.
+The router sees the complete collective. Each first-party specialist has its
+own plugin. Hexaemeron contains Fiat, Kronos, the engineering phase
+disciplines, the prose masks, the Fiat worker briefs, and the untouched Pashov
+security suite. Together the distribution
+exposes <!-- front-door:count key="governed" -->27 governed first-party skills,
+a number derived from the tree rather than typed here. The worker briefs are packets
+Fiat may delegate; they are not canonical skills a user selects through this
+router.
 
 ## Select one runtime contract
 

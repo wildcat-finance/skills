@@ -1,6 +1,6 @@
 ![Anamnesis, keeper of the recalled record](./assets/characters/anamnesis.webp)
 
-# Anamnesis
+# ANAMNESIS
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Anamnesis keeps audit findings and the changes that answered them as a source-bo
 **Next Fiat job.** Use /hexaemeron:fiat to decide what the corpus preserves beyond the pilot. The seed release holds 41 findings from three skills chosen by hand, the curation scope is a resolver-side constant rather than a declared policy field, and whether those are the right records to have preserved is unanswered. Accepted when the release policy declares its own scope and a corpus built under a different declared scope rebuilds to its own release id, or when a decision record states that a hand-picked seed is the permanent shape and names what governs additions. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Character
+## CHARACTER
 
 <details>
 <summary>Keeper of the recalled record</summary>
@@ -51,7 +51,7 @@ Anamnesis therefore reads neither as judge nor oracle, but as the custodian of s
 
 </details>
 
-## Why it exists
+## WHY IT EXISTS
 
 An audit finding and the change that answered it are usually recorded once, in
 one report, and then left where they fell. Hundreds of rounds later nobody can
@@ -64,7 +64,7 @@ preserves the producer's own bytes and identifiers unchanged, and curates a
 graph in which submissions, adjudicated findings, occurrences, remediation
 attempts and verifications stay separate records joined by many-to-many edges.
 
-## What it is careful about
+## WHAT IT IS CAREFUL ABOUT
 
 A corpus is easy to build and easy to make useless. Three things break one:
 
@@ -78,7 +78,7 @@ A corpus is easy to build and easy to make useless. Three things break one:
 
 Every release rebuilds to the same digest from the same inputs, or refuses.
 
-## Where it stops
+## WHERE IT STOPS
 
 Anamnesis does not produce audit rounds, decide whether a finding was real,
 prove a fix correct, or compare runs. Warden produces a round's record.
@@ -91,7 +91,7 @@ It does not train a model, rank auditors, estimate how common a weakness is
 beyond the records it holds, or treat public visibility as permission to
 redistribute.
 
-## Using it
+## USING IT
 
 ```bash
 python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit \
@@ -103,9 +103,13 @@ The design behind the member is in [docs/study.md](docs/study.md), the build
 order in [docs/runbook.md](docs/runbook.md), and the decisions that were
 expensive to reverse in [docs/decisions/](docs/decisions/).
 
-This version implements source admission. Curation and release are declared
-boundaries that refuse by name and say which runbook step owes them.
+<!-- front-door:status skill="anamnesis" version="anamnesis-v3.1.0" -->
+This version admits sources, curates them into a finding graph, builds and
+verifies a release, and reads that release back through the Elenchus and
+Synkrisis projections. What the corpus should preserve beyond the hand-picked
+pilot is the question its [ledger](skills/anamnesis/EVOLUTION.md) still holds
+open.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

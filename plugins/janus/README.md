@@ -1,6 +1,6 @@
 ![Janus](./assets/characters/janus.png)
 
-# Janus
+# JANUS
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Janus checks a contract hook at the host threshold it crosses: the observations 
 **Next Fiat job.** Use /hexaemeron:fiat to ship a second host adapter for a different callback model, added only after the Wildcat adapter's suite passes, so the manifest format is shown host-neutral rather than asserted; accept it when the second adapter's honest hook passes, its hostile hooks are each caught, and the shared harness runs both adapters green. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Janus when a protocol lets hooks or callbacks run around a host action and
 the ABI alone does not say what those modules may observe or change. A manifest
@@ -24,7 +24,7 @@ modelled hostile hooks. No second host adapter yet establishes that the same
 manifest model generalises to another callback design, and a passing Janus run
 is not a whole-protocol security verdict.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Janus owns the hook-to-host effect boundary. Pandects can supply economic laws
 that the host transition must preserve; Hermes can measure a gas change inside
@@ -47,7 +47,7 @@ implementation code, comments, and the assumptions of whoever wrote the first
 hook. A new module can satisfy the ABI and still break the host's economic
 contract.
 
-## How it works
+## HOW IT WORKS
 
 A host adapter exposes a host's actions, the state that matters, and its
 economic roles. A manifest, JSON checked against a schema, declares what a hook
@@ -76,7 +76,7 @@ symbol, a blank account symbol, a zero address, and a name with more than one re
 each abort with a named error, because a permitted set that silently
 lost an entry would reject everything and read as a passing gate.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the hook-manifest JSON schema and a stdlib Python validator;
 - the Solidity host-adapter interface and the state-delta recorder;
@@ -87,7 +87,7 @@ lost an entry would reject everything and read as a passing gate.
   with an honest hook that passes every applicable gate; and
 - human and SARIF reports linking each violation to a manifest rule and a trace.
 
-## The seven gates
+## THE SEVEN GATES
 
 1. Permitted effects are enumerated; an omitted write, call target, or value
    movement is forbidden rather than implicitly accepted.
@@ -104,7 +104,7 @@ lost an entry would reject everything and read as a passing gate.
 7. A host adapter limits every result; passing the Wildcat suite makes no claim
    about another protocol's callback model.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** A hook is written for a market and has to satisfy more than the
 ABI. Declare the effects it is allowed in a manifest, run the harness, and see
@@ -118,7 +118,7 @@ prove the gates catch callback re-entry, gas grief, value redirection, storage
 mutation outside the declared slots, and stale authorisation, and the exit gate
 shows a user can still leave after a credential lapses or a provider is removed.
 
-## Use
+## USE
 
 Janus needs [Foundry](https://getfoundry.sh/) and the exact interpreter in the
 suite [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).

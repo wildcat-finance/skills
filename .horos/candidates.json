@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 19103919,
+    "bytes_blob": 20115554,
     "bytes_generated": 98
   },
   "entries": [
@@ -33,6 +33,34 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
+    },
+    {
+      "bytes": 131133,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 65566",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1275-elenchus-emits-the-fixed-and-guarded-result.md"
+    },
+    {
+      "bytes": 131855,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1275-elenchus-emits-the-fixed-and-guarded-result.synopsis.md"
+    },
+    {
+      "bytes": 154646,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 152598",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.md"
+    },
+    {
+      "bytes": 155337,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -376,6 +404,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-ship-the-markdown-outline-extractor-the-census-n.synopsis.md"
+    },
+    {
+      "bytes": 218779,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 109389",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.md"
+    },
+    {
+      "bytes": 219885,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.synopsis.md"
     },
     {
       "bytes": 79048,
