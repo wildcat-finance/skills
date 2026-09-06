@@ -12,6 +12,14 @@ The workbook is read where it lives. Its bytes are never written into a record
 or committed: a scrutiny references cases by identifier, which is what a
 coverage claim has to name, and carries no test step, expected result, comment
 or evidence field from any row.
+
+The scrutiny record carries the coverage record's `confirmations` block
+unchanged, and the rendered prose states it under "Who decided": how many
+people decided, every rule the set declares with its id, text, author and
+applied count, and how many entries were decided individually. That section
+is where a reader of the prose rather than the JSON learns whose judgement the
+numerator is. The only reviewer-typed strings that reach it are a person's
+name and a rule's text, both bounded where the reconciler admits them.
 """
 
 from __future__ import annotations
@@ -112,6 +120,9 @@ def scrutinise(
         "counts": coverage["counts"],
         "gaps": len(coverage["gaps"]),
         "undisposed": len(coverage["undisposed"]),
+        # Whose judgement the numerator is, copied from the coverage record so
+        # the committed scrutiny answers it without the record beside it.
+        "confirmations": json.loads(json.dumps(coverage["confirmations"])),
         "timing": {
             "observed_ms": elapsed_ms,
             "budget_ms": BUDGET_MS,
@@ -292,6 +303,7 @@ def render(scrutiny: dict, coverage: dict) -> str:
             "workbook contributes rows nobody has joined to it.",
             "",
         ]
+    lines += render_confirmations(scrutiny["confirmations"])
     lines += [
         "## Gaps",
         "",
@@ -329,6 +341,89 @@ def render(scrutiny: dict, coverage: dict) -> str:
         "",
     ]
     return "\n".join(lines) + "\n"
+
+
+def render_confirmations(confirmations: dict) -> list[str]:
+    """The "Who decided" section: whose judgement the numerator is.
+
+    States the people count, every declared rule with its id, text, author and
+    applied count, and the individual count, each as a figure the committed
+    evidence check can find again. A rule applied to nothing is listed, not
+    dropped: a stated rule nobody used is reported rather than hidden.
+    """
+    people = confirmations["people"]
+    rules = confirmations["by_rule"]
+    lines = [
+        "## Who decided",
+        "",
+        f"- People: **{people}** distinct "
+        f"{'person' if people == 1 else 'people'} confirmed the numerator",
+        f"- Individually: **{confirmations['individual']}** "
+        "entries confirmed by a named person under no rule",
+        f"- Rules declared: **{len(rules)}**",
+        "",
+    ]
+    if rules:
+        lines += [
+            "| Rule | Stated by | Applied | Text |",
+            "| --- | --- | ---: | --- |",
+        ]
+        for rule_id in sorted(rules):
+            row = rules[rule_id]
+            lines.append(
+                f"| `{rule_id}` | {row['stated_by']} | {row['applied']} | "
+                f"{row['text']} |"
+            )
+    else:
+        lines.append(
+            "The set declares no rule, so every confirmed entry was decided "
+            "individually by the person it names."
+        )
+    lines += [
+        "",
+        "A person's name here is a claim the disposition set makes under that",
+        "name; nothing verified that the person agreed. An entry confirmed",
+        "under a rule carries the judgement of the person who stated the rule.",
+        "",
+    ]
+    return lines
+
+
+def prose_omissions(prose: str, confirmations: dict) -> list[str]:
+    """What the prose fails to state about who decided, each named.
+
+    The committed evidence check uses this: a prose file that omits the people
+    count or any declared rule refuses, because a scrutiny whose prose says
+    how much was decided without saying by whom is the document this run
+    exists to replace.
+    """
+    missing: list[str] = []
+    if "## Who decided" not in prose:
+        missing.append("the committed scrutiny prose has no \"Who decided\" section")
+        return missing
+    section = prose.split("## Who decided", 1)[1].split("\n## ", 1)[0]
+    people = confirmations["people"]
+    if f"**{people}** distinct" not in section:
+        missing.append(
+            f"the committed scrutiny prose does not state that {people} "
+            f"{'person' if people == 1 else 'people'} decided"
+        )
+    if f"**{confirmations['individual']}** entries confirmed" not in section:
+        missing.append(
+            "the committed scrutiny prose does not state the individual count "
+            f"{confirmations['individual']}"
+        )
+    for rule_id, row in sorted(confirmations["by_rule"].items()):
+        expected = (
+            f"| `{rule_id}` | {row['stated_by']} | {row['applied']} | "
+            f"{row['text']} |"
+        )
+        if expected not in section:
+            missing.append(
+                f"the committed scrutiny prose does not state rule {rule_id} "
+                f"with its author, applied count and text"
+            )
+    return missing
 
 
 def fixture_root() -> Path:
@@ -413,13 +508,13 @@ def check() -> list[str]:
                 f"an unexplained move reported {named}, not ['unattributed']"
             )
 
-        for label, made in (
+        for label, built in (
             ("scrutiny", committed_scrutiny(first)),
             ("coverage", coverage),
         ):
             failures.extend(
                 f"the {label} record breaches its schema: {line}"
-                for line in schema_lib.check(made)
+                for line in schema_lib.check(built)
             )
 
         prose = render(first, coverage)
@@ -429,4 +524,57 @@ def check() -> list[str]:
             failures.append("the rendered scrutiny does not state the denominator")
         if "never that anything passed" in prose and "passed" not in prose:
             failures.append("the rendered scrutiny lost its own boundary sentence")
+
+        # Whose judgement the numerator is, carried and stated. The closed
+        # disposition fixture names two people, two rules and both shapes of
+        # confirmation, so the section has every figure to state.
+        spec = importlib.util.spec_from_file_location(
+            "dispositions_build", root / "dispositions" / "build.py"
+        )
+        dispositions_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dispositions_module)
+        with tempfile.TemporaryDirectory() as sets:
+            declared = reconcile_lib.read_json(
+                dispositions_module.build_all(Path(sets))["closed.json"]
+            )
+        attributed, attributed_coverage = scrutinise(
+            app, made["benign.xlsx"], "0.0.0-fixture", application, declared
+        )
+        if attributed["confirmations"] != attributed_coverage["confirmations"]:
+            failures.append(
+                "the scrutiny and its coverage disagree on the confirmations"
+            )
+        if committed_scrutiny(attributed).get("confirmations") != (
+            attributed_coverage["confirmations"]
+        ):
+            failures.append("the committed scrutiny drops the confirmations")
+        failures.extend(
+            f"the attributed scrutiny record breaches its schema: {line}"
+            for line in schema_lib.check(committed_scrutiny(attributed))
+        )
+        block = attributed["confirmations"]
+        if block["people"] < 2 or not block["by_rule"] or block["individual"] == 0:
+            failures.append(
+                "the closed fixture no longer names two people, a rule and an "
+                "individual confirmation, so the section cannot be proved"
+            )
+        attributed_prose = render(attributed, attributed_coverage)
+        failures.extend(prose_omissions(attributed_prose, block))
+        again, again_coverage = scrutinise(
+            app, made["benign.xlsx"], "0.0.0-fixture", application, declared
+        )
+        if render(again, again_coverage) != attributed_prose:
+            failures.append("the attributed prose did not regenerate byte for byte")
+        without_people = attributed_prose.replace(
+            f"**{block['people']}** distinct", "**some** distinct"
+        )
+        if not prose_omissions(without_people, block):
+            failures.append("a prose file omitting the people count was accepted")
+        first_rule = sorted(block["by_rule"])[0]
+        without_rule = "\n".join(
+            line for line in attributed_prose.splitlines()
+            if not line.startswith(f"| `{first_rule}` |")
+        ) + "\n"
+        if not prose_omissions(without_rule, block):
+            failures.append("a prose file omitting a declared rule was accepted")
     return failures
