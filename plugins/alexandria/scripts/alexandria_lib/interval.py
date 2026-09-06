@@ -547,7 +547,10 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
+            return {
+                "history": [], "last_accepted": None, "next_shard": 0,
+                "offsets": {name: 0 for name in self.classes}, "records": 0,
+            }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
         checkpoint = load_bytes(
@@ -558,8 +561,14 @@ class Staging:
             "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
             "next_shard": checkpoint["next_shard"],
+            "offsets": dict(checkpoint["offsets"]),
             "records": checkpoint["records"],
         }
+
+    def journal_bytes(self, name: str) -> int:
+        """The bytes one class journal holds on disk, committed or not; zero when absent."""
+        path = self._journal_path(name)
+        return path.stat().st_size if path.is_file() else 0
 
     def rewind_to(self, shard: int) -> dict:
         """Drop every record above one remembered boundary and continue from it.

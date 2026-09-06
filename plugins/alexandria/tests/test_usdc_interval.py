@@ -1782,6 +1782,27 @@ class OpeningReconciliationTests(CollectorTestCase):
             self.reconcile(root, FixtureTransport(self.state))
         self.assertEqual(journals(root), before)
 
+    def test_an_opening_read_the_checkpoint_has_not_committed_refuses_to_reconcile(self):
+        """A record past the committed offset is one the collector would re-issue on resume."""
+        clean = self.collected("clean")
+        lines = (clean / "journals" / f"{OPENING_CLASS}.jsonl").read_bytes().splitlines(keepends=True)
+        root = self.scratch("uncommitted")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at=opening_labels()[6])).collect()
+        path = root / "journals" / f"{OPENING_CLASS}.jsonl"
+        committed = checkpoint(root)["offsets"][OPENING_CLASS]
+        self.assertEqual(committed, path.stat().st_size)
+        path.write_bytes(b"".join(lines))
+        self.assertEqual(len(opening_entries(root)), 7)
+        self.assertGreater(path.stat().st_size, committed)
+        before = journals(root)
+        with self.assertRaisesRegex(
+            AlexandriaError, "epoch-evidence journal holds bytes the checkpoint has not committed",
+        ):
+            self.reconcile(root, FixtureTransport(self.state))
+        self.assertEqual(journals(root), before)
+        self.assertFalse((root / "reconciliation" / "reconciliation.json").exists())
+
     def test_the_receipt_schema_names_every_dispute_kind(self):
         schema = json.loads((PLUGIN / "schemas" / "interval-receipt-v1.schema.json").read_text())
         kinds = schema["$defs"]["reconciliation"]["properties"]["disputed"]["items"]["properties"]["kind"]["enum"]

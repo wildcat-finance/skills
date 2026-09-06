@@ -833,6 +833,18 @@ class Reconciler:
             raise AlexandriaError(
                 "the interval is not completely collected, so there is nothing to reconcile"
             )
+        # Once the last shard commits, `next_shard` stays one past the plan
+        # while the opening reads are still being made, so it no longer says
+        # that every staged byte is committed. The checkpoint's offsets do: a
+        # journal longer than its offset holds a read the collector would
+        # truncate and re-issue on resume, and comparing it would reconcile
+        # bytes the release will never carry.
+        for name in self.staging.classes:
+            if self.staging.journal_bytes(name) != state["offsets"].get(name, 0):
+                raise AlexandriaError(
+                    f"the {name} journal holds bytes the checkpoint has not committed, "
+                    "so there is nothing to reconcile"
+                )
         staged = self._staged()
         for index in range(len(shards)):
             for name in self.classes:
