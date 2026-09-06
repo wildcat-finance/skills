@@ -3699,3 +3699,132 @@ Those results close both first-round mechanisms without widening Step 3.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R2-01`,
+`plugins/hexaemeron/tests/test_hexctl.py` may change only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` may change only
+within `FrontierReceiptCase` plus one pure source-contract case. Both fixtures
+close the process environment around inherited setup. Frontier routes its
+remaining five graph mutations through its absolute native-Git helper and
+adds fixed identity and dates only to commit commands. For `S3-R2-02`,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change only
+within `NativeGraphCase` plus one pure source-contract case, giving its three
+commit commands fixed identity and dates and pinning their exact key sets.
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py` may add only the two
+round-2 source-contract reporter cases. The production controller and promise
+coverage register do not change. Every other file boundary remains unchanged.
+
+The signed test-only guard commit has sole parent
+`6021e664d76a46160eebadddefa0fbfc77d7346b` and changes only the reporter and
+two pure source-contract test files. The signed product fix has that same sole
+parent and contains the repair, regression and specification bytes but no
+audit file. The audit branch first receives it through a signed
+no-fast-forward merge whose first parent is round-2 audit commit
+`ca77e424a9a9e368b163fb8b652271fff29b5db1`; Warden appends round 3 in a later
+signed audit-only commit.
+
+Complete replacement Tests: Overlay the signed test-only guard commit on its
+exact parent and run both source-bound commands:
+
+```bash
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-test-guard> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case s3-r2-01 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/fiat-453-step-3-r2-01.json --require-guard --format json
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-test-guard> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case s3-r2-02 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/fiat-453-step-3-r2-02.json --require-guard --format json
+```
+
+Both must report `guarded` through assertion failures rather than import,
+runner or sandbox errors. On the fixed tree, invoke the publication and
+frontier classes under hostile process-level Git directory, work-tree and
+object-directory variables; require their inherited setup and complete native
+graph paths to remain local. Build NativeGraph twice and require the three
+commit ids and the exact command-local identity-and-date key sets to match.
+Then rerun the affected classes, Warden's exact `unittest-json-v1` command and
+every preceding full-suite, Promise, frozen-byte, source, lint, Horos and diff
+gate. Never launch measurement, parity, a tokenizer, a recorded-family
+adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the closed fixture setup,
+absolute Git resolution, empty base environments, command-local identity and
+dates, and local-only objects and refs. elenchus owns both assertion-red
+source-contract guards and keeps their result separate from Warden's audit
+runner. ephoros: none, no product signal changes. metron: none, no performance
+claim. hypomnema: none, the repair applies the existing native-substitution
+decision. Every other Step 3 discipline requirement continues unchanged.
+
+**Why.** Round 2 proved that hostile Git state can act before the current test
+bodies, that five Frontier mutations still bypass their closed helper, and
+that NativeGraph object ids still depend on wall time. This repair closes
+those fixture-only mechanisms without changing production behaviour or the
+known-failure inventory.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R2-01`,
+`plugins/hexaemeron/tests/test_hexctl.py` may change only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` may change only in
+its imports, `FrontierReceiptCase` and the round-2 source-contract case. Each
+fixture activates a cleared process environment before inherited setup,
+retains it through cleanup, restores only the fake-tool path plus
+`os.defpath`, and keeps every Frontier graph mutation on the absolute
+native-Git helper. The module import used by the contract must not expose an
+imported `TestCase` class to unittest discovery. Frontier commit commands add
+only fixed identity and dates. For `S3-R2-02`,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change only
+within `NativeGraphCase` and the round-2 contract case. Its three commit
+commands receive exact six-key identity-and-date environments; the contract
+records those actual calls and requires two independent builds to produce the
+same three object ids. `plugins/hexaemeron/tests/emit_issue_453_guard_report.py`
+may add only the two round-2 reporter cases. The production controller and
+promise coverage register do not change. Every other file boundary remains
+unchanged.
+
+The stronger signed test-only guard commit is
+`a9facb8891d7705ce760f4a9796e7115c7644683`, with sole parent
+`6021e664d76a46160eebadddefa0fbfc77d7346b` and only the reporter plus two
+contract-test files. It supersedes the weaker `f52b875b` guard commit. The
+signed product fix keeps the same sole parent and contains the repair,
+regression and specification bytes but no audit file. The audit branch first
+receives it through a signed no-fast-forward merge whose first parent is the
+round-2 audit commit `ca77e424a9a9e368b163fb8b652271fff29b5db1`;
+Warden appends round 3 in a later signed audit-only commit.
+
+Complete replacement Tests: Elenchus ran each round-2 reporter from
+`a9facb8891d7705ce760f4a9796e7115c7644683`. Each result is `guarded` with one
+executed test, one assertion failure, zero errors and zero skips. On the fixed
+tree, the strengthened contracts pass 2/2, their final individual reports
+pass 1/1 each, the complete hostile publication fixture passes 35/35, the
+complete hostile Frontier fixture passes 7/7, Frontier module discovery is
+exactly eight tests, that module passes 8/8, and the branch-extension module
+passes 13/13. Warden's exact `unittest-json-v1` command and every preceding
+full-suite, Promise, frozen-byte, source, lint, Horos and diff gate remain
+required. Never launch measurement, parity, a tokenizer, a recorded-family
+adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the pre-parent closed process
+environment, absolute Git resolution, exact command-local identity and dates,
+local-only objects and refs, and the no-duplicate discovery boundary.
+elenchus owns both strengthened assertion-red guards and keeps their results
+separate from Warden's audit runner. ephoros: none, no product signal changes.
+metron: none, no performance claim. hypomnema: none, the repair applies the
+existing native-substitution decision. Every other Step 3 discipline
+requirement continues unchanged.
+
+**Why.** The completed repair closes both round-2 mechanisms. The strengthened
+guards also refuse inactive or late environment clearing, ambient-key union,
+nondeterministic object ids and accidental rediscovery of the imported
+publication suite.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

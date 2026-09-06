@@ -1935,6 +1935,14 @@ class TestMergedState(HexctlCase):
 
 
 class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
+    def setUp(self):
+        self.closed_process_environment = mock.patch.dict(os.environ, {}, clear=True)
+        self.closed_process_environment.start()
+        self.addCleanup(self.closed_process_environment.stop)
+        super().setUp()
+        fake_bin = self.env["PATH"].split(os.pathsep, 1)[0]
+        self.env["PATH"] = fake_bin + os.pathsep + os.defpath
+
     def to_push(self, base=None):
         self.to_steps(("Ship",), base=base)
         self.run_ctl(

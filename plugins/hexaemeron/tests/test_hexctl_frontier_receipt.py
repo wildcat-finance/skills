@@ -19,13 +19,16 @@ fixture. Each test fails against that controller: the two end-to-end guards
 on the refusal itself, the rest on the missing shared constant.
 """
 
+import inspect
 import json
 import os
 import shutil
 import subprocess
+import unittest
 from unittest import mock
 
 try:
+    from plugins.hexaemeron.tests import test_hexctl as _test_hexctl
     from plugins.hexaemeron.tests.test_hexctl import (
         HEXCTL,
         SUITE,
@@ -36,6 +39,7 @@ try:
         widget_ledger,
     )
 except ModuleNotFoundError:
+    import test_hexctl as _test_hexctl
     from test_hexctl import (
         HEXCTL,
         SUITE,
@@ -66,7 +70,13 @@ class FrontierReceiptCase(HexctlCase):
     OWN = "widget-v1.4.0"
 
     def setUp(self):
+        self.closed_process_environment = mock.patch.dict(os.environ, {}, clear=True)
+        self.closed_process_environment.start()
+        self.addCleanup(self.closed_process_environment.stop)
         super().setUp()
+        fake_bin = self.env["PATH"].split(os.pathsep, 1)[0]
+        self.env["PATH"] = fake_bin + os.pathsep + os.defpath
+        self.native_commit_number = 0
         self.install_blob_passthrough()
         self.ledger_rel = os.path.join(
             "plugins", "demo", "skills", "widget", "EVOLUTION.md")
@@ -75,8 +85,27 @@ class FrontierReceiptCase(HexctlCase):
             "widget-v1.1.0", "baseline", self.HELD[1], self.base_digest,
             "Versioning starts here.")
         self.write_ledger(self.dir, [self.baseline_row], "widget-v1.1.0")
-        self.git("add", self.ledger_rel)
-        self.git("commit", "-q", "-m", "widget ledger baseline")
+        self.native_git("add", self.ledger_rel, cwd=self.target)
+        self.native_git(
+            "commit", "-q", "-m", "widget ledger baseline",
+            extra_env=self._next_commit_environment(), cwd=self.target,
+        )
+
+    @staticmethod
+    def _commit_environment(number):
+        timestamp = 1000000000 + number
+        return {
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+        }
+
+    def _next_commit_environment(self):
+        self.native_commit_number += 1
+        return self._commit_environment(self.native_commit_number)
 
     def install_blob_passthrough(self):
         """Serve `git show <sha>:<path>` from the real repository.
@@ -126,7 +155,8 @@ class FrontierReceiptCase(HexctlCase):
             self.FOREIGN[-1])
         self.native_git("add", self.ledger_rel, cwd=self.dir)
         self.native_git(
-            "commit", "-q", "-m", "published rows", cwd=self.dir
+            "commit", "-q", "-m", "published rows", cwd=self.dir,
+            extra_env=self._next_commit_environment(),
         )
         return self.native_git("rev-parse", "HEAD", cwd=self.dir)
 
@@ -149,20 +179,11 @@ class FrontierReceiptCase(HexctlCase):
         return proc.stdout.strip()
 
     def native_commit(self, tree_parent, changes, *parents, message):
-        self.native_commit_number = getattr(self, "native_commit_number", 0) + 1
+        identity_environment = self._next_commit_environment()
         index = os.path.join(
             self.dir, f"frontier-sync-index-{self.native_commit_number}"
         )
         index_environment = {"GIT_INDEX_FILE": index}
-        timestamp = 1000000000 + self.native_commit_number
-        identity_environment = {
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
-            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
-        }
         try:
             self.native_git(
                 "read-tree", tree_parent, extra_env=index_environment
@@ -289,9 +310,14 @@ class FrontierReceiptCase(HexctlCase):
         steps = self.write("steps.json", json.dumps(["Ship"]))
         self.run_ctl("done", "runbook", "--artifact", runbook,
                      "--steps-file", steps)
-        self.git("add", "study.md", "runbook.md", "steps.json")
-        self.git("commit", "-q", "-m", "fixture")
-        self.git("branch", self.step_branch(1))
+        self.native_git(
+            "add", "study.md", "runbook.md", "steps.json", cwd=self.target,
+        )
+        self.native_git(
+            "commit", "-q", "-m", "fixture", cwd=self.target,
+            extra_env=self._next_commit_environment(),
+        )
+        self.native_git("branch", self.step_branch(1), cwd=self.target)
         self.run_ctl("done", "implement", "--branch", self.step_branch(1),
                      "--commit", "abc123")
         self.run_ctl("record", "security_suite", SUITE)
@@ -494,7 +520,37 @@ class FrontierReceiptCase(HexctlCase):
                 )
 
 
+class FixtureEnvironmentSourceContractTests(unittest.TestCase):
+    def test_s3_r2_01_fixture_graph_uses_closed_setup_and_native_calls(self):
+        publication_setup = inspect.getsource(
+            _test_hexctl.TestPublicationBindings.setUp
+        )
+        frontier_setup = inspect.getsource(FrontierReceiptCase.setUp)
+        frontier_source = inspect.getsource(FrontierReceiptCase)
+
+        def closes_before_parent(source):
+            patch = source.find(
+                "mock.patch.dict(os.environ, {}, clear=True)"
+            )
+            start = source.find("self.closed_process_environment.start()")
+            cleanup = source.find(
+                "self.addCleanup(self.closed_process_environment.stop)"
+            )
+            parent = source.find("super().setUp()")
+            return -1 not in (patch, start, cleanup, parent) and (
+                patch < start < cleanup < parent
+            )
+
+        self.assertTrue(
+            closes_before_parent(publication_setup)
+            and closes_before_parent(frontier_setup)
+            and "self.git(" not in frontier_source,
+            "publication/frontier setup must activate and retain a closed "
+            "environment before parent setup, and every Frontier graph "
+            "mutation must use native_git",
+        )
+
+
 if __name__ == "__main__":  # pragma: no cover
-    import unittest
 
     unittest.main()

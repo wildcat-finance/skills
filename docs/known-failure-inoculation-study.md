@@ -1029,3 +1029,27 @@ without guessing every present or future injection-variable name.
 
 **Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Step 3 now closes two fixture-construction gaps found in its
+second audit round. The publication and frontier fixtures must close the
+process environment before their inherited repository setup can run, rather
+than sanitising only calls made later inside a test. Frontier's remaining
+setup and lifecycle mutations must use its absolute native-Git helper with an
+empty base and command-local deterministic commit identity. NativeGraph's two
+ordinary commits and one `commit-tree` must likewise receive fixed identity
+and dates, and its tests must pin the exact environment keys passed to those
+three commands.
+
+**Why.** A hostile `GIT_DIR`, work tree or object directory can act before the
+current test bodies and can redirect five Frontier mutations that still use
+the inherited ambient helper. Separately, wall-clock commit dates make the
+same NativeGraph source produce different object ids. Both mechanisms weaken
+the disposable fixture evidence even though the production isolation is
+already guarded.
+
+**Steps touched.** Step 3's Tests.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

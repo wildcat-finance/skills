@@ -46,6 +46,16 @@ CASES = {
         "InoculationLifecycleTests."
         "test_kf_453_05_undeclared_product_path_refuses"
     ),
+    "s3-r2-01": (
+        "plugins.hexaemeron.tests.test_hexctl_frontier_receipt."
+        "FixtureEnvironmentSourceContractTests."
+        "test_s3_r2_01_fixture_graph_uses_closed_setup_and_native_calls"
+    ),
+    "s3-r2-02": (
+        "plugins.hexaemeron.tests.test_step_branch_extensions."
+        "NativeGraphSourceContractTests."
+        "test_s3_r2_02_commit_environment_is_fixed_and_wired"
+    ),
 }
 REQUIRED_SURFACE = (
     Path("plugins/hexaemeron/tests/test_known_failure_inventory.py"),

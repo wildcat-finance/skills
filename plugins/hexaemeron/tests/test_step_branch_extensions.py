@@ -50,6 +50,18 @@ def hexctl_module():
 class NativeGraphCase(unittest.TestCase):
     """One real ``P -> E`` graph plus a commit from unrelated history."""
 
+    @staticmethod
+    def _commit_environment(number):
+        timestamp = 1000000000 + number
+        return {
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+        }
+
     def setUp(self):
         self.hexctl = hexctl_module()
         self.tmp = tempfile.TemporaryDirectory()
@@ -61,22 +73,23 @@ class NativeGraphCase(unittest.TestCase):
 
         (self.repo / "history.txt").write_text("P\n", encoding="utf-8")
         self._git("add", "history.txt")
-        self._git("commit", "-q", "-m", "P")
+        self._git(
+            "commit", "-q", "-m", "P",
+            extra_env=self._commit_environment(1),
+        )
         self.recorded = self._git("rev-parse", "HEAD").stdout.strip()
 
         (self.repo / "history.txt").write_text("P\nE\n", encoding="utf-8")
-        self._git("commit", "-q", "-am", "E")
+        self._git(
+            "commit", "-q", "-am", "E",
+            extra_env=self._commit_environment(2),
+        )
         self.descendant = self._git("rev-parse", "HEAD").stdout.strip()
 
         tree = self._git("mktree", input_text="").stdout.strip()
-        identity = {
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-        }
         self.unrelated = self._git(
-            "commit-tree", tree, "-m", "unrelated", extra_env=identity
+            "commit-tree", tree, "-m", "unrelated",
+            extra_env=self._commit_environment(3),
         ).stdout.strip()
 
     def tearDown(self):
@@ -458,6 +471,65 @@ class DescendantMergeReceiptCase(HexctlCase):
         self.assertEqual(identity["login"], "shoggoth-wildcat")
         self.assertEqual(identity["committer"]["login"], "laurenceday")
         self.assertNotIn("@", json.dumps(effective["attribution"]))
+
+
+class NativeGraphSourceContractTests(unittest.TestCase):
+    def test_s3_r2_02_commit_environment_is_fixed_and_wired(self):
+        self.assertIn("_commit_environment", NativeGraphCase.__dict__)
+        expected_keys = {
+            "GIT_AUTHOR_NAME",
+            "GIT_AUTHOR_EMAIL",
+            "GIT_COMMITTER_NAME",
+            "GIT_COMMITTER_EMAIL",
+            "GIT_AUTHOR_DATE",
+            "GIT_COMMITTER_DATE",
+        }
+
+        def build_graph():
+            case = NativeGraphCase(
+                methodName="test_equal_head_makes_no_relation_call"
+            )
+            native_git = NativeGraphCase._git
+            commit_environments = []
+
+            def record_git(instance, *argv, input_text=None, extra_env=None):
+                if argv and argv[0] in {"commit", "commit-tree"}:
+                    commit_environments.append(dict(extra_env or {}))
+                return native_git(
+                    instance,
+                    *argv,
+                    input_text=input_text,
+                    extra_env=extra_env,
+                )
+
+            with mock.patch.object(NativeGraphCase, "_git", record_git):
+                case.setUp()
+            try:
+                commits = (case.recorded, case.descendant, case.unrelated)
+                expected = [
+                    case._commit_environment(index) for index in range(1, 4)
+                ]
+                return commits, commit_environments, expected
+            finally:
+                case.tearDown()
+
+        first, first_environments, expected = build_graph()
+        second, second_environments, second_expected = build_graph()
+        self.assertEqual(first, second)
+        self.assertEqual(expected, second_expected)
+        self.assertEqual(first_environments, expected)
+        self.assertEqual(second_environments, expected)
+        for index, environment in enumerate(expected, 1):
+            with self.subTest(index=index):
+                self.assertEqual(set(environment), expected_keys)
+                self.assertEqual(
+                    environment["GIT_AUTHOR_DATE"],
+                    f"{1000000000 + index} +0000",
+                )
+                self.assertEqual(
+                    environment["GIT_COMMITTER_DATE"],
+                    environment["GIT_AUTHOR_DATE"],
+                )
 
 
 def run_elenchus_report(argv):
