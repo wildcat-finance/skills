@@ -1,4 +1,4 @@
-# Install and publish Wildcat Labs Skills
+# INSTALL AND PUBLISH WILDCAT LABS SKILLS
 
 Use this page after choosing what you want to run. The
 [main README](./README.md) explains how Wildcat Labs Skills, the Shoggoth,
@@ -16,9 +16,9 @@ Installing one specialist does not install a general autonomous agent. The
 selected skill still follows the target repository's instructions and performs
 only its declared operations.
 
-## Install
+## INSTALL
 
-### Codex
+### CODEX
 
 Add the Wildcat Labs marketplace from the Codex CLI. The next two commands let
 you inspect the configured sources and fetch later marketplace updates:
@@ -35,7 +35,7 @@ select **Wildcat Labs**, and install the plugin that owns your task.
 See OpenAI's [plugin packaging documentation](https://developers.openai.com/plugins/build/plugins)
 for the marketplace workflow.
 
-### Claude Code
+### CLAUDE CODE
 
 Add the same marketplace and install a plugin from inside Claude Code:
 
@@ -62,7 +62,7 @@ Add the same marketplace and install a plugin from inside Claude Code:
 
 If the install summary asks for it, run `/reload-plugins`.
 
-#### Invoke
+#### INVOKE
 
 Claude namespaces plugin skills, so each entry skill answers as:
 
@@ -104,7 +104,7 @@ See Anthropic's [skills](https://code.claude.com/docs/en/skills) and
 [plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces)
 documentation for the underlying format.
 
-#### Attribution
+#### ATTRIBUTION
 
 The repository carries `.claude/settings.json` with one object:
 
@@ -133,7 +133,7 @@ that the line is absent. The rule is
 the keys are documented in Anthropic's
 [settings reference](https://code.claude.com/docs/en/settings-reference).
 
-### Local agents
+### LOCAL AGENTS
 
 Install the collective through the Agent Skills convention by selecting the
 single [Promise Machine router](./.agents/skills/promise-machine/SKILL.md),
@@ -177,14 +177,14 @@ A file-reading agent without automatic skill discovery should begin with
 [AGENTS.md](./AGENTS.md). That file identifies the entrypoints, path rules, and
 plugin-specific runtime contracts.
 
-## Publish
+## PUBLISH
 
 Work lands in the public repository, but an installed plugin can remain behind
 that revision. The two distribution routes below fetch and cache different
 things. In either case, verify the bytes a machine is actually serving instead
 of treating a successful update command as proof of currency.
 
-### Git-backed installation
+### GIT-BACKED INSTALLATION
 
 A marketplace added with `/plugin marketplace add wildcat-finance/skills`, or
 the Codex equivalent, is a clone fetched with the operator's own Git
@@ -211,12 +211,14 @@ exits zero and the machine keeps the old files.
 
 This gap was measured on 2026-08-22 over the 122 commits between an install at
 `793b112` and a head at `cd48583`. `plugin update` moved Hexaemeron from 1.5.1
-to 1.5.4 and left the other thirteen plugins pinned at `793b112`, and all
-thirteen had real changes under `skills/*/SKILL.md`. Hermes was the worst of
-them: its plugin version stayed at 0.1.1 while the skill's own frontmatter went
-from 0.1.0 to 0.1.1, so the cached copy was short a 73-line `SKILL.md` diff
-carrying the pinned 120-rule gas corpus, the reference to that corpus JSON, and
-the rule refusing work outside the target's scope.
+to 1.5.4 and left the other
+<!-- front-door:historical captured="2026-08-22" figure="thirteen" -->thirteen
+plugins pinned at `793b112`, and all thirteen had real changes under
+`skills/*/SKILL.md`. Hermes was the worst of them: its plugin version stayed
+at 0.1.1 while the skill's own frontmatter went from 0.1.0 to 0.1.1, so the
+cached copy was short a 73-line `SKILL.md` diff carrying the pinned 120-rule
+gas corpus, the reference to that corpus JSON, and the rule refusing work
+outside the target's scope.
 
 Do not trust the exit code alone. Each install records its pinned commit;
 compare those commits with the marketplace checkout's current head:
@@ -239,11 +241,12 @@ claude plugin install <plugin>@wildcat-labs --yes
 ```
 
 `--keep-data` preserves `~/.claude/plugins/data/{id}/`, and enabled status
-survived the round trip for all fourteen plugins present in that dated
-measurement. Apply the same check to every plugin now behind the head, not only
-the one being worked on.
+survived the round trip for all
+<!-- front-door:historical captured="2026-08-22" figure="fourteen" -->fourteen
+plugins present in that dated measurement. Apply the same check to every plugin
+now behind the head, not only the one being worked on.
 
-### Organisation distribution through the private mirror
+### ORGANISATION DISTRIBUTION THROUGH THE PRIVATE MIRROR
 
 A marketplace distributed through
 [Organization settings > Plugins](https://claude.ai/admin-settings/plugins) is
@@ -283,7 +286,7 @@ bump is released once it has crossed all three links: merged here, mirrored
 there, and distributed by sync. Each link can look healthy while sitting behind
 the one before it, which is how this route produces the gap named above.
 
-### Identify the route a machine uses
+### IDENTIFY THE ROUTE A MACHINE USES
 
 The update commands above apply only to the Git-backed route. A Git-backed
 install holds a Git checkout; an
@@ -299,7 +302,7 @@ covers source rules, and the
 [organisation plugin workflow](https://support.claude.com/en/articles/13837433)
 covers the administrator side.
 
-## Licence boundary
+## LICENCE BOUNDARY
 
 Wildcat Labs first-party files are licensed under
 [Apache-2.0](./LICENSE). The bundled Pashov security skills are vendored

@@ -1,6 +1,6 @@
 ![Synkrisis](./assets/characters/synkrisis.png)
 
-# Synkrisis
+# SYNKRISIS
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Synkrisis builds one checked cohort from validated Promise Machine run observati
 **Next Fiat job.** Use /hexaemeron:fiat to build one cohort from captured production run observations under the shipped policy schema, run the rule catalogue over it, and reconcile every refusal or missed pattern into rule or schema repairs; accept it when the cohort, findings and report recompute from preserved inputs and each repair carries a red-to-green guard. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Synkrisis when several agent runs have already produced validated
 observations and a person can declare which differences may be compared. It
@@ -24,7 +24,7 @@ on constructed records, not a captured production cohort. Findings remain
 bounded inferences: they do not establish cause, model quality, or permission
 to act.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 The Promise Machine records what one agent run observably did: the
 run-observation contract defines the record, the capture gate keeps forbidden
@@ -40,7 +40,7 @@ Elenchus works one failure to its cause, and Horos sets the repository-reading
 boundary. A finding suggests a next owner; a person still decides whether
 anything happens.
 
-## What it ships today
+## WHAT IT SHIPS TODAY
 
 - `cohort` validates every declared run, recomputes its digest and accepted
   prefix, applies the operator's comparison policy, and keeps excluded and
@@ -59,7 +59,7 @@ negative cases for an empty eligible cohort and a rule that claims cause. The
 remaining evidence gap is field use: no captured production cohort has tested
 the two current rule kinds.
 
-## How it works
+## HOW IT WORKS
 
 An operator declares two things: a manifest naming every run in the
 comparison universe, with each record's digest, byte count, validation,
@@ -78,7 +78,7 @@ rules to what is left. `render` writes the report from fixed templates, and
 trusting any of them, and `bench_synkrisis.py` holds the whole path to its
 declared ceilings on the runner it records.
 
-## Use
+## USE
 
 Synkrisis needs only the exact interpreter in the suite
 [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).

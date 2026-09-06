@@ -1,0 +1,9 @@
+{
+  "candidate": "editorial-only",
+  "command": "python3 docs/design/build_shoggoth_front_door_design_evidence.py",
+  "criterion": "demo-state-is-discovered",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

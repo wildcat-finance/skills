@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 19676890,
+    "bytes_blob": 20115554,
     "bytes_generated": 98
   },
   "entries": [
@@ -404,6 +404,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-ship-the-markdown-outline-extractor-the-census-n.synopsis.md"
+    },
+    {
+      "bytes": 218779,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 109389",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.md"
+    },
+    {
+      "bytes": 219885,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-shoggoth-front-door-derived.synopsis.md"
     },
     {
       "bytes": 79048,

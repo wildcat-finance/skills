@@ -1,6 +1,6 @@
 ![Hexaemeron](./assets/characters/hexaemeron.png)
 
-# hexaemeron
+# HEXAEMERON
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -14,7 +14,7 @@ Hexaemeron carries an explicit, receipted delivery from study to one merged chan
 
 Let there be light.
 
-## Start here
+## START HERE
 
 Use Hexaemeron when you want one repository issue carried through the complete
 controlled delivery, not merely edited. Its Fiat controller orders study,
@@ -25,7 +25,7 @@ Fiat is explicit-only. It does not start because a task sounds like delivery.
 Its checkpoints survive local context loss at completed boundaries; they are
 not arbitrary mid-step snapshots or a distributed cross-machine service.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Hexaemeron is the delivery system, not a general replacement for the other
 plugins. Fiat controls the run. Surveyor, Mason, Warden, and Scribe execute
@@ -54,7 +54,7 @@ Named for the six days of ordered creation from a void to finished work,
 then rest. The entry skill is `fiat`, so the invocation is
 `/hexaemeron:fiat` and a fresh run's first words are the line above.
 
-## How it works
+## HOW IT WORKS
 
 Let there be light. A deterministic controller (`hexctl`) decides what comes next and refuses to advance without a receipt; state and a hash-chained ledger survive context resets, so resume is the same command.
 
@@ -67,23 +67,23 @@ Let there be light. A deterministic controller (`hexctl`) decides what comes nex
 7. Once every step is pushed, merge the stack into the run branch in order, receipt one signed base sync if concurrent work created an integration conflict, then merge the run branch into the base once.
 
 A run works on one integration branch cut from the base. An issue-free run uses
-`fiat/<run slug>`. When a known task issue is supplied during initialization,
+`fiat/<run slug>`. When a known task issue is supplied during initialisation,
 the branch uses `fiat/<issue>-<run slug>` and every step branch keeps that
 prefix. Each step's pull request targets the step below it, step 1 targets the
 run branch, and nothing merges until the whole stack is ready. The base sees
 exactly one merge per run.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the executable [`hexctl.py`](./skills/fiat/scripts/hexctl.py) controller with a tamper-evident ledger (`verify` proves both chain and state);
 - the [`imprimatur`](./skills/imprimatur) three-tier prose lint and the [`vulgate`](./skills/vulgate) voice mask, invokable on their own;
 - [`kronos`](./skills/kronos), which ranks eligible held frontier jobs and loops complete Fiat runs until none remain;
-- six phase disciplines; all six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer and whether the evidence due for their chosen design is present, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
+- the phase disciplines, of which six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer and whether the evidence due for their chosen design is present, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
 - the Pashov Audit Group suite vendored verbatim (MIT; `LICENSE` and `NOTICE.md` in each skill directory);
 - Codex metadata for explicit or automatic invocation; and
 - the controller, contract, practice-check and lint test suite, plus a fuzz-audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) covering the controller's own surfaces.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** A half-formed idea and a week to find out whether it holds. Hexaemeron turns it into a study, a runbook of discrete steps, and one pull request per step. Each directive carries a source-bound agent packet; each Fiat-created commit is verified locally, and pushed ranges and merge SHAs must carry GitHub's valid verification before their receipts advance.
 
@@ -93,7 +93,7 @@ exactly one merge per run.
 
 **Business development.** An integration document has to be accurate about what the protocol does and readable by someone who is not an engineer. The study phase produces the first and the prose masks produce the second.
 
-## The shape of a run
+## THE SHAPE OF A RUN
 
 | Day | Phase | What happens |
 | --- | --- | --- |
@@ -108,7 +108,7 @@ exactly one merge per run.
 Days 3 through the rest repeat per step. The sixth day makes the prose in
 a human image, which is roughly the joke the name is carrying.
 
-## Usage
+## USAGE
 
 ```text
 /hexaemeron:fiat "borrowing-base covenant hook for V2.5"   # start
@@ -133,7 +133,7 @@ audit loop hit its round cap with findings still open, a push was
 refused, or a Solidity repo is missing its security-suite receipt.
 Everything else proceeds.
 
-## The controller
+## THE CONTROLLER
 
 `skills/fiat/scripts/hexctl.py` sequences the run. The model does the work;
 the controller decides what comes next and refuses to advance without a
@@ -175,8 +175,8 @@ removes the tree when git can do it without force, keeping any tree that holds
 work.
 
 Mutating commands hold a kernel lock for their whole run. Separate runs get
-separate trees and separate state, so the lock only bites when two agents share
-one run's tree; a second writer is refused with the first process's details, and
+separate trees and separate state, so the lock only bites when a second agent
+enters one run's tree; a second writer is refused with the first process's details, and
 `next`, `status`, and `verify` still answer. The operating system releases the
 lock if the holder crashes, so a stale metadata file never needs manual cleanup.
 
@@ -198,7 +198,7 @@ task issue is closed. Its closing comment follows Sapheneia, Imprimatur,
 Vulgate, and an Imprimatur re-lint, then is posted verbatim and read back. Fiat
 creates no GitHub issue unless the user or target repository requires one.
 
-## Skill versions and the stopping rule
+## SKILL VERSIONS AND THE STOPPING RULE
 
 The first-party Fiat, Imprimatur, Vulgate, and Kronos skills keep an
 `EVOLUTION.md` ledger beside `SKILL.md`. Labels use
@@ -214,7 +214,7 @@ material improvement, the ledger becomes `mature`, its next job becomes
 `None -- mature`, and Fiat refuses further frontier runs. A different rewrite
 or another model's curiosity is not grounds to keep seasoning it.
 
-## Audit synopses
+## AUDIT SYNOPSES
 
 Fiat keeps each audit source authoritative and commits a bounded deterministic
 read view beside it. A legacy `**/audit/AUDIT.md` uses
@@ -246,7 +246,7 @@ and views that fail the strict 15% integer line budget. `--write` uses a
 flushed same-directory temporary, atomic replacement, cleanup and exact
 post-write read. It has no network, shell, dependency, or generation clock.
 
-## Configuration
+## CONFIGURATION
 
 `hexctl config get <path>` reads every path. After `init`, `config set` may
 change only the exact `audit.log_path` leaf, the `git` section, or a path below
@@ -276,10 +276,10 @@ https://www.pashov.com/. Preflight records the bundled ids in the
 so a stale config cannot fake a suite. Prose-free or Solidity-free runs record
 a waiver instead.
 
-## The skills each phase is held to
+## THE SKILLS EACH PHASE IS HELD TO
 
-Six skills carry the standards each phase is held to, and each runs on its own
-outside the loop. `protasis` says what a study and a runbook must answer.
+The standards each phase is held to are carried by their own skills, and each
+runs on its own outside the loop. `protasis` says what a study and a runbook must answer.
 `elenchus` works an observed failure down to its cause and guards it.
 `phylax` holds the off-chain surface: input, subprocesses, fetched hosts,
 secrets, dependencies and model output. It also ships the synthetic
@@ -292,7 +292,7 @@ change without a recorded before and after. `hypomnema` decides which
 decisions earn a written reason and where each record lives. Each carries its
 own `EVOLUTION.md`, so Kronos ranks their frontiers alongside the rest.
 
-## The prose masks
+## THE PROSE MASKS
 
 Everything the loop needs ships in the plugin; it stands alone. The two
 prose masks are vendored, not referenced: `imprimatur` (a three-tier lint
@@ -306,7 +306,7 @@ pass it merges its own PR and closes its own task issue rather than leaving
 routine publication work behind. It reads the task-issue comment and closed
 state back from GitHub; the closure receipt does not attest the prose passes.
 
-## Agents
+## AGENTS
 
 The four workers isolate bulky phases without inheriting controller authority:
 
@@ -327,7 +327,7 @@ alone receipts their results and chooses the next directive. The current open
 frontier is the visible identity of a reused worker handle: callers must reject
 one that still names an older issue, step, or role.
 
-## Tests
+## TESTS
 
 ```text
 python3 tests/run_tests.py
