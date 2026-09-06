@@ -19,6 +19,7 @@ import copy
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -49,6 +50,18 @@ def hexctl_module():
 class NativeGraphCase(unittest.TestCase):
     """One real ``P -> E`` graph plus a commit from unrelated history."""
 
+    @staticmethod
+    def _commit_environment(number):
+        timestamp = 1000000000 + number
+        return {
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+        }
+
     def setUp(self):
         self.hexctl = hexctl_module()
         self.tmp = tempfile.TemporaryDirectory()
@@ -60,37 +73,38 @@ class NativeGraphCase(unittest.TestCase):
 
         (self.repo / "history.txt").write_text("P\n", encoding="utf-8")
         self._git("add", "history.txt")
-        self._git("commit", "-q", "-m", "P")
+        self._git(
+            "commit", "-q", "-m", "P",
+            extra_env=self._commit_environment(1),
+        )
         self.recorded = self._git("rev-parse", "HEAD").stdout.strip()
 
         (self.repo / "history.txt").write_text("P\nE\n", encoding="utf-8")
-        self._git("commit", "-q", "-am", "E")
+        self._git(
+            "commit", "-q", "-am", "E",
+            extra_env=self._commit_environment(2),
+        )
         self.descendant = self._git("rev-parse", "HEAD").stdout.strip()
 
         tree = self._git("mktree", input_text="").stdout.strip()
-        identity = {
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-        }
         self.unrelated = self._git(
-            "commit-tree", tree, "-m", "unrelated", extra_env=identity
+            "commit-tree", tree, "-m", "unrelated",
+            extra_env=self._commit_environment(3),
         ).stdout.strip()
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def _git(self, *argv, input_text=None, extra_env=None):
-        environment = os.environ.copy()
-        environment.update(extra_env or {})
+        executable = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(executable)
         result = subprocess.run(
-            ["git", "-c", "commit.gpgsign=false", *argv],
+            [executable, "-c", "commit.gpgsign=false", *argv],
             cwd=self.repo,
             input=input_text,
             capture_output=True,
             text=True,
-            env=environment,
+            env=dict(extra_env or {}),
         )
         if result.returncode:
             self.fail(
@@ -219,7 +233,8 @@ class NativeGraphCase(unittest.TestCase):
         self.assertIsNone(message)
         self.assertEqual(len(calls), 1)
         args, kwargs = calls[0]
-        self.assertEqual(args[1], "git")
+        self.assertEqual(args[1], module._native_git_executable())
+        self.assertTrue(os.path.isabs(args[1]))
         self.assertEqual(
             args[2],
             [
@@ -239,14 +254,97 @@ class NativeGraphCase(unittest.TestCase):
         self.assertEqual(environment["GIT_NO_LAZY_FETCH"], "1")
         self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
 
+    def test_relation_guard_and_signature_git_use_closed_environments(self):
+        module = self.hexctl
+        hostile = {
+            "BASH_ENV": str(self.repo / "bash-env"),
+            "DYLD_FRAMEWORK_PATH": str(self.repo / "frameworks"),
+            "DYLD_INSERT_LIBRARIES": str(self.repo / "inject.dylib"),
+            "DYLD_LIBRARY_PATH": str(self.repo / "libraries"),
+            "ENV": str(self.repo / "shell-env"),
+            "GCONV_PATH": str(self.repo / "gconv"),
+            "GIT_DIR": str(self.repo / "foreign-git-dir"),
+            "GIT_OBJECT_DIRECTORY": str(self.repo / "foreign-objects"),
+            "HOME": str(self.repo / "home"),
+            "LD_AUDIT": str(self.repo / "audit.so"),
+            "LD_LIBRARY_PATH": str(self.repo / "ld-libraries"),
+            "LD_PRELOAD": str(self.repo / "preload.so"),
+            "GNUPGHOME": str(self.repo / "gnupg"),
+            "PYTHONHOME": str(self.repo / "python-home"),
+            "PYTHONPATH": str(self.repo / "python-path"),
+            "SSH_AUTH_SOCK": str(self.repo / "agent.sock"),
+        }
+        with mock.patch.dict(os.environ, hostile, clear=True), mock.patch.object(
+            module, "bounded_tool", return_value=b""
+        ) as runner:
+            module._native_relation_git(str(self.repo), ["status"], "relation")
+            module._guard_native_git(str(self.repo), ["status"], "guard")
+            module._guard_exact_git(str(self.repo), ["status"], "exact")
+            module._native_signature_git(
+                str(self.repo), ["verify-commit", "a" * 40], "signature"
+            )
+
+        base = {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_NO_LAZY_FETCH": "1",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LANG": "C",
+            "LC_ALL": "C",
+            "PATH": os.defpath,
+            "SSH_AUTH_SOCK": hostile["SSH_AUTH_SOCK"],
+        }
+        calls = runner.call_args_list
+        self.assertEqual(len(calls), 4)
+        for call in calls[:3]:
+            self.assertEqual(call.kwargs["environment"], base)
+        verifier_directories = [
+            *os.defpath.split(os.pathsep),
+            "/usr/local/bin",
+            "/opt/homebrew/bin",
+            "/opt/local/bin",
+        ]
+        signature = {
+            **base,
+            "GNUPGHOME": hostile["GNUPGHOME"],
+            "HOME": hostile["HOME"],
+            "PATH": os.pathsep.join(
+                dict.fromkeys(
+                    path for path in verifier_directories if os.path.isabs(path)
+                )
+            ),
+        }
+        self.assertEqual(calls[3].kwargs["environment"], signature)
+
+    def test_native_fixture_git_ignores_the_ambient_environment(self):
+        hostile = {
+            "GIT_DIR": str(self.repo / "foreign-git-dir"),
+            "GIT_OBJECT_DIRECTORY": str(self.repo / "foreign-objects"),
+            "LD_PRELOAD": str(self.repo / "preload.so"),
+        }
+        native_run = subprocess.run
+        calls = []
+
+        def record_run(*args, **kwargs):
+            calls.append((args, kwargs))
+            return native_run(*args, **kwargs)
+
+        with mock.patch.dict(os.environ, hostile, clear=False), mock.patch.object(
+            subprocess, "run", side_effect=record_run
+        ):
+            result = self._git("rev-parse", "HEAD")
+        self.assertEqual(result.stdout.strip(), self.descendant)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1]["env"], {})
+        self.assertTrue(os.path.isabs(calls[0][0][0][0]))
+
     def test_replacement_ref_cannot_manufacture_native_ancestry(self):
         # Replacing the unrelated tip with E makes ordinary Git report P as an
         # ancestor.  The controller must ask about native objects instead.
         self._git("replace", self.unrelated, self.descendant)
-        ordinary = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", self.recorded, self.unrelated],
-            cwd=self.repo,
-            capture_output=True,
+        ordinary = self._git(
+            "merge-base", "--is-ancestor", self.recorded, self.unrelated
         )
         self.assertEqual(ordinary.returncode, 0, ordinary.stderr)
         message = self._run_guard(self.unrelated)
@@ -285,7 +383,7 @@ class DescendantMergeReceiptCase(HexctlCase):
 
     URL_TEMPLATE = "https://github.com/wildcat-finance/example/pull/{}"
 
-    def _finish_step(self, number):
+    def _finish_step(self, number, head_commit=None):
         self.run_ctl(
             "done",
             "implement",
@@ -312,7 +410,7 @@ class DescendantMergeReceiptCase(HexctlCase):
             "--pr-url",
             self.URL_TEMPLATE.format(number),
             "--head-commit",
-            format(number, "x") * 40,
+            head_commit or format(number, "x") * 40,
             "--pr-base",
             self.step_base(number),
         )
@@ -320,13 +418,22 @@ class DescendantMergeReceiptCase(HexctlCase):
     def test_descendant_is_reverified_without_rewriting_the_push_receipt(self):
         self.to_steps(("lower", "extended"))
         self._finish_step(1)
-        self._finish_step(2)
+
+        state = self.state()
+        branch = self.step_branch(2, state)
+        parent = self.git("rev-parse", branch).stdout.strip()
+        tree = self.git("show", "-s", "--format=%T", parent).stdout.strip()
+        recorded = self.git(
+            "commit-tree", tree, "-p", parent, "-m", "recorded step head"
+        ).stdout.strip()
+        extended = self.git(
+            "commit-tree", tree, "-p", recorded, "-m", "extended step head"
+        ).stdout.strip()
+        self._finish_step(2, head_commit=recorded)
 
         state = self.state()
         original_push = copy.deepcopy(state["steps"][1]["receipts"]["push"])
-        branch = self.step_branch(2, state)
         url = original_push["pr_url"]
-        extended = "7" * 40
         self.fake_refs[branch] = extended
         self.fake_prs[url]["head"]["sha"] = extended
 
@@ -364,6 +471,65 @@ class DescendantMergeReceiptCase(HexctlCase):
         self.assertEqual(identity["login"], "shoggoth-wildcat")
         self.assertEqual(identity["committer"]["login"], "laurenceday")
         self.assertNotIn("@", json.dumps(effective["attribution"]))
+
+
+class NativeGraphSourceContractTests(unittest.TestCase):
+    def test_s3_r2_02_commit_environment_is_fixed_and_wired(self):
+        self.assertIn("_commit_environment", NativeGraphCase.__dict__)
+        expected_keys = {
+            "GIT_AUTHOR_NAME",
+            "GIT_AUTHOR_EMAIL",
+            "GIT_COMMITTER_NAME",
+            "GIT_COMMITTER_EMAIL",
+            "GIT_AUTHOR_DATE",
+            "GIT_COMMITTER_DATE",
+        }
+
+        def build_graph():
+            case = NativeGraphCase(
+                methodName="test_equal_head_makes_no_relation_call"
+            )
+            native_git = NativeGraphCase._git
+            commit_environments = []
+
+            def record_git(instance, *argv, input_text=None, extra_env=None):
+                if argv and argv[0] in {"commit", "commit-tree"}:
+                    commit_environments.append(dict(extra_env or {}))
+                return native_git(
+                    instance,
+                    *argv,
+                    input_text=input_text,
+                    extra_env=extra_env,
+                )
+
+            with mock.patch.object(NativeGraphCase, "_git", record_git):
+                case.setUp()
+            try:
+                commits = (case.recorded, case.descendant, case.unrelated)
+                expected = [
+                    case._commit_environment(index) for index in range(1, 4)
+                ]
+                return commits, commit_environments, expected
+            finally:
+                case.tearDown()
+
+        first, first_environments, expected = build_graph()
+        second, second_environments, second_expected = build_graph()
+        self.assertEqual(first, second)
+        self.assertEqual(expected, second_expected)
+        self.assertEqual(first_environments, expected)
+        self.assertEqual(second_environments, expected)
+        for index, environment in enumerate(expected, 1):
+            with self.subTest(index=index):
+                self.assertEqual(set(environment), expected_keys)
+                self.assertEqual(
+                    environment["GIT_AUTHOR_DATE"],
+                    f"{1000000000 + index} +0000",
+                )
+                self.assertEqual(
+                    environment["GIT_COMMITTER_DATE"],
+                    environment["GIT_AUTHOR_DATE"],
+                )
 
 
 def run_elenchus_report(argv):

@@ -19,12 +19,16 @@ fixture. Each test fails against that controller: the two end-to-end guards
 on the refusal itself, the rest on the missing shared constant.
 """
 
+import inspect
 import json
 import os
 import shutil
 import subprocess
+import unittest
+from unittest import mock
 
 try:
+    from plugins.hexaemeron.tests import test_hexctl as _test_hexctl
     from plugins.hexaemeron.tests.test_hexctl import (
         HEXCTL,
         SUITE,
@@ -35,6 +39,7 @@ try:
         widget_ledger,
     )
 except ModuleNotFoundError:
+    import test_hexctl as _test_hexctl
     from test_hexctl import (
         HEXCTL,
         SUITE,
@@ -65,7 +70,13 @@ class FrontierReceiptCase(HexctlCase):
     OWN = "widget-v1.4.0"
 
     def setUp(self):
+        self.closed_process_environment = mock.patch.dict(os.environ, {}, clear=True)
+        self.closed_process_environment.start()
+        self.addCleanup(self.closed_process_environment.stop)
         super().setUp()
+        fake_bin = self.env["PATH"].split(os.pathsep, 1)[0]
+        self.env["PATH"] = fake_bin + os.pathsep + os.defpath
+        self.native_commit_number = 0
         self.install_blob_passthrough()
         self.ledger_rel = os.path.join(
             "plugins", "demo", "skills", "widget", "EVOLUTION.md")
@@ -74,8 +85,27 @@ class FrontierReceiptCase(HexctlCase):
             "widget-v1.1.0", "baseline", self.HELD[1], self.base_digest,
             "Versioning starts here.")
         self.write_ledger(self.dir, [self.baseline_row], "widget-v1.1.0")
-        self.git("add", self.ledger_rel)
-        self.git("commit", "-q", "-m", "widget ledger baseline")
+        self.native_git("add", self.ledger_rel, cwd=self.target)
+        self.native_git(
+            "commit", "-q", "-m", "widget ledger baseline",
+            extra_env=self._next_commit_environment(), cwd=self.target,
+        )
+
+    @staticmethod
+    def _commit_environment(number):
+        timestamp = 1000000000 + number
+        return {
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+        }
+
+    def _next_commit_environment(self):
+        self.native_commit_number += 1
+        return self._commit_environment(self.native_commit_number)
 
     def install_blob_passthrough(self):
         """Serve `git show <sha>:<path>` from the real repository.
@@ -90,7 +120,8 @@ class FrontierReceiptCase(HexctlCase):
         passthrough_bin = os.path.join(self.dir, "blob-tools")
         os.makedirs(passthrough_bin)
         fixture_git = os.path.join(self.dir, "delivery-tools", "git")
-        real_git = shutil.which("git")
+        real_git = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(real_git)
         script = os.path.join(passthrough_bin, "git")
         with open(script, "w", encoding="utf-8") as handle:
             handle.write(
@@ -122,15 +153,149 @@ class FrontierReceiptCase(HexctlCase):
             [self.baseline_row,
              *(self.held_generation_row(v) for v in self.FOREIGN)],
             self.FOREIGN[-1])
-        subprocess.run(["git", "add", self.ledger_rel], cwd=self.dir,
-                       check=True, capture_output=True)
-        subprocess.run(["git", "commit", "-q", "-m", "published rows"],
-                       cwd=self.dir, check=True, capture_output=True)
-        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.dir,
-                              check=True, capture_output=True,
-                              text=True).stdout.strip()
+        self.native_git("add", self.ledger_rel, cwd=self.dir)
+        self.native_git(
+            "commit", "-q", "-m", "published rows", cwd=self.dir,
+            extra_env=self._next_commit_environment(),
+        )
+        return self.native_git("rev-parse", "HEAD", cwd=self.dir)
 
-    def advance_to_merged_step(self):
+    def native_git(self, *args, input_text=None, extra_env=None, cwd=None):
+        executable = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(executable)
+        proc = subprocess.run(
+            [executable, *args],
+            cwd=cwd or self.target,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            env=dict(extra_env or {}),
+        )
+        if proc.returncode:
+            self.fail(
+                f"native git {' '.join(args)} -> rc {proc.returncode}\n"
+                f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc.stdout.strip()
+
+    def native_commit(self, tree_parent, changes, *parents, message):
+        identity_environment = self._next_commit_environment()
+        index = os.path.join(
+            self.dir, f"frontier-sync-index-{self.native_commit_number}"
+        )
+        index_environment = {"GIT_INDEX_FILE": index}
+        try:
+            self.native_git(
+                "read-tree", tree_parent, extra_env=index_environment
+            )
+            for path, content in sorted(changes.items()):
+                blob = self.native_git(
+                    "hash-object", "-w", "--stdin", input_text=content
+                )
+                self.native_git(
+                    "update-index", "--add", "--cacheinfo",
+                    "100644", blob, path, extra_env=index_environment,
+                )
+            tree = self.native_git(
+                "write-tree", extra_env=index_environment
+            )
+            parent_args = [
+                value for parent in parents for value in ("-p", parent)
+            ]
+            return self.native_git(
+                "commit-tree", tree, *parent_args,
+                input_text=message + "\n",
+                extra_env=identity_environment,
+            )
+        finally:
+            for suffix in ("", ".lock"):
+                try:
+                    os.unlink(index + suffix)
+                except FileNotFoundError:
+                    pass
+
+    def test_native_git_fixture_ignores_hostile_ambient_environment(self):
+        base = self.native_git("rev-parse", "HEAD")
+        objects = self.native_git("rev-parse", "--git-path", "objects")
+        if not os.path.isabs(objects):
+            objects = os.path.join(self.target, objects)
+        decoy = os.path.join(self.dir, "ambient-decoy.git")
+        origin = os.path.join(self.dir, "confined-origin.git")
+        self.native_git("init", "--bare", "--quiet", decoy)
+        hostile = {
+            "GIT_DIR": decoy,
+            "GIT_WORK_TREE": self.target,
+            "GIT_OBJECT_DIRECTORY": os.path.join(decoy, "objects"),
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES": objects,
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.hooksPath",
+            "GIT_CONFIG_VALUE_0": os.path.join(self.dir, "ambient-hooks"),
+            "GIT_REPLACE_REF_BASE": "refs/ambient-replace",
+            "GIT_NO_REPLACE_OBJECTS": "0",
+            "GIT_NO_LAZY_FETCH": "0",
+            "LD_PRELOAD": "",
+            "LD_LIBRARY_PATH": "",
+            "DYLD_INSERT_LIBRARIES": "",
+            "DYLD_LIBRARY_PATH": "",
+            "PYTHONPATH": os.path.join(self.dir, "ambient-python"),
+        }
+        calls = []
+        native_run = subprocess.run
+
+        def record_run(*args, **kwargs):
+            calls.append((args[0][1], dict(kwargs["env"])))
+            return native_run(*args, **kwargs)
+
+        with mock.patch.dict(os.environ, hostile, clear=False), \
+                mock.patch.object(subprocess, "run", side_effect=record_run):
+            commit = self.native_commit(
+                base,
+                {"confined.txt": "confined\n"},
+                base,
+                message="confined fixture commit",
+            )
+            self.native_git("init", "--bare", "--quiet", origin)
+            self.native_git(
+                "push", "--quiet", origin,
+                f"{commit}:refs/heads/confined",
+            )
+
+        index_keys = {"GIT_INDEX_FILE"}
+        identity_keys = {
+            "GIT_AUTHOR_NAME",
+            "GIT_AUTHOR_EMAIL",
+            "GIT_COMMITTER_NAME",
+            "GIT_COMMITTER_EMAIL",
+            "GIT_AUTHOR_DATE",
+            "GIT_COMMITTER_DATE",
+        }
+        expected_keys = {
+            "read-tree": index_keys,
+            "hash-object": set(),
+            "update-index": index_keys,
+            "write-tree": index_keys,
+            "commit-tree": identity_keys,
+            "init": set(),
+            "push": set(),
+        }
+        self.assertTrue(calls)
+        for command, environment in calls:
+            self.assertEqual(set(environment), expected_keys[command])
+        self.assertEqual(self.native_git("cat-file", "-t", commit), "commit")
+        self.assertEqual(
+            self.native_git(
+                "--git-dir", origin, "rev-parse", "refs/heads/confined"
+            ),
+            commit,
+        )
+        self.assertEqual(
+            self.native_git(
+                "--git-dir", decoy, "for-each-ref", "--format=%(refname)"
+            ),
+            "",
+        )
+
+    def advance_to_merged_step(self, merge_commit):
         """One step from study to its recorded merge, as the fixtures do."""
         study = self.write(
             "study.md",
@@ -145,9 +310,14 @@ class FrontierReceiptCase(HexctlCase):
         steps = self.write("steps.json", json.dumps(["Ship"]))
         self.run_ctl("done", "runbook", "--artifact", runbook,
                      "--steps-file", steps)
-        self.git("add", "study.md", "runbook.md", "steps.json")
-        self.git("commit", "-q", "-m", "fixture")
-        self.git("branch", self.step_branch(1))
+        self.native_git(
+            "add", "study.md", "runbook.md", "steps.json", cwd=self.target,
+        )
+        self.native_git(
+            "commit", "-q", "-m", "fixture", cwd=self.target,
+            extra_env=self._next_commit_environment(),
+        )
+        self.native_git("branch", self.step_branch(1), cwd=self.target)
         self.run_ctl("done", "implement", "--branch", self.step_branch(1),
                      "--commit", "abc123")
         self.run_ctl("record", "security_suite", SUITE)
@@ -162,25 +332,34 @@ class FrontierReceiptCase(HexctlCase):
             "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
         )
         self.run_ctl("done", "merge-step", "--step", "1",
-                     "--merge-commit", "e" * 40)
+                     "--merge-commit", merge_commit)
         self.write_run_pr()
 
-    def receipt_sync(self, base_sha, sync_sha="7" * 40):
+    def receipt_sync(self, base_sha):
         """A green `done sync-run` whose receipt names the real base tip."""
         state = self.state()
         final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
-        base_before = "4" * 40
+        ledger_path = os.path.join(self.target, self.ledger_rel)
+        with open(ledger_path, encoding="utf-8") as handle:
+            run_ledger = handle.read()
+        sync_sha = self.native_commit(
+            final_merge,
+            {self.ledger_rel: run_ledger},
+            final_merge,
+            base_sha,
+            message="fixture frontier integration sync",
+        )
+        origin = os.path.join(self.dir, "native-origin.git")
+        self.native_git("init", "--bare", "--quiet", origin)
+        self.native_git("remote", "add", "origin", origin)
+        self.native_git(
+            "push", "--quiet", "--force", "origin",
+            f"{sync_sha}:refs/heads/{state['run_branch']}",
+            f"{base_sha}:refs/heads/{self.integration_base(state)}",
+        )
         self.fake_refs[state["run_branch"]] = sync_sha
         self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_MERGE_BASE"] = base_before
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
-            {
-                f"{base_before}..{final_merge}": ["product.py"],
-                f"{base_before}..{base_sha}": [self.ledger_rel],
-                f"{final_merge}..{sync_sha}": [self.ledger_rel],
-            }
-        )
         revalidation = self.write(
             os.path.join(".hexaemeron", "integration-revalidation.json"),
             json.dumps(
@@ -210,7 +389,14 @@ class FrontierReceiptCase(HexctlCase):
                      "--frontier", self.ledger_rel)
         self.write_design_evidence()
         base_sha = self.publish_base_rows()
-        self.advance_to_merged_step()
+        base_before = self.native_git("rev-parse", f"{base_sha}^")
+        product_sha = self.native_commit(
+            base_before,
+            {"product.py": "product\n"},
+            base_before,
+            message="fixture frontier product merge",
+        )
+        self.advance_to_merged_step(product_sha)
         self.write_ledger(
             self.target,
             [self.baseline_row,
@@ -334,7 +520,37 @@ class FrontierReceiptCase(HexctlCase):
                 )
 
 
+class FixtureEnvironmentSourceContractTests(unittest.TestCase):
+    def test_s3_r2_01_fixture_graph_uses_closed_setup_and_native_calls(self):
+        publication_setup = inspect.getsource(
+            _test_hexctl.TestPublicationBindings.setUp
+        )
+        frontier_setup = inspect.getsource(FrontierReceiptCase.setUp)
+        frontier_source = inspect.getsource(FrontierReceiptCase)
+
+        def closes_before_parent(source):
+            patch = source.find(
+                "mock.patch.dict(os.environ, {}, clear=True)"
+            )
+            start = source.find("self.closed_process_environment.start()")
+            cleanup = source.find(
+                "self.addCleanup(self.closed_process_environment.stop)"
+            )
+            parent = source.find("super().setUp()")
+            return -1 not in (patch, start, cleanup, parent) and (
+                patch < start < cleanup < parent
+            )
+
+        self.assertTrue(
+            closes_before_parent(publication_setup)
+            and closes_before_parent(frontier_setup)
+            and "self.git(" not in frontier_source,
+            "publication/frontier setup must activate and retain a closed "
+            "environment before parent setup, and every Frontier graph "
+            "mutation must use native_git",
+        )
+
+
 if __name__ == "__main__":  # pragma: no cover
-    import unittest
 
     unittest.main()

@@ -48,16 +48,21 @@ and merge.
 The controller delegates one of two packet shapes. An `inoculate` directive
 gives you one `brief` object with exactly `study_sha256`, `runbook_sha256`,
 `inventory_sha256`, `known_failure_inventory`, `consuming_step`,
-`assigned_findings`, `allowed_guard_paths`, `reporter_contracts`, `branch`,
-`branch_from`, `step_parent`, `evidence_directory`, and `plugin_root`, plus
-`design_evidence` when the run has that receipt. Each reporter contract has
-exactly `finding_id`, `test_command`, `report_format`, `report_file`, and
-`green_command`.
+`assigned_findings`, `allowed_guard_paths`, `completed_ids`, `remaining_ids`,
+`reporter_contracts`, `branch`, `branch_from`, `step_parent`,
+`evidence_directory`, and `plugin_root`, plus `guard_commit` when a common
+guard tip has already been retained and `design_evidence` when the run has
+that receipt. Each reporter contract has exactly `finding_id`, `test_command`,
+`report_format`, `report_file`, and `green_command`.
 
-During inoculation, do not create or check out the branch and do not edit a
-product path. Recheck the source digests, exact parent, assigned entries,
-allowed paths, reporter contracts, and fixed evidence directory from the
-packet. When `assigned_findings` is empty, write only
+During inoculation, recheck the source digests, exact parent, assigned entries,
+allowed paths, reporter contracts and fixed evidence directory from the
+packet. The controller, not this packet, owns the configured audit-pair
+validation. Any inoculation packet without `guard_commit` authorises only an
+atomic create-only creation of the exact `branch` from `step_parent`. If that
+branch already exists at any tip, make no edit, reset, repoint or checkout and
+request a fresh `next` packet. When the capture assigns no finding to
+`consuming_step`, after that successful creation write only
 `<evidence_directory>/no-known-findings.json`. Its exact fields are `schema`,
 `study_sha256`, `inventory_sha256`, `source_views`, `consuming_step`, and
 `assertion`; use schema `fiat-no-known-findings/v1`, project every capture
@@ -66,29 +71,62 @@ assertion to
 `no-known-findings-for-step`. Do not add a field, manifest or empty-evidence
 claim.
 
-When the packet assigns one or more findings, this controller generation can
-carry the declaration but cannot yet retain or validate its guard evidence.
-Stop and report that `guard_manifests` remains empty. Do not run a guard,
-retain a report, synthesize a manifest, claim a guard ran, or claim product
-editing is authorised; Step 3 owns that evidence boundary. Never call
-`hexctl done inoculate` yourself. The orchestrator receipts only the exact
-evidence the controller accepts.
+When the capture assigns one or more findings to `consuming_step` and the
+packet has no `guard_commit`, use the successfully created Step branch and make
+one guard-only commit whose complete native delta is
+exactly the UTF-8-byte-sorted `allowed_guard_paths` union. No product path may
+ride along. Sign the commit, give it `step_parent` as its sole parent, and end
+its message with exactly one copy of
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and
+`Wildcat-Origin: shoggoth`. Leave the branch and `HEAD` at that commit and
+report its full object id. When `guard_commit` is present, require the exact
+Step branch and `HEAD` already at that commit; make no new commit or edit, and
+return the same object id. In either case, do not run or classify the
+reporters, write a report or manifest, or select an evidence path: the
+orchestrator calls
+`hexctl retain-guard` once for each remaining id, and Fiat supplies the closed
+contract to Elenchus, admits the returned bytes, and persists any successful
+pair. Never call `retain-guard` or `done inoculate` yourself.
 
-An `implement` directive gives you one `brief` object with
-`runbook_step`, `design_evidence`, `branch`, `branch_from`, and `plugin_root`.
-A capture-aware implementation brief also carries exactly one `step_parent`;
-a pre-capture brief omits it.
+The configured audit log and synopsis are the only clean-tree exclusion during
+this boundary. They remain untracked and byte-identical. Never stage, change,
+copy, remove, follow, summarize or record an identity or timestamp for either
+one. Refuse a missing member, third dirty row, or any staged or tracked path
+outside the exact guard commit.
+
+The current live Step 3 is explicitly pre-contract. Its installed controller
+has no capture and cannot issue the successor retention or inoculation receipt.
+For that one recorded bootstrap route, validate the exact receipt-bound source
+prefixes and current append-only projections, create the same signed guard-only
+commit, and run each immutable assigned reporter through Elenchus on its exact
+parent. Require the strict Fiat numeric admission, not a `guarded` string alone.
+Record only the signed commit identity, prefix/candidate projection digests and
+bounded results under `.hexaemeron/bootstrap/step-3/`; record no raw report,
+manifest, audit identity, timestamp tuple, marker or controller field. Recheck
+the untouched audit pair in a fresh operation before and after each run and
+immediately before the installed controller's recorded implement transition.
+Never invoke the newly checked-in controller against that live state.
+
+An `implement` directive gives you one `brief` object with `runbook_step`,
+`design_evidence`, `branch`, `branch_from`, and `plugin_root`. A capture-aware
+implementation brief also carries `step_parent`. An assigned-finding receipt
+adds the immutable `guard_commit`; a zero-assigned receipt omits it. A
+pre-capture brief omits both fields.
 `runbook_step` carries the exact effective Markdown, artefact path, SHA-256,
 step number, title, and any current study-bound amendment bytes.
 `design_evidence` names the fixed record path, schema, SHA-256, and selected
 candidate checked before this step opened. Read that exact record and implement
 the selected candidate. The branch fields come verbatim from the `implement`
 directive, which chains this step onto the one below it. Use those exact names;
-do not shorten, renumber, or invent one. For a capture-aware brief, require
-`step_parent` to be the full commit in the inoculation receipt and cut the
-branch from that immutable commit, not by resolving `branch_from` again. A
-pre-capture brief still cuts from `branch_from`. Create or check out the branch,
-confirm the entry state builds and its tests pass, then work.
+do not shorten, renumber, or invent one. For a capture-aware brief with a
+`guard_commit`, require the branch already checked out at that exact commit;
+continue from that red ancestor. For a zero-assigned capture-aware brief,
+require the branch already checked out at `step_parent` and continue from that
+clean ancestor. Never recreate either branch or resolve `branch_from` again. A
+pre-capture brief still cuts from `branch_from` and confirms that entry builds
+and passes before work. An assigned capture-aware branch is expected to be red
+only for the admitted guard; make the selected product repair and require every
+declared green command and the Step suite to pass before hand-back.
 
 The design is already selected. Do not replace it with a locally simpler
 construction or re-grade it from prose. Keep implementation choices inside its
@@ -109,13 +147,14 @@ in your brief. Read the ones the step actually names, when it names them. A
 step with no performance claim does not need Metron, and a step that has not
 failed does not need Elenchus.
 
-Only implementation mode creates commits. Commit in coherent units. Sign every
+Assigned inoculation creates only the one guard-only commit described above;
+implementation commits the product repair and later coherent units. Sign every
 commit and end its message, after a blank
 line, with exactly `Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and
 `Wildcat-Origin: shoggoth`; the controller will verify the whole owned range.
 Do not push, do not open a PR, do not merge
 anything, and do not touch the controller -- the orchestrator owns all of
 that. In inoculation mode, report the exact no-known record path and SHA-256 or
-the assigned-evidence stop. In implementation mode, report the branch, head
-commit SHA, test command and its pass count, and anything the step asked for
-that you deliberately deferred (with why).
+the assigned signed guard commit for controller retention. In implementation
+mode, report the branch, head commit SHA, test command and its pass count, and
+anything the step asked for that you deliberately deferred (with why).

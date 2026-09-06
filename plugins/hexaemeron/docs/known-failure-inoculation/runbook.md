@@ -2512,3 +2512,1319 @@ every other model process remain explicitly disabled.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Entry: Start only after the current
+study includes and receipts the 2026-09-06 Step 3 authority amendment above,
+and its SHA-256 is the current-study binding recorded by this runbook amendment. Start
+from Step 2's exact signed, pushed, and verified green product head on the
+controller-directed stack. The Step 2 push receipt, valid local signature and
+provenance, remote branch-head readback, pull-request readback, and required
+gates must all bind that same commit. It is Step 3's exact `step_parent`; Step
+3 does not wait for a merge commit, and integration retains ownership of
+merging the stack.
+
+The configured audit log and its derived synopsis remain untouched as the
+only two non-ignored untracked rows in the otherwise clean managed worktree.
+Fiat derives both paths from controller state; neither path is a guard path.
+For a successor run the exact-pair exclusion applies from Step 3 entry through
+successful `done inoculate`; for this current pre-contract run it applies from
+Step 3 entry through completion of bootstrap guard validation immediately
+before the recorded `implement` transition. Each guarded operation
+re-establishes its own stable no-follow identity and validates receipt-bound
+exact bytes and digests without comparing device, inode, or times with Entry
+or another process. No product path has changed.
+
+This current live run is pre-contract. Its installed controller has no stored
+known-failure capture and cannot issue an inoculation receipt. Entry therefore
+binds its exact original study and runbook receipt prefixes plus the current
+append-only candidates; it does not pretend that the successor capture already
+exists. The installed controller keeps its recorded bootstrap route. Only a
+disposable repository may prove the checked-in successor retention and
+receipt path.
+
+Complete replacement Exit: Keep the ownership split authorized by the amended
+study. Fiat alone owns the complete Step-wide Git binding, fixed
+controller-local report and manifest paths, strict admission, partial-set
+discovery, and inoculation receipt. Elenchus alone owns detached-parent
+execution, raw replacement-free blob overlay, runner invocation, report
+parsing, four-state classification, exact raw-byte return before cleanup, and
+the narrow `elenchus-parent-guard-evidence` promise. Elenchus never publishes
+inside `.hexaemeron`, applies Fiat admission, or writes controller authority.
+Fiat never changes the meanings of `unguarded`, `inconclusive`, `guarded`, or
+`passed`. The existing `elenchus-fixed-and-guarded` promise remains unchanged;
+the new promise covers parent-guard evidence only, with one provisional
+candidate-generation row whose released label remains an integration decision.
+
+The immutable inventory and assignment projection remain exactly:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+These seven isolated lines are the whole active map. No amendment changes a
+finding, source view, assignment, command, report format, logical report file,
+or guard path.
+
+For a successor run, require the stored `done runbook`
+`protasis-known-failure-inventory-capture/v1` object. Validate the current
+study and runbook as stable bounded append-only candidates from the exact
+receipt-bound original prefixes, call the one checked inventory loader, and
+require the current clean projection's `inventory_sha256`, `source_views`,
+`findings`, `no_known_findings`, and `assignments` to equal the corresponding
+stored-capture fields. Each manifest binds only that initial capture's study,
+runbook, and inventory SHA-256 values. Current amendment-tip digests are
+validated live and are not copied into manifests, so a valid amendment between
+partial retains neither invalidates nor weakens existing evidence.
+
+For this current pre-contract live run, do not require or fabricate a capture.
+Validate the exact original study and runbook receipt-bound prefixes and every
+current append-only amendment boundary. Project both the original prefix pair
+and the current candidate pair through the checked loader. Both projections
+must be clean; their exact `inventory_sha256`, `source_views`, `findings`,
+`no_known_findings`, and `assignments` fields must equal one another and the
+immutable seven-finding, seven-assignment source declaration above. A
+malformed prefix, broken digest chain, dirty projection, or semantic mismatch
+blocks the bootstrap. This comparison is validation only: it writes no
+known-failure capture, manifest reference, or inoculation receipt into legacy
+state.
+
+Add one successor-only, non-receipting command with no caller-selected path,
+command, format, or report option:
+
+```text
+hexctl retain-guard --finding-id <assigned-id> --guard-commit <full-object-id>
+```
+
+Add it to `MUTATING`, and permit only `held_lock` to dispatch it. It takes the
+exclusive controller writer lock once and holds it from state read through
+the runner, every recheck, publication, and final directory `fsync`; it never
+calls `commit()`. `hexctl done inoculate` likewise holds that writer lock for
+its complete validation and receipt commit. A refusal from either leaves
+state, ledger, design transitions, checkpoints, branch tip, and pre-existing
+final evidence bytes unchanged.
+
+Successful retention prints one compact JSON object under schema
+`fiat-guard-retention-result/v1` with exactly `schema`, `finding_id`,
+`retained_report`, `manifest`, and `disposition`. Each evidence reference has
+exactly `path` and `sha256`; `disposition` is `created` or
+`already-retained`. It contains no report or source bytes.
+
+The guard-boundary clean-tree predicate has one narrow exception. Derive the
+configured audit log and its exact sibling synopsis path from controller
+state. For a successor run, from Step 3 entry through successful
+`done inoculate`, the non-ignored untracked set must be exactly those two
+paths, bytewise sorted. For this current pre-contract run, the same predicate
+applies from Step 3 entry through completion of bootstrap guard validation
+immediately before the recorded `implement` transition. During the applicable
+lifetime, every other staged, tracked, or untracked status row must be absent
+after the six-path guard commit. When creating that commit, the staged set is
+exactly the six guard paths and the untracked set remains exactly the audit
+pair. Never stage, change, copy, remove, or follow either audit path.
+
+At guard-commit creation, before and after every runner, before and after each
+report or manifest publication, and immediately before a successor
+inoculation-receipt commit, treat each check as one guarded operation. Open
+both audit leaves relative to stable no-follow directory descriptors; each is
+a single-link regular file of at most 2,097,152 bytes. At the start and close
+of that operation, require the no-follow named-leaf lookup and opened
+descriptor to agree on device, inode, regular-file type, link count, size,
+modification time, and change time, and require those observations unchanged
+within that operation. Do not compare device, inode, or times with Step 3
+Entry, an earlier guarded operation, or a prior process.
+
+In every guarded operation, require the audit log's exact raw bytes and
+SHA-256 to equal its complete receipt-bound round prefix through the exact
+final receipt end offset, with no unreceipted suffix. Require the synopsis's
+exact raw bytes and SHA-256 to equal the latest receipted synopsis digest.
+Re-read the same two status rows before closing the operation. A missing,
+extra, unstable, linked, oversized, tracked, staged, ignored, receipt-bound
+byte or digest mismatch, unreceipted suffix, or third dirty row refuses before
+the guarded action. Do not persist an audit identity, timestamp tuple,
+operation observation, durable marker, or new controller-state field. This
+exclusion never alters the six-path Git delta. Warden resumes its existing
+ownership after implementation begins.
+
+Derive `changed_paths` as the unique UTF-8-byte-sorted union of every
+`guard_paths` entry assigned to the current Step. The limits are 128 assigned
+findings, 4,096 union paths, 1,024 UTF-8 bytes per path, 4,096 UTF-8 bytes per
+command, and 16 command arguments. With replacement objects and rename/copy
+detection disabled, parse the exact native `step_parent..guard_commit` delta.
+Its path set must equal the union. Every row is exactly `A` or `M`; every new
+entry is a regular blob with mode `100644` or `100755`; an `A` row has old mode
+`000000`, and an `M` row has an old regular-blob mode. Refuse a deletion,
+rename, copy, type change, symlink, gitlink, directory substitution, duplicate,
+extra, missing, or invalid-mode row.
+
+Resolve one `guard_blobs` row for every changed path, in the same order, with
+exactly `path`, `status`, `mode`, `oid`, `bytes`, and `sha256`. Read each full
+native object id with replacement-free `git cat-file blob`; hash its raw bytes
+without decoding, filters, attributes, newline repair, or filesystem fallback.
+One blob is at most 2,097,152 bytes and the Step-wide sum is at most
+16,777,216 bytes. Every finding manifest carries the same parent, guard commit,
+changed paths, and complete blob rows. Re-resolve repository and worktree
+identity, branch, tip, parent, delta, tree rows, and raw bytes immediately
+before execution, after execution, and before either final publication.
+
+At every successor writer check require the same physical managed worktree,
+the exact Step branch checked out, and the guard-boundary clean-tree predicate
+above. Require `HEAD` and the branch tip to equal the supplied guard commit,
+with the recorded Step parent as its sole parent. Run native local
+`git verify-commit` under the controller's pinned OpenPGP, X.509, and SSH
+verifier configuration, retain the existing author, committer, host-byline,
+and co-author refusals, and require exactly one of each trailer:
+
+```text
+Co-authored-by: Shoggoth <shoggoth@wildcat.finance>
+Wildcat-Origin: shoggoth
+```
+
+GitHub-rewritten or otherwise locally unverifiable signatures refuse. No
+cached signature, ref, object, source, audit-file, or worktree observation
+authorises a later write.
+
+Fiat supplies Elenchus the exact parent, complete ordered raw blob rows, closed
+test argv, report format, and logical report file. Elenchus overlays those raw
+bytes at their declared modes into its detached parent worktree; it neither
+rediscovers paths nor uses decoded Git text. The command runs without a shell,
+with exactly one whole-argument `{report}` placeholder, a 900-second timeout,
+and 4,000 diagnostic characters. The only report formats are
+`unittest-json-v1`, `forge-junit-v1`, and `node-test-json-v1`. Elenchus reads a
+fresh stable no-follow report of at most 1,048,576 bytes, classifies it, and
+returns its exact raw bytes and result to Fiat before removing the detached
+worktree.
+
+The final paths take no caller input:
+
+```text
+.hexaemeron/steps/<n>/inoculation/reports/<finding-id>.report
+.hexaemeron/steps/<n>/inoculation/manifests/<finding-id>.json
+```
+
+Open every component relative to stable no-follow controller-owned directory
+descriptors. Final leaves are single-link regular files. Fiat writes the exact
+report bytes to an exclusive mode-`0600` staging leaf in the report directory,
+file-`fsync`s and revalidates it, publishes it with an atomic no-replace
+primitive, then directory-`fsync`s. It constructs canonical manifest bytes,
+writes an exclusive staging leaf in the manifest directory, file-`fsync`s and
+revalidates every binding again, publishes the manifest last with an atomic
+no-replace primitive, then directory-`fsync`s. No check-then-rename may
+overwrite a final leaf.
+
+The manifest is `json.dumps` with `ensure_ascii=True`, `sort_keys=True`, and
+`separators=(",", ":")`, UTF-8 encoded and followed by exactly one LF; its
+SHA-256 includes that LF. It is at most 8,388,608 bytes, has strict JSON depth
+at most 32, and rejects duplicate or unknown keys, booleans in integer fields,
+non-finite numbers, invalid UTF-8, and trailing data. Schema
+`elenchus-guard-manifest/v1` has exactly `schema`, `finding_id`,
+`consuming_step`, `controller_run_id`, `worktree_identity`, `capture`,
+`step_parent`, `guard_commit`, `changed_paths`, `guard_blobs`, `test_command`,
+`test_argv`, `report_format`, `report_file`, `retained_report`, `runner_exit`,
+`counters`, and `verdict`.
+
+`worktree_identity` has exactly non-negative integer `device` and `inode`.
+`capture` has exactly `study_sha256`, `runbook_sha256`, and `inventory_sha256`.
+`retained_report` has exactly `path`, `bytes`, and `sha256` and names the fixed
+report path. `counters` has exactly `complete`, `executed`,
+`assertion_failures`, `errors`, and `skipped`. `test_command`, `report_format`,
+and `report_file` equal the immutable inventory. `test_argv` is the exact
+closed string array produced by its parser, has at most 16 entries and one
+whole-entry placeholder, and round-trips to the raw command. Digests are 64
+lower-case hexadecimal characters. `runner_exit` is a non-negative process
+exit retained as diagnostics, never verdict authority. Arrays are ordered and
+unique as specified; no other field is allowed.
+
+Fiat admission requires exact JSON integer counters, `complete is true`,
+`executed >= 1`, `assertion_failures >= 1`, `errors == 0`, `skipped == 0`, and
+`verdict == "guarded"`. For `unittest-json-v1`, reparse the exact retained raw
+report and additionally require its closed schema, `testsRun >= 1`,
+`failures >= 1`, `errors == 0`, `skipped == 0`, `expectedFailures == 0`, and
+`unexpectedSuccesses == 0`; its raw fields must reproduce the normalized
+manifest counters exactly. A skip, expected failure, or unexpected success
+never admits Fiat. This narrower gate does not alter Elenchus classification.
+
+A final manifest is the only completion point. A report without it is an
+orphan and the id remains remaining. Under the writer lock, an exact rerun
+reruns the command, then either reuses a byte-identical admissible orphan or
+removes and directory-`fsync`s that unmanifested leaf before no-replace report
+publication. Staging leaves are never evidence. A manifest without its exact
+report, or any mismatch in bytes, context, or binding, refuses and is never
+repaired in place. Once both final leaves exist, an exact request fully replays
+them as an idempotent success without a runner or filesystem mutation; any
+difference refuses rather than replacing either final leaf.
+
+`status --json` and `next` remain lock-free. They do not call `held_lock` or
+wait for the writer lock. From one atomically read controller-state snapshot,
+they inspect only final manifest names for the assigned set, read each
+manifest-report pair with stable no-follow descriptors, then re-read the
+manifest identity and atomic state generation before returning. A concurrent
+writer exposes either no final manifest or the fully file- and directory-
+`fsync`ed report plus manifest; staging and report-only leaves stay remaining.
+If the state generation changed, the observer retries from a new snapshot or
+returns a named unstable-state refusal without mutation.
+
+These observers derive uniquely sorted `completed_ids` and `remaining_ids`.
+`status --json` exposes phase, initial inventory digest, assigned count, common
+guard commit when present, completed ids, and remaining ids without report
+content. `next` carries the same sets and emits retain work only for remaining
+ids. Partial discovery resumes only after process restart in the same physical
+managed worktree and controller run. Foreign run id, device/inode, foreign
+evidence, mixed commits, malformed extra manifest, or changed immutable
+context refuses. Only `retain-guard` and `done inoculate` require the current
+tip to equal the guard commit. After implementation starts, read-only replay
+requires the immutable guard commit to remain an ancestor of the implementation
+tip; it never moves that tip backwards.
+
+For a successor state, `hexctl done inoculate` still takes no phase-specific
+argument. Under its one writer lock it revalidates the stored capture against
+the current clean semantic projections, the exact audit-pair exclusion,
+physical worktree, exact Step branch and guard tip, local signature and
+trailers, sole parent, Step-wide delta, raw blobs, all raw reports and
+manifests, and the full assigned id set. Every manifest binds one common guard
+commit equal to that tip. Empty, partial, duplicate, foreign, mixed, stale, or
+invalid evidence refuses before authority mutation. Only the complete admitted
+set writes the existing `fiat-known-failure-inoculation/v1` receipt with
+uniquely sorted `{finding_id, path, sha256}` references and opens `implement`
+on the same branch. Zero-assigned and pre-contract legacy routes remain as Step
+2 defined; specifically, the current live state does not gain this receipt.
+
+Step 3 adds no checkpoint export, checkpoint restore, `verify` replay,
+cross-worktree or post-compaction reconstruction, final-green manifest, final
+suite evidence, or successor gate that withholds Warden until final green.
+Step 4 owns all of those. The current Step's ordinary Warden audit remains part
+of the already-receipted Fiat lifecycle after implementation; a partial
+retain, red guard, or inoculation receipt is not audit admission.
+
+The Fiat instruction source is a hard no-model boundary. The loader/capture
+paragraph and loop row remain one `inoculate-phase` directive with exactly
+seven Fiat bindings, fifteen aggregate bindings, nine questions, and fourteen
+mutations. Do not run `agent_instruction.py measure`,
+`agent_instruction.py parity`, a tokenizer, either recorded-family adapter,
+Ollama, or any other model process. Only deterministic offline
+`python3 scripts/prove_agent_instruction_reconciliation.py reconcile --root .`,
+the structural instruction check, and ordinary unit suites may run.
+`measurement.json` and `parity.json` remain byte-for-byte identical to the
+signed parent.
+
+Complete replacement Files: The signed historical guard commit changes
+exactly these six inventory-declared paths and no others:
+
+```text
+plugins/hexaemeron/tests/test_issue_453_guard_evidence.py
+plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py
+plugins/hexaemeron/tests/emit_issue_453_guard_report.py
+plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json
+plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json
+plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json
+```
+
+Keep those exact historical paths, blobs, commands, manifests, and signed
+ancestor immutable. In the fixed tree rename the first test module to
+`plugins/hexaemeron/tests/test_guard_evidence.py`; fold the historical
+lifecycle cases into the existing
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py` and remove the
+issue-numbered lifecycle module. Update the reporter to select the two
+numberless maintained modules. The issue reporter and fixture directory remain
+issue-scoped support paths.
+
+Change `plugins/hexaemeron/skills/elenchus/scripts/elenchus.py`,
+`plugins/hexaemeron/skills/elenchus/SKILL.md`,
+`plugins/hexaemeron/skills/elenchus/EVOLUTION.md`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/agents/mason.md`,
+`plugins/hexaemeron/tests/test_elenchus_checker.py`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_fiat_skill.py`,
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py`,
+`plugins/hexaemeron/tests/test_guard_evidence.py`,
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py`,
+the three historical fixtures above,
+`tests/test_promise_machine_contract.py`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/promise_machine_coverage.json`,
+`docs/known-failure-inoculation-study.md`, and
+`plugins/hexaemeron/docs/known-failure-inoculation/runbook.md`.
+
+Read but do not change the seven findings, assignment map, source views,
+existing ADR draft, `plugins/hexaemeron/agents/warden.md`,
+`scripts/prove_agent_instruction_reconciliation.py`,
+`scripts/agent_instruction.py`, `tests/test_agent_instruction.py`,
+`tests/test_agent_instruction_corpus.py`,
+`docs/agent-instruction-language-v1.md`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json`,
+`tests/fixtures/agent-instruction-v1/manifest.schema.json`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`, and
+`tests/fixtures/agent-instruction-v1/evidence/parity.json`. Never stage, change,
+copy, remove, or follow the configured audit log or synopsis during the guard
+boundary. Refresh the ignored portable verification payload without staging
+it. Regenerate the three `.horos/` records only if their repository checker
+requires it. Warden alone changes the configured audit record and synopsis
+after implementation begins.
+
+Complete replacement Tests: First prove the amended study and runbook
+candidates extend their exact receipt-bound original prefixes and have
+identical clean seven-finding and seven-assignment projections. For successor
+fixtures, also require exact equality with the stored runbook capture. For the
+current pre-contract state, prove no capture or inoculation receipt is created.
+
+At Step 3 entry, prove the configured audit log and synopsis are exactly the
+two non-ignored untracked rows. In that one guarded operation, establish and
+recheck each stable no-follow opened identity without retaining it; require
+the exact raw bytes and SHA-256 values to equal the receipt-bound complete log
+prefix and latest synopsis digest. Leave both untouched. Create one locally
+signed guard-only commit on the exact Step 3 branch, with the verified Step 2
+pushed head as its sole parent and only the six paths above staged as its exact
+delta. Revalidate the untouched pair in a new operation-local check and
+require the commit's local signature and two exact provenance trailers. Then
+run the immutable parent checks against that same full commit:
+
+```bash
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-guard-commit> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-03 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/issue-453-kf-453-03.json --require-guard --format json
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-guard-commit> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-04 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/issue-453-kf-453-04.json --require-guard --format json
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-guard-commit> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-05 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/issue-453-kf-453-05.json --require-guard --format json
+```
+
+Revalidate the audit pair before and after each command. Every validation
+re-establishes identity within that guarded operation and never compares
+device, inode, or times with Entry, another operation, or a prior process.
+Each result must independently meet the exact Fiat numeric admission; a
+`guarded` string alone is insufficient. In the current managed run, retain
+only the signed commit identity, the two prefix/candidate projection digests,
+and bounded bootstrap results already authorized below
+`.hexaemeron/bootstrap/step-3/`; do not retain an audit identity, timestamp
+tuple, operation observation, durable marker, or new controller-state field.
+Stop unless all three commands pass. Immediately before the installed
+controller's recorded bootstrap `implement` route, complete the final
+operation-local audit-pair validation; that completion ends this current
+pre-contract run's exact-pair exclusion. Enter the recorded `implement`
+route, after which Warden resumes its existing ownership. Those files are not
+successor manifests or receipts. Never invoke the newly checked-in controller
+against live state.
+
+In disposable successor repositories, call the retention command for each id
+with the same full object id, stopping the process between at least two calls:
+
+```bash
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . retain-guard --finding-id kf-453-03 --guard-commit <signed-guard-commit>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . retain-guard --finding-id kf-453-04 --guard-commit <signed-guard-commit>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . retain-guard --finding-id kf-453-05 --guard-commit <signed-guard-commit>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . status --json
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . next
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . done inoculate
+```
+
+Prove retain and done serialize under the exclusive writer lock, never receipt
+during retain, and require the exact guard tip and two-row clean-tree
+exclusion. Prove status and next never acquire or wait for that lock: pause a
+writer before report publication, after report publication, and before and
+after manifest publication, and require each observer to return the old or new
+whole set without blocking or exposing staging/report-only authority.
+State-generation races retry or refuse without mutation.
+
+Table-driven cases cover strict report and manifest schemas; every numeric and
+byte bound; incomplete, zero-run, assertion-zero, error, mixed, skip,
+expected-failure, unexpected-success, timeout, signal, import/start, stale,
+malformed, duplicate-key, non-finite, oversized, replaced, unstable, or
+escaping reports; all four unchanged Elenchus verdicts; wrong raw/normalized
+counters; stored-capture and current-prefix/candidate drift; foreign run,
+worktree, Step, id, parent, branch, commit, command, argv, format, and report
+path; invalid local signatures or trailers; moved refs and replacement
+objects; and every extra, missing, reordered, renamed, copied, deleted,
+type-changed, linked, invalid-mode, OID, length, digest, and raw-byte delta.
+
+Audit-pair refusal cases cover a missing member, third status row, staged or
+tracked member, symlink, replacement or identity, size, or time change within
+one guarded operation, growth beyond the bound, receipt-bound byte or digest
+inequality, an unreceipted log suffix, a stale synopsis, and a runner that
+tries to touch either path. Each refusal occurs before authority changes and
+leaves both files byte-identical. A positive case replaces one leaf between
+completed guarded operations with an exact byte-for-byte copy and proves that
+the next operation does not compare device, inode, or times with Entry or the
+prior process, while still requiring its own stable no-follow identity and
+receipt-bound exact-byte and digest equality. Inject interruption before and
+after every
+report/manifest file and directory `fsync` and final publication. A report
+orphan remains recoverable and remaining; a completed pair is immutable and
+idempotent; a manifest without its report or any altered pair refuses. Partial
+evidence resumes only in the same physical worktree and is rejected by
+cross-worktree, checkpoint, checkpoint restore, `verify`, post-compaction,
+delegation, final-green, and Warden-admission paths.
+
+On the fixed tree run each immutable `green_command` for `kf-453-03` through
+`kf-453-05` and require positive complete execution with zero assertion
+failures, errors, skips, expected failures, and unexpected successes. Validate
+the amended source and its tracked copies before the focused and root suites:
+
+```bash
+cmp .hexaemeron/study.md docs/known-failure-inoculation-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md --repository . --expected-id kf-453-01 --expected-id kf-453-02 --expected-id kf-453-03 --expected-id kf-453-04 --expected-id kf-453-05 --expected-id kf-453-06 --expected-id kf-453-07
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_guard_evidence -v
+python3 -m unittest plugins.hexaemeron.tests.test_elenchus_checker -v
+python3 -m unittest plugins.hexaemeron.tests.test_inoculation_lifecycle -v
+python3 -m unittest plugins.hexaemeron.tests.test_hexctl plugins.hexaemeron.tests.test_fiat_skill -v
+python3 -m unittest tests.test_promise_machine_contract -v
+git diff --exit-code HEAD -- scripts/agent_instruction.py tests/test_agent_instruction.py tests/test_agent_instruction_corpus.py docs/agent-instruction-language-v1.md tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json tests/fixtures/agent-instruction-v1/manifest.schema.json tests/fixtures/agent-instruction-v1/evidence/measurement.json tests/fixtures/agent-instruction-v1/evidence/parity.json
+python3 scripts/prove_agent_instruction_reconciliation.py reconcile --root .
+git diff --exit-code HEAD -- scripts/agent_instruction.py tests/test_agent_instruction.py tests/test_agent_instruction_corpus.py docs/agent-instruction-language-v1.md tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json tests/fixtures/agent-instruction-v1/manifest.schema.json tests/fixtures/agent-instruction-v1/evidence/measurement.json tests/fixtures/agent-instruction-v1/evidence/parity.json
+python3 scripts/agent_instruction.py check --root . --manifest tests/fixtures/agent-instruction-v1/manifest.json
+python3 -m unittest tests.test_agent_instruction tests.test_agent_instruction_corpus tests.test_repository_naming -v
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/PORTABLE.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/scripts/verify_runtime.py plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/skills/elenchus/SKILL.md plugins/hexaemeron/skills/elenchus/EVOLUTION.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/agents/mason.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/elenchus/SKILL.md plugins/hexaemeron/skills/elenchus/EVOLUTION.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/agents/mason.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --mode fiat-audit-record
+git diff --check
+```
+
+The two `cmp` commands, seven-id inventory check, and both Protasis checks must
+pass on the exact bytes that ship. Run root suites from a clean detached
+worktree at the exact signed Step 3 candidate; the two audit files stay outside
+that detached tree and unchanged in the managed tree. Run source comparison
+and offline reconciliation in the managed controller worktree. After
+implementation, the unchanged Warden runner remains
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}` with
+format `unittest-json-v1` and
+`.elenchus/fiat-453-step-3-audit.json`, then reruns the complete Exit after a
+fix. That current audit is not Step 4's successor final-green admission gate.
+
+No test instruction authorizes `agent_instruction.py measure`,
+`agent_instruction.py parity`, a tokenizer, either recorded-family adapter,
+Ollama, or any model process. The deterministic reconciler, structural
+instruction check, and ordinary unit suites above are the complete permitted
+instruction path, and both evidence files must remain byte-identical.
+
+Complete replacement Disciplines: phylax: Fiat owns the untrusted controller
+arguments, successor stored capture, live receipt-bound prefixes and current
+append-only candidates, exact audit-pair exclusion, Git refs and raw objects,
+worktree identity, subprocess request, retained report, manifest, and receipt
+boundaries. Apply closed fields and argv, fixed paths, caps, stable no-follow
+descriptors, native replacement-free Git, local signature and trailer
+verification, raw-byte equality, one exclusive writer lock for retain and
+done, staged file `fsync`, atomic report-first and manifest-last no-replace
+publication, directory `fsync`, and refusal before authority mutation.
+Elenchus owns only execution, classification, and raw-byte return. Lock-free
+observers obtain authority only from a stable final manifest pair.
+
+ephoros: bounded retention confirmation, `status --json`, `next`, receipt
+stdout, and named refusals expose Step, finding, initial inventory digest,
+parent, common guard commit, report and manifest identities, completed and
+remaining ids, exact audit-pair status, and idempotent disposition without
+source/report content or stderr as authority. A staging leaf, orphan, foreign
+pair, changed state generation, dirty third path, or changed audit file remains
+visibly non-authoritative.
+
+metron: none. File, path, blob, aggregate, manifest, argv, timeout, and
+diagnostic bounds are safety limits, not measurements. No performance, token,
+model, measurement, or parity claim exists. The seven/fifteen/nine/fourteen
+instruction corpus and recorded measurement/parity bytes remain frozen.
+
+elenchus: all three assigned findings must record a real assertion failure on
+the exact Step parent through the one signed six-path commit. Elenchus overlays
+and returns the bound raw bytes before cleanup and keeps all four verdicts
+unchanged. Fiat independently rejects skips, expected failures, and unexpected
+successes. Fixed-tree green proves the failures were removed; it does not turn
+the deliberately red ancestor into a completed step.
+
+hypomnema: the amended study owns the Elenchus/Fiat split, historical versus
+maintained names, pushed-head entry, lock-free observer boundary, untouched
+audit-pair exclusion, successor/live evidence distinction, and Step 4 hand-off.
+The existing numberless ADR continues to own phase order, atomic receipt,
+red-intermediate, and old-controller bootstrap. Step 4 retains
+checkpoint/restore/verify, cross-worktree and post-compaction recovery, final
+green, and successor Warden admission. No new ADR number, finding, assignment,
+receipt history, semantic instruction directive, or model evidence is
+invented.
+
+**Why.** The amended study is now the source authority for the corrections the
+earlier Step 3 text could not choose on its own. Durable persistence and
+admission belong to Fiat, while execution and classification remain with
+Elenchus. The signed stack advances from a verified pushed head rather than a
+merge. The issue-numbered test paths remain historical while maintained test
+modules satisfy repository naming. Lock-free observations are safe because a
+fully durable manifest is published last, not because readers take the writer
+lock. The unchanged audit pair is now the sole exact clean-tree exclusion and
+is revalidated rather than relocated. Finally, successor state binds a stored
+capture while this current pre-contract run can only compare its receipt-bound
+prefixes and current candidates without inventing authority. The repaired
+clauses preserve every evidence and Step 4 boundary and make the controller
+owner's no-model/no-measurement instruction absolute.
+
+**Steps touched.** Step 3's Entry, Exit, Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Tests: Run every Step 3 test and source
+comparison in the preceding amendment unchanged, except that instruction
+validation must keep all seven existing Fiat bindings, bind the loop's
+`inoculate` row and loader/capture paragraph to the same `inoculate-phase`
+node, and require exactly nine Fiat bindings and seventeen aggregate bindings.
+Keep nine questions and fourteen mutations. This supersedes every
+seven/fifteen count in the preceding Step 3 amendment. Do not run
+`agent_instruction.py measure`, `agent_instruction.py parity`, a tokenizer,
+either recorded-family adapter, Ollama, or any model process. Use only
+deterministic offline reconciliation, the structural instruction check, and
+ordinary unit suites; keep `measurement.json` and `parity.json` byte-for-byte
+unchanged.
+
+Complete replacement Disciplines: The controller owner's later explicit
+9/17 instruction controls the fixture. The hard no-model and no-measurement
+boundary remains absolute. All other Step 3 discipline requirements in the
+preceding amendment remain unchanged.
+
+**Why.** The fixture needs one reviewed binding for each of the two governed
+source locations, but both bindings must name one semantic directive. Nine and
+seventeen are therefore the only counts consistent with the frozen prose and
+the seven retained bindings.
+
+**Steps touched.** Step 3's Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every Step 3 file and
+historical-byte rule in the preceding amendments, with one narrow override.
+`scripts/agent_instruction.py`, `tests/test_agent_instruction.py`,
+`docs/agent-instruction-language-v1.md`,
+`tests/fixtures/agent-instruction-v1/manifest.json`, and
+`tests/fixtures/agent-instruction-v1/manifest.schema.json` may change only to
+encode, enforce, test, and describe `model_evidence_status: disabled` and the
+corrected 9/17 binding counts. Keep
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json`,
+the tokenizer and family profiles, decoder bootstrap, parity prompt,
+`measurement.json`, and `parity.json` byte-for-byte unchanged.
+
+Complete replacement Tests: Run every Step 3 deterministic comparison,
+structural check, focused test, ordinary unit suite, repository check, and lint
+from the preceding amendments. The instruction check must accept exactly 17
+aggregate bindings, nine Fiat bindings on one `inoculate-phase`, nine
+questions, fourteen mutations, and the explicit disabled status while still
+checking the frozen evidence files' paths and digests. Direct and CLI tests
+must prove both `measure` and `parity` refuse with
+`WAI-E-EVIDENCE.DISABLED` before executable or profile identity checks,
+tokenization, adapters, subprocesses, output creation, or report writes.
+Ordinary unit tests may use fake adapters against disposable manifest copies
+only with identity and model operations mocked. Never launch a tokenizer,
+recorded-family adapter, Ollama, model, measurement, or parity process.
+
+Complete replacement Disciplines: The manifest's current model evidence state
+is explicitly `disabled`. The two frozen reports are historical records, not
+current evidence and not transition gates. Deterministic offline
+reconciliation, structural instruction checking, and ordinary unit suites are
+the complete instruction-related execution boundary. Every other Step 3
+discipline requirement in the preceding amendments remains unchanged.
+
+**Why.** The machine-readable disabled state keeps the structural fixture
+green without regenerating or misrepresenting old measurement and parity
+evidence.
+
+**Steps touched.** Step 3's Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every Step 3 file and
+historical-byte rule in the preceding amendments, with one narrow addition to
+the immediately preceding disabled-evidence override.
+`scripts/prove_agent_instruction_reconciliation.py` and
+`tests/test_agent_instruction_corpus.py` may change only to support multiple
+source bindings that name the same directive node and to test the explicit
+`model_evidence_status: disabled` boundary. Keep the questions, mutations,
+tokenizer and family profiles, decoder bootstrap, parity prompt,
+`measurement.json`, and `parity.json` byte-for-byte unchanged. Every other
+file boundary in the preceding amendments remains unchanged.
+
+Complete replacement Tests: Run every Step 3 test in the preceding amendments.
+The deterministic reconciler must rederive all nine Fiat source bindings
+without collapsing the two bindings that name `inoculate-phase`. Corpus tests
+must treat the frozen measurement and parity records as historical bytes, not
+as current evidence or transition gates, and must prove that reconciliation
+does not rewrite or consult them. Remove no structural round-trip, source-span,
+mutation, count, frozen-digest, or no-process assertion. Unit-only adapter
+coverage remains confined to disposable active-manifest copies with identity
+and model operations mocked. Never launch `agent_instruction.py measure`,
+`agent_instruction.py parity`, a tokenizer, either recorded-family adapter,
+Ollama, or any model process.
+
+Complete replacement Disciplines: The deterministic reconciler may repair
+only derived structural bindings and their registered digests. Disabled model
+evidence supplies no acceptance or refusal, and its historical files remain
+immutable. Every other Step 3 discipline requirement in the preceding
+amendments remains unchanged.
+
+**Why.** Nine Fiat bindings include two reviewed source locations for one
+`inoculate-phase` directive, so a node-keyed offset map loses one binding. The
+older corpus tests also require the very measurement and parity currency that
+the controller owner explicitly disabled. This amendment repairs those two
+deterministic assumptions without re-enabling or regenerating model evidence.
+
+**Steps touched.** Step 3's Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every Step 3 file and
+historical-byte rule in the preceding amendments, with one narrow correction
+to the disabled instruction-evidence contract. `PROMISE_MACHINE.md`, its
+generated plugin-local `PROMISE_MACHINE.md` copies,
+`docs/agent-instruction-language-v1.md`, and the `agent_instruction` entry in
+`tests/promise_machine_coverage.json` may change only to state the exact
+seventeen aggregate bindings, nine Fiat bindings, nine questions, fourteen
+mutations, and three structural round trips; to classify the frozen
+measurement and parity files as historical bytes rather than current
+evidence; and to remove any authority to report or rerun their old results as
+current. Generate plugin-local copies only with
+`python3 scripts/promise_machine.py sync` and keep them byte-identical to the
+root contract. Every other file and frozen historical byte rule remains
+unchanged.
+
+Complete replacement Tests: Run every Step 3 test in the preceding
+amendments, plus Promise Machine sync and check and the focused contract
+tests. Run the deterministic corpus suite in the clean detached exact
+candidate required by the existing Step 3 Exit; the managed controller tree's
+untracked `.hexaemeron/design-evidence.json` is run-specific state and is not
+the agent-instruction design record. Never launch an instruction measurement,
+parity, tokenizer, recorded-family adapter, Ollama, or model process.
+
+Complete replacement Disciplines: The Promise Machine may authorise only the
+current structural result. Historical measurement and parity bytes remain
+digest-bound context, not current evidence, a transition gate, or permission
+to execute their producers. Every other Step 3 discipline requirement in the
+preceding amendments remains unchanged.
+
+**Why.** The root Promise still described the superseded fifteen-binding
+active-evidence corpus after the manifest moved to seventeen bindings and an
+explicit disabled state. Its generated copies, one documentation sentence,
+and the coverage transition inherited the same overclaim. This correction
+keeps the portable contract aligned with the checked structural result without
+touching or invoking disabled evidence.
+
+**Steps touched.** Step 3's Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file and frozen-byte rule. Before changing fixture review provenance, create
+one signed source-anchor commit as a direct child of
+`8f9302289c984ae8209b679b9e777ffd78dcb5c2`. It may change only
+`plugins/hexaemeron/skills/fiat/SKILL.md`. It is an immutable source reference,
+not the Step 3 delivery candidate or a controller transition. It must carry
+the required local signature,
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>`, and
+`Wildcat-Origin: shoggoth` trailers.
+
+Its immediate signed descendant must restore the complete green structural
+corpus before `done implement`. After the anchor exists,
+`tests/fixtures/agent-instruction-v1/manifest.json` and
+`tests/fixtures/agent-instruction-v1/manifest.schema.json` may change only to
+set the Fiat fixture's review date to `2026-09-06` and `source_ref` to the
+full anchor commit. Make the schema's base review definition structural and
+pin each fixture row to its exact review values: the Fiat row uses the new
+date and anchor, while the unchanged Horos and Promise Machine rows retain
+`2026-08-31` and
+`1c1137898bce9086c34310bd29b5cf8a889f800c`. The Fiat source-span rows retain
+reviewer `shoggoth`.
+
+The root `PROMISE_MACHINE.md` and the eighteen byte-identical plugin-local
+copies written by `python3 scripts/promise_machine.py sync` land in that
+immediate descendant. The changed root Promise bytes begin after the Promise
+Machine fixture's
+reviewed envelope. Deterministically rebind only that fixture's whole-source
+digest and the derived `model.json`, `source-spans.json`, `compact.wai`,
+manifest artefact digests, and matching
+`tests/promise_machine_coverage.json` rows. Keep its four reviewed span bytes,
+offsets, digests, reviewer and original review record unchanged. The focused
+agent-instruction tests may change only to enforce those per-fixture review
+records, prove that both historical reports name a corpus other than the
+current structural corpus, and prove that live reconciliation does not read
+either report. Keep all questions, mutations, tokenizer and family profiles,
+decoder bootstrap, parity prompt, `measurement.json`, and `parity.json`
+byte-for-byte unchanged.
+
+Complete replacement Tests: Run every preceding Step 3 test. Before the source
+anchor, run Imprimatur and Brevitas on the final Fiat source and
+`git diff --check`. After it, prove the anchor's sole parent,
+exact changed-path set, source blob identity, signature and trailers. Prove the
+immediate descendant restores the complete structural corpus, Promise sync and
+repository checks before `done implement`. Prove the
+Promise Machine reviewed envelope and four spans remain exact while its
+whole-source digest alone is rebound. Prove the Fiat row's new review values
+and all three schema-pinned review records. The structural check must still
+report three round trips, seventeen bindings, nine Fiat bindings, nine
+questions, fourteen mutations and disabled model evidence. No instruction
+measurement, parity, tokenizer, recorded-family adapter, Ollama or model
+process may run.
+
+Complete replacement Disciplines: A reviewed binding must name a truthful
+review event and immutable source reference. The two new Fiat spans use the
+current signed anchor; unchanged older spans may retain their original review.
+A whole-source digest repair outside an unchanged reviewed envelope is
+structural reconciliation, not a new semantic review. The intermediate anchor
+authorises no transition by itself. Every other Step 3 discipline requirement
+continues unchanged.
+
+**Why.** The new Fiat bindings do not exist at the old review commit, while the
+root Promise contract correction changes bytes outside its retained reviewed
+envelope. Separate source anchoring, per-fixture provenance and deterministic
+whole-source rebinding make both facts explicit without consulting or
+regenerating disabled model evidence.
+
+**Steps touched.** Step 3's Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve the immediately
+preceding provenance amendment, with one necessary addition.
+`scripts/agent_instruction.py` may change only to replace its one global
+fixture-review date and source-reference check with an exact per-fixture map.
+The Fiat row must require reviewer `shoggoth`, date `2026-09-06`, the full
+signed source-anchor commit created under that amendment, and statement
+`reviewed-source-to-model-binding`. The Horos and Promise Machine rows must
+continue to require the same reviewer and statement with date `2026-08-31`
+and source reference
+`1c1137898bce9086c34310bd29b5cf8a889f800c`. No other checker behaviour may
+change.
+
+Complete replacement Tests: Run every preceding Step 3 test and add focused
+cases proving that each exact row is accepted and that cross-row, stale,
+unknown, or mixed review values refuse with `WAI-E-MANIFEST.REVIEW`. The
+structural check remains the only live instruction-evidence operation. Never
+run measurement, parity, tokenizer, recorded-family adapter, Ollama or a model
+process.
+
+Complete replacement Disciplines: The checker, schema and manifest must enforce
+one identical closed provenance map. A generic shape check or one shared
+historical constant is insufficient. Every other Step 3 discipline requirement
+continues unchanged.
+
+**Why.** The manifest and schema cannot truthfully carry the new Fiat review
+while the checker still refuses every value except the old shared review.
+
+**Steps touched.** Step 3's Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file and frozen-byte rule, with two test-only additions.
+`plugins/hexaemeron/tests/test_fiat_decision_assignments.py` may change only to
+forward the controller's bounded-probe output and timeout keyword arguments
+through its existing race-test proxy.
+`plugins/hexaemeron/tests/test_known_failure_inventory.py` may change only to
+recognise the receipted twelfth active Exit generation while preserving the
+same seven-finding assignment map. Every other file boundary continues
+unchanged.
+
+Complete replacement Tests: Run every preceding Step 3 test. The capture-aware
+assigned-finding lifecycle must additionally prove that the exact validated
+guard commit appears unchanged in both the implementation directive and the
+Mason brief. The Fiat source-contract test must require the loop row and
+loader/capture paragraph to remain two bindings of the same
+`inoculate-phase` directive. The bounded-probe race test and committed-runbook
+generation-history test must pass through their maintained interfaces without
+weakening either refusal. No instruction measurement, parity, tokenizer,
+recorded-family adapter, Ollama, or model process may run.
+
+**Why.** The complete suite exposed two test adapters that still described the
+pre-Step-3 interface and runbook history. It also exposed an omitted
+guard-commit field in the capture-aware implementation packet. These narrow
+corrections keep the checked contract and regression suite aligned without
+changing a finding, assignment, source view, frozen evidence file, or model
+boundary.
+
+**Steps touched.** Step 3's Files and Tests.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, signed-parent, source-anchor, historical-byte and no-model rule. The
+following post-anchor corrections, and only these, belong to the one immediate
+signed descendant of
+`2e31d5121b3e64f7288c913f04548547b42ae43c`.
+`docs/known-failure-inoculation-study.md` may append only the matching Step 3
+source-contract amendment immediately above this runbook amendment.
+
+`scripts/agent_instruction.py`, `tests/test_agent_instruction.py`, and
+`docs/agent-instruction-language-v1.md` may change only to replace the temporary
+disabled-evidence refusal with the three closed families:
+`WAI-E-DIGEST.FROZEN` for changed historical report bytes,
+`WAI-E-MEASURE.DISABLED` for a disabled measurement request, and
+`WAI-E-PARITY.DISABLED` for a disabled parity request. This expressly
+supersedes the preceding `WAI-E-EVIDENCE.DISABLED` requirement.
+
+`plugins/hexaemeron/skills/elenchus/scripts/elenchus.py`,
+`plugins/hexaemeron/skills/elenchus/SKILL.md`,
+`plugins/hexaemeron/skills/elenchus/EVOLUTION.md`, and
+`plugins/hexaemeron/tests/test_elenchus_checker.py` may change only to make
+report tracking use one literal Git path and to bound exact-parent
+materialisation before runner execution. Stream at most 100,000 tree entries,
+4,096 UTF-8 bytes per path, 33,554,432 listing bytes, 33,554,432 bytes for one
+blob, and 268,435,456 aggregate blob bytes, with a 30-second bound on each
+native listing or blob-reader phase. Admit only the declared regular-blob,
+symlink and `160000 commit` tree shapes. Materialise a gitlink as one bound
+empty directory from its exact row without reading or requiring the foreign
+commit; it consumes the listing and entry limits but no blob-byte allowance.
+
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/agents/mason.md`,
+`plugins/hexaemeron/tests/test_inoculation_lifecycle.py`, and
+`plugins/hexaemeron/tests/test_fiat_skill.py` may change only for the native-Git,
+gitlink, stale-packet and pending-publication corrections below. Every assigned
+guard Git, signature and ancestry read resolves Git as an absolute executable
+from `os.defpath` and refuses if that resolution fails. Caller `PATH`, Git
+environment, repository verifier-program configuration, replacement objects
+and lazy fetch cannot substitute it. Signature verification retains
+`SIGNATURE_VERIFIER_CONFIG` and uses either independently resolved verifier
+executables or the fixed verification-only trusted path consisting of
+`os.defpath`, `/usr/local/bin`, `/opt/homebrew/bin`, and `/opt/local/bin`; do not
+limit real verifier discovery to `os.defpath` alone.
+
+The zero-assigned tracked-tree binding admits exactly a `160000 commit` gitlink,
+binds its complete raw tree row, path, mode and object id, counts the row,
+assigns it zero tracked blob bytes, and never requires the foreign object.
+Every other mode/type mismatch refuses. Worktree status always uses
+`--ignore-submodules=none`; an initialised dirty, moved, removed or untracked
+submodule remains a dirty row regardless of repository or `.gitmodules` ignore
+configuration. An absent or uninitialised gitlink remains admissible when the
+superproject row and every other cleanliness binding are exact.
+
+A packet without `guard_commit` authorises only atomic create-only creation of
+its exact Step branch at `step_parent`. If that branch already exists at any
+tip, Mason makes no edit, reset, repoint or checkout and requests a fresh
+lock-free `next` packet. Capture-aware implementation continues only on the
+already checked-out receipt tip: `guard_commit` for an assigned Step or
+`step_parent` for a zero-assigned Step.
+
+The controller-derived pending and completion leaves use the closed
+`elenchus-guard-publication/v1` object, mode `0600`, and a 4,096-byte limit. It
+has exactly `schema`, `finding_id`, `report_sha256`, `manifest_sha256`,
+`runner_exit`, and `counters`; `runner_exit` is a non-negative integer and
+`counters` is the exact admitted closed counter object. Publication order is
+durable report, durable `.pending-<finding-id>.json`, durable final manifest,
+durable `.complete-<finding-id>.json`, then no-replace retirement of the
+pending name to the inert `.intent-<finding-id>.json` and directory `fsync`.
+
+Before loading or calling Elenchus, a retry inspects any pending or completion
+record. It validates the retained report, normalized counters, runner exit,
+immutable context and both digests. A missing final manifest is the sole
+reconstructible absence: rebuild its canonical bytes from those bound values,
+require its marker digest, and publish it no-replace. An existing manifest must
+already be byte-identical. A changed, missing or malformed report, marker,
+completion or context, or a foreign final leaf, refuses without reporter
+execution or mutation. Lock-free readers admit only the exact report and
+manifest pair after the matching completion record is durable and the pending
+name is absent. A stage, orphan, pending pair, completion with a pending gate,
+or retired intent is not authority. This supersedes the earlier requirement
+that an exact partial retry rerun the reporter.
+
+All changes to `plugins/hexaemeron/skills/fiat/SKILL.md` remain strictly after
+the anchor's last reviewed byte at offset 28,710. Keep every reviewed span,
+offset, digest, reviewer, date and
+`source_ref=2e31d5121b3e64f7288c913f04548547b42ae43c` unchanged. Run only the
+deterministic reconciler to rebind changed whole-source digests and the Fiat
+fixture's derived `model.json`, `source-spans.json`, `compact.wai`, top-level
+`manifest.json`, and matching `agent_instruction` coverage rows. Keep the
+schema, questions, mutations, profiles, bootstrap, prompt,
+`measurement.json`, and `parity.json` byte-for-byte unchanged. Every other
+file boundary continues unchanged.
+
+Complete replacement Tests: Run every preceding deterministic Step 3 test.
+Focused tests must prove the three exact refusal codes; literal report-path
+tracking; exact and one-over parent listing, entry, per-blob and aggregate
+limits before runner execution; listing and blob-reader deadlines; and an
+absent foreign gitlink materialised as a bound empty directory. Exercise the
+current repository parent successfully so its approximately 14.6 MB largest
+blob remains below the 32 MiB per-blob ceiling.
+
+Using a real signed commit, prove a hostile caller `PATH` cannot run a fake Git
+while native writer, signature and reader/ancestry checks still succeed.
+Preserve the existing repository-verifier-substitution refusal. Prove ignored
+submodule tracked edits, untracked children, and moved or removed initialised
+submodules remain visible; prove an absent gitlink is accepted and mismatched
+mode/type pairs refuse.
+
+Interrupt publication after each durable boundary. Prove report A plus its
+pending marker reconstructs or validates manifest A without invoking
+nondeterministic reporter B; a missing manifest is reconstructed exactly; a
+counter, exit, report, digest, context, mode or foreign-leaf mismatch refuses
+without runner or mutation; and readers expose authority only after exact
+completion and pending retirement. Pin the stale-packet create-only wording in
+both Fiat and Mason and preserve the exact implementation-tip rules.
+
+The structural checker may bounded-read and hash the two frozen historical
+reports solely to enforce `WAI-E-DIGEST.FROZEN`; it does not parse their results
+as current evidence. Disabled measurement and parity entry points refuse before
+evidence-file access, profile identity, tokenizer, adapter, subprocess, output,
+or report-writing work. Never launch a tokenizer, recorded-family adapter,
+Ollama, model, measurement, or parity process.
+
+Complete replacement Disciplines: phylax owns absolute native-tool resolution,
+literal paths, bounded parent materialisation, opaque gitlinks, full submodule
+status, create-only branch handling, and crash-consistent report-first,
+manifest-last publication. Elenchus remains execution and classification only;
+Fiat remains admission, persistence and receipt authority. metron: none; these
+are safety limits, not measurements. hypomnema preserves the signed source
+anchor and permits only deterministic whole-source rebinding outside unchanged
+reviewed spans.
+
+**Why.** Hostile executable lookup, pathspec interpretation, a missing foreign
+submodule object, ignored submodule dirt, an unbounded parent, a stale branch
+packet, or nondeterministic retry output must not alter or strand Fiat evidence.
+These repairs preserve all seven findings, assignments, 9/17 bindings, frozen
+evidence bytes and Step topology.
+
+**Steps touched.** Step 3's Files, Tests, and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, signed-parent, source-anchor, historical-byte and no-model rule, with one
+test-only addition to the final post-anchor correction.
+`plugins/hexaemeron/tests/test_hexctl.py`
+may change only inside `TestPublicationBindings` to replace its simulated sync
+refs, parents and deltas with a native local commit graph and bare origin, and
+to assert the resulting dynamic object ids. The fixture may resolve Git only
+from `os.defpath`, construct commits through a private temporary index, and
+publish only to that per-test local origin. Fake delivery tools remain confined
+to signature and GitHub response surfaces. Production code, controller escape
+hatches and inherited Git substitution are forbidden.
+
+Complete replacement Tests: Run every preceding deterministic Step 3 test.
+Run all publication-binding cases and the complete controller suite on the
+final fixture bytes. Require real ordered `[product, base]` merge parents for
+success and supersession, a real wrong first parent for the parent refusal, a
+stable three-path replacement surface, an empty required acknowledgement set,
+and eight bounded tree-neutral replacement advances. Keep the test module
+below the Promise Machine 262,144-byte source limit. The exact clean detached
+candidate still owns the root and corpus suites. Never launch measurement,
+parity, a tokenizer, a recorded-family adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns native executable resolution,
+private test object construction and the local-only remote. The fixture proves
+the production trust boundary; it does not weaken or replace it. Every other
+Step 3 discipline requirement continues unchanged.
+
+**Why.** Native relation checks cannot be qualified by a `PATH` shim they are
+designed to distrust. The prior fixture failed before reaching its intended
+sync assertions because its object and remote evidence existed only in that
+shim.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule, with two final
+test-only additions. `plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py`
+may change only to replace simulated sync topology with native product and
+ordered-parent sync commits plus exact run/base refs on a per-test bare origin.
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change only to
+give descendant revalidation a real recorded commit and child, and to require
+the exact absolute executable returned by `_native_git_executable()`. Neither
+file may add a production branch, environment-variable bypass or mock hook
+that changes native relation checking.
+
+Complete replacement Tests: Run every preceding deterministic Step 3 test.
+The six frontier-receipt cases must exercise their real native graph while
+preserving empty subtraction for missing, malformed or unreadable recorded
+base tips. The descendant case must preserve the original push receipt and
+recompute only the effective push over a real child. Native graph cases must
+continue to distinguish equality, descendant, non-ancestor, unknown and
+replacement-object outcomes, and must bind absolute Git,
+`--no-replace-objects`, and the scrubbed environment. Run the complete
+Hexaemeron suite and all clean-candidate gates again. Never launch measurement,
+parity, a tokenizer, a recorded-family adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the native executable, local
+objects and test-only bare remotes. The real fixtures qualify the existing
+production boundary without modifying it. Every other Step 3 discipline
+requirement continues unchanged.
+
+**Why.** The full runner exposed the remaining tests whose fake remote,
+parent, merge-base or ancestry facts could no longer reach the hardened native
+reader. Real local evidence restores their intended assertions.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R1-01`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py` may change only to replace
+the inherited native-Git environment with a literal relation/guard base and a
+signature-specific extension. The base fixes `PATH`, the C locale, Git's
+global and system configuration suppression, lazy-fetch refusal and terminal
+prompt refusal; it may pass through only a non-empty `SSH_AUTH_SOCK` for a
+native SSH remote read. The signature extension may additionally retain only
+non-empty `HOME` and `GNUPGHOME`, then sets the already declared fixed
+verification-only path. It must not inherit any other caller field.
+
+For `S3-R1-01` tests,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change to prove
+that relation, guard and signature calls exclude hostile Git, dynamic-loader,
+shell and language-runtime variables while preserving the exact allowed base
+and signature extension. For `S3-R1-02`, that file's `NativeGraphCase`,
+`plugins/hexaemeron/tests/test_hexctl.py` only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` only within
+`FrontierReceiptCase` may change to resolve Git from `os.defpath`, pass a fresh
+empty base environment to every native Git call, route remaining direct Git
+calls through the helper, and add only the private index and deterministic
+commit identity and dates at the commands that require them. All object and
+ref writes remain inside each disposable repository and local bare origin.
+Every other file boundary remains unchanged.
+
+Complete replacement Tests: Run every preceding deterministic Step 3 test.
+Before changing production code, overlay only the new hostile-environment
+production regression on exact candidate
+`8f3a491bfc2f90db0eb4d59774b480a126c04c32` and require it to fail because
+the injected variables survive. After the repair, require exact allowed-key
+sets for relation, guard and signature environments; retain the existing real
+signed-commit checks; and prove hostile ambient Git variables cannot redirect
+any of the three native fixture graphs, their objects, refs or local pushes.
+Run Warden's exact `unittest-json-v1` command and every preceding full-suite,
+Promise, frozen-byte, source, lint, Horos and diff gate. Elenchus may report the
+fixture-only part as `passed` because its changed helper bytes travel with the
+tests; do not misstate the production guard's result as independent red proof
+for that test-only repair. Never launch measurement, parity, a tokenizer, a
+recorded-family adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the literal child environments,
+absolute executables, explicit trust-store locators, private fixture indexes
+and local-only object and ref writes. elenchus owns the parent-red production
+regression and keeps a `passed` fixture-only result distinct from `guarded`.
+ephoros: none, the existing subprocess and receipt signals remain complete.
+metron: none, this is a trust-boundary repair with no performance claim.
+hypomnema: none, the audit findings apply the existing native-substitution
+decision without changing it. Every other Step 3 discipline requirement
+continues unchanged.
+
+**Why.** The first Step 3 audit proved that loader variables reached the Git
+trust root and that ambient Git variables could redirect newly added fixture
+objects and refs. Closing each child environment fixes the causes without a
+denylist, mock bypass, new authority or wider product surface.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R1-01`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py` may change only to replace
+the inherited native-Git environment with a literal relation/guard base and a
+signature-specific extension. The base fixes `PATH`, the C locale, Git's
+global and system configuration suppression, lazy-fetch refusal and terminal
+prompt refusal; it may pass through only a non-empty `SSH_AUTH_SOCK` for a
+native SSH remote read. The signature extension may additionally retain only
+non-empty `HOME` and `GNUPGHOME`, then sets the already declared fixed
+verification-only path. It must not inherit any other caller field.
+
+For `S3-R1-01` tests,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change to prove
+that relation, guard and signature calls exclude hostile Git, dynamic-loader,
+shell and language-runtime variables while preserving the exact allowed base
+and signature extension. For `S3-R1-02`, that file's `NativeGraphCase`,
+`plugins/hexaemeron/tests/test_hexctl.py` only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` only within
+`FrontierReceiptCase` may change to resolve Git from `os.defpath`, pass a fresh
+empty base environment to every native Git call, route remaining direct Git
+calls through the helper, and add only the private index and deterministic
+commit identity and dates at the commands that require them. All object and
+ref writes remain inside each disposable repository and local bare origin.
+Every other file boundary remains unchanged.
+
+**Why.** The parent-red regression exposed the inherited loader variables.
+The repaired tree excludes them, confines each native fixture graph, preserves
+real signed-commit verification, and passes the complete focused 199-test set.
+Those results close both first-round mechanisms without widening Step 3.
+
+**Steps touched.** Step 3's Files.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R2-01`,
+`plugins/hexaemeron/tests/test_hexctl.py` may change only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` may change only
+within `FrontierReceiptCase` plus one pure source-contract case. Both fixtures
+close the process environment around inherited setup. Frontier routes its
+remaining five graph mutations through its absolute native-Git helper and
+adds fixed identity and dates only to commit commands. For `S3-R2-02`,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change only
+within `NativeGraphCase` plus one pure source-contract case, giving its three
+commit commands fixed identity and dates and pinning their exact key sets.
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py` may add only the two
+round-2 source-contract reporter cases. The production controller and promise
+coverage register do not change. Every other file boundary remains unchanged.
+
+The signed test-only guard commit has sole parent
+`6021e664d76a46160eebadddefa0fbfc77d7346b` and changes only the reporter and
+two pure source-contract test files. The signed product fix has that same sole
+parent and contains the repair, regression and specification bytes but no
+audit file. The audit branch first receives it through a signed
+no-fast-forward merge whose first parent is round-2 audit commit
+`ca77e424a9a9e368b163fb8b652271fff29b5db1`; Warden appends round 3 in a later
+signed audit-only commit.
+
+Complete replacement Tests: Overlay the signed test-only guard commit on its
+exact parent and run both source-bound commands:
+
+```bash
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-test-guard> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case s3-r2-01 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/fiat-453-step-3-r2-01.json --require-guard --format json
+python3 plugins/hexaemeron/skills/elenchus/scripts/elenchus.py --ref <signed-test-guard> --test-command "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case s3-r2-02 --report {report}" --report-format unittest-json-v1 --report-file .elenchus/fiat-453-step-3-r2-02.json --require-guard --format json
+```
+
+Both must report `guarded` through assertion failures rather than import,
+runner or sandbox errors. On the fixed tree, invoke the publication and
+frontier classes under hostile process-level Git directory, work-tree and
+object-directory variables; require their inherited setup and complete native
+graph paths to remain local. Build NativeGraph twice and require the three
+commit ids and the exact command-local identity-and-date key sets to match.
+Then rerun the affected classes, Warden's exact `unittest-json-v1` command and
+every preceding full-suite, Promise, frozen-byte, source, lint, Horos and diff
+gate. Never launch measurement, parity, a tokenizer, a recorded-family
+adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the closed fixture setup,
+absolute Git resolution, empty base environments, command-local identity and
+dates, and local-only objects and refs. elenchus owns both assertion-red
+source-contract guards and keeps their result separate from Warden's audit
+runner. ephoros: none, no product signal changes. metron: none, no performance
+claim. hypomnema: none, the repair applies the existing native-substitution
+decision. Every other Step 3 discipline requirement continues unchanged.
+
+**Why.** Round 2 proved that hostile Git state can act before the current test
+bodies, that five Frontier mutations still bypass their closed helper, and
+that NativeGraph object ids still depend on wall time. This repair closes
+those fixture-only mechanisms without changing production behaviour or the
+known-failure inventory.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit broken. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-06
+
+**What changed.** Complete replacement Files: Preserve every preceding Step 3
+file, source-anchor, historical-byte and no-model rule. For `S3-R2-01`,
+`plugins/hexaemeron/tests/test_hexctl.py` may change only within
+`TestPublicationBindings`, and
+`plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py` may change only in
+its imports, `FrontierReceiptCase` and the round-2 source-contract case. Each
+fixture activates a cleared process environment before inherited setup,
+retains it through cleanup, restores only the fake-tool path plus
+`os.defpath`, and keeps every Frontier graph mutation on the absolute
+native-Git helper. The module import used by the contract must not expose an
+imported `TestCase` class to unittest discovery. Frontier commit commands add
+only fixed identity and dates. For `S3-R2-02`,
+`plugins/hexaemeron/tests/test_step_branch_extensions.py` may change only
+within `NativeGraphCase` and the round-2 contract case. Its three commit
+commands receive exact six-key identity-and-date environments; the contract
+records those actual calls and requires two independent builds to produce the
+same three object ids. `plugins/hexaemeron/tests/emit_issue_453_guard_report.py`
+may add only the two round-2 reporter cases. The production controller and
+promise coverage register do not change. Every other file boundary remains
+unchanged.
+
+The stronger signed test-only guard commit is
+`a9facb8891d7705ce760f4a9796e7115c7644683`, with sole parent
+`6021e664d76a46160eebadddefa0fbfc77d7346b` and only the reporter plus two
+contract-test files. It supersedes the weaker `f52b875b` guard commit. The
+signed product fix keeps the same sole parent and contains the repair,
+regression and specification bytes but no audit file. The audit branch first
+receives it through a signed no-fast-forward merge whose first parent is the
+round-2 audit commit `ca77e424a9a9e368b163fb8b652271fff29b5db1`;
+Warden appends round 3 in a later signed audit-only commit.
+
+Complete replacement Tests: Elenchus ran each round-2 reporter from
+`a9facb8891d7705ce760f4a9796e7115c7644683`. Each result is `guarded` with one
+executed test, one assertion failure, zero errors and zero skips. On the fixed
+tree, the strengthened contracts pass 2/2, their final individual reports
+pass 1/1 each, the complete hostile publication fixture passes 35/35, the
+complete hostile Frontier fixture passes 7/7, Frontier module discovery is
+exactly eight tests, that module passes 8/8, and the branch-extension module
+passes 13/13. Warden's exact `unittest-json-v1` command and every preceding
+full-suite, Promise, frozen-byte, source, lint, Horos and diff gate remain
+required. Never launch measurement, parity, a tokenizer, a recorded-family
+adapter, Ollama or a model process.
+
+Complete replacement Disciplines: phylax owns the pre-parent closed process
+environment, absolute Git resolution, exact command-local identity and dates,
+local-only objects and refs, and the no-duplicate discovery boundary.
+elenchus owns both strengthened assertion-red guards and keeps their results
+separate from Warden's audit runner. ephoros: none, no product signal changes.
+metron: none, no performance claim. hypomnema: none, the repair applies the
+existing native-substitution decision. Every other Step 3 discipline
+requirement continues unchanged.
+
+**Why.** The completed repair closes both round-2 mechanisms. The strengthened
+guards also refuse inactive or late environment clearing, ambient-key union,
+nondeterministic object ids and accidental rediscovery of the imported
+publication suite.
+
+**Steps touched.** Step 3's Files, Tests and Disciplines.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

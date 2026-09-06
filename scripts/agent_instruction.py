@@ -32,7 +32,12 @@ CHECK_RECORD_SCHEMA = "wildcat-agent-instruction-check-record/v1"
 MANIFEST_ID = "wildcat-agent-instruction-manifest/v1"
 MANIFEST_SCHEMA_ID = "https://wildcat.finance/schemas/agent-instruction-manifest-v1.schema.json"
 MANIFEST_SCHEMA_PATH = "tests/fixtures/agent-instruction-v1/manifest.schema.json"
-MANIFEST_SCHEMA_SHA256 = "b09b2d38f0c491977e121b2a38f0bc39185d09aa98f110419fdbf37e4e0419e1"
+MANIFEST_SCHEMA_SHA256 = "8c86d56cb868310c1afed9016186a1331b3d0c80a604d47c13acb507955124d5"
+MODEL_EVIDENCE_STATUSES = ("active", "disabled")
+DISABLED_MODEL_EVIDENCE_SHA256 = {
+    "measurement_record": "1f1f168fc66489d497464772946caa5affc71656c41b2325843c9a4297fa158f",
+    "parity_record": "5c628fe267bb9862cc165848be1380b545b68c416cf9d914c608da71670687c7",
+}
 FIXTURE_ROOT = "tests/fixtures/agent-instruction-v1"
 EVIDENCE_ROOT = f"{FIXTURE_ROOT}/evidence"
 EVIDENCE_ARTIFACTS = {
@@ -63,13 +68,17 @@ FIXTURE_CONTRACT = {
     "fiat-study-runbook-phase": {
         "source_id": "fiat",
         "source_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-        "binding_count": 7,
+        "review_date": "2026-09-06",
+        "source_ref": "2e31d5121b3e64f7288c913f04548547b42ae43c",
+        "binding_count": 9,
         "question_count": 3,
         "mutation_count": 4,
     },
     "horos-boundary-check": {
         "source_id": "horos",
         "source_path": "plugins/horos/skills/horos/SKILL.md",
+        "review_date": "2026-08-31",
+        "source_ref": "1c1137898bce9086c34310bd29b5cf8a889f800c",
         "binding_count": 4,
         "question_count": 3,
         "mutation_count": 4,
@@ -77,6 +86,8 @@ FIXTURE_CONTRACT = {
     "promise-machine-router-selection": {
         "source_id": "promise-machine",
         "source_path": "PROMISE_MACHINE.md",
+        "review_date": "2026-08-31",
+        "source_ref": "1c1137898bce9086c34310bd29b5cf8a889f800c",
         "binding_count": 4,
         "question_count": 3,
         "mutation_count": 6,
@@ -2243,6 +2254,7 @@ def validate_manifest(manifest: Any) -> dict[str, Any]:
             "mutation_count",
             "fixtures",
             "evidence",
+            "model_evidence_status",
         ),
         "$",
     )
@@ -2252,6 +2264,8 @@ def validate_manifest(manifest: Any) -> dict[str, Any]:
         refuse("WAI-E-MANIFEST.SCHEMA_PATH", "$.schema_path")
     if _sha256(root["schema_sha256"], "$.schema_sha256") != MANIFEST_SCHEMA_SHA256:
         refuse("WAI-E-DIGEST.SCHEMA", "$.schema_sha256")
+    if _string(root["model_evidence_status"], "$.model_evidence_status") not in MODEL_EVIDENCE_STATUSES:
+        refuse("WAI-E-MANIFEST.EVIDENCE_STATUS", "$.model_evidence_status")
     risks = _array(root["risk_classes"], "$.risk_classes", len(RISK_CLASSES), minimum=len(RISK_CLASSES))
     if tuple(_string(item, f"$.risk_classes[{index}]") for index, item in enumerate(risks)) != RISK_CLASSES:
         refuse("WAI-E-MANIFEST.RISKS", "$.risk_classes")
@@ -2321,9 +2335,12 @@ def validate_manifest(manifest: Any) -> dict[str, Any]:
         review = _object(fixture["review"], ("reviewer", "date", "source_ref", "statement"), f"{path}.review")
         if _identifier(review["reviewer"], f"{path}.review.reviewer") != FIXTURE_REVIEWER:
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.reviewer")
-        if _string(review["date"], f"{path}.review.date") != "2026-08-31":
+        if _string(review["date"], f"{path}.review.date") != expected_contract["review_date"]:
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.date")
-        if _string(review["source_ref"], f"{path}.review.source_ref") != "1c1137898bce9086c34310bd29b5cf8a889f800c":
+        if (
+            _string(review["source_ref"], f"{path}.review.source_ref")
+            != expected_contract["source_ref"]
+        ):
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.source_ref")
         if _string(review["statement"], f"{path}.review.statement") != "reviewed-source-to-model-binding":
             refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.statement")
@@ -2877,7 +2894,10 @@ def _check_manifest_bytes(
         _load_evidence_artifacts(
             root,
             manifest,
-            validate_reports=validate_evidence_reports,
+            validate_reports=(
+                validate_evidence_reports
+                and manifest["model_evidence_status"] == "active"
+            ),
         )
     records.append(
         _check_record(
@@ -2890,6 +2910,7 @@ def _check_manifest_bytes(
             roundtrip_count=sum(record["event"] == "roundtrip.result" for record in records),
             mutation_count=mutation_total,
             question_count=question_total,
+            model_evidence_status=manifest["model_evidence_status"],
             passed=sum(record["outcome"] == "accepted" for record in records),
             failed=failures,
             refused=failures,
@@ -3460,6 +3481,11 @@ def _load_evidence_artifacts(
             refuse("WAI-E-PARITY.PROMPT", "$.evidence.parity_prompt")
     tokenizer = validate_tokenizer_profile(load_canonical_record(evidence["tokenizer_profile"]))
     families = validate_family_profiles(load_canonical_record(evidence["family_profiles"]))
+    if manifest["model_evidence_status"] == "disabled":
+        for name, expected_sha256 in DISABLED_MODEL_EVIDENCE_SHA256.items():
+            if _digest(evidence[name]) != expected_sha256:
+                refuse("WAI-E-DIGEST.FROZEN", f"$.evidence.{name}")
+        return evidence
     if not validate_reports:
         return evidence
     measurement = load_canonical_record(evidence["measurement_record"], allow_integers=True)
@@ -3639,6 +3665,8 @@ def _signed_decimal(value: int) -> str:
 def measure_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:
     manifest_bytes = read_confined(root, manifest_path)
     manifest = validate_manifest(load_canonical_record(manifest_bytes))
+    if manifest["model_evidence_status"] != "active":
+        refuse("WAI-E-MEASURE.DISABLED", "$.model_evidence_status")
     checked = _check_manifest_bytes(root, manifest_bytes, validate_evidence_reports=False)
     if checked[-1]["outcome"] != "accepted":
         refuse("WAI-E-MEASURE.MUTATIONS", "$.manifest")
@@ -3911,6 +3939,8 @@ def _answer_record(response: str, question: Mapping[str, Any]) -> dict[str, Any]
 def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:
     manifest_bytes = read_confined(root, manifest_path)
     manifest = validate_manifest(load_canonical_record(manifest_bytes))
+    if manifest["model_evidence_status"] != "active":
+        refuse("WAI-E-PARITY.DISABLED", "$.model_evidence_status")
     checked = _check_manifest_bytes(root, manifest_bytes, validate_evidence_reports=False)
     if checked[-1]["outcome"] != "accepted":
         refuse("WAI-E-PARITY.MUTATIONS", "$.manifest")

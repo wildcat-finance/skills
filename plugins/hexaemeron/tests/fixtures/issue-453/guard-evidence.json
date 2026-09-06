@@ -1,0 +1,145 @@
+{
+  "schema": "issue-453-guard-evidence-fixture/v1",
+  "finding_id": "kf-453-03",
+  "consuming_step": 3,
+  "controller_run_id": "fiat-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "worktree_identity": {
+    "device": 17,
+    "inode": 45303
+  },
+  "capture": {
+    "study_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "runbook_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+    "inventory_sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "step_parent": "4444444444444444444444444444444444444444",
+  "guard_commit": "5555555555555555555555555555555555555555",
+  "changed_paths": [
+    "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+    "plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json",
+    "plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json",
+    "plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json",
+    "plugins/hexaemeron/tests/test_issue_453_guard_evidence.py",
+    "plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py"
+  ],
+  "guard_blob_payloads": [
+    {
+      "path": "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+      "status": "M",
+      "mode": "100644",
+      "content": "reporter guard blob\n"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json",
+      "status": "A",
+      "mode": "100644",
+      "content": "guard evidence fixture blob\n"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json",
+      "status": "A",
+      "mode": "100644",
+      "content": "guard outcomes fixture blob\n"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json",
+      "status": "A",
+      "mode": "100644",
+      "content": "path boundary fixture blob\n"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_issue_453_guard_evidence.py",
+      "status": "A",
+      "mode": "100644",
+      "content": "guard evidence test blob\n"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py",
+      "status": "A",
+      "mode": "100644",
+      "content": "inoculation lifecycle test blob\n"
+    }
+  ],
+  "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-03 --report {report}",
+  "test_argv": [
+    "python3",
+    "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+    "--case",
+    "kf-453-03",
+    "--report",
+    "{report}"
+  ],
+  "report_format": "unittest-json-v1",
+  "report_file": ".elenchus/issue-453-kf-453-03.json",
+  "retained_report": ".hexaemeron/steps/3/inoculation/reports/kf-453-03.report",
+  "raw_report": {
+    "payload": {
+      "schema": "elenchus.unittest.v1",
+      "complete": true,
+      "testsRun": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "unexpectedSuccesses": 0
+    },
+    "bytes": 159,
+    "sha256": "a3e8d6a24c60d1c0d9c817f8b92e1e94d64402daf2c598c17e2547e279559cbe"
+  },
+  "counters": {
+    "complete": true,
+    "executed": 1,
+    "assertion_failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "manifest_fields": [
+    "schema",
+    "finding_id",
+    "consuming_step",
+    "controller_run_id",
+    "worktree_identity",
+    "capture",
+    "step_parent",
+    "guard_commit",
+    "changed_paths",
+    "guard_blobs",
+    "test_command",
+    "test_argv",
+    "report_format",
+    "report_file",
+    "retained_report",
+    "runner_exit",
+    "counters",
+    "verdict"
+  ],
+  "worktree_identity_fields": [
+    "device",
+    "inode"
+  ],
+  "capture_fields": [
+    "study_sha256",
+    "runbook_sha256",
+    "inventory_sha256"
+  ],
+  "guard_blob_fields": [
+    "path",
+    "status",
+    "mode",
+    "oid",
+    "bytes",
+    "sha256"
+  ],
+  "retained_report_fields": [
+    "path",
+    "bytes",
+    "sha256"
+  ],
+  "counter_fields": [
+    "complete",
+    "executed",
+    "assertion_failures",
+    "errors",
+    "skipped"
+  ]
+}
