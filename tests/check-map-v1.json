@@ -24,6 +24,13 @@
       "kind": "command",
       "script": "scripts/check_public_front_door.py"
     },
+    "joined-front-door-suite": {
+      "title": "Joined front-door and demonstration suite",
+      "argv": ["python3", "-m", "unittest", "tests.test_joined_front_door", "-v"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "tests/test_joined_front_door.py"
+    },
     "dead-code-suite": {
       "title": "Report-only dead-code suite",
       "argv": ["python3", "-m", "unittest", "tests.test_dead_code", "-v"],
@@ -228,7 +235,7 @@
   "scopes": {
     "root": {
       "title": "Root contract, shared scripts and root suite",
-      "checks": ["root-suite", "demonstrations-suite", "front-door-check"]
+      "checks": ["root-suite", "demonstrations-suite", "front-door-check", "joined-front-door-suite"]
     },
     "dead-code": {
       "title": "Report-only dead-code discovery",
