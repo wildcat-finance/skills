@@ -25,8 +25,8 @@ def predicate(**overrides):
         },
         "inputs": [
             {
-                "name": "goldfinch capture",
-                "locator": "alexandria://goldfinch/2024-01",
+                "name": "aave-v4 capture",
+                "locator": "alexandria://aave-v4/2024-01",
                 "digest": CAPTURE,
             }
         ],
@@ -57,8 +57,8 @@ def predicate(**overrides):
             ],
         },
         "deltas": {
-            "baseline": {"name": "goldfinch-v1", "digest": PREVIOUS},
-            "current": {"name": "goldfinch-v2", "digest": EVENTS},
+            "baseline": {"name": "aave-v4-v1", "digest": PREVIOUS},
+            "current": {"name": "aave-v4-v2", "digest": EVENTS},
             "records": {"added": ["0xabc"], "removed": [], "changed": []},
         },
         "claims": [],
@@ -360,7 +360,7 @@ class GateFiveTests(unittest.TestCase):
     def test_a_comparison_naming_both_sides_passes(self):
         found = gate(5, predicate())
         self.assertTrue(found.passed, found.detail)
-        self.assertIn("goldfinch-v2 against goldfinch-v1", found.detail)
+        self.assertIn("aave-v4-v2 against aave-v4-v1", found.detail)
 
     def test_an_absent_deltas_block_fails(self):
         body = predicate()
@@ -375,7 +375,7 @@ class GateFiveTests(unittest.TestCase):
             predicate(
                 deltas={
                     "baseline": None,
-                    "current": {"name": "goldfinch-v1", "digest": EVENTS},
+                    "current": {"name": "aave-v4-v1", "digest": EVENTS},
                     "reason": "first release of this dataset",
                 }
             ),
@@ -389,7 +389,7 @@ class GateFiveTests(unittest.TestCase):
         digest and still verify clean."""
         for side, expected in (
             ({"digest": EVENTS}, "no name"),
-            ({"name": "goldfinch-v1"}, "current side"),
+            ({"name": "aave-v4-v1"}, "current side"),
             ({"name": "", "digest": EVENTS}, "no name"),
         ):
             with self.subTest(side=side):
@@ -425,7 +425,7 @@ class GateFiveTests(unittest.TestCase):
 
     def test_a_release_compared_against_itself_fails(self):
         body = predicate()
-        body["deltas"]["baseline"] = {"name": "goldfinch-v1", "digest": EVENTS}
+        body["deltas"]["baseline"] = {"name": "aave-v4-v1", "digest": EVENTS}
         found = gate(5, body)
         self.assertFalse(found.passed)
         self.assertIn("comparison against itself", found.detail)
@@ -436,7 +436,7 @@ class GateFiveTests(unittest.TestCase):
             predicate(
                 deltas={
                     "baseline": None,
-                    "current": {"name": "goldfinch-v1", "digest": EVENTS},
+                    "current": {"name": "aave-v4-v1", "digest": EVENTS},
                 }
             ),
         )
@@ -449,7 +449,7 @@ class GateFiveTests(unittest.TestCase):
             predicate(
                 deltas={
                     "baseline": None,
-                    "current": {"name": "goldfinch-v1", "digest": EVENTS},
+                    "current": {"name": "aave-v4-v1", "digest": EVENTS},
                     "reason": "first release of this dataset",
                     "records": {"added": ["0xabc"], "removed": [], "changed": []},
                 }
@@ -472,7 +472,7 @@ class GateFiveTests(unittest.TestCase):
 
     def test_a_baseline_without_a_digest_fails(self):
         body = predicate()
-        body["deltas"]["baseline"] = {"name": "goldfinch-v1"}
+        body["deltas"]["baseline"] = {"name": "aave-v4-v1"}
         found = gate(5, body)
         self.assertFalse(found.passed)
         self.assertIn("baseline side", found.detail)
@@ -665,8 +665,8 @@ class InputsTests(unittest.TestCase):
     def test_an_input_recorded_absent_with_a_reason_passes(self):
         body = predicate()
         body["inputs"][0] = {
-            "name": "goldfinch capture",
-            "locator": "alexandria://goldfinch/2024-01",
+            "name": "aave-v4 capture",
+            "locator": "alexandria://aave-v4/2024-01",
             "disposition": "redacted",
             "reason": "the upstream capture is under an embargo until 2027",
         }
@@ -677,8 +677,8 @@ class InputsTests(unittest.TestCase):
     def test_an_input_recorded_absent_without_a_reason_fails(self):
         body = predicate()
         body["inputs"][0] = {
-            "name": "goldfinch capture",
-            "locator": "alexandria://goldfinch/2024-01",
+            "name": "aave-v4 capture",
+            "locator": "alexandria://aave-v4/2024-01",
             "disposition": "skipped",
         }
         found = named("inputs", body)
@@ -691,8 +691,8 @@ class InputsTests(unittest.TestCase):
         recorded absent."""
         body = predicate()
         body["inputs"][0] = {
-            "name": "goldfinch capture",
-            "locator": "alexandria://goldfinch/2024-01",
+            "name": "aave-v4 capture",
+            "locator": "alexandria://aave-v4/2024-01",
             "disposition": "passed",
         }
         found = named("inputs", body)
@@ -710,8 +710,8 @@ class InputsTests(unittest.TestCase):
         for disposition in dataset.INPUT_DISPOSITIONS:
             body = predicate()
             body["inputs"][0] = {
-                "name": "goldfinch capture",
-                "locator": "alexandria://goldfinch/2024-01",
+                "name": "aave-v4 capture",
+                "locator": "alexandria://aave-v4/2024-01",
                 "disposition": disposition,
             }
             with self.subTest(disposition=disposition):
@@ -725,8 +725,8 @@ class InputsTests(unittest.TestCase):
     def test_a_disposition_outside_the_vocabulary_fails(self):
         body = predicate()
         body["inputs"][0] = {
-            "name": "goldfinch capture",
-            "locator": "alexandria://goldfinch/2024-01",
+            "name": "aave-v4 capture",
+            "locator": "alexandria://aave-v4/2024-01",
             "disposition": "probably fine",
         }
         found = named("inputs", body)

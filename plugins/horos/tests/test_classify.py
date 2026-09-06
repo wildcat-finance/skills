@@ -361,6 +361,25 @@ class ContentAddressedTests(unittest.TestCase):
         # Shape gates the read: a short name is refused before any hashing.
         self.assertIsNone(horos.content_addressed_algorithm("objects/sha256/ab/abcd"))
 
+    def test_a_deeper_shard_path_stays_readable(self):
+        # Neither layout files an object two shards deep; the shape gate
+        # refuses the path before its bytes are ever hashed.
+        payload = b"filed two shards deep\n"
+        digest = hashlib.sha256(payload).hexdigest()
+        relpath = f"objects/sha256/{digest[:2]}/{digest[2:4]}/{digest}"
+        write(self.root, relpath, payload)
+        self.assertIsNone(horos.content_addressed_algorithm(relpath))
+        self.assertNotIn(relpath, self.classified())
+
+    def test_an_uppercase_algorithm_segment_stays_readable(self):
+        # The algorithm segment is an exact-match key, not a case-folded one.
+        payload = b"shouted algorithm\n"
+        digest = hashlib.sha256(payload).hexdigest()
+        relpath = f"objects/SHA256/{digest[:2]}/{digest}"
+        write(self.root, relpath, payload)
+        self.assertIsNone(horos.content_addressed_algorithm(relpath))
+        self.assertNotIn(relpath, self.classified())
+
     def test_counts_report_content_addressed_bytes(self):
         payload = b"counted by category\n"
         self.store(payload)

@@ -1,16 +1,16 @@
-# Study: make Goldfinch fixture generation work on macOS
+# Study: make Aave v4 fixture generation work on macOS
 
 Assumptions fixed before the design:
 
 - The user is the Wildcat contributor invoking Fiat for open issue #881. The target is this clean run only; a predecessor directory was declared corrupt and deleted, so none of its product bytes or claims is evidence here.
 - “OS-provided root aliases such as `/var`” means the exact macOS root aliases `/var -> private/var`, `/tmp -> private/tmp`, and `/etc -> private/etc`, checked at the time of use. It does not mean resolving a general symlink chain.
 - The exact supported interpreter is Python 3.14.6. Python 3.13.15 is historical reproduction evidence, not a second supported target and not authority to change the pin.
-- The existing Goldfinch fixture and release bytes are outputs to reproduce, not files to regenerate in this repair.
+- The existing Aave v4 fixture and release bytes are outputs to reproduce, not files to regenerate in this repair.
 - There is no remaining ambiguity that changes the design. If a future macOS release changes a root alias, the safe result is a named refusal until that alias contract is studied again.
 
 ## 1. Problem statement
 
-Lazarus's Goldfinch v1 producer is supposed to rebuild a checked fixture offline. On macOS it creates and pins the private stage correctly, then `_descriptor_directory` tries to turn the open directory back into `/proc/self/fd/<fd>/fixture` or `/dev/fd/<fd>/fixture`. Neither path reaches the child on this Darwin host, so the producer exits 1 with `refused: platform cannot anchor fixture stage`. The skip at `plugins/lazarus/tests/test_goldfinch.py:67-70` hides the builder and its race guards on the platform that needs them.
+Lazarus's Aave v4 v1 producer is supposed to rebuild a checked fixture offline. On macOS it creates and pins the private stage correctly, then `_descriptor_directory` tries to turn the open directory back into `/proc/self/fd/<fd>/fixture` or `/dev/fd/<fd>/fixture`. Neither path reaches the child on this Darwin host, so the producer exits 1 with `refused: platform cannot anchor fixture stage`. The skip at `plugins/lazarus/tests/test_aave_v4.py:67-70` hides the builder and its race guards on the platform that needs them.
 
 The release writer has the opposite problem. Its descriptor-relative statement walk correctly refuses every symlinked parent, but macOS's ordinary temporary directory is below lexical `/var`, which is a system root symlink to `private/var`. `_read_statement` therefore rejects a valid statement before reaching the user-controlled part of the path.
 
@@ -18,7 +18,7 @@ A working prototype means both defects are repaired without converting either op
 
 The proving path is:
 
-1. Run the exact supported interpreter with `TMPDIR=/private/tmp` and build to a new path. Exit 0 and byte-for-byte equality with `plugins/lazarus/examples/goldfinch-v1` are required.
+1. Run the exact supported interpreter with `TMPDIR=/private/tmp` and build to a new path. Exit 0 and byte-for-byte equality with `plugins/lazarus/examples/aave-v4-spoke-v1` are required.
 2. Copy the checked statement to Python's default macOS `TemporaryDirectory`, call `write_release`, and verify the produced release. Exit 0 is required.
 3. Run the hostile parent-symlink, parent-identity, no-replace, rollback, and bounded-cleanup guards without the descriptor-path skip.
 4. Run `python3 plugins/lazarus/tests/run_tests.py --elenchus-report {report}` under exact Python 3.14.6; the report must be closed `unittest-json-v1`, complete, and green.
@@ -27,7 +27,7 @@ The proving path is:
 Current reproductions at `0987aa37f5110501b2c7a440f42370f81d58afe5`:
 
 ```text
-TMPDIR=/private/tmp PYTHONPATH=plugins/lazarus uv run --no-project --python 3.14.6 --with-requirements plugins/lazarus/requirements.lock python plugins/lazarus/examples/goldfinch-v1/demo.py build-fixture --out /private/tmp/fiat881-surveyor-goldfinch-v1
+TMPDIR=/private/tmp PYTHONPATH=plugins/lazarus uv run --no-project --python 3.14.6 --with-requirements plugins/lazarus/requirements.lock python plugins/lazarus/examples/aave-v4-spoke-v1/demo.py build-fixture --out /private/tmp/fiat881-surveyor-aave-v4-spoke-v1
 exit 1: refused: platform cannot anchor fixture stage
 
 PYTHONPATH=plugins/lazarus/scripts uv run --no-project --python 3.14.6 --with-requirements plugins/lazarus/requirements.lock python -c '<copy checked statement into tempfile.TemporaryDirectory; call write_release>'
@@ -42,12 +42,12 @@ Repository code already contains most of the required mechanism. `demo.py:182-44
 
 The last two merged pull requests that changed the subject paths were read from the local merge commits because both GitHub pull endpoints returned HTTP 404:
 
-- Merge `4296f9f0b3eb03926d9b5b03258246dcab8c13ec` (PR #718), second parent `21fbe2b583bf247b1e58a93e456ba7715207d32d`, pinned Python 3.14.6 and adjusted Python 3.14 path inspection semantics. It changed `demo.py` and `test_goldfinch.py` but did not repair either macOS path defect. Carry forward the exact pin and the issue's finding that both failures predate it; refuse any pin change here.
-- Merge `68039a8756e60c7aae97439d1cce616c09986a24` (PR #666), second parent `82c1b7123a3cc10b8ce875ba915cd703fb147d19`, removed an orphaned cross-plugin assertion from `test_goldfinch.py`. Carry forward its plugin boundary: do not restore cross-plugin test ownership or move this repair outside Lazarus without a checked shared contract.
+- Merge `4296f9f0b3eb03926d9b5b03258246dcab8c13ec` (PR #718), second parent `21fbe2b583bf247b1e58a93e456ba7715207d32d`, pinned Python 3.14.6 and adjusted Python 3.14 path inspection semantics. It changed `demo.py` and `test_aave_v4.py` but did not repair either macOS path defect. Carry forward the exact pin and the issue's finding that both failures predate it; refuse any pin change here.
+- Merge `68039a8756e60c7aae97439d1cce616c09986a24` (PR #666), second parent `82c1b7123a3cc10b8ce875ba915cd703fb147d19`, removed an orphaned cross-plugin assertion from `test_aave_v4.py`. Carry forward its plugin boundary: do not restore cross-plugin test ownership or move this repair outside Lazarus without a checked shared contract.
 
 The complete audit-synopsis set was checked with `python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .`, exit 0. The in-scope records were then read for their path and recovery findings:
 
-- `audit/AUDIT.md`, Goldfinch preservation release rounds at lines 3119-3725, requires dangling-symlink refusal, one-read statement binding, stable bytes, owner-only staging, no partial output, and nested-symlink refusal. Its accepted final empty-directory rename race is bounded and is not reopened by this issue.
+- `audit/AUDIT.md`, Aave v4 preservation release rounds at lines 3119-3725, requires dangling-symlink refusal, one-read statement binding, stable bytes, owner-only staging, no partial output, and nested-symlink refusal. Its accepted final empty-directory rename race is bounded and is not reopened by this issue.
 - `audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.md` and its checked synopsis carry S4-R1-04 (one bounded stable final statement descriptor), S4-R3-03 (no-follow every parent), S5-R5-01 (pin parent and stage descriptors through publication and rollback), S5-R7-01 (descriptor-bounded cleanup must not delete a replacement), and S5-R7-02 (bounded path-error surface). These controls are mandatory. The final audit explicitly left hosted CI unchecked; issue #881 now owns the Darwin regression evidence.
 - `audit/rounds/fiat-386-record-a-structured-multi-provider-chain-anc.md` and its synopsis carry atomic finalisation, bounded resources, and release compatibility. Their provider and secret leads are outside this offline path repair.
 - `audit/rounds/fiat-387-pin-rpc-boundary-failures-into-lazarus-fixtu.md` and its synopsis contain no open fixture-stage or statement-path work. Its replay and RPC boundaries are refused from this repair.
@@ -65,7 +65,7 @@ Always:
 - Keep the stage descriptor authoritative from creation through manifest construction, verification, publication, rollback, and cleanup. Duplicate a caller-owned descriptor before a helper takes ownership; never close the caller's descriptor implicitly.
 - Preserve component-count, byte, depth, identity, regular-file, stable-read, no-follow, no-replace, and offline limits.
 - Check a macOS root alias lexically and by exact link text and target identity; after that one root transition, open every remaining component relative to a descriptor with no-follow flags.
-- Keep all existing path-root APIs and fixture formats compatible. The checked Goldfinch v0/v1 fixture, statement, release, and manifest bytes remain unchanged.
+- Keep all existing path-root APIs and fixture formats compatible. The checked Aave v4 v0/v1 fixture, statement, release, and manifest bytes remain unchanged.
 - Make macOS regression tests execute rather than skip, and keep the Linux suite green under the exact pin.
 
 The issue explicitly authorises the smallest `.github/workflows/lazarus.yml` change needed for a macOS regression job if the durable runner is CI. Adding another workflow, changing permissions, changing unrelated matrices, or changing release automation still requires separate authority.
@@ -127,8 +127,8 @@ fixture-byte-drift | a path repair changes the shipped fixture or release | rebu
 
 - Live issue `https://github.com/wildcat-finance/skills/issues/881`, read 2026-08-31; title, body, acceptance, and boundary. Its pull references #718 and #666 were unavailable through GitHub API (HTTP 404), so no remote body or comment was inferred.
 - Git start `0987aa37f5110501b2c7a440f42370f81d58afe5`; local merge commits `4296f9f0b3eb03926d9b5b03258246dcab8c13ec` and `68039a8756e60c7aae97439d1cce616c09986a24`, including their second-parent diffs and commit bodies.
-- `plugins/lazarus/examples/goldfinch-v1/demo.py:148-446` and `:449-644`; current identity, descriptor, cleanup, no-replace, path bridge, and build flow.
-- `plugins/lazarus/tests/test_goldfinch.py:40-70` and the builder race tests; current platform skip and guarded invariants.
+- `plugins/lazarus/examples/aave-v4-spoke-v1/demo.py:148-446` and `:449-644`; current identity, descriptor, cleanup, no-replace, path bridge, and build flow.
+- `plugins/lazarus/tests/test_aave_v4.py:40-70` and the builder race tests; current platform skip and guarded invariants.
 - `plugins/lazarus/scripts/lazarus_lib/paths.py`; current confined read/write primitives and path-only whole-tree listing.
 - `plugins/lazarus/scripts/lazarus_lib/release.py:393-470`; current statement descriptor walk and bounded stable read.
 - `.github/workflows/lazarus.yml` and `plugins/lazarus/tests/test_scaffold.py:304-369`; current Linux-only workflow and its pinned shell/toolchain contract.
@@ -171,7 +171,7 @@ The bounded resource contract still holds: no extra whole-tree copy, no unbounde
 
 Every unsupported or changed condition refuses before publication: missing descriptor APIs, wrong descriptor type, alias mismatch, non-Darwin alias request, symlink below the admitted root, identity drift, oversize or unstable statement, existing destination, unavailable exclusive rename, cleanup identity drift, and incomplete test evidence. A recognized `/var` must not become a fallback to `resolve`; if its checked form differs, it is refused.
 
-Elenchus guards are red on the exact base before repair and green after it. Extend `test_goldfinch.py` with an unskipped macOS build that compares every fixture file; extend `test_release.py` with the default `TemporaryDirectory` success case and exact hostile non-root symlink refusals; preserve all current parent-swap, write-swap, finalisation, no-replace, rollback, and cleanup guards. The source-owned command is:
+Elenchus guards are red on the exact base before repair and green after it. Extend `test_aave_v4.py` with an unskipped macOS build that compares every fixture file; extend `test_release.py` with the default `TemporaryDirectory` success case and exact hostile non-root symlink refusals; preserve all current parent-swap, write-swap, finalisation, no-replace, rollback, and cleanup guards. The source-owned command is:
 
 ```text
 python3 plugins/lazarus/tests/run_tests.py --elenchus-report {report}
@@ -183,7 +183,7 @@ The report is `unittest-json-v1`. A valid report names the exact command and Pyt
 
 The selected candidate and rejected path-reentry alternative live immutably in `.hexaemeron/design-evidence.json` and its reports. That record is the design authority; this prose explains it.
 
-The descriptor-root ownership rule belongs beside the confinement implementation in `plugins/lazarus/scripts/lazarus_lib/paths.py`, with executable ownership and rename guards in `plugins/lazarus/tests/test_paths.py` and `test_goldfinch.py`. A short code comment must explain why a descriptor is duplicated and why path materialisation would lose authority; comments should not restate mechanics.
+The descriptor-root ownership rule belongs beside the confinement implementation in `plugins/lazarus/scripts/lazarus_lib/paths.py`, with executable ownership and rename guards in `plugins/lazarus/tests/test_paths.py` and `test_aave_v4.py`. A short code comment must explain why a descriptor is duplicated and why path materialisation would lose authority; comments should not restate mechanics.
 
 The exact Darwin root-alias allowlist is an operator-visible security policy. Its home is the statement-walk helper in `release.py`, its hostile and valid cases in `test_release.py`, and the public preservation-release guide if the accepted path surface is documented there. Any future alias addition changes the trust boundary and requires a new decision, not a data-only edit.
 
@@ -193,7 +193,7 @@ No new ADR is required: the choice is local to Lazarus, reversible without a wir
 
 ### Amendment -- 2026-08-31
 
-**What changed.** `plugins/lazarus/examples/goldfinch-v1/demo.py` is both the builder that must change and a digest-bound component of the checked Goldfinch fixture and preservation release. Step 1 may update that canonical component and must rebuild every directly derived manifest and release binding in place under the same existing version. Every preserved source component other than the two checked `demo.py` copies remains byte-identical; there is no version bump, superseded copy, or retained bad artefact.
+**What changed.** `plugins/lazarus/examples/aave-v4-spoke-v1/demo.py` is both the builder that must change and a digest-bound component of the checked Aave v4 fixture and preservation release. Step 1 may update that canonical component and must rebuild every directly derived manifest and release binding in place under the same existing version. Every preserved source component other than the two checked `demo.py` copies remains byte-identical; there is no version bump, superseded copy, or retained bad artefact.
 **Why.** Keeping the old digest bytes would require keeping the failing pseudo-FD builder, while changing the builder without rebuilding its bindings makes the checked fixture invalid. Digest-sealed evidence must describe the corrected same-version bytes rather than retain a known-bad prior state.
 **Steps touched.** Step 1's Exit and Files; Step 3's Entry.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit holds. Step 3: entry broken; exit holds.

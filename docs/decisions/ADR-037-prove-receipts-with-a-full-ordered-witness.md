@@ -7,7 +7,7 @@ Accepted, 2026-08-26.
 ## Context
 
 Lazarus already checks a captured block header and therefore binds its
-`receiptsRoot` to that header hash. The Goldfinch fixture also preserves one
+`receiptsRoot` to that header hash. The Aave v4 fixture also preserves one
 transaction receipt and one five-log `eth_getLogs` result, but those RPC
 records remain the provider's statements. A target receipt proof alone cannot
 show that the filtered result is complete: an unseen receipt could contain
@@ -17,7 +17,7 @@ The accepted [study](../lazarus-receipt-inclusion-proofs/study.md) fixes the
 evidence boundary and the
 [runbook](../lazarus-receipt-inclusion-proofs/runbook.md) divides its delivery.
 Existing plan-v1, plan-v2, manifest-v1, release-v1, state-fixture/v1, and
-Goldfinch v0 bytes must keep their existing meaning.
+Aave v4 v0 bytes must keep their existing meaning.
 
 ## Decision
 

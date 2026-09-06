@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import collections
 import hashlib
 import importlib.util
 import contextlib
@@ -2652,6 +2654,25 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         self.assertEqual(report["summary"]["refusal_codes"], ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"])
 
     def test_source_baseline_precedes_each_compact_count(self):
+        """Order, and which exact bytes reached the tokenizer.
+
+        The order claim is unchanged: every source baseline is counted before
+        any compact document, so a comparison cannot be assembled from counts
+        taken under a drifting runtime.
+
+        What the streams are did change. Step 3 measures the canonical model and
+        the compact document through `digest_neutral_projection`, because each
+        embeds its source's whole-file digest and counting the raw bytes let an
+        edit outside a reviewed span invalidate a count of bytes that had not
+        moved. The reviewed spans are still counted raw: a span's recorded
+        digest is `span_sha256`, and that equality is the review boundary.
+        The decoder bootstrap is evidence rather than a bound fixture artefact,
+        carries no bound digest, and is unchanged either way.
+
+        Asserted as the exact streams rather than as counts, so a regression
+        that projected the span, or that stopped projecting an artefact, is
+        caught here by digest and not left to the record comparison.
+        """
         observed = []
 
         def count(profile, prompt, **kwargs):
@@ -2674,11 +2695,23 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         for fixture in manifest["fixtures"]:
             expected.extend(
                 [
-                    (ROOT / fixture["artifacts"]["model"]["path"]).read_bytes(),
-                    (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes(),
+                    AI.digest_neutral_projection(
+                        manifest, (ROOT / fixture["artifacts"]["model"]["path"]).read_bytes()
+                    ),
+                    AI.digest_neutral_projection(
+                        manifest, (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes()
+                    ),
                 ]
             )
         self.assertEqual([hashlib.sha256(item).hexdigest() for item in observed], [hashlib.sha256(item).hexdigest() for item in expected])
+        # The projection actually moved the two artefact streams here, so the
+        # comparison above is not passing because it is a no-op.
+        for fixture in manifest["fixtures"]:
+            for name in ("model", "compact"):
+                raw = (ROOT / fixture["artifacts"][name]["path"]).read_bytes()
+                with self.subTest(fixture=fixture["id"], artifact=name):
+                    self.assertNotIn(raw, observed)
+                    self.assertIn(AI.digest_neutral_projection(manifest, raw), observed)
 
     def test_measurement_report_has_exact_ten_integer_cases(self):
         counts = iter([*((10, "{}") for _ in range(3)), (1, "{}"), *((value, "{}") for value in (5, 1) * 3)])
@@ -3202,7 +3235,20 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             with self.subTest(path=record["path"]):
                 path = ROOT / record["path"]
                 self.assertTrue(path.is_file())
-                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), record["sha256"])
+                self.assertEqual(
+                    hashlib.sha256(path.read_bytes()).hexdigest(),
+                    record["sha256"],
+                    # Nothing generates tests/promise_machine_coverage.json, so
+                    # this is the failure a person has to act on by hand, and a
+                    # bare digest comparison did not say how. Rebinding before
+                    # the last edit to the file is what leaves it stale again,
+                    # which is the loop this message exists to break.
+                    f"tests/promise_machine_coverage.json binds {record['path']} to a "
+                    "digest its bytes no longer have. Nothing regenerates that file: "
+                    f"recompute with `shasum -a 256 {record['path']}` and write the "
+                    "value into the matching sha256, as the last edit before you "
+                    "commit rather than the first.",
+                )
 
     def test_root_promise_has_complete_exact_field_inventory(self):
         source = (ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
@@ -3234,6 +3280,18 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         self.assertIn("| all decoded literals and binding offsets | 786,432 | UTF-8 bytes |", contract)
 
     def test_specialised_coverage_binds_runtime_documentation_and_manifest(self):
+        """The records a reader needs to interpret this capability, bound by digest.
+
+        ADR-076 joins the list at step 3. The row binds the capability's own
+        decision records, and ADR-076 is one: it is what a reader consults on
+        finding that a measurement record's `compact.sha256` does not match
+        `compact.wai` on disk. Leaving it unbound would be the same drift
+        S2-R2-04 filed against the prover -- a document the behaviour depends on,
+        outside the register that notices when it moves.
+
+        The list is asserted exactly rather than by length, so adding a record
+        here is a deliberate edit and never a side effect of writing an ADR.
+        """
         coverage = self.coverage()
         self.assertEqual(coverage["checker"]["path"], "scripts/agent_instruction.py")
         self.assertEqual(coverage["manifest"]["path"], str(MANIFEST.relative_to(ROOT)))
@@ -3242,10 +3300,39 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             [
                 "docs/agent-instruction-language-v1.md",
                 "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
+                "docs/decisions/ADR-076-digest-neutral-measured-corpus.md",
             ],
         )
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
         self.assert_bound_paths(records)
+
+    def test_specialised_coverage_binds_the_reconciliation_prover(self):
+        """The component that verifies every bound artefact is itself bound.
+
+        `Reconciliation.__init__` checks every path `bound_digests` reports
+        before a proof runs, and `bound_targets` refuses a report written over
+        any of them. Until now neither the prover nor its test module appeared
+        in any coverage row, so the guard over the bound set was the one thing
+        outside it: an edit to either moved no digest this register would
+        notice. S2-R2-04.
+
+        `test_every_bound_capability_digest_matches_the_file_it_names` in
+        `tests/test_unique_identifiers.py` recomputes any `path`/`sha256` pair
+        under a promise entry, so these two are bound by that walker as soon as
+        they are named here. This case is what makes the naming deliberate
+        rather than incidental, so removing either row fails here and not only
+        as a digest that stopped being checked.
+        """
+        coverage = self.coverage()
+        self.assertEqual(
+            coverage["prover"]["path"],
+            "scripts/prove_agent_instruction_reconciliation.py",
+        )
+        self.assertEqual(
+            coverage["prover_tests"]["path"],
+            "tests/test_agent_instruction_corpus.py",
+        )
+        self.assert_bound_paths([coverage["prover"], coverage["prover_tests"]])
 
     def test_specialised_coverage_binds_focused_tests(self):
         record = self.coverage()["tests"]
@@ -3367,6 +3454,1200 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
             ("summary", "passed"),
             "WAI-E-PARITY.RECORD",
         )
+
+    def assert_undefined_projection_refuses(self, evidence_key: str, locate, code: str) -> None:
+        """One recorded stream renamed to a projection this version does not define.
+
+        `docs/agent-instruction-language-v1.md` says a record whose
+        `projection` names an undefined rule refuses, and names both codes. The
+        refusals existed from the commit that added the field and nothing
+        exercised either: deleting both membership checks from
+        `agent_instruction.py` left the whole suite green apart from the
+        checker's own whole-file digest binding, which notices any edit to that
+        file and says nothing about behaviour. S3-R1-01.
+
+        The substituted name is well-formed and versioned, so this separates
+        "this rule is not defined in version 1" from a malformed or missing
+        field, which the closed-object check already refuses. Widening
+        `MEASURED_PROJECTIONS` to accept it would turn this red, which is the
+        point: the versioned name is what stops a record written under one rule
+        reading as though it were written under another.
+
+        The report is rewritten in a copy and its manifest binding rebound, so
+        the refusal reached is the projection check and not the stale-record
+        digest that would otherwise refuse first.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            manifest_path = copied / MANIFEST.relative_to(ROOT)
+            manifest = AI.load_canonical_record(manifest_path.read_bytes())
+            report_path = copied / manifest["evidence"][evidence_key]["path"]
+            report = AI.load_canonical_record(report_path.read_bytes(), allow_integers=True)
+            target = locate(report)
+            # Known defined before the edit, so this cannot pass by having
+            # renamed something that was already outside the set.
+            self.assertIn(target["projection"], AI.MEASURED_PROJECTIONS)
+            target["projection"] = "digest-neutral-bound-sha256/v2"
+            self.assertNotIn(target["projection"], AI.MEASURED_PROJECTIONS)
+            changed = AI.canonical_record_bytes(report, allow_integers=True)
+            report_path.write_bytes(changed)
+            manifest["evidence"][evidence_key]["sha256"] = hashlib.sha256(changed).hexdigest()
+            manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+            self.assertRefusal(code, AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT)))
+
+    def test_undefined_measurement_projection_refuses(self):
+        self.assert_undefined_projection_refuses(
+            "measurement_record",
+            lambda report: report["documents"][0]["compact"],
+            "WAI-E-MEASURE.PROJECTION",
+        )
+
+    def test_undefined_parity_projection_refuses(self):
+        self.assert_undefined_projection_refuses(
+            "parity_record",
+            lambda report: report["results"][0]["compact"],
+            "WAI-E-PARITY.PROJECTION",
+        )
+
+    def edited_token_count_tree(self, destination: Path, shift: int, *, consistent: bool) -> Path:
+        """A copy whose measurement record has one token count moved by hand.
+
+        `consistent` decides how far the edit is carried. False moves
+        `documents[0].compact.tokens` and nothing else. True moves every field
+        the checker recomputes from it -- that document's `one_document.tokens`
+        and `delta_tokens`, the three `totals` token fields, the
+        `compact_plus_bootstrap_tokens` and `delta_tokens` of every `amortised`
+        prefix that includes it, and the `measurement.result` event that carries
+        it -- using the same formulas `measure_manifest` uses.
+
+        The record's manifest binding is rebound either way, so what the two
+        cases separate is the record's internal arithmetic and nothing else. No
+        byte of any measured stream moves, so every `sha256` and `bytes` in the
+        record stays exactly right; only counts change.
+        """
+        copied = self.copied_root(destination)
+        manifest_path = copied / MANIFEST.relative_to(ROOT)
+        manifest = AI.load_canonical_record(manifest_path.read_bytes())
+        report_path = copied / manifest["evidence"]["measurement_record"]["path"]
+        report = AI.load_canonical_record(report_path.read_bytes(), allow_integers=True)
+
+        bootstrap = report["bootstrap"]["tokens"]
+        documents = report["documents"]
+        documents[0]["compact"]["tokens"] += shift
+        if consistent:
+            for document in documents:
+                compact = document["compact"]["tokens"]
+                source = document["source"]["tokens"]
+                document["one_document"]["tokens"] = compact + bootstrap
+                document["one_document"]["delta_tokens"] = str(compact + bootstrap - source)
+            source_total = sum(item["source"]["tokens"] for item in documents)
+            compact_total = sum(item["compact"]["tokens"] for item in documents)
+            report["totals"]["compact_tokens"] = compact_total
+            report["totals"]["compact_plus_bootstrap_tokens"] = compact_total + bootstrap
+            report["totals"]["delta_tokens"] = str(compact_total + bootstrap - source_total)
+            for count, row in enumerate(report["amortised"], 1):
+                selected = documents[:count]
+                sources = sum(item["source"]["tokens"] for item in selected)
+                compacts = sum(item["compact"]["tokens"] for item in selected)
+                row["compact_plus_bootstrap_tokens"] = compacts + bootstrap
+                row["delta_tokens"] = str(compacts + bootstrap - sources)
+            for event in report["events"]:
+                if event["event"] == "measurement.result":
+                    document = next(
+                        item for item in documents if item["fixture_id"] == event["fixture_id"]
+                    )
+                    event["tokens"] = document["compact"]["tokens"]
+
+        changed = AI.canonical_record_bytes(report, allow_integers=True)
+        report_path.write_bytes(changed)
+        manifest["evidence"]["measurement_record"]["sha256"] = hashlib.sha256(changed).hexdigest()
+        manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+        return copied
+
+    def test_an_edited_token_count_refuses_on_its_own(self):
+        """One count moved and nothing else: the record's own arithmetic catches it.
+
+        `check` recomputes `one_document`, `totals`, `amortised` and every
+        `measurement.result` event from `documents[*]`, so a count that moves
+        alone contradicts the numbers derived from it and the whole document
+        comparison refuses. This is the half of the guard that works, and it is
+        recorded so the sibling case below cannot be read as saying the counts
+        are unguarded altogether.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.edited_token_count_tree(Path(temporary), -5, consistent=False)
+            self.assertRefusal(
+                "WAI-E-MEASURE.RECORD", AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT))
+            )
+
+    def test_a_consistent_token_count_edit_is_not_detected(self):
+        """The same count moved with every derived number moved to match: accepted.
+
+        S3-R2-05, pinned rather than argued. `_measurement_material` carries
+        `tokens` over from the supplied record into the value it compares
+        against, so the count is the one field in the record that `check` never
+        recomputes; it verifies each measured stream's `sha256` and `bytes`
+        against the exact projected bytes and takes the count beside them on
+        trust. Recomputing it means consulting the model, which `check` must not
+        do.
+
+        The consequence this fixes in place: `delta_tokens` moves from `-165` to
+        `-170` and `check` still exits 0 with no refusal, so the number the
+        delivery is accepted on, and `WAI-E-MEASURE.NON_NEGATIVE_DELTA` with it,
+        rest on the run having been honest rather than on anything mechanical.
+        An edit in the other direction passes the same way.
+
+        What still constrains a tamper is recorded by the sibling case above and
+        by the rebinding this helper has to do: the edit must be carried through
+        every derived field, the record's manifest binding must be rebound, and
+        `tests/promise_machine_coverage.json` binds the record too, so it is
+        visible in a diff and invisible to every gate.
+
+        This case is expected to fail the moment the counts are bound to the run
+        that produced them. Deleting it is then the right move, and it should be
+        deleted deliberately rather than found mysteriously red.
+        """
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.edited_token_count_tree(Path(temporary), -5, consistent=True)
+            records = AI.check_manifest(copied, str(MANIFEST.relative_to(ROOT)))
+            self.assertFalse(
+                [item for item in records if item["outcome"] == "refused"],
+                "check now detects a consistent token-count edit; delete this case",
+            )
+            self.assertEqual(records[-1]["event"], "run.summary")
+            self.assertEqual(records[-1]["outcome"], "accepted")
+            report = AI.load_canonical_record(
+                (copied / "tests/fixtures/agent-instruction-v1/evidence/measurement.json").read_bytes(),
+                allow_integers=True,
+            )
+            self.assertEqual("-170", report["totals"]["delta_tokens"])
+            committed = AI.load_canonical_record(
+                (ROOT / "tests/fixtures/agent-instruction-v1/evidence/measurement.json").read_bytes(),
+                allow_integers=True,
+            )
+            self.assertEqual("-165", committed["totals"]["delta_tokens"])
+
+
+class AdapterRefusalDetailTests(unittest.TestCase):
+    """`refusal-detail-coverage`, closed over an enumerated set.
+
+    The register item's scope is "every adapter refusal a contributor can
+    actually reach". PR #1100 attached the guidance to the `EXECUTABLE_CHANGED`
+    sites, which is three of them, and left nine reachable refusals bare: a
+    client executable present at another path returned a bare
+    `WAI-E-ADAPTER.EXECUTABLE`, a runtime that would not start returned a bare
+    `WAI-E-ADAPTER.UNAVAILABLE`, and `_verify_profile_identity` split down the
+    middle with `VERSION_CHANGED` and `IDENTITY_CHANGED` bare beside two
+    detailed siblings.
+
+    Closing an item with that scope over a described set would over-claim, so
+    the set is enumerated from the source instead. `scripts/agent_instruction.py`
+    is parsed and every `refuse(...)` call is read out of the tree with its
+    enclosing function, its code and whether it carries a detail. In scope is
+    every `WAI-E-ADAPTER.*` and `WAI-E-TOKENIZER.*` refusal inside a covered
+    function that is not a declared exclusion; out of scope is exactly the
+    complement. So a refusal added to a covered function under a code no
+    exclusion names fails here until it is detailed or excluded with a reason.
+
+    The boundary that remains, stated rather than left to be discovered: an
+    exclusion is keyed by function and code, so a second refusal added under an
+    already-excluded code in a covered function is admitted by the exclusion
+    that already reasons about that situation. The per-function site counts
+    below are what makes even that visible in a diff.
+    """
+
+    SOURCE = ROOT / "scripts/agent_instruction.py"
+
+    #: The functions a contributor reaches from a machine the profile does not
+    #: pin. Everything else refuses only when the profile record is edited or
+    #: an adapter answers out of contract.
+    COVERED_FUNCTIONS = (
+        "_hash_executable",
+        "_run_bounded",
+        "_verify_profile_identity",
+        "_ollama_generate",
+    )
+
+    #: The helpers that are not given the profile and take the detail instead.
+    THREADED_HELPERS = ("_hash_executable", "_run_bounded")
+
+    #: The three builders. Every detail in the source is one of these called
+    #: with the profile, or the threaded parameter carrying one.
+    DETAIL_BUILDERS = (
+        "_adapter_identity_detail",
+        "_adapter_executable_detail",
+        "_adapter_run_detail",
+    )
+
+    #: In a covered function and still out of scope, with the reason. Each is
+    #: the adapter answering out of contract or the caller passing bounds that
+    #: are not about which machine this is.
+    EXCLUSIONS = {
+        ("_run_bounded", "WAI-E-ADAPTER.INPUT_CAP"): "the caller's input exceeded the cap",
+        ("_run_bounded", "WAI-E-ADAPTER.BOUNDS"): "the caller passed a non-positive bound",
+        ("_run_bounded", "WAI-E-ADAPTER.TIMEOUT"): "the adapter answered too slowly",
+        ("_run_bounded", "WAI-E-ADAPTER.OUTPUT_CAP"): "the adapter answered past its cap",
+        ("_run_bounded", "WAI-E-ADAPTER.IO"): "the pipes failed mid-run",
+        ("_ollama_generate", "WAI-E-ADAPTER.INPUT_CAP"): "the prompt exceeded the cap",
+        ("_ollama_generate", "WAI-E-ADAPTER.SCHEMA"): "the profile names another adapter",
+    }
+
+    #: The runbook's own counts, which are checkable and therefore checked.
+    ADAPTER_SITE_COUNT = 64
+    IN_SCOPE_ADAPTER_COUNT = 12
+    IN_SCOPE_TOKENIZER_COUNT = 2
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        tree = ast.parse(cls.SOURCE.read_text(encoding="utf-8"))
+        cls.sites = []
+        cls.helper_calls = []
+        cls.functions = {}
+
+        stack: list[ast.FunctionDef] = []
+
+        class Walk(ast.NodeVisitor):
+            def visit_FunctionDef(self, node):
+                stack.append(node)
+                cls.functions[node.name] = node
+                self.generic_visit(node)
+                stack.pop()
+
+            visit_AsyncFunctionDef = visit_FunctionDef
+
+            def visit_Call(self, node):
+                function = node.func
+                enclosing = stack[-1].name if stack else "<module>"
+                if isinstance(function, ast.Name):
+                    if function.id == "refuse":
+                        code = (
+                            node.args[0].value
+                            if node.args and isinstance(node.args[0], ast.Constant)
+                            else None
+                        )
+                        cls.sites.append(
+                            {
+                                "function": enclosing,
+                                "code": code,
+                                "line": node.lineno,
+                                "detail": node.args[2] if len(node.args) >= 3 else None,
+                            }
+                        )
+                    elif function.id in cls.THREADED_HELPERS:
+                        cls.helper_calls.append(
+                            {
+                                "callee": function.id,
+                                "caller": enclosing,
+                                "line": node.lineno,
+                                "arguments": list(node.args),
+                            }
+                        )
+                self.generic_visit(node)
+
+        Walk().visit(tree)
+
+    def adapter_sites(self) -> list[dict]:
+        return [
+            site
+            for site in self.sites
+            if site["code"] and site["code"].startswith("WAI-E-ADAPTER.")
+        ]
+
+    def in_scope_sites(self) -> list[dict]:
+        """Derived, not restated: covered function, adapter or tokenizer code,
+        and not a declared exclusion."""
+        found = []
+        for site in self.sites:
+            code = site["code"]
+            if code is None or site["function"] not in self.COVERED_FUNCTIONS:
+                continue
+            if not code.startswith(("WAI-E-ADAPTER.", "WAI-E-TOKENIZER.")):
+                continue
+            if (site["function"], code) in self.EXCLUSIONS:
+                continue
+            found.append(site)
+        return found
+
+    def test_every_in_scope_adapter_refusal_carries_the_operator_detail(self):
+        """All twelve, and the two tokenizer refusals reached by the same route.
+
+        Static and dynamic halves, because either alone is weak. Statically:
+        every in-scope site passes a third argument to `refuse`, and that
+        argument is either one of the three builders called with the profile or
+        the `detail` parameter of a helper that was given one -- which is what
+        says the two helpers not holding a profile receive the sentence rather
+        than inventing one. Every call to those helpers is then checked to
+        supply a builder call, so the parameter cannot be reaching them empty.
+
+        Dynamically: each builder is called with the committed profile and the
+        result is required to name the tokenizer, the runtime, the client and
+        what to do about it. Only fields the profile itself records are named,
+        so the sentence cannot carry a path or an account name out of the
+        environment, which is this step's phylax boundary.
+        """
+        in_scope = self.in_scope_sites()
+        self.assertEqual(
+            self.IN_SCOPE_ADAPTER_COUNT + self.IN_SCOPE_TOKENIZER_COUNT, len(in_scope)
+        )
+        for site in in_scope:
+            with self.subTest(function=site["function"], line=site["line"]):
+                detail = site["detail"]
+                self.assertIsNotNone(
+                    detail,
+                    f"{site['code']} at {self.SOURCE.name}:{site['line']} is bare",
+                )
+                if isinstance(detail, ast.Name):
+                    self.assertEqual("detail", detail.id)
+                    self.assertIn(site["function"], self.THREADED_HELPERS)
+                else:
+                    self.assertIsInstance(detail, ast.Call)
+                    self.assertIsInstance(detail.func, ast.Name)
+                    self.assertIn(detail.func.id, self.DETAIL_BUILDERS)
+                    self.assertEqual("profile", detail.args[0].id)
+
+        self.assertTrue(self.helper_calls)
+        for call in self.helper_calls:
+            with self.subTest(callee=call["callee"], line=call["line"]):
+                # The position is read off the helper's own signature rather
+                # than assumed, so the two helpers can keep different argument
+                # lists and a later reorder cannot make this pass vacuously.
+                names = [item.arg for item in self.functions[call["callee"]].args.args]
+                self.assertIn("detail", names)
+                index = names.index("detail")
+                self.assertGreater(
+                    len(call["arguments"]),
+                    index,
+                    f"{call['callee']} at {self.SOURCE.name}:{call['line']} is given no detail",
+                )
+                supplied = call["arguments"][index]
+                self.assertIsInstance(supplied, ast.Call)
+                self.assertIn(supplied.func.id, self.DETAIL_BUILDERS)
+
+        profile = AI.load_canonical_record(
+            (ROOT / "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json").read_bytes(),
+            allow_integers=True,
+        )
+        for name in self.DETAIL_BUILDERS:
+            with self.subTest(builder=name):
+                text = getattr(AI, name)(profile, "client executable")
+                self.assertIn(profile["id"], text)
+                self.assertIn(profile["runtime_executable"], text)
+                self.assertIn(profile["executable"], text)
+                self.assertIn("machine that recorded the profile", text)
+                self.assertLessEqual(len(text), 1024)
+
+    def test_the_in_scope_refusal_set_is_enumerated_from_the_source(self):
+        """The set is read out of the tree, so a new refusal joins it uninvited.
+
+        Every covered function is required to exist, so a rename does not
+        silently empty the set; every declared exclusion is required to match a
+        real site, so a stale exclusion cannot widen the boundary after the
+        refusal it named is gone; and the per-function counts are asserted, so
+        adding a refusal to a covered function fails here whether or not it
+        carries a detail. That last one is the whole reason for enumerating
+        rather than listing: the case has to break when the source grows.
+        """
+        for name in self.COVERED_FUNCTIONS:
+            self.assertIn(name, self.functions)
+
+        keys = {(site["function"], site["code"]) for site in self.sites}
+        for key, reason in sorted(self.EXCLUSIONS.items()):
+            with self.subTest(exclusion=key):
+                self.assertIn(key, keys, "the exclusion names no refusal in the source")
+                self.assertTrue(reason)
+
+        counts = collections.Counter(site["function"] for site in self.in_scope_sites())
+        self.assertEqual(
+            {
+                "_hash_executable": 5,
+                "_run_bounded": 2,
+                "_verify_profile_identity": 6,
+                "_ollama_generate": 1,
+            },
+            dict(counts),
+        )
+
+        codes = collections.Counter(site["code"] for site in self.in_scope_sites())
+        self.assertEqual(
+            {
+                "WAI-E-ADAPTER.EXECUTABLE": 4,
+                "WAI-E-ADAPTER.EXECUTABLE_CHANGED": 4,
+                "WAI-E-ADAPTER.UNAVAILABLE": 2,
+                "WAI-E-ADAPTER.VERSION_CHANGED": 1,
+                "WAI-E-ADAPTER.IDENTITY_CHANGED": 1,
+                "WAI-E-TOKENIZER.MISMATCH": 2,
+            },
+            dict(codes),
+        )
+
+    def test_the_out_of_scope_adapter_refusals_are_exactly_the_complement(self):
+        """52 of the 64, each with a reason rather than an inference.
+
+        The two halves partition the adapter refusals: nothing is in both and
+        nothing is in neither. Each out-of-scope site is then required to be
+        out of scope for one of exactly two recorded reasons -- it sits outside
+        the covered functions, so it is reached by editing the profile record
+        or by an adapter answering out of contract, or it is a declared
+        exclusion carrying its own reason. A site that is out of scope for no
+        stated reason fails here, which is what stops the complement being
+        whatever is left over.
+        """
+        adapter = self.adapter_sites()
+        self.assertEqual(self.ADAPTER_SITE_COUNT, len(adapter))
+
+        in_scope = [
+            site for site in self.in_scope_sites() if site["code"].startswith("WAI-E-ADAPTER.")
+        ]
+        self.assertEqual(self.IN_SCOPE_ADAPTER_COUNT, len(in_scope))
+
+        identified = {(site["function"], site["code"], site["line"]) for site in adapter}
+        inside = {(site["function"], site["code"], site["line"]) for site in in_scope}
+        outside = identified - inside
+        self.assertEqual(
+            self.ADAPTER_SITE_COUNT - self.IN_SCOPE_ADAPTER_COUNT, len(outside)
+        )
+        self.assertEqual(identified, inside | outside)
+        self.assertEqual(set(), inside & outside)
+
+        for function, code, line in sorted(outside):
+            with self.subTest(function=function, line=line):
+                if function in self.COVERED_FUNCTIONS:
+                    self.assertIn(
+                        (function, code),
+                        self.EXCLUSIONS,
+                        "a refusal in a covered function is neither detailed nor excluded",
+                    )
+                else:
+                    self.assertNotIn((function, code), self.EXCLUSIONS)
+
+
+class UnmeasuredEvidenceGuaranteeTests(unittest.TestCase):
+    """#1098's fourth acceptance check, made a gate instead of a circumstance.
+
+    The claim: `measurement.json` cannot record a token count or an
+    `observed_on` date for bytes no tokenizer read. It holds today because
+    nobody can re-measure, which is not a guarantee -- it is an absence of
+    opportunity, and the second `measure` run this delivery spends is exactly
+    the opportunity it depends on.
+
+    What the two cases below establish, precisely: a count and a date are
+    admissible only while the stream beside them is byte-for-byte the stream
+    the record says it is, and only while the date is the one the profile that
+    read those bytes recorded. Move the bytes and leave the count; move the
+    date and leave the bytes; either way `check` refuses.
+
+    What they do **not** establish is S3-R2-05, and this class does not claim
+    to close it. `_measurement_material` carries `tokens` over from the
+    supplied record into the value it compares against, so a count that is
+    wrong for bytes that are right is invisible here and stays invisible;
+    `test_a_consistent_token_count_edit_is_not_detected` pins that hole
+    deliberately. What closes is narrower and worth having: a count cannot be
+    carried across a change to the bytes it counted.
+
+    `_validate_measurement_record` is called directly rather than through
+    `check_manifest`. Two reasons, both about isolation. It puts the refusal
+    the case is about first, ahead of the manifest-level digest comparisons
+    that would otherwise answer for it; and it lets the record's own
+    `corpus_sha256` and correlation ids be realigned in memory, so these cases
+    say what they say today rather than waiting on the pending reissue. No
+    count and no date is realigned -- only the two identifiers the checker
+    recomputes from `_corpus_sha256` -- which is the whole point of doing it
+    here and not on disk.
+    """
+
+    def setUp(self) -> None:
+        self.manifest = manifest_record()
+        self.evidence = {
+            name: (ROOT / record["path"]).read_bytes()
+            for name, record in self.manifest["evidence"].items()
+        }
+        self.profile = AI.load_canonical_record(
+            self.evidence["tokenizer_profile"], allow_integers=True
+        )
+
+    def realigned_record(self, evidence: dict[str, bytes]) -> dict:
+        """The committed measurement record with its two derived ids recomputed.
+
+        `corpus_sha256` and every `correlation_id` are the only fields
+        `_validate_measurement_record` derives from `_corpus_sha256` and the
+        bootstrap digest, and both are pending the second `measure` run. They
+        are recomputed here so a case about counts fails on a count. Nothing
+        else is touched: no `tokens`, no `bytes`, no `sha256` of a measured
+        stream, and no `observed_on`.
+        """
+        record = AI.load_canonical_record(
+            evidence["measurement_record"], allow_integers=True
+        )
+        correlation = AI._digest(
+            (
+                AI._corpus_sha256(self.manifest)
+                + AI._digest(evidence["tokenizer_profile"])
+                + AI._digest(evidence["decoder_bootstrap"])
+            ).encode("ascii")
+        )
+        record["corpus_sha256"] = AI._corpus_sha256(self.manifest)
+        record["correlation_id"] = correlation
+        for event in record["events"]:
+            event["correlation_id"] = correlation
+        record["summary"]["correlation_id"] = correlation
+        return record
+
+    def assertMeasurementRefuses(self, record, evidence, code, node_path):
+        with self.assertRaises(AI.CodecError) as raised:
+            AI._validate_measurement_record(
+                ROOT, record, self.manifest, evidence, self.profile
+            )
+        self.assertEqual(code, raised.exception.code)
+        self.assertEqual(node_path, raised.exception.node_path)
+
+    def assertControlAccepted(self) -> None:
+        """The untampered record, accepted.
+
+        A refusal is evidence only if the same record without the tamper is
+        accepted. Otherwise a case would pass against a record refusing for
+        some fourth reason, and the guarantee would read as established while
+        nothing was being guarded. Asserted inside each case rather than beside
+        them, so neither depends on a sibling having run.
+        """
+        AI._validate_measurement_record(
+            ROOT,
+            self.realigned_record(self.evidence),
+            self.manifest,
+            self.evidence,
+            self.profile,
+        )
+
+    def test_a_recorded_token_count_is_refused_for_bytes_no_tokenizer_read(self):
+        """Grow a measured stream, leave its count: refused.
+
+        The decoder bootstrap is the measured stream with no derived artefact
+        behind it, so growing it moves exactly one thing -- the bytes a
+        tokenizer read -- and every other binding can be rebound around it
+        without rebuilding a document. `bootstrap_sha256` is rebound and the
+        correlation ids are recomputed, so nothing earlier answers first, and
+        the record is left carrying `bootstrap.tokens` for a stream that is now
+        eleven bytes longer than the one that produced it.
+
+        The refusal is at `bootstrap.bytes`, and that is the honest shape of
+        this guarantee: it is the recorded byte length and digest that pin the
+        count, not the count itself. Nothing recomputes `tokens`, because
+        recomputing it means consulting a model.
+        """
+        self.assertControlAccepted()
+        evidence = dict(self.evidence)
+        evidence["decoder_bootstrap"] = self.evidence["decoder_bootstrap"] + b"unmeasured\n"
+        self.assertNotEqual(
+            self.evidence["decoder_bootstrap"], evidence["decoder_bootstrap"]
+        )
+        record = self.realigned_record(evidence)
+        record["bootstrap_sha256"] = AI._digest(evidence["decoder_bootstrap"])
+        # The count is left exactly as the committed record has it, which is
+        # what makes this a count for bytes no tokenizer read.
+        committed = AI.load_canonical_record(
+            self.evidence["measurement_record"], allow_integers=True
+        )
+        self.assertEqual(
+            committed["bootstrap"]["tokens"], record["bootstrap"]["tokens"]
+        )
+        self.assertMeasurementRefuses(
+            record,
+            evidence,
+            "WAI-E-MEASURE.RECORD",
+            "$.evidence.measurement_record.bootstrap",
+        )
+
+    def test_a_recorded_observed_on_date_is_refused_unless_the_profile_carries_it(self):
+        """Move the date, leave the bytes: refused, on either side.
+
+        `observed_on` is the record's statement of when a tokenizer read the
+        bytes, and the checker takes it from `profile["observed_on"]` rather
+        than from the record. So a date written into the record that the
+        profile does not carry is refused, and a date changed in the profile
+        while the record keeps the old one is refused too -- the second by the
+        profile's own digest binding, which is what stops the pair being
+        rewritten together without leaving a trace.
+
+        Both directions are asserted, because a guarantee holding on one side
+        only would let a date be moved by moving the other record.
+        """
+        self.assertControlAccepted()
+        moved = self.realigned_record(self.evidence)
+        self.assertEqual(self.profile["observed_on"], moved["observed_on"])
+        moved["observed_on"] = "2026-08-31"
+        self.assertNotEqual(self.profile["observed_on"], moved["observed_on"])
+        self.assertMeasurementRefuses(
+            moved,
+            self.evidence,
+            "WAI-E-MEASURE.RECORD",
+            "$.evidence.measurement_record",
+        )
+
+        # The other side: the profile's date moves and the record keeps its
+        # own. The record now agrees with no profile the manifest binds.
+        profile = copy.deepcopy(self.profile)
+        profile["observed_on"] = "2026-08-31"
+        rewritten = AI.canonical_record_bytes(profile, allow_integers=True)
+        evidence = dict(self.evidence)
+        evidence["tokenizer_profile"] = rewritten
+        record = self.realigned_record(evidence)
+        record["tokenizer_profile_sha256"] = AI._digest(rewritten)
+        self.assertEqual(self.profile["observed_on"], record["observed_on"])
+        with self.assertRaises(AI.CodecError) as raised:
+            AI._validate_measurement_record(
+                ROOT, record, self.manifest, evidence, profile
+            )
+        self.assertEqual("WAI-E-MEASURE.RECORD", raised.exception.code)
+
+
+class DigestNeutralProjectionTests(unittest.TestCase):
+    """`digest_neutral_projection`, and the corpus subject that now runs through it.
+
+    The projection exists so that editing a bound instruction document outside
+    its reviewed span stops moving the corpus digest. Step 2 added it over the
+    source digests alone; step 3 widened it to every digest the manifest binds
+    and switched `_corpus_sha256` onto it. Every case here runs against the
+    committed fixture as it stands and none of them writes a file. The bound
+    sources are read and never written: the edit these cases reason about is
+    applied to bytes in memory.
+
+    Each case is written to fail if its property is removed. A projection that
+    did nothing would pass "changes only the digest positions" vacuously and
+    would pass idempotence trivially, so both cases also require the projection
+    to have moved the artefacts that carry a bound digest, and the out-of-span
+    case compares two byte strings that are known to differ before projection.
+    """
+
+    # Appended at end of file, which is past every fixture's reviewed span, so
+    # no recorded binding offset and no reviewed byte moves. The edit shape the
+    # design is meant to stop charging for.
+    OUT_OF_SPAN_EDIT = b"\n<!-- skills#1098 out-of-span edit -->\n"
+
+    PLACEHOLDER = "f" * 64
+
+    def setUp(self) -> None:
+        self.manifest = manifest_record()
+        # Step 2 kept only the source digests here, because that was the whole
+        # of what its projection substituted. Step 3's widening makes the
+        # projected set every digest the manifest binds a path by -- each
+        # fixture's `source.sha256` and all five `artifacts.*.sha256` -- so the
+        # cases below have to ask about that set or they would measure the
+        # widening against step 2's narrower expectation and fail on the
+        # artefact digests the widening deliberately reaches.
+        self.source_digests = sorted(
+            {fixture["source"]["sha256"] for fixture in self.manifest["fixtures"]}
+        )
+        self.artifact_digests = sorted(
+            {
+                artifact["sha256"]
+                for fixture in self.manifest["fixtures"]
+                for artifact in fixture["artifacts"].values()
+            }
+        )
+        self.bound_digests = sorted(set(self.source_digests) | set(self.artifact_digests))
+
+    def bound_artifacts(self) -> dict[str, bytes]:
+        """Every file the manifest binds that this projection could touch.
+
+        `mutations` and `questions` are in deliberately. They are bound
+        artefacts that embed no bound digest at all -- not the source digest,
+        and not any artefact's -- so they are the control on "changes nothing
+        else": a projection reaching further than the digests it names would
+        show up as a change to one of them. Their own digests are in the
+        projected set after step 3's widening, but a digest *of* a file cannot
+        appear *inside* that file, so they still come through byte-identical.
+        """
+        artifacts = {str(MANIFEST.relative_to(ROOT)): MANIFEST.read_bytes()}
+        for fixture in self.manifest["fixtures"]:
+            for record in fixture["artifacts"].values():
+                artifacts[record["path"]] = (ROOT / record["path"]).read_bytes()
+        return artifacts
+
+    def occurrences(self, data: bytes) -> list[int]:
+        """Every offset at which a digest the manifest binds a path by starts."""
+        found = []
+        for digest in self.bound_digests:
+            needle = digest.encode("ascii")
+            start = data.find(needle)
+            while start >= 0:
+                found.append(start)
+                start = data.find(needle, start + 1)
+        return sorted(found)
+
+    def test_projection_is_idempotent(self):
+        """Projecting a projection changes nothing further.
+
+        The fixed point is reached in one pass, so a caller cannot get a
+        different answer by applying the projection a different number of
+        times, and step 3 can digest the result without recording how many
+        passes produced it. Applying it to the marker itself is the same
+        claim from the other side: the marker is not itself rewritten, so the
+        substitution cannot cascade.
+
+        Idempotence is trivially true of a projection that does nothing, so
+        this also requires the first pass to have moved every artefact that
+        carries a bound digest.
+        """
+        moved = 0
+        for path, raw in sorted(self.bound_artifacts().items()):
+            with self.subTest(path=path):
+                once = AI.digest_neutral_projection(self.manifest, raw)
+                twice = AI.digest_neutral_projection(self.manifest, once)
+                self.assertEqual(once, twice)
+                if self.occurrences(raw):
+                    self.assertNotEqual(raw, once, "the projection left the digest in place")
+                    moved += 1
+        # manifest, plus model, source_spans and compact for each of three
+        # fixtures: the four places a bound whole-file digest is embedded.
+        self.assertEqual(10, moved)
+
+        marker = self.PLACEHOLDER.encode("ascii")
+        self.assertEqual(marker, AI.digest_neutral_projection(self.manifest, marker))
+
+    def test_projection_changes_only_the_bound_digest_positions(self):
+        """Byte-identical to the committed fixture except where a digest sat.
+
+        Length is preserved, every differing byte falls inside a bound digest's
+        own 64 bytes, and each of those runs now reads as the marker. The two
+        artefacts that embed no digest come through untouched, which is what
+        makes "changes nothing else" an observation rather than a claim.
+
+        Step 3 widened both sides of this together: the projection now
+        substitutes every digest the manifest binds a path by, and `occurrences`
+        now looks for that same set. Widening only the projection would leave
+        the manifest's `artifacts.*.sha256` runs differing outside `covered` and
+        this case failing -- which is the point of updating the helper rather
+        than relaxing the `assertLessEqual`.
+        """
+        for path, raw in sorted(self.bound_artifacts().items()):
+            with self.subTest(path=path):
+                projected = AI.digest_neutral_projection(self.manifest, raw)
+                self.assertEqual(len(raw), len(projected))
+
+                starts = self.occurrences(raw)
+                covered = {
+                    offset for start in starts for offset in range(start, start + 64)
+                }
+                differing = {
+                    offset
+                    for offset in range(len(raw))
+                    if raw[offset] != projected[offset]
+                }
+                self.assertLessEqual(
+                    differing, covered, "the projection changed a byte outside a digest"
+                )
+
+                for start in starts:
+                    self.assertEqual(
+                        self.PLACEHOLDER, projected[start : start + 64].decode("ascii")
+                    )
+                if not starts:
+                    self.assertEqual(raw, projected)
+
+    def in_span_edited_fixture(self, fixture: dict) -> dict:
+        """One bound source edited *inside* its span, with the passes run.
+
+        The mirror of `edited_fixture`: same mechanical rewrites, and the
+        reviewed span digest rebound on top, which is what a re-review would
+        mean. Rebinding it is what makes the case load-bearing -- if the span
+        digest were left stale, the subject would differ for that reason alone
+        and the case would pass without saying anything about the projection.
+
+        The substitution is same-length, so no recorded binding offset moves and
+        the only thing separating this from `edited_fixture` is that the changed
+        bytes are reviewed ones. Nothing is written: the manifest is built in
+        memory and the bound documents are read only.
+        """
+        source_record = fixture["source"]
+        source = (ROOT / source_record["path"]).read_bytes()
+        start = int(source_record["start"])
+        end = int(source_record["end"])
+        span = source[start:end]
+        for needle, replacement in ((b"the ", b"THE "), (b"a ", b"A ")):
+            index = span.find(needle)
+            if index >= 0:
+                edited_span = span[:index] + replacement + span[index + len(needle) :]
+                break
+        else:
+            self.fail("found no same-length substitution inside the reviewed span")
+        self.assertNotEqual(span, edited_span)
+        edited = source[:start] + edited_span + source[end:]
+        self.assertEqual(len(source), len(edited), "the in-span edit moved the offsets")
+
+        old = source_record["sha256"]
+        new = hashlib.sha256(edited).hexdigest()
+        rewritten: dict[str, bytes] = {}
+        for name in ("model", "source_spans"):
+            record = fixture["artifacts"][name]
+            raw = (ROOT / record["path"]).read_bytes()
+            rewritten[record["path"]] = raw.replace(
+                old.encode("ascii"), new.encode("ascii")
+            )
+        model_path = fixture["artifacts"]["model"]["path"]
+        rewritten[fixture["artifacts"]["compact"]["path"]] = AI.format_compact(
+            AI.load_canonical_record(rewritten[model_path])
+        )
+
+        manifest = copy.deepcopy(self.manifest)
+        entry = next(item for item in manifest["fixtures"] if item["id"] == fixture["id"])
+        entry["source"]["sha256"] = new
+        entry["source"]["span_sha256"] = hashlib.sha256(edited_span).hexdigest()
+        for name in ("model", "source_spans", "compact"):
+            record = entry["artifacts"][name]
+            record["sha256"] = hashlib.sha256(rewritten[record["path"]]).hexdigest()
+        return manifest
+
+    def test_the_corpus_subject_still_moves_on_an_in_span_edit(self):
+        """`in-span-edit-refusal`, for all three fixtures rather than the one.
+
+        This is the property the widening had to leave standing, and the reason
+        it is safe: `_corpus_sha256` digests its subject through the projection,
+        and the projection substitutes every digest the manifest binds a path by
+        -- but never `span_sha256`, which is not one of them. So an edit that
+        moves reviewed bytes moves the subject and moves the corpus digest, even
+        with every mechanical pass applied and the span digest rebound on top.
+
+        `test_in_span_edit_refuses_with_every_mechanical_pass_applied` in
+        `test_agent_instruction_corpus.py` proves the same claim end to end,
+        through `check` itself, for the one fixture the prover edits. This
+        covers all three, at the digest rather than the refusal, which is the
+        level the switch actually changed.
+
+        Contrasted against the out-of-span case in the same run, so the two are
+        not separately true of two different edits: the same fixture is edited
+        both ways and the corpus digest is shown to move once and not the other
+        time.
+        """
+        corpus = AI._corpus_sha256(self.manifest)
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                in_span = self.in_span_edited_fixture(fixture)
+                self.assertNotEqual(
+                    corpus,
+                    AI._corpus_sha256(in_span),
+                    "an in-span edit no longer moves the corpus digest",
+                )
+                out_of_span, _ = self.edited_fixture(fixture)
+                self.assertEqual(corpus, AI._corpus_sha256(out_of_span))
+
+    def edited_fixture(self, fixture: dict) -> tuple[dict, dict[str, bytes]]:
+        """One bound source edited past its span, with the mechanical passes run.
+
+        Returns the manifest as the passes leave it and the artefacts they
+        rewrite. Nothing is written: the edit and every derived artefact are
+        built in memory, so the bound documents in the repository are read and
+        never touched.
+        """
+        source_record = fixture["source"]
+        source = (ROOT / source_record["path"]).read_bytes()
+        old = source_record["sha256"]
+        self.assertEqual(old, hashlib.sha256(source).hexdigest())
+
+        start = int(source_record["start"])
+        end = int(source_record["end"])
+        edited = source + self.OUT_OF_SPAN_EDIT
+        self.assertEqual(
+            source[start:end], edited[start:end], "the edit moved the reviewed span"
+        )
+        new = hashlib.sha256(edited).hexdigest()
+        self.assertNotEqual(old, new)
+
+        rewritten: dict[str, bytes] = {}
+        for name in ("model", "source_spans"):
+            record = fixture["artifacts"][name]
+            raw = (ROOT / record["path"]).read_bytes()
+            self.assertEqual(1, raw.count(old.encode("ascii")))
+            rewritten[record["path"]] = raw.replace(
+                old.encode("ascii"), new.encode("ascii")
+            )
+        model_path = fixture["artifacts"]["model"]["path"]
+        rewritten[fixture["artifacts"]["compact"]["path"]] = AI.format_compact(
+            AI.load_canonical_record(rewritten[model_path])
+        )
+
+        manifest = copy.deepcopy(self.manifest)
+        entry = next(item for item in manifest["fixtures"] if item["id"] == fixture["id"])
+        entry["source"]["sha256"] = new
+        for name in ("model", "source_spans", "compact"):
+            record = entry["artifacts"][name]
+            record["sha256"] = hashlib.sha256(rewritten[record["path"]]).hexdigest()
+        return manifest, rewritten
+
+    def test_projection_is_unchanged_by_an_out_of_span_edit(self):
+        """The property the whole design rests on, for all three bound sources.
+
+        An edit appended past the reviewed span changes no measured byte: the
+        span, its digest and every recorded binding offset stay where they
+        were, and `evidence/measurement.json` records the span's byte count as
+        the measured source. What it does change is the whole-file digest, and
+        with it the three artefacts that embed it. Under the projection those
+        three artefacts are identical before and after, so nothing the corpus
+        would digest through it has moved.
+
+        The comparison is between two byte strings shown to differ first, so
+        this cannot pass by the projection returning its input.
+        """
+        measurement = AI.load_canonical_record(
+            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
+            allow_integers=True,
+        )
+        measured = {item["fixture_id"]: item["source"] for item in measurement["documents"]}
+
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                # What was measured is the reviewed span, not the whole file:
+                # the recorded byte count is the span's length and the recorded
+                # digest is the span digest. An out-of-span edit therefore
+                # leaves every measured byte alone and moves only the digest
+                # this projection neutralises.
+                recorded = measured[fixture["id"]]
+                span = fixture["source"]
+                self.assertEqual(int(span["end"]) - int(span["start"]), recorded["bytes"])
+                self.assertEqual(span["span_sha256"], recorded["sha256"])
+
+                after_manifest, rewritten = self.edited_fixture(fixture)
+                for path, edited in sorted(rewritten.items()):
+                    with self.subTest(path=path):
+                        committed = (ROOT / path).read_bytes()
+                        self.assertNotEqual(
+                            committed, edited, "the edit did not move the artefact"
+                        )
+                        self.assertEqual(
+                            AI.digest_neutral_projection(self.manifest, committed),
+                            AI.digest_neutral_projection(after_manifest, edited),
+                        )
+
+    def test_the_corpus_subject_no_longer_carries_the_whole_file_source_digest(self):
+        """Inverted from step 2's `..._still_carries_...`, which this replaces.
+
+        Step 2's assumption was that the subject had not moved yet: it asserted
+        that an out-of-span edit still moved `_corpus_sha256`, and that both
+        committed evidence records still agreed with it. Step 2 held that
+        deliberately, so that a change quietly moving the subject early would be
+        caught rather than stranding two evidence records the repository cannot
+        reissue on demand. Step 3 is the change it was waiting for, so the
+        assumption is spent and both halves flip.
+
+        The second half is the design's whole claim, and it is checked for all
+        three bound sources rather than the one the prover edits: an edit past
+        the reviewed span moves the whole-file digest and the three artefact
+        digests that embed it, every one of them is projected, and the corpus
+        digest is therefore the same before and after.
+
+        The first half is now a claim about reissued records, and it is red
+        until they are reissued. `_corpus_sha256` moved when the subject moved,
+        so `evidence/measurement.json` and `evidence/parity.json` still carry
+        the pre-switch digest, and only one `measure` run and one `parity` run
+        can honestly replace it -- along with `correlation_id` and every
+        `events[*].correlation_id`, which `_validate_measurement_record`
+        recomputes from `_corpus_sha256`. Asserting equality here rather than
+        weakening it to "whatever is on disk" is what makes the reissue's
+        absence visible instead of assumed.
+        """
+        corpus = AI._corpus_sha256(self.manifest)
+        for key in ("measurement_record", "parity_record"):
+            with self.subTest(evidence=key):
+                path = ROOT / self.manifest["evidence"][key]["path"]
+                record = AI.load_canonical_record(path.read_bytes(), allow_integers=True)
+                self.assertEqual(
+                    corpus,
+                    record["corpus_sha256"],
+                    "the evidence record still carries the pre-switch corpus digest: "
+                    "it is reissued by one measure run and one parity run, not by hand",
+                )
+
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                after_manifest, _ = self.edited_fixture(fixture)
+                # Known to differ before the switch: `edited_fixture` asserts
+                # the source digest moved, so this cannot pass by the edit
+                # having been a no-op.
+                self.assertNotEqual(
+                    AI.canonical_record_bytes(self.manifest),
+                    AI.canonical_record_bytes(after_manifest),
+                )
+                self.assertEqual(corpus, AI._corpus_sha256(after_manifest))
+
+    def test_the_reviewed_span_digest_is_distinct_from_the_projected_digest(self):
+        """The review boundary survives the projection, checked not assumed.
+
+        `digest_neutral_projection` substitutes a digest value, so it cannot
+        tell a `source.sha256` apart from any other field carrying the same
+        bytes. Today no fixture's reviewed span covers its whole file, so no
+        `span_sha256` carries those bytes and the span digest comes through
+        untouched. That is a property of the fixtures, not of the code: a
+        fixture whose span ran from 0 to the file's length would make the two
+        digests equal, and the projection would then neutralise the review
+        boundary along with the binding it is aimed at.
+
+        S2-R1-02. Without this case the docstring's "the reviewed span digest
+        is untouched" is an observation about three fixtures rather than a
+        checked claim about the projection.
+
+        Step 3 widened the set this has to be distinct from. The span digest now
+        has to differ from every digest the manifest binds a path by, not just
+        from its own fixture's `source.sha256`, because the projection
+        substitutes all eighteen. `in-span-edit-refusal` rests on exactly this:
+        `_corpus_sha256` keeps `span_sha256` only because no substitution
+        reaches it, so a span digest that collided with any bound digest would
+        take the review boundary out with it.
+        """
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                span = fixture["source"]
+                raw = (ROOT / span["path"]).read_bytes()
+                self.assertNotEqual(
+                    (int(span["start"]), int(span["end"])),
+                    (0, len(raw)),
+                    "a whole-file reviewed span makes span_sha256 the projected digest",
+                )
+                self.assertNotEqual(span["span_sha256"], span["sha256"])
+                self.assertNotIn(
+                    span["span_sha256"],
+                    self.bound_digests,
+                    "the reviewed span digest is one the projection substitutes",
+                )
+                projected = AI.digest_neutral_projection(
+                    self.manifest, span["span_sha256"].encode("ascii")
+                )
+                self.assertEqual(span["span_sha256"].encode("ascii"), projected)
+
+    def test_every_occurrence_of_a_bound_digest_is_substituted(self):
+        """Not just the first, for a byte string that carries one twice.
+
+        Each committed artefact embeds each bound digest exactly once, so a
+        regression to `bytes.replace(digest, marker, 1)` passes every case
+        above without changing a byte of their evidence. The multiplicity rule
+        is stated in the docstring -- "wherever it appears" -- so it gets a
+        buffer that can see the difference.
+
+        S2-R1-03. The buffer is built here and never written; no committed file
+        carries a repeated binding today, and this does not require one to.
+
+        Run over the whole bound set after step 3's widening, not the source
+        quarter of it: a `replace(..., 1)` regression reintroduced for the
+        artefact digests alone would otherwise pass.
+        """
+        for digest in self.bound_digests:
+            with self.subTest(digest=digest):
+                needle = digest.encode("ascii")
+                doubled = needle + b'","other":"' + needle
+                projected = AI.digest_neutral_projection(self.manifest, doubled)
+                marker = self.PLACEHOLDER.encode("ascii")
+                self.assertEqual(marker + b'","other":"' + marker, projected)
+                self.assertNotIn(needle, projected)
+
+    def test_the_projection_neutralises_the_bound_artefact_digests(self):
+        """Inverted from step 2's `..._does_not_yet_...`, which this replaces.
+
+        Step 2's assumption was that the substitution reached the source digests
+        and stopped there. `test_projection_is_unchanged_by_an_out_of_span_edit`
+        compares the three artefacts derived from a source and they did project
+        alike even then, but the manifest is not among them and it is the byte
+        string that matters: `_corpus_sha256` digests a subject carrying
+        `fixtures` whole, so it carries `artifacts.model.sha256`,
+        `artifacts.source_spans.sha256` and `artifacts.compact.sha256`. Those
+        are digests of the three artefacts, they move when the source digest
+        embedded inside them moves, and they are not themselves bound *source*
+        digests, so step 2's substitution passed over them.
+
+        S2-R1-01 pinned that gap as a counterexample precisely so a step 3 that
+        switched the subject without widening the projection could not leave the
+        case green while shipping a corpus digest that still moved on an
+        out-of-span edit. Step 3 widened the projection to every digest
+        `bound_digests` enumerates, so the counterexample is closed and the case
+        asserts the property the design wants instead of the gap.
+
+        The comparison is between two byte strings shown to differ before
+        projection, so this cannot pass by the projection returning its input.
+        """
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                after_manifest, _ = self.edited_fixture(fixture)
+                before = AI.canonical_record_bytes(self.manifest)
+                after = AI.canonical_record_bytes(after_manifest)
+                self.assertNotEqual(before, after)
+                self.assertEqual(
+                    AI.digest_neutral_projection(self.manifest, before),
+                    AI.digest_neutral_projection(after_manifest, after),
+                )
+
+
+    def test_a_before_span_edit_still_moves_the_measured_artefact_streams(self):
+        """Why the corpus subject alone was never the whole of #1098's first check.
+
+        Step 5 removed each fixture's `source.start` and `source.end` from
+        `_corpus_sha256`'s subject and then put them back, because the removal
+        was necessary and not sufficient and a partial fix that changes no
+        observable behaviour only weakens a digest. This case is what the
+        removal was measured against, kept because the reason outlives it.
+
+        The measurement record measures each fixture's `canonical_model` and
+        `compact` through `digest_neutral_projection`, and both documents carry
+        the reviewed span's recorded offsets *inside* them -- `model.json` as
+        every binding's `start` and `end`, and `compact.wai` as the codec's
+        rendering of the same model. The projection substitutes digests; an
+        offset is not a digest, so re-deriving the offsets after a before-span
+        edit moves both measured streams and `_measurement_material` refuses
+        `WAI-E-MEASURE.RECORD` for them, one check past the corpus comparison
+        that step 4's manual experiment stopped at.
+
+        So the study's diagnosis -- `_corpus_sha256` taking `fixtures` whole --
+        named one of two causes, and the second cannot be closed the same way.
+        `digest_neutral_projection` replaces byte sequences, which is unsound
+        for a decimal, and these streams are what the recorded token counts are
+        counts of, so making the corpus digest ignore them is not the same kind
+        of narrowing at all. Closing it means storing the model's offsets
+        relative to the reviewed span start, which changes an artefact schema
+        and the codec that renders it.
+
+        The offsets are shifted here the way the prover's re-derivation writes
+        them back, so this reproduces the on-disk case without a copy, a
+        subprocess or a model. It is expected to fail if that second cause is
+        ever closed, and should then be replaced deliberately rather than found
+        mysteriously red.
+        """
+        before_span_edit = b"<!-- skills#1098 before-span edit -->\n"
+        measurement = AI.load_canonical_record(
+            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
+            allow_integers=True,
+        )
+        measured = {item["fixture_id"]: item for item in measurement["documents"]}
+        delta = len(before_span_edit)
+
+        for fixture in self.manifest["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                recorded = measured[fixture["id"]]
+                model_path = ROOT / fixture["artifacts"]["model"]["path"]
+                model = AI.load_canonical_record(model_path.read_bytes())
+
+                # The committed streams are the ones the record measured, so a
+                # difference below is the edit's and not a stale fixture's.
+                self.assertEqual(
+                    recorded["canonical_model"]["sha256"],
+                    AI._digest(
+                        AI.digest_neutral_projection(self.manifest, model_path.read_bytes())
+                    ),
+                )
+
+                self.assertTrue(model["bindings"])
+                for binding in model["bindings"]:
+                    binding["start"] = str(int(binding["start"]) + delta)
+                    binding["end"] = str(int(binding["end"]) + delta)
+                shifted = AI.canonical_record_bytes(model)
+                self.assertNotEqual(model_path.read_bytes(), shifted)
+
+                self.assertNotEqual(
+                    recorded["canonical_model"]["sha256"],
+                    AI._digest(AI.digest_neutral_projection(self.manifest, shifted)),
+                    "the measured canonical model survived a before-span edit",
+                )
+                self.assertNotEqual(
+                    recorded["compact"]["sha256"],
+                    AI._digest(
+                        AI.digest_neutral_projection(self.manifest, AI.format_compact(model))
+                    ),
+                    "the measured compact document survived a before-span edit",
+                )
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-# Goldfinch receipt inclusion delivery proof
+# Aave v4 receipt inclusion delivery proof
 
 ## Authority and source boundary
 
-This record covers Fiat issue 383, Step 5, `Ship and demonstrate the Goldfinch
+This record covers Fiat issue 383, Step 5, `Ship and demonstrate the Aave v4
 receipt proof`. Implementation started from signed parent
 `c883ff1cb3e86080884175088cfba403146a6269` on
 `fiat/383-prove-receipts-against-the-captured-header-s-step-4-carry-the-proof-through-release`.
@@ -34,15 +34,15 @@ implementation and this audit directive.
 
 ## Shipped artefacts and claims
 
-The fixed fixture at `plugins/lazarus/examples/goldfinch-v1` verifies to:
+The fixed fixture at `plugins/lazarus/examples/aave-v4-spoke-v1` verifies to:
 
 | Field | Verified value | Evidence class |
 | --- | --- | --- |
-| Ethereum block | `0xc7da16` | Header bound |
-| Block hash | `0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc` | Header bound |
-| Receipts root | `0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e` | Recomputed |
+| Ethereum block | `0x18ac22c` | Header bound |
+| Block hash | `0x11e9be2ff9ff6a04319af0b04c24b95f3f1117c2df79f44f94d208857d01af07` | Header bound |
+| Receipts root | `0x7d3403cc37d77546db4005e06876a204372b0ef52a703cc88577a96dc4befb1a` | Recomputed |
 | Ordered consensus receipts | 224 | Recomputed |
-| Target trie index | `0xbf` | Receipt-trie proved |
+| Target trie index | `0x3f` | Receipt-trie proved |
 | Target consensus logs | 110 | Receipt-trie proved |
 | Filtered consensus-log projection | 5 | Receipt-trie proved |
 | Receipt-trie-proved relations | 2 | Recomputed count |
@@ -50,7 +50,7 @@ The fixed fixture at `plugins/lazarus/examples/goldfinch-v1` verifies to:
 | Transaction-hash attribution | `recorded_rpc` | Recorded only |
 
 The public fixture copies the six captured source components from
-`plugins/lazarus/tests/fixtures/receipt-proof-v1` byte for byte: `anchors.jsonl`,
+`plugins/lazarus/tests/fixtures/aave-v4-receipt-proof-v1` byte for byte: `anchors.jsonl`,
 `header.json`, `plan.json`, `proofs.jsonl`, `receipt-witness.json` and
 `rpc.jsonl`. Its own `demo.py` and manifest make the published demonstration a
 separate deterministic fixture. Its offline builder verifies the pinned source
@@ -66,28 +66,28 @@ source component.
 
 | Artefact identity | SHA-256 | Digest scope |
 | --- | --- | --- |
-| Goldfinch v1 fixture digest | `1d2b6eab3d62ad57f9481e5c202efa83c8d423ccbd95b6086cef1f9b0c34cf1d` | Semantic manifest identity |
-| Goldfinch v1 manifest file | `5c1ffc35c816a93dd4b95ceb891c883bf5b455ed7435bea08fe08159653ac211` | Raw file bytes |
+| Aave v4 v1 fixture digest | `1d2b6eab3d62ad57f9481e5c202efa83c8d423ccbd95b6086cef1f9b0c34cf1d` | Semantic manifest identity |
+| Aave v4 v1 manifest file | `5c1ffc35c816a93dd4b95ceb891c883bf5b455ed7435bea08fe08159653ac211` | Raw file bytes |
 | Ariadne state-fixture/v2 statement file | `67bf286eeebb03a3731f22f46bf35d6dcbc3d28bc8dcb060a3f0443080e515fd` | Raw file bytes |
-| Goldfinch v1 release digest | `fceee6d3611d9a008ce3c8db84df29a177dffa58b578b301ddd5ebb351e2a973` | Semantic release identity |
-| Goldfinch v1 release file | `dee99fcd27079f6c4636279f293d35607338f117e79c04642e49fda220e086fb` | Raw file bytes |
+| Aave v4 v1 release digest | `fceee6d3611d9a008ce3c8db84df29a177dffa58b578b301ddd5ebb351e2a973` | Semantic release identity |
+| Aave v4 v1 release file | `dee99fcd27079f6c4636279f293d35607338f117e79c04642e49fda220e086fb` | Raw file bytes |
 | Restamped internal receipt manifest file | `f9bd4a3e9192ec4d472b4b9127fd66871f87d5b60f75b34a3f82c7d6e1213558` | Raw file bytes |
 | Restamped internal fixture digest | `a88218e27b979a67941bd66f04eec9e0d1208178697c0c3f59a245f22dba0eec` | Semantic manifest identity |
 
-`goldfinch-v1-release` contains the exact fixture copy, the deterministic
+`aave-v4-spoke-v1-release` contains the exact fixture copy, the deterministic
 state-fixture/v2 statement and release-v2 binding. The statement and release
 carry `receipts_root` and the count of two scoped relations. They explicitly do
 not claim that the receipt trie attributes a transaction hash, that the block
 is canonical, or that the recorded providers are independent.
 
-The historical Goldfinch release remains byte-identical:
+The historical Aave v4 release remains byte-identical:
 
 | Historical identity | SHA-256 | Digest scope |
 | --- | --- | --- |
-| Goldfinch v0 fixture digest | `d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49` | Semantic manifest identity |
-| Goldfinch v0 manifest file | `c37cd789e5386a1347abd4dff24c8b1db96cdab771df4eb4d63056ba56145fa9` | Raw file bytes |
-| Goldfinch v0 statement file | `d8b262278ffd4db76e449a2bfce4629903a70e7f4ad7c1f3a6ebbfb1f112555e` | Raw file bytes |
-| Goldfinch v0 release file | `ec5c9b8091286de8713b6daf6cfdeaa7e9cfa6177b96c10a2ed20ffd6654bcff` | Raw file bytes |
+| Aave v4 v0 fixture digest | `d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49` | Semantic manifest identity |
+| Aave v4 v0 manifest file | `c37cd789e5386a1347abd4dff24c8b1db96cdab771df4eb4d63056ba56145fa9` | Raw file bytes |
+| Aave v4 v0 statement file | `d8b262278ffd4db76e449a2bfce4629903a70e7f4ad7c1f3a6ebbfb1f112555e` | Raw file bytes |
+| Aave v4 v0 release file | `ec5c9b8091286de8713b6daf6cfdeaa7e9cfa6177b96c10a2ed20ffd6654bcff` | Raw file bytes |
 
 Writer 0.2.0 stamps new output. An exact deterministic rebuild of the existing
 historical manifest-v1 preserves writer 0.1.0. Installable package versions are
@@ -102,7 +102,7 @@ Twenty-three observed failures were localised before the final run:
    before the helper's original verification-only exception boundary. That
    first repair accepted either construction or verification rejection; guard
    9 below closes the remaining evidence gap.
-2. Raising the writer to 0.2.0 caused the unchanged Goldfinch v0 demo's
+2. Raising the writer to 0.2.0 caused the unchanged Aave v4 v0 demo's
    byte-identical manifest rebuild to relabel manifest-v1. The first repair then
    selected writer 0.1.0 by schema and mislabeled fresh plan-v1 captures made by
    writer 0.2.0. Manifest construction now preserves writer 0.1.0 only for an
@@ -123,15 +123,15 @@ Twenty-three observed failures were localised before the final run:
    called a five-copy marker inventory complete. The guide now carries the
    governed current block, describes both release versions and passes the
    structural prose gate; the 165-file inventory includes its exact bytes.
-6. The first Goldfinch v1 statement recorded `lazarus capture goldfinch-v1` as
+6. The first Aave v4 v1 statement recorded `lazarus capture aave-v4-spoke-v1` as
    one argv element even though Ariadne requires one `--capture-command` per
    word. The first receipted repair split that vector; guard 8 below replaces
    the resulting fictitious command with the real producer.
 7. This proof said four observed failures while enumerating five. Its count now
    agrees with the numbered guards, and the scaffold test holds both the count
    and final numbered entry.
-8. The split `lazarus`, `capture`, `goldfinch-v1` vector still named no installed
-   executable or implemented Goldfinch command. The shipped statement now
+8. The split `lazarus`, `capture`, `aave-v4-spoke-v1` vector still named no installed
+   executable or implemented Aave v4 command. The shipped statement now
    records the exact five-word Python builder argv that materialized the
    byte-identical fixture from pinned local sources.
 9. The demo caught `LazarusError` around mutation construction as well as
@@ -170,7 +170,7 @@ Twenty-three observed failures were localised before the final run:
     source tree is byte- and entry-identical after refusal.
 15. The demonstration built an arbitrary temporary fixture in-process, then
     told Ariadne that the fixed five-word command ending in
-    `tmp/goldfinch-v1-rebuild` had produced it. The command was runnable but was
+    `tmp/aave-v4-spoke-v1-rebuild` had produced it. The command was runnable but was
     not the producer of the captured path. The demonstration now executes that
     exact argv in an isolated temporary root and hands Ariadne its named output;
     the guard compares the recorded argv, execution root and captured path.
@@ -252,7 +252,7 @@ patches both socket connection entry points to fail on use and reports
 accept, endpoint send/receive or socket-option syscall.
 
 **Ephoros.** The demo emits one canonical JSON line with correlation ID
-`goldfinch-v1-offline-demo`. It includes the safe block identity, root, bounded
+`aave-v4-spoke-v1-offline-demo`. It includes the safe block identity, root, bounded
 counts, scoped relation, versions, digests and named mutation verdicts. Tests
 refuse extra lines, require the byte-identical rebuild verdict, and scan the
 event for topics, data, RPC URL forms, credentials and bearer material. Receipt
@@ -284,7 +284,7 @@ The 111 context-bearing Markdown paths are:
 | --- | ---: | --- |
 | Alexandria | 14 | `plugins/alexandria/{AGENTS.md,README.md,docs/{address-index.md,compound-v3-harvest.md,credit-view.md,data-dictionary.md,raw-releases.md,runbook.md,study.md},examples/{README.md,compound-v3-phase0-v0/README.md,credit-history-v0/README.md},schemas/README.md,skills/alexandria/SKILL.md}` |
 | Ariadne | 14 | `plugins/ariadne/{AGENTS.md,README.md,docs/{capturing-a-dataset.md,capturing-a-release.md,capturing-a-state-fixture.md,conformance.md,dataset.md,design.md,solidity-release.md,state-fixture.md},examples/README.md,skills/ariadne/SKILL.md,tests/fixtures/{dataset-release/README.md,forge-project/README.md}}` |
-| Berean | 9 | `plugins/berean/{AGENTS.md,README.md,docs/{answers.md,design.md,influences.md,release-policy.md,spec.md},examples/goldfinch-demo-v0/README.md,skills/berean/SKILL.md}` |
+| Berean | 9 | `plugins/berean/{AGENTS.md,README.md,docs/{answers.md,design.md,influences.md,release-policy.md,spec.md},examples/aave-v4-demo-v0/README.md,skills/berean/SKILL.md}` |
 | Brevitas | 3 | `plugins/brevitas/{AGENTS.md,README.md,skills/brevitas/SKILL.md}` |
 | Hermes | 4 | `plugins/hermes/{AGENTS.md,README.md,skills/hermes/{SKILL.md,references/optimisation-catalogue.md}}` |
 | Hexaemeron | 6 | `plugins/hexaemeron/{AGENTS.md,README.md,agents/{mason.md,scribe.md,surveyor.md,warden.md}}` |
@@ -295,7 +295,7 @@ The 111 context-bearing Markdown paths are:
 | Pandects | 8 | `plugins/pandects/{AGENTS.md,README.md,adapters/medusa/README.md,docs/{applicability.md,design.md,writing-a-law.md},integrations/wildcat/APPLICABILITY.md,skills/pandects/SKILL.md}` |
 | Probitas | 8 | `plugins/probitas/{AGENTS.md,README.md,assets/dossier-template.md,docs/{adding-a-venue.md,example-dossier.md},skills/probitas/{SKILL.md,references/{gates.md,venues.md}}}` |
 | Sapheneia | 3 | `plugins/sapheneia/{AGENTS.md,README.md,skills/sapheneia/SKILL.md}` |
-| Tabularium | 16 | `plugins/tabularium/{AGENTS.md,README.md,docs/{adding-an-adapter.md,compound-v3-preservation.md,euler-preservation-runbook.md,euler-preservation-study.md,release-policy.md},examples/{compound-v3-phase0-v0/{DATA-DICTIONARY.md,README.md},euler-v1-v0/{DATA-DICTIONARY.md,README.md},euler-v2-v0/{DATA-DICTIONARY.md,README.md},goldfinch-v0/{DATA-DICTIONARY.md,README.md}},skills/tabularium/SKILL.md}` |
+| Tabularium | 16 | `plugins/tabularium/{AGENTS.md,README.md,docs/{adding-an-adapter.md,compound-v3-preservation.md,euler-preservation-runbook.md,euler-preservation-study.md,release-policy.md},examples/{compound-v3-phase0-v0/{DATA-DICTIONARY.md,README.md},euler-v1-v0/{DATA-DICTIONARY.md,README.md},euler-v2-v0/{DATA-DICTIONARY.md,README.md},aave-v4-spoke-v0/{DATA-DICTIONARY.md,README.md}},skills/tabularium/SKILL.md}` |
 
 The remaining exact path sets are `README.md`,
 `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`,
@@ -334,7 +334,7 @@ after the final source bytes are fixed.
 | Round 5 Warden source-bound entry runner | exit 0, 1,275 tests, 91.002 seconds | Report SHA-256 `5507771aeedf8c7d4157260981da713df7476e52e62bac14aa39ea555429eaab` |
 | Round 6 Warden source-bound entry runner | exit 0, 1,281 tests, 93.810 seconds | Report SHA-256 `cfda950fd252d1bb9d054d408961415df452a54b13361c5e49b570ad568c26d1` |
 | Round 7 Warden source-bound entry runner | exit 0, 1,284 tests, 95.083 seconds | Report SHA-256 `357b5a134a2da73b4b3a7fb2570dbb845796b9664975bf88cff97d4e3e83ff33` |
-| New and legacy Goldfinch/release/scaffold focus | exit 0, 64 tests | Focused unittest output |
+| New and legacy Aave v4/release/scaffold focus | exit 0, 64 tests | Focused unittest output |
 | Marketplace, version, evolution and portable-skill focus | exit 0, 41 tests | Focused unittest output |
 | Ariadne plugin suite | exit 0, 689 tests | Complete source-bound runner |
 | Lazarus plugin suite | exit 0, 597 tests | Complete source-bound runner |

@@ -5,8 +5,8 @@
 <!-- marketplace-context:end -->
 
 This demonstration runs the complete Alexandria prototype without reaching
-the network. It reads the existing Goldfinch source at
-`plugins/tabularium/examples/goldfinch-v0/source.json` and the existing
+the network. It reads the existing Aave v4 source at
+`plugins/tabularium/examples/aave-v4-v0/source.json` and the existing
 Clearpool source stored with this example at
 `plugins/alexandria/examples/credit-history-v0/sources/clearpool.json`. The
 plan pins both SHA-256 values and materializes them only in the temporary demo
@@ -27,9 +27,9 @@ Verify opens the index and releases read-only and uses a temporary directory
 outside the output for Probitas's render-and-verify handoff.
 
 The derived release contains 522 events and 31 position observations:
-Goldfinch contributes 511 events and all 31 observations; Clearpool contributes
-11 events. The example query address has 11 Clearpool events and no Goldfinch
-rows. Clearpool coverage is covered. Goldfinch coverage remains partial because
+Aave v4 contributes 511 events and all 31 observations; Clearpool contributes
+11 events. The example query address has 11 Clearpool events and no Aave v4
+rows. Clearpool coverage is covered. Aave v4 coverage remains partial because
 25 native callable-loan and tranched-pool records are deliberately unsupported
 by the narrow mapping.
 
@@ -39,7 +39,7 @@ dossier gates pass. The other 12 coverage rows remain visible as gaps; this is
 not evidence that those venues were clean.
 
 The fixed inputs demonstrate reproducibility, not a production corpus. The
-Goldfinch bytes came from a hosted indexer and carry provider-reported finality.
+Aave v4 bytes came from a hosted indexer and carry provider-reported finality.
 The Clearpool bytes are a subject-scoped archive-log fixture whose finality is
 unknown. Matching their digests does not prove publisher authenticity, source
 completeness or canonical-chain finality.

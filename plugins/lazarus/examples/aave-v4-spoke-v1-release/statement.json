@@ -1,0 +1,289 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "anchors.jsonl",
+      "digest": {
+        "sha256": "bdaa788670ea7b26d96db9b4998a6cad8964cc8c96eaba7c35223dc0dd4ebc4d"
+      }
+    },
+    {
+      "name": "demo.py",
+      "digest": {
+        "sha256": "d8c1da22a04dd12b1db19b3ae47dcbfe7d70e8f2a1a19907b3c82780719e0d00"
+      }
+    },
+    {
+      "name": "header.json",
+      "digest": {
+        "sha256": "e112cd70944c09ce38a0225cb2c45c686ace1652e840aeaa6ce458d3caea26b3"
+      }
+    },
+    {
+      "name": "plan.json",
+      "digest": {
+        "sha256": "14659868c0564f047b967384134cecb0f6de185d65fac3af1136f1175e4d1aa7"
+      }
+    },
+    {
+      "name": "proofs.jsonl",
+      "digest": {
+        "sha256": "bd26968ded8cb2daa6465740e435b0daf62f0bd4ed6d9bc6725c9652d0a3da2a"
+      }
+    },
+    {
+      "name": "receipt-witness.json",
+      "digest": {
+        "sha256": "e152f82a621b6f544c6be49d8a7a25d4b8dbc0cc7d9861b9e4f1f3ae978553d5"
+      }
+    },
+    {
+      "name": "rpc.jsonl",
+      "digest": {
+        "sha256": "4bae14b2005f4d24a74c6c0c5c9e3148bb2845dbd5655ab72bb4bbece1dad0ee"
+      }
+    },
+    {
+      "name": "aave-v4-spoke-v1",
+      "digest": {
+        "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/state-fixture/v2",
+  "predicate": {
+    "chain": {
+      "chain_id": 1,
+      "block_number": 25870892,
+      "block_hash": "0x11e9be2ff9ff6a04319af0b04c24b95f3f1117c2df79f44f94d208857d01af07",
+      "state_root": "0x4380c8de07debb300d6daa1a949bf40dd1df1756da9b2119e33b1df8cb4fbce6",
+      "receipts_root": "0x7d3403cc37d77546db4005e06876a204372b0ef52a703cc88577a96dc4befb1a"
+    },
+    "capture": {
+      "tool": "lazarus",
+      "tool_version": "0.2.0",
+      "command": [
+        "python3",
+        "plugins/lazarus/examples/aave-v4-spoke-v1/demo.py",
+        "build-fixture",
+        "--out",
+        "tmp/aave-v4-spoke-v1-rebuild"
+      ],
+      "parameters_digest": {
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "fixture_subjects": [
+      {
+        "name": "anchors.jsonl",
+        "path": "anchors.jsonl",
+        "digest": {
+          "sha256": "bdaa788670ea7b26d96db9b4998a6cad8964cc8c96eaba7c35223dc0dd4ebc4d"
+        },
+        "bytes": 280
+      },
+      {
+        "name": "demo.py",
+        "path": "demo.py",
+        "digest": {
+          "sha256": "d8c1da22a04dd12b1db19b3ae47dcbfe7d70e8f2a1a19907b3c82780719e0d00"
+        },
+        "bytes": 37248
+      },
+      {
+        "name": "header.json",
+        "path": "header.json",
+        "digest": {
+          "sha256": "e112cd70944c09ce38a0225cb2c45c686ace1652e840aeaa6ce458d3caea26b3"
+        },
+        "bytes": 16295
+      },
+      {
+        "name": "plan.json",
+        "path": "plan.json",
+        "digest": {
+          "sha256": "14659868c0564f047b967384134cecb0f6de185d65fac3af1136f1175e4d1aa7"
+        },
+        "bytes": 3307
+      },
+      {
+        "name": "proofs.jsonl",
+        "path": "proofs.jsonl",
+        "digest": {
+          "sha256": "bd26968ded8cb2daa6465740e435b0daf62f0bd4ed6d9bc6725c9652d0a3da2a"
+        },
+        "bytes": 43141
+      },
+      {
+        "name": "receipt-witness.json",
+        "path": "receipt-witness.json",
+        "digest": {
+          "sha256": "e152f82a621b6f544c6be49d8a7a25d4b8dbc0cc7d9861b9e4f1f3ae978553d5"
+        },
+        "bytes": 343966
+      },
+      {
+        "name": "rpc.jsonl",
+        "path": "rpc.jsonl",
+        "digest": {
+          "sha256": "4bae14b2005f4d24a74c6c0c5c9e3148bb2845dbd5655ab72bb4bbece1dad0ee"
+        },
+        "bytes": 576798
+      }
+    ],
+    "evidence": {
+      "proof_backed": 7,
+      "header_bound": 1,
+      "recorded_rpc": 10,
+      "receipt_trie_proved": 2
+    },
+    "replay": {
+      "reaches_network": false,
+      "canonical_chain_claim": false,
+      "provider_independence_claim": false
+    },
+    "deltas": {
+      "baseline": null,
+      "current": {
+        "name": "aave-v4-spoke-v1",
+        "digest": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        }
+      },
+      "reason": "first receipts-root-proved Aave v4 fixture"
+    },
+    "claims": [
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "bdaa788670ea7b26d96db9b4998a6cad8964cc8c96eaba7c35223dc0dd4ebc4d"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "anchors.jsonl",
+          "bytes": 280
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "d8c1da22a04dd12b1db19b3ae47dcbfe7d70e8f2a1a19907b3c82780719e0d00"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "demo.py",
+          "bytes": 37248
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "e112cd70944c09ce38a0225cb2c45c686ace1652e840aeaa6ce458d3caea26b3"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "header.json",
+          "bytes": 16295
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "14659868c0564f047b967384134cecb0f6de185d65fac3af1136f1175e4d1aa7"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "plan.json",
+          "bytes": 3307
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "bd26968ded8cb2daa6465740e435b0daf62f0bd4ed6d9bc6725c9652d0a3da2a"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "proofs.jsonl",
+          "bytes": 43141
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "e152f82a621b6f544c6be49d8a7a25d4b8dbc0cc7d9861b9e4f1f3ae978553d5"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "receipt-witness.json",
+          "bytes": 343966
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "4bae14b2005f4d24a74c6c0c5c9e3148bb2845dbd5655ab72bb4bbece1dad0ee"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "rpc.jsonl",
+          "bytes": 576798
+        }
+      },
+      {
+        "name": "evidence counts read from the manifest",
+        "subject": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        },
+        "disposition": "passed",
+        "detail": {
+          "proof_backed": 7,
+          "header_bound": 1,
+          "recorded_rpc": 10,
+          "receipt_trie_proved": 2
+        }
+      },
+      {
+        "name": "receipt-trie relations re-checked by this capture",
+        "subject": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        },
+        "disposition": "skipped",
+        "reason": "this capture reads local manifest evidence and component bytes; Lazarus verification owns receipt-trie proof"
+      },
+      {
+        "name": "independent providers established",
+        "subject": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        },
+        "disposition": "skipped",
+        "reason": "operator-chosen source labels do not establish provider independence"
+      },
+      {
+        "name": "transaction hash attributed by the receipt trie",
+        "subject": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        },
+        "disposition": "skipped",
+        "reason": "transaction hashes are recorded RPC decorations outside the consensus receipt and log-projection proof"
+      },
+      {
+        "name": "state proofs re-checked by this capture",
+        "subject": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        },
+        "disposition": "skipped",
+        "reason": "this capture reads what Lazarus recorded and does not re-verify a trie proof; the counts come from the manifest and re-deriving one would put a judgement in the statement that Ariadne did not make"
+      },
+      {
+        "name": "the pinned block placed on the canonical chain",
+        "subject": {
+          "sha256": "1b45e313c6d3312b7cb047cdc6e20f06beb885aa2b04fb9dab584270f6cf64d8"
+        },
+        "disposition": "skipped",
+        "reason": "neither tool re-derives a chain, so whether this block is canonical is not established here"
+      }
+    ],
+    "commands": []
+  }
+}

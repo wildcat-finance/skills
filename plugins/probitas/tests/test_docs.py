@@ -21,6 +21,7 @@ REFERENCES = os.path.join(
     support.PLUGIN_ROOT, "skills", "probitas", "references"
 )
 README = os.path.join(support.PLUGIN_ROOT, "README.md")
+RUNTIME_CONTRACT = os.path.join(support.PLUGIN_ROOT, "AGENTS.md")
 
 WORDS = {
     2: "two",
@@ -267,6 +268,17 @@ class TestTheReadmeDescribesTheToolThatExists(unittest.TestCase):
         text = read(README)
         self.assertIn("From this directory, `plugins/probitas`", text)
         self.assertIn("From the repository root", text)
+
+    def test_the_runtime_contract_routes_and_bounds_the_diff_command(self):
+        text = " ".join(read(RUNTIME_CONTRACT).split())
+        for statement in (
+            "compare two Probitas evidence files for the same subject",
+            "`diff` reaches no network",
+            "atomically",
+            "must not alias either input",
+        ):
+            with self.subTest(statement=statement):
+                self.assertIn(statement, text)
 
 
 class TestTheDescriptionAgreesWithItself(unittest.TestCase):

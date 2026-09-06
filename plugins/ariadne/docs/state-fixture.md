@@ -35,7 +35,7 @@ that is enforced -- deliberately, so the rule reaches statements gate 2 accepts
 rather than only ones it has already refused.
 
 Both numbers are integers. A Lazarus manifest writes them as hex quantity strings,
-which is right on the wire and wrong to compare: `"0xc7da16" < "0x2"` is true,
+which is right on the wire and wrong to compare: `"0x18ac22c" < "0x2"` is true,
 because that orders text. The capture path converts and this predicate refuses the
 wire form rather than ordering it as a string.
 
@@ -198,6 +198,6 @@ python3 scripts/ariadne.py verify tests/fixtures/conformance/pass-state-fixture-
 ```
 
 Both exit 0. The version 1 fixture uses the digests, byte counts and evidence
-counts Lazarus wrote for `plugins/lazarus/examples/goldfinch-v0`. The version 2
+counts Lazarus wrote for `plugins/lazarus/examples/aave-v4-spoke-v0`. The version 2
 fixture carries a receipt witness rooted at
 `0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e`.

@@ -12,14 +12,14 @@ from tests.support import PLUGIN_ROOT, REPO_ROOT, SCRIPTS  # noqa: F401
 from berean_lib import evals, jsonio, release
 from tests.test_corpus import failures
 
-EXAMPLE = PLUGIN_ROOT / "examples" / "goldfinch-demo-v0"
+EXAMPLE = PLUGIN_ROOT / "examples" / "aave-v4-demo-v0"
 RELEASE_DIR = EXAMPLE / "release"
 LAZARUS_RPC = (
     REPO_ROOT
     / "plugins"
     / "lazarus"
     / "examples"
-    / "goldfinch-v0-release"
+    / "aave-v4-spoke-v0-release"
     / "fixture"
     / "rpc.jsonl"
 )

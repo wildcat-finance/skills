@@ -74,8 +74,10 @@ belongs to the application's own repository, and where Anamnesis keeps custody
 of findings and their remedies, Dokimasia records only which behaviour has no
 reviewed oracle. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
-durable audit, issue, and comment prose. It does not change another skill's
-facts or gates. Brevitas controls the volume and structure of engineering prose
+durable audit, issue, and comment prose. The same operation governs every other
+record its agents write down, from a pull request to a repository document or a
+commit message, and cuts each to the shortest form its evidence allows. It does
+not change another skill's facts or gates. Brevitas controls the volume and structure of engineering prose
 after vocabulary and register passes. If a request crosses one of those
 boundaries, hand it to the named sibling rather than broadening the selected
 skill.
@@ -115,6 +117,14 @@ wonky regular expression does not. A `0` names the pull request that answers it
 before the issue closes. `hexctl init` reads the line and refuses to start a run
 against a `0` before it creates any state, worktree or branch.
 
+The issue also carries a label matching that line: `fiat-run-needed` for `1`,
+`only-pr-needed` for `0`. The filer sets it the same way `held-job`, `wish` and
+`observation` get set above. Neither `hexctl issue-check` nor `init` reads the
+label; the `Fiat-Required:` line stays the sole checked answer.
+[ADR-078](docs/decisions/ADR-078-echo-fiat-required-as-a-filer-set-label.md)
+holds the reasoning, including why this differs from the label pair ADR-067
+already rejected.
+
 **What does this leave for somebody else?** One fenced `carryover` block, one row
 per outstanding, carried-forward or unaddressed item:
 
@@ -131,35 +141,43 @@ kebab-case and used once. A filing that carries nothing writes the single row
 run-level pull request body under `## Carried forward`, and `hexctl done
 integrate` refuses without it.
 
-Check a candidate body before filing it:
+Check the complete candidate title, body, and labels before filing it:
 
 ```bash
-python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check --body <path>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check \
+  --body <path> --title '<exact title>' --label '<label>'
 ```
 
-It exits 1 on findings and reports both questions at once. `--issue <url>` reads
-an already-filed issue instead. The check reads shape, never judgement: it does
-not open a referenced issue, and a disposition nobody should have accepted still
-counts as an answer.
+Repeat `--label` for every label; omit it only when the complete candidate has
+none. The command exits 1 on findings and reports the queue and both body
+questions at once. `--issue <url>` reads an already-filed issue's title, body,
+and labels instead. The check reads shape, never judgement: it does not open a
+referenced issue, and a disposition nobody should have accepted still counts as
+an answer.
 
 Closing a delivered issue belongs to whoever merges its pull request. The
 Atlas draws from open issues alone, so one whose delivery has merged keeps
 being allocated until it is closed, and a contributor working from a fork
 cannot close it.
 
-## Issue and comment publication
+## Written-record publication
 
-Before an agent publishes a GitHub issue title and body or a GitHub issue
-comment for this repository, use this sequence on the complete candidate:
+Before an agent writes prose into this repository or publishes it to a host,
+use this sequence on the complete candidate. It governs every record an agent
+writes down: an audit record, an issue title and body, an issue or pull request
+comment, a pull request title and body, a repository document, and a commit
+message.
 
-1. freeze the required title prefix, body opening and protected evidence inventory;
+1. freeze the required title prefix, body opening and protected evidence inventory, or the equivalent required structure where the record is not an issue;
 2. apply `sapheneia-durable-record-shape`;
 3. run Imprimatur and clear every reported defect without dropping protected content;
 4. apply Vulgate to the surface only and compare its content with the source;
 5. re-run Imprimatur on the exact publishable bytes; and
-6. for an issue body, run `hexctl issue-check --body` on those exact bytes and
-   clear every finding. The decision line and the `carryover` block are
-   protected content, so a wording pass may not drop or reword either.
+6. for an issue, run `hexctl issue-check --body <path> --title '<exact title>'`
+   with every label supplied through repeated `--label` flags, and clear every
+   finding. The title prefix, queue label, required opening, decision line and
+   `carryover` block are protected content, so a wording pass may not drop or
+   reword them.
 
 The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
 `framework-N`. Keep every queue-specific body rule from the section above.
@@ -167,6 +185,9 @@ The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
 selectors, numbers, dates, links, quotations, severities, verdicts, status, the
 `Fiat-Required` line, the `carryover` block, and required host structure.
+Bytes another owner fixes are outside the sequence: a generated copy, a
+receipt, a digest-bound document and a fixed-template report ship as their
+owner produced them, and a record already written stays as it is.
 Do not publish after a failed check, changed prefix or body opening, missing
 protected item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from

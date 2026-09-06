@@ -3,23 +3,23 @@
 Assuming, unless corrected:
 
 - The delivery is limited to open held job [#383](https://github.com/wildcat-finance/skills/issues/383) and the exact Lazarus evolution-ledger entry it mirrors.
-- The fixed Goldfinch block, transaction receipt, and filtered log request are the first working case. The design may be reusable, but success does not require proving every kind of receipt ever accepted by Ethereum.
+- The fixed Aave v4 block, transaction receipt, and filtered log request are the first working case. The design may be reusable, but success does not require proving every kind of receipt ever accepted by Ethereum.
 - A receipt-trie proof covers consensus receipt fields only. RPC decorations such as `from`, `to`, `contractAddress`, `gasUsed`, and `effectiveGasPrice` remain recorded provider responses unless another proof covers them.
-- Existing `goldfinch-v0`, manifest-v1, release-v1, and Ariadne state-fixture/v1 bytes remain valid and unchanged. New claims use new registered format versions.
+- Existing `aave-v4-spoke-v0`, manifest-v1, release-v1, and Ariadne state-fixture/v1 bytes remain valid and unchanged. New claims use new registered format versions.
 - The source RPC records remain `recorded_rpc` evidence even when a derived relation is proved from them. The new relation receives its own evidence class rather than rewriting source provenance.
 - The capture command may make one more bounded standard RPC request for the fixed block. Verification and release checks remain offline.
 - Completion includes the ledger-mandated cold read and reconciliation of mutable first-party marketplace prose; it does not include unrelated held jobs or audit leads.
 
 ## 1. Problem statement
 
-Lazarus preserves the Goldfinch fixture's block header, one transaction receipt, and one block-hash-and-address `eth_getLogs` response. The verifier recomputes the header hash, so the header's `receiptsRoot` is bound to the captured block. It does not reconstruct the receipts trie. The named receipt and its five selected logs therefore still rest on the RPC provider's response even though the fixture already holds the commitment that can check them.
+Lazarus preserves the Aave v4 fixture's block header, one transaction receipt, and one block-hash-and-address `eth_getLogs` response. The verifier recomputes the header hash, so the header's `receiptsRoot` is bound to the captured block. It does not reconstruct the receipts trie. The named receipt and its five selected logs therefore still rest on the RPC provider's response even though the fixture already holds the commitment that can check them.
 
 The prototype must add an offline, fail-closed path from an ordered set of block receipts to the captured `receiptsRoot`. It must then bind two exact derived claims:
 
-1. the target transaction's consensus receipt payload and all 110 receipt logs occupy transaction index `0xbf` in that trie; and
-2. filtering all proved block logs by the existing block hash and Goldfinch address yields exactly the five recorded `eth_getLogs` entries, in Ethereum log order.
+1. the target transaction's consensus receipt payload and all 110 receipt logs occupy transaction index `0x3f` in that trie; and
+2. filtering all proved block logs by the existing block hash and Aave v4 address yields exactly the five recorded `eth_getLogs` entries, in Ethereum log order.
 
-For the fixed block `0xc7da16` (`0x41119192...2cfc`), the header lists 224 transaction hashes and the target hash is `0xa46a744d...ce699`. Success means a fresh, versioned fixture and release verify offline; a one-byte receipt, index, log, or root mutation fails; old examples still verify byte-for-byte; and Ariadne can state the new proof count without presenting ordinary RPC fields as proved.
+For the fixed block `0x18ac22c` (`0x41119192...2cfc`), the header lists 224 transaction hashes and the target hash is `0xa46a744d...ce699`. Success means a fresh, versioned fixture and release verify offline; a one-byte receipt, index, log, or root mutation fails; old examples still verify byte-for-byte; and Ariadne can state the new proof count without presenting ordinary RPC fields as proved.
 
 The implementation is accepted only when these commands are green from the repository root in the locked dependency environment:
 
@@ -27,8 +27,8 @@ The implementation is accepted only when these commands are green from the repos
 python3 plugins/lazarus/tests/run_tests.py --elenchus-report .hexaemeron/lazarus-elenchus-report.json
 python3 -m unittest discover -s plugins/ariadne/tests -t plugins/ariadne
 python3 -m unittest discover -s tests
-python3 plugins/lazarus/scripts/lazarus.py verify plugins/lazarus/examples/goldfinch-v1
-python3 plugins/lazarus/scripts/lazarus.py verify-release plugins/lazarus/examples/goldfinch-v1-release
+python3 plugins/lazarus/scripts/lazarus.py verify plugins/lazarus/examples/aave-v4-spoke-v1
+python3 plugins/lazarus/scripts/lazarus.py verify-release plugins/lazarus/examples/aave-v4-spoke-v1-release
 python3 scripts/promise_machine.py check
 ```
 
@@ -39,20 +39,20 @@ The runbook must also name the exact Ariadne capture and `verify` commands after
 ### Repository code and records
 
 - Lazarus already verifies account and storage Merkle-Patricia proofs in `plugins/lazarus/scripts/lazarus_lib/trieproof.py`, encodes RLP in `rlp.py`, binds the complete header including `receiptsRoot` in `header.py`, derives evidence counts in `manifest.py`, and checks release-to-fixture equality in `release.py`. Receipt work should reuse those bounded readers, hash functions, and registry patterns rather than introduce a second trie stack.
-- `plugins/lazarus/examples/goldfinch-v0/plan.json` fixes the block hash, receipt transaction hash, and exact `eth_getLogs` filter. Its manifest reports `proof_backed: 2`, `header_bound: 1`, and `recorded_rpc: 4`. The receipt record has 110 logs; the separate filtered record has five logs, all drawn from that receipt.
+- `plugins/lazarus/examples/aave-v4-spoke-v0/plan.json` fixes the block hash, receipt transaction hash, and exact `eth_getLogs` filter. Its manifest reports `proof_backed: 2`, `header_bound: 1`, and `recorded_rpc: 4`. The receipt record has 110 logs; the separate filtered record has five logs, all drawn from that receipt.
 - Ariadne state-fixture/v1 already carries a `state_root` plus evidence counts. Its schema, predicate module, capture adapter, and conformance fixtures form one interface and must move together for a state-fixture/v2 receipt-root claim.
 - [Lazarus evolution ledger](../../plugins/lazarus/skills/lazarus/EVOLUTION.md) names this exact frontier and says no other recorded RPC response moves into a proved class. [Ariadne evolution ledger](../../plugins/ariadne/skills/ariadne/EVOLUTION.md) has a different held frontier; this delivery changes only the state-fixture interface needed by #383 and must not claim that frontier.
 
 ### Last two merged delivery pull requests
 
 - [PR #623, “Record structured multi-provider Lazarus chain anchors”](https://github.com/wildcat-finance/skills/pull/623), merged 2026-08-25 at integration commit `e2200b6...`, kept receipts and logs in `recorded_rpc` and carried #383 forward. It also kept canonical-chain and provider-independence claims outside the evidence boundary.
-- [PR #227, “Lazarus: the first end-to-end Goldfinch preservation release”](https://github.com/wildcat-finance/skills/pull/227), merged 2026-08-20 at `569f4a3...`, established release binding, count recomputation, and the rule that a release cannot silently upgrade a manifest. Its audit and delivery notes state that receipts and logs were recorded, not trie-proved. The old release digest is therefore historical evidence, not a file to regenerate.
+- [PR #227, “Lazarus: the first end-to-end Aave v4 preservation release”](https://github.com/wildcat-finance/skills/pull/227), merged 2026-08-20 at `569f4a3...`, established release binding, count recomputation, and the rule that a release cannot silently upgrade a manifest. Its audit and delivery notes state that receipts and logs were recorded, not trie-proved. The old release digest is therefore historical evidence, not a file to regenerate.
 
 ### Audit records and read mode
 
 The whole-set synopsis check passed before this study: `python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check "$TARGET"` exited 0.
 
-- [Root audit](../../audit/AUDIT.md) was read through its verified [synopsis](../../audit/AUDIT_SYNOPSIS.md): source SHA-256 `c271237691dc76a95059651f08710411e9d095b12d92b3d5f960182e357bb9fa`, synopsis SHA-256 `b9fe6925729395a72433e0f5918ddba785cc1905b2acc8926a94a6a23b1bc6e6`. Relevant rounds 123 to 142 cover Ariadne state-fixture work; rounds 143 to 162 cover the Goldfinch release. Prior fixes require a nonzero committed root when a proved count is positive, parity between schema and predicate code, bounded component paths, and manifest/release count cross-checks. Older fixture omissions remain unknown rather than being inferred.
+- [Root audit](../../audit/AUDIT.md) was read through its verified [synopsis](../../audit/AUDIT_SYNOPSIS.md): source SHA-256 `c271237691dc76a95059651f08710411e9d095b12d92b3d5f960182e357bb9fa`, synopsis SHA-256 `b9fe6925729395a72433e0f5918ddba785cc1905b2acc8926a94a6a23b1bc6e6`. Relevant rounds 123 to 142 cover Ariadne state-fixture work; rounds 143 to 162 cover the Aave v4 release. Prior fixes require a nonzero committed root when a proved count is positive, parity between schema and predicate code, bounded component paths, and manifest/release count cross-checks. Older fixture omissions remain unknown rather than being inferred.
 - [Fiat-386 audit](../../audit/rounds/fiat-386-record-a-structured-multi-provider-chain-anc.md) was read through its verified synopsis: source SHA-256 `e1da4b8ebfd08d7d6d0a1a3470c86034b8080139f41b1134bb3dc69c952abad2`, synopsis SHA-256 `c21dcbd056fde4bbab7ec93aa1159df20a863ccf484feab2266a8f378030a3e3`. Three rounds reported no finding. Its carried constraints are secret handling, shared RPC budgets, atomic finalisation, and release compatibility.
 - [Ariadne audit](../../plugins/ariadne/audit/AUDIT.md) was read through its verified synopsis: source SHA-256 `d8d13eb238b6e270fb9f89ec11fea797b4a3aa27025b5a62a7f36ac2642617af`, synopsis SHA-256 `53aacbb59bc9bc1455ce580ce484cbcb16802f7faa41b2b12f65c3ce614d1b4a`. Its 21 initial rounds contain no receipt-specific finding; the applicable result is to retain its input, schema, replay, and gate boundaries.
 
@@ -62,7 +62,7 @@ No other first-party implementation proves receipt inclusion. Ariadne consumes L
 
 The official Execution API defines [`eth_getBlockReceipts`](https://ethereum.github.io/execution-apis/api/methods/eth_getBlockReceipts/) for one block and [`debug_getRawReceipts`](https://ethereum.github.io/execution-apis/api/methods/debug_getRawReceipts/) as a debug-namespace alternative. [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) fixes trie keys as `rlp(transactionIndex)` and distinguishes legacy RLP receipts from typed envelopes; [EIP-658](https://eips.ethereum.org/EIPS/eip-658) replaces the pre-Byzantium intermediate-state field with status. The study pins the consulted Execution APIs tree at `7c58b324fb924e1da18e089890bb2c25cc45c143` and the consulted EIPs tree at `ac450a4ab2f37387385ee9c54b62f518d97e6cc9`.
 
-One bounded observation against `https://ethereum-rpc.publicnode.com` on 2026-08-26 found that `eth_getBlockReceipts` accepted the fixed block hash and returned 224 receipts in 579,013 response bytes over 0.566927 seconds. Receipt `0xbf` contained the expected 110 logs. This records feasibility for one provider at one time; it is not a service, latency, or availability promise.
+One bounded observation against `https://ethereum-rpc.publicnode.com` on 2026-08-26 found that `eth_getBlockReceipts` accepted the fixed block hash and returned 177 receipts in 579,013 response bytes over 0.566927 seconds. Receipt `0x3f` contained the expected 110 logs. This records feasibility for one provider at one time; it is not a service, latency, or availability promise.
 
 ## 3. Constraints and non-goals
 
@@ -97,7 +97,7 @@ The run starts from synced `main` at `5489863196006d8e8b45799d74b56208cac65e4d` 
 
 ### Option A: compact proof for the target receipt
 
-Capture the target receipt plus the trie nodes on its path. This has the smallest fixture delta and directly proves membership at index `0xbf`. It cannot prove that the five-address-filtered logs are complete, because unseen receipts may contain another matching log. Adding non-membership arguments for every other possible matching log is not expressible as one compact receipt-membership path.
+Capture the target receipt plus the trie nodes on its path. This has the smallest fixture delta and directly proves membership at index `0x3f`. It cannot prove that the five-address-filtered logs are complete, because unseen receipts may contain another matching log. Adding non-membership arguments for every other possible matching log is not expressible as one compact receipt-membership path.
 
 ### Option B: full ordered block-receipt witness (chosen)
 
@@ -155,7 +155,7 @@ The implementation and runbook should use these pinned or repository-local sourc
 - [Lazarus skill contract](../../plugins/lazarus/skills/lazarus/SKILL.md), [Ariadne skill contract](../../plugins/ariadne/skills/ariadne/SKILL.md), and the suite [Promise Machine](../../PROMISE_MACHINE.md).
 - Lazarus verifier, header, RLP, trie-proof, manifest, release, binding, capture, records, schema, and version modules under `plugins/lazarus/scripts/lazarus_lib/`.
 - Ariadne state-fixture predicate and capture modules, their schemas, and their conformance/schema-agreement tests under `plugins/ariadne/`.
-- Existing Goldfinch plan, fixture, release, and audit records described in section 2.
+- Existing Aave v4 plan, fixture, release, and audit records described in section 2.
 - Execution APIs commit `7c58b324fb924e1da18e089890bb2c25cc45c143`: [`eth_getBlockReceipts`](https://ethereum.github.io/execution-apis/api/methods/eth_getBlockReceipts/) and [`debug_getRawReceipts`](https://ethereum.github.io/execution-apis/api/methods/debug_getRawReceipts/).
 - EIPs commit `ac450a4ab2f37387385ee9c54b62f518d97e6cc9`: [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718) and [EIP-658](https://eips.ethereum.org/EIPS/eip-658).
 - Exact runtime pins already present in Lazarus: `eth-hash[pycryptodome]==0.7.1`, `jsonschema==4.25.1`, `rlp==4.1.0`, and `trie==3.1.0`; Python floor 3.11.
@@ -214,7 +214,7 @@ Each cause receives the smallest deterministic mutation test: alter one status b
 
 ### Amendment -- 2026-08-26
 
-**What changed.** The proof boundary is narrowed to what the header's `receiptsRoot` actually commits. A receipt-trie-proved relation may establish the canonical receipt payload at a trie index and the ordered consensus log tuples `(address, topics, data)` inside that payload. The fixed block hash and number come from the verified header; transaction index and block-global log index are derived from the proved trie key and ordered receipt/log positions. The header's RPC `transactions[]` hash list, receipt and log `transactionHash` fields, and every other RPC-only decoration remain `recorded_rpc`: the header hash commits `transactionsRoot`, but this delivery neither captures transaction bodies nor reconstructs that trie, so it cannot bind a transaction hash to receipt index `0xbf`. Plan-v3 may retain the target hash as a recorded lookup label and may require recorded sources to agree with one another, but the receipt witness must not present that hash as a receipt-root field. Filtered-log completeness compares the full ordered proved consensus projection and its derivable positions with the corresponding fields in the recorded `eth_getLogs` result; transaction-hash equality is recorded consistency, not part of the proved relation. The two derived relations remain the consensus receipt payload at index `0xbf` and the complete five-entry consensus-log projection. The original `receipt-set-completeness` control is therefore satisfied by unique contiguous receipt indices plus reconstruction of the exact committed root, not by unproved transaction-hash equality; the original `transaction-index-binding` control proves the payload at its trie key while explicitly retaining hash attribution as recorded. Step 1 must remove proof-bearing transaction-hash fields and claims from the new schemas, helpers, tests, ADR, and tracked specification copies. Steps 2 through 5 must use this same scoped relation in verification, capture, manifest/release/Ariadne evidence, the Goldfinch demonstration, and public prose.
+**What changed.** The proof boundary is narrowed to what the header's `receiptsRoot` actually commits. A receipt-trie-proved relation may establish the canonical receipt payload at a trie index and the ordered consensus log tuples `(address, topics, data)` inside that payload. The fixed block hash and number come from the verified header; transaction index and block-global log index are derived from the proved trie key and ordered receipt/log positions. The header's RPC `transactions[]` hash list, receipt and log `transactionHash` fields, and every other RPC-only decoration remain `recorded_rpc`: the header hash commits `transactionsRoot`, but this delivery neither captures transaction bodies nor reconstructs that trie, so it cannot bind a transaction hash to receipt index `0x3f`. Plan-v3 may retain the target hash as a recorded lookup label and may require recorded sources to agree with one another, but the receipt witness must not present that hash as a receipt-root field. Filtered-log completeness compares the full ordered proved consensus projection and its derivable positions with the corresponding fields in the recorded `eth_getLogs` result; transaction-hash equality is recorded consistency, not part of the proved relation. The two derived relations remain the consensus receipt payload at index `0x3f` and the complete five-entry consensus-log projection. The original `receipt-set-completeness` control is therefore satisfied by unique contiguous receipt indices plus reconstruction of the exact committed root, not by unproved transaction-hash equality; the original `transaction-index-binding` control proves the payload at its trie key while explicitly retaining hash attribution as recorded. Step 1 must remove proof-bearing transaction-hash fields and claims from the new schemas, helpers, tests, ADR, and tracked specification copies. Steps 2 through 5 must use this same scoped relation in verification, capture, manifest/release/Ariadne evidence, the Aave v4 demonstration, and public prose.
 
 **Why.** Warden finding `S1-R1-01` demonstrated a coherent witness rewrite that changed every target transaction-hash decoration while preserving all receipt trie values and `receiptsRoot`; its consensus projection SHA-256 was `9fa074210f311ce216f30d332a9fa87307298c2961f57de0b70024a279243273`. Ethereum receipt values contain status or root, cumulative gas used, logs bloom, and ordered consensus logs, but no transaction hash. Adding a transaction-trie proof would require full typed transaction bodies, canonical transaction encoding, another capture and verification boundary, and a different success claim. That is materially larger than issue #383's receipts-root frontier and is rejected here in favour of an explicit recorded-RPC qualification.
 

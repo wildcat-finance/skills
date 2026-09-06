@@ -118,12 +118,33 @@ class DecisionRecordTests(unittest.TestCase):
             "proof is trusting a record its own subject can write",
         )
 
-    def test_no_record_claims_the_number_this_draft_is_avoiding(self):
-        claimed = sorted(p.name for p in DECISIONS.glob("ADR-074-*.md"))
+    def test_this_runs_record_ships_unnumbered(self):
+        """The record stays a draft; whoever merges it assigns the number.
+
+        This was written as "no file claims ADR-074", because run #856 was
+        open on the same base and claimed that number. Assigning at merge
+        means the number is not this run's to reserve: main has since taken
+        ADR-074 for another record entirely, and that says nothing about
+        this one. What has to hold is narrower, and is what the draft is
+        for -- this run's own record carries no number.
+        """
+        self.assertTrue(
+            RECORD.is_file(),
+            f"this run's decision record is missing from {DECISIONS}",
+        )
+        self.assertTrue(
+            RECORD.name.startswith("draft-"),
+            f"this run's record must ship unnumbered; found {RECORD.name}",
+        )
+        numbered = sorted(
+            path.name
+            for path in DECISIONS.glob("ADR-*.md")
+            if "activate-the-commit-gate" in path.name
+        )
         self.assertEqual(
-            claimed, [],
-            "this run ships its record unnumbered because run #856 is open on "
-            f"the same base and claims ADR-074; found {claimed}",
+            numbered, [],
+            "this run's record is numbered somewhere as well as drafted; "
+            f"found {numbered}",
         )
 
 

@@ -140,6 +140,20 @@ class FiatSkillContractTests(unittest.TestCase):
             overlays,
         )
 
+    def test_overlay_run_supplies_manifest_digest_to_suite_promise(self):
+        overlays = " ".join(self.overlays.split())
+        self.assertIn(
+            "the digest-matched instruction is the accepted descriptor's "
+            "`manifest_sha256`",
+            overlays,
+        )
+        self.assertIn("No other clause of the promise moves", overlays)
+        self.assertIn(
+            "bind the instruction the run actually read, whichever copy that is",
+            overlays,
+        )
+        self.assertIn("An overlay does not relax any of them", overlays)
+
     def test_overlay_resolution_failure_falls_back_without_reporting(self):
         overlays = " ".join(self.overlays.split())
         self.assertIn(
@@ -547,6 +561,33 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
 
+    def test_decision_assignment_contract_is_read_only_and_source_bound(self):
+        fiat = " ".join(self.fiat.split())
+        push = " ".join(self.push_discipline.split())
+        for text in (fiat, push):
+            self.assertIn("fiat-decision-assignments/v1", text)
+            self.assertIn("fiat-decision-assignment-composition/v1", text)
+            self.assertIn("verify-decision-assignments", text)
+            self.assertIn("read-only", text)
+            self.assertIn("ADR-Assignment-Base: <base>", text)
+            self.assertIn("ADR-Assignment: adr/<slug>=ADR-NNN", text)
+            self.assertIn("sibling", text)
+        self.assertIn("--decision-assignments", push)
+        self.assertIn("fiat_decision_assignments_v1", push)
+        self.assertIn("must not remain in active ancestry", push)
+
+    def test_decision_assignment_promise_keeps_hypomnema_authority(self):
+        promise = self.fiat.split(
+            "### fiat-decision-assignment-composition", 1
+        )[1].split("### ", 1)[0]
+        self.assertIn("- Consequence: 2", promise)
+        self.assertIn("- Authorises:", promise)
+        self.assertIn("Hypomnema alone owns allocation policy", promise)
+        self.assertIn("does not reserve a number", promise)
+        self.assertIn("does not", promise)
+        self.assertIn("mutate a draft", promise)
+        self.assertIn("superseded assignment retained in active ancestry", promise)
+
     def test_issue_556_generation_records_retain_the_declared_relation(self):
         ledgers = {
             "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
@@ -797,6 +838,7 @@ class PluginCurrencyTests(unittest.TestCase):
         cls.doc = PLUGIN_CURRENCY.read_text(encoding="utf-8")
         cls.flat = " ".join(cls.doc.split())
         cls.fiat = " ".join(FIAT.read_text(encoding="utf-8").split())
+        cls.kronos = " ".join(KRONOS.read_text(encoding="utf-8").split())
         cls.market = " ".join(
             MARKETPLACE.read_text(encoding="utf-8").split()
         )
@@ -840,6 +882,33 @@ class PluginCurrencyTests(unittest.TestCase):
 
     def test_a_run_cannot_enforce_what_it_just_shipped(self):
         self.assertIn("cannot take effect for the very run that made it", self.flat)
+
+    def test_kronos_distinguishes_every_currency_exit_before_reranking(self):
+        """A source-controller refusal is not a clean fleet report."""
+        for surface in (self.flat, self.kronos):
+            with self.subTest(surface=surface[:40]):
+                self.assertIn("Exit 0 alone permits the rescan", surface)
+                self.assertIn("On exit 3", surface)
+                self.assertIn("On exit 1", surface)
+                self.assertIn("exact refusal text and exit status", surface)
+                self.assertIn(
+                    "Do not rescan, rerank, or dispatch another Fiat run", surface
+                )
+                self.assertIn("changes no reported-behind plugin's recorded pin", surface)
+
+        dispatch = self.kronos.split("### kronos-fiat-dispatch", 1)[1].split(
+            "### kronos-parked-lane", 1
+        )[0]
+        self.assertIn("For any dispatch after a completed iteration", dispatch)
+        self.assertIn("fleet report exits 0", dispatch)
+        self.assertIn("currency refusal or unrecognised status", dispatch)
+        hard_rules = self.kronos.split("## Hard rules", 1)[1].split(
+            "## Promise Machine contract", 1
+        )[0]
+        self.assertIn(
+            "while the latest controller-currency report has not exited 0",
+            hard_rules,
+        )
 
 
 class FrontierGateContractTests(unittest.TestCase):

@@ -449,5 +449,199 @@ class TestTheWholeSequence(unittest.TestCase):
         )
 
 
+class TestDiffCommand(unittest.TestCase):
+    """Two verified fixture runs become one offline change artifact."""
+
+    address = "0x" + "a1" * 20
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.prior = self._collect("empty", "prior")
+        self.current = self._collect("defaulted", "current")
+
+    def _collect(self, case, run_id):
+        path = os.path.join(self.directory.name, f"{run_id}.json")
+        result = run(
+            "collect",
+            "--entity",
+            "Acme Trading Ltd",
+            "--address",
+            self.address,
+            "--fixtures",
+            os.path.join(FIXTURES, case),
+            "--run-id",
+            run_id,
+            "--out",
+            path,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return path
+
+    def test_markdown_and_json_reports_run_end_to_end(self):
+        report = os.path.join(self.directory.name, "borrower-change-report.md")
+        result = run("diff", self.prior, self.current, "--out", report)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        with open(report, encoding="utf-8") as handle:
+            markdown = handle.read()
+        self.assertIn("# Borrower change report: Acme Trading Ltd", markdown)
+        self.assertIn("## Coverage changes", markdown)
+        self.assertIn("## Record differences", markdown)
+        self.assertIn("roles chosen by the operator", markdown)
+
+        result = run("diff", self.prior, self.current, "--json", "--out", "-")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        comparison = json.loads(result.stdout)
+        self.assertEqual(comparison["schema"], "probitas-evidence-delta/v1")
+        self.assertEqual(comparison["inputs"]["prior"]["run"]["id"], "prior")
+        self.assertEqual(comparison["inputs"]["current"]["run"]["id"], "current")
+
+    def test_a_gate_breach_exits_one_without_partial_output(self):
+        with open(self.current, encoding="utf-8") as handle:
+            payload = json.load(handle)
+        payload["coverage"] = [
+            row for row in payload["coverage"] if row["venue"] != "maple"
+        ]
+        with open(self.current, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+
+        report = os.path.join(self.directory.name, "must-not-exist.md")
+        result = run("diff", self.prior, self.current, "--out", report)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("current evidence failed its generated dossier", result.stderr)
+        self.assertFalse(os.path.exists(report))
+
+    def test_repairing_the_input_and_rerunning_replaces_the_old_report(self):
+        with open(self.current, "rb") as handle:
+            valid_current = handle.read()
+        payload = json.loads(valid_current)
+        payload["coverage"] = [
+            row for row in payload["coverage"] if row["venue"] != "maple"
+        ]
+        with open(self.current, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+        report = os.path.join(self.directory.name, "borrower-change-report.md")
+        old_report = b"previous report stays until a complete replacement\n"
+        with open(report, "wb") as handle:
+            handle.write(old_report)
+
+        failed = run("diff", self.prior, self.current, "--out", report)
+        self.assertEqual(failed.returncode, 1)
+        with open(report, "rb") as handle:
+            self.assertEqual(handle.read(), old_report)
+
+        with open(self.current, "wb") as handle:
+            handle.write(valid_current)
+        recovered = run("diff", self.prior, self.current, "--out", report)
+        self.assertEqual(recovered.returncode, 0, recovered.stderr)
+        with open(report, "rb") as handle:
+            self.assertNotEqual(handle.read(), old_report)
+
+    def test_a_broken_success_notice_does_not_turn_a_committed_report_into_failure(self):
+        report = os.path.join(self.directory.name, "borrower-change-report.md")
+        old_report = b"old report\n"
+        with open(report, "wb") as handle:
+            handle.write(old_report)
+
+        read_descriptor, write_descriptor = os.pipe()
+        process = None
+        try:
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    PROBITAS,
+                    "diff",
+                    self.prior,
+                    self.current,
+                    "--out",
+                    report,
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=write_descriptor,
+            )
+            os.close(write_descriptor)
+            write_descriptor = None
+            os.close(read_descriptor)
+            read_descriptor = None
+            returncode = process.wait(timeout=10)
+        finally:
+            if write_descriptor is not None:
+                os.close(write_descriptor)
+            if read_descriptor is not None:
+                os.close(read_descriptor)
+            if process is not None and process.poll() is None:
+                process.kill()
+                process.wait()
+
+        self.assertEqual(returncode, 0)
+        with open(report, "rb") as handle:
+            self.assertNotEqual(handle.read(), old_report)
+
+    def test_an_input_cannot_be_replaced_directly_or_through_a_symlink(self):
+        with open(self.prior, "rb") as handle:
+            before = handle.read()
+        alias = os.path.join(self.directory.name, "prior-alias.json")
+        os.symlink(self.prior, alias)
+
+        for output in (self.prior, alias):
+            with self.subTest(output=output):
+                result = run("diff", self.prior, self.current, "--out", output)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("must not replace either evidence input", result.stderr)
+                with open(self.prior, "rb") as handle:
+                    self.assertEqual(handle.read(), before)
+
+    def test_a_fifo_input_is_refused_without_waiting_for_a_writer(self):
+        fifo = os.path.join(self.directory.name, "blocking-input")
+        os.mkfifo(fifo)
+
+        result = subprocess.run(
+            [sys.executable, PROBITAS, "diff", fifo, self.current, "--out", "-"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=2,
+        )
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("not a regular file", result.stderr)
+
+    def test_a_non_text_venue_exits_two_without_a_traceback(self):
+        with open(self.prior, encoding="utf-8") as handle:
+            malformed = json.load(handle)
+        malformed["coverage"][0]["venue"] = ["wildcat"]
+        with open(self.prior, "w", encoding="utf-8") as handle:
+            json.dump(malformed, handle)
+
+        result = run("diff", self.prior, self.current, "--out", "-")
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("venue must be text", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_diff_accepts_a_gate_checkable_many_address_collector_output(self):
+        evidence = os.path.join(self.directory.name, "many-addresses.json")
+        arguments = [
+            "collect",
+            "--entity",
+            "Acme Trading Ltd",
+            "--fixtures",
+            os.path.join(FIXTURES, "empty"),
+            "--run-id",
+            "many-addresses",
+            "--out",
+            evidence,
+        ]
+        for index in range(1, 258):
+            arguments.extend(("--address", f"0x{index:040x}"))
+
+        collected = run(*arguments)
+        self.assertEqual(collected.returncode, 0, collected.stderr)
+
+        compared = run("diff", evidence, evidence, "--json", "--out", "-")
+        self.assertEqual(compared.returncode, 0, compared.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

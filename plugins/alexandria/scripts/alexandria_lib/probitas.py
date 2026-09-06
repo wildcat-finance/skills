@@ -5,7 +5,7 @@ from __future__ import annotations
 from .query import query
 
 
-SUPPORTED_VENUES = {"clearpool", "goldfinch"}
+SUPPORTED_VENUES = {"aave-v4", "clearpool"}
 
 
 def translate(index_path, addresses):

@@ -7,8 +7,8 @@
 Four statements produced by a capture and committed as they came out. Two are
 Solidity releases over the fixture project in `../tests/fixtures/forge-project`;
 the third is a state fixture over the Lazarus fixture in
-`../../lazarus/examples/goldfinch-v0`; the fourth binds the committed Berean
-release in `../../berean/examples/goldfinch-demo-v0/release`.
+`../../lazarus/examples/aave-v4-spoke-v0`; the fourth binds the committed Berean
+release in `../../berean/examples/aave-v4-demo-v0/release`.
 
 The build records, digests and deltas in them came from the compiler. The test
 and fuzz dispositions did not: capture takes those from whoever runs it, and
@@ -21,8 +21,8 @@ that no longer exists.
 | --- | --- | --- |
 | `escrow-v1.1.0.json` | Solidity release | A clean release: tests and fuzz passed, an audit covering the released commit, a deployment |
 | `escrow-v1.1.0-with-gaps.json` | Solidity release | The same release with a fuzz campaign that timed out and an audit covering an earlier revision |
-| `goldfinch-demo-v0-agent.json` | Grounded agent | Pinned corpus and reads, three recorded answers, seven recorded evaluation cases, and the decision that promoted the complete release |
-| `goldfinch-v0-fixture.json` | State fixture | The pinned block with its state root, eleven components, and the three evidence counts read from the Lazarus manifest rather than recomputed |
+| `aave-v4-demo-v0-agent.json` | Grounded agent | Pinned corpus and reads, three recorded answers, seven recorded evaluation cases, and the decision that promoted the complete release |
+| `aave-v4-spoke-v0-fixture.json` | State fixture | The pinned block with its state root, eleven components, and the three evidence counts read from the Lazarus manifest rather than recomputed |
 
 The second one is why both are here. A format whose only examples are clean
 releases teaches producers to make their releases look clean. Both verify, and
@@ -70,8 +70,8 @@ that `verify` exits 1 on each and names the gate.
 | --- | --- | --- |
 | `escrow-v1.1.0-claim-repointed.json` | A claim points at bytes the statement does not cover | 1 |
 | `escrow-v1.1.0-with-gaps-reason-removed.json` | The timed-out campaign keeps its disposition and loses its reason | 3 |
-| `goldfinch-demo-v0-agent-policy-byte-changed.json` | One byte in the bound policy component changes while the declared release identity stays fixed | the release-digest check |
-| `goldfinch-v0-fixture-state-root-removed.json` | The state root goes and the proof-backed count stays | the evidence check |
+| `aave-v4-demo-v0-agent-policy-byte-changed.json` | One byte in the bound policy component changes while the declared release identity stays fixed | the release-digest check |
+| `aave-v4-spoke-v0-fixture-state-root-removed.json` | The state root goes and the proof-backed count stays | the evidence check |
 
 The fourth tamper is the rule the state-fixture predicate exists for. Two records are
 counted as proved against a state root the statement no longer carries, so the count
@@ -79,7 +79,7 @@ describes work that could not have happened. Gate 2 still passes, which is the p
 the pin is intact and the claim about it is not.
 
 ```bash
-python3 ../scripts/ariadne.py verify goldfinch-v0-fixture.json
+python3 ../scripts/ariadne.py verify aave-v4-spoke-v0-fixture.json
 ```
 
 Seven gate lines and three checks, exit 0, with the evidence line reading `2

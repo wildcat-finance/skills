@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16618554,
+    "bytes_blob": 18289139,
     "bytes_generated": 98
   },
   "entries": [
@@ -19,6 +19,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
+    },
+    {
+      "bytes": 199627,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 197579",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.md"
+    },
+    {
+      "bytes": 200708,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -252,11 +266,39 @@
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
     },
     {
+      "bytes": 306795,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 304747",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-856-framework-13-test-the-remaining-atlas-hand-o.md"
+    },
+    {
+      "bytes": 307924,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-856-framework-13-test-the-remaining-atlas-hand-o.synopsis.md"
+    },
+    {
+      "bytes": 90295,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-859-reinstate-the-wave-delta-distributed-checkpo.synopsis.md"
+    },
+    {
       "bytes": 46184,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-881-macos-path-repair-clean-run.synopsis.md"
+    },
+    {
+      "bytes": 23354,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-888-adr-merge-recovery.synopsis.md"
     },
     {
       "bytes": 97194,
@@ -306,6 +348,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-dokimasia-proposed-dispositions.synopsis.md"
+    },
+    {
+      "bytes": 41070,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-ship-the-content-addressed-object-rule-whose-evi.synopsis.md"
+    },
+    {
+      "bytes": 53232,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-ship-the-markdown-outline-extractor-the-census-n.synopsis.md"
     },
     {
       "bytes": 59394,
@@ -399,11 +455,11 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 78175,
+      "bytes": 76508,
       "category": "blob",
-      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "evidence": "mean line length above 400 in a window at offset 74460",
       "grade": "candidate",
-      "path": "plugins/berean/examples/goldfinch-demo-v0/release/reads.jsonl"
+      "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
       "bytes": 38122,
@@ -477,95 +533,81 @@
       "path": "plugins/horos/examples/fixture/prisma/migrations/0001_init/migration.sql"
     },
     {
-      "bytes": 17204,
+      "bytes": 30828,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 17204 bytes",
+      "evidence": "no newline in the first 4096 bytes of 30828 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v0-release/fixture/header.json"
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v0-release/fixture/proofs.jsonl"
     },
     {
-      "bytes": 78175,
+      "bytes": 30828,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 30828 bytes",
+      "grade": "candidate",
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v0/proofs.jsonl"
+    },
+    {
+      "bytes": 43141,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 43141 bytes",
+      "grade": "candidate",
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/proofs.jsonl"
+    },
+    {
+      "bytes": 343966,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 343966 bytes",
+      "grade": "candidate",
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/receipt-witness.json"
+    },
+    {
+      "bytes": 576798,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v0-release/fixture/rpc.jsonl"
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/rpc.jsonl"
     },
     {
-      "bytes": 17204,
+      "bytes": 43141,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 17204 bytes",
+      "evidence": "no newline in the first 4096 bytes of 43141 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v0/header.json"
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1/proofs.jsonl"
     },
     {
-      "bytes": 78175,
+      "bytes": 343966,
       "category": "blob",
-      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "evidence": "no newline in the first 4096 bytes of 343966 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v0/rpc.jsonl"
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1/receipt-witness.json"
     },
     {
-      "bytes": 17204,
-      "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 17204 bytes",
-      "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/header.json"
-    },
-    {
-      "bytes": 349333,
-      "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 349333 bytes",
-      "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/receipt-witness.json"
-    },
-    {
-      "bytes": 657455,
+      "bytes": 576798,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/rpc.jsonl"
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1/rpc.jsonl"
     },
     {
-      "bytes": 17204,
+      "bytes": 43141,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 17204 bytes",
+      "evidence": "no newline in the first 4096 bytes of 43141 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v1/header.json"
+      "path": "plugins/lazarus/tests/fixtures/aave-v4-receipt-proof-v1/proofs.jsonl"
     },
     {
-      "bytes": 349333,
+      "bytes": 343966,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 349333 bytes",
+      "evidence": "no newline in the first 4096 bytes of 343966 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v1/receipt-witness.json"
+      "path": "plugins/lazarus/tests/fixtures/aave-v4-receipt-proof-v1/receipt-witness.json"
     },
     {
-      "bytes": 657455,
-      "category": "blob",
-      "evidence": "mean line length above 400 in the first 4096 bytes",
-      "grade": "candidate",
-      "path": "plugins/lazarus/examples/goldfinch-v1/rpc.jsonl"
-    },
-    {
-      "bytes": 17204,
-      "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 17204 bytes",
-      "grade": "candidate",
-      "path": "plugins/lazarus/tests/fixtures/receipt-proof-v1/header.json"
-    },
-    {
-      "bytes": 349333,
-      "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 349333 bytes",
-      "grade": "candidate",
-      "path": "plugins/lazarus/tests/fixtures/receipt-proof-v1/receipt-witness.json"
-    },
-    {
-      "bytes": 657455,
+      "bytes": 576798,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
-      "path": "plugins/lazarus/tests/fixtures/receipt-proof-v1/rpc.jsonl"
+      "path": "plugins/lazarus/tests/fixtures/aave-v4-receipt-proof-v1/rpc.jsonl"
     },
     {
       "bytes": 24967,
@@ -582,23 +624,23 @@
       "path": "plugins/probitas/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 732267,
+      "bytes": 1232064,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
-      "path": "plugins/tabularium/examples/goldfinch-v0/events.jsonl"
+      "path": "plugins/tabularium/examples/aave-v4-v0/events.jsonl"
     },
     {
-      "bytes": 203679,
+      "bytes": 461304,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 203679 bytes",
+      "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
-      "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
+      "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
     },
     {
-      "bytes": 23378,
+      "bytes": 24566,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 23378 bytes",
+      "evidence": "no newline in the first 4096 bytes of 24566 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }

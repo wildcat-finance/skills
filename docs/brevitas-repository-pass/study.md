@@ -113,7 +113,7 @@ Evidence rules:
   every structural budget. Cut prose before evidence.
 - Keep the three Brevitas `evals/cases/*/original.md` files byte-identical because
   their `case.json` files pin SHA-256 values. Keep
-  `plugins/lazarus/examples/goldfinch-v0/README.md` byte-identical because
+  `plugins/lazarus/examples/aave-v4-spoke-v0/README.md` byte-identical because
   `manifest.json` records `b8a0441746fdd8feb6657bcc78f13ff199c94b081a6462981e8e8a233ae0c09b`.
 - Record those four refusals. Any other refusal needs a checked byte digest or a
   provenance fixture that would break under a rewrite.
@@ -312,7 +312,7 @@ Repository sources:
   `--source` token extraction.
 - `plugins/brevitas/skills/brevitas/evals/cases/*/case.json`: three pinned source
   fixture digests.
-- `plugins/lazarus/examples/goldfinch-v0/manifest.json`: the README component
+- `plugins/lazarus/examples/aave-v4-spoke-v0/manifest.json`: the README component
   length and SHA-256 binding.
 - `tests/test_evolution_contract.py` and
   `plugins/hexaemeron/tests/test_evolution.py`: ledger fields and axis rules.

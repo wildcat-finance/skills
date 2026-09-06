@@ -7,6 +7,7 @@ absent here is refused by map, never guessed at.
 
 from .cpp import cpp
 from .go import go
+from .markdown import markdown
 from .python import python
 from .solidity import solidity
 from .typescript import typescript
@@ -20,6 +21,7 @@ EXTRACTORS = {
     ".h": cpp.outline,
     ".hh": cpp.outline,
     ".hpp": cpp.outline,
+    ".md": markdown.outline,
     ".py": python.outline,
     ".ts": typescript.outline,
     ".tsx": typescript.outline,

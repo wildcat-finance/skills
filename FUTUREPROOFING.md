@@ -107,11 +107,15 @@ retain the stop control.
 ### Horos
 
 **Today.** Horos emits and verifies repository reading boundaries, byte
-censuses, drift reports, and skeleton maps for Python, TypeScript, Go, C++, and
-Solidity. A boundary is fail-open and never applies during a security review.
+censuses, drift reports, and skeleton maps for Python, TypeScript, Go, C++,
+Solidity, and Markdown. A boundary is fail-open and never applies during a
+security review.
 
-**Missing.** The content-addressed-object rule has classified a large real
-surface but still owes its frontier run. Markdown has no outline extractor.
+**Missing.** Nothing the recorded evidence names. The Markdown outline
+extractor closed the last held job, so every filetype above 1% of this
+repository's readable bytes is mapped or is a data format with no
+declarations to outline, and the frontier is mature. Reopening it needs a
+maintainer's new external evidence.
 
 **With enough contribution.** Horos could give an agent a cheap, proved map of
 large mixed repositories: generated and vendored sinks excluded with reasons,
@@ -158,7 +162,7 @@ exact bytes, ties live values to a chain and block, records evaluation, and
 governs promotion and rollback of a grounded protocol-agent release.
 
 **Missing.** The reference release uses a demonstration corpus and preserved
-Goldfinch readings. No live Wildcat reference release or Ariadne binding has
+Aave v4 readings. No live Wildcat reference release or Ariadne binding has
 been established.
 
 **With enough contribution.** Berean could support continuously evaluated

@@ -9,6 +9,7 @@ import traceback
 import unittest
 from unittest import mock
 
+from lazarus_lib.canonical import loads
 from lazarus_lib.errors import FormatError, ResourceLimitError
 from lazarus_lib.limits import CaptureLimits
 from lazarus_lib.rpc import JsonRpcClient, RpcTransportError
@@ -86,11 +87,40 @@ class RpcTests(unittest.TestCase):
         client = JsonRpcClient(
             "https://rpc.example",
             limits(max_requests=count),
+            max_batch_size=count,
         )
         with mock.patch.object(client, "_post", return_value=responses):
             outcomes = client.request_many([("read", []) for _ in range(count)])
         self.assertEqual(len(outcomes), count)
         self.assertLess(CountingInt.comparisons, count * 4)
+
+    def test_request_many_splits_calls_into_provider_sized_batches(self):
+        posted = []
+
+        def fake_post(body):
+            payload = loads(body, max_bytes=65536)
+            single = isinstance(payload, dict)
+            requests = [payload] if single else payload
+            posted.append([request["id"] for request in requests])
+            answers = [
+                {"jsonrpc": "2.0", "id": request["id"], "result": request["id"]}
+                for request in requests
+            ]
+            return answers[0] if single else answers
+
+        client = JsonRpcClient(
+            "https://rpc.example",
+            limits(max_requests=7),
+            max_batch_size=3,
+        )
+        with mock.patch.object(client, "_post", side_effect=fake_post):
+            outcomes = client.request_many([("read", []) for _ in range(7)])
+        self.assertEqual(posted, [[1, 2, 3], [4, 5, 6], [7]])
+        self.assertEqual([outcome.result for outcome in outcomes], [1, 2, 3, 4, 5, 6, 7])
+
+    def test_batch_size_below_one_is_refused(self):
+        with self.assertRaises(ValueError):
+            JsonRpcClient("https://rpc.example", limits(), max_batch_size=0)
 
     def test_response_body_is_bounded_before_json_parsing(self):
         with FakeRpc(lambda *args: None, raw_response=b" " * 65) as server:
