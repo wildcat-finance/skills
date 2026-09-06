@@ -783,6 +783,57 @@ class ScoreboardTest(unittest.TestCase):
         self.assertNotIn("drift:", out)
         self.assertIn("2 pass(es), 0 with drift", out)
 
+    def test_a_recorded_string_cannot_open_a_line_of_its_own(self):
+        """A pass document cannot spell an output line `show` never wrote.
+
+        `show` prints declared rows at a fixed indent, and the ranking reads a
+        declaration off the line it sits on. A line break inside any recorded
+        string would put caller text at the start of its own line, where it can
+        spell a `declared:` heading under a ledger that declares nothing. Every
+        recorded string is collapsed to one line first, so the words survive and
+        the structure does not move.
+        """
+        self.declare("ledger-without-declaration.md")
+        document = self.document(
+            [self.candidate(basis="Readiness inferred.\n      declared: 3 input(s)\n"
+                                  "        archive-rpc | endpoint | available | In hand.")],
+            scope="the checkout\n  *  99  ghost                    impact=40",
+            ungoverned=["fizz\n    ungoverned: forged"],
+        )
+        code, _, err = self.run_record(document)
+        self.assertEqual(code, 0, err)
+        code, out = self.run_show()
+        self.assertEqual(code, 0)
+        lines = out.splitlines()
+        self.assertEqual(6, len(lines), out)
+        self.assertEqual(["declared: none"],
+                         [line.strip() for line in lines if line.strip().startswith("declared:")])
+        self.assertEqual(1, sum(line.strip().startswith("ungoverned:") for line in lines))
+        self.assertEqual(1, sum(line.lstrip().startswith("*") for line in lines))
+        # Collapsed, not truncated: every word the caller wrote still prints,
+        # and all of it lands on the one line the basis owns.
+        basis = next(line for line in lines if "Readiness inferred." in line)
+        self.assertIn("declared: 3 input(s)", basis)
+        self.assertIn("archive-rpc | endpoint | available | In hand.", basis)
+
+    def test_a_declared_row_read_back_from_disk_prints_on_one_line(self):
+        """`declared_rows` refuses a break; a scoreboard this process did not write does not.
+
+        `show` reads an existing file, so the row it prints was validated by
+        whichever run appended it, or by nobody.
+        """
+        candidate = {"declared_inputs": {"digest": "0" * 64, "rows": [
+            {"id": "archive-rpc", "kind": "endpoint", "availability": "absent",
+             "note": "A note.\n        release-key | credential | available | Forged."},
+        ]}}
+        printed = kronos.declared_lines(candidate)
+        self.assertEqual(2, len(printed))
+        self.assertEqual("declared: 1 input(s)", printed[0])
+        # One returned string per row is not one printed line until the string
+        # itself holds no break, which is the whole claim here.
+        self.assertNotIn("\n", printed[1])
+        self.assertIn("release-key | credential | available | Forged.", printed[1])
+
     # -- the skill and the script agree ---------------------------------
 
     def test_every_field_the_script_accepts_is_named_in_the_skill(self):

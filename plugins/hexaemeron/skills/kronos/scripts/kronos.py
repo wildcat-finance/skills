@@ -56,8 +56,11 @@ an object when the ledger declared and null when it did not, and its digest
 covers the rows rather than the block's bytes, so `show` can mark a declaration
 that moved under a held job that did not. `show` prints each candidate's
 declared rows beside its scores, and `declared: none` where the recorded line
-carries no declaration. A declaration is a claim its ledger's owner makes.
-Nothing here checks that a declared input exists.
+carries no declaration. Every recorded string it prints is collapsed to one
+line first, so a scope, skill, basis, run or row a caller wrote cannot open a
+line of its own and spell a `declared:` heading no ledger carried. A
+declaration is a claim its ledger's owner makes. Nothing here checks that a
+declared input exists.
 
 What this does not do. It records a judgement; it does not make one. An axis
 score is a number the ranking agent supplies, and a basis is prose nobody
@@ -941,6 +944,22 @@ def recorded_declaration(candidate: dict) -> str | None:
     return declared.get("digest") if isinstance(declared, dict) else None
 
 
+def one_line(value) -> str:
+    """One line of recorded text, so nothing printed can open a second line.
+
+    `show` writes a scoreboard's own words at fixed indents, and a reader
+    tells a basis from a declared row by the line each sits on. A line break
+    inside any recorded string would put text somebody supplied at the start
+    of its own line, where it can spell a `declared:` heading no ledger wrote.
+    `park` prints its reason a line at a time for the same reason; this holds
+    the rest of the verb to that rule. Breaks collapse to a space rather than
+    truncating, so every word the record carries still reaches the reader.
+    `splitlines` is the splitter the block reader already uses, so the two
+    agree on what a line break is, U+2028 and U+0085 included.
+    """
+    return " ".join(str(value).splitlines())
+
+
 def declared_lines(candidate: dict) -> list:
     """What a recorded candidate declared, as lines for `show` to print.
 
@@ -949,6 +968,10 @@ def declared_lines(candidate: dict) -> list:
     between two spellings of the same four fields. `none` covers both a line
     written before the field existed and a ledger that declared nothing, which
     is the same conflation the drift mark above already makes.
+
+    The fields go through `one_line` even though `declared_rows` already
+    refuses a break in one: a scoreboard read back from disk was not validated
+    by this process, and the caller who could edit it is the one this guards.
     """
     declared = candidate.get("declared_inputs")
     if not isinstance(declared, dict):
@@ -956,7 +979,10 @@ def declared_lines(candidate: dict) -> list:
     rows = declared["rows"]
     lines = [f"declared: {len(rows)} input(s)"]
     lines.extend(
-        "  " + " | ".join((row["id"], row["kind"], row["availability"], row["note"]))
+        "  " + " | ".join(
+            one_line(row[name])
+            for name in ("id", "kind", "availability", "note")
+        )
         for row in rows
     )
     return lines
@@ -1010,7 +1036,10 @@ def show(args: argparse.Namespace) -> int:
     declared_moved = declaration_drift(passes)
     for entry in passes:
         note = "rank-only" if entry.get("rank_only") else (entry.get("run") or "no run recorded")
-        print(f"pass {entry['pass']}  {entry['mode']}  {entry['scope']}  ({note})")
+        print(
+            f"pass {entry['pass']}  {one_line(entry['mode'])}  "
+            f"{one_line(entry['scope'])}  ({one_line(note)})"
+        )
         for candidate in sorted(entry["candidates"], key=lambda c: -c["total"]):
             # A parked candidate outscoring the selected one is the normal case
             # once anything is parked. Without the mark the output reads as
@@ -1022,8 +1051,8 @@ def show(args: argparse.Namespace) -> int:
             else:
                 mark = " "
             axes = " ".join(f"{name}={candidate[name]}" for name, _ in AXES)
-            print(f"  {mark} {candidate['total']:3d}  {candidate['skill']:<24} {axes}")
-            print(f"      {candidate['basis']}")
+            print(f"  {mark} {candidate['total']:3d}  {one_line(candidate['skill']):<24} {axes}")
+            print(f"      {one_line(candidate['basis'])}")
             for line in declared_lines(candidate):
                 print(f"      {line}")
             for name, before, after in moved.get((entry["pass"], candidate["skill"]), []):
@@ -1033,7 +1062,7 @@ def show(args: argparse.Namespace) -> int:
                 was, now = (digest[:12] if digest else "none" for digest in change)
                 print(f"      drift: declaration {was} -> {now}, held job unchanged")
         for name in entry.get("ungoverned", []):
-            print(f"    ungoverned: {name}")
+            print(f"    ungoverned: {one_line(name)}")
     print(f"{len(passes)} pass(es), {len(set(moved) | set(declared_moved))} with drift")
     return 0
 

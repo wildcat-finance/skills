@@ -55,6 +55,8 @@ for.
 }
 ```
 
+Those bytes go to `$tmp/pass.json`, which is what `record` reads below.
+
 Observed output:
 
 ```text
