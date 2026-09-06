@@ -17,6 +17,7 @@ PLUGIN = HERE.parents[2]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
+from dokimasia_lib import propose as propose_lib  # noqa: E402
 from dokimasia_lib import reconcile as reconcile_lib  # noqa: E402
 from dokimasia_lib import workbook as workbook_lib  # noqa: E402
 
@@ -412,6 +413,19 @@ def build_all(directory: Path) -> dict[str, Path]:
         }
         rules.update(json.loads(json.dumps(RULES)))
         write(name, _envelope(inventory, workbook, closed, rules))
+
+    # The shape a set has between two reviews: every workbook row confirmed
+    # under the stated rule, every compiled item still the untouched draft the
+    # generator wrote, and the table carrying the row nobody applied. A
+    # regeneration must carry the attributed half and the whole table byte
+    # for byte and replace only the drafts.
+    scoped = reconcile_lib.scoped_set(inventory, workbook)
+    between = [
+        next(e for e in closed if e["item"] == entry["id"])
+        if entry["side"] == "workbook" else propose_lib.draft_entry(entry)
+        for entry in scoped
+    ]
+    write("regeneration-input.json", _envelope(inventory, workbook, between))
 
     return made
 
