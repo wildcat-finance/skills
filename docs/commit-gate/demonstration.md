@@ -193,10 +193,12 @@ them by its own terms.
 6. **One machine, one git, one interpreter.** Every number above was taken on
    the machine named at the top, with other work running on it, and the study's
    own single-machine caveat carries over unchanged.
-7. **The edited file was `.githooks/README.md`.** It was chosen because the
-   suite asserts only that it names the activation command, so an appended
-   comment leaves the suite green. Adding a new path instead would have moved
-   the reading boundary's file count and made row 7 fail for a reason that has
+7. **The edited file was `.githooks/README.md`.** The suite makes two
+   assertions about that file, both presence checks: that it names the
+   activation command, and that it carries the literal bypass token. An
+   appended comment leaves both green, which is why an edit there was safe;
+   a deletion would not be. Adding a new path instead would have moved the
+   reading boundary's file count and made row 7 fail for a reason that has
    nothing to do with the gate.
 8. **The transcript numbers the commands the conditions turn on, not every
    command the run made.** The two edits are unnumbered, and so is the
