@@ -1,4 +1,4 @@
-# Futureproofing the Shoggoth
+# FUTUREPROOFING THE SHOGGOTH
 
 This is the honest roadmap for Wildcat Labs Skills, the Shoggoth collective. It
 is also the complete roster: every governed member, the four bounded delivery
@@ -15,7 +15,7 @@ each skill's `EVOLUTION.md` ledger.
 Snapshot: 31 August 2026, at repository revision
 `ec426cd00508a8cb118d879f3f65d99098c4d787`.
 
-## What we are trying to build
+## WHAT WE ARE TRYING TO BUILD
 
 A fully formed Shoggoth would help a crypto team move from an uncertain
 question to a result another person can inspect:
@@ -39,7 +39,7 @@ The final form should still be a collection of bounded specialists. Turning it
 into one opaque “do everything” agent would remove the property that makes the
 work inspectable.
 
-## How to read each entry
+## HOW TO READ EACH ENTRY
 
 Every entry has three labels:
 
@@ -52,9 +52,9 @@ Every entry has three labels:
 No numeric maturity scores appear here. A narrow skill can be complete without
 being broad, and a large implementation can remain unproved in actual use.
 
-## Shared law and controlled delivery
+## SHARED LAW AND CONTROLLED DELIVERY
 
-### Promise Machine
+### PROMISE MACHINE
 
 **Today.** The Promise Machine gives every first-party skill one law for
 evidence, consequence, composition, refusal, and recovery. Repository checks
@@ -72,7 +72,7 @@ what was observed, which bytes and chain positions support it, which later
 actions it permits, and which uncertainty survives the hand-off. That needs
 real integrations and hostile composition tests, not a larger vocabulary.
 
-### Fiat
+### FIAT
 
 **Today.** [Fiat](./plugins/hexaemeron/skills/fiat) controls an explicit,
 hash-chained repository delivery through study, runbook, implementation, audit,
@@ -91,7 +91,7 @@ surface recurring failures to the research layer without relaxing human
 publication authority. A distributed version would need authenticated state
 transfer, replay protection, and recovery tests before it could claim that.
 
-### Kronos
+### KRONOS
 
 **Today.** [Kronos](./plugins/hexaemeron/skills/kronos) ranks eligible held
 frontier jobs, records one durable goal, can park work, and dispatches the
@@ -106,9 +106,9 @@ that uses real failure rates, maintenance cost, field coverage, and downstream
 reuse as evidence for prioritisation. The human would still set the policy and
 retain the stop control.
 
-## Sources, history, and releases
+## SOURCES, HISTORY, AND RELEASES
 
-### Horos
+### HOROS
 
 **Today.** [Horos](./plugins/horos) emits and verifies repository reading
 boundaries, byte censuses, drift reports, and skeleton maps for Python,
@@ -123,7 +123,7 @@ large mixed repositories: generated and vendored sinks excluded with reasons,
 important interfaces outlined, and stale boundaries rejected before work
 begins. It must continue to expose what it did not read.
 
-### Lemma
+### LEMMA
 
 **Today.** [Lemma](./plugins/lemma) converts Solidity compiler standard JSON
 input or Markdown trees into validated JSONL chunks with source locations and
@@ -138,7 +138,7 @@ layer for protocol research: compiler-aware Solidity units, documentation
 structures, versioned schemas, and stable incremental rebuilds that make every
 retrieved sentence traceable to exact source bytes.
 
-### Lazarus
+### LAZARUS
 
 **Today.** [Lazarus](./plugins/lazarus) captures finite fixed-block Ethereum
 evidence, proves and verifies the supported state offline, replays the exact
@@ -156,7 +156,7 @@ providers compared at capture time, broader proof relations, deterministic
 local replay, and long-term release migration. It should remain finite rather
 than pretending to replace an archive node.
 
-### Berean
+### BEREAN
 
 **Today.** [Berean](./plugins/berean) binds a document corpus by digest, proves
 citations against exact bytes, ties live values to a chain and block, records
@@ -172,7 +172,7 @@ protocol assistants whose releases fail closed when documents, deployments, or
 chain readings drift. Real value would come from held questions written by
 protocol users and maintainers, not from a larger demonstration set.
 
-### Ariadne
+### ARIADNE
 
 **Today.** [Ariadne](./plugins/ariadne) captures, inspects, verifies, and
 performs bounded replay of digest-bound in-toto statements. Its predicate
@@ -188,7 +188,7 @@ dataset, audit artefact, and binary a portable evidence envelope whose coverage
 and gates can be checked offline. Signature verification and publisher policy
 would need explicit owners rather than being smuggled into the current promise.
 
-### Synkrisis
+### SYNKRISIS
 
 **Today.** All four [Synkrisis](./plugins/synkrisis) operations ship: checked
 cohort construction, deterministic bounded diagnosis, fixed-template rendering,
@@ -203,7 +203,7 @@ repeated crypto-agent runs: comparable cohorts, drift and failure signals,
 counterfactual specimens, and links to the owner best placed to investigate.
 It should never promote correlation into cause or authorise remediation.
 
-### Anamnesis
+### ANAMNESIS
 
 **Today.** [Anamnesis](./plugins/anamnesis) admits audit findings and the
 changes that answered them against an explicit rights basis, keeps the
@@ -220,9 +220,9 @@ what auditors found and what teams changed in reply, so a later reader can ask
 whether a class of defect keeps returning. Admission would still turn on a
 stated rights basis rather than on what happens to be reachable.
 
-## Protocol behaviour and Solidity
+## PROTOCOL BEHAVIOUR AND SOLIDITY
 
-### Janus
+### JANUS
 
 **Today.** [Janus](./plugins/janus) validates a conformance manifest and runs
 seven bounded gates for the Wildcat v2.5 hook seam, producing Markdown and
@@ -237,7 +237,7 @@ across protocols using host-specific adapters over a common effect language,
 with temporal properties and executable negative specimens. Generality must be
 earned one real host at a time.
 
-### Pandects
+### PANDECTS
 
 **Today.** [Pandects](./plugins/pandects) maintains executable credit-law
 records, a rendered catalogue, and broken specimens that prove each law catches
@@ -252,7 +252,7 @@ for lending and adjacent accounting systems, with adapters from laws to
 Foundry, Echidna, Medusa, Janus manifests, and formal tools. Each law must stay
 small enough to falsify and must never stand in for a whole-protocol audit.
 
-### Hermes
+### HERMES
 
 **Today.** [Hermes](./plugins/hermes) optimises one named Solidity gas class at
 a time. It records a baseline, applies one candidate, remeasures, reruns
@@ -267,7 +267,7 @@ corpus into reproducible compiler- and chain-aware experiments, including
 interaction effects and long-term regressions. More rules only matter when
 their preconditions and safety checks are executable.
 
-### Dokimasia
+### DOKIMASIA
 
 **Today.** [Dokimasia](./plugins/dokimasia) compiles a frontend's routes,
 actions and access guards into a coverage denominator, then reconciles a
@@ -285,7 +285,7 @@ several applications and releases, each with preserved inputs and a named
 reviewer behind every disposition, which would make an unreviewed release
 visible rather than arguable.
 
-### Homologia
+### HOMOLOGIA
 
 **Today.** [Homologia](./plugins/homologia) is a packaged and selectable
 scaffold. Its substantive verbs refuse cleanly. There is no manifest validator,
@@ -300,13 +300,12 @@ integer for integer, preserving every divergence as a specimen. Pandects could
 supply economic laws and Lazarus proved chain-side answers, but agreement would
 still not prove that either implementation models the right rule.
 
-### Upstream Pashov suite
+### UPSTREAM PASHOV SUITE
 
 **Today.** X-Ray maps a Solidity repository before audit; Solidity Auditor
 reviews contracts; Fizz creates stateful Echidna/Medusa harnesses; Fizz Convert
 turns recorded properties into assertions; Fizz Sync reconciles a harness with
-source changes. These five skills ship unchanged under their upstream MIT
-licence.
+source changes. All of them ship unchanged under their upstream MIT licence.
 
 **Missing.** Wildcat does not own their roadmaps and must not describe an
 upstream possibility as a first-party commitment.
@@ -316,9 +315,9 @@ around those tools: feed precise scope into them, preserve their raw outputs,
 turn failures into Elenchus specimens, and bind released audit artefacts with
 Ariadne. Changes to the tools themselves belong upstream.
 
-## Lending and credit records
+## LENDING AND CREDIT RECORDS
 
-### Alexandria
+### ALEXANDRIA
 
 **Today.** [Alexandria](./plugins/alexandria) preserves heterogeneous lending
 inputs by digest, emits verified derived views, creates unsigned release
@@ -333,7 +332,7 @@ of raw lending evidence across venues and time: resumable capture, independent
 source reconciliation, schema migration, and content-addressed releases. It
 should continue to preserve rather than interpret.
 
-### Tabularium
+### TABULARIUM
 
 **Today.** [Tabularium](./plugins/tabularium) converts supported preserved
 venue records into deterministic, venue-qualified credit-event releases with
@@ -348,7 +347,7 @@ event model across lending protocols, with venue-native meanings kept visible,
 mapping changes diffable, and every release reproducible from preserved input.
 It should not erase disagreement in pursuit of a universal-looking table.
 
-### Probitas
+### PROBITAS
 
 **Today.** [Probitas](./plugins/probitas) collects evidence from addresses a
 subject declared and builds a verified borrowing and repayment dossier with
@@ -362,9 +361,9 @@ time-bounded dossiers with explicit identity claims, dispute records, and
 repeatable refreshes for human underwriting. It should never guess undisclosed
 addresses, equate an address with a legal person, or make the credit decision.
 
-## Engineering disciplines
+## ENGINEERING DISCIPLINES
 
-### Protasis
+### PROTASIS
 
 **Today.** [Protasis](./plugins/hexaemeron/skills/protasis) checks the
 mechanical content and relations of studies, risk registers, amendments,
@@ -381,7 +380,7 @@ more typed evidence producers, and stronger traceability from assumptions and
 risks to tests and release gates, while leaving design judgement with people
 and the relevant specialist.
 
-### Phylax
+### PHYLAX
 
 **Today.** [Phylax](./plugins/hexaemeron/skills/phylax) mechanically checks
 Python and source-local TypeScript controls and guides review of external data,
@@ -395,7 +394,7 @@ security layer with taint-aware fixtures, dependency and provenance policy,
 and incident-derived rules. Every mechanical rule should arrive with a broken
 specimen that proves its value.
 
-### Ephoros
+### EPHOROS
 
 **Today.** [Ephoros](./plugins/hexaemeron/skills/ephoros) asks the operator's
 questions first, then checks bounded patterns for logs, metrics, durations,
@@ -408,7 +407,7 @@ limited to block-style YAML.
 observability contracts across Python, TypeScript, Solidity events, workers,
 and release pipelines. The goal is an explainable failure, not more telemetry.
 
-### Metron
+### METRON
 
 **Today.** [Metron](./plugins/hexaemeron/skills/metron) accepts a declared
 workload, validates a recorded baseline and candidate measurement, and keeps or
@@ -421,7 +420,7 @@ measurements it consumes.
 drivers, environment fingerprints, variance handling, and long-term regression
 tracking for off-chain tools. Hermes should continue to own Solidity gas.
 
-### Elenchus
+### ELENCHUS
 
 **Today.** [Elenchus](./plugins/hexaemeron/skills/elenchus) starts with a
 failure already in hand, reproduces and localises it, fixes the cause, and
@@ -436,7 +435,7 @@ failure specimens across crypto tooling, with automatic historical fixtures,
 cause taxonomy, and guarded replay. It should remain failure-led rather than
 becoming a vague debugging persona.
 
-### Hypomnema
+### HYPOMNEMA
 
 **Today.** [Hypomnema](./plugins/hexaemeron/skills/hypomnema) decides whether a
 durable decision belongs in an ADR, comment, runbook, interface note, or
@@ -449,7 +448,7 @@ judgement rather than a deterministic check.
 graph from code and alerts to decisions, assumptions, and operating procedures,
 while rejecting duplicate or stale records.
 
-### Imprimatur
+### IMPRIMATUR
 
 **Today.** [Imprimatur](./plugins/hexaemeron/skills/imprimatur) diagnoses three
 tiers of prose defects, including banned AI writing habits, unsupported
@@ -465,7 +464,7 @@ with independently labelled corpora for several engineering registers, stable
 false-positive budgets, and transparent versioned rules. Contributors must
 repair the evaluation before tuning to its numbers.
 
-### Vulgate
+### VULGATE
 
 **Today.** [Vulgate](./plugins/hexaemeron/skills/vulgate) rewrites messages,
 documentation, announcements, and technical explanations into a plain human
@@ -479,7 +478,7 @@ repeatable evaluation.
 held human evaluations across several registers, making tone changes easier to
 check without flattening every author's voice.
 
-### Sapheneia
+### SAPHENEIA
 
 **Today.** [Sapheneia](./plugins/sapheneia) shapes an agent's replies for AuDHD
 readers and has one bounded operation for durable audit records, issues, and
@@ -493,7 +492,7 @@ corpus.
 that adapts state, choices, and next actions to different cognitive needs
 without patronising the reader or hiding uncertainty.
 
-### Brevitas
+### BREVITAS
 
 **Today.** [Brevitas](./plugins/brevitas) enforces structural output budgets on
 engineering prose and checks that protected tokens such as identifiers, paths,
@@ -506,11 +505,11 @@ preservation beyond protected tokens remains agent-checked.
 by reader-comprehension and decision-quality evidence, producing shorter work
 because it is easier to use rather than because a line count looks tidy.
 
-## Fiat's four worker roles
+## FIAT'S FOUR WORKER ROLES
 
 The workers are execution roles, not extra governed skills.
 
-### Surveyor
+### SURVEYOR
 
 **Today.** Surveyor receives one source-bound study packet and returns a study.
 It cannot receipt the phase, steer Fiat, publish, or widen the task.
@@ -519,7 +518,7 @@ It cannot receipt the phase, steer Fiat, publish, or widen the task.
 logs and independent source verification while retaining the same lack of
 controller authority.
 
-### Mason
+### MASON
 
 **Today.** Mason implements and tests one exact runbook step on its assigned
 branch pair. It cannot push, open a pull request, merge, or alter Fiat.
@@ -528,7 +527,7 @@ branch pair. It cannot push, open a pull request, merge, or alter Fiat.
 environments and stronger artefact capture without becoming an autonomous
 delivery controller.
 
-### Warden
+### WARDEN
 
 **Today.** Warden runs one exact audit round, preserves raw findings, fixes
 bounded defects, and reports an Elenchus verdict. It cannot receipt its own
@@ -538,7 +537,7 @@ round or call missing evidence clean.
 study's named attack paths and preserve machine-readable findings for cross-run
 analysis, with Fiat still controlling acceptance.
 
-### Scribe
+### SCRIBE
 
 **Today.** Scribe performs one bounded prose pass, running Imprimatur, applying
 Vulgate without changing protected content, and rerunning the lint. It cannot
@@ -547,46 +546,46 @@ invent claims, issues, or publication authority.
 **With enough contribution.** It could check more document types and held
 reader tasks while remaining a surface editor rather than a source of facts.
 
-## Research programmes worth contributing to
+## RESEARCH PROGRAMMES WORTH CONTRIBUTING TO
 
 The member frontiers become more useful when they form complete paths rather
 than isolated features.
 
-### Historical protocol laboratory
+### HISTORICAL PROTOCOL LABORATORY
 
 Combine Horos, Lazarus, Elenchus, Pandects, Janus, the Pashov suite, and Ariadne
 so a real historical failure can be reduced, replayed offline, tested against a
 named law or host boundary, and released with evidence. The current pieces are
 useful; a multi-protocol public specimen set is missing.
 
-### Checkable protocol assistants
+### CHECKABLE PROTOCOL ASSISTANTS
 
 Combine Lemma, Lazarus, Berean, Ariadne, Sapheneia, and Brevitas around held
 questions from protocol users. The success measure is not answer volume. It is
 whether answers remain source-correct under document and chain drift, refuse
 when support is absent, and help a person decide what to do next.
 
-### Cross-protocol behaviour
+### CROSS-PROTOCOL BEHAVIOUR
 
 Extend Janus with real host adapters, Pandects with more executable laws, and
 Homologia from scaffold to a tested parity operation. This could expose where
 different protocols use the same words for different state transitions.
 
-### Open lending evidence
+### OPEN LENDING EVIDENCE
 
 Complete Alexandria capture, Tabularium adapters, and Probitas curation for
 declared intervals and venues. Release preserved input, mapping provenance,
 coverage, and disputes separately so a dossier can be corrected without
 rewriting history.
 
-### Evidence from repeated delivery
+### EVIDENCE FROM REPEATED DELIVERY
 
 Capture Promise Machine observations from real Fiat runs, compare declared
 cohorts with Synkrisis, and feed reproduced failures to the relevant owner.
 This is how the collective can learn without allowing the comparison layer to
 diagnose causes or change code on its own.
 
-## The admission test for new work
+## THE ADMISSION TEST FOR NEW WORK
 
 Before adding a skill, operation, adapter, or rule, answer these questions in
 ordinary language:
@@ -604,7 +603,7 @@ ordinary language:
 If those answers do not exist, write a study or preserve a specimen. Do not add
 an agent name and hope that capability follows.
 
-## Choosing useful work
+## CHOOSING USEFUL WORK
 
 Good first contributions are small enough to verify and large enough to change
 what a user can establish. Examples from the current gaps include:
@@ -625,7 +624,7 @@ The exact accepted next job may be narrower than these examples. Check the
 member's `EVOLUTION.md`, open issues, tests, and `AGENTS.md` before changing its
 files.
 
-## Review rhythm
+## REVIEW RHYTHM
 
 Revisit this document when a member's shipped frontier changes, when a planned
 integration is disproved, or when field evidence shows that a research

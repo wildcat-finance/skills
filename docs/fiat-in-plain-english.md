@@ -1,4 +1,4 @@
-# Fiat in plain English
+# FIAT IN PLAIN ENGLISH
 
 Fiat is the controller for taking one repository issue from “we should fix
 this” to an inspectable delivery. It keeps the work in order, records what each
@@ -8,7 +8,7 @@ Fiat runs only when a user explicitly asks to start, run, resume, recover, or
 continue Fiat or Hexaemeron. A general request to implement something does not
 activate it.
 
-## The short version
+## THE SHORT VERSION
 
 ```text
 understand the problem
@@ -28,7 +28,7 @@ Fiat owns the state between those phases. A worker returns an artefact; Fiat
 checks the receipt and decides whether the next dependent action may begin.
 Chat history is never the controller ledger.
 
-## One run from beginning to end
+## ONE RUN FROM BEGINNING TO END
 
 | Phase | Work produced | Who may advance the run |
 | --- | --- | --- |
@@ -47,12 +47,12 @@ remains available.
 
 “The code looks done” is not a controller state.
 
-## The four worker roles
+## THE FOUR WORKER ROLES
 
 These workers are deliberately less powerful than Fiat. Each receives one
 source-bound packet and returns named evidence.
 
-### Surveyor
+### SURVEYOR
 
 Surveyor studies one problem. Its packet names the target, base revision,
 sources, and output path. It returns a buildable account of the problem, the
@@ -62,7 +62,7 @@ that still need a person.
 Surveyor cannot record its own receipt, change the issue, publish, or move Fiat
 into the runbook.
 
-### Mason
+### MASON
 
 Mason implements exactly one runbook step from the exact starting revision and
 branch pair Fiat supplies. It writes the code and tests, commits the step, and
@@ -71,7 +71,7 @@ returns the commit, test command, result, and any deliberate deferral.
 Mason cannot push, open a pull request, merge, widen the step, or alter Fiat's
 state.
 
-### Warden
+### WARDEN
 
 Warden performs one audit round over one step. It runs the security work the
 study and change require, preserves every finding and raw audit artefact, fixes
@@ -81,7 +81,7 @@ guard.
 Warden cannot call missing evidence clean, accept its own round, or move the
 run forward.
 
-### Scribe
+### SCRIBE
 
 Scribe handles one bounded prose pass after the code and evidence exist. It
 checks the complete changed prose with Imprimatur, applies Vulgate to the
@@ -94,7 +94,7 @@ publication authority. It cannot receipt its own phase.
 Fiat may execute any of these packets in its own context when an isolated
 worker is unavailable. The packet, artefact, and receipt stay the same.
 
-## The disciplines inside a run
+## THE DISCIPLINES INSIDE A RUN
 
 The following are skills Fiat may apply during a phase. They are not extra
 controllers.
@@ -115,7 +115,7 @@ Pashov security skills for audit preparation, Solidity review, and stateful
 fuzzing. Those tools can use their own internal specialist roles; none of them
 controls Fiat.
 
-## Durable state and checkpoints
+## DURABLE STATE AND CHECKPOINTS
 
 Fiat stores its run in a dedicated worktree with a hash-chained state record.
 After an accepted step it writes a verified archive into a fixed local
@@ -131,7 +131,7 @@ digests directly. Do not infer progress from chat, choose an informal archive
 destination, or reuse a worker handle whose visible issue, step, or role comes
 from an older run.
 
-## Git and publication
+## GIT AND PUBLICATION
 
 Fiat owns branch creation, step commits, pushes, stacked pull requests, ordered
 merges, and the final controller report within the authority the user and
@@ -148,7 +148,7 @@ If the required signer, repository access, or controller evidence is absent,
 Fiat stops before the dependent commit, push, pull request, or merge and leaves
 a precise hand-off.
 
-## What completion means
+## WHAT COMPLETION MEANS
 
 A complete Fiat run has satisfied the controller's required receipts and
 reached its authorised integration endpoint. The final report identifies the

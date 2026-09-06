@@ -1,4 +1,4 @@
-# Dokimasia
+# DOKIMASIA
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -10,7 +10,7 @@ Dokimasia compiles a frontend's routes, actions and guards into a coverage denom
 **Next Fiat job.** Use /hexaemeron:fiat to propose a disposition set a reviewer can edit rather than author from nothing: draft `manual` and `excluded` entries with reasons for every scoped item, and never propose `covered`, which ADR-001 reserves to a person holding an item to a reviewed oracle. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 A release gets declared tested because a spreadsheet says so. The spreadsheet
 lists the paths somebody thought to walk. Nothing joins it to the application,
@@ -27,7 +27,7 @@ packaging, and a self-test. Inventory compilation, workbook import,
 reconciliation and the coverage record remain to be implemented; substantive
 requests refuse and name the runbook step that owes them.
 
-## Intended boundary
+## INTENDED BOUNDARY
 
 The unit of the answer is a disposition. Every scoped route, action, guard and
 workbook row ends up marked covered, manual or excluded, with a reason for the
@@ -42,7 +42,7 @@ The harness that executes a release belongs to the application repository,
 where the study for one already exists. A person owns every disposition; the
 skill may propose one and can never mark an item covered on its own.
 
-## The pieces
+## THE PIECES
 
 | Verb | State |
 | --- | --- |
@@ -69,7 +69,7 @@ python3 plugins/dokimasia/scripts/dokimasia.py demonstrate \
   --write-evidence --report-timing
 ```
 
-## What is committed here
+## WHAT IS COMMITTED HERE
 
 [The study](docs/dokimasia-study.md) states the proposition and its twelve
 answers. [The runbook](docs/dokimasia-runbook.md) states the five steps.

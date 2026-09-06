@@ -1,6 +1,6 @@
 ![Alexandria](./assets/characters/alexandria.png)
 
-# Alexandria
+# ALEXANDRIA
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Alexandria preserves heterogeneous lending captures byte for byte, then exposes 
 **Next Fiat job.** Use /hexaemeron:fiat to run the Ethereum USDC collector against two live providers, read the interval's first block so a finalized scope binds both boundary hashes, and preserve the implementation code each epoch names so its code hash can be rechecked offline. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Alexandria when lending data may disappear, change shape, or need to be
 checked later. It keeps the original source bytes, records exactly what was and
@@ -28,7 +28,7 @@ It has not run that collector against a live provider. It covers one market of
 the 28 at the registry pin, never reads an interval's first block, preserves no
 implementation code, and makes no credit decision.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Alexandria is the preservation end of the credit-data path. Tabularium consumes
 its raw releases and makes venue-qualified credit events; Probitas may use those
@@ -50,7 +50,7 @@ each capture to explicit scope and coverage, derives a narrow Tabularium credit
 view and supplies that view to Probitas through a disposable index. Alexandria
 is an archive and data source, not a lending venue or underwriting system.
 
-## How it works
+## HOW IT WORKS
 
 Raw GraphQL responses and archive logs do not need one payload schema. Each
 release stores the original bytes under their SHA-256, names the source, chain,
@@ -70,7 +70,7 @@ logical digest and exact release-backed contents before returning rows. The
 explicit Probitas route keeps both venue and archive provenance and leaves all
 unharvested registry venues visible as gaps.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the standard-library [`alexandria.py`](./scripts/alexandria.py)
   ingest, verify, statement, derive, index and query command;
@@ -84,7 +84,7 @@ unharvested registry venues visible as gaps.
   separate explicit network capture command and pinned
   [production harvest specification](./docs/compound-v3-harvest.md).
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** Preserve a protocol response now, with its gaps and usage
 restrictions, then rebuild the same release after the endpoint is gone.
@@ -96,7 +96,7 @@ selector stays unsupported.
 **Finance.** Query a counterparty address across the archived venues without
 letting an unharvested venue read as clean history.
 
-## Complete prototype
+## COMPLETE PROTOTYPE
 
 Alexandria can ingest raw releases, derive verified credit views, rebuild an
 address index and query it:
@@ -165,7 +165,7 @@ Its expected receipts bind 522 derived events, 31 observations, an 11-event
 Clearpool address query and 11 Probitas records. Goldfinch remains partial for
 that query because the mapping declares 25 unsupported native records.
 
-## Compound v3 Phase 0
+## COMPOUND V3 PHASE 0
 
 The checked-in [`compound-v3-phase0-v0`](examples/compound-v3-phase0-v0/README.md)
 release pins all 28 production Comet deployments from ten chains at Compound
@@ -199,7 +199,7 @@ python3 scripts/compound_v3_phase0.py capture \
 This is a fixed method proof from one RPC provider, not an interval harvester,
 independent finality evidence or a canonical Compound event release.
 
-## Architecture
+## ARCHITECTURE
 
 The design separates:
 
@@ -212,7 +212,7 @@ A digest match will prove only that local bytes agree with the manifest. It
 will not prove who published them, that a hosted source was complete or that
 its reported block was canonical.
 
-## Design record
+## DESIGN RECORD
 
 - [`docs/study.md`](docs/study.md) records the research, selected construction
   and risk register.
@@ -249,7 +249,7 @@ its reported block was canonical.
 - [`examples/README.md`](examples/README.md) states the offline demonstration
   boundary.
 
-## Tests
+## TESTS
 
 From the repository root:
 
@@ -262,6 +262,6 @@ The implementation uses Python's standard library. The six core Alexandria
 commands, Compound build/check commands and checked-in demonstrations reach no
 network. Only the explicit Compound `capture` command performs network I/O.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).
