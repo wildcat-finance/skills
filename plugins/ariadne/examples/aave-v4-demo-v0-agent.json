@@ -1,0 +1,243 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "Berean release document",
+      "digest": {
+        "sha256": "3ae9bb5251a664eecf6c14fe5290055573497f809f2f1b21b796133b9364b392"
+      }
+    },
+    {
+      "name": "corpus manifest",
+      "digest": {
+        "sha256": "5e7bd0585af5ae4ce077123c84a105e018e0133d6c4c193f6bf01b67634bfcc6"
+      }
+    },
+    {
+      "name": "corpus component 1",
+      "digest": {
+        "sha256": "136377d8bd912ac3e66dd65d875aaa18751baf44d2f0d3534ea697c4028283f3"
+      }
+    },
+    {
+      "name": "corpus component 2",
+      "digest": {
+        "sha256": "e486d0bc575d894686d23624811761968aef7e453c38d6d542569a533f9eff01"
+      }
+    },
+    {
+      "name": "corpus component 3",
+      "digest": {
+        "sha256": "8abcab0cea7f306b6f1a444978204711d211b140e62896b8eae746d428494119"
+      }
+    },
+    {
+      "name": "block-bound reads",
+      "digest": {
+        "sha256": "db36030888f3802a3049e055bbaeb92674c26b3bd0b0bdf81473a58736aaf008"
+      }
+    },
+    {
+      "name": "answer 1",
+      "digest": {
+        "sha256": "d872c7398bbffbca9ffb56a40a2083e3ccd2ed5032d747a79cfa48ec7d6e9951"
+      }
+    },
+    {
+      "name": "answer 2",
+      "digest": {
+        "sha256": "dc2e338ec72e26bf792d8751fac0ea136e97d062c05985626fa29e48ba0a4621"
+      }
+    },
+    {
+      "name": "answer 3",
+      "digest": {
+        "sha256": "dd9221c46271b5dd49f09e830215991fadd9932375f72822c7a6ac3e7afe100a"
+      }
+    },
+    {
+      "name": "evaluation cases",
+      "digest": {
+        "sha256": "f7b7590dcc00adb73b0236e9eff2a77381835dcf1cfffbde337f8bd79ad0cdef"
+      }
+    },
+    {
+      "name": "evaluation report",
+      "digest": {
+        "sha256": "1482bed186fbbc258960992329919c02ff16a370d12faf36a0cbc37e59cc1522"
+      }
+    },
+    {
+      "name": "promotion chain",
+      "digest": {
+        "sha256": "481deeeae5b5a6087da968a62b8f1c60a86f1d961aedd8ad2da9142baca50826"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/grounded-agent/v1",
+  "predicate": {
+    "release": {
+      "format": "berean-release/v1",
+      "release_version": "aave-v4-demo-v0",
+      "release_digest": "bf607a6f1ede680b13c6491cd4ffd92ba1f598f1ee7fc8615de23a90eefbdf84",
+      "document": {
+        "name": "Berean release document",
+        "path": "release.json",
+        "sha256": "3ae9bb5251a664eecf6c14fe5290055573497f809f2f1b21b796133b9364b392",
+        "bytes": 2052
+      }
+    },
+    "given": {
+      "corpus": {
+        "path": "corpus",
+        "corpus_version": "demo-v2",
+        "corpus_digest": "818c5dd3c2cc5c4fb4dfd9a648b7adc01b6d14b20bd457a47152877a629d2e91",
+        "manifest": {
+          "name": "corpus manifest",
+          "path": "corpus-manifest.json",
+          "sha256": "5e7bd0585af5ae4ce077123c84a105e018e0133d6c4c193f6bf01b67634bfcc6",
+          "bytes": 479
+        },
+        "components": [
+          {
+            "name": "corpus component 1",
+            "path": "corpus/appendix.md",
+            "sha256": "136377d8bd912ac3e66dd65d875aaa18751baf44d2f0d3534ea697c4028283f3",
+            "bytes": 626
+          },
+          {
+            "name": "corpus component 2",
+            "path": "corpus/history.md",
+            "sha256": "e486d0bc575d894686d23624811761968aef7e453c38d6d542569a533f9eff01",
+            "bytes": 444
+          },
+          {
+            "name": "corpus component 3",
+            "path": "corpus/terms.md",
+            "sha256": "8abcab0cea7f306b6f1a444978204711d211b140e62896b8eae746d428494119",
+            "bytes": 678
+          }
+        ]
+      },
+      "reads": {
+        "component": {
+          "name": "block-bound reads",
+          "path": "reads.jsonl",
+          "sha256": "db36030888f3802a3049e055bbaeb92674c26b3bd0b0bdf81473a58736aaf008",
+          "bytes": 13229
+        },
+        "chain_id": 1,
+        "block_number": 25870892,
+        "block_hash": "0x11e9be2ff9ff6a04319af0b04c24b95f3f1117c2df79f44f94d208857d01af07",
+        "source": "Copied byte for byte from the Lazarus aave-v4-spoke-v0 preservation release (plugins/lazarus/examples/aave-v4-spoke-v0-release/fixture/rpc.jsonl), which preserves these responses for Ethereum mainnet block 25870892 and records the block hash provenance in its plan. The records stay recorded-rpc evidence here; nothing upgrades them."
+      },
+      "reads_absence_reason": null
+    },
+    "produced": {
+      "answers": [
+        {
+          "name": "answer 1",
+          "path": "answers/grounded.json",
+          "sha256": "d872c7398bbffbca9ffb56a40a2083e3ccd2ed5032d747a79cfa48ec7d6e9951",
+          "bytes": 995
+        },
+        {
+          "name": "answer 2",
+          "path": "answers/refusal.json",
+          "sha256": "dc2e338ec72e26bf792d8751fac0ea136e97d062c05985626fa29e48ba0a4621",
+          "bytes": 362
+        },
+        {
+          "name": "answer 3",
+          "path": "answers/stale.json",
+          "sha256": "dd9221c46271b5dd49f09e830215991fadd9932375f72822c7a6ac3e7afe100a",
+          "bytes": 1053
+        }
+      ],
+      "evaluations": {
+        "cases": {
+          "name": "evaluation cases",
+          "path": "evals/cases.json",
+          "sha256": "f7b7590dcc00adb73b0236e9eff2a77381835dcf1cfffbde337f8bd79ad0cdef",
+          "bytes": 7819
+        },
+        "report": {
+          "name": "evaluation report",
+          "path": "evals/report.json",
+          "sha256": "1482bed186fbbc258960992329919c02ff16a370d12faf36a0cbc37e59cc1522",
+          "bytes": 330
+        }
+      },
+      "evaluations_absence_reason": null,
+      "promotion": {
+        "component": {
+          "name": "promotion chain",
+          "path": "promotions.jsonl",
+          "sha256": "481deeeae5b5a6087da968a62b8f1c60a86f1d961aedd8ad2da9142baca50826",
+          "bytes": 475
+        },
+        "format": "berean-promotion/v1",
+        "terminal": {
+          "sequence": 1,
+          "action": "promote",
+          "target_release_digest": "bf607a6f1ede680b13c6491cd4ffd92ba1f598f1ee7fc8615de23a90eefbdf84"
+        }
+      },
+      "promotion_absence_reason": null
+    },
+    "policy": {
+      "question_families": [
+        "demonstration subject state",
+        "documented behaviour of the demonstration subject"
+      ],
+      "refusal_conditions": [
+        "questions outside the demonstration corpus",
+        "evidence past the preserved block"
+      ],
+      "rules": {
+        "evidence_classes": [
+          "proof-backed",
+          "header-bound",
+          "recorded-rpc"
+        ],
+        "source_classes": [
+          "document",
+          "chain_read",
+          "calculation",
+          "user_supplied"
+        ]
+      },
+      "allowlists": {
+        "chains": [
+          1
+        ],
+        "contracts": [
+          "0x973a023a77420ba610f06b3858ad991df6d85a08",
+          "0xcca852bc40e560adc3b1cc58ca5b55638ce826c9"
+        ]
+      },
+      "retention": "none"
+    },
+    "adapter": {
+      "tool": "berean",
+      "tool_version": "0.2.0",
+      "command": [
+        "python3",
+        "plugins/berean/examples/aave-v4-demo-v0/rebuild.py"
+      ],
+      "parameters_digest": {
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "comparison": {
+      "baseline": null,
+      "current": {
+        "name": "aave-v4-demo-v0",
+        "release_digest": "bf607a6f1ede680b13c6491cd4ffd92ba1f598f1ee7fc8615de23a90eefbdf84"
+      },
+      "first_capture_reason": "first Ariadne capture of this Berean release"
+    },
+    "claims": [],
+    "commands": []
+  }
+}

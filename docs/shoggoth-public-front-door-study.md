@@ -1215,12 +1215,12 @@ The source contract is `plugins/hexaemeron/skills/hypomnema/SKILL.md`.
 
 **What changed.** The selected `per-skill-demo-ledger` construction now has
 one explicit Hypomnema design bridge to
-`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md`:
+`docs/decisions/drafts/govern-real-data-demonstrations-separately.md`:
 
 ```design-bridge
 schema | hypomnema-design-bridge/v1
 decision | per-skill-demo-ledger
-record | docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md
+record | docs/decisions/drafts/govern-real-data-demonstrations-separately.md
 ```
 
 The integration base advanced after this study was receipted and assigned
@@ -1245,3 +1245,21 @@ files.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds. Step 6: entry holds; exit broken.
+
+### Amendment -- 2026-09-06
+
+**What changed.** The three records ship unnumbered, as drafts under
+`docs/decisions/drafts/`, and the design bridge above names the draft path. No
+number is claimed here at all.
+
+**Why.** The integration base advanced 511 commits while this run was open and
+took ADR-076, ADR-077 and ADR-078 for other decisions, so the numbers this
+study last planned collided at the sync. The base has since adopted a mechanism
+that settles this properly: its own ADR-077 records that decision numbers are
+assigned when a record merges rather than when it is authored, and its
+`adr-assignments` gate enforces that. Renumbering by hand would only pick the
+next free number and race the same way again, so the records are converted to
+drafts and the base assigns their numbers. Every document that cites them by
+the stable `adr/<slug>` identity is unaffected, which is what that identity is
+for. The audit records name the numbers each round saw and are append-only
+evidence of what was true when it ran, so they are left as written.

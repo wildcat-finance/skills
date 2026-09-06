@@ -79,7 +79,7 @@ Phase 1 task.
   `DELEGATECALL` writes are attributed to proxy storage.
 - Compound Phase 0 facts stay outside Euler's canonical-event v2 and coverage
   v2. Phase 1 owns a new canonical schema version.
-- Existing Alexandria, Goldfinch and Euler truth bytes, vendored Pashov prose,
+- Existing Alexandria, Aave v4 and Euler truth bytes, vendored Pashov prose,
   historical audit bodies, legal attribution and the Lazarus fixture digest
   remain unchanged.
 

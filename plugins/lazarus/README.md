@@ -9,7 +9,7 @@ Lazarus captures the finite historical Ethereum state and exact RPC evidence one
 
 **Current frontier.** Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
 
-**Next Fiat job.** Use /hexaemeron:fiat to accept an empty ordered receipt witness only when the verified header carries Ethereum's empty trie root, derive zero receipt-trie-proved relations without a target receipt or filtered-log request, and preserve the shipped non-empty Goldfinch relation plus every legacy format. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to accept an empty ordered receipt witness only when the verified header carries Ethereum's empty trie root, derive zero receipt-trie-proved relations without a target receipt or filtered-log request, and preserve the shipped non-empty Aave v4 relation plus every legacy format. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## START HERE
@@ -68,7 +68,7 @@ other RPC result fields remain recorded evidence.
 
 Replay verifies the fixture before opening a loopback server. An uncaptured
 request returns a stable `-32070` error describing the missing plan entry, and
-there is no provider fallback. The checked-in Goldfinch examples preserve the
+there is no provider fallback. The checked-in Aave v4 examples preserve the
 original recorded-RPC fixture and separately demonstrate the receipt-root
 relation, mutation rejection and deterministic release rebuilding without a
 network.
@@ -80,7 +80,7 @@ network.
 - offline header, account, storage, code, receipt-trie and manifest verification;
 - exact-request JSON-RPC replay over loopback, including batches and
   notifications; and
-- fixed Goldfinch v0 and v1 demonstrations, including a preservation release
+- fixed Aave v4 v0 and v1 demonstrations, including a preservation release
   for each evidence boundary.
 
 ## DAY TO DAY
@@ -160,30 +160,30 @@ python3 scripts/lazarus.py verify examples/multi-provider-anchor-v0
 The result reports `chain-anchor-records: 2`; both canonical-chain and provider
 independence claims remain false.
 
-## GOLDFINCH DEMONSTRATION
+## AAVE V4 DEMONSTRATION
 
-[`examples/goldfinch-v0`](./examples/goldfinch-v0) is a checked-in Ethereum
-mainnet fixture for a Goldfinch market at block `0xc7da16`. It carries a
+[`examples/aave-v4-spoke-v0`](./examples/aave-v4-spoke-v0) is a checked-in Ethereum
+mainnet fixture for a Aave v4 market at block `0x18ac22c`. It carries a
 proof-backed account, contract code and storage slot, plus the named receipt
 and a five-log query as recorded RPC evidence. Run the complete test without a
 provider:
 
 ```bash
-python3 plugins/lazarus/examples/goldfinch-v0/demo.py
+python3 plugins/lazarus/examples/aave-v4-spoke-v0/demo.py
 ```
 
 The demo verifies before replay, reads the four committed results through
 ordinary loopback JSON-RPC, observes a `-32070` miss for slot `0x1`, rejects a
 one-nibble proof mutation and rebuilds the same manifest bytes.
 
-[`examples/goldfinch-v1`](./examples/goldfinch-v1) uses the same captured raw
-sources with a plan-v3 receipt witness. It reconstructs all 224 receipts at the
-same block, proves target index `0xbf` with 110 consensus logs, proves the exact
-five-log projection, and ships a state-fixture/v2 release. Run its fail-closed
+[`examples/aave-v4-spoke-v1`](./examples/aave-v4-spoke-v1) uses the same captured raw
+sources with a plan-v3 receipt witness. It reconstructs all 177 receipts at the
+same block, proves target index `0x3f` with 4 consensus logs, proves the exact
+two-log projection, and ships a state-fixture/v2 release. Run its fail-closed
 offline demonstration with:
 
 ```bash
-python3 plugins/lazarus/examples/goldfinch-v1/demo.py
+python3 plugins/lazarus/examples/aave-v4-spoke-v1/demo.py
 ```
 
 The demo verifies and deterministically rebuilds the statement and release,

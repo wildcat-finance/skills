@@ -14,6 +14,10 @@ Amended, 2026-08-29: Fiat owns a checked controller-state capsule and
 same-ledger relocation. The standing outer transport and semantic identity
 remain separate concerns.
 
+Amended, 2026-08-29: future Fiat runs resolve one immutable starting commit
+at initialization and bind it through an init-owned run anchor. Semantic
+checkpoint identity is separate from exact capsule and archive bytes.
+
 Amended, 2026-08-30: every accepted boundary now produces an unconditional
 local archive in the origin checkout. Drive publication, issue-note publication
 and the checkpoint waiver are retired. Until a distributed transport is
@@ -165,6 +169,39 @@ siblings, traversal and malformed roots still refuse before mutation. This is
 the sole exception to the 2026-08-29 statement that relocation changes only
 the origin and worktree fields.
 
+## Amendment: Immutable run anchors and checkpoint identity (2026-08-29)
+
+For a new run, Fiat resolves the operator's starting branch or full commit to
+one full commit before initialization writes anything. The worktree starts
+from that commit and `state.base` retains it. The named branch that receives
+the completed delivery remains separate in `config.git.base`.
+
+Initialization owns a closed `fiat-run-anchor/v1` receipt. It joins the
+repository and task identity, run id, run branch, integration branch,
+controller identity and immutable starting commit. The initial ledger event
+binds the receipt digest. A later command cannot replace the receipt or change
+the integration branch it names. Verification accepts an absent receipt only
+for a legacy ledger that never claimed one; when a receipt is present, every
+join must still agree.
+
+Checkpoint meaning and transport bytes have different identities. The
+semantic identity is derived from the verified run anchor, accepted checkpoint
+boundary and controller evidence. The native manifest digest continues to
+name its exact manifest bytes and inventory. A future outer archive digest
+will name exact packed bytes. Repacking a carrier can therefore change its
+byte digest without changing checkpoint meaning.
+
+A legacy state whose base is a symbolic ref cannot mint a semantic checkpoint
+identity. The controller did not record which commit that ref named at
+initialization, so it refuses instead of rebuilding an anchor after the fact.
+
+Three alternatives remain rejected. Reusing the native manifest digest would
+confuse exact controller-capsule bytes with checkpoint meaning. Letting the
+outer archive define identity would bind the meaning to one transport and
+leave inspection unable to separate repacking from a changed checkpoint. The
+retired service, authority and lineage schemas would restore infrastructure
+and authority claims that same-ledger local continuation does not need.
+
 ## Amendment: Mandatory local checkpoint hand-off (2026-08-30)
 
 The outer checkpoint remains complete, but its current home is always the fixed
@@ -237,3 +274,20 @@ no claim of remote durability or distributed availability.
 Checkpoint archives can be large, and every exhausted loop creates another
 one. That cost is accepted in exchange for never pretending a reconstructed
 ledger is the original run.
+
+## Amendment: distributed layer reinstated (2026-09-02)
+
+The distributed checkpoint framework this record deferred is accepted again.
+[ADR-069](ADR-069-reinstate-the-distributed-checkpoint-layer-above-the-local-store.md)
+is the accepted change the mandatory local hand-off amendment above asked for.
+It reopens the layer above the local store rather than replacing it.
+
+This record stays Accepted and every clause above stands. The local checkpoint
+store remains the only current transport, the hand-off remains mandatory, and no
+checkpoint operation uploads, posts, commits or pushes until a later delivery
+accepts a transport that does. Reopening the layer authorises design records,
+not behaviour, and nothing in `hexctl` changes with it.
+
+ADR-029 through ADR-032 stay Retired. Each gains one standing successor that
+carries its decision forward rebased on `fiat-v5.49.1`, so this record's
+retirement of them is left as history rather than undone.

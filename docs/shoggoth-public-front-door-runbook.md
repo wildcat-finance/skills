@@ -757,7 +757,7 @@ holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 `docs/shoggoth-public-front-door-study.md` and
 `docs/shoggoth-public-front-door-runbook.md` are byte-identical to the current
 receipted study and runbook.
-`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` records
+`docs/decisions/drafts/govern-real-data-demonstrations-separately.md` records
 the selected `per-skill-demo-ledger` construction, and the study's one
 `hypomnema-design-bridge/v1` block binds that candidate to that record.
 `docs/design/build_shoggoth_front_door_design_evidence.py` exists at exactly
@@ -817,7 +817,7 @@ Complete replacement Files: Create
 `docs/shoggoth-public-front-door-design-evidence.json`,
 `docs/design/build_shoggoth_front_door_design_evidence.py`, the 24 reports
 under `docs/reports/`,
-`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md`,
+`docs/decisions/drafts/govern-real-data-demonstrations-separately.md`,
 `scripts/shoggoth_topology.py`, `tests/test_shoggoth_topology.py`, and four
 specimens under `tests/fixtures/shoggoth-topology/`. Change
 `tests/check-map-v1.json`. Permit `.horos/boundary.json` and
@@ -834,7 +834,7 @@ same two files; this step adds no unattended operation, so the expected result
 is a clean exit rather than new instrumentation. hypomnema: run the ordinary
 walk against `docs/shoggoth-public-front-door-study.md`,
 `docs/shoggoth-public-front-door-runbook.md`, and
-`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md`, whose
+`docs/decisions/drafts/govern-real-data-demonstrations-separately.md`, whose
 relative links must resolve from their own directories, and run study mode
 against the study and committed design evidence to prove the selected
 candidate's one standing record. metron: none, because discovery agreement is
@@ -871,10 +871,10 @@ git diff --check
 ```
 
 Each command exits 0. The accepted per-skill-ledger decision already exists at
-`docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md` from
+`docs/decisions/drafts/govern-real-data-demonstrations-separately.md` from
 step 1. Two further decision records land:
-`docs/decisions/ADR-077-keep-the-root-readme-as-a-front-door.md` and
-`docs/decisions/ADR-078-derive-topology-counts-from-the-tree.md`, the last
+`docs/decisions/drafts/keep-the-root-readme-as-a-front-door.md` and
+`docs/decisions/drafts/derive-topology-counts-from-the-tree.md`, the last
 naming commit `67a01a6c` as the worked example of the failure it prevents and
 recording the pinned-specimen exception. An end-to-end test proves the joined
 relation rather than the parts: changing one demonstration record's status from
@@ -888,12 +888,12 @@ rather than discarded. Prove the exit with the commands above plus:
 
 ```bash
 python3 -m unittest tests.test_joined_front_door -v
-python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/decisions/ADR-076-govern-real-data-demonstrations-separately.md docs/decisions/ADR-077-keep-the-root-readme-as-a-front-door.md docs/decisions/ADR-078-derive-topology-counts-from-the-tree.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/decisions/drafts/govern-real-data-demonstrations-separately.md docs/decisions/drafts/keep-the-root-readme-as-a-front-door.md docs/decisions/drafts/derive-topology-counts-from-the-tree.md
 ```
 
 Complete replacement Files: Create
-`docs/decisions/ADR-077-keep-the-root-readme-as-a-front-door.md`,
-`docs/decisions/ADR-078-derive-topology-counts-from-the-tree.md`, and
+`docs/decisions/drafts/keep-the-root-readme-as-a-front-door.md`,
+`docs/decisions/drafts/derive-topology-counts-from-the-tree.md`, and
 `tests/test_joined_front_door.py`. Change `tests/check-map-v1.json` and, only
 if the joined proof exposes a defect, `scripts/check_public_front_door.py`,
 `scripts/demonstrations.py` or `scripts/shoggoth_topology.py`. Permit the

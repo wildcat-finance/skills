@@ -4,7 +4,7 @@
 live JSON-RPC endpoint's answer is captured into a Lazarus fixture and
 reproduced offline behind `lazarus replay`. This module is the guard half of
 that procedure, run against the fixture Lazarus ships at
-`plugins/lazarus/examples/goldfinch-v0`, whose `verify` digest is
+`plugins/lazarus/examples/aave-v4-spoke-v0`, whose `verify` digest is
 `d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49`. The digest
 is named here rather than asserted, so a Lazarus recapture that keeps the
 recorded answers keeps this example green.
@@ -38,7 +38,7 @@ from unittest import mock
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SKILL_FILE = REPO_ROOT / "plugins" / "hexaemeron" / "skills" / "elenchus" / "SKILL.md"
 RPC_RECORDS = (
-    REPO_ROOT / "plugins" / "lazarus" / "examples" / "goldfinch-v0" / "rpc.jsonl"
+    REPO_ROOT / "plugins" / "lazarus" / "examples" / "aave-v4-spoke-v0" / "rpc.jsonl"
 )
 
 SECTION_HEADING = "## Pin an RPC-boundary failure into a fixture"
@@ -74,7 +74,7 @@ REPLAY_ARGV = [
     sys.executable,
     "plugins/lazarus/scripts/lazarus.py",
     "replay",
-    "plugins/lazarus/examples/goldfinch-v0",
+    "plugins/lazarus/examples/aave-v4-spoke-v0",
     "--port",
     "0",
 ]
@@ -84,9 +84,9 @@ STOP_SECONDS = 10.0
 
 MISS_ERROR = -32070
 METHOD_NOT_FOUND = -32601
-ADDRESS = "0x8bbd80f88e662e56b918c353da635e210ece93c6"
-BLOCK_NUMBER = "0xc7da16"
-SLOT_ZERO_WORD = "0x" + "00" * 31 + "01"
+ADDRESS = "0x973a023a77420ba610f06b3858ad991df6d85a08"
+BLOCK_NUMBER = "0x18ac22c"
+SLOT_ZERO_WORD = "0x" + "00" * 31 + "0b"
 
 
 def fixture_section(text):
@@ -121,13 +121,13 @@ def skip_reason(missing, executable=sys.executable):
 
 
 def recorded_outcome(method, params):
-    """The outcome of the Goldfinch record whose method and params match exactly."""
+    """The outcome of the Aave v4 record whose method and params match exactly."""
     with RPC_RECORDS.open(encoding="utf-8") as handle:
         for line in handle:
             record = json.loads(line)
             if record["method"] == method and record["params"] == params:
                 return record["outcome"]
-    raise AssertionError("no Goldfinch record for " + method + " " + repr(params))
+    raise AssertionError("no Aave v4 record for " + method + " " + repr(params))
 
 
 class ProcedureTextTests(unittest.TestCase):
@@ -240,7 +240,7 @@ class LazarusDependencyGuardTests(unittest.TestCase):
 
 
 class ReplayGuardExampleTests(unittest.TestCase):
-    """Drive the shipped Goldfinch fixture through `lazarus replay` on loopback."""
+    """Drive the shipped Aave v4 fixture through `lazarus replay` on loopback."""
 
     process = None
     port = None
@@ -346,7 +346,7 @@ class ReplayGuardExampleTests(unittest.TestCase):
         self.assertEqual(response["result"], SLOT_ZERO_WORD)
 
     def test_uncaptured_slot_one_is_a_miss_carrying_a_plan_fragment(self):
-        params = [ADDRESS, "0x1", BLOCK_NUMBER]
+        params = [ADDRESS, "0x2", BLOCK_NUMBER]
         response = self.rpc("eth_getStorageAt", params, 2)
         self.assertNotIn("result", response)
         error = response["error"]

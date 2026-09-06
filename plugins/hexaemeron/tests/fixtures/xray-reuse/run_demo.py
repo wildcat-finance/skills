@@ -149,7 +149,7 @@ def execute(
     duration = time.perf_counter_ns() - started if started is not None else None
     if promoted["outputs"] != manifest["outputs"]:
         raise RuntimeError("promoted output digests differ from the bound manifest")
-    source_paths = [source["path"] for source in plan["sources"]]
+    _source_paths = [source["path"] for source in plan["sources"]]
     stale_removed = sorted(
         set(plan["removed"]) & set(candidate["synthesis"]["source_inventory"])
     )

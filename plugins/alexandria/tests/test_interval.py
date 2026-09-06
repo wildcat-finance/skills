@@ -2,7 +2,6 @@
 
 from copy import deepcopy
 import json
-import os
 from pathlib import Path
 import socket
 import sys
@@ -713,7 +712,7 @@ class EpochDiscoveryTests(unittest.TestCase):
 
     def test_two_different_bodies_for_one_implementation_refuse(self):
         evidence = epoch_evidence()
-        first = "0x1b0e765f6224c21223aea2af16c1c46e38885a40"
+        _first = "0x1b0e765f6224c21223aea2af16c1c46e38885a40"
         evidence["code_reads"]["0x1B0E765F6224C21223AEA2AF16C1C46E38885A40"] = "0xdeadbeef"
         with self.assertRaisesRegex(AlexandriaError, "two different bodies"):
             discover_epochs(**evidence)

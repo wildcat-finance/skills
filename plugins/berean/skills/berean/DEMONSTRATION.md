@@ -5,7 +5,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 - Current demonstration version: `berean-demo-v0.1.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `replace-the-model-answer-records`
-- Current demonstration: The Goldfinch corpus is real and the graded answers beside it are records written for the example.
+- Current demonstration: The Aave v4 chain reads are real and the graded answers beside them are records written for the example.
 - Next demonstration job: Record answers from an actual agent run so no material input is written for the demonstration.
 
 ```shoggoth-demonstration
@@ -25,14 +25,14 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     {
       "id": "input-1",
       "class": "protocol",
-      "path": "plugins/berean/examples/goldfinch-demo-v0/release/corpus-manifest.json",
-      "sha256": "279484f479e78d1391e9974d21f856a6130875cad74e8ceec75f48ae5076a99e"
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/corpus-manifest.json",
+      "sha256": "5e7bd0585af5ae4ce077123c84a105e018e0133d6c4c193f6bf01b67634bfcc6"
     },
     {
       "id": "input-2",
       "class": "model-record",
-      "path": "plugins/berean/examples/goldfinch-demo-v0/release/answers/grounded.json",
-      "sha256": "a36cd2fccc2c6211a78c2cb1783e6d5e650390c613069404f47b8f267473fab5"
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/answers/grounded.json",
+      "sha256": "d872c7398bbffbca9ffb56a40a2083e3ccd2ed5032d747a79cfa48ec7d6e9951"
     }
   ],
   "commands": [
@@ -52,15 +52,15 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     }
   ],
   "observations": [
-    "The command exits 0 in about 0.3 seconds with no network.",
+    "The command exits 0 in about 0.5 seconds with no network.",
     "Its last reported line is: OK (skipped=1)"
   ],
   "frontier": {
     "version": "berean-demo-v0.1.0",
     "status": "open",
     "revision": "replace-the-model-answer-records",
-    "sha256": "f85cd906ca7a3de69891703de54cc6710c1b223d3960ebaeca627808fb457543",
-    "current": "The Goldfinch corpus is real and the graded answers beside it are records written for the example.",
+    "sha256": "b026ea251c0eea0b54710a31ca7222d404eca6eb813844a041b5a529dc3d1c04",
+    "current": "The Aave v4 chain reads are real and the graded answers beside them are records written for the example.",
     "next": "Record answers from an actual agent run so no material input is written for the demonstration."
   }
 }
@@ -70,4 +70,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `berean-demo-v0.1.0` | baseline | `replace-the-model-answer-records` | `f85cd906ca7a3de69891703de54cc6710c1b223d3960ebaeca627808fb457543` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |
+| `berean-demo-v0.1.0` | baseline | `replace-the-model-answer-records` | `b026ea251c0eea0b54710a31ca7222d404eca6eb813844a041b5a529dc3d1c04` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |

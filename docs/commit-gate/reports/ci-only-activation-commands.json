@@ -1,0 +1,9 @@
+{
+  "candidate": "ci-only",
+  "command": "python3 .hexaemeron/design/evaluate_commit_gate.py --candidate ci-only --criterion activation-commands",
+  "criterion": "activation-commands",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

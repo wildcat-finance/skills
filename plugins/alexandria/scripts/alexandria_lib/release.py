@@ -195,6 +195,9 @@ def verify(release_root: Path) -> str:
     for capture in manifest["captures"]:
         if capture["component_sha256"] != digest_by_name[capture["component"]]:
             raise AlexandriaError(f"capture {capture['id']} component digest does not match")
+    from .proof_backed import verify_proof_backed_captures
+
+    verify_proof_backed_captures(release_root, manifest)
     allowed = {"manifest.json", *(component["object_path"] for component in manifest["components"])}
     if "derivation" in manifest:
         from .derivation import component_reader, output_paths, verify_derivation

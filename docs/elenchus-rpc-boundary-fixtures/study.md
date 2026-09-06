@@ -10,7 +10,7 @@ Assuming, unless corrected:
    before this study was written.
 2. Issue #387's "procedure, with one worked example" is met by one new
    section in the Elenchus skill file and one new test module that runs
-   offline against the checked-in Goldfinch fixture through the Lazarus
+   offline against the checked-in Aave v4 fixture through the Lazarus
    command line. No test performs a live capture; the capture half is written
    as procedure with its exact commands.
 3. The wave peers the issue leans on have not landed. #383 (`lazarus-next`),
@@ -95,7 +95,7 @@ A working prototype means:
   crossed an RPC boundary.
 - `plugins/hexaemeron/tests/test_elenchus_rpc_boundary_fixture.py` exists
   and is the worked example: it starts `lazarus replay` on
-  `plugins/lazarus/examples/goldfinch-v0` as an argv-pinned subprocess on an
+  `plugins/lazarus/examples/aave-v4-spoke-v0` as an argv-pinned subprocess on an
   ephemeral loopback port, asserts the recorded answer for storage slot `0x0`
   exactly, asserts that the uncaptured slot `0x1` and the spelling `0x00` are
   `-32070` misses carrying the method, the parameters and a plan fragment,
@@ -125,7 +125,7 @@ evidence rather than as a green gate:
 python3 -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture -v
 uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture -v
 uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus
-uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python plugins/lazarus/examples/goldfinch-v0/demo.py
+uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python plugins/lazarus/examples/aave-v4-spoke-v0/demo.py
 npx --yes --package=node@26.6.0 --call 'uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python plugins/hexaemeron/tests/run_tests.py'
 python3 -m unittest discover -s tests
 python3 -m unittest tests.test_evolution_contract
@@ -155,7 +155,7 @@ copy/copies` and `coverage --check` prints `clean: promises=71
 coverage_rows=71 coverage_selected=71`; `audit_synopsis.py --check .` exits 0
 with all fourteen pairs reporting `committed=match`; the Lazarus suite runs
 414 OK in 34.7 seconds under `uv` and fails to import under plain `python3`
-(91 tests collected, 15 errors, every one `ModuleNotFoundError`); the Goldfinch
+(91 tests collected, 15 errors, every one `ModuleNotFoundError`); the Aave v4
 demo and `verify` exit 0 under `uv` at fixture digest
 `d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49`. The
 Hexaemeron suite under plain `python3` reports `1166/1168 tests passed` in
@@ -223,16 +223,16 @@ and the absent procedure; they are not proof of the change.
   `_verify_rpc_coverage` requires the records to cover the plan's requests
   exactly and the manifest's `optional_failures` to equal the recorded error
   keys, which is why a fixture cannot quietly drop a request.
-- `plugins/lazarus/examples/goldfinch-v0/` is the offline material. Its plan
-  names four required `recorded-rpc` requests at block `0xc7da16`, hash
+- `plugins/lazarus/examples/aave-v4-spoke-v0/` is the offline material. Its plan
+  names four required `recorded-rpc` requests at block `0x18ac22c`, hash
   `0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc`, and
   one proof target with slot `0x0`. `rpc.jsonl` holds the record
-  `goldfinch-slot-zero`, `eth_getStorageAt
-  ["0x8bbd80f88e662e56b918c353da635e210ece93c6","0x0","0xc7da16"]`, request
+  `aave-spoke-slot-zero`, `eth_getStorageAt
+  ["0x973a023a77420ba610f06b3858ad991df6d85a08","0x0","0x18ac22c"]`, request
   key `5552a66c5b132aaf501e0a8aed28909a7efabfb87273283d0b74c241c4e41e76`,
   result `0x` followed by sixty-two zeros and `01`. `optional_failures` is
   empty, so the fixture records no provider error. `demo.py` already treats
-  slot `0x1` as the observed miss, and `plugins/lazarus/tests/test_goldfinch.py`
+  slot `0x1` as the observed miss, and `plugins/lazarus/tests/test_aave_v4.py`
   pins the digest, the slot value and the miss code, while
   `test_no_network.py` patches `socket.socket.connect` to refuse any
   destination that is not loopback. The example test reuses those two idioms
@@ -321,20 +321,20 @@ the source was read instead and is named as such.
   step 1, and issue 453 owns the blocking policy." This study accepts that
   boundary and uses it: the new module sits under `plugins/hexaemeron/tests/`
   and its prose assertions are what fail on the parent.
-- `audit/AUDIT.md`, sections `Goldfinch preservation release`, steps 1 to 5,
+- `audit/AUDIT.md`, sections `Aave v4 preservation release`, steps 1 to 5,
   twenty rounds (2026-08-19 to 2026-08-20): source read, because seventeen of
   the twenty synopsis lines carry `[missing legacy field: leads-not-pursued]`.
   L1-R1-01 (hollow identifier strings, fixed with `text.py`) is the one
   tabulated finding; the later rounds record their findings in prose, all
   fixed in the round that found them, and steps 4 and 5 establish the facts
-  this example relies on: the shipped Goldfinch fixture verifies, releases,
+  this example relies on: the shipped Aave v4 fixture verifies, releases,
   reads back and passes every drift guard, and both demonstrations exit 0.
   The leads not pursued concern a split earlier audit record and probes that
   missed their targets; none concerns replay.
 - `audit/rounds/fiat-386-record-a-structured-multi-provider-chain-anc.md`
   and its `.synopsis.md` (2026-08-25): both read. Three rounds, zero
   findings, every changed path reviewed against that study's register; the
-  step 3 round records Lazarus 414/414, Goldfinch at
+  step 3 round records Lazarus 414/414, Aave v4 at
   `d93cd09f...`, the anchored fixture at `188eb293...`, and `Leads not
   pursued: none`. Its step 1 and step 2 leads were owned by later steps of
   the same run and closed there.
@@ -408,7 +408,7 @@ The search says nothing about private or unindexed repositories.
   prints exists in `plugins/lazarus/scripts/lazarus.py` today, every
   behaviour it states is one `capture.py`, `rpc.py`, `scrub.py`,
   `replay.py` or `server.py` implements, and the worked example runs against
-  the checked-in `goldfinch-v0` fixture through that command line.
+  the checked-in `aave-v4-spoke-v0` fixture through that command line.
 - Nothing under `plugins/lazarus/` changes: no source, test, schema, example,
   document or ledger byte. The Lazarus frontier `receipt-inclusion-proofs`
   and its held job are not moved.
@@ -457,7 +457,7 @@ The search says nothing about private or unindexed repositories.
 - Performing a live capture in any test, fixture builder or demo. A capture
   needs a provider URL; the study describes the capture half as procedure
   with exact commands and demonstrates the offline half.
-- Committing a new Lazarus fixture. The Goldfinch fixture already ships,
+- Committing a new Lazarus fixture. The Aave v4 fixture already ships,
   verifies and carries the two outcomes the example needs; a synthetic
   fixture carrying a recorded provider error is option D below and is
   rejected there.
@@ -470,7 +470,7 @@ The search says nothing about private or unindexed repositories.
   would make a claim Elenchus does not verify.
 - Adding a CI workflow for the Hexaemeron suite, changing the three existing
   workflows, or adding a dependency to Hexaemeron.
-- Pinning the Goldfinch fixture digest as an assertion in the example. The
+- Pinning the Aave v4 fixture digest as an assertion in the example. The
   example asserts the recorded slot value and the miss, and names the digest
   in its docstring, so a Lazarus recapture that keeps those answers does not
   break the Hexaemeron suite; the reason is recorded in section 4.
@@ -617,13 +617,13 @@ The worked example is one unittest module with three classes:
   and raises `unittest.SkipTest` with that reason when any is missing.
   Otherwise it spawns `[sys.executable,
   "plugins/lazarus/scripts/lazarus.py", "replay",
-  "plugins/lazarus/examples/goldfinch-v0", "--port", "0"]` with the
+  "plugins/lazarus/examples/aave-v4-spoke-v0", "--port", "0"]` with the
   repository root as `cwd`, `stdin` closed, `stdout` and `stderr` piped,
   reads the first stdout line under a thirty-second deadline enforced by a
   timer that kills the process, and parses the port. Under a
   `socket.socket.connect` patch that refuses any non-loopback destination,
   its tests then assert: the answer to `eth_getStorageAt` for slot `0x0` at
-  `0xc7da16` equals the `outcome.result` of the matching `rpc.jsonl` record
+  `0x18ac22c` equals the `outcome.result` of the matching `rpc.jsonl` record
   read with the standard library and equals the literal sixty-four hex
   digit word ending in `01`; slot `0x1` returns `error.code` `-32070`
   with `data.method`, `data.params` and a fragment whose `method`, `params`,
@@ -640,7 +640,7 @@ a recorded provider error, because the shipped fixture carries none and this
 study declines to fabricate one; that case is written as procedure and is
 proved by Lazarus's own `test_capture.py`. The example depends on another
 plugin's checked-in fixture and command line, so a Lazarus change to the
-Goldfinch slot value or the miss payload would break a Hexaemeron test; the
+Aave v4 slot value or the miss payload would break a Hexaemeron test; the
 coupling is kept to values Lazarus's own tests pin, and the fixture digest is
 named in the docstring rather than asserted, so a recapture that keeps the
 recorded answers keeps this test green. And the skill file grows by one
@@ -662,7 +662,7 @@ second place for the prose to go stale, which the frontier discipline in
 
 Put the worked example under `plugins/hexaemeron/skills/elenchus/examples/`
 so an installed copy of the skill carries it. Rejected because the example
-needs the Lazarus command line and the Goldfinch fixture at a sibling path
+needs the Lazarus command line and the Aave v4 fixture at a sibling path
 that exists in this checkout and not in an installed plugin cache, where
 Lazarus is a separate directory under its own version; a shipped example that
 cannot run where it ships misleads. A file under the skill tree would also
@@ -671,7 +671,7 @@ need a second file under `tests/` to be exercised at all.
 ### option D: a synthetic committed fixture carrying a recorded provider error
 
 Assemble a small fixture under `plugins/hexaemeron/tests/fixtures/`: the
-Goldfinch header and schemas copied, a plan with one optional request, an
+Aave v4 header and schemas copied, a plan with one optional request, an
 `rpc.jsonl` holding one `{"error": {"code": -32000, "message": "provider
 request failed"}}` record, an empty `proofs.jsonl` and a manifest built with
 `optional_failures`, plus a builder script and a regeneration test. It would
@@ -722,7 +722,7 @@ Settled alongside the pick:
   module docstring only.
 - The generation row's change column says what the section and the example
   do, that the example demonstrates the offline half against the shipped
-  Goldfinch fixture, that no Lazarus file changed, and that options B to E
+  Aave v4 fixture, that no Lazarus file changed, and that options B to E
   were rejected with their reasons summarised; its evidence column links
   `../../tests/test_elenchus_rpc_boundary_fixture.py` and
   `../../../../docs/elenchus-rpc-boundary-fixtures/study.md`, both
@@ -819,8 +819,8 @@ next agent to build a fixture that cannot exist.
   `plan-v2.json`, `rpc-record-v1.json`; `scripts/lazarus.py`,
   `scripts/lazarus_lib/capture.py`, `rpc.py`, `scrub.py`, `records.py`,
   `replay.py`, `server.py`, `verifier.py`, `manifest.py`, `canonical.py`;
-  `examples/goldfinch-v0/` with `demo.py`, `plan.json`, `manifest.json`,
-  `rpc.jsonl`, `README.md`; `tests/test_goldfinch.py`, `test_no_network.py`,
+  `examples/aave-v4-spoke-v0/` with `demo.py`, `plan.json`, `manifest.json`,
+  `rpc.jsonl`, `README.md`; `tests/test_aave_v4.py`, `test_no_network.py`,
   `tests/run_tests.py`, `tests/support.py`.
 - Contracts: `plugins/hexaemeron/skills/VERSIONING.md`,
   `plugins/hexaemeron/skills/fiat/references/plugin-currency.md`,
@@ -831,7 +831,7 @@ next agent to build a fixture that cannot exist.
 - Change history: merged PRs #596, #493 and #196; commits `43babf2`,
   `b8acf61`, `7411f8b`, `c981f30`, `9385328`, `69b8b42`, `c4d3d3c`,
   `3766c51`; `audit/AUDIT.md` sections `Elenchus structured reports`,
-  `Elenchus audit-round verdict` and `Goldfinch preservation release`;
+  `Elenchus audit-round verdict` and `Aave v4 preservation release`;
   `audit/rounds/fiat-386-record-a-structured-multi-provider-chain-anc.md`;
   `plugins/hexaemeron/audit/AUDIT.md`.
 - Precedent studies and ledgers: `docs/berean-question-spans/study.md`,
@@ -865,7 +865,7 @@ Checks run for this study:
 - `uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt
   python -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus`
   ran 414 OK in 34.7 seconds; plain `python3` on the same discover collected
-  91 tests and errored 15 times on `ModuleNotFoundError`; the Goldfinch
+  91 tests and errored 15 times on `ModuleNotFoundError`; the Aave v4
   `demo.py` printed all eight lines including `slot 0x1 miss: -32070` and
   `verify` printed digest `d93cd09f...`, `proof-backed: 2`, `header-bound: 1`,
   `recorded-rpc: 4`, both under `uv`.
@@ -883,7 +883,7 @@ Checks run for this study:
   in 405 seconds with only that error. `/usr/bin/python3` reported 647/1153
   with 393 failures and 113 errors and is not a Hexaemeron gate.
   `/usr/bin/python3 -m unittest discover -s tests` printed `OK`.
-- Under `uv`, `lazarus.py replay plugins/lazarus/examples/goldfinch-v0
+- Under `uv`, `lazarus.py replay plugins/lazarus/examples/aave-v4-spoke-v0
   --port 0` printed `lazarus replay listening on http://127.0.0.1:51711`
   within 0.1 seconds; `eth_getStorageAt` slot `0x0` returned the sixty-four
   digit word ending in `01`; slot `0x1` returned `-32070` with the fragment

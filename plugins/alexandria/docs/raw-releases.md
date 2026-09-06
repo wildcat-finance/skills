@@ -89,6 +89,17 @@ undeclared file or directory makes verification fail. The command prints the
 release ID on success and changes nothing, so it also works against a read-only
 release tree.
 
+A `proof-backed-state` capture earns that class only during `verify`: its
+component must be a Lazarus manifest, every named fixture file must be present
+by digest and byte count, Alexandria must reconstruct and rerun Lazarus, and
+the capture must stay within the proved block and targets. Finality must be
+`unknown` because Lazarus proves block binding but reports no finality class.
+The scope must be subject-scoped and remain within the proof targets because a
+finite proof set is not a full dataset. Missing Lazarus or its pinned packages
+is a refusal because the claim is not earned until Lazarus has rechecked it;
+install `plugins/lazarus/requirements.lock` beside this checkout. The refusal
+names the capture that failed.
+
 The command does not establish publisher identity, completeness outside the
 declared boundary or canonical-chain finality. It makes no network request and
 has no live fallback.

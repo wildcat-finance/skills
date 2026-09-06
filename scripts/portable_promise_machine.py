@@ -54,6 +54,7 @@ ROOT_FILES = (
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
     Path("docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"),
     Path("docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md"),
+    Path("docs/decisions/ADR-078-echo-fiat-required-as-a-filer-set-label.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
 )
 

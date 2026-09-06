@@ -1,4 +1,4 @@
-"""The Goldfinch example README stays bound to its manifest digest.
+"""The Aave v4 example README stays bound to its manifest digest.
 
 Anchored in lazarus's own suite so the check runs when the example changes
 rather than on every unrelated gated change (it lived in
@@ -13,7 +13,7 @@ import unittest
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-EXAMPLE = PLUGIN_ROOT / "examples" / "goldfinch-v0"
+EXAMPLE = PLUGIN_ROOT / "examples" / "aave-v4-spoke-v0"
 
 
 class ExampleReadmeDigestTests(unittest.TestCase):

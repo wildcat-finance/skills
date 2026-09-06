@@ -53,8 +53,8 @@ canonical skill only when the selected workflow requires a named handoff.
 | Preserve finite historical Ethereum state and exact RPC traffic | [Lazarus](../../../plugins/lazarus/AGENTS.md) | `lazarus` |
 | Produce source-linked Solidity or Markdown chunks | [Lemma](../../../plugins/lemma/AGENTS.md) | `lemma` |
 | Apply executable credit laws | [Pandects](../../../plugins/pandects/AGENTS.md) | `pandects` |
-| Build a declared-address counterparty dossier | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
-| Shape the agent's own replies for an AuDHD reader, or shape durable agent-authored audit records and GitHub issue titles, bodies and comments | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
+| Build a declared-address counterparty dossier, or compare two Probitas borrower evidence runs for the same subject | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
+| Shape the agent's own replies for an AuDHD reader, or shape every record it writes down, including durable agent-authored audit records, GitHub issue titles, bodies and comments, pull requests, repository documents and commit messages | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
 | Compare validated run observations across runs, or inspect the cross-run comparison boundary | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
 | Build a venue-qualified credit-event release | [Tabularium](../../../plugins/tabularium/AGENTS.md) | `tabularium` |
 
@@ -85,6 +85,10 @@ build a checked cohort, infer bounded findings, render a fixed report, and
 verify the path from the original inputs. It cannot file an issue, mutate a
 repository, or dispatch a Fiat run. A comparison result still requires a
 person to choose the next owner and action.
+
+Probitas compares borrower evidence for one unchanged declared-address
+subject. Synkrisis compares validated run observations from agent executions;
+it does not compare borrower dossiers or their evidence files.
 
 ## Preserve the selected promise
 

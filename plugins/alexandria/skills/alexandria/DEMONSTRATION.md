@@ -9,7 +9,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 - Next demonstration job: Preserve a real Ethereum USDC interval and demonstrate the collector over it end to end.
 
 The registered record below runs `credit-history-v0`, the complete offline path
-over the preserved Goldfinch and Clearpool inputs. The demo frontier bullets
+over the preserved Aave v4 and Clearpool inputs. The demo frontier bullets
 keep their baseline wording until the lane advances.
 
 ```shoggoth-demonstration
@@ -19,8 +19,8 @@ keep their baseline wording until the lane advances.
   "plugin": "alexandria",
   "status": "real-data",
   "claim_id": "alexandria-credit-history-v0",
-  "claim": "The preserved Goldfinch and Clearpool inputs rebuild offline through release, index, query and the Probitas handoff to the recorded derived release id, and the rebuilt output verifies.",
-  "non_claim": "It does not establish source authenticity, complete venue coverage or canonical-chain finality; Goldfinch coverage stays partial and the 14 unqueried venue rows are stated gaps, not clean venues.",
+  "claim": "The preserved Aave v4 and Clearpool inputs rebuild offline through release, index, query and the Probitas handoff to the recorded derived release id, and the rebuilt output verifies.",
+  "non_claim": "It does not establish source authenticity, complete venue coverage or canonical-chain finality; Clearpool coverage stays partial and the 14 unqueried venue rows are stated gaps, not clean venues.",
   "network": {
     "policy": "denied"
   },
@@ -30,13 +30,13 @@ keep their baseline wording until the lane advances.
       "id": "plan",
       "class": "protocol",
       "path": "plugins/alexandria/examples/credit-history-v0/demo-plan.json",
-      "sha256": "5e5e3b8d3cf4f07cbb973a7dc631d9f158d8611ac90e6d28605948efe7192751"
+      "sha256": "60369dfba4e9bea4f547a3b63ba5126a4cc063badcbd7def641207b4edd8bfb1"
     },
     {
-      "id": "goldfinch-source",
+      "id": "aave-v4-source",
       "class": "protocol",
-      "path": "plugins/tabularium/examples/goldfinch-v0/source.json",
-      "sha256": "644b706804b6e28d69b1028b87937e0e36c882f703419d0e2bf568b056892bc9"
+      "path": "plugins/tabularium/examples/aave-v4-v0/source.json",
+      "sha256": "1d88fdb5bca293995fd02e5a59f060d74541c80405e7bf1987544e5f334a8744"
     },
     {
       "id": "clearpool-source",
@@ -75,8 +75,8 @@ keep their baseline wording until the lane advances.
     }
   ],
   "observations": [
-    "build: line \"sha256:d57f0b009d40a804e5f760e8cde4a6b1eb1ada1cc9dbf858e0494c1e750e840c\"",
-    "verify: line \"sha256:d57f0b009d40a804e5f760e8cde4a6b1eb1ada1cc9dbf858e0494c1e750e840c\""
+    "build: line \"sha256:fccc014cd400f553814b58911bb06cd450f395e6145e21c0071a06b092b181ec\"",
+    "verify: line \"sha256:fccc014cd400f553814b58911bb06cd450f395e6145e21c0071a06b092b181ec\""
   ],
   "frontier": {
     "version": "alexandria-demo-v0.1.0",

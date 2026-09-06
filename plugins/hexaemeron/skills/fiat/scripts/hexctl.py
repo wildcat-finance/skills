@@ -21,7 +21,10 @@ independent pull request rather than a run. The same read requires the issue's
 `carryover` block, and `done integrate` requires it of the run's own pull
 request body, so an outstanding item is either filed as its own issue, pointed
 at the issue that already carries it, or refused with a stated reason.
-`issue-check` runs that contract over a candidate body before anything is filed.
+`issue-check` also binds a candidate's title and labels to the repository's
+four issue queues before anything is filed. At integration, every `filed`
+carryover reference into wildcat-finance/skills is opened and replayed against
+that same publication contract; a URL alone is not a filing receipt.
 
 Exit codes: 0 success, 2 validation/usage error, 1 unexpected failure.
 `issue-check` exits 1 on findings, which is a report rather than a crash.
@@ -97,6 +100,28 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 )
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
+ISSUE_TITLE_BYTES_MAX = 512
+ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation"))
+FRAMEWORK_ISSUE_OPENING = (
+    "Protasis decides which skill or skills this observation upgrades. "
+    "The filer is the wrong party to guess."
+)
+FRAMEWORK_ISSUE_TITLE_RE = re.compile(
+    r"^framework-(?P<number>[1-9][0-9]*): (?P<summary>\S.*)$"
+)
+SKILL_ISSUE_TITLE_RE = re.compile(
+    r"^(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
+    r"(?P<kind>next|wish|[1-9][0-9]*): (?P<summary>\S.*)$"
+)
+
+# The status block ADR-014's amendment authorises: one span at the top of an open
+# issue's body recording its current status, supersession, or changed
+# requirement. The census reads bodies, so a correction that lands only in the
+# comment thread is a correction nobody compiling the queue will see. Absence is
+# ordinary and not a fault; a body that opens two blocks, or opens one and never
+# closes it, has made no statement and refuses.
+STATUS_BLOCK_START = "<!-- status:start -->"
+STATUS_BLOCK_END = "<!-- status:end -->"
 
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
@@ -286,6 +311,51 @@ SYNC_RESOLUTION_GUARD_KEYS = frozenset(
 )
 SYNC_TREE_PATH_BATCH_MAX = 64
 SYNC_TREE_ARG_BYTES_MAX = 64 * 1024
+DECISION_ASSIGNMENT_REPORT_SCHEMA = "fiat-decision-assignments/v1"
+DECISION_ASSIGNMENT_COMMAND_SCHEMA = "fiat-decision-assignment-command/v1"
+DECISION_ASSIGNMENT_RECEIPT_SCHEMA = (
+    "fiat-decision-assignment-composition/v1"
+)
+DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY = "fiat_decision_assignments_v1"
+DECISION_ASSIGNMENT_REPORT_RE = re.compile(
+    r"^\.hexaemeron/[a-z0-9][a-z0-9._-]*\.json$"
+)
+DECISION_ASSIGNMENT_REF_RE = re.compile(
+    r"^refs/(?:heads|remotes)/[A-Za-z0-9._/-]+$"
+)
+DECISION_ASSIGNMENT_REPORT_BYTES_MAX = 256 * 1024
+DECISION_ASSIGNMENT_MAPPINGS_MAX = 32
+DECISION_ASSIGNMENT_LIMITS = {
+    "max_adr_number": 999,
+    "max_blob_bytes": 1 << 20,
+    "max_drafts": 32,
+    "max_git_input_bytes": 2 << 20,
+    "max_git_output_bytes": 16 << 20,
+    "max_git_seconds": 20,
+    "max_heading_bytes": 4096,
+    "max_path_bytes": 1024,
+    "max_report_bytes": 256 << 10,
+    "max_report_depth": 16,
+    "max_slug_bytes": 96,
+    "max_tree_entries": 20_000,
+}
+DECISION_ASSIGNMENT_RECEIPT_KEYS = frozenset(
+    {
+        "schema",
+        "artifact",
+        "report_schema",
+        "report_sha256",
+        "base",
+        "base_ref",
+        "product",
+        "candidate",
+        "candidate_ref",
+        "result_tree",
+        "mappings",
+        "commit_message_sha256",
+        "limits",
+    }
+)
 GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
 GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
 GENERATOR_AGGREGATE_REGISTRY = {
@@ -313,6 +383,19 @@ RESOLUTION_SYNC_KEYS = frozenset(
         "resolution_guard",
     }
 )
+DECISION_ASSIGNMENT_SYNC_KEY = "decision_assignments"
+
+
+def _sync_field_set_is_supported(sync: dict) -> bool:
+    """Legacy syncs remain readable; new syncs may add one closed receipt."""
+    fields = set(sync)
+    legacy = RESOLUTION_SYNC_KEYS - {SYNC_BASE_HEAD_KEY}
+    return fields in {
+        RESOLUTION_SYNC_KEYS,
+        legacy,
+        RESOLUTION_SYNC_KEYS | {DECISION_ASSIGNMENT_SYNC_KEY},
+        legacy | {DECISION_ASSIGNMENT_SYNC_KEY},
+    }
 RESOLUTION_REVALIDATION_KEYS = frozenset(
     {
         "schema",
@@ -379,6 +462,10 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.47.1",
         "fiat-v5.48.1",
         "fiat-v5.49.1",
+        "fiat-v5.50.1",
+        "fiat-v5.51.1",
+        "fiat-v5.52.1",
+        "fiat-v5.53.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -452,6 +539,21 @@ VERSION_RESOLUTION_KEYS = frozenset(
         "ts",
     }
 )
+
+CHECKPOINT_IDENTITY_SCHEMA = "fiat-checkpoint-identity/v1"
+CHECKPOINT_IDENTITY_RESULT_SCHEMA = "fiat-checkpoint-identity-result/v1"
+CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA = "fiat-checkpoint-identity-evidence/v1"
+CHECKPOINT_IDENTITY_POLICY_SCHEMA = "fiat-checkpoint-behavior-policy/v1"
+CHECKPOINT_IDENTITY_OBSERVATIONS_SCHEMA = "fiat-checkpoint-observations/v1"
+CHECKPOINT_IDENTITY_DOMAIN = b"wildcat-fiat-checkpoint-identity/v1\0"
+CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX = 100_000
+CHECKPOINT_IDENTITY_SKILLS_MAX = 32
+CHECKPOINT_IDENTITY_TEXT_BYTES_MAX = 128
+
+RUN_ANCHOR_SCHEMA = "fiat-run-anchor/v1"
+RUN_ANCHOR_RECEIPT = "run_anchor"
+RUN_ANCHOR_REPOSITORY_UNBOUND = {"status": "unbound"}
+RUN_ANCHOR_TASK_NONE = {"kind": "none"}
 
 
 def scoped_path(base_dir: str, supplied: str, label: str) -> str:
@@ -1163,6 +1265,50 @@ def check_branch_name(name: str) -> None:
 def run_branch_of(state: dict):
     """The run's integration branch, or None for a run started before 3.4."""
     return state.get("run_branch")
+
+
+def init_starting_commit(base_dir: str, starting_ref: str) -> str:
+    """Resolve one validated init ref before the command may write anything."""
+    if not isinstance(starting_ref, str) or not starting_ref:
+        die("--base must name a branch or one full commit SHA")
+    if COMMIT_RE.fullmatch(starting_ref):
+        object_type = bounded_git(
+            base_dir,
+            ["cat-file", "-t", starting_ref],
+            "starting base does not resolve to an object",
+        )
+        if tool_text(object_type, "starting base object type").strip() != "commit":
+            die("starting base SHA does not name a commit object")
+        return starting_ref
+    check_branch_name(starting_ref)
+    expected_ref = f"refs/heads/{starting_ref}"
+    data = bounded_git(
+        base_dir,
+        ["show-ref", "--verify", "--hash", expected_ref],
+        "starting base does not resolve to a local branch",
+    )
+    lines = [
+        line.strip()
+        for line in tool_text(data, "starting base").splitlines()
+        if line.strip()
+    ]
+    if len(lines) != 1 or not COMMIT_RE.fullmatch(lines[0]):
+        die("starting base did not resolve to one full commit SHA")
+    return lines[0]
+
+
+def init_controller_identity() -> dict:
+    """The controller identity an init-owned anchor records."""
+    version = ledger_version(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            os.pardir,
+            "EVOLUTION.md",
+        )
+    )
+    if version is None:
+        die("init cannot resolve the controller version")
+    return {"name": "hexctl", "state_version": 1, "version": version}
 
 
 def integration_base_of(state: dict) -> str:
@@ -2393,19 +2539,8 @@ def parse_value(raw: str):
 
 # ------------------------------------------------------------------ commands
 
-def cmd_init(args) -> None:
-    origin_root = os.path.realpath(args.dir)
-    root = state_root(args.dir)
-    if os.path.exists(state_path(args.dir)):
-        die(f"state already exists at {root}; resume with `hexctl next`")
-    waiver = None
-    if args.controller_currency_waiver is not None:
-        waiver = args.controller_currency_waiver.strip()
-        if not waiver:
-            die(
-                "--controller-currency-waiver needs a reason; an empty one "
-                "records nothing"
-            )
+def init_preflight(args) -> dict:
+    """Resolve every immutable anchor input before init takes its write lock."""
     prefix = DEFAULT_CONFIG["git"]["run_branch_prefix"]
     issue_number = (
         task_issue_number(args.task_issue) if args.task_issue is not None else None
@@ -2425,8 +2560,60 @@ def cmd_init(args) -> None:
                 f"--run-branch for task issue {issue_number} must start with "
                 f"'{required_prefix}'"
             )
-    if run_branch == args.base:
-        die("--run-branch must differ from --base; the run needs its own branch")
+    integration_branch = (
+        DEFAULT_CONFIG["git"]["base"]
+        if COMMIT_RE.fullmatch(args.base)
+        else args.base
+    )
+    check_branch_name(integration_branch)
+    if run_branch == integration_branch:
+        die(
+            "--run-branch must differ from --base (the integration branch); "
+            "the run needs its own branch"
+        )
+    repo_root = repository_root(args.dir)
+    starting_commit = init_starting_commit(args.dir, args.base)
+    controller = init_controller_identity()
+    repository = target_repository_binding(args.dir)
+    task = run_anchor_task(args.task_issue, repository)
+    candidate = os.path.join(
+        repo_root, *WORKTREE_HOME, flattened_run_branch(run_branch)
+    )
+    if os.path.exists(state_path(candidate)):
+        die(
+            f"this run already has a worktree at {candidate}; "
+            f"resume with `hexctl --dir {candidate} next`"
+        )
+    worktree = check_worktree_path(repo_root, candidate)
+    refuse_checked_out_branch(args.dir, run_branch)
+    return {
+        "controller": controller,
+        "integration_branch": integration_branch,
+        "repository": repository,
+        "run_branch": run_branch,
+        "starting_commit": starting_commit,
+        "task": task,
+        "worktree": worktree,
+    }
+
+
+def cmd_init(args) -> None:
+    plan = getattr(args, "_init_preflight", None) or init_preflight(args)
+    origin_root = os.path.realpath(args.dir)
+    root = state_root(args.dir)
+    if os.path.exists(state_path(args.dir)):
+        die(f"state already exists at {root}; resume with `hexctl next`")
+    waiver = None
+    if args.controller_currency_waiver is not None:
+        waiver = args.controller_currency_waiver.strip()
+        if not waiver:
+            die(
+                "--controller-currency-waiver needs a reason; an empty one "
+                "records nothing"
+            )
+    run_branch = plan["run_branch"]
+    starting_commit = plan["starting_commit"]
+    integration_branch = plan["integration_branch"]
     frontier = None
     if args.frontier:
         ledger = args.frontier if os.path.isabs(args.frontier) else \
@@ -2451,7 +2638,7 @@ def cmd_init(args) -> None:
     # refusal still costs nothing: no worktree, no state, no ledger, no
     # breadcrumb.
     repo_root = repository_root(args.dir)
-    candidate = run_worktree_path(args.dir, run_branch)
+    candidate = plan["worktree"]
     if os.path.exists(state_path(candidate)):
         die(
             f"this run already has a worktree at {candidate}; "
@@ -2510,6 +2697,8 @@ def cmd_init(args) -> None:
             file=sys.stderr,
         )
     provenance = {**currency, "waiver": waiver}
+    if provenance.get("ledger_version") != plan["controller"]["version"]:
+        die("controller version changed during init; retry from a stable controller")
 
     home = os.path.dirname(worktree)
     os.makedirs(home, exist_ok=True)
@@ -2525,10 +2714,10 @@ def cmd_init(args) -> None:
             fh.write("*\n")
     bounded_git(
         args.dir,
-        ["worktree", "add", "-b", run_branch, worktree, args.base],
+        ["worktree", "add", "-b", run_branch, worktree, starting_commit],
         refusal=(
             f"could not create the run worktree at {worktree} "
-            f"for '{run_branch}' off '{args.base}'"
+            f"for '{run_branch}' off '{starting_commit}'"
         ),
     )
     try:
@@ -2563,7 +2752,7 @@ def cmd_init(args) -> None:
         "controller": "hexctl",
         "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA},
         "topic": args.topic,
-        "base": args.base,
+        "base": starting_commit,
         "run_branch": run_branch,
         "created_at": now(),
         "phase": "study",
@@ -2575,16 +2764,26 @@ def cmd_init(args) -> None:
         "frontier": frontier,
     }
     state["config"]["audit"]["log_path"] = run_audit_log_path(run_branch)
+    state["config"]["git"]["base"] = integration_branch
     state["config"]["git"]["worktree"] = worktree
     state["config"]["git"]["origin"] = origin_root
+    run_anchor = build_run_anchor(state, plan["repository"], plan["controller"])
+    if run_anchor["task"] != plan["task"]:
+        die("init task identity changed while constructing the run anchor", 1)
+    state["receipts"][RUN_ANCHOR_RECEIPT] = run_anchor
+    run_anchor_sha256 = hashlib.sha256(
+        canonical(run_anchor).encode("utf-8")
+    ).hexdigest()
     init_data = {
         "topic": args.topic,
-        "base": args.base,
+        "base": starting_commit,
+        "integration_branch": integration_branch,
         "run_branch": run_branch,
         "contracts": state["contracts"],
         "controller_currency": provenance,
         "task_issue_contract": task_issue_contract,
         "starting_commit": starting_commit,
+        "run_anchor_sha256": run_anchor_sha256,
     }
     if args.task_issue is not None:
         init_data["task_issue"] = args.task_issue
@@ -2596,7 +2795,7 @@ def cmd_init(args) -> None:
         die(f"could not record the run at {root}")
     print(
         f"initialised {root} (topic: {args.topic}); "
-        f"run branch {run_branch} off {args.base}"
+        f"run branch {run_branch} off {starting_commit}"
     )
     print(f"run worktree {worktree}")
     print(f"work in it: hexctl --dir {worktree} next")
@@ -3952,7 +4151,7 @@ def _require_resolution_sync(
     relations: dict,
 ) -> None:
     """Recheck the active signed composition and its target-path coverage."""
-    if set(sync) != RESOLUTION_SYNC_KEYS:
+    if not _sync_field_set_is_supported(sync):
         die("active version-resolution sync has an unsupported field set")
     if (
         sync.get("commit") != head_commit
@@ -4079,14 +4278,20 @@ def _require_resolution_sync(
         die("version resolution sync checks do not cover every affected path")
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
-    previous_sync = _active_sync_predecessor(
+    sync_history = _active_sync_history(
         as_dict(state.get("integrate")), head_commit
     )
+    previous_sync = sync_history[-1] if sync_history else None
     _require_sync_resolution_guard(
         base_dir,
         sync,
         product_head,
         previous_sync=previous_sync,
+    )
+    replay_sync_decision_assignment(
+        base_dir,
+        sync,
+        previous_sync=sync_history,
     )
 
 
@@ -4462,6 +4667,136 @@ def carryover_triage(text: str, label: str) -> tuple[list[dict], list[str]]:
     return parsed, [f"{label}: {fault}" for fault in faults]
 
 
+def status_block_span(
+    text: str, label: str
+) -> tuple[tuple[int, int] | None, list[str]]:
+    """The status block one issue body carries, and every fault in it.
+
+    Read outside fenced code, so a body quoting the delimiters as an example
+    carries no block. That is the rule which lets the decision record show its
+    own markers. Line numbers count the unfenced stream, because that is the
+    only sequence both this reader and a downstream consumer can agree on.
+
+    Absence returns ``(None, [])``. Most bodies carry no block, and a refusal
+    there would make the ordinary case the loud one.
+    """
+    opened = closed = None
+    faults: list[str] = []
+    lines = _unfenced_markdown_lines(text)
+    for number, physical in enumerate(lines, start=1):
+        line = physical.rstrip("\r\n").strip()
+        if line == STATUS_BLOCK_START:
+            if opened is not None:
+                return None, [
+                    f"{label} opens more than one status block, so no statement "
+                    f"in it is authoritative"
+                ]
+            opened = number
+        elif line == STATUS_BLOCK_END:
+            # An unmatched closer is refused wherever it sits, including after a
+            # block that already closed. A body carrying one is mid-edit, and
+            # reporting it clean tells the editor the opposite.
+            if opened is None or closed is not None:
+                return None, [
+                    f"{label} has a status block closed before it opened"
+                ]
+            closed = number
+    if opened is None:
+        return None, []
+    if closed is None:
+        return None, [
+            f"{label} opens a status block that is never closed, so the rest of "
+            f"the body would be read as its content"
+        ]
+    # The record puts the block above the filing prose, so a reader coming top to
+    # bottom meets the current statement before the original one. The rule
+    # protects what a reader sees, so blank lines and whole-line HTML comments do
+    # not count: 92 of the 137 issues open at the time this was written begin with
+    # the invisible `wildcat-origin` marker, and refusing the arrangement those
+    # bodies produce would make the contract unusable on the corpus it governs.
+    for physical in lines[:opened - 1]:
+        line = physical.strip()
+        if not line or (line.startswith("<!--") and line.endswith("-->")):
+            continue
+        return None, [
+            f"{label} opens its status block below the filing prose, so a "
+            f"reader meets the original requirement before the correction"
+        ]
+    content = lines[opened:closed - 1]
+    for offset, physical in enumerate(content, start=opened + 1):
+        if _contains_nonprinting_character(physical.rstrip("\r\n")):
+            faults.append(
+                f"{label} status block line {offset} contains a control character"
+            )
+    if faults:
+        return None, faults
+    return (opened, closed), []
+
+
+STALE_BODY_REPORT_SCHEMA = "fiat-stale-body-report/v1"
+STALE_BODY_INPUT_BYTES_MAX = 8 * 1024 * 1024
+STALE_BODY_ROWS_MAX = 2048
+
+
+def stale_body_report(bodies: list[dict]) -> dict:
+    """Which open issues carry no status block, and which carry a broken one.
+
+    Report-only, following ADR-053's posture for dead-code discovery: it counts
+    and names, and nothing here refuses. An absent block is the ordinary case
+    rather than a defect, so a gate on this number would be a gate on almost
+    every issue in the repository.
+
+    An absence and a malformed block are separated deliberately. A body nobody
+    has touched needs somebody to decide whether its requirement still holds; a
+    body mid-edit needs its own delimiters finished, which is a different job
+    for a different person.
+    """
+    rows = []
+    absent = malformed = carried = 0
+    for entry in bodies:
+        number = entry["number"]
+        body = entry.get("body")
+        title = entry.get("title")
+        # Hostile JSON reaches this parser. A wrong type used to surface as an
+        # AttributeError from deep inside the line reader, which is a traceback
+        # rather than a diagnosis; findings F-03 and F-04 in the plugin's own
+        # audit record are the same class, fixed the same way.
+        if body is not None and not isinstance(body, str):
+            die(f"issue {number} carries a body that is not text")
+        if title is not None and not isinstance(title, str):
+            die(f"issue {number} carries a title that is not text")
+        span, faults = status_block_span(body or "", f"issue {number}")
+        if faults:
+            malformed += 1
+            state, detail = "malformed", faults[0]
+        elif span is None:
+            absent += 1
+            state, detail = "absent", "no status block"
+        else:
+            carried += 1
+            continue
+        rows.append({
+            # Titles come from GitHub and these rows are printed to a terminal,
+            # so an escape sequence in a crafted title would render raw. The
+            # carryover row reader refuses control characters by name; this one
+            # strips them, because a title is display text rather than a field
+            # any decision rests on.
+            "number": number,
+            "title": "".join(c for c in (title or "") if c.isprintable()),
+            "state": state,
+            "detail": detail,
+        })
+    rows.sort(key=lambda row: row["number"])
+    return {
+        "schema": STALE_BODY_REPORT_SCHEMA,
+        "surveyed": len(bodies),
+        "with_block": carried,
+        "without_block": absent,
+        "malformed": malformed,
+        "rows": rows,
+    }
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -4502,12 +4837,133 @@ def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
     """
     value, value_faults = fiat_required_value(text, label)
     carryover, carryover_faults = carryover_triage(text, label)
+    status, status_faults = status_block_span(text, label)
     record = {
         "fiat_required": None if value is None else int(value),
         "carryover": carryover,
+        "status_block": None if status is None else [status[0], status[1]],
         "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
     }
-    return record, [*value_faults, *carryover_faults]
+    return record, [*value_faults, *carryover_faults, *status_faults]
+
+
+def issue_queue_contract(
+    title: str, labels: list[str], text: str, label: str
+) -> tuple[dict, list[str]]:
+    """The canonical queue selected by one publishable issue title.
+
+    The repository has four queues, not a free-form title convention. Queue
+    labels are checked as one mutually exclusive set while unrelated labels
+    remain allowed. A framework observation also carries the exact opening
+    that leaves ownership for Protasis to decide.
+    """
+    faults: list[str] = []
+    queue = required_label = owner = None
+    if not isinstance(title, str):
+        return {}, [f"{label} carries a title that is not text"]
+    if len(title.encode("utf-8")) > ISSUE_TITLE_BYTES_MAX:
+        faults.append(
+            f"{label} title is above the {ISSUE_TITLE_BYTES_MAX}-byte cap"
+        )
+    if _contains_nonprinting_character(title):
+        faults.append(f"{label} title contains a control character")
+    framework = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+    skill = None if framework else SKILL_ISSUE_TITLE_RE.fullmatch(title)
+    if framework:
+        queue, required_label, owner = "framework-N", "observation", "framework"
+    elif skill:
+        owner = skill.group("skill")
+        kind = skill.group("kind")
+        if kind == "next":
+            queue, required_label = "{skill}-next", "held-job"
+        elif kind == "wish":
+            queue = "{skill}-wish"
+        else:
+            queue, required_label = "{skill}-N", "wish"
+    else:
+        faults.append(
+            f"{label} title is not one of `{{skill}}-next: <summary>`, "
+            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, or "
+            "`framework-N: <summary>`"
+        )
+
+    queue_labels = sorted(set(labels) & ISSUE_QUEUE_LABELS)
+    expected = [] if required_label is None else [required_label]
+    if queue is not None and queue_labels != expected:
+        actual = ", ".join(f"`{value}`" for value in queue_labels) or "none"
+        wanted = ", ".join(f"`{value}`" for value in expected) or "no queue label"
+        faults.append(
+            f"{label} queue {queue} requires {wanted}; its queue labels are {actual}"
+        )
+
+    if queue == "framework-N":
+        lines = _unfenced_markdown_lines(text)
+        span, _ = status_block_span(text, label)
+        if span is not None:
+            lines = lines[span[1]:]
+        first_visible = None
+        for physical in lines:
+            line = physical.strip()
+            if not line or (line.startswith("<!--") and line.endswith("-->")):
+                continue
+            first_visible = line
+            break
+        if first_visible != FRAMEWORK_ISSUE_OPENING:
+            faults.append(
+                f"{label} framework body must open with exactly "
+                f"{FRAMEWORK_ISSUE_OPENING!r}"
+            )
+
+    return {
+        "queue": queue,
+        "owner": owner,
+        "title": title,
+        "labels": sorted(set(labels)),
+    }, faults
+
+
+def issue_label_names(payload: dict, label: str, path: str) -> list[str]:
+    """Read GitHub's issue labels without accepting an untyped substitute."""
+    raw = payload.get("labels")
+    if not isinstance(raw, list):
+        github_unreachable(label, path, "returned labels that are not an array")
+    names = []
+    for index, entry in enumerate(raw, start=1):
+        name = entry.get("name") if isinstance(entry, dict) else entry
+        if not isinstance(name, str) or not name:
+            github_unreachable(
+                label, path, f"returned label {index} without a text name"
+            )
+        names.append(name)
+    return names
+
+
+def issue_publication_contract_faults(
+    title: str, labels: list[str], text: str, label: str
+) -> tuple[dict, list[str]]:
+    """The complete machine-checkable contract for a newly filed issue."""
+    body_record, body_faults = issue_contract_faults(text, label)
+    queue_record, queue_faults = issue_queue_contract(title, labels, text, label)
+    return {**queue_record, **body_record}, [*queue_faults, *body_faults]
+
+
+def issue_publication_from_payload(
+    payload: dict, label: str, path: str
+) -> tuple[dict, list[str]]:
+    """Read and check one GitHub issue payload as exact publication bytes."""
+    title = payload.get("title")
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(label, path, "returned a body that is not text")
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            "reader will parse, so its publication contract went unread"
+        )
+    labels = issue_label_names(payload, label, path)
+    return issue_publication_contract_faults(title, labels, body, label)
 
 
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
@@ -4648,6 +5104,51 @@ def carried_forward_record(path: str) -> dict:
         "duplicates": [row["id"] for row in rows
                        if row["disposition"] == CARRYOVER_DUPLICATE],
     }
+
+
+def filed_issue_publication_records(
+    base_dir: str, path: str
+) -> tuple[list[dict], list[str]]:
+    """Replay newly filed Skills issues named by the run's carryover rows.
+
+    `duplicate` may point at a legacy issue and therefore remains a reference,
+    not a claim that the old filing follows today's convention. `filed` is the
+    run's own publication claim. For this repository, integration proves that
+    claim by reading the issue back and applying the same contract as the
+    pre-publication command.
+    """
+    with open(path, encoding="utf-8") as handle:
+        text = handle.read()
+    section = carried_forward_section(text) or ""
+    rows, _ = carryover_triage(section, path)
+    records: list[dict] = []
+    faults: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        if row["disposition"] != CARRYOVER_FILED:
+            continue
+        reference = row["reference"]
+        identity = github_issue_identity(reference)
+        if identity is None or identity[0] != "wildcat-finance/skills":
+            continue
+        if reference in seen:
+            continue
+        seen.add(reference)
+        repository, number = identity
+        api_path = f"repos/{repository}/issues/{number}"
+        label = f"filed issue {repository}#{number}"
+        payload = github_rest(base_dir, api_path, label)
+        record, issue_faults = issue_publication_from_payload(
+            payload, label, api_path
+        )
+        faults.extend(issue_faults)
+        records.append({
+            "issue": reference,
+            "repository": repository,
+            "number": number,
+            **record,
+        })
+    return records, faults
 
 
 def base_ledger_versions(base_dir: str, base_commit: str, ledger: str) -> frozenset:
@@ -5240,7 +5741,12 @@ def cmd_currency(args) -> None:
         sys.exit(3)
 
 
-RESERVED_RECEIPTS = {"study", "runbook", "run_observations"}
+RESERVED_RECEIPTS = {
+    "study",
+    "runbook",
+    "run_observations",
+    RUN_ANCHOR_RECEIPT,
+}
 
 
 def cmd_record(args) -> None:
@@ -5264,6 +5770,14 @@ def cmd_record(args) -> None:
         # Recording context while halted is allowed; progress commands are not.
         pass
     value = parse_value(args.value)
+    if args.key == DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY:
+        replay_decision_assignment_receipt(args.dir, value)
+        existing = state["receipts"].get(args.key)
+        if existing is not None:
+            if existing != value:
+                die("bootstrap decision assignment receipt cannot be replaced")
+            print("bootstrap decision assignment receipt already recorded")
+            return
     if args.key == "task_issue":
         if args.key not in state["receipts"]:
             die(
@@ -5279,23 +5793,84 @@ def cmd_record(args) -> None:
     print(f"recorded {args.key}")
 
 
-def cmd_issue_check(args) -> None:
-    """Check one candidate or filed issue body against the filing contract.
+def cmd_stale_bodies(args) -> None:
+    """Report which open issues carry no status block, or a broken one.
 
-    Stateless, so it runs before an issue exists and outside any run. Both
-    questions are reported together: the `Fiat-Required` decision, and whether
-    every outstanding item has been considered for an issue of its own and
-    compared against what is already filed.
+    Report-only. It prints what it found and exits zero whatever that is,
+    following ADR-053's posture for dead-code discovery. Almost every issue in
+    a repository lacks a block, so a gate on this count would refuse nearly
+    everything and teach the reader to bypass it.
+
+    The bodies come from a file rather than the network, because the survey a
+    person acts on is one they can rerun on the same input and get the same
+    answer. Produce that file with the reader's own transport, and pass
+    `--paginate`: the issues endpoint returns pull requests alongside issues,
+    so one unpaginated page of 100 yielded 59 issues out of 138 here and the
+    survey could not tell it had seen well under half of them.
+
+        gh api --paginate "repos/OWNER/NAME/issues?state=open&per_page=100" \
+          --jq '.[] | select(.pull_request == null) | {number, title, body}'
+
+    Collect those objects into one JSON array before passing the file in. The
+    counts describe the file and never the repository: this reader is handed a
+    set and cannot know what was left out of it, so it reports `surveyed`
+    rather than `open` and leaves the completeness claim to whoever produced
+    the file.
+    """
+    try:
+        with open(args.bodies, "rb") as handle:
+            raw = handle.read(STALE_BODY_INPUT_BYTES_MAX + 1)
+    except OSError as exc:
+        die(f"{args.bodies} cannot be read ({exc})")
+    if len(raw) > STALE_BODY_INPUT_BYTES_MAX:
+        die(f"{args.bodies} is above the {STALE_BODY_INPUT_BYTES_MAX}-byte cap "
+            f"this reader will parse")
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        die(f"{args.bodies} is not readable JSON ({exc})")
+    if not isinstance(payload, list):
+        die(f"{args.bodies} must hold a JSON array of issues")
+    if len(payload) > STALE_BODY_ROWS_MAX:
+        die(f"{args.bodies} holds {len(payload)} issues, above the "
+            f"{STALE_BODY_ROWS_MAX} this reader will survey")
+    bodies = []
+    for index, entry in enumerate(payload):
+        if not isinstance(entry, dict) or not isinstance(entry.get("number"), int):
+            die(f"{args.bodies} entry {index} carries no integer issue number")
+        bodies.append(entry)
+    report = stale_body_report(bodies)
+    if args.json:
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return
+    print(f"{report['surveyed']} issue(s) surveyed: {report['with_block']} carry a "
+          f"status block, {report['without_block']} carry none, "
+          f"{report['malformed']} carry a broken one")
+    for row in report["rows"]:
+        print(f"  #{row['number']} {row['state']}: {row['title']}")
+    print("report-only; nothing here refuses")
+
+
+def cmd_issue_check(args) -> None:
+    """Check one candidate or filed issue against the publication contract.
+
+    Stateless, so it runs before an issue exists and outside any run.
+    The queue title, queue label, framework opening, `Fiat-Required` decision,
+    and carryover triage are reported together.
 
     Shape alone. A `duplicate` row pointing at a real issue about something else
-    passes here, an issue that exists is never opened, and a `none` reason
-    nobody should have accepted still counts as an answer. Whether the
-    disposition was the right one stays with the reviewer; whether the filer
+    passes here, and a `none` reason nobody should have accepted still counts as
+    an answer. Carryover references are not followed by this command. Whether
+    the disposition was right stays with the reviewer; whether the filer
     answered at all is settled here.
     """
     if bool(args.body) == bool(args.issue):
         die("issue-check needs exactly one of --body <path> or --issue <url>")
     if args.body:
+        repository = target_repository_binding(args.dir)
+        skills_contract = repository == "wildcat-finance/skills"
+        if skills_contract and args.title is None:
+            die("issue-check --body also needs the exact candidate --title")
         label = args.body
         try:
             with open(args.body, "rb") as handle:
@@ -5310,23 +5885,38 @@ def cmd_issue_check(args) -> None:
         except UnicodeDecodeError:
             die(f"{args.body} is not UTF-8")
     else:
+        if args.title is not None or args.label:
+            die(
+                "issue-check --issue reads the remote title and labels; "
+                "do not supply them"
+            )
         identity = github_issue_identity(args.issue)
         if identity is None:
             die(f"--issue {args.issue} is not a canonical GitHub issue URL")
         repository, number = identity
+        skills_contract = repository.casefold() == "wildcat-finance/skills"
         label = f"{repository}#{number}"
         payload = github_rest(
             args.dir, f"repos/{repository}/issues/{number}", f"issue {label}"
         )
-        text = payload.get("body") or ""
-        if not isinstance(text, str):
-            github_unreachable(
-                f"issue {label}",
-                f"repos/{repository}/issues/{number}",
-                "returned a body that is not text",
+        path = f"repos/{repository}/issues/{number}"
+        if skills_contract:
+            record, faults = issue_publication_from_payload(
+                payload, label, path
             )
+        else:
+            text = payload.get("body") or ""
+            if not isinstance(text, str):
+                github_unreachable(label, path, "returned a body that is not text")
+            record, faults = issue_contract_faults(text, label)
 
-    record, faults = issue_contract_faults(text, label)
+    if args.body:
+        if skills_contract:
+            record, faults = issue_publication_contract_faults(
+                args.title, args.label, text, label
+            )
+        else:
+            record, faults = issue_contract_faults(text, label)
     for fault in faults:
         print(f"{label}: {fault}" if not fault.startswith(label) else fault,
               file=sys.stderr)
@@ -5343,6 +5933,10 @@ def cmd_issue_check(args) -> None:
     duplicates = [row for row in record["carryover"]
                   if row["disposition"] == CARRYOVER_DUPLICATE]
     print(f"{label}: clean")
+    if skills_contract:
+        queue_labels = sorted(set(record["labels"]) & ISSUE_QUEUE_LABELS)
+        rendered_labels = ", ".join(queue_labels) or "none"
+        print(f"queue: {record['queue']} (queue labels: {rendered_labels})")
     print(f"{FIAT_REQUIRED_KEY}: {record['fiat_required']} ({route})")
     print(
         f"carryover: {len(record['carryover'])} row(s), {len(filed)} filed, "
@@ -5521,7 +6115,9 @@ def cmd_observe(args) -> None:
     )
 
 
-def verify_observation_bindings(base_dir: str, state: dict) -> tuple[int, int]:
+def verify_observation_bindings(
+    base_dir: str, state: dict, *, allow_unavailable: bool = False
+) -> tuple[int, int]:
     bindings = state["receipts"].get("run_observations")
     if not isinstance(bindings, list) or not bindings:
         observation_error(
@@ -5599,17 +6195,50 @@ def verify_observation_bindings(base_dir: str, state: dict) -> tuple[int, int]:
                 1,
             )
         used_record_lines.add(record.get("_line"))
-        if (
-            binding.get("capture_status") != "accepted"
-            or binding.get("validation_status") != "passed"
-            or binding.get("redaction_status") != "passed"
-        ):
+        available = (
+            binding.get("capture_status") == "accepted"
+            and binding.get("validation_status") == "passed"
+            and binding.get("redaction_status") == "passed"
+        )
+        if not available and not allow_unavailable:
             observation_error(
                 "FOB005",
                 "the requested observation claim is unavailable or failed",
                 "capture, validate, and redact an accepted prefix before claiming it",
                 1,
             )
+        if not available:
+            if (
+                set(binding)
+                != {
+                    "schema",
+                    "observation_contract",
+                    "controller_run_id",
+                    "recorded_at",
+                    "capture_status",
+                    "redaction_status",
+                    "receipt",
+                    "validation_status",
+                    "reason_code",
+                }
+                or binding.get("capture_status") not in OBSERVATION_CAPTURE_STATUSES
+                or binding.get("capture_status") == "accepted"
+                or binding.get("validation_status") != "unknown"
+                or binding.get("redaction_status") not in ("failed", "unknown")
+                or not isinstance(binding.get("recorded_at"), str)
+                or not binding["recorded_at"].isascii()
+                or len(binding["recorded_at"].encode("ascii"))
+                > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+                or not isinstance(binding.get("reason_code"), str)
+                or OBSERVATION_REASON_RE.fullmatch(binding["reason_code"]) is None
+            ):
+                observation_error(
+                    "FOB003",
+                    "a non-available observation binding has an invalid closed shape",
+                    "restore the complete receipted binding and verify again",
+                    1,
+                )
+            continue
         artifact = binding.get("artifact")
         byte_count = binding.get("byte_count")
         event_count = binding.get("event_count")
@@ -5739,6 +6368,12 @@ def cmd_config(args) -> None:
     value = parse_value(args.value)
     if args.path == "audit.log_path":
         value = check_audit_log_path(args.dir, state, value)
+    anchor = state["receipts"].get(RUN_ANCHOR_RECEIPT)
+    if anchor is not None and args.path == "git.base":
+        die("config git.base is fixed by the init-owned run anchor")
+    if anchor is not None and args.path == "git":
+        if not isinstance(value, dict) or value.get("base") != node[leaf].get("base"):
+            die("config git.base is fixed by the init-owned run anchor")
     node[leaf] = value
     commit(args.dir, state, "config-set", {"path": args.path, "value": node[leaf]})
     print(f"set {args.path}")
@@ -6056,6 +6691,12 @@ def done_runbook(args, state: dict) -> None:
             die("each step must be a string or an object with a 'title'")
     if any(not title.strip() for title in titles):
         die("step titles must be non-empty")
+    expected_topology = list(enumerate(titles, 1))
+    if _runbook_topology(artifact_text) != expected_topology:
+        die(
+            "runbook Step headings must exactly match steps-file titles, "
+            "numbers, and order; edit the runbook or steps file, then retry"
+        )
     if design_evidence_required(state):
         design_transition = _prepare_design_transition(args.dir, state, "step:1")
     state["steps"] = [
@@ -7014,6 +7655,13 @@ def _integrate_directive(
                 "disposes of nothing, so integration does not proceed on "
                 "leftovers nothing was decided about"
             ),
+            "filed_issue_gate": (
+                "for every `filed` reference into wildcat-finance/skills, "
+                "done integrate reads the remote title, labels and body, "
+                "replays the canonical queue and filing contract, and records "
+                "the checked publication shape; `duplicate` remains "
+                "legacy-compatible"
+            ),
         },
         **({"version_resolution": resolution} if resolution is not None else {}),
         "then": then,
@@ -7210,21 +7858,37 @@ def _sync_tree_entries(
     return identities
 
 
-def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
-    """Return the sync immediately superseded by the active receipt."""
+def _active_sync_history(integrate: dict, active_commit: str) -> list[dict]:
+    """Return the bounded, fully joined history behind the active sync."""
     history = integrate.get("superseded_syncs") or []
-    if not isinstance(history, list):
+    if (
+        not isinstance(history, list)
+        or len(history) > INTEGRATION_SYNC_SUPERSESSIONS_MAX
+    ):
         die("recorded superseded integration syncs are malformed")
     if not history:
-        return None
-    tail = history[-1]
-    previous = tail.get("sync") if isinstance(tail, dict) else None
-    if (
-        not isinstance(previous, dict)
-        or tail.get("superseded_by") != active_commit
-    ):
-        die("active integration sync is not joined to its supersession history")
-    return previous
+        return []
+    expected = require_full_sha(active_commit, "active integration sync")
+    seen = {expected}
+    reversed_syncs = []
+    for entry in reversed(history):
+        previous = entry.get("sync") if isinstance(entry, dict) else None
+        if not isinstance(previous, dict):
+            die("recorded superseded integration syncs are malformed")
+        superseded_by = require_full_sha(
+            entry.get("superseded_by"), "superseding integration sync"
+        )
+        if superseded_by != expected:
+            die("active integration sync is not joined to its supersession history")
+        previous_commit = require_full_sha(
+            previous.get("commit"), "superseded integration sync"
+        )
+        if previous_commit in seen:
+            die("recorded superseded integration syncs are malformed")
+        seen.add(previous_commit)
+        reversed_syncs.append(previous)
+        expected = previous_commit
+    return list(reversed(reversed_syncs))
 
 
 def sync_resolution_guard_record(
@@ -7347,6 +8011,881 @@ def _sha256_value(value, label: str) -> str:
         die(f"{label} must be a lowercase SHA-256 digest")
     return value
 
+
+def _decision_assignment_artifact(base_dir: str, value: str) -> tuple[str, str]:
+    """Resolve one controller-owned report path without following a symlink."""
+    try:
+        encoded_value = value.encode("ascii", "strict") if isinstance(value, str) else b""
+    except UnicodeEncodeError:
+        encoded_value = b""
+    if (
+        not isinstance(value, str)
+        or DECISION_ASSIGNMENT_REPORT_RE.fullmatch(value) is None
+        or not encoded_value
+        or len(encoded_value) > 1024
+    ):
+        die("decision assignment report path is malformed")
+    root = os.path.realpath(base_dir)
+    resolved = os.path.realpath(os.path.join(root, value))
+    if not contained_in(root, resolved):
+        die("decision assignment report path escapes the repository")
+    path = os.path.join(root, value)
+    try:
+        metadata = os.lstat(path)
+    except OSError:
+        die("decision assignment report cannot be read")
+    if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISREG(metadata.st_mode):
+        die("decision assignment report is not a regular file")
+    return value, path
+
+
+def _decision_assignment_report(base_dir: str, artifact: str) -> tuple[dict, bytes]:
+    """Read and close-parse the allocator's canonical report bytes."""
+    artifact, path = _decision_assignment_artifact(base_dir, artifact)
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(DECISION_ASSIGNMENT_REPORT_BYTES_MAX + 1)
+    except OSError:
+        die("decision assignment report cannot be read")
+    if len(raw) > DECISION_ASSIGNMENT_REPORT_BYTES_MAX:
+        die("decision assignment report exceeds its byte ceiling")
+    try:
+        report = json.loads(
+            raw.decode("ascii"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError):
+        die("decision assignment report is not canonical ASCII JSON")
+    if not isinstance(report, dict) or set(report) != {
+        "base",
+        "base_ref",
+        "limits",
+        "mappings",
+        "object_format",
+        "product",
+        "result_tree",
+        "schema",
+    }:
+        die("decision assignment report has an unsupported field set")
+    if (
+        report.get("schema") != DECISION_ASSIGNMENT_REPORT_SCHEMA
+        or report.get("limits") != DECISION_ASSIGNMENT_LIMITS
+        or report.get("object_format") not in {"sha1", "sha256"}
+    ):
+        die("decision assignment report has an unsupported contract")
+    oid_length = 40 if report["object_format"] == "sha1" else 64
+
+    def object_id(value, label: str) -> str:
+        if (
+            not isinstance(value, str)
+            or len(value) != oid_length
+            or re.fullmatch(r"[0-9a-f]+", value) is None
+        ):
+            die(f"decision assignment report {label} is malformed")
+        return value
+
+    for field in ("base", "product", "result_tree"):
+        object_id(report.get(field), field)
+    base_ref = report.get("base_ref")
+    if (
+        not isinstance(base_ref, str)
+        or DECISION_ASSIGNMENT_REF_RE.fullmatch(base_ref) is None
+    ):
+        die("decision assignment report base ref is malformed")
+    mappings = report.get("mappings")
+    if (
+        not isinstance(mappings, list)
+        or not 1 <= len(mappings) <= DECISION_ASSIGNMENT_MAPPINGS_MAX
+    ):
+        die("decision assignment report mapping count is malformed")
+    mapping_keys = {
+        "draft_path",
+        "final_path",
+        "identity",
+        "input_blob",
+        "mode",
+        "number",
+        "number_text",
+        "output_blob",
+        "slug",
+    }
+    slugs = []
+    numbers = []
+    for index, row in enumerate(mappings):
+        if not isinstance(row, dict) or set(row) != mapping_keys:
+            die(f"decision assignment mapping {index} is malformed")
+        slug = row.get("slug")
+        if (
+            not isinstance(slug, str)
+            or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) is None
+            or len(slug.encode("ascii")) > 96
+        ):
+            die(f"decision assignment mapping {index} slug is malformed")
+        number = row.get("number")
+        number_text = row.get("number_text")
+        if (
+            type(number) is not int
+            or not 1 <= number <= 999
+            or number_text != f"{number:03d}"
+        ):
+            die(f"decision assignment mapping {index} number is malformed")
+        expected = {
+            "draft_path": f"docs/decisions/drafts/{slug}.md",
+            "final_path": f"docs/decisions/ADR-{number_text}-{slug}.md",
+            "identity": f"adr/{slug}",
+        }
+        if any(row.get(field) != value for field, value in expected.items()):
+            die(f"decision assignment mapping {index} paths are malformed")
+        if row.get("mode") not in {"100644", "100755"}:
+            die(f"decision assignment mapping {index} mode is malformed")
+        object_id(row.get("input_blob"), f"mapping {index} input blob")
+        object_id(row.get("output_blob"), f"mapping {index} output blob")
+        slugs.append(slug)
+        numbers.append(number)
+    if slugs != sorted(set(slugs)) or len(numbers) != len(set(numbers)):
+        die("decision assignment mappings are not ordered and unique")
+    try:
+        expected_raw = (canonical(report) + "\n").encode("ascii")
+    except UnicodeEncodeError:
+        die("decision assignment report is not canonical ASCII JSON")
+    if raw != expected_raw:
+        die("decision assignment report bytes are not canonical")
+    return report, raw
+
+
+def _decision_assignment_tool_environment() -> dict[str, str]:
+    """Run the trusted allocator without inherited Git or Python substitution."""
+    environment = {
+        name: value
+        for name, value in _native_relation_environment().items()
+        if not name.startswith("GIT_") and not name.startswith("PYTHON")
+    }
+    environment["PYTHONNOUSERSITE"] = "1"
+    return environment
+
+
+def _run_decision_assignment_report_replay(
+    base_dir: str, artifact: str, report: dict, raw: bytes, allocator: str
+) -> None:
+    """Run Hypomnema against one repository whose report refs are already fixed."""
+    output = bounded_tool(
+        base_dir,
+        sys.executable,
+        [
+            "-I",
+            allocator,
+            "replay",
+            "--repo",
+            os.path.realpath(base_dir),
+            "--report",
+            artifact,
+        ],
+        "decision assignment report did not replay",
+        environment=_decision_assignment_tool_environment(),
+    )
+    try:
+        result = json.loads(
+            output.decode("ascii"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError):
+        die("decision assignment allocator returned malformed output")
+    if result != {
+        "base": report["base"],
+        "mapping_count": len(report["mappings"]),
+        "outcome": "replayed",
+        "product": report["product"],
+        "result_tree": report["result_tree"],
+        "schema": DECISION_ASSIGNMENT_COMMAND_SCHEMA,
+    }:
+        die("decision assignment allocator returned mismatched output")
+    reread, reread_raw = _decision_assignment_report(base_dir, artifact)
+    if reread != report or reread_raw != raw:
+        die("decision assignment report changed during replay")
+
+
+def _decision_assignment_common_objects(base_dir: str) -> str:
+    """Return the one native object directory safe for a private replay repo."""
+    _git_dir, common_dir = _native_relation_repository_identity(base_dir)
+    objects = os.path.join(common_dir, "objects")
+    try:
+        metadata = os.lstat(objects)
+        encoded = os.fsencode(objects)
+    except (OSError, UnicodeError):
+        die("decision assignment native object directory cannot be read")
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or stat.S_ISLNK(metadata.st_mode)
+        or not os.path.isabs(objects)
+        or not encoded
+        or len(encoded) > 4096
+        or any(byte in encoded for byte in (b"\x00", b"\n", b"\r"))
+    ):
+        die("decision assignment native object directory is malformed")
+    return objects
+
+
+def _write_decision_assignment_replay_file(path: str, raw: bytes) -> None:
+    """Write one private regular file without following a pre-existing path."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags, 0o600)
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except OSError:
+        die("decision assignment private replay file cannot be written")
+
+
+def _replay_decision_assignment_report(
+    base_dir: str,
+    artifact: str,
+    report: dict,
+    raw: bytes,
+    *,
+    verify_base_ref: bool = True,
+) -> None:
+    """Replay Hypomnema policy, optionally isolating its mutable ref check."""
+    allocator = os.path.realpath(
+        os.path.join(
+            plugin_root(),
+            "skills",
+            "hypomnema",
+            "scripts",
+            "decision_assignments.py",
+        )
+    )
+    if not os.path.isfile(allocator) or os.path.islink(allocator):
+        die("trusted decision assignment allocator is unavailable")
+    if verify_base_ref:
+        _run_decision_assignment_report_replay(
+            base_dir, artifact, report, raw, allocator
+        )
+        return
+
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="fiat-decision-assignment-policy-"
+        ) as temporary:
+            replay_root = os.path.join(temporary, "repository")
+            bounded_tool(
+                base_dir,
+                "git",
+                [
+                    "init",
+                    "--quiet",
+                    f"--object-format={report['object_format']}",
+                    replay_root,
+                ],
+                "decision assignment private replay repository cannot be initialized",
+                environment=_native_relation_environment(),
+            )
+            objects = _decision_assignment_common_objects(base_dir)
+            alternates = os.path.join(
+                replay_root, ".git", "objects", "info", "alternates"
+            )
+            _write_decision_assignment_replay_file(
+                alternates, os.fsencode(objects) + b"\n"
+            )
+            report_path = os.path.join(replay_root, artifact)
+            os.makedirs(os.path.dirname(report_path), mode=0o700)
+            _write_decision_assignment_replay_file(report_path, raw)
+            bounded_tool(
+                replay_root,
+                "git",
+                [
+                    "--no-replace-objects",
+                    "update-ref",
+                    "--no-deref",
+                    report["base_ref"],
+                    report["base"],
+                ],
+                "decision assignment private base ref cannot be fixed",
+                environment=_native_relation_environment(),
+            )
+            _run_decision_assignment_report_replay(
+                replay_root, artifact, report, raw, allocator
+            )
+    except OSError:
+        die("decision assignment private replay repository cannot be prepared")
+
+
+def _decision_assignment_filter_config(
+    base_dir: str, scope: str
+) -> tuple[int, bytes]:
+    """Read one fixed repository config scope without exposing its values."""
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "config",
+            scope,
+            "--includes",
+            "--name-only",
+            "--get-regexp",
+            r"^filter\..*\.(clean|process)$",
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in {0, 1}:
+        die("decision assignment repository filter configuration cannot be read")
+    return status, output
+
+
+def _decision_assignment_reject_clean_filters(base_dir: str) -> None:
+    """Refuse executable clean-filter state before Git observes the worktree."""
+    status, output = _decision_assignment_filter_config(base_dir, "--local")
+    if status == 0 or output:
+        die("decision assignment repository configures a clean or process filter")
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "config",
+            "--local",
+            "--includes",
+            "--type=bool",
+            "--get",
+            "extensions.worktreeConfig",
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in {0, 1}:
+        die("decision assignment repository filter configuration cannot be read")
+    if status == 1:
+        if output:
+            die("decision assignment repository filter configuration is malformed")
+        return
+    try:
+        enabled = output.decode("ascii").strip()
+    except UnicodeDecodeError:
+        enabled = ""
+    if enabled == "false":
+        return
+    if enabled != "true":
+        die("decision assignment repository filter configuration is malformed")
+    status, output = _decision_assignment_filter_config(base_dir, "--worktree")
+    if status == 0 or output:
+        die("decision assignment repository configures a clean or process filter")
+
+
+def _decision_assignment_index_snapshot(path: str, label: str) -> bytes:
+    """Read one stable regular Git index without following its final path."""
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        named_before = os.lstat(path)
+        if (
+            stat.S_ISLNK(named_before.st_mode)
+            or not stat.S_ISREG(named_before.st_mode)
+            or named_before.st_size > GIT_OUTPUT_MAX
+        ):
+            die(f"decision assignment {label} is not a bounded regular file")
+        descriptor = os.open(path, flags)
+        with os.fdopen(descriptor, "rb") as handle:
+            opened = os.fstat(handle.fileno())
+            raw = handle.read(GIT_OUTPUT_MAX + 1)
+            finished = os.fstat(handle.fileno())
+        named_after = os.lstat(path)
+    except OSError:
+        die(f"decision assignment {label} cannot be read")
+    identity = lambda value: (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+    if (
+        len(raw) > GIT_OUTPUT_MAX
+        or not stat.S_ISREG(opened.st_mode)
+        or identity(named_before) != identity(opened)
+        or identity(opened) != identity(finished)
+        or identity(finished) != identity(named_after)
+        or len(raw) != finished.st_size
+    ):
+        die(f"decision assignment {label} changed during read")
+    return raw
+
+
+def _decision_assignment_private_status(
+    base_dir: str, repository: tuple[str, str], head: str
+) -> bytes:
+    """Observe one worktree through private fixed Git metadata and index bytes."""
+    git_dir, common_dir = repository
+    index_path = os.path.join(git_dir, "index")
+    index = _decision_assignment_index_snapshot(index_path, "worktree index")
+    shared_raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--shared-index-path"],
+        "decision assignment shared index path cannot be read",
+    )
+    try:
+        shared_path = shared_raw.decode("utf-8", "strict").strip()
+    except UnicodeDecodeError:
+        shared_path = "\x00"
+    shared = None
+    if shared_path:
+        shared_name = os.path.basename(shared_path)
+        allowed_parents = {os.path.realpath(git_dir), os.path.realpath(common_dir)}
+        if (
+            not os.path.isabs(shared_path)
+            or os.path.realpath(os.path.dirname(shared_path)) not in allowed_parents
+            or re.fullmatch(r"sharedindex\.[0-9a-f]{40}(?:[0-9a-f]{24})?", shared_name)
+            is None
+        ):
+            die("decision assignment shared index path is malformed")
+        shared = (
+            shared_name,
+            _decision_assignment_index_snapshot(shared_path, "shared worktree index"),
+        )
+    object_format = "sha1" if len(head) == 40 else "sha256"
+    try:
+        with tempfile.TemporaryDirectory(
+            prefix="fiat-decision-assignment-worktree-"
+        ) as temporary:
+            private_root = os.path.join(temporary, "repository")
+            bounded_tool(
+                temporary,
+                "git",
+                [
+                    "init",
+                    "--quiet",
+                    f"--object-format={object_format}",
+                    private_root,
+                ],
+                "decision assignment private worktree repository cannot be initialized",
+                environment=_native_relation_environment(),
+            )
+            private_git = os.path.join(private_root, ".git")
+            objects = os.path.join(common_dir, "objects")
+            try:
+                objects_metadata = os.lstat(objects)
+                objects_raw = os.fsencode(objects)
+            except (OSError, UnicodeError):
+                die("decision assignment native object directory cannot be read")
+            if (
+                not stat.S_ISDIR(objects_metadata.st_mode)
+                or stat.S_ISLNK(objects_metadata.st_mode)
+                or not os.path.isabs(objects)
+                or not objects_raw
+                or len(objects_raw) > 4096
+                or any(byte in objects_raw for byte in (b"\x00", b"\n", b"\r"))
+            ):
+                die("decision assignment native object directory is malformed")
+            _write_decision_assignment_replay_file(
+                os.path.join(private_git, "objects", "info", "alternates"),
+                objects_raw + b"\n",
+            )
+            _write_decision_assignment_replay_file(
+                os.path.join(private_git, "index"), index
+            )
+            if shared is not None:
+                _write_decision_assignment_replay_file(
+                    os.path.join(private_git, shared[0]), shared[1]
+                )
+            bounded_tool(
+                private_root,
+                "git",
+                ["--no-replace-objects", "update-ref", "--no-deref", "HEAD", head],
+                "decision assignment private worktree HEAD cannot be fixed",
+                environment=_native_relation_environment(),
+            )
+            return bounded_tool(
+                private_root,
+                "git",
+                [
+                    "--no-replace-objects",
+                    f"--work-tree={os.path.realpath(base_dir)}",
+                    "-c",
+                    "core.fsmonitor=false",
+                    "-c",
+                    f"core.hooksPath={os.devnull}",
+                    "status",
+                    "--porcelain=v1",
+                    "-z",
+                    "--untracked-files=all",
+                    "--ignore-submodules=all",
+                ],
+                "decision assignment worktree status cannot be read",
+                environment=_native_relation_environment(),
+            )
+    except OSError:
+        die("decision assignment private worktree repository cannot be prepared")
+
+
+def _decision_assignment_worktree(base_dir: str) -> tuple[tuple[str, str], str, bytes]:
+    """Capture the repository, HEAD, and exact clean status without locks."""
+    _decision_assignment_reject_clean_filters(base_dir)
+    repository = _native_relation_repository_identity(base_dir)
+    head = _native_relation_commit(base_dir, "HEAD", "decision assignment worktree HEAD")
+    status = _decision_assignment_private_status(base_dir, repository, head)
+    return repository, head, status
+
+
+def _decision_assignment_candidate_ref(
+    base_dir: str, candidate_ref: str | None, candidate: str
+) -> None:
+    if candidate_ref is None:
+        return
+    if (
+        not isinstance(candidate_ref, str)
+        or DECISION_ASSIGNMENT_REF_RE.fullmatch(candidate_ref) is None
+    ):
+        die("decision assignment candidate ref is malformed")
+    if _native_relation_commit(
+        base_dir, candidate_ref, "decision assignment candidate ref"
+    ) != candidate:
+        die("decision assignment candidate ref moved")
+
+
+def _decision_assignment_base_ref(base_dir: str, report: dict) -> None:
+    """Require the report's mutable base ref to retain its exact base commit."""
+    if _native_relation_commit(
+        base_dir, report["base_ref"], "decision assignment base ref"
+    ) != report["base"]:
+        die("decision assignment base ref moved during evidence collection")
+
+
+def _decision_assignment_tree(base_dir: str, commit_sha: str, label: str) -> str:
+    raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--verify", "--end-of-options", f"{commit_sha}^{{tree}}"],
+        f"{label} tree cannot be read",
+    )
+    try:
+        tree = raw.decode("ascii").strip()
+    except UnicodeDecodeError:
+        tree = ""
+    if COMMIT_RE.fullmatch(tree) is None:
+        die(f"{label} tree id is malformed")
+    return tree
+
+
+def _decision_assignment_message(
+    base_dir: str, candidate: str, report: dict
+) -> str:
+    raw = _exact_commit_git(
+        base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%B", candidate],
+        "decision assignment candidate message cannot be read",
+        native_relation=True,
+    )
+    try:
+        message = raw.decode("utf-8", "strict")
+    except UnicodeDecodeError:
+        die("decision assignment candidate message is not UTF-8")
+    lines = message.splitlines()
+    while lines and not lines[-1]:
+        lines.pop()
+    expected = [f"ADR-Assignment-Base: {report['base']}"]
+    expected.extend(
+        f"ADR-Assignment: {row['identity']}=ADR-{row['number_text']}"
+        for row in report["mappings"]
+    )
+    observed = [
+        line
+        for line in lines
+        if line.casefold().startswith("adr-assignment")
+    ]
+    if observed != expected:
+        die("decision assignment candidate trailers do not match the report")
+    last_blank = max((index for index, line in enumerate(lines) if not line), default=-1)
+    if any(line not in lines[last_blank + 1 :] for line in expected):
+        die("decision assignment evidence is not in the final trailer block")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def _decision_assignment_candidate(
+    base_dir: str,
+    report: dict,
+    candidate: str,
+    *,
+    expected_sync_parents: list[str] | None,
+) -> str:
+    candidate = require_full_sha(candidate, "decision assignment candidate")
+    _native_relation_commit(base_dir, candidate, "decision assignment candidate")
+    if _decision_assignment_tree(base_dir, candidate, "decision assignment candidate") != report["result_tree"]:
+        die("decision assignment candidate tree does not match the report")
+    if expected_sync_parents is not None:
+        if (
+            not isinstance(expected_sync_parents, list)
+            or len(expected_sync_parents) != 2
+        ):
+            die("decision assignment expected sync parents are malformed")
+        expected_sync_parents = [
+            require_full_sha(parent, "decision assignment expected sync parent")
+            for parent in expected_sync_parents
+        ]
+        if _native_relation_parents(
+            base_dir, candidate, "decision assignment candidate"
+        ) != expected_sync_parents:
+            die("decision assignment candidate parents do not match the active sync")
+        if _native_relation_parents(
+            base_dir, report["product"], "decision assignment report product"
+        ) != expected_sync_parents:
+            die("decision assignment report product is not the unnumbered sync")
+
+    expected_paths = sorted(
+        [row["draft_path"] for row in report["mappings"]]
+        + [row["final_path"] for row in report["mappings"]]
+    )
+    actual_paths = _native_diff_paths(
+        base_dir,
+        report["product"],
+        candidate,
+        "decision assignment path delta",
+        "decision assignment path delta cannot be read",
+    )
+    if actual_paths != expected_paths:
+        die("decision assignment candidate path delta does not match the report")
+    product_entries = _sync_tree_entries(
+        base_dir,
+        report["product"],
+        expected_paths,
+        "decision assignment product",
+    )
+    candidate_entries = _sync_tree_entries(
+        base_dir,
+        candidate,
+        expected_paths,
+        "decision assignment candidate",
+    )
+    for row in report["mappings"]:
+        expected_input = f"{row['mode']} blob {row['input_blob']}"
+        expected_output = f"{row['mode']} blob {row['output_blob']}"
+        if (
+            product_entries[row["draft_path"]] != expected_input
+            or product_entries[row["final_path"]] is not None
+            or candidate_entries[row["draft_path"]] is not None
+            or candidate_entries[row["final_path"]] != expected_output
+        ):
+            die("decision assignment candidate blobs do not match the report")
+    return candidate
+
+
+def decision_assignment_receipt(
+    base_dir: str,
+    artifact: str,
+    candidate: str,
+    *,
+    candidate_ref: str | None = None,
+    expected_base: str | None = None,
+    expected_sync_parents: list[str] | None = None,
+    verify_base_ref: bool = True,
+) -> dict:
+    """Replay and bind one report without modifying Git or controller state."""
+    before_repository, before_head, before_status = _decision_assignment_worktree(
+        base_dir
+    )
+    if before_status:
+        die("decision assignment worktree is dirty")
+    report, raw = _decision_assignment_report(base_dir, artifact)
+    if expected_base is not None and report["base"] != require_full_sha(
+        expected_base, "decision assignment expected base"
+    ):
+        die("decision assignment report names a stale base")
+    candidate = require_full_sha(candidate, "decision assignment candidate")
+    if verify_base_ref:
+        _decision_assignment_base_ref(base_dir, report)
+    _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
+    _replay_decision_assignment_report(
+        base_dir,
+        artifact,
+        report,
+        raw,
+        verify_base_ref=verify_base_ref,
+    )
+    _decision_assignment_candidate(
+        base_dir,
+        report,
+        candidate,
+        expected_sync_parents=expected_sync_parents,
+    )
+    verify_local_commit(
+        base_dir,
+        candidate,
+        "decision assignment composition",
+        native_relation=True,
+    )
+    message_digest = _decision_assignment_message(base_dir, candidate, report)
+    _decision_assignment_candidate_ref(base_dir, candidate_ref, candidate)
+    if verify_base_ref:
+        _decision_assignment_base_ref(base_dir, report)
+    after_repository, after_head, after_status = _decision_assignment_worktree(
+        base_dir
+    )
+    if (
+        after_repository != before_repository
+        or after_head != before_head
+        or after_status != before_status
+    ):
+        die("decision assignment repository changed during evidence collection")
+    return {
+        "schema": DECISION_ASSIGNMENT_RECEIPT_SCHEMA,
+        "artifact": artifact,
+        "report_schema": report["schema"],
+        "report_sha256": hashlib.sha256(raw).hexdigest(),
+        "base": report["base"],
+        "base_ref": report["base_ref"],
+        "product": report["product"],
+        "candidate": candidate,
+        "candidate_ref": candidate_ref,
+        "result_tree": report["result_tree"],
+        "mappings": report["mappings"],
+        "commit_message_sha256": message_digest,
+        "limits": report["limits"],
+    }
+
+
+def _decision_assignment_receipt_shape(receipt: object) -> dict:
+    """Validate one retained assignment receipt without strengthening its claim."""
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != DECISION_ASSIGNMENT_RECEIPT_KEYS
+        or receipt.get("schema") != DECISION_ASSIGNMENT_RECEIPT_SCHEMA
+    ):
+        die("decision assignment receipt is partial or malformed")
+    _sha256_value(
+        receipt.get("report_sha256"), "decision assignment report digest"
+    )
+    _sha256_value(
+        receipt.get("commit_message_sha256"),
+        "decision assignment commit-message digest",
+    )
+    return receipt
+
+
+def replay_decision_assignment_receipt(
+    base_dir: str,
+    receipt: dict,
+    *,
+    expected_base: str | None = None,
+    expected_sync_parents: list[str] | None = None,
+    previous_receipt: dict | list[dict] | None = None,
+    verify_base_ref: bool = True,
+) -> dict:
+    """Recompute one closed receipt from its report and immutable objects."""
+    receipt = _decision_assignment_receipt_shape(receipt)
+    rebuilt = decision_assignment_receipt(
+        base_dir,
+        receipt.get("artifact"),
+        receipt.get("candidate"),
+        candidate_ref=receipt.get("candidate_ref"),
+        expected_base=(expected_base if expected_base is not None else receipt.get("base")),
+        expected_sync_parents=expected_sync_parents,
+        verify_base_ref=verify_base_ref,
+    )
+    if rebuilt != receipt:
+        die("decision assignment receipt does not replay")
+    if previous_receipt is not None:
+        require_decision_assignment_supersession(
+            base_dir, previous_receipt, receipt
+        )
+    return rebuilt
+
+
+def require_decision_assignment_supersession(
+    base_dir: str, previous: dict | list[dict], current: dict
+) -> None:
+    """A stale assignment may remain in evidence, never active ancestry."""
+    if not isinstance(current, dict):
+        die("decision assignment supersession evidence is malformed")
+    previous_receipts = previous if isinstance(previous, list) else [previous]
+    if (
+        not previous_receipts
+        or len(previous_receipts) > INTEGRATION_SYNC_SUPERSESSIONS_MAX + 1
+        or any(not isinstance(receipt, dict) for receipt in previous_receipts)
+    ):
+        die("decision assignment supersession evidence is malformed")
+    new_candidate = require_full_sha(
+        current.get("candidate"), "active decision assignment candidate"
+    )
+    seen = set()
+    for receipt in previous_receipts:
+        old_candidate = require_full_sha(
+            receipt.get("candidate"), "superseded decision assignment candidate"
+        )
+        if old_candidate in seen:
+            die("decision assignment supersession evidence is malformed")
+        seen.add(old_candidate)
+        status = _native_ancestry_status(base_dir, old_candidate, new_candidate)
+        if status is None:
+            die("decision assignment supersession ancestry cannot be determined")
+        if status == 0:
+            die("superseded decision assignment remains in active ancestry")
+
+
+def _decision_assignment_previous_receipts(
+    previous_sync: dict | list[dict] | None,
+) -> list[dict]:
+    """Validate and extract every retained assignment receipt in sync history."""
+    if previous_sync is None:
+        return []
+    previous_syncs = previous_sync if isinstance(previous_sync, list) else [previous_sync]
+    if (
+        len(previous_syncs) > INTEGRATION_SYNC_SUPERSESSIONS_MAX + 1
+        or any(not isinstance(sync, dict) for sync in previous_syncs)
+    ):
+        die("recorded superseded integration syncs are malformed")
+    receipts = []
+    for sync in previous_syncs:
+        receipt = sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+        if receipt is None:
+            continue
+        receipt = _decision_assignment_receipt_shape(receipt)
+        commit_sha = require_full_sha(sync.get("commit"), "superseded integration sync")
+        if receipt.get("candidate") != commit_sha:
+            die("superseded integration sync decision assignment names another candidate")
+        receipts.append(receipt)
+    return receipts
+
+
+def replay_sync_decision_assignment(
+    base_dir: str,
+    sync: dict,
+    *,
+    previous_sync: dict | list[dict] | None = None,
+    verify_base_ref: bool = True,
+) -> dict | None:
+    """Replay the optional assignment bound to one active sync receipt."""
+    receipt = sync.get(DECISION_ASSIGNMENT_SYNC_KEY)
+    previous_receipts = _decision_assignment_previous_receipts(previous_sync)
+    if receipt is None:
+        if previous_receipts:
+            die("replacement integration sync dropped decision assignment evidence")
+        return None
+    if not isinstance(receipt, dict):
+        die("active integration sync decision assignment receipt is malformed")
+    commit_sha = require_full_sha(sync.get("commit"), "active integration sync")
+    if receipt.get("candidate") != commit_sha:
+        die("active integration sync decision assignment names another candidate")
+    parents = sync.get("parents")
+    if not isinstance(parents, list) or len(parents) != 2:
+        die("active integration sync parents are malformed")
+    return replay_decision_assignment_receipt(
+        base_dir,
+        receipt,
+        expected_base=sync.get(SYNC_BASE_HEAD_KEY),
+        expected_sync_parents=parents,
+        previous_receipt=(previous_receipts if previous_receipts else None),
+        verify_base_ref=verify_base_ref,
+    )
+
+
+def cmd_verify_decision_assignments(args) -> None:
+    receipt = decision_assignment_receipt(
+        args.dir,
+        args.report,
+        args.candidate,
+        candidate_ref=args.candidate_ref,
+    )
+    print(canonical(receipt))
 
 def _aggregate_relative_path(value, label: str) -> str:
     if not isinstance(value, str):
@@ -8498,6 +10037,7 @@ def done_sync_run(args, state: dict) -> None:
     current_sync = as_dict(integrate.get("sync"))
     superseded_sync = None
     supersession_reason = None
+    sync_history = []
     if current_sync:
         if args.supersede_sync is None:
             die(
@@ -8508,6 +10048,7 @@ def done_sync_run(args, state: dict) -> None:
         active = require_full_sha(
             current_sync.get("commit"), "active recorded sync commit"
         )
+        sync_history = _active_sync_history(integrate, active)
         supplied = require_full_sha(
             args.supersede_sync, "sync commit to supersede"
         )
@@ -8593,6 +10134,27 @@ def done_sync_run(args, state: dict) -> None:
             getattr(args, "acknowledge_sync_paths", None) or []
         ),
     )
+    assignment_receipt = None
+    previous_assignments = _decision_assignment_previous_receipts(
+        [*sync_history, current_sync] if current_sync else None
+    )
+    if getattr(args, "decision_assignments", None):
+        assignment_receipt = decision_assignment_receipt(
+            args.dir,
+            args.decision_assignments,
+            sync_tip,
+            expected_base=base_tip,
+            expected_sync_parents=expected_parents,
+        )
+        if previous_assignments:
+            require_decision_assignment_supersession(
+                args.dir, previous_assignments, assignment_receipt
+            )
+    elif previous_assignments:
+        die(
+            "replacement integration sync must carry a freshly replayed "
+            "--decision-assignments report"
+        )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
     _require_native_relation_history(args.dir)
@@ -8609,6 +10171,8 @@ def done_sync_run(args, state: dict) -> None:
         "revalidation": revalidation,
         "resolution_guard": resolution_guard,
     }
+    if assignment_receipt is not None:
+        new_sync[DECISION_ASSIGNMENT_SYNC_KEY] = assignment_receipt
     if current_sync:
         superseded_sync = {
             "sync": current_sync,
@@ -8970,6 +10534,14 @@ def done_integrate(args, state: dict) -> None:
     carried = carried_forward_fault(run_pr_path(args.dir))
     if carried:
         die(carried)
+    filed_issue_contracts, filed_issue_faults = filed_issue_publication_records(
+        args.dir, run_pr_path(args.dir)
+    )
+    if filed_issue_faults:
+        die(
+            "a `filed` carryover issue does not satisfy the publication "
+            "contract: " + "; ".join(filed_issue_faults)
+        )
     remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
     final_step = state["steps"][-1]["n"]
     integrate = as_dict(state.get("integrate"))
@@ -8984,9 +10556,8 @@ def done_integrate(args, state: dict) -> None:
             state, recorded_tip
         ):
             die("recorded product evidence changed after the integration sync")
-        previous_sync = _active_sync_predecessor(
-            integrate, sync.get("commit")
-        )
+        sync_history = _active_sync_history(integrate, sync.get("commit"))
+        previous_sync = sync_history[-1] if sync_history else None
         _require_sync_resolution_guard(
             args.dir,
             sync,
@@ -9013,6 +10584,8 @@ def done_integrate(args, state: dict) -> None:
     )
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
     attribution = merged_attribution(args.dir, state, args.merge_commit)
+    carried_forward = carried_forward_record(run_pr_path(args.dir))
+    carried_forward["filed_issue_contracts"] = filed_issue_contracts
     state["receipts"]["integrate"] = {
         "run_branch": run_branch_of(state),
         "base": integration_base,
@@ -9020,7 +10593,7 @@ def done_integrate(args, state: dict) -> None:
         "pr_url": args.pr_url,
         "merge_commit": args.merge_commit,
         "closed_issue_url": args.closed_issue_url,
-        "carried_forward": carried_forward_record(run_pr_path(args.dir)),
+        "carried_forward": carried_forward,
         "github_verified": github_verified,
         "pull_request": pr_record,
         "run_head": remote_tip,
@@ -9170,6 +10743,7 @@ def receipted_version_relations(
 STEP_HEADING_RE = re.compile(
     r"^##\s+Step\s+(?P<number>\d+)\s*:\s*(?P<title>.*?)\s*$"
 )
+STEP_NUMBER_DIGITS_MAX = 128
 MARKDOWN_FENCE_RE = re.compile(
     r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<remainder>.*)$"
 )
@@ -9420,7 +10994,13 @@ def _runbook_topology(text: str) -> list[tuple[int, str]]:
         if match:
             if amendment_started:
                 die("runbook amendment cannot append a replacement Step heading")
-            topology.append((int(match.group("number")), match.group("title")))
+            number = match.group("number")
+            if len(number) > STEP_NUMBER_DIGITS_MAX:
+                die(
+                    "runbook Step number is too long "
+                    f"(maximum {STEP_NUMBER_DIGITS_MAX} digits)"
+                )
+            topology.append((int(number), match.group("title")))
     return topology
 
 
@@ -11303,6 +12883,178 @@ def require_full_sha(value: object, label: str) -> str:
     return value
 
 
+def target_repository_binding(base_dir: str):
+    """Return one credential-free GitHub identity or an explicit unbound value.
+
+    A missing or non-GitHub origin is not silently promoted into a repository
+    identity.  Successful but ambiguous Git output is malformed and refuses.
+    """
+    status, data = bounded_run(
+        base_dir, "git", ["config", "--get-all", "remote.origin.url"]
+    )
+    if status == 1:
+        return dict(RUN_ANCHOR_REPOSITORY_UNBOUND)
+    if status != 0:
+        die("target origin could not be resolved")
+    try:
+        lines = [line.strip() for line in data.decode("utf-8").splitlines() if line.strip()]
+    except UnicodeDecodeError:
+        die("target origin is not UTF-8")
+    if len(lines) != 1:
+        die("target origin does not name one repository")
+    match = GITHUB_HTTPS_RE.fullmatch(lines[0]) or GITHUB_SSH_RE.fullmatch(lines[0])
+    if match is None:
+        return dict(RUN_ANCHOR_REPOSITORY_UNBOUND)
+    repository = match.group("repo").lower()
+    if (
+        not REPOSITORY_RE.fullmatch(repository)
+        or any(segment in (".", "..") for segment in repository.split("/"))
+    ):
+        die("target origin does not name one GitHub repository")
+    return repository
+
+
+def run_anchor_task(task_issue, repository, *, exit_code: int = 2):
+    """Project one init task into the anchor's closed task vocabulary."""
+    if task_issue is None:
+        return dict(RUN_ANCHOR_TASK_NONE)
+    if not isinstance(task_issue, str):
+        die("run anchor task receipt is malformed", exit_code)
+    match = GITHUB_ISSUE_RE.fullmatch(task_issue)
+    if match is None or not isinstance(repository, str):
+        return {
+            "kind": "external",
+            "sha256": hashlib.sha256(task_issue.encode("utf-8")).hexdigest(),
+        }
+    issue_repository = match.group("repo")
+    if isinstance(repository, str) and issue_repository.casefold() != repository.casefold():
+        die("task issue repository does not match target origin", exit_code)
+    return {"kind": "github-issue", "number": int(match.group("number"))}
+
+
+def build_run_anchor(
+    state: dict, repository, controller: dict, *, exit_code: int = 2
+) -> dict:
+    """Build the init-owned closed anchor from controller state."""
+    return {
+        "schema": RUN_ANCHOR_SCHEMA,
+        "controller": controller,
+        "initial_base_sha": state["base"],
+        "integration_branch": state["config"]["git"]["base"],
+        "repository": repository,
+        "run_branch": state["run_branch"],
+        "run_id": controller_run_id(state),
+        "task": run_anchor_task(
+            state["receipts"].get("task_issue"),
+            repository,
+            exit_code=exit_code,
+        ),
+    }
+
+
+def validate_run_anchor_shape(anchor) -> dict:
+    """Accept only the closed version-1 anchor language."""
+    fields = {
+        "schema",
+        "controller",
+        "initial_base_sha",
+        "integration_branch",
+        "repository",
+        "run_branch",
+        "run_id",
+        "task",
+    }
+    if not isinstance(anchor, dict) or set(anchor) != fields:
+        die("run anchor has an unsupported shape", 1)
+    controller = anchor.get("controller")
+    if (
+        not isinstance(controller, dict)
+        or set(controller) != {"name", "state_version", "version"}
+        or controller.get("name") != "hexctl"
+        or controller.get("state_version") != 1
+        or isinstance(controller.get("state_version"), bool)
+        or not isinstance(controller.get("version"), str)
+        or re.fullmatch(r"fiat-v[0-9]+\.[0-9]+\.[0-9]+", controller["version"])
+        is None
+    ):
+        die("run anchor controller identity is malformed", 1)
+    repository = anchor.get("repository")
+    if not (
+        (
+            isinstance(repository, str)
+            and REPOSITORY_RE.fullmatch(repository) is not None
+            and repository == repository.lower()
+        )
+        or repository == RUN_ANCHOR_REPOSITORY_UNBOUND
+    ):
+        die("run anchor repository identity is malformed", 1)
+    task = anchor.get("task")
+    task_valid = False
+    if isinstance(task, dict):
+        if task == RUN_ANCHOR_TASK_NONE:
+            task_valid = True
+        elif set(task) == {"kind", "number"}:
+            number = task.get("number")
+            task_valid = (
+                task.get("kind") == "github-issue"
+                and isinstance(number, int)
+                and not isinstance(number, bool)
+                and number > 0
+            )
+        elif set(task) == {"kind", "sha256"}:
+            task_valid = (
+                task.get("kind") == "external"
+                and isinstance(task.get("sha256"), str)
+                and re.fullmatch(r"[0-9a-f]{64}", task["sha256"]) is not None
+            )
+    if not task_valid:
+        die("run anchor task identity is malformed", 1)
+    if (
+        anchor.get("schema") != RUN_ANCHOR_SCHEMA
+        or not isinstance(anchor.get("initial_base_sha"), str)
+        or COMMIT_RE.fullmatch(anchor["initial_base_sha"]) is None
+        or not isinstance(anchor.get("integration_branch"), str)
+        or not branch_name_ok(anchor["integration_branch"])
+        or not isinstance(anchor.get("run_branch"), str)
+        or not branch_name_ok(anchor["run_branch"])
+        or anchor["run_branch"] == anchor["integration_branch"]
+        or not isinstance(anchor.get("run_id"), str)
+        or re.fullmatch(r"fiat-[0-9a-f]{64}", anchor["run_id"]) is None
+    ):
+        die("run anchor has malformed semantic fields", 1)
+    return anchor
+
+
+def verify_run_anchor(base_dir: str, state: dict, initial_entry: dict | None) -> None:
+    """Verify every init join when a version-1 run anchor is present."""
+    receipts = state["receipts"]
+    initial_data = as_dict(as_dict(initial_entry).get("data"))
+    if RUN_ANCHOR_RECEIPT not in receipts:
+        if "run_anchor_sha256" in initial_data:
+            die("run anchor is missing from an anchored initial ledger event", 1)
+        return
+    anchor = validate_run_anchor_shape(receipts[RUN_ANCHOR_RECEIPT])
+    controller_currency = as_dict(receipts.get("controller_currency"))
+    controller = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+        "version": controller_currency.get("ledger_version"),
+    }
+    origin = configured_git_path(state, "origin")
+    if not isinstance(origin, str) or not origin:
+        die("run anchor cannot verify the target origin", 1)
+    repository = target_repository_binding(origin)
+    expected = build_run_anchor(state, repository, controller, exit_code=1)
+    if anchor != expected:
+        die("run anchor does not match controller state, origin, or task", 1)
+    digest = hashlib.sha256(canonical(anchor).encode("utf-8")).hexdigest()
+    if (
+        as_dict(initial_entry).get("event") != "init"
+        or initial_data.get("run_anchor_sha256") != digest
+    ):
+        die("run anchor does not match the initial ledger event", 1)
+
+
 def target_repository(base_dir: str) -> str:
     data = bounded_git(
         base_dir,
@@ -11879,13 +13631,17 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         packet["brief"] = {
             "topic": state["topic"],
             "target_dir": root,
-            "base_ref": state["base"],
+            "base_ref": integration_base_of(state),
             "output_path": scoped_path(
                 root, os.path.join(STATE_DIR_NAME, "study.md"), "study output"
             ),
             "design_output_path": scoped_path(
                 root, DESIGN_EVIDENCE_FILE, "design-evidence output"
             ),
+            # Surveyor applies Protasis and Mason applies five more siblings.
+            # Neither could resolve a path to them, so each brief carries the
+            # plugin root the way Warden's and Scribe's already do.
+            "plugin_root": plugin_root(),
         }
         return packet
 
@@ -11906,6 +13662,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
 
     step = current_step(state)
     plan = branch_plan(state, step)
+    root_plugin = plugin_root()
     if action == "implement":
         packet["agent"] = "mason"
         packet["brief"] = {
@@ -11917,12 +13674,12 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             ),
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
+            "plugin_root": root_plugin,
         }
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
 
-    root_plugin = plugin_root()
     if action == "audit-round":
         audit = as_dict(as_dict(state.get("config")).get("audit"))
         log = configured_audit_log(state)
@@ -11936,13 +13693,22 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "stacked_branch is not a valid Git branch",
         )
         packet["agent"] = "warden"
+        # Which Warden the controller delegates to, not what that Warden has
+        # read. A step's first round has no earlier agent to continue, so it
+        # says `new`; a later round of the same step says `same-agent`. The
+        # value never asserts that the suite documents are loaded: a Warden
+        # decides that from its own context, and a host that cannot keep the
+        # agent alive starts a new one and reads them in full.
+        prior_rounds = as_dict(step.get("audit")).get("rounds") or []
         packet["brief"] = {
             "step_branch": plan["branch"],
             "stacked_branch": stacked_branch,
             "security_suite": as_dict(state.get("receipts")).get("security_suite"),
             "plugin_root": root_plugin,
             "audit_log_path": scoped_path(root, log, "audit log path"),
+            "step": step["n"],
             "round": directive["round"],
+            "warden_continuity": "new" if not prior_rounds else "same-agent",
             "audit_filter": directive["audit_filter"],
             "risk_register": source_risk_register(study),
             "runbook_step": source_runbook_step(
@@ -12378,6 +14144,805 @@ def _checkpoint_ledger(data: bytes, state: dict) -> tuple[int, str]:
     if count == 0 or last_state != state_fingerprint(state):
         die("checkpoint state does not match its ledger tail")
     return count, previous
+
+
+def _checkpoint_identity_sha256(value, label: str) -> str:
+    """Accept one lowercase SHA-256 without coercing another JSON type."""
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        die(f"checkpoint identity {label} is not a lowercase SHA-256")
+    return value
+
+
+def _checkpoint_identity_short_ascii(value, label: str) -> str:
+    """Accept one bounded printable ASCII token used by the closed language."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or not value.isascii()
+        or len(value.encode("ascii")) > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+        or any(ord(character) < 33 or ord(character) > 126 for character in value)
+    ):
+        die(f"checkpoint identity {label} is not bounded printable ASCII")
+    return value
+
+
+def _checkpoint_identity_ledger(
+    data: bytes, state: dict
+) -> tuple[list[dict], int, str]:
+    """Verify the exact bounded appendable prefix used by semantic identity."""
+    if type(data) is not bytes:
+        die("checkpoint identity ledger input must be captured bytes")
+    if not data or len(data) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint identity ledger exceeds its byte ceiling")
+    if not data.endswith(b"\n"):
+        die("checkpoint identity ledger is not an appendable exact prefix")
+
+    previous = "genesis"
+    entries = []
+    for raw_line in io.BytesIO(data):
+        if not raw_line.strip():
+            die("checkpoint identity ledger contains an empty record")
+        entry = _checkpoint_json(raw_line, "identity ledger")
+        if (
+            not isinstance(entry, dict)
+            or set(entry) != {"ts", "event", "data", "prev", "state", "hash"}
+            or not isinstance(entry.get("ts"), str)
+            or not entry["ts"].isascii()
+            or len(entry["ts"].encode("ascii"))
+            > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+            or not isinstance(entry.get("event"), str)
+            or not entry["event"]
+            or not entry["event"].isascii()
+            or len(entry["event"].encode("ascii"))
+            > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+            or not isinstance(entry.get("data"), dict)
+            or not isinstance(entry.get("prev"), str)
+            or not isinstance(entry.get("state"), str)
+            or not isinstance(entry.get("hash"), str)
+        ):
+            die("checkpoint identity ledger entry has an unsupported shape")
+        if entry["prev"] != previous:
+            die("checkpoint identity ledger chain is invalid")
+        _checkpoint_identity_sha256(entry["state"], "ledger state")
+        _checkpoint_identity_sha256(entry["hash"], "ledger hash")
+        if entry["prev"] != "genesis":
+            _checkpoint_identity_sha256(entry["prev"], "ledger predecessor")
+        body = {
+            key: entry[key] for key in ("ts", "event", "data", "prev", "state")
+        }
+        expected = hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()
+        if entry["hash"] != expected:
+            die("checkpoint identity ledger chain is invalid")
+        previous = entry["hash"]
+        entries.append(entry)
+        if len(entries) > CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX:
+            die("checkpoint identity ledger exceeds its entry ceiling")
+
+    if entries[-1]["state"] != state_fingerprint(state):
+        die("checkpoint identity state does not match its ledger tail")
+    return entries, len(entries), previous
+
+
+def _checkpoint_identity_policy(state: dict) -> dict:
+    """Project only the behavior settings named by the version-1 contract."""
+    config = state["config"]
+    skills = config["skills"]
+    audit = config["audit"]
+    git_config = config["git"]
+    if not isinstance(skills, dict) or set(skills) != {
+        "prose_lint",
+        "voice",
+        "security",
+    }:
+        die("checkpoint identity skills policy has an unsupported shape")
+    security = skills.get("security")
+    if (
+        not isinstance(security, list)
+        or not security
+        or len(security) > CHECKPOINT_IDENTITY_SKILLS_MAX
+        or any(not isinstance(item, str) for item in security)
+        or len(set(security)) != len(security)
+    ):
+        die("checkpoint identity security policy is malformed")
+    skill_names = [skills.get("prose_lint"), skills.get("voice"), *security]
+    for skill_name in skill_names:
+        _checkpoint_identity_short_ascii(skill_name, "skill name")
+        if re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9][A-Za-z0-9._-]*",
+            skill_name,
+        ) is None:
+            die("checkpoint identity skill name is malformed")
+
+    max_rounds = audit.get("max_rounds")
+    if (
+        isinstance(max_rounds, bool)
+        or not isinstance(max_rounds, int)
+        or max_rounds < 1
+        or max_rounds > 1_000_000
+    ):
+        die("checkpoint identity audit round policy is malformed")
+    fold = audit.get("fold")
+    if not isinstance(fold, bool):
+        die("checkpoint identity audit fold policy is malformed")
+    suffix = _checkpoint_identity_short_ascii(
+        audit.get("stacked_suffix"), "audit stacked suffix"
+    )
+    if re.fullmatch(r"[A-Za-z0-9._/-]+", suffix) is None:
+        die("checkpoint identity audit stacked suffix is malformed")
+    draft_pr = git_config.get("draft_pr")
+    if not isinstance(draft_pr, bool):
+        die("checkpoint identity draft pull-request policy is malformed")
+    solidity = config.get("solidity")
+    if not solidity_mode(solidity):
+        die("checkpoint identity Solidity policy is malformed")
+
+    return {
+        "schema": CHECKPOINT_IDENTITY_POLICY_SCHEMA,
+        "skills": {
+            "prose_lint": skills["prose_lint"],
+            "voice": skills["voice"],
+            "security": list(security),
+        },
+        "audit": {
+            "max_rounds": max_rounds,
+            "fold": fold,
+            "stacked_suffix": suffix,
+        },
+        "git": {"draft_pr": draft_pr},
+        "solidity": solidity,
+    }
+
+
+def _checkpoint_identity_observation_shape(binding: dict, run_id: str) -> None:
+    """Validate the closed binding bytes before reducing them to one digest."""
+    common = {
+        "schema",
+        "observation_contract",
+        "controller_run_id",
+        "recorded_at",
+        "capture_status",
+        "redaction_status",
+        "receipt",
+        "validation_status",
+    }
+    available = {
+        *common,
+        "artifact",
+        "byte_count",
+        "event_count",
+        "sha256",
+        "interval",
+    }
+    unavailable = {*common, "reason_code"}
+    if not isinstance(binding, dict) or set(binding) not in (available, unavailable):
+        die("checkpoint identity observation binding has an unsupported shape")
+    if (
+        binding.get("schema") != OBSERVATION_BINDING_CONTRACT
+        or binding.get("observation_contract") != OBSERVATION_CONTRACT
+        or binding.get("controller_run_id") != run_id
+    ):
+        die("checkpoint identity observation binding names another contract or run")
+    recorded_at = binding.get("recorded_at")
+    if (
+        not isinstance(recorded_at, str)
+        or not recorded_at
+        or not recorded_at.isascii()
+        or len(recorded_at.encode("ascii"))
+        > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+    ):
+        die("checkpoint identity observation timestamp is malformed")
+    receipt = binding.get("receipt")
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != {"line", "event", "hash", "state"}
+        or isinstance(receipt.get("line"), bool)
+        or not isinstance(receipt.get("line"), int)
+        or receipt["line"] < 1
+    ):
+        die("checkpoint identity observation receipt has an unsupported shape")
+    _checkpoint_identity_short_ascii(receipt.get("event"), "observation event")
+    _checkpoint_identity_sha256(receipt.get("hash"), "observation receipt hash")
+    _checkpoint_identity_sha256(receipt.get("state"), "observation state")
+
+    if set(binding) == unavailable:
+        reason = binding.get("reason_code")
+        if (
+            binding.get("capture_status") not in OBSERVATION_CAPTURE_STATUSES
+            or binding.get("capture_status") == "accepted"
+            or binding.get("validation_status") != "unknown"
+            or binding.get("redaction_status") not in ("failed", "unknown")
+            or not isinstance(reason, str)
+            or OBSERVATION_REASON_RE.fullmatch(reason) is None
+        ):
+            die("checkpoint identity unavailable observation is malformed")
+        return
+
+    artifact = binding.get("artifact")
+    interval = binding.get("interval")
+    if (
+        binding.get("capture_status") != "accepted"
+        or binding.get("validation_status") != "passed"
+        or binding.get("redaction_status") != "passed"
+        or not isinstance(artifact, str)
+        or not artifact
+        or not artifact.isascii()
+        or len(artifact.encode("ascii")) > OBSERVATION_PATH_BYTES_MAX
+        or isinstance(binding.get("byte_count"), bool)
+        or not isinstance(binding.get("byte_count"), int)
+        or binding["byte_count"] < 1
+        or binding["byte_count"] > OBSERVATION_BYTES_MAX
+        or isinstance(binding.get("event_count"), bool)
+        or not isinstance(binding.get("event_count"), int)
+        or binding["event_count"] < 1
+        or not isinstance(interval, dict)
+        or set(interval)
+        != {
+            "first_sequence",
+            "last_sequence",
+            "first_event_id",
+            "last_event_id",
+        }
+    ):
+        die("checkpoint identity accepted observation is malformed")
+    _checkpoint_identity_sha256(binding.get("sha256"), "observation prefix")
+    first_sequence = interval.get("first_sequence")
+    last_sequence = interval.get("last_sequence")
+    if (
+        isinstance(first_sequence, bool)
+        or not isinstance(first_sequence, int)
+        or first_sequence < 0
+        or isinstance(last_sequence, bool)
+        or not isinstance(last_sequence, int)
+        or last_sequence < first_sequence
+    ):
+        die("checkpoint identity observation interval is malformed")
+    _checkpoint_identity_short_ascii(
+        interval.get("first_event_id"), "observation first event id"
+    )
+    _checkpoint_identity_short_ascii(
+        interval.get("last_event_id"), "observation last event id"
+    )
+
+
+def _checkpoint_identity_observations(state: dict, entries: list[dict]) -> dict:
+    """Reduce absent or already verified ordered bindings to path-free evidence."""
+    receipts = state["receipts"]
+    if "run_observations" not in receipts:
+        absent = {
+            "schema": CHECKPOINT_IDENTITY_OBSERVATIONS_SCHEMA,
+            "status": "absent",
+        }
+        return {
+            "status": "absent",
+            "bindings": 0,
+            "sha256": hashlib.sha256(canonical(absent).encode("utf-8")).hexdigest(),
+        }
+    bindings = receipts.get("run_observations")
+    if (
+        not isinstance(bindings, list)
+        or not bindings
+        or len(bindings) > OBSERVATION_BINDINGS_MAX
+    ):
+        die("checkpoint identity observation collection is malformed")
+    run_id = controller_run_id(state)
+    by_hash = {entry["hash"]: (line, entry) for line, entry in enumerate(entries, 1)}
+    observation_records = [
+        (line, entry)
+        for line, entry in enumerate(entries, 1)
+        if entry["event"] == "record:run-observation"
+    ]
+    if len(observation_records) != len(bindings):
+        die("checkpoint identity observation ledger count does not match state")
+    used_records = set()
+    previous_record_line = 0
+    for binding in bindings:
+        _checkpoint_identity_observation_shape(binding, run_id)
+        receipt = binding["receipt"]
+        selected_pair = by_hash.get(receipt["hash"])
+        binding_sha256 = hashlib.sha256(
+            canonical(binding).encode("utf-8")
+        ).hexdigest()
+        matches = [
+            (line, entry)
+            for line, entry in observation_records
+            if entry["data"].get("binding_sha256") == binding_sha256
+        ]
+        if selected_pair is None or len(matches) != 1:
+            die("checkpoint identity observation receipt is not joined to the ledger")
+        selected_line, selected = selected_pair
+        record_line, record = matches[0]
+        if (
+            selected["event"] == "record:run-observation"
+            or record_line in used_records
+            or record_line <= previous_record_line
+            or selected_line + 1 != record_line
+            or receipt
+            != {
+                "line": selected_line,
+                "event": selected["event"],
+                "hash": selected["hash"],
+                "state": selected["state"],
+            }
+            or record["data"].get("receipt_hash") != selected["hash"]
+            or record["data"].get("capture_status")
+            != binding["capture_status"]
+        ):
+            die("checkpoint identity observation receipt disagrees with the ledger")
+        used_records.add(record_line)
+        previous_record_line = record_line
+    return {
+        "status": "bound",
+        "bindings": len(bindings),
+        "sha256": hashlib.sha256(canonical(bindings).encode("utf-8")).hexdigest(),
+    }
+
+
+def _checkpoint_identity_working_commit(
+    state: dict, entries: list[dict]
+) -> tuple[str, int, str]:
+    """Derive the accepted boundary and its last receipted local commit."""
+    tail = entries[-1]
+    if tail["event"] not in ("done:push", "audit-round"):
+        die(
+            "checkpoint identity is allowed only immediately after done push or "
+            "at an active audit-verdict"
+        )
+    data = tail["data"]
+    step_number = data.get("step")
+    if (
+        isinstance(step_number, bool)
+        or not isinstance(step_number, int)
+        or step_number < 1
+    ):
+        die("checkpoint identity boundary has no positive step number")
+    matches = [step for step in state["steps"] if step.get("n") == step_number]
+    if len(matches) != 1:
+        die("checkpoint identity boundary step is not unique")
+    step = matches[0]
+
+    if tail["event"] == "done:push":
+        push = as_dict(as_dict(step.get("receipts")).get("push"))
+        verified = push.get("verified_commits")
+        if (
+            step.get("status") != "done"
+            or step.get("phase") != "done"
+            or not isinstance(verified, list)
+            or not verified
+            or len(verified) > GIT_PATHS_MAX
+            or any(
+                not isinstance(commit_sha, str)
+                or COMMIT_RE.fullmatch(commit_sha) is None
+                for commit_sha in verified
+            )
+            or data.get("verified_commits") != verified
+        ):
+            die("checkpoint identity post-push receipt is incomplete")
+        working = verified[-1]
+        if push.get("head_commit") != working or data.get("head_commit") != working:
+            die("checkpoint identity post-push working commit is not final")
+        kind = "post-push"
+    elif tail["event"] == "audit-round":
+        if (
+            state.get("phase") != "steps"
+            or state.get("current_step") != step_number
+            or step.get("status") != "open"
+            or step.get("phase") != "audit"
+            or _next_directive(state).get("do") != "audit-verdict"
+        ):
+            die("checkpoint identity audit-verdict boundary is not active")
+        rounds = as_dict(step.get("audit")).get("rounds")
+        if not isinstance(rounds, list) or not rounds:
+            die("checkpoint identity audit-verdict receipt is incomplete")
+        latest = rounds[-1]
+        latest_verified = as_dict(latest).get("verified_commits")
+        latest_round = as_dict(latest).get("round")
+        latest_findings = as_dict(latest).get("findings")
+        if (
+            not isinstance(latest, dict)
+            or type(latest_round) is not int
+            or latest_round < 1
+            or type(latest_findings) is not int
+            or latest_findings < 0
+            or type(data.get("round")) is not int
+            or type(data.get("findings")) is not int
+            or not isinstance(latest_verified, list)
+            or len(latest_verified) > GIT_PATHS_MAX
+            or any(
+                not isinstance(commit_sha, str)
+                or COMMIT_RE.fullmatch(commit_sha) is None
+                for commit_sha in latest_verified
+            )
+            or data.get("round") != latest_round
+            or data.get("findings") != latest_findings
+            or data.get("verified_commits") != latest_verified
+        ):
+            die("checkpoint identity audit-verdict ledger tail disagrees with state")
+        working = last_local_commit(step)
+        kind = "audit-verdict"
+    if not isinstance(working, str) or COMMIT_RE.fullmatch(working) is None:
+        die("checkpoint identity working commit is not a full receipted SHA")
+    return kind, step_number, working
+
+
+def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> dict:
+    """Derive path-free semantics from two already captured bounded byte strings."""
+    if type(state_bytes) is not bytes:
+        die("checkpoint identity state input must be captured bytes")
+    if not state_bytes or len(state_bytes) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint identity state exceeds its byte ceiling")
+    state = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    if (
+        type(state.get("version")) is not int
+        or state["version"] != 1
+        or state.get("controller") != "hexctl"
+    ):
+        die("checkpoint identity controller state has an unsupported identity")
+    selected_step = state.get("current_step")
+    if selected_step is not None and (
+        type(selected_step) is not int or selected_step < 1
+    ):
+        die("checkpoint identity current step is not a positive integer")
+    step_numbers = []
+    for step in state["steps"]:
+        number = step.get("n")
+        if type(number) is not int or number < 1:
+            die("checkpoint identity step number is not a positive integer")
+        step_numbers.append(number)
+    if len(step_numbers) != len(set(step_numbers)):
+        die("checkpoint identity step numbers are duplicated")
+    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
+        ledger_bytes, state
+    )
+    if (
+        not isinstance(state.get("base"), str)
+        or COMMIT_RE.fullmatch(state["base"]) is None
+    ):
+        die("checkpoint identity requires an immutable full-SHA run base")
+
+    anchor = state["receipts"].get(RUN_ANCHOR_RECEIPT)
+    if anchor is None:
+        die("checkpoint identity requires an init-owned run anchor")
+    anchor = validate_run_anchor_shape(anchor)
+    if anchor.get("repository") == RUN_ANCHOR_REPOSITORY_UNBOUND:
+        die("checkpoint identity requires a bound repository in the run anchor")
+    controller_currency = as_dict(state["receipts"].get("controller_currency"))
+    expected_anchor = build_run_anchor(
+        state,
+        anchor["repository"],
+        {
+            "name": state.get("controller"),
+            "state_version": state.get("version"),
+            "version": controller_currency.get("ledger_version"),
+        },
+        exit_code=1,
+    )
+    if anchor != expected_anchor:
+        die("checkpoint identity run anchor does not match captured state")
+    anchor_sha256 = hashlib.sha256(canonical(anchor).encode("utf-8")).hexdigest()
+    initial = entries[0]
+    if (
+        initial.get("event") != "init"
+        or initial["data"].get("run_anchor_sha256") != anchor_sha256
+    ):
+        die("checkpoint identity run anchor does not match the initial ledger event")
+
+    study_sha256 = _checkpoint_identity_sha256(
+        as_dict(state["receipts"].get("study")).get("sha256"), "study receipt"
+    )
+    runbook_sha256 = _checkpoint_identity_sha256(
+        as_dict(state["receipts"].get("runbook")).get("sha256"),
+        "runbook receipt",
+    )
+    policy = _checkpoint_identity_policy(state)
+    observations = _checkpoint_identity_observations(state, entries)
+    boundary, step_number, working_commit = _checkpoint_identity_working_commit(
+        state, entries
+    )
+    return {
+        "state": state,
+        "anchor": anchor,
+        "anchor_sha256": anchor_sha256,
+        "boundary": boundary,
+        "step": step_number,
+        "working_commit_sha": working_commit,
+        "study_sha256": study_sha256,
+        "runbook_sha256": runbook_sha256,
+        "policy": policy,
+        "observations": observations,
+        "ledger_entries": ledger_count,
+        "ledger_tail": ledger_tail,
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "state_fingerprint": state_fingerprint(state),
+    }
+
+
+def _checkpoint_identity_validate_evidence(
+    semantics: dict, evidence: dict
+) -> None:
+    """Join the pure capture to one closed set of prevalidated external facts."""
+    if not isinstance(evidence, dict) or set(evidence) != {
+        "schema",
+        "git",
+        "sources",
+        "observations",
+    }:
+        die("checkpoint identity evidence has an unsupported shape")
+    if evidence.get("schema") != CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA:
+        die("checkpoint identity evidence has an unsupported schema")
+
+    git_evidence = evidence.get("git")
+    if not isinstance(git_evidence, dict) or set(git_evidence) != {
+        "repository",
+        "refs",
+        "initial_base_sha",
+        "working_commit_sha",
+        "ancestry",
+    }:
+        die("checkpoint identity Git evidence has an unsupported shape")
+    refs = git_evidence.get("refs")
+    expected_refs = _checkpoint_ref_names(semantics["state"])
+    if (
+        not isinstance(refs, dict)
+        or len(refs) != len(expected_refs)
+        or set(refs) != set(expected_refs)
+        or any(
+            not isinstance(value, str) or COMMIT_RE.fullmatch(value) is None
+            for value in refs.values()
+        )
+        or refs.get(semantics["anchor"]["initial_base_sha"])
+        != semantics["anchor"]["initial_base_sha"]
+    ):
+        die("checkpoint identity ref evidence is malformed or incomplete")
+    if (
+        git_evidence.get("repository") != semantics["anchor"]["repository"]
+        or git_evidence.get("initial_base_sha")
+        != semantics["anchor"]["initial_base_sha"]
+        or git_evidence.get("working_commit_sha")
+        != semantics["working_commit_sha"]
+        or git_evidence.get("ancestry") != "verified"
+    ):
+        die("checkpoint identity Git evidence does not match the captured run")
+
+    sources = evidence.get("sources")
+    if not isinstance(sources, dict) or set(sources) != {
+        "study_sha256",
+        "runbook_sha256",
+    }:
+        die("checkpoint identity source evidence has an unsupported shape")
+    if (
+        _checkpoint_identity_sha256(sources.get("study_sha256"), "study source")
+        != semantics["study_sha256"]
+        or _checkpoint_identity_sha256(
+            sources.get("runbook_sha256"), "runbook source"
+        )
+        != semantics["runbook_sha256"]
+    ):
+        die("checkpoint identity source evidence does not match the receipts")
+
+    observations = evidence.get("observations")
+    expected_observations = semantics["observations"]
+    if not isinstance(observations, dict) or set(observations) != {
+        "status",
+        "bindings",
+        "sha256",
+    }:
+        die("checkpoint identity observation evidence has an unsupported shape")
+    bindings = observations.get("bindings")
+    if (
+        observations.get("status") not in ("absent", "bound")
+        or isinstance(bindings, bool)
+        or not isinstance(bindings, int)
+        or bindings < 0
+        or _checkpoint_identity_sha256(
+            observations.get("sha256"), "observation evidence"
+        )
+        != expected_observations["sha256"]
+        or observations != expected_observations
+    ):
+        die("checkpoint identity observation evidence does not match captured state")
+
+
+def checkpoint_identity_from_captured(
+    state_bytes: bytes, ledger_bytes: bytes, evidence: dict
+) -> dict:
+    """Return one semantic identity without opening a path or changing state."""
+    semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+    _checkpoint_identity_validate_evidence(semantics, evidence)
+    observations = semantics["observations"]
+    identity = {
+        "schema": CHECKPOINT_IDENTITY_SCHEMA,
+        "run": semantics["anchor"],
+        "boundary": {
+            "kind": semantics["boundary"],
+            "step": semantics["step"],
+            "working_commit_sha": semantics["working_commit_sha"],
+        },
+        "evidence": {
+            "ledger_entries": semantics["ledger_entries"],
+            "ledger_sha256": semantics["ledger_sha256"],
+            "ledger_tail": semantics["ledger_tail"],
+            "observation_bindings": observations["bindings"],
+            "observation_sha256": observations["sha256"],
+            "observation_status": observations["status"],
+            "policy_sha256": hashlib.sha256(
+                canonical(semantics["policy"]).encode("utf-8")
+            ).hexdigest(),
+            "run_anchor_sha256": semantics["anchor_sha256"],
+            "runbook_sha256": semantics["runbook_sha256"],
+            "state_fingerprint": semantics["state_fingerprint"],
+            "study_sha256": semantics["study_sha256"],
+        },
+    }
+    snapshot_id = hashlib.sha256(
+        CHECKPOINT_IDENTITY_DOMAIN + canonical(identity).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema": CHECKPOINT_IDENTITY_RESULT_SCHEMA,
+        "identity": identity,
+        "snapshot_id": snapshot_id,
+    }
+
+
+def _checkpoint_identity_sanitized(operation, refusal: str):
+    """Run a legacy verifier without letting its path-bearing errors escape."""
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            return operation()
+    except (Exception, SystemExit):
+        die(refusal)
+
+
+def _checkpoint_identity_source_evidence(
+    base_dir: str, state: dict
+) -> tuple[dict, tuple[tuple[str, str, str], ...]]:
+    """Verify current source receipts and return a stable-reread comparison token."""
+    sources = []
+    for name in ("study", "runbook"):
+        source = _checkpoint_identity_sanitized(
+            lambda: receipted_source(base_dir, state, name),
+            f"checkpoint identity {name} source verification failed",
+        )
+        if source is None:
+            die(f"checkpoint identity requires a current {name} source receipt")
+        if name == "runbook":
+            _receipted_runbook_amendments(source)
+        sources.append((source["path"], source["sha256"], source["text"]))
+    evidence = {
+        "study_sha256": sources[0][1],
+        "runbook_sha256": sources[1][1],
+    }
+    return evidence, tuple(sources)
+
+
+def _checkpoint_identity_git_evidence(
+    base_dir: str, semantics: dict
+) -> dict:
+    """Resolve the fixed Git facts without admitting them into hashed identity."""
+    state = semantics["state"]
+    origin = configured_git_path(state, "origin")
+    if not isinstance(origin, str) or not origin:
+        die("checkpoint identity cannot verify the target repository")
+    repository = target_repository_binding(origin)
+    if repository == RUN_ANCHOR_REPOSITORY_UNBOUND:
+        die("checkpoint identity cannot verify a bound target repository")
+    refs = _checkpoint_refs(base_dir, state)
+    initial_base_sha = resolved_commit(
+        base_dir,
+        semantics["anchor"]["initial_base_sha"],
+        "checkpoint identity immutable base",
+    )
+    working_commit_sha = resolved_commit(
+        base_dir,
+        semantics["working_commit_sha"],
+        "checkpoint identity working commit",
+    )
+    if not commit_is_ancestor(
+        base_dir,
+        initial_base_sha,
+        working_commit_sha,
+        "checkpoint identity working commit",
+    ):
+        die("checkpoint identity working commit does not descend from its immutable base")
+    return {
+        "repository": repository,
+        "refs": refs,
+        "initial_base_sha": initial_base_sha,
+        "working_commit_sha": working_commit_sha,
+        "ancestry": "verified",
+    }
+
+
+def _checkpoint_identity_verify_observations(
+    base_dir: str, state: dict
+) -> tuple[tuple[str, int, str], ...]:
+    """Verify bound bytes and return an exact stable-reread comparison token."""
+    if "run_observations" not in state["receipts"]:
+        return ()
+    prior_bytecode_policy = sys.dont_write_bytecode
+    try:
+        sys.dont_write_bytecode = True
+        verify_observation_bindings(base_dir, state, allow_unavailable=True)
+    finally:
+        sys.dont_write_bytecode = prior_bytecode_policy
+    token = []
+    seen = set()
+    for binding in state["receipts"]["run_observations"]:
+        if binding.get("capture_status") != "accepted":
+            continue
+        artifact = binding["artifact"]
+        if artifact in seen:
+            continue
+        seen.add(artifact)
+        relative, current = read_observation_bytes(base_dir, artifact, exit_code=1)
+        recheck_observation_bytes(base_dir, artifact, current, exit_code=1)
+        token.append(
+            (relative, len(current), hashlib.sha256(current).hexdigest())
+        )
+    return tuple(token)
+
+
+def cmd_checkpoint_identity(args) -> None:
+    """Print one stable semantic checkpoint identity without taking a write lock."""
+    base_dir = os.path.abspath(args.dir)
+    if os.path.lexists(state_path(base_dir) + ".tmp"):
+        die("checkpoint identity refuses a pending controller transaction")
+    state_bytes = _checkpoint_read_staged(
+        state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+    ledger_bytes = _checkpoint_read_staged(
+        ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+
+    _checkpoint_identity_sanitized(
+        lambda: verify_run(base_dir),
+        "checkpoint identity controller verification failed",
+    )
+    if (
+        _checkpoint_read_staged(state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX)
+        != state_bytes
+        or _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != ledger_bytes
+    ):
+        die("checkpoint identity source changed during verification")
+
+    semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+    state = semantics["state"]
+    source_evidence, source_token = _checkpoint_identity_source_evidence(
+        base_dir, state
+    )
+    observation_token = _checkpoint_identity_verify_observations(base_dir, state)
+    git_evidence = _checkpoint_identity_git_evidence(base_dir, semantics)
+    observation_evidence = semantics["observations"]
+    evidence = {
+        "schema": CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA,
+        "git": git_evidence,
+        "sources": source_evidence,
+        "observations": observation_evidence,
+    }
+    result = checkpoint_identity_from_captured(state_bytes, ledger_bytes, evidence)
+
+    if _checkpoint_identity_verify_observations(base_dir, state) != observation_token:
+        die("checkpoint identity observation bytes changed before output")
+    _, final_source_token = _checkpoint_identity_source_evidence(base_dir, state)
+    if final_source_token != source_token:
+        die("checkpoint identity source changed before output")
+    if _checkpoint_identity_git_evidence(base_dir, semantics) != git_evidence:
+        die("checkpoint identity Git evidence changed before output")
+    if (
+        os.path.lexists(state_path(base_dir) + ".tmp")
+        or _checkpoint_read_staged(
+            state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != state_bytes
+        or _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != ledger_bytes
+    ):
+        die("checkpoint identity source changed before output")
+    print(canonical(result))
 
 
 def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
@@ -14029,6 +16594,23 @@ def cmd_next(args) -> None:
         refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
     out = delegation_packet(args.dir, state, directive)
+    brief_out = getattr(args, "brief_out", None)
+    if brief_out is not None and out["brief"]:
+        # The controller delegates this packet rather than reading it, so the
+        # brief body costs it a transcript it never uses. Writing the body out
+        # and naming its path leaves the directive readable and gives the
+        # delegate the exact same bytes. An inline directive carries no brief,
+        # so there is nothing to divert and the packet is left alone.
+        path = scoped_path(args.dir, brief_out, "brief output path")
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(out["brief"], handle, sort_keys=True, indent=2)
+        except OSError:
+            die(f"could not write the brief to {brief_out}")
+        out = dict(out)
+        out["brief"] = {}
+        out["brief_path"] = path
     print(json.dumps(out))
 
 
@@ -14196,6 +16778,26 @@ def clean(text: str) -> str:
 
 def cmd_status(args) -> None:
     state = load_state(args.dir)
+    assignment = as_dict(state.get("receipts")).get(
+        DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
+    )
+    if assignment is not None:
+        assignment = replay_decision_assignment_receipt(
+            args.dir, assignment, verify_base_ref=False
+        )
+    integrate_assignment = as_dict(as_dict(state.get("integrate")).get("sync"))
+    if integrate_assignment:
+        sync_history = _active_sync_history(
+            as_dict(state.get("integrate")), integrate_assignment.get("commit")
+        )
+        replayed = replay_sync_decision_assignment(
+            args.dir,
+            integrate_assignment,
+            previous_sync=sync_history,
+            verify_base_ref=False,
+        )
+        if replayed is not None:
+            assignment = replayed
     version_relations = None
     resolution_state = None
     for name in ("study", "runbook"):
@@ -14210,17 +16812,30 @@ def cmd_status(args) -> None:
             )
             if version_relations is not None:
                 resolution_state = version_resolution_status(args.dir, state)
-    if args.json:
+    field = getattr(args, "field", None)
+    if args.json or field is not None:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
         if resolution_state is not None:
             payload["version_resolution_status"] = resolution_state
-        print(json.dumps(payload, indent=2))
+        if field is None:
+            print(json.dumps(payload, indent=2))
+            return
+        # Reading one value should not cost the whole state. The state grows
+        # a step, a receipt and a round at a time, and a caller after
+        # `observation_run_id` wants twenty bytes of it. The walk matches
+        # `config get`, over the same payload `--json` would have printed.
+        node = payload
+        for part in field.split("."):
+            if not isinstance(node, dict) or part not in node:
+                die(f"status field not found: {field}")
+            node = node[part]
+        print(json.dumps(node))
         return
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
-        print(f"run:   {state['run_branch']} -> {state['base']}")
+        print(f"run:   {state['run_branch']} -> {integration_base_of(state)}")
     if version_relations is not None:
         resolution_history = as_dict(state.get("integrate")).get(
             "version_resolutions"
@@ -14265,6 +16880,14 @@ def cmd_status(args) -> None:
                 f"{target['anchor_version']}; {detail}"
             )
     print(f"observe: {controller_run_id(state)}")
+    if assignment is not None:
+        print(
+            "decision assignments: "
+            f"{assignment['report_schema']}; base {assignment['base']}; "
+            f"product {assignment['product']}; candidate "
+            f"{assignment['candidate']}; {len(assignment['mappings'])} "
+            f"mapping(s); report {assignment['report_sha256']}"
+        )
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
     blocked = amendment_block(state)
@@ -14461,6 +17084,7 @@ def verify_run(
     runbook_event = None
     design_transition_events = []
     resolution_events = []
+    initial_entry = None
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
             if not line.strip():
@@ -14494,12 +17118,15 @@ def verify_run(
                 resolution_events.append(entry.get("data"))
             prev = entry["hash"]
             last_state = entry["state"]
+            if initial_entry is None:
+                initial_entry = entry
             count += 1
     if last_state is not None and state_fingerprint(state) != last_state:
         die(
             "state file does not match the last ledger entry; "
             "state.json was edited outside hexctl", 1
         )
+    verify_run_anchor(base_dir, state, initial_entry)
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
@@ -14523,6 +17150,28 @@ def verify_run(
         if version_relations is not None and event_relations != version_relations:
             die("done:runbook ledger event does not match the version anchor", 1)
     integrate_state = as_dict(state.get("integrate"))
+    bootstrap_assignment = as_dict(state.get("receipts")).get(
+        DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
+    )
+    if bootstrap_assignment is not None:
+        replay_decision_assignment_receipt(
+            base_dir,
+            bootstrap_assignment,
+            verify_base_ref=False,
+        )
+    active_sync = as_dict(integrate_state.get("sync"))
+    if active_sync:
+        if not _sync_field_set_is_supported(active_sync):
+            die("active integration sync has an unsupported field set", 1)
+        sync_history = _active_sync_history(
+            integrate_state, active_sync.get("commit")
+        )
+        replay_sync_decision_assignment(
+            base_dir,
+            active_sync,
+            previous_sync=sync_history,
+            verify_base_ref=False,
+        )
     history = integrate_state.get("version_resolutions") or []
     if history:
         validate_version_resolution_history(
@@ -14679,7 +17328,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_init)
 
     sp = sub.add_parser("status", help="show run state")
-    sp.add_argument("--json", action="store_true")
+    shape = sp.add_mutually_exclusive_group()
+    shape.add_argument("--json", action="store_true")
+    shape.add_argument(
+        "--field",
+        metavar="PATH",
+        help=(
+            "print one dotted path out of the state --json would print, "
+            "such as observation_run_id"
+        ),
+    )
     sp.set_defaults(fn=cmd_status)
 
     sp = sub.add_parser(
@@ -14694,11 +17352,40 @@ def build_parser() -> argparse.ArgumentParser:
         help="check one candidate or filed issue against the filing contract",
     )
     sp.add_argument("--body", help="path to the candidate issue body")
+    sp.add_argument("--title", help="exact candidate issue title")
+    sp.add_argument("--label", action="append", default=[],
+                    help="candidate label; repeat for every label")
     sp.add_argument("--issue", help="canonical GitHub issue URL to read")
     sp.set_defaults(fn=cmd_issue_check)
 
+    sp = sub.add_parser(
+        "stale-bodies",
+        help="report which open issues carry no status block (report-only)",
+    )
+    sp.add_argument("--bodies", required=True,
+                    help="path to a JSON array of {number, title, body}")
+    sp.add_argument("--json", action="store_true", help="emit the report as JSON")
+    sp.set_defaults(fn=cmd_stale_bodies)
+
     sp = sub.add_parser("next", help="emit the single next action as JSON")
+    sp.add_argument(
+        "--brief-out",
+        metavar="PATH",
+        help=(
+            "write the delegated brief to PATH and name it in brief_path, "
+            "instead of printing its body"
+        ),
+    )
     sp.set_defaults(fn=cmd_next)
+
+    sp = sub.add_parser(
+        "verify-decision-assignments",
+        help="replay one signed ADR assignment composition without writing state",
+    )
+    sp.add_argument("--report", required=True)
+    sp.add_argument("--candidate", required=True)
+    sp.add_argument("--candidate-ref", dest="candidate_ref", required=True)
+    sp.set_defaults(fn=cmd_verify_decision_assignments)
 
     sp = sub.add_parser("record", help="store a named receipt")
     sp.add_argument("key")
@@ -14749,6 +17436,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--commit")
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
+    sp.add_argument("--decision-assignments", dest="decision_assignments")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
     sp.add_argument(
         "--acknowledge-sync-path",
@@ -14798,9 +17486,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_resume)
 
     sp = sub.add_parser(
-        "checkpoint", help="export or restore portable controller state"
+        "checkpoint", help="identify, export or restore portable controller state"
     )
     checkpoint = sp.add_subparsers(dest="checkpoint_action", required=True)
+    identity = checkpoint.add_parser(
+        "identity", help="print one verified semantic checkpoint identity"
+    )
+    identity.set_defaults(fn=cmd_checkpoint_identity)
     export = checkpoint.add_parser(
         "export", help="write one deterministic controller capsule"
     )
@@ -14834,6 +17526,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     if args.fn.__name__ in MUTATING:
+        if args.fn.__name__ == "cmd_init":
+            args._init_preflight = init_preflight(args)
         with held_lock(args.dir, args.fn.__name__):
             args.fn(args)
         return

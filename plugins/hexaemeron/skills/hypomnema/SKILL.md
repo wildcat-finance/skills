@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.6.0"
+  version: "5.8.0"
 ---
 
 <p align="center">
@@ -40,10 +40,12 @@ Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
 **Current state.** The ordinary walk checks recognised record and runbook
-pointers and shapes. An explicit study mode now binds one selected Protasis
-candidate to exactly one ADR or governed-skill ledger through a closed design
-bridge. It refuses a duplicate the study declares; it does not discover the same
-decision standing in a second established home when the study declares one.
+pointers and shapes, including stable `adr/<slug>` identities. An explicit
+study mode binds one selected Protasis candidate through a closed design bridge
+to exactly one numbered ADR, shape-valid numberless draft, or governed-skill
+ledger. It refuses a duplicate the study declares; it does not discover the
+same decision standing in a second established home when the study declares
+one.
 
 ## Match what is already there
 
@@ -69,11 +71,13 @@ A decision earns a record when undoing it later would cost real work: a
 framework or a dependency that spreads, a data model, a trust boundary, an
 interface others build against, a storage format that outlives its writer.
 
-Where no convention exists, put them in `docs/decisions/` numbered in sequence,
-and keep this shape.
+Where no convention exists, put them in `docs/decisions/`. In this repository,
+new records begin under `docs/decisions/drafts/` with a stable lowercase ASCII
+slug and receive their number only in the final integration composition. Keep
+this authoring shape.
 
 ```markdown
-# ADR-001: <the decision, stated as a decision>
+# Decision: <the decision, stated as a decision>
 ## Status
 Accepted, 2026-08-18. Superseded by ADR-00N once it stops being true.
 ## Context
@@ -85,6 +89,51 @@ Each one considered, what it offered, and why it lost.
 ## Consequences
 What this makes easy, what it makes hard, and what it commits us to.
 ```
+
+Name that file `<slug>.md`, where the slug is lowercase ASCII kebab-case and
+at most 96 bytes. Cite it as `adr/<slug>` in Markdown and supported source
+comments before and after assignment. One slug names exactly one draft or
+final record; numbered records inherited unchanged from the base may share a
+slug, and a draft never takes one they hold. A Markdown file directly under
+`docs/decisions/` that is neither is tolerated only while it is inherited
+unchanged from the base; the product may not add or change one. Existing `ADR-NNN-<slug>.md` records and `ADR-NNN` references
+remain valid and are not rewritten to adopt the stable form.
+
+## Assign the number from the integration base
+
+The merge composer, not the author, assigns a draft's number. Let `B` be the
+full immutable commit still named by the active integration-base ref and `P`
+the full product commit containing the drafts. The bounded helper plans the
+mapping from native Git objects, applies it to a clean worktree at `P`, and
+replays the canonical report:
+
+```bash
+python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/decision_assignments.py" plan \
+  --repo . --base "$B" --base-ref refs/remotes/origin/main --product "$P" \
+  --report .hexaemeron/decision-assignments.json
+python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/decision_assignments.py" apply \
+  --repo . --report .hexaemeron/decision-assignments.json
+python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/decision_assignments.py" replay \
+  --repo . --report .hexaemeron/decision-assignments.json
+```
+
+The planner takes the greatest three-digit number in `B`, ignores every hole
+below it, sorts at most 32 draft slugs by ASCII bytes, and assigns consecutive
+numbers. It derives `ADR-NNN-<slug>.md` from the validated slug, substitutes
+only the exact first `# Decision: <title>` heading, and preserves mode and all
+remaining bytes. Its canonical `fiat-decision-assignments/v1` report binds the
+exact base, base ref, product, result tree, blobs, ordered mapping, object
+format, and fixed ceilings.
+
+Every Git command disables replacement objects, inherited `GIT_*` repointing,
+prompts, lazy fetches, and user or system configuration. A shallow repository,
+wrong object type, moved base ref, unrelated product, inherited record drift,
+draft already present in the base, new numbered record in the product, hostile
+path or slug, duplicate identity or number, oversized input, exhausted
+three-digit namespace, dirty or wrong worktree, report drift, or partial
+mutation refuses with one bounded code. Plan and replay change no repository
+tree. Apply validates every source and destination before its first rename and
+restores every source if an I/O operation fails.
 
 The alternatives section is the part that pays. A record saying only what was
 chosen tells a reader nothing they cannot get from the code; the value is in
@@ -151,14 +200,15 @@ schema is the documentation and prose describes only what the schema cannot.
 
 ## The mechanical subset
 
-Five rules here are settled by a parser: whether the things a record points at
+Six rules here are settled by a parser: whether the things a record points at
 exist, whether a decision record carries the template's shape, whether a
-source comment's record reference resolves, and whether each Markdown file
-below a `runbooks` directory carries the three runbook answers. The fifth binds
-one caller-named study's declared decision to the selected candidate in an
-already checked Protasis design-evidence record and to one established standing
-record. Run the ordinary walk over the documents a step touched, and require
-exit 0.
+source comment's record reference resolves, whether each Markdown file below a
+`runbooks` directory carries the three runbook answers, whether each
+`adr/<slug>` identity is valid and uniquely placed, and whether a caller-named
+study binds its declared decision to the selected candidate in an already
+checked Protasis design-evidence record and to one established standing record,
+including the numberless draft used before integration assigns an ADR number.
+Run the ordinary walk over the documents a step touched, and require exit 0.
 
 ```bash
 python3 "$PLUGIN_ROOT/skills/hypomnema/scripts/hypomnema.py" docs plugins
@@ -178,7 +228,12 @@ naming a record that is absent, a Markdown or block-YAML `runbook:` pointer
 naming a local target that is not there,
 a decision record under a decisions directory missing its dated status or
 one of the template's five sections, and a source comment citing a record
-that does not exist. H007 also reports each absent or empty `What fired`,
+that does not exist. H008 reports a malformed, misplaced, duplicated,
+non-ASCII, traversal, control-character, or oversized stable identity, and
+H009 reports a valid `adr/<slug>` reference with no indexed draft or final.
+Stable identifiers remain live inside Markdown code spans because studies,
+runbooks, audits, issues, and commit prose quote them in that form; the exact
+grammar placeholder `adr/<slug>` is not a live reference. H007 also reports each absent or empty `What fired`,
 `First check` or `Who to wake` answer in a Markdown file below a directory
 named `runbooks`; headings and bodies inside fenced examples do not count. A
 record pointing at something absent is worse than no record, because it reads
@@ -200,14 +255,16 @@ Hypomnema bounds those arrays and consumes only the schema, closed candidate
 set and selected-candidate membership needed for this join.
 
 The target is an ordinary non-symlink file read stably below the supplied root.
-It is either an ADR-numbered Markdown file below a `decisions` directory or an
-`EVOLUTION.md` beside a `SKILL.md` whose governed name matches its directory
-under a plugin skills tree. H008 also refuses absent, repeated, malformed or
-unclosed blocks, a selection mismatch, absolute, escaping, backslash or
-control-bearing paths, a wrong or dangling home, oversized inputs, duplicate
-JSON keys, excessive JSON depth, special files and a file that changes while
-it is read. The ordinary walk never infers a bridge, so historical studies and
-H000 through H007 retain their existing scope.
+It is an ADR-numbered Markdown file below a `decisions` directory, a directly
+nested `docs/decisions/drafts/<slug>.md` carrying the valid stable slug, draft
+heading, five record sections and dated status, or an `EVOLUTION.md` beside a
+`SKILL.md` whose governed name matches its directory under a plugin skills
+tree. H008 also refuses absent, repeated, malformed or unclosed blocks, a
+selection mismatch, absolute, escaping, backslash or control-bearing paths, a
+wrong, malformed or dangling home, oversized inputs, duplicate JSON keys,
+excessive JSON depth, special files and a file that changes while it is read.
+The ordinary walk never infers a bridge, so historical studies and H000 through
+H007 retain their existing scope.
 
 The YAML H003 pass reads generic `runbook:` keys outside comments and block
 scalars, resolves relative Markdown targets from the YAML file's directory and
@@ -299,14 +356,26 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-pointer-gate
 
-- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run.
+- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run. A draft named by study mode is directly under `docs/decisions/drafts/` and has a valid stable slug, draft heading, five record sections and dated status.
 - Evidence: The exact lint version, mode, arguments, selected paths, design-evidence and repository-root identities where supplied, structured findings and zero exit status.
 - Evidence classes: checked
-- Boundary: A clean ordinary walk proves only that recognised pointers resolve and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; Protasis owns full design-record validity, ADR shape and the versioning contract own record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
+- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; for a declared draft it also proves the mechanical draft path, heading, section and dated-status shape. Protasis owns full design-record validity, numbered-ADR shape and the versioning contract own their record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
 - Authorises: Passing the mechanical record and runbook-shape gate for the exact paths and checker version recorded.
 - Consequence: 1
-- Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, or a claim about documents excluded from the run.
+- Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a malformed or duplicate stable identity, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, a declared draft outside its exact home or without its required mechanical shape, or a claim about documents excluded from the run.
 - Recovery: Restore or correct the target, mark supersession accurately, add the missing runbook or answer, repair the one closed bridge or its selected record, and rerun the same bounded lint mode.
+- Exceptions: none
+
+### hypomnema-decision-assignment
+
+- Promise: A successful replay establishes that one canonical `fiat-decision-assignments/v1` report is the deterministic `max(exact base)+1` transform for every validated draft in the exact product commit while the named integration-base ref still names that base.
+- Evidence: Full base and product commit ids, active base ref, result tree, ordered stable-slug mapping, source and result blob ids, file modes, object format, fixed ceilings, canonical report bytes and zero-exit replay.
+- Evidence classes: checked
+- Boundary: Replay proves the immutable Git-object transform and report bytes only. It does not prove that the resulting commit is signed, that its trailers agree, that a hosted status ran on the same head, or that repository rules serialize admission; Fiat and the base-owned workflow own those later gates.
+- Authorises: Using the exact report to prepare or verify the decision-record path and heading changes in one integration composition.
+- Consequence: 2
+- Refuses: A shallow or incomplete repository, replacement or repointed Git state, wrong or moved base, unrelated or wrong-typed product, inherited-record drift, malformed or duplicate identity, numeric hole filling, more than 32 drafts, an oversized blob or path, a non-exact heading change, dirty or wrong worktree, report or blob drift, or any partial mutation.
+- Recovery: Restore complete native objects and a clean exact-product worktree, restore the active base ref or recompute from its new exact commit, correct the draft identity or bytes, discard the refused report, and plan then replay again.
 - Exceptions: none
 
 ### hypomnema-record-placement

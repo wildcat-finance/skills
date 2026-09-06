@@ -5,7 +5,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 - Current demonstration version: `tabularium-demo-v0.1.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `canonical-compound-v3-events`
-- Current demonstration: The Goldfinch rebuild matches its record digest while the Compound witness stays reconstructed.
+- Current demonstration: The Aave v4 rebuild matches its record digest while the Compound witness stays reconstructed.
 - Next demonstration job: Preserve canonical Compound v3 events so the release carries no reconstructed component.
 
 ```shoggoth-demonstration
@@ -15,7 +15,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
   "plugin": "tabularium",
   "status": "mixed",
   "claim_id": "tabularium-goldfinch-release",
-  "claim": "The preserved Goldfinch credit events rebuild to their declared record digest offline.",
+  "claim": "The preserved Aave v4 credit events rebuild to their declared record digest offline.",
   "non_claim": "The Compound v3 Phase 0 witness beside them is a non-canonical reconstruction, not a preserved venue record.",
   "network": {
     "policy": "denied"
@@ -25,8 +25,8 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     {
       "id": "input-1",
       "class": "protocol",
-      "path": "plugins/tabularium/examples/goldfinch-v0/events.jsonl",
-      "sha256": "751754a2f913691cf95f3e9f859b156f9ccd7963b1d72d4fc3379348924469b1"
+      "path": "plugins/tabularium/examples/aave-v4-v0/events.jsonl",
+      "sha256": "490d3f6399f84af8a81a5401b3cc92bf7ecfbe98a6bb02f07215b9099625ccf7"
     },
     {
       "id": "input-2",
@@ -40,21 +40,21 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "run",
       "argv": [
         "python3",
-        "plugins/tabularium/examples/goldfinch-v0/rebuild.py"
+        "plugins/tabularium/examples/aave-v4-v0/rebuild.py"
       ],
       "expect_exit": 0
     }
   ],
   "observations": [
-    "The command exits 0 in about 0.1 seconds with no network.",
-    "Its last reported line is: coverage manifest sha256 58184a75d8eca6ae8d9b44653c36ce8c482549c5d3cecd1a2a991b0936561f6d"
+    "The command exits 0 in about 0.3 seconds with no network.",
+    "Its last reported line is: rebuild matches aave-v4-mainnet-credit-window-v0: 490d3f6399f84af8a81a5401b3cc92bf7ecfbe98a6bb02f07215b9099625ccf7"
   ],
   "frontier": {
     "version": "tabularium-demo-v0.1.0",
     "status": "open",
     "revision": "canonical-compound-v3-events",
-    "sha256": "e3e0e7c08f95dfeafb8ed02d69737ec6fe01ef2ae81245372d540aa97ae2069a",
-    "current": "The Goldfinch rebuild matches its record digest while the Compound witness stays reconstructed.",
+    "sha256": "a2857ce92e63d0a2f5fedb9a02f09a118cb003109cb547f84008b9e48dc0207b",
+    "current": "The Aave v4 rebuild matches its record digest while the Compound witness stays reconstructed.",
     "next": "Preserve canonical Compound v3 events so the release carries no reconstructed component."
   }
 }
@@ -64,4 +64,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
-| `tabularium-demo-v0.1.0` | baseline | `canonical-compound-v3-events` | `e3e0e7c08f95dfeafb8ed02d69737ec6fe01ef2ae81245372d540aa97ae2069a` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |
+| `tabularium-demo-v0.1.0` | baseline | `canonical-compound-v3-events` | `a2857ce92e63d0a2f5fedb9a02f09a118cb003109cb547f84008b9e48dc0207b` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `mixed` is decided by the material inputs above, not by the prose. |

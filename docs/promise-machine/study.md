@@ -209,7 +209,7 @@ evaluation cases, release identity and promotion history. Its verifier
 re-slices citations from pinned bytes, recomputes read request keys, keeps
 document and chain time domains visible, refuses unpinned evaluation and never
 runs a model or retrieves documents. Its `berean-v0.1.0` frontier is deliberately
-open: the shipped Goldfinch release uses a fabricated frozen corpus and recorded
+open: the shipped Aave v4 release uses a fabricated frozen corpus and recorded
 mainnet reads; a Wildcat corpus, captured Wildcat market reads and an Ariadne
 grounded-agent statement remain future work. The Promise Machine may govern
 those future claims, but this delivery must not consume that held frontier.

@@ -10,17 +10,17 @@ binding the two, written only if the fixture verifies and the statement survives
 being held to that verification.
 
 The historical manifest-v1 example is at
-[`examples/goldfinch-v0-release/`](../examples/goldfinch-v0-release). The
+[`examples/aave-v4-spoke-v0-release/`](../examples/aave-v4-spoke-v0-release). The
 receipt-aware manifest-v2 example is at
-[`examples/goldfinch-v1-release/`](../examples/goldfinch-v1-release). Read
+[`examples/aave-v4-spoke-v1-release/`](../examples/aave-v4-spoke-v1-release). Read
 either one back with no network:
 
 ```bash
 python3 plugins/lazarus/scripts/lazarus.py verify-release \
-  plugins/lazarus/examples/goldfinch-v0-release
+  plugins/lazarus/examples/aave-v4-spoke-v0-release
 
 python3 plugins/lazarus/scripts/lazarus.py verify-release \
-  plugins/lazarus/examples/goldfinch-v1-release
+  plugins/lazarus/examples/aave-v4-spoke-v1-release
 ```
 
 ## The gap this closes
@@ -146,7 +146,7 @@ long as the document says so.
 
 ## Why the fixture does not mention the release
 
-`README.md` inside the Goldfinch fixture is a manifest component: its bytes are
+`README.md` inside the Aave v4 fixture is a manifest component: its bytes are
 digested, and the release records that digest. Editing it to advertise the
 release would change the digest the release records, which would invalidate the
 release, which would need rewriting, which would change the README. The release

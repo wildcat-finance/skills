@@ -28,18 +28,18 @@ from lazarus_lib.verifier import verify_fixture
 
 from . import support
 
-FIXTURE = support.PLUGIN_ROOT / "examples" / "goldfinch-v0"
-SHIPPED = support.PLUGIN_ROOT / "examples" / "goldfinch-v0-release"
-RECEIPT_FIXTURE = support.PLUGIN_ROOT / "examples" / "goldfinch-v1"
-RECEIPT_SHIPPED = support.PLUGIN_ROOT / "examples" / "goldfinch-v1-release"
+FIXTURE = support.PLUGIN_ROOT / "examples" / "aave-v4-spoke-v0"
+SHIPPED = support.PLUGIN_ROOT / "examples" / "aave-v4-spoke-v0-release"
+RECEIPT_FIXTURE = support.PLUGIN_ROOT / "examples" / "aave-v4-spoke-v1"
+RECEIPT_SHIPPED = support.PLUGIN_ROOT / "examples" / "aave-v4-spoke-v1-release"
 DEMONSTRATION = (
     support.PLUGIN_ROOT / "examples" / "preservation-release-demo.py"
 )
 
 LEGACY_DIGESTS = {
-    FIXTURE / "manifest.json": "c37cd789e5386a1347abd4dff24c8b1db96cdab771df4eb4d63056ba56145fa9",
-    SHIPPED / STATEMENT_NAME: "d8b262278ffd4db76e449a2bfce4629903a70e7f4ad7c1f3a6ebbfb1f112555e",
-    SHIPPED / RELEASE_NAME: "ec5c9b8091286de8713b6daf6cfdeaa7e9cfa6177b96c10a2ed20ffd6654bcff",
+    FIXTURE / "manifest.json": "1be58bdeb2312b24ab7958fcdd7a5304a902d81ec7b6491d9cc5d7a0efff8bb3",
+    SHIPPED / STATEMENT_NAME: "cb5cfae539f91d814dcee0ddddf13f4fb60a03f2b17c1b7581f330a8353438ef",
+    SHIPPED / RELEASE_NAME: "de4eb122aa84c589bdd0c7370f43e01845d4b733bcf61599f6b9893d41c5be4e",
 }
 
 
@@ -154,15 +154,15 @@ class ShippedReceiptReleaseTests(unittest.TestCase):
         report = verify_release(RECEIPT_SHIPPED)
         self.assertEqual(
             report["fixture_digest"],
-            "aadf1b809ae45946967e17f2132ae4d73b06026345b0e8c7f1ca4c3c0add9535",
+            "ea047af74636f278d1641807edbce7860bc831e6822db187fd8d5290d0dc937b",
         )
         self.assertEqual(
             report["statement_sha256"],
-            "5bb2ff36f909142bfe542f9da95e92fd014026a7b6527d2b5fbed365691b9014",
+            "798797de0eed3167cc6c91d0ae9529d73fa532e10a1b6a2b9e5c5206b820ab7f",
         )
         self.assertEqual(
             report["release_digest"],
-            "701fa846f81c28ede5ab9539c0c19815dfe7435eca45ba663219c0c88c3bdb74",
+            "a104fc78d4c7b6b1df8fe0abd9daa74236b382154f4246604662040d1298aa39",
         )
         self.assertEqual(
             hashlib.sha256(
@@ -188,7 +188,7 @@ class ShippedReceiptReleaseTests(unittest.TestCase):
         )
         self.assertEqual(
             report["receipts_root"],
-            "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e",
+            "0x7d3403cc37d77546db4005e06876a204372b0ef52a703cc88577a96dc4befb1a",
         )
         self.assertEqual(report["evidence_counts"]["receipt_trie_proved"], 2)
         self.assertFalse(held["verified"]["canonical_chain_claim"])
@@ -198,10 +198,10 @@ class ShippedReceiptReleaseTests(unittest.TestCase):
             statement["predicate"]["capture"]["command"],
             [
                 "python3",
-                "plugins/lazarus/examples/goldfinch-v1/demo.py",
+                "plugins/lazarus/examples/aave-v4-spoke-v1/demo.py",
                 "build-fixture",
                 "--out",
-                "tmp/goldfinch-v1-rebuild",
+                "tmp/aave-v4-spoke-v1-rebuild",
             ],
         )
         skipped = {
@@ -237,7 +237,7 @@ class ShippedReceiptReleaseTests(unittest.TestCase):
         self.assertNotIn("receipts_root", document()["verified"])
         self.assertIn("receipts_root", receipt_document()["verified"])
         self.assertEqual(
-            verify_fixture(FIXTURE)["manifest"]["tool_version"], "0.1.0"
+            verify_fixture(FIXTURE)["manifest"]["tool_version"], "0.2.0"
         )
         self.assertEqual(
             verify_fixture(RECEIPT_FIXTURE)["manifest"]["tool_version"], "0.2.0"

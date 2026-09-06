@@ -37,7 +37,7 @@ source-bound runbook step. Fiat owns the controller, receipts, push, pull
 request, and merge.
 
 The controller gives you one `brief` object with exactly `runbook_step`,
-`design_evidence`, `branch`, and `branch_from`. `runbook_step` carries the exact effective
+`design_evidence`, `branch`, `branch_from`, and `plugin_root`. `runbook_step` carries the exact effective
 Markdown, artefact path, SHA-256, step number, title, and any current
 study-bound amendment bytes. `design_evidence` names the fixed record path,
 schema, SHA-256, and selected candidate checked before this step opened. Read
@@ -57,6 +57,13 @@ Apply every discipline the step names. Phylax owns its off-chain boundaries,
 Ephoros its retained telemetry, Metron any non-gas performance claim, Elenchus
 any failure that appears, and Hypomnema the record a lasting decision needs.
 Hermes owns Solidity gas. Do not silently import a sibling's job into the step.
+
+You are the one who reads those contracts, not the controller that delegated to
+you. Each is at `<plugin-root>/skills/<name>/SKILL.md` --
+`phylax`, `ephoros`, `metron`, `elenchus`, `hypomnema` -- and `plugin_root` is
+in your brief. Read the ones the step actually names, when it names them. A
+step with no performance claim does not need Metron, and a step that has not
+failed does not need Elenchus.
 
 Commit in coherent units. Sign every commit and end its message, after a blank
 line, with exactly `Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and

@@ -26,7 +26,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "input",
       "class": "fixture",
       "path": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-      "sha256": "02868e65be7ec505abec7db65950e5bb11c305194cf3f7f2fa41f4f66bef9c11"
+      "sha256": "fa81907e7b28eac21558e5e9a2a6cc3b18a125afdf7ffedf4836a6b088fe7584"
     }
   ],
   "commands": [

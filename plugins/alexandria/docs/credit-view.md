@@ -31,9 +31,9 @@ record under two capture names, derivation refuses the duplicate.
 
 ## Registered mappings
 
-`goldfinch.credit.v1` reads the complete hosted-indexer capture already shipped
+`aave-v4.credit.v1` reads the complete hosted-indexer capture already shipped
 by Tabularium. It maps `borrows` and `repays` to 511 events and maps 31
-`creditLines` to provider-reported `goldfinch.credit-line-balance`
+`creditLines` to provider-reported `aave-v4.credit-line-balance`
 observations at the source snapshot. `callableLoans` and `tranchedPools` remain
 counted but unsupported by the narrow view.
 
@@ -67,7 +67,7 @@ available transaction coordinates and complete provenance. Multiple amount
 legs allow later liquidation mappings to retain debt and collateral without
 forcing them into one number.
 
-The current Goldfinch and Clearpool mappings emit one `source-amount` leg.
+The current Aave v4 and Clearpool mappings emit one `source-amount` leg.
 Their repayment records do not split that amount into principal and interest,
 so the derived row does not add such a split.
 

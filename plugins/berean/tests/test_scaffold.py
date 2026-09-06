@@ -36,7 +36,7 @@ GIT = shutil.which("git")
 class PackagingTests(unittest.TestCase):
     def test_pinned_release_corpora_are_not_fuzzer_output(self):
         paths = (
-            "plugins/berean/examples/goldfinch-demo-v0/release/corpus/terms.md",
+            "plugins/berean/examples/aave-v4-demo-v0/release/corpus/terms.md",
             "plugins/berean/tests/fixtures/conformance/pass-release/corpus/terms.md",
         )
         for path in paths:

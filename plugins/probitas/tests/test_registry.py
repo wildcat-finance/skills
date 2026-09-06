@@ -89,7 +89,7 @@ class TestAdapterFailures(unittest.TestCase):
         def quiet(addresses, config):
             return [], Coverage("wildcat", "empty")
 
-        records, coverage = run_adapter("wildcat", quiet, {}, {})
+        _records, coverage = run_adapter("wildcat", quiet, {}, {})
         self.assertEqual(coverage.records, 0)
         self.assertEqual(coverage.status, "empty")
 

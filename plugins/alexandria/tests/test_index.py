@@ -201,9 +201,15 @@ class IndexBuildTests(IndexTestCase):
         self.build_derived()
         first = self.derived_release
         first_id = self.derived_id
-        source = self.source_json("goldfinch-source")
-        source["_meta"]["block"]["number"] += 1
-        self.write_source("goldfinch-source", source)
+        source = self.source_json("aave-v4-source")
+        source["logs"] = source["logs"][:-1]
+        self.write_source("aave-v4-source", source)
+        coverage = self.plan["captures"][0]["coverage"]
+        for collection in coverage["collections"]:
+            if collection["selector"] == "/logs":
+                collection["record_count"] -= 1
+                coverage["record_count"] -= 1
+        self._write_plan()
         self.raw_release = self.root / "second-raw"
         self.derived_release = self.root / "second-derived"
         self.build_derived()
@@ -218,9 +224,12 @@ class IndexBuildTests(IndexTestCase):
     def test_active_releases_may_not_disagree_about_one_row_id(self):
         self.build_derived()
         first = self.derived_release
-        source = self.source_json("goldfinch-source")
-        source["borrows"][0]["amount"] = str(int(source["borrows"][0]["amount"]) + 1)
-        self.write_source("goldfinch-source", source)
+        source = self.source_json("aave-v4-source")
+        log = source["logs"][0]
+        body = log["data"][2:]
+        bumped = int(body[64:128], 16) + 1
+        log["data"] = "0x" + body[:64] + "%064x" % bumped + body[128:]
+        self.write_source("aave-v4-source", source)
         self.raw_release = self.root / "changed-raw"
         self.derived_release = self.root / "changed-derived"
         self.build_derived()
@@ -264,9 +273,9 @@ class AddressQueryTests(IndexTestCase):
 
     def test_venue_filter_is_applied(self):
         self.build_index()
-        result = query(self.index, [CLEARPOOL], venues=["goldfinch"])
+        result = query(self.index, [CLEARPOOL], venues=["aave-v4"])
         self.assertFalse(result["events"])
-        self.assertEqual([item["venue"] for item in result["coverage"]], ["goldfinch"])
+        self.assertEqual([item["venue"] for item in result["coverage"]], ["aave-v4"])
 
     def test_chain_filter_is_applied(self):
         self.build_index()
@@ -300,24 +309,30 @@ class AddressQueryTests(IndexTestCase):
             self.assertRegex(item["row"]["provenance"]["component_sha256"], r"^sha256:")
 
     def test_full_dataset_coverage_can_prove_empty(self):
-        source = self.source_json("goldfinch-source")
-        source["callableLoans"] = []
-        source["tranchedPools"] = []
-        self.write_source("goldfinch-source", source)
+        source = self.source_json("aave-v4-source")
+        source["logs"] = []
+        self.write_source("aave-v4-source", source)
         coverage = self.plan["captures"][0]["coverage"]
         for collection in coverage["collections"]:
-            if collection["selector"] in ("/callableLoans", "/tranchedPools"):
+            if collection["selector"] == "/logs":
                 coverage["record_count"] -= collection["record_count"]
                 collection["record_count"] = 0
         self._write_plan()
         self.build_index()
-        goldfinch = next(item for item in query(self.index, [UNKNOWN])["coverage"] if item["venue"] == "goldfinch")
-        self.assertEqual((goldfinch["status"], goldfinch["empty_allowed"]), ("covered", True))
+        aave_v4 = next(item for item in query(self.index, [UNKNOWN])["coverage"] if item["venue"] == "aave-v4")
+        self.assertEqual((aave_v4["status"], aave_v4["empty_allowed"]), ("covered", True))
 
-    def test_unsupported_mapping_collections_refuse_empty(self):
+    def test_complete_mapping_coverage_permits_an_empty_answer(self):
+        """No shipped mapping leaves an unsupported collection any more.
+
+        The Aave v4 capture is a topic pair over a block range, so every
+        captured log is mapped and an unknown subject can be answered empty.
+        The refusal path for a venue that does leave collections unmapped has
+        no shipped example; it is still enforced by the coverage contract.
+        """
         self.build_index()
-        goldfinch = next(item for item in query(self.index, [UNKNOWN])["coverage"] if item["venue"] == "goldfinch")
-        self.assertEqual((goldfinch["status"], goldfinch["empty_allowed"]), ("partial", False))
+        aave_v4 = next(item for item in query(self.index, [UNKNOWN])["coverage"] if item["venue"] == "aave-v4")
+        self.assertEqual((aave_v4["status"], aave_v4["empty_allowed"]), ("covered", True))
 
     def test_subject_scope_refuses_false_empty(self):
         self.build_index()
@@ -329,8 +344,8 @@ class AddressQueryTests(IndexTestCase):
         self.plan["captures"][0]["coverage"]["gaps"] = ["provider completeness not established"]
         self._write_plan()
         self.build_index()
-        goldfinch = next(item for item in query(self.index, [UNKNOWN])["coverage"] if item["venue"] == "goldfinch")
-        self.assertEqual((goldfinch["status"], goldfinch["empty_allowed"]), ("partial", False))
+        aave_v4 = next(item for item in query(self.index, [UNKNOWN])["coverage"] if item["venue"] == "aave-v4")
+        self.assertEqual((aave_v4["status"], aave_v4["empty_allowed"]), ("partial", False))
 
     def test_time_filtered_block_coverage_refuses_false_empty(self):
         self.build_index()
@@ -339,20 +354,20 @@ class AddressQueryTests(IndexTestCase):
 
     def test_open_ended_time_filter_refuses_snapshot_empty(self):
         self.build_index()
-        goldfinch = next(item for item in query(self.index, [UNKNOWN], time_start="1")["coverage"] if item["venue"] == "goldfinch")
-        self.assertFalse(goldfinch["empty_allowed"])
+        aave_v4 = next(item for item in query(self.index, [UNKNOWN], time_start="1")["coverage"] if item["venue"] == "aave-v4")
+        self.assertFalse(aave_v4["empty_allowed"])
 
     def test_query_is_offline(self):
         self.build_index()
         with mock.patch.object(socket, "socket", side_effect=AssertionError("network attempted")):
             self.assertEqual(query(self.index, [CLEARPOOL])["format"], "alexandria-address-query/v1")
 
-    def test_query_returns_position_observations(self):
-        borrower = self.source_json("goldfinch-source")["creditLines"][0]["borrower"]
+    def test_log_mappings_answer_with_events_and_no_position(self):
+        borrower = "0x" + self.source_json("aave-v4-source")["logs"][0]["topics"][2][26:]
         self.build_index()
-        observations = query(self.index, [borrower])["observations"]
-        self.assertTrue(observations)
-        self.assertTrue(all(item["row"]["row_kind"] == "position-observation" for item in observations))
+        answer = query(self.index, [borrower])
+        self.assertTrue(answer["events"])
+        self.assertEqual(answer["observations"], [])
 
     def test_cli_emits_canonical_json(self):
         self.build_index()
@@ -435,13 +450,19 @@ class ProbitasBridgeTests(IndexTestCase):
         self.assertEqual(verified.returncode, 0, verified.stdout + verified.stderr)
         self.assertEqual(len(verified.stdout.strip().splitlines()), 5)
 
-    def test_goldfinch_observation_keeps_a_document_citation(self):
-        borrower = self.source_json("goldfinch-source")["creditLines"][0]["borrower"]
+    def test_aave_v4_event_keeps_its_evidence_class(self):
+        """No mapping emits a position observation now; events carry the class."""
+        borrower = "0x" + self.source_json("aave-v4-source")["logs"][0]["topics"][2][26:]
         self.build_index()
         result = self._collect(borrower)
-        observation = next(row for row in result["records"] if row["claim"] == "position_observation")
-        self.assertEqual(observation["source_kind"], "document")
-        self.assertEqual(observation["values"]["evidence_class"], "hosted-indexer")
+        self.assertFalse(
+            any(row["claim"] == "position_observation" for row in result["records"])
+        )
+        self.assertEqual(
+            {item["row"]["provenance"]["evidence_class"]
+             for item in query(self.index, [borrower])["events"]},
+            {"archive-log"},
+        )
 
     def test_default_fixture_path_remains_available(self):
         result = subprocess.run(

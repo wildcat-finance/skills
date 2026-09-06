@@ -19,7 +19,7 @@ checked later. It keeps the original source bytes, records exactly what was and
 was not captured, and can derive only the reviewed rows its mappings support.
 
 Today it can ingest and verify releases, produce unsigned evidence statements,
-derive Goldfinch and Clearpool views, build a disposable address index, verify
+derive Aave v4 and Clearpool views, build a disposable address index, verify
 one Compound v3 Phase 0 execution witness, and collect a declared Ethereum USDC
 Comet block interval in bounded shards that resumes after a kill, rewinds after
 a reorg, reconciles against a second provider and verifies offline.
@@ -54,7 +54,7 @@ is an archive and data source, not a lending venue or underwriting system.
 
 Raw GraphQL responses and archive logs do not need one payload schema. Each
 release stores the original bytes under their SHA-256, names the source, chain,
-scope, finality class and counted coverage, and verifies offline. Goldfinch and
+scope, finality class and counted coverage, and verifies offline. Aave v4 and
 Clearpool releases can then produce a narrow Tabularium view without turning
 the archive itself into an interpretation layer.
 
@@ -76,7 +76,7 @@ unharvested registry venues visible as gaps.
   ingest, verify, statement, derive, index and query command;
 - raw-release, release-statement, coverage, credit-row, query and
   demonstration schemas;
-- registered Goldfinch and Clearpool mappings with exact source and context
+- registered Aave v4 and Clearpool mappings with exact source and context
   selectors;
 - the offline [`credit-history-v0`](./examples/credit-history-v0/README.md)
   path through Probitas's five gates; and
@@ -120,6 +120,10 @@ gaps, correction links and exact release-tree membership without using the
 network or changing the release. Repeating an ingest from fixed inputs
 produces the same objects, manifest and release ID.
 
+For `proof-backed-state`, verification also reconstructs the embedded Lazarus
+fixture by digest, reruns its offline verifier and bounds the capture to the
+proved block and targets. This earns the class instead of trusting its label.
+
 The `statement` command first performs that complete offline verification. It
 then projects the logical release and every manifest component into a
 canonical unsigned in-toto Statement v1 and writes it atomically outside the
@@ -136,7 +140,7 @@ unchecked, and gates 2 and 5 remain unchecked. See
 [`docs/release-statements.md`](docs/release-statements.md) for the wire contract
 and the exact demonstration.
 
-Goldfinch and Clearpool releases can now produce deterministic Tabularium
+Aave v4 and Clearpool releases can now produce deterministic Tabularium
 credit events and position observations. Verification rebuilds both views from
 the raw objects and reconciles provenance, mapping revisions and coverage.
 Row IDs survive capture renames and raw-release corrections. Native repayment
@@ -152,7 +156,7 @@ observation and per-venue coverage JSON. Probitas opts into the archive with
 `--alexandria-index`; its normal fixture and live adapter route is unchanged.
 
 The checked-in [`credit-history-v0`](examples/credit-history-v0/README.md)
-demonstration runs that complete path from the existing Goldfinch and Clearpool
+demonstration runs that complete path from the existing Aave v4 and Clearpool
 source files through Probitas's five gates without network access:
 
 ```bash
@@ -162,7 +166,7 @@ python3 examples/credit-history-v0/demo.py verify "$output"
 ```
 
 Its expected receipts bind 522 derived events, 31 observations, an 11-event
-Clearpool address query and 11 Probitas records. Goldfinch remains partial for
+Clearpool address query and 11 Probitas records. Aave v4 remains partial for
 that query because the mapping declares 25 unsupported native records.
 
 ## COMPOUND V3 PHASE 0
@@ -258,9 +262,11 @@ python3 plugins/alexandria/tests/run_tests.py \
   --elenchus-report .elenchus/alexandria-unittest.json
 ```
 
-The implementation uses Python's standard library. The six core Alexandria
-commands, Compound build/check commands and checked-in demonstrations reach no
-network. Only the explicit Compound `capture` command performs network I/O.
+Alexandria's own implementation uses Python's standard library. Verifying a
+`proof-backed-state` capture loads the sibling Lazarus verifier from the same
+checkout with Lazarus's pinned packages. The six core Alexandria commands,
+Compound build/check commands and checked-in demonstrations reach no network.
+Only the explicit Compound `capture` command performs network I/O.
 
 ## LICENCE
 
