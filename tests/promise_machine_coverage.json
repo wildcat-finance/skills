@@ -8,7 +8,7 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "d2366bb4da716ef3b1f07ecb1e0edf38cccd8dcd3a2607e00b4f7b02879c3683"
+      "sha256": "1b408a8912df3ce2a2fd2d90e6fe12e9fad178c51938361a26ea18572aa27356"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
@@ -75,11 +75,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "8b3c1092a2c39d250c089ae3827469cdb6255ae80ee81ccf70229277be2e82f8"
+        "sha256": "a6269e8487cfb23095334ea6dfc293ed59c958c9a73c748366e276fef55f17d8"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "4934a7aa828877d2cd8d80f49ceb46a8af487d12a4be072ec6d46f7bb1bd066a"
+        "sha256": "852a9f4b988ed9af8ff3bf4644ac1d8372dc668dc7162ff12d17937622e7e490"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -91,7 +91,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "887410d8db2355e0aa115a41e5571ec3a4be01936e0de30100f1c6072b063fbb"
+        "sha256": "adcb0cd4de5887ff0ea841f293ad0b304607e8745d7808059ab5d0883c3a8fed"
       }
     ],
     "evidence": [
@@ -217,7 +217,7 @@
         "test_wave_atlas_pull_requests_read_every_page",
         "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "0360121b78010dca24e5143f140b60456f7e45412f6cd5ecc2fe03388ec576ca"
+      "sha256": "746d1073fce24282bef9e8659bd8b435d42b465823420181e380bc7fd481c1eb"
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
