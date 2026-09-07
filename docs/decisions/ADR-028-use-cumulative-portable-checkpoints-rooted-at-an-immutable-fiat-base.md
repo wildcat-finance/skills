@@ -291,3 +291,21 @@ not behaviour, and nothing in `hexctl` changes with it.
 ADR-029 through ADR-032 stay Retired. Each gains one standing successor that
 carries its decision forward rebased on `fiat-v5.49.1`, so this record's
 retirement of them is left as history rather than undone.
+
+## Amendment: Native outer archive (2026-09-07)
+
+The outer archive assembly this record leaves to the manual procedure is
+moving into `hexctl` under its own record, "Build the outer checkpoint archive
+natively", cited as `adr/build-the-outer-checkpoint-archive-natively` and
+numbered at integration. That record states the three commands, the
+stored container, the single content manifest that replaces the member
+sidecars, the fixed nine-entry layout, the `pack.threads=1` rule, the
+disposable keyring, the no-fetch `remote.origin.url` and the rejected designs
+with their measurements.
+
+This amendment changes no operative clause. The record stays Accepted: the
+checkpoint store path, the two boundaries, unconditional saving, the mandatory
+local hand-off and the rule that no checkpoint operation uploads, posts,
+commits or pushes all stand. The rejection of complete standing-checkpoint
+automation above described this controller generation; the draft record, once
+accepted, is the decision for the next one.
