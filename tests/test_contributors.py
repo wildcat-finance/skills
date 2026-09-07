@@ -284,6 +284,17 @@ class RecordedDecisions(unittest.TestCase):
         for field in ("- Promise:", "- Evidence:", "- Boundary:", "- Refuses:", "- Recovery:"):
             self.assertIn(field, block.split("## ", 1)[0])
 
+    def test_the_contributor_promise_has_no_fiat_host_set_dependency(self):
+        text = (REPOSITORY_ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        block = text.split("promise-machine-contributor-ranking", 1)[1].split("## ", 1)[0]
+        self.assertNotIn("hexctl.py", block)
+        self.assertNotIn("declared host set", block)
+
+    def test_the_guide_does_not_make_account_matching_an_admission_rule(self):
+        text = self.GUIDE.read_text(encoding="utf-8")
+        self.assertNotIn("author address must be one GitHub can match", text)
+        self.assertNotRegex(text, r"under your human\s+identity")
+
     def test_the_guide_says_what_the_list_does_not_establish(self):
         text = self.GUIDE.read_text(encoding="utf-8")
         self.assertIn("CONTRIBUTORS.md", text)

@@ -12,8 +12,8 @@ This guide offers two routes:
 - choose a small contribution yourself; or
 - let the Wave Atlas allocate an unblocked issue and take it through Fiat.
 
-Both routes produce ordinary repository contributions under your human
-identity. Neither gives an agent extra authority.
+Both routes produce ordinary repository contributions under a
+repository-valid signing identity. Neither gives an agent extra authority.
 
 There is a printable field-guide version of this page at
 [`pdf/how-to-help-shoggoth.pdf`](pdf/how-to-help-shoggoth.pdf), drawn by
@@ -293,10 +293,11 @@ the author address, never the address itself. At integration it refuses to
 claim success if the base no longer carries those identities, either in the
 commits or in the merge that replaced them.
 
-Your commit author address must be one GitHub can match to your account. Fiat
-records an unmatched address as unresolved instead of guessing. GitHub's own
-contributor view is computed and published by GitHub on its schedule; no local
-receipt can force an entry to appear.
+If you want GitHub to link a commit to your account, use an author address it
+can match. Fiat records an unmatched address as unresolved instead of guessing;
+that attribution result does not invalidate an otherwise valid signature.
+GitHub's own contributor view is computed and published by GitHub on its
+schedule; no local receipt can force an entry to appear.
 
 A daily repository job generates [`CONTRIBUTORS.md`](../CONTRIBUTORS.md) and the
 thanks section in the root README from public history. It ranks resolved Skills
