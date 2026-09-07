@@ -1,0 +1,48 @@
+[
+  {
+    "id": "eng:archive-verification-2026-08-31",
+    "producer": "Wildcat Labs, archive verification of 31 August 2026",
+    "rounds": [
+      {
+        "date": "31 August 2026",
+        "findings": 12,
+        "id": "round:archive-verification-2026-08-31:1",
+        "label": "Priority findings, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "31 August 2026",
+        "findings": 1,
+        "id": "round:archive-verification-2026-08-31:2",
+        "label": "Family verdicts, round 2",
+        "native_schema": null,
+        "verdict": null
+      }
+    ],
+    "source": "archive-verification-2026-08-31"
+  },
+  {
+    "id": "eng:counterparty-history-2026-09-05",
+    "producer": "Wildcat Labs, counterparty-history programme note of 5 September 2026",
+    "rounds": [
+      {
+        "date": "5 September 2026",
+        "findings": 1,
+        "id": "round:counterparty-history-2026-09-05:1",
+        "label": "Capture inventory, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "5 September 2026",
+        "findings": 3,
+        "id": "round:counterparty-history-2026-09-05:2",
+        "label": "Open actions carried from prior handovers, round 2",
+        "native_schema": null,
+        "verdict": null
+      }
+    ],
+    "source": "counterparty-history-2026-09-05"
+  }
+]

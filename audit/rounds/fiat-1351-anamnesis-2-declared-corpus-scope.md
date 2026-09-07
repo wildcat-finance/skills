@@ -63,3 +63,36 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: round 1's three stand as recorded. Nothing new was found.
+
+## Step 3, round 1 -- 2026-09-07T21:25:33Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=reviewed; constant-removed=not-applicable; scope-both-ways=reviewed; estate-provenance=reviewed; private-origin-unnamed=reviewed; disclosure-assumption=reviewed; pilot-rebuild-drift=reviewed; killed-build=reviewed; ledger-arithmetic=not-applicable; stale-prose=reviewed; demo-status=reviewed
+
+Not checked: the security suite is waived for this run and the waiver is on the ledger; this step adds Markdown, JSON and one test file and changes no Solidity, so x-ray, solidity-auditor and fizz have no target. The ledger row is owed by step 4. Also unchecked: hosted CI, the controller receipt, push and publication; whether the seventeen preserved findings are true, which is the producer's claim and not this corpus's; whether the maintainer's written permission is legally sufficient, which admission records rather than establishes; and whether these seventeen are the right seventeen to have kept, which a declared scope states and does not justify.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | low | plugins/anamnesis/specimens/estate/events/admit.jsonl | The specimen ships a committed event stream that nothing regenerates or compares, so a later change to the admission policy or to the correlation-id derivation would leave it stale in silence. The pilot's projections carry a guard for exactly this reason and its event streams do not. A guard now compares the committed stream against a fresh admission and holds each event's kind, disclosure and correlation-id length. The stream was already correct, so this guard passes against the parent commit: it prevents drift rather than repairing it | fixed in this round |
+| S3-R1-02 | low | plugins/anamnesis/docs/demo.md | The document described the demo path over one corpus, and this step commits a second. A reader following it would run the pilot and never learn that the estate exists, which is the corpus the declared scope was built to make possible. The document now names both specimens, their scopes and bounds, states that they rebuild to different release ids and that neither builds under the other's scope, and its not-established section covers both. Its guard fails against the parent commit | fixed in this round |
+
+Leads not pursued: four observations carry forward. Pointing the Hypomnema walk at `plugins/anamnesis/specimens` reports `H001` on the pilot's preserved `pandects-audit-rounds.md:27`, whose producer wrote a link to `../docs/design.md` that resolves to nothing here; the corpus preserves that byte unchanged by contract, the walk skips specimens by default and the repository's declared lint scope exits 0, so the finding belongs to the producer's own record and is not repaired. The estate ships no refused-event example, while the pilot ships one recording rule `A057`; nothing requires a second, and the refusal paths this corpus can exercise are covered by the step's own `A074` and `A075` specimens rather than by a committed stream. `SKILL.md` names the pilot in every command example and `README.md` describes one corpus; both are marketplace prose that step 4's cold read owns, and changing them here would move bytes the ledger step is required to reconcile. The seventeen preserved findings are quotations of what their producer wrote, so their numbers, ratings and verbatim strings were compared against the originals field by field this round and not otherwise judged. Evidence for the covered concerns: the estate rebuilds twice to `509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3` across 7 components with 17 findings, 4 rounds, 0 remediations and 4 verifications all unknown; each source records basis `permission`, disclosure `public`, holder Wildcat Labs and the written permission of 7 September 2026, and names its original by date, section, line range and SHA-256 with no repository, branch, path or URL, held by a guard that fails when one is introduced; the estate under the pilot's curation policy refuses `A074` and the pilot under the estate's refuses `A074`, a scope source nobody admitted refuses `A075`, and 17 records sit outside the pilot's declared 25 to 50; a build into an occupied destination refuses `A100`; a taxonomy without `unrated` quarantines those records rather than mapping them; a probe making one source restricted withheld its 4 findings from the cohort and counted them; the pilot specimen is byte-identical to step 2; and `anamnesis.py` is unchanged since step 2's exit.
+
+## Step 3, round 2 -- 2026-09-07T21:34:04Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=reviewed; constant-removed=not-applicable; scope-both-ways=reviewed; estate-provenance=reviewed; private-origin-unnamed=reviewed; disclosure-assumption=reviewed; pilot-rebuild-drift=reviewed; killed-build=reviewed; ledger-arithmetic=not-applicable; stale-prose=reviewed; demo-status=reviewed
+
+Not checked: unchanged from round 1. The suite waiver still holds, the ledger row is still owed by step 4, and hosted CI, the receipt, push and publication stay outside every round. Round 2 asked one question round 1 did not: what can a corpus of open findings assert through its projections that it has no right to assert. Six readings, none a defect. The Elenchus view carries `verdict` null and no analogue carries a remediation at all, because neither source records one, so there is no state for a past result to travel through. Every finding and every submission reads adjudication `unknown`, which is what a source that adjudicates nothing establishes, and all four verifications read `unknown` rather than passed. The Synkrisis view carries ten denominators, five counted unknown families and an empty exclusion list, and states what it does not establish. Nothing in either view converts an open finding into a judged one.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1's four stand as recorded. Nothing new was found.
