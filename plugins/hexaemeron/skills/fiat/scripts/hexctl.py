@@ -2221,6 +2221,15 @@ def held_lock(base_dir: str, command: str):
             yield
             return
         os.makedirs(root, exist_ok=True)
+        # This invocation found the root absent. It is not a claim to have
+        # created it: `makedirs(exist_ok=True)` is a no-op on a directory
+        # another process made a moment earlier, so two inits racing on a
+        # fresh checkout both set this. Exclusion does not depend on it. Only
+        # the flock winner reaches the teardown, and the teardown's own guard,
+        # no state file and nothing but the lock, is what makes removal safe.
+        root_was_absent = True
+    else:
+        root_was_absent = False
 
     path = lock_path(base_dir)
     try:
@@ -2231,6 +2240,16 @@ def held_lock(base_dir: str, command: str):
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_NOFOLLOW", 0),
             0o600,
+        )
+    except FileNotFoundError:
+        # The state root went away between the check above and this open. The
+        # teardown below removes a root it found empty, so a contender can
+        # arrive in that window. Saying the lock is unsafe would name the wrong
+        # cause: it is absent, and starting again finds or makes a new one.
+        die(
+            "the run state directory went away while this command was starting;"
+            " nothing was changed, so run it again",
+            1,
         )
     except OSError:
         die("run lock is not a safe regular file", 1)
@@ -2273,6 +2292,29 @@ def held_lock(base_dir: str, command: str):
     finally:
         if acquired:
             try:
+                # `held_lock` opens this lock under the *calling* checkout's
+                # state root. A
+                # run's own state goes to the worktree's, so every `init`
+                # started from a checkout without `.hexaemeron/` leaves this
+                # directory holding nothing but the lock, whether it routed a
+                # filed `0` or built a run. Nothing tracked ignores it there:
+                # the self-ignoring `.gitignore` is written into the worktree's
+                # root, not this one. So a leftover lock dirties `git status`
+                # and stops the next run at the clean-tree preflight, which is
+                # why this removes it rather than leaving a marker.
+                #
+                # The unlink happens while the lock is still held. A contender
+                # holding this inode cannot exist, one blocked on it dies at
+                # `flock` as before, and one that opens the path afterwards
+                # creates its own inode and is right to, because nothing here
+                # owns the run any more.
+                if root_was_absent and not os.path.exists(state_path(base_dir)):
+                    try:
+                        if os.listdir(root) == ["lock"]:
+                            os.unlink(path)
+                            os.rmdir(root)
+                    except OSError:
+                        pass
                 os.ftruncate(fd, 0)
                 os.fsync(fd)
                 fcntl.flock(fd, fcntl.LOCK_UN)
@@ -2657,6 +2699,14 @@ def cmd_init(args) -> None:
     # question nobody asked.
     if args.task_issue is not None:
         task_issue_contract = read_task_issue_contract(args.dir, args.task_issue)
+        if task_issue_contract["fiat_required"] == 0:
+            # The filer answered that this work does not need a run, so the
+            # answer is reported and nothing is built. This sits before the
+            # first mutation deliberately: the directive's claim that no state,
+            # worktree or branch exists is true because none has been made yet,
+            # not because something was cleaned up afterwards.
+            print(json.dumps(routed_filing_directive(task_issue_contract)))
+            sys.exit(0)
     else:
         task_issue_contract = {
             "issue": None,
@@ -5028,22 +5078,82 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
             + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
             f"line and one `{CARRYOVER_INFO}` block, then start the run again"
         )
-    if record["fiat_required"] == 0:
-        die(
-            f"{label} declares `{FIAT_REQUIRED_KEY}: 0`: the filer decided this "
-            f"work does not need a Fiat run. No run state, worktree or branch "
-            f"was created. Do the work as one independent pull request, point "
-            f"the issue at that pull request, and close it there. If that "
-            f"decision was wrong, change the issue to "
-            f"`{FIAT_REQUIRED_KEY}: 1` and say why in the issue before "
-            f"starting a run.",
-            1,
-        )
+    # A filed `0` is not a fault, so it does not refuse here. This reader
+    # reports what the issue decided and `cmd_init` routes it, which keeps the
+    # decision about what to do with a `0` in one place instead of two.
+    # `adr/route-a-filed-zero-as-an-answer` records why it stopped being an
+    # error, and why the bytes that used to end this refusal are gone.
     return {
         "issue": issue_url,
         "repository": repository,
         "number": number,
         **record,
+    }
+
+
+def routed_filing_directive(contract: dict) -> dict:
+    """The directive a filed `Fiat-Required: 0` earns, in place of a refusal.
+
+    A `0` is the filer's answer to whether this work needs a run, so `init`
+    reports the route that answer chose rather than failing on it. The object
+    is the shape the loop's other directives already carry, and the closure
+    block is the one `done integrate` already emits, so a caller that parses a
+    directive parses this without new grammar.
+
+    It names no mechanism that would grant a run instead. That is the whole
+    point: the refusal this replaces ended by naming the edit that turned it
+    off, and an agent told to start a run read that as the instruction for
+    doing so. Nothing here can be read that way, because nothing here is a
+    door.
+
+    Every issue-derived string passes `clean`, because an agent consumes this
+    object and an issue body is somebody else's text.
+    """
+    def scrubbed(value):
+        """Every string this object carries, at any depth and keys included.
+
+        The row shape is three fixed string keys today and
+        `carryover_row_faults` refuses a row carrying a control character
+        before this is reached, so nothing currently arrives dirty. Neither
+        fact is pinned by anything here, and the cost of not depending on
+        them is one recursion (S2-R1-04).
+        """
+        if isinstance(value, str):
+            return clean(value)
+        if isinstance(value, dict):
+            return {clean(str(key)): scrubbed(inner)
+                    for key, inner in value.items()}
+        if isinstance(value, list):
+            return [scrubbed(inner) for inner in value]
+        return value
+
+    issue = clean(str(contract["issue"]))
+    repository = clean(str(contract["repository"]))
+    number = clean(str(contract["number"]))
+    rows = scrubbed(list(contract.get("carryover") or []))
+    return {
+        "do": "pull-request",
+        "reason": f"the task issue declares `{FIAT_REQUIRED_KEY}: 0`",
+        "task_issue": issue,
+        "repository": repository,
+        "number": number,
+        "fiat_required": 0,
+        "route": (
+            "do the work as one independent pull request; no run state, "
+            "worktree or branch was created and none is owed"
+        ),
+        "run_state": None,
+        "worktree": None,
+        "branch": None,
+        "carryover": rows,
+        "task_issue_closure": {
+            "issue": issue,
+            "required_before_merge": f"Closes {repository}#{number}",
+            "gate": (
+                "the issue closes on that pull request; no Fiat receipt is "
+                "owed because no run exists to record one"
+            ),
+        },
     }
 
 

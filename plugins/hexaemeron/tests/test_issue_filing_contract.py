@@ -594,14 +594,29 @@ class InitFilingGateTests(HexctlCase):
                            "reference": FILED}])
         self.assertEqual(len(contract["sha256"]), 64)
 
-    def test_a_zero_refuses_before_any_state_worktree_or_branch_exists(self):
+    def test_a_zero_routes_before_any_state_worktree_or_branch_exists(self):
+        """A filed `0` is answered, not refused, and still builds nothing.
+
+        This case asked the same question before
+        `adr/route-a-filed-zero-as-an-answer`, when the answer was exit 1 and a
+        refusal whose closing sentence named the edit that turned it off. What
+        changed is the outcome, not the question: a `0` still reaches no run.
+        """
         self.set_issue(body("Fiat-Required: 0"))
         proc = self.run_ctl("init", "--topic", "Not a run", "--task-issue",
-                            ISSUE, expect=1)
-        self.assertIn("Fiat-Required: 0", proc.stderr)
-        self.assertIn("one independent pull request", proc.stderr)
-        self.assertIn("No run state, worktree or branch was created",
-                      proc.stderr)
+                            ISSUE, expect=0)
+        directive = json.loads(proc.stdout)
+        self.assertEqual(directive["do"], "pull-request")
+        self.assertEqual(directive["fiat_required"], 0)
+        self.assertIn("one independent pull request", directive["route"])
+        self.assertEqual(
+            directive["task_issue_closure"]["required_before_merge"],
+            "Closes wildcat-finance/example#74",
+        )
+        self.assertEqual(proc.stderr, "")
+        for grant in ("If that decision was wrong", "Fiat-Required: 1",
+                      "override"):
+            self.assertNotIn(grant, proc.stdout)
         self.assertFalse(
             os.path.exists(os.path.join(self.dir, ".hexaemeron", "state.json")))
         self.assertFalse(
