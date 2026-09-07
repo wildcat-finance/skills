@@ -1132,6 +1132,24 @@ class TimeCommandTests(TempFiles):
         self.assertIn("aggregate", proc.stderr)
         self.assertFalse(path.exists())
 
+    def test_an_unnamed_aggregation_is_refused_rather_than_defaulted(self):
+        """S3-R1-01. Argparse holds the command line to the two names, but
+        `timed_run` writes whatever name it is handed into
+        `recorder.aggregation` while `aggregate` chose the value. A rule outside
+        `AGGREGATIONS` that fell through to p95 would write a file naming an
+        aggregation its number is not, which is exactly what study risk
+        `aggregation-declared` forbids."""
+        spread = metron.spread_of([10.0, 20.0])
+        self.assertEqual((spread["p50"], spread["p95"]), (10.0, 20.0))
+        for rule in ("mean", "p99", "MEDIAN", ""):
+            with self.subTest(rule=rule):
+                with self.assertRaises(metron.BudgetError) as refusal:
+                    metron.aggregate(spread, rule)
+                self.assertIn("--aggregate", str(refusal.exception))
+        for rule, expected in (("median", 10.0), ("p95", 20.0)):
+            with self.subTest(rule=rule):
+                self.assertEqual(metron.aggregate(spread, rule), expected)
+
     def test_warm_up_repetitions_run_under_the_same_bounds_and_are_discarded(self):
         """The warm-up buys the kept samples the same cache. It has to run to do
         that, and it must not be counted once it has."""
