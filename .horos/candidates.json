@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20682370,
+    "bytes_blob": 20718587,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,14 +63,14 @@
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
-      "bytes": 108022,
+      "bytes": 126085,
       "category": "blob",
-      "evidence": "no newline in a 2048-byte window at offset 54011 of 108022 bytes",
+      "evidence": "no newline in a 2048-byte window at offset 63042 of 126085 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1350-alexandria-1-interval-collector-run-against.md"
     },
     {
-      "bytes": 108755,
+      "bytes": 126909,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

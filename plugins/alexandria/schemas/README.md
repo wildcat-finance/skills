@@ -1,7 +1,7 @@
 # Alexandria schemas
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 <!-- marketplace-context:end -->
 
 Step 2 defines three raw-release contracts:
@@ -87,9 +87,14 @@ and the three opening-read kinds, `first-block-hash`, `slot-word` and
 checkpoint to its own plan's digest and refuse a shard outside it.
 
 The interval release itself enters through the ordinary capture plan. Its
-components are one JSON journal per evidence class, format
+components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one
-record per preserved exchange under `/records`, plus the interval receipt, the
-reconciliation record, the error receipts, the plan and the pinned registry.
-Every coverage count is a JSON pointer into the component it describes, so
-`ingest` refuses a count the payload does not carry.
+record per preserved exchange under `/records`; the `epoch-evidence` journal of
+opening reads, in the same format; and six more -- the interval receipt, the
+`implementation-code` component carrying each implementation's runtime bytecode
+under `/records`, the reconciliation record, the error receipts, the plan and
+the pinned registry. Every coverage count is a JSON pointer into the component
+it describes, so `ingest` refuses a count the payload does not carry. An
+evidence capture whose plan names `finalized` or `safe` carries that finality
+class with both boundary hashes bound; a `confirmations` plan and every derived
+component stay `provider-reported`.
