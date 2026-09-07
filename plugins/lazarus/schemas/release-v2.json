@@ -80,9 +80,9 @@
             "recorded_rpc": {"$ref": "#/$defs/count"},
             "receipt_trie_proved": {
               "type": "integer",
-              "minimum": 1,
+              "minimum": 0,
               "maximum": 100000,
-              "description": "Only the consensus receipt and log-projection relations proved by the receipt witness."
+              "description": "Zero records a verified empty receipt set; positive values count only scoped consensus receipt and log-projection relations."
             }
           }
         },

@@ -3,21 +3,41 @@
 from __future__ import annotations
 
 import copy
+from contextlib import ExitStack
+import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
+from unittest import mock
 
-from lazarus_lib.errors import FormatError, IntegrityError
+from lazarus_lib.canonical import dump, load
+from lazarus_lib.capture import (
+    _derive_receipt_witness,
+    capture_fixture,
+)
+from lazarus_lib.errors import FormatError, IntegrityError, PathError, ResourceLimitError
 from lazarus_lib.header import compute_header_hash
 from lazarus_lib.hexvalue import encode_hex
+from lazarus_lib.limits import CaptureLimits
+from lazarus_lib.manifest import fixture_digest
 from lazarus_lib.receipts import receipt_trie_root, verify_receipt_relation
-from lazarus_lib.records import request_key
+from lazarus_lib.records import read_rpc_records, request_key
+from lazarus_lib.release import verify_release, write_release
 from lazarus_lib.schemas import validate_document
 from lazarus_lib.trieproof import EMPTY_TRIE_ROOT
+from lazarus_lib.verifier import verify_fixture
 
 from . import support
+from .fake_rpc import FakeRpc
 
 
 EMPTY_ROOT = encode_hex(EMPTY_TRIE_ROOT)
+GENESIS_HASH = "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"
+GENESIS_FIXTURE = Path(__file__).resolve(strict=True).parent / "fixtures" / (
+    "ethereum-genesis-empty-receipts-v1"
+)
 
 
 def verify_material(material):
@@ -238,6 +258,247 @@ class EmptyReceiptRelationTests(unittest.TestCase):
         self.assertEqual(report["target_log_count"], 1)
         self.assertEqual(report["filtered_log_count"], 1)
         self.assertEqual(report["relations"], 2)
+
+
+class EmptyReceiptCaptureTests(unittest.TestCase):
+    def setUp(self):
+        try:
+            self.derive(self.fixture_material())
+        except (KeyError, FormatError, IntegrityError) as error:
+            self.fail(f"empty receipt capture precondition failed: {type(error).__name__}")
+
+    def fixture_material(self):
+        return {
+            "plan": load(GENESIS_FIXTURE / "plan.json"),
+            "header": load(GENESIS_FIXTURE / "header.json"),
+            "rpc_records": read_rpc_records(GENESIS_FIXTURE / "rpc.jsonl"),
+        }
+
+    def derive(self, material):
+        return _derive_receipt_witness(
+            material["plan"],
+            material["header"],
+            material["rpc_records"],
+            CaptureLimits(material["plan"]["limits"]),
+        )
+
+    def dispatch(self, material, receipt_result):
+        def answer(method, params, server):
+            if method == "eth_chainId":
+                return "0x1"
+            if method == "eth_getBlockByNumber":
+                return copy.deepcopy(material["header"]["rpc_result"])
+            if method == "eth_getBlockReceipts":
+                return copy.deepcopy(receipt_result)
+            raise AssertionError(f"unexpected method {method}")
+
+        return answer
+
+    def test_empty_capture_derives_only_the_exclusive_empty_witness(self):
+        material = self.fixture_material()
+        witness, report = self.derive(material)
+        self.assertEqual(
+            witness,
+            {
+                "schema_version": 1,
+                "header": {
+                    "number": "0x0",
+                    "hash": GENESIS_HASH,
+                    "receipts_root": EMPTY_ROOT,
+                },
+                "receipts": [],
+            },
+        )
+        self.assertEqual(report["mode"], "empty")
+        self.assertEqual(report["relations"], 0)
+
+    def test_empty_capture_refuses_missing_null_nonarray_nonempty_and_oversized_results(self):
+        oversized = [{}] * 100_001
+        cases = (
+            ("missing", "missing", IntegrityError),
+            ("null", None, IntegrityError),
+            ("non-array", {}, IntegrityError),
+            ("non-empty", [{}], IntegrityError),
+            ("oversized", oversized, ResourceLimitError),
+        )
+        for label, result, error in cases:
+            material = self.fixture_material()
+            if result == "missing":
+                material["rpc_records"] = []
+            else:
+                material["rpc_records"][0]["outcome"]["result"] = result
+            with self.subTest(label=label), self.assertRaises(error) as raised:
+                self.derive(material)
+            self.assertLessEqual(len(str(raised.exception)), 1200)
+
+    def test_empty_capture_refuses_header_cardinality_disagreement(self):
+        material = self.fixture_material()
+        material["header"]["rpc_result"]["transactions"] = [support.hash32("01")]
+        with self.assertRaisesRegex(IntegrityError, "cover every header slot"):
+            self.derive(material)
+
+    def test_full_capture_makes_one_named_receipt_call_and_finalises_atomically(self):
+        material = self.fixture_material()
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            root = Path(directory)
+            output = root / "fixture"
+            primary = stack.enter_context(FakeRpc(self.dispatch(material, [])))
+            anchor = stack.enter_context(FakeRpc(self.dispatch(material, [])))
+            report = capture_fixture(
+                GENESIS_FIXTURE / "plan.json",
+                primary.url,
+                output,
+                anchor_rpc_env=("publicnode-observation=GENESIS_ANCHOR",),
+                environment={"GENESIS_ANCHOR": anchor.url},
+            )
+            receipt_calls = [
+                request
+                for request in primary.requests
+                if request["method"] == "eth_getBlockReceipts"
+            ]
+            self.assertEqual(
+                [(item["params"], item["id"]) for item in receipt_calls],
+                [([GENESIS_HASH], 3)],
+            )
+            self.assertEqual(report["terminal_result"]["mode"], "empty")
+            self.assertEqual(
+                report["terminal_result"]["relation_scope"]["receipt_trie_proved"],
+                [],
+            )
+            self.assertEqual(report["terminal_result"]["counts"]["receipts"], 0)
+            self.assertEqual(report["terminal_result"]["counts"]["selected_logs"], 0)
+            self.assertTrue(output.is_dir())
+            self.assertEqual(list(root.glob(".fixture.lazarus-*")), [])
+
+    def test_failed_finalisation_leaves_no_destination_or_stage(self):
+        material = self.fixture_material()
+
+        def refuse_finalisation(source, destination):
+            raise PathError("test finalisation refusal")
+
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            root = Path(directory)
+            output = root / "fixture"
+            primary = stack.enter_context(FakeRpc(self.dispatch(material, [])))
+            anchor = stack.enter_context(FakeRpc(self.dispatch(material, [])))
+            with self.assertRaisesRegex(PathError, "finalisation refusal"):
+                capture_fixture(
+                    GENESIS_FIXTURE / "plan.json",
+                    primary.url,
+                    output,
+                    anchor_rpc_env=("publicnode-observation=GENESIS_ANCHOR",),
+                    environment={"GENESIS_ANCHOR": anchor.url},
+                    finalizer=refuse_finalisation,
+                )
+            self.assertFalse(output.exists())
+            self.assertEqual(list(root.glob(".fixture.lazarus-*")), [])
+
+
+class EmptyReceiptFixtureTests(unittest.TestCase):
+    def setUp(self):
+        try:
+            verify_fixture(GENESIS_FIXTURE)
+        except (FormatError, IntegrityError) as error:
+            self.fail(f"empty receipt fixture precondition failed: {type(error).__name__}")
+
+    def test_checked_in_genesis_fixture_verifies_offline_with_stable_digest(self):
+        with mock.patch("socket.socket", side_effect=AssertionError("network forbidden")):
+            report = verify_fixture(GENESIS_FIXTURE)
+        self.assertEqual(report["fixture_digest"], fixture_digest(report["manifest"]))
+        self.assertEqual(
+            report["fixture_digest"],
+            "5b2f62a649c550e5b40619a9c0707248244301441888c1c6702c099f2f0a92b4",
+        )
+        self.assertEqual(report["block_hash"], GENESIS_HASH)
+        self.assertEqual(report["receipts_root"], EMPTY_ROOT)
+        self.assertEqual(report["receipt_trie_proved"]["mode"], "empty")
+        self.assertEqual(report["receipt_trie_proved"]["receipt_count"], 0)
+        self.assertEqual(report["receipt_trie_proved"]["relations"], 0)
+        self.assertEqual(report["evidence_counts"]["receipt_trie_proved"], 0)
+
+    def test_manifest_distinguishes_verified_zero_from_missing_evidence(self):
+        report = verify_fixture(GENESIS_FIXTURE)
+        validate_document("manifest", report["manifest"])
+        missing = copy.deepcopy(report["manifest"])
+        del missing["evidence_counts"]["receipt_trie_proved"]
+        missing["fixture_digest"] = fixture_digest(missing)
+        with self.assertRaisesRegex(FormatError, "invalid manifest"):
+            validate_document("manifest", missing)
+
+    def test_ariadne_v2_statement_and_lazarus_v2_release_preserve_verified_zero(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            statement = root / "statement.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(support.REPO_ROOT / "plugins" / "ariadne" / "scripts" / "ariadne.py"),
+                    "capture-state-fixture",
+                    "--fixture",
+                    str(GENESIS_FIXTURE),
+                    "--name",
+                    "ethereum-genesis-empty-receipts-v1",
+                    "--capture-tool",
+                    "lazarus",
+                    "--capture-version",
+                    "0.2.0",
+                    "--capture-command",
+                    "lazarus",
+                    "--capture-command",
+                    "capture",
+                    "--first-capture-reason",
+                    "first checked empty receipt fixture",
+                    "--out",
+                    str(statement),
+                ],
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            statement_document = json.loads(statement.read_text(encoding="utf-8"))
+            self.assertEqual(
+                statement_document["predicateType"],
+                "https://ariadne.wildcat.finance/state-fixture/v2",
+            )
+            self.assertEqual(
+                statement_document["predicate"]["evidence"]["receipt_trie_proved"],
+                0,
+            )
+            self.assertEqual(
+                statement_document["predicate"]["chain"]["receipts_root"],
+                EMPTY_ROOT,
+            )
+
+            release_root = root / "release"
+            release = write_release(GENESIS_FIXTURE, statement, release_root)
+            self.assertEqual(release["schema_version"], 2)
+            self.assertEqual(release["verified"]["evidence_counts"]["receipt_trie_proved"], 0)
+            read_back = verify_release(release_root)
+            self.assertEqual(read_back["evidence_counts"]["receipt_trie_proved"], 0)
+            self.assertEqual(read_back["receipts_root"], EMPTY_ROOT)
+
+    def test_missing_statement_evidence_refuses_without_release_output(self):
+        from .test_release import statement_for
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            statement_path = root / "statement.json"
+            statement = statement_for(GENESIS_FIXTURE)
+            del statement["predicate"]["evidence"]["receipt_trie_proved"]
+            statement_path.write_text(json.dumps(statement), encoding="utf-8")
+            output = root / "release"
+            with self.assertRaises((FormatError, IntegrityError)):
+                write_release(GENESIS_FIXTURE, statement_path, output)
+            self.assertFalse(output.exists())
+            self.assertEqual(list(root.glob(".release.staged")), [])
+
+    def test_legacy_and_scoped_fixture_dispatch_stays_unchanged(self):
+        legacy = verify_fixture(support.PLUGIN_ROOT / "examples" / "aave-v4-spoke-v0")
+        scoped = verify_fixture(support.RECEIPT_PROOF_FIXTURE)
+        self.assertNotIn("receipt_trie_proved", legacy["evidence_counts"])
+        self.assertEqual(scoped["receipt_trie_proved"]["mode"], "scoped")
+        self.assertEqual(scoped["receipt_trie_proved"]["relations"], 2)
 
 
 if __name__ == "__main__":
