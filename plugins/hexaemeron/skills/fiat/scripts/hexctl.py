@@ -466,6 +466,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.51.1",
         "fiat-v5.52.1",
         "fiat-v5.53.1",
+        "fiat-v5.54.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -17377,7 +17378,7 @@ def cmd_verify(args) -> None:
 
 
 def cmd_reset(args) -> None:
-    """Archive a completed run, and retire the worktree it ran in.
+    """Archive a completed or halted run, and retire the worktree it ran in.
 
     Retirement belongs here rather than in `done integrate`, because the
     controller's own contract has the caller run `status` and `verify` after the
@@ -17389,14 +17390,36 @@ def cmd_reset(args) -> None:
     A run that lived in a worktree archives into the checkout it was started
     from, because archiving inside the tree and then removing the tree would
     destroy the archive in the same breath.
+
+    A halted run is the other run this command accepts. Its stop is already on
+    the ledger with a reason, and no phase command advances it until `resume`,
+    so clearing it discards no live delivery. Retirement appends one `retire`
+    entry naming the phase the run stopped in and the recorded reason before
+    anything moves, so the archived ledger ends with the retirement rather than
+    with a halt that reads as paused. A run that is merely incomplete has no
+    recorded stop and is still refused.
     """
     count = verify_run(args.dir)
     state = load_state(args.dir)
-    if state["phase"] != "done":
+    halted = state.get("halted")
+    if state["phase"] != "done" and not halted:
         die(
             f"refusing to reset an incomplete run in phase '{state['phase']}'; "
-            "resume it or halt it explicitly"
+            "resume it, or record the stop with `hexctl halt --reason ...` and "
+            "reset again to retire it"
         )
+    if halted:
+        commit(
+            args.dir,
+            state,
+            "retire",
+            {
+                "phase": state["phase"],
+                "reason": halted["reason"],
+                "halted_ts": halted["ts"],
+            },
+        )
+        count += 1
 
     root = state_root(args.dir)
     origin = configured_git_path(state, "origin")
@@ -17407,7 +17430,8 @@ def cmd_reset(args) -> None:
     os.makedirs(archive_root, exist_ok=True)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     topic = re.sub(r"[^a-z0-9]+", "-", state["topic"].lower()).strip("-")[:48]
-    name = f"{stamp}-{topic or 'completed-run'}"
+    kind = "halted" if halted else "completed"
+    name = f"{stamp}-{f'halted-{topic}' if halted and topic else topic or f'{kind}-run'}"
     destination = os.path.join(archive_root, name)
     suffix = 2
     while os.path.exists(destination):
@@ -17421,9 +17445,12 @@ def cmd_reset(args) -> None:
             continue
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
+    stopped = (
+        f", stopped in phase '{state['phase']}': {halted['reason']}" if halted else ""
+    )
     print(
-        f"archived verified completed run ({count} ledger entries) locally at "
-        f"{destination}; active state cleared"
+        f"archived verified {kind} run ({count} ledger entries{stopped}) locally "
+        f"at {destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):
@@ -17653,7 +17680,7 @@ def build_parser() -> argparse.ArgumentParser:
     restore.set_defaults(fn=cmd_checkpoint_restore)
 
     sp = sub.add_parser(
-        "reset", help="archive a completed run and clear its active state"
+        "reset", help="archive a completed or halted run and clear its active state"
     )
     sp.set_defaults(fn=cmd_reset)
 

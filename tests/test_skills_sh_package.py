@@ -99,7 +99,21 @@ CONTRACT = "promise-machine/v1"
 # 25 MiB the CLI allows, against 88.3% when the last paragraph was written. The
 # byte cap is the CLI's own default, cannot be raised here, and is the one a
 # nineteenth plugin still has to answer for.
-MAX_FILES = 1_300
+#
+# A fourth raise, again without a nineteenth plugin, and again during an
+# integration that composed a completed delivery with a base that had advanced
+# 109 commits underneath it. This one measured 1,323 files, of which 36 are one
+# delivery's committed design record: a Protasis candidate matrix and the 33
+# reports and resolver its cells name. Those are evidence a reader reruns, they
+# live under `docs/` like every other shipped document, and the reasoning above
+# holds unchanged: the pressure is repository-wide, no per-plugin trim closes
+# it, and shipped package content is not trimmed to hold a file count.
+#
+# The byte cap is now the live constraint rather than the predicted one. The
+# payload measures 24,956,643 bytes, 95.2% of the 25 MiB the CLI allows,
+# against 91.5% one paragraph above and 88.3% the paragraph before that. It
+# cannot be raised here. Filed as framework-109.
+MAX_FILES = 1_400
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {

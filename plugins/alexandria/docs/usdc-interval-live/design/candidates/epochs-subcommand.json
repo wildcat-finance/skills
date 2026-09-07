@@ -1,0 +1,11 @@
+{
+  "id": "epochs-subcommand",
+  "summary": "A third network command, epochs, runs after collect and before reconcile: it scans the staged logs for upgrades and reads the first block, the boundary slots and headers and the runtime code into its own journal; collect is unchanged and build and check consume the journal the same way.",
+  "start_hash_from_collector_read": true,
+  "code_read_journaled": true,
+  "code_rechecked_offline": true,
+  "reachable_provider_pair": true,
+  "resume_safe_after_kill": true,
+  "network_commands": ["collect", "epochs", "reconcile"],
+  "new_release_components": ["epoch-evidence", "implementation-code"]
+}

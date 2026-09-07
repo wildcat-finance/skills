@@ -331,6 +331,221 @@ class Confirmation(ReconcileCase):
                 self.assertIn("two dispositions", str(caught.exception))
 
 
+class Attribution(ReconcileCase):
+    """A confirmed entry says whose judgement it is. See ADR-003."""
+
+    def confirmed_entries(self, name: str) -> list[dict]:
+        declared = reconcile.read_json(self.made[name])
+        return [e for e in declared["dispositions"] if e["confirmed"]]
+
+    def test_a_confirmed_entry_with_no_person_refuses_by_name(self):
+        message = self.refusal_from("confirmed-without-person.json")
+        self.assertIn("carries no 'confirmed_by'", message)
+        self.assertIn(self.confirmed_entries("closed.json")[0]["item"], message)
+
+    def test_a_blank_person_refuses(self):
+        message = self.refusal_from("blank-person.json")
+        self.assertIn("'confirmed_by'", message)
+        self.assertIn("is blank", message)
+
+    def test_a_non_string_person_refuses(self):
+        message = self.refusal_from("non-string-person.json")
+        self.assertIn("'confirmed_by'", message)
+        self.assertIn("int, not a string", message)
+
+    def test_a_rule_id_the_table_does_not_hold_refuses(self):
+        message = self.refusal_from("unknown-rule.json")
+        self.assertIn("'no-such-rule'", message)
+        self.assertIn("the rules table does not hold", message)
+
+    def test_a_non_string_rule_id_refuses(self):
+        message = self.refusal_from("non-string-rule.json")
+        self.assertIn("'rule'", message)
+        self.assertIn("not a string", message)
+
+    def test_a_rule_row_with_blank_text_refuses(self):
+        message = self.refusal_from("rule-without-text.json")
+        self.assertIn(f"rule {build.ROW_RULE!r} carries no text", message)
+
+    def test_a_rule_row_with_blank_author_refuses(self):
+        message = self.refusal_from("rule-without-author.json")
+        self.assertIn(f"rule {build.ROW_RULE!r} carries no stated_by", message)
+
+    def test_a_rules_value_that_is_not_an_object_refuses(self):
+        message = self.refusal_from("rules-not-object.json")
+        self.assertIn("'rules'", message)
+        self.assertIn("list, not an object", message)
+
+    def test_a_rule_id_that_is_not_one_safe_segment_refuses(self):
+        message = self.refusal_from("unsafe-rule-id.json")
+        self.assertIn("'../escaped'", message)
+        self.assertIn("not one safe segment", message)
+
+    def test_an_unconfirmed_entry_carrying_a_person_refuses(self):
+        message = self.refusal_from("unconfirmed-with-person.json")
+        self.assertIn("unconfirmed disposition", message)
+        self.assertIn("carries 'confirmed_by'", message)
+
+    def test_an_unconfirmed_entry_carrying_a_rule_refuses(self):
+        message = self.refusal_from("unconfirmed-with-rule.json")
+        self.assertIn("unconfirmed disposition", message)
+        self.assertIn("carries 'rule'", message)
+
+    def test_a_set_confirmed_before_attribution_refuses_on_its_first_confirmed_entry(self):
+        """The dokimasia-v2.1.0 shape: drafts first, then confirmations with no
+        person. Nothing is defaulted; the first confirmed item is named, and no
+        coverage record exists to be read."""
+        declared = reconcile.read_json(self.made["prior-shape.json"])
+        self.assertNotIn("rules", declared)
+        first = next(e for e in declared["dispositions"] if e["confirmed"])
+        self.assertNotIn("confirmed_by", first)
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, self.workbook, declared)
+        message = str(caught.exception)
+        self.assertIn(repr(first["item"]), message)
+        self.assertIn("'confirmed_by'", message)
+
+    def test_a_refused_set_produces_no_coverage_record_through_the_command_line(self):
+        import subprocess
+
+        report = Path(self.tmp.name) / "never-written.json"
+        result = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "dokimasia.py"), "reconcile",
+             "--inventory", str(self.made["inventory.json"]),
+             "--workbook", str(self.made["workbook.json"]),
+             "--dispositions", str(self.made["confirmed-without-person.json"]),
+             "--report", str(report)],
+            capture_output=True, text=True, timeout=60,
+        )
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("refused", result.stderr)
+        self.assertIn("confirmed_by", result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertFalse(report.exists(), "a refused set wrote a coverage record")
+
+    def test_people_is_the_count_of_distinct_confirmers(self):
+        made = self.run_with("closed.json")
+        names = {e["confirmed_by"] for e in self.confirmed_entries("closed.json")}
+        self.assertEqual(made["confirmations"]["people"], len(names))
+        self.assertEqual(set(made["confirmations"]["by_person"]), names)
+        self.assertEqual(names, {build.PERSON_ONE, build.PERSON_TWO})
+
+    def test_by_person_sums_to_disposed(self):
+        for name in ("closed.json", "mixed-confirmation.json"):
+            with self.subTest(fixture=name):
+                made = self.run_with(name)
+                self.assertEqual(
+                    sum(made["confirmations"]["by_person"].values()),
+                    made["counts"]["disposed"],
+                )
+
+    def test_individual_plus_every_applied_count_equals_disposed(self):
+        for name in ("closed.json", "mixed-confirmation.json"):
+            with self.subTest(fixture=name):
+                made = self.run_with(name)
+                block = made["confirmations"]
+                applied = sum(row["applied"] for row in block["by_rule"].values())
+                self.assertGreater(block["individual"], 0)
+                self.assertGreater(applied, 0)
+                self.assertEqual(block["individual"] + applied, made["counts"]["disposed"])
+
+    def test_a_rule_carries_its_text_and_author_beside_its_applied_count(self):
+        made = self.run_with("closed.json")
+        row = made["confirmations"]["by_rule"][build.ROW_RULE]
+        self.assertEqual(row["text"], build.RULES[build.ROW_RULE]["text"])
+        self.assertEqual(row["stated_by"], build.PERSON_TWO)
+        self.assertEqual(
+            row["applied"],
+            sum(1 for e in self.confirmed_entries("closed.json")
+                if e.get("rule") == build.ROW_RULE),
+        )
+
+    def test_a_rule_nobody_applied_reports_zero_rather_than_refusing(self):
+        made = self.run_with("closed.json")
+        row = made["confirmations"]["by_rule"][build.UNUSED_RULE]
+        self.assertEqual(row["applied"], 0)
+        self.assertEqual(row["stated_by"], build.PERSON_ONE)
+
+    def test_a_set_with_no_rules_table_reconciles_with_an_empty_by_rule(self):
+        declared = reconcile.read_json(self.made["closed.json"])
+        del declared["rules"]
+        for entry in declared["dispositions"]:
+            entry.pop("rule", None)
+        made = reconcile.reconcile(self.inventory, self.workbook, declared)
+        self.assertEqual(made["confirmations"]["by_rule"], {})
+        self.assertEqual(made["confirmations"]["individual"], made["counts"]["disposed"])
+
+    def test_a_changed_attribution_changes_the_canonical_digest(self):
+        first = self.run_with("closed.json")
+        declared = reconcile.read_json(self.made["closed.json"])
+        target = next(e for e in declared["dispositions"] if e["confirmed"])
+        target["confirmed_by"] = "Somebody Else"
+        second = reconcile.reconcile(self.inventory, self.workbook, declared)
+        self.assertEqual(first["dispositions"], second["dispositions"])
+        self.assertNotEqual(
+            reconcile.coverage_digest(first), reconcile.coverage_digest(second)
+        )
+
+    def test_the_numerator_counts_attributed_confirmations_only(self):
+        made = self.run_with("mixed-confirmation.json")
+        declared = reconcile.read_json(self.made["mixed-confirmation.json"])
+        attributed = [
+            e for e in declared["dispositions"]
+            if e["confirmed"] and e.get("confirmed_by")
+        ]
+        self.assertGreater(len(attributed), 0)
+        self.assertLess(len(attributed), len(declared["dispositions"]))
+        self.assertEqual(made["closure_ratio"]["numerator"], len(attributed))
+        self.assertEqual(made["confirmations"]["people"], 2)
+        for entry in declared["dispositions"]:
+            if not entry["confirmed"]:
+                self.assertNotIn("confirmed_by", entry)
+                self.assertNotIn("rule", entry)
+
+    def test_each_cap_at_its_bound_is_admitted_and_one_over_refuses(self):
+        pairs = (
+            ("person-at-cap.json", "person-over-cap.json", "confirmed_by"),
+            ("author-at-cap.json", "author-over-cap.json", "stated_by"),
+            ("rule-text-at-cap.json", "rule-text-over-cap.json", "text"),
+            ("rule-id-at-cap.json", "rule-id-over-cap.json", "rule id"),
+            ("rules-at-cap.json", "rules-over-cap.json", "rules table"),
+        )
+        for at, over, field in pairs:
+            with self.subTest(field=field):
+                made = self.run_with(at)
+                self.assertTrue(made["closure_ratio"]["closed"])
+                message = self.refusal_from(over)
+                self.assertIn(field, message)
+                self.assertIn("over the", message)
+
+    def test_the_caps_are_the_values_the_runbook_states(self):
+        self.assertEqual(reconcile.MAX_PERSON_BYTES, 128)
+        self.assertEqual(reconcile.MAX_RULE_ID_BYTES, 64)
+        self.assertEqual(reconcile.MAX_RULE_TEXT_BYTES, reconcile.MAX_REASON_BYTES)
+        self.assertEqual(reconcile.MAX_RULE_TEXT_BYTES, 512)
+        self.assertEqual(reconcile.MAX_RULES, 256)
+        at_cap = reconcile.read_json(self.made["rules-at-cap.json"])
+        self.assertEqual(len(at_cap["rules"]), 256)
+        at_id = reconcile.read_json(self.made["rule-id-at-cap.json"])
+        self.assertIn("r" * 64, at_id["rules"])
+
+    def test_the_attributed_record_validates_against_the_committed_schema(self):
+        for name in ("closed.json", "mixed-confirmation.json", "rules-at-cap.json"):
+            with self.subTest(fixture=name):
+                self.assertEqual(schema.check(self.run_with(name)), [])
+
+    def test_the_committed_fixtures_regenerate_from_the_builder(self):
+        """The hostile set `reconcile --check` reads is the set the builder writes."""
+        committed = reconcile.fixture_root()
+        for name, path in self.made.items():
+            with self.subTest(fixture=name):
+                self.assertEqual(
+                    (committed / name).read_text(encoding="utf-8"),
+                    path.read_text(encoding="utf-8"),
+                )
+
+
 class NoPathMarksAnythingCovered(ReconcileCase):
     """The control this step exists for: an agent cannot widen coverage."""
 
@@ -398,8 +613,24 @@ class RecordShape(ReconcileCase):
                 "dispositions": reconcile.MAX_DISPOSITIONS,
                 "reason_bytes": reconcile.MAX_REASON_BYTES,
                 "input_bytes": reconcile.MAX_FILE_BYTES,
+                "person_bytes": reconcile.MAX_PERSON_BYTES,
+                "rule_id_bytes": reconcile.MAX_RULE_ID_BYTES,
+                "rule_text_bytes": reconcile.MAX_RULE_TEXT_BYTES,
+                "rules": reconcile.MAX_RULES,
             },
         )
+
+    def test_a_lowered_cap_is_reported_as_the_cap_that_applied(self):
+        """A cap is a parameter, so the record says which value bound it."""
+        declared = reconcile.read_json(self.made["closed.json"])
+        made = reconcile.reconcile(
+            self.inventory, self.workbook, declared, max_rules=8, max_person_bytes=64
+        )
+        self.assertEqual(made["caps"]["rules"], 8)
+        self.assertEqual(made["caps"]["person_bytes"], 64)
+        with self.assertRaises(reconcile.ReconcileError) as caught:
+            reconcile.reconcile(self.inventory, self.workbook, declared, max_rules=1)
+        self.assertIn("over the 1-row cap", str(caught.exception))
 
     def test_the_record_is_the_same_however_the_dispositions_are_ordered(self):
         first = self.run_with("closed.json")

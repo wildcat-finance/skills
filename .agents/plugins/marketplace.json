@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.27",
+      "version": "1.6.30",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -43,6 +43,7 @@
     },
     {
       "name": "dokimasia",
+      "version": "3.1.0",
       "source": {
         "source": "local",
         "path": "./plugins/dokimasia"

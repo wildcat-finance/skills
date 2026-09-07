@@ -8,7 +8,7 @@ description: >-
   Solidity gas, which belongs to hermes and its Foundry loop, and do not use it
   for something that is broken rather than slow, which belongs to elenchus.
 metadata:
-  version: "1.1.0"
+  version: "2.1.0"
 ---
 
 <p align="center">
@@ -37,7 +37,7 @@ baseline and re-measurement.
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** Metron ships the budget check, so a declared budget is held mechanically, and nothing in the plugin produces the measurement it reads.
+**Current state.** Metron measures a command and holds a budget, and the check compares a run against a baseline without reading the conditions the recorder wrote beside each.
 
 ## Refuse these four
 
@@ -69,6 +69,18 @@ Repeat enough to see the spread, then compare the change against it. A gain of
 three percent inside five percent of run-to-run variance is not a gain; it is
 another sample. Read durations at p95 and p99, because the mean is where the
 worst experience goes to hide.
+
+`time` does the repeating for a command you can name:
+
+```bash
+python3 scripts/metron.py time \
+  --name harvest.usdc.wall_clock --repeat 5 --out build/run.json -- ./harvest
+```
+
+It runs the argv after `--` as a list, with no shell, N times under one
+timeout, and writes `min`, `p50`, `p95`, `max` and a relative spread beside the
+value it records. That relative spread is the number a budget's `variance` is
+set from.
 
 ## Where to look first
 
@@ -126,9 +138,10 @@ its ceiling, when it regressed past its variance, when the run stopped reporting
 the run reports a name no budget declares. A move inside the variance is another sample, as
 above. `record` keeps the ledger below, including the reverted attempts.
 
-It measures nothing itself. The run comes from whatever measured it.
-[`references/budget-check.md`](references/budget-check.md) has the file formats and the six
-verdicts.
+`time` is the recorder beside it, and it writes the run rather than reading it, so a run
+from anything else is read on the same terms.
+[`references/budget-check.md`](references/budget-check.md) has the file formats, the recorder
+flags and the six verdicts.
 
 ## Keep or revert
 
