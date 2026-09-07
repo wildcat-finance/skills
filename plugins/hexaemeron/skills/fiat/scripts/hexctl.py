@@ -5094,11 +5094,8 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     # evidence. `created_at` and `updated_at` come out of the response already
     # read, so the REST half costs nothing; the GraphQL half is the one extra
     # request this command makes and it is never required.
-    created_at = payload.get("created_at")
-    updated_at = payload.get("updated_at")
     provenance = {
-        "created_at": created_at if isinstance(created_at, str) else None,
-        "updated_at": updated_at if isinstance(updated_at, str) else None,
+        **rest_filing_stamps(payload),
         **github_issue_edit_provenance(base_dir, repository, number),
     }
     return {
@@ -5129,6 +5126,31 @@ ISSUE_EDIT_NODES_MAX = 20
 """Matched to the `first:` argument, so a response claiming more is refused
 rather than silently truncated into a smaller edit count than the issue has."""
 
+FILING_PROVENANCE_UNKNOWN = "unknown"
+"""What the reader records for a field it could not read at all.
+
+`unknown_filing_provenance` writes this instead of a value or an absence, so a
+receipt can tell "no edit history" from "could not look". Every reader of a
+recorded provenance block owes that distinction back: comparing the sentinel as
+though it were a value throws it away in both directions (S3-R2-01).
+"""
+
+
+def rest_filing_stamps(payload: dict) -> dict:
+    """The two provenance fields the REST response already carries.
+
+    Both builders of a provenance block go through here so the recorded and the
+    re-read halves normalise identically. They did not: `init` coerced a
+    non-string `updated_at` to `None` and the divergence reader kept it, so the
+    two sides of one comparison disagreed about the same response (S3-R2-01).
+    """
+    created_at = payload.get("created_at")
+    updated_at = payload.get("updated_at")
+    return {
+        "created_at": created_at if isinstance(created_at, str) else None,
+        "updated_at": updated_at if isinstance(updated_at, str) else None,
+    }
+
 
 def unknown_filing_provenance(reason: str) -> dict:
     """Every readable field as `unknown`, with the reason it could not be read.
@@ -5139,9 +5161,9 @@ def unknown_filing_provenance(reason: str) -> dict:
     tell "no edit history" from "could not look".
     """
     return {
-        "edit_count": "unknown",
-        "last_edited_at": "unknown",
-        "prior_fiat_required": "unknown",
+        "edit_count": FILING_PROVENANCE_UNKNOWN,
+        "last_edited_at": FILING_PROVENANCE_UNKNOWN,
+        "prior_fiat_required": FILING_PROVENANCE_UNKNOWN,
         "reason": reason,
     }
 
@@ -5237,11 +5259,20 @@ def github_issue_edit_provenance(
         )
     revisions = [as_dict(node) for node in nodes]
     last_edited = revisions[0].get("editedAt") if revisions else None
-    prior = "unknown"
+    prior = FILING_PROVENANCE_UNKNOWN
     reason = None
     if len(revisions) < 2:
         prior = None
-        reason = "the body has one revision, so it has no prior value"
+        # Counted off the nodes actually carried, not off `totalCount`. The
+        # two are validated separately and a response where they disagree
+        # wrote `edit_count: 4` beside "the body has one revision", which is a
+        # revision count the run never read (S3-R2-03). An empty node list
+        # said the same thing about a body it had seen nothing of.
+        reason = (
+            f"the response carried {len(revisions)} "
+            f"{'revision' if len(revisions) == 1 else 'revisions'}, so it "
+            "carries no prior value"
+        )
     else:
         body = revisions[1].get("diff")
         if not isinstance(body, str):
@@ -17498,13 +17529,39 @@ def verify_run(
     return count
 
 
-def filing_decision_divergence(base_dir: str, state: dict) -> tuple[list, str]:
+def uncomparable_filing_field(was, now) -> str:
+    """Which side of one field could not be read, in the words a reader needs.
+
+    A field is not compared when either end is the `unknown` sentinel, so the
+    account has to say which end, or the reader learns only that something is
+    missing and not whose read failed.
+    """
+    was_unknown = was == FILING_PROVENANCE_UNKNOWN
+    now_unknown = now == FILING_PROVENANCE_UNKNOWN
+    if was_unknown and now_unknown:
+        return "neither this run's read nor the current one could read it"
+    if was_unknown:
+        return "this run recorded it as `unknown`, so it read no value to compare"
+    return "the current read returned `unknown`, so there is no value to compare"
+
+
+def filing_decision_divergence(
+    base_dir: str, state: dict
+) -> tuple[list, list, str]:
     """What the issue says now, against what this run recorded when it started.
 
     The receipt is what the run read, not what is true afterwards. A filing
     decision can move under a run and the receipt cannot know, so this reads
     the issue again and reports the difference rather than letting the
     recorded value stand as the whole account.
+
+    Three lists come back, not two, because a field can also be uncomparable.
+    Reading the `unknown` sentinel as a value made a failed GraphQL read at
+    either end report a body edit that never happened, and made two failed
+    reads compare equal and report a history that "stands as recorded" when
+    neither end had ever been read -- the pass the `graphql-transport` line
+    refuses (S3-R2-01). A receipt written before this reader existed carries no
+    provenance block at all, and read the same way.
 
     It refuses nothing. A run already under way cannot be un-started by a
     divergence, and a gate here would be a second place to argue about a
@@ -17513,10 +17570,10 @@ def filing_decision_divergence(base_dir: str, state: dict) -> tuple[list, str]:
     recorded = as_dict(as_dict(state.get("receipts")).get("task_issue_contract"))
     issue_url = recorded.get("issue")
     if not isinstance(issue_url, str) or not issue_url:
-        return [], "this run named no task issue, so there is nothing to compare"
+        return [], [], "this run named no task issue, so there is nothing to compare"
     identity = github_issue_identity(issue_url)
     if identity is None:
-        return [], f"{issue_url} is not a GitHub issue this reader can re-read"
+        return [], [], f"{issue_url} is not a GitHub issue this reader can re-read"
     repository, number = identity
     label = f"task issue {repository}#{number}"
     payload = github_rest(base_dir, f"repos/{repository}/issues/{number}", label)
@@ -17524,26 +17581,55 @@ def filing_decision_divergence(base_dir: str, state: dict) -> tuple[list, str]:
     body = body if isinstance(body, str) else ""
     now_record, _faults = issue_contract_faults(body, label)
     now_provenance = {
-        "created_at": payload.get("created_at"),
-        "updated_at": payload.get("updated_at"),
+        **rest_filing_stamps(payload),
         **github_issue_edit_provenance(base_dir, repository, number),
     }
     was_provenance = as_dict(recorded.get("provenance"))
-    divergences = []
-    for field, was, now in (
-        ("fiat_required", recorded.get("fiat_required"), now_record["fiat_required"]),
-        ("sha256", recorded.get("sha256"), now_record["sha256"]),
-        ("updated_at", was_provenance.get("updated_at"), now_provenance["updated_at"]),
-        ("edit_count", was_provenance.get("edit_count"), now_provenance["edit_count"]),
+    recorded_provenance = isinstance(recorded.get("provenance"), dict)
+    divergences: list = []
+    uncomparable: list = []
+    for field, was, now, from_provenance in (
+        (
+            "fiat_required",
+            recorded.get("fiat_required"),
+            now_record["fiat_required"],
+            False,
+        ),
+        ("sha256", recorded.get("sha256"), now_record["sha256"], False),
+        (
+            "updated_at",
+            was_provenance.get("updated_at"),
+            now_provenance["updated_at"],
+            True,
+        ),
+        (
+            "edit_count",
+            was_provenance.get("edit_count"),
+            now_provenance["edit_count"],
+            True,
+        ),
         (
             "last_edited_at",
             was_provenance.get("last_edited_at"),
             now_provenance["last_edited_at"],
+            True,
         ),
     ):
+        if from_provenance and not recorded_provenance:
+            uncomparable.append({
+                "field": field,
+                "why": "this run's receipt carries no provenance block, so it "
+                       "recorded no value to compare",
+            })
+            continue
+        if FILING_PROVENANCE_UNKNOWN in (was, now):
+            uncomparable.append(
+                {"field": field, "why": uncomparable_filing_field(was, now)}
+            )
+            continue
         if was != now:
             divergences.append({"field": field, "recorded": was, "now": now})
-    return divergences, ""
+    return divergences, uncomparable, ""
 
 
 UNDISCRIMINATED_DIVERGENCE_FIELDS = frozenset({"updated_at"})
@@ -17561,6 +17647,7 @@ beside it.
 
 def cmd_verify(args) -> None:
     count = verify_run(args.dir)
+    reported = False
     if args.observations:
         state = load_state(args.dir)
         observation_count, tail_bytes = verify_observation_bindings(args.dir, state)
@@ -17572,10 +17659,16 @@ def cmd_verify(args) -> None:
             f"ok: {count} ledger entries, chain intact, state consistent; "
             f"{observation_count} observation {noun} verified{suffix}"
         )
-        return
+        # No `return` here. This branch used to end the command, so
+        # `--observations --check-filing-decision` printed the observation line
+        # and dropped the filing-decision comparison without saying so: exit 0
+        # over an issue whose body had moved (S3-R2-02).
+        reported = True
     if getattr(args, "check_filing_decision", False):
         state = load_state(args.dir)
-        divergences, skipped = filing_decision_divergence(args.dir, state)
+        divergences, uncomparable, skipped = filing_decision_divergence(
+            args.dir, state
+        )
         if skipped:
             print(
                 f"ok: {count} ledger entries, chain intact, state consistent; "
@@ -17609,13 +17702,37 @@ def cmd_verify(args) -> None:
                     f"{clean(str(entry['recorded']))}, now "
                     f"{clean(str(entry['now']))}{note}"
                 )
+            print_uncomparable_filing_fields(uncomparable)
             sys.exit(1)
+        if uncomparable:
+            noun = "field" if len(uncomparable) == 1 else "fields"
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"the filing decision stands as recorded on every field this "
+                f"run could compare, and {len(uncomparable)} {noun} could not "
+                f"be compared:"
+            )
+            print_uncomparable_filing_fields(uncomparable)
+            return
         print(
             f"ok: {count} ledger entries, chain intact, state consistent; "
             f"the filing decision stands as recorded"
         )
         return
-    print(f"ok: {count} ledger entries, chain intact, state consistent")
+    if not reported:
+        print(f"ok: {count} ledger entries, chain intact, state consistent")
+
+
+def print_uncomparable_filing_fields(uncomparable: list) -> None:
+    """Name every field the comparison could not reach, and why.
+
+    Printed beside a divergence as well as instead of one: a run that could
+    read two of the three body-recording fields has not established that the
+    third stands, and the line that says so is the whole difference between
+    reporting a read and reporting a pass.
+    """
+    for entry in uncomparable:
+        print(f"  {entry['field']}: not compared, because {entry['why']}")
 
 
 def cmd_reset(args) -> None:

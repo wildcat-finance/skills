@@ -14,6 +14,7 @@ Its own module because `test_hexctl.py` is bounded at 262144 bytes and this law
 pushed it over, the same reason the harness moved out before it.
 """
 
+import argparse
 import json
 import os
 import subprocess
@@ -98,7 +99,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         provenance = self.start()
         self.assertEqual(set(provenance), expected)
         self.assertIsNone(provenance["prior_fiat_required"])
-        self.assertIn("one revision", provenance["reason"])
+        self.assertIn("carried 1 revision", provenance["reason"])
 
     def test_prior_body_text_reaches_no_recorded_surface(self):
         self.edits([
@@ -260,6 +261,143 @@ class FilingDecisionProvenanceTests(HexctlCase):
             os.path.exists(log),
             "plain verify or status made a network request",
         )
+
+    def test_the_reason_names_the_revision_count_the_response_carried(self):
+        """A count off the nodes read, not off `totalCount` (S3-R2-03).
+
+        `totalCount` and `nodes` are validated separately, so a response where
+        they disagree wrote `edit_count: 4` beside a sentence claiming one
+        revision, and an empty node list claimed one revision of a body it had
+        seen nothing of. Neither count was read.
+        """
+        self.edits([], total=0)
+        provenance = self.start(value=1)
+        self.assertEqual(provenance["edit_count"], 0)
+        self.assertIn("carried 0 revisions", provenance["reason"])
+        self.tearDown()
+        self.setUp()
+        self.edits(
+            [{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}], total=4)
+        provenance = self.start(value=1)
+        self.assertEqual(provenance["edit_count"], 4)
+        self.assertIn("carried 1 revision", provenance["reason"])
+        self.assertNotIn("the body has", provenance["reason"])
+
+    def test_an_unreadable_history_now_is_not_called_a_moved_decision(self):
+        """`unknown` at the current end is a failed read, not a body edit.
+
+        Comparing the sentinel as a value reported `edit_count: recorded 1, now
+        unknown` under "the filing decision has moved since this run read it",
+        which is the undiscriminated-read reading S3-R1-01 removed from
+        `updated_at`, arriving through the transport instead (S3-R2-01).
+        """
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        self.env["FAKE_GH_MODE"] = "graphql-unreachable"
+        proc = self.run_ctl("verify", "--check-filing-decision")
+        self.assertNotIn("has moved", proc.stdout)
+        self.assertIn("edit_count: not compared", proc.stdout)
+        self.assertIn("last_edited_at: not compared", proc.stdout)
+        self.assertIn("the current read returned `unknown`", proc.stdout)
+
+    def test_an_unreadable_history_then_is_not_called_a_moved_decision(self):
+        """The same in reverse: `unknown` recorded, a value read now."""
+        self.env["FAKE_GH_MODE"] = "graphql-unreachable"
+        self.start(value=1)
+        self.env.pop("FAKE_GH_MODE")
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        proc = self.run_ctl("verify", "--check-filing-decision")
+        self.assertNotIn("has moved", proc.stdout)
+        self.assertIn("edit_count: not compared", proc.stdout)
+        self.assertIn("recorded it as `unknown`", proc.stdout)
+
+    def test_two_unreadable_reads_do_not_read_as_a_history_that_stands(self):
+        """The pass `graphql-transport` refuses (S3-R2-01).
+
+        Two `unknown` sentinels compared equal, so a run that never reached
+        GraphQL at either end printed "the filing decision stands as recorded"
+        and exited 0 over an edit history nothing had ever read.
+        """
+        self.env["FAKE_GH_MODE"] = "graphql-unreachable"
+        self.start(value=1)
+        proc = self.run_ctl("verify", "--check-filing-decision")
+        self.assertNotIn("the filing decision stands as recorded\n", proc.stdout)
+        self.assertIn("could not be compared", proc.stdout)
+        self.assertIn(
+            "neither this run's read nor the current one could read it",
+            proc.stdout,
+        )
+
+    def test_a_receipt_with_no_provenance_block_is_not_a_moved_decision(self):
+        """A run started before this reader existed records no block at all.
+
+        `as_dict` turned the absence into `{}` and every provenance field
+        compared `None` against a real value, so an untouched issue read as
+        three divergences and exit 1 (S3-R2-01).
+        """
+        module = hexctl_module()
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        recorded = dict(
+            self.state()["receipts"]["task_issue_contract"])
+        recorded.pop("provenance")
+        saved = dict(os.environ)
+        os.environ.update(
+            {key: value for key, value in self.env.items()
+             if key.startswith("FAKE_GH") or key == "PATH"})
+        try:
+            result = module.filing_decision_divergence(
+                self.dir, {"receipts": {"task_issue_contract": recorded}})
+        finally:
+            os.environ.clear()
+            os.environ.update(saved)
+        # Unpacked after the length is asserted, so a reader that reports no
+        # uncomparable fields fails this case rather than erroring in it and
+        # costing the round its Elenchus verdict.
+        self.assertEqual(len(result), 3, "no uncomparable fields are reported")
+        divergences, uncomparable, skipped = result
+        self.assertEqual(divergences, [], divergences)
+        self.assertEqual(skipped, "")
+        self.assertEqual(
+            [entry["field"] for entry in uncomparable],
+            ["updated_at", "edit_count", "last_edited_at"],
+        )
+        for entry in uncomparable:
+            self.assertIn("carries no provenance block", entry["why"])
+
+
+class VerifyFlagCompositionTests(unittest.TestCase):
+    """`--observations` used to end the command before the filing check ran."""
+
+    def test_the_observations_flag_does_not_swallow_the_filing_check(self):
+        """Both flags, one comparison dropped in silence (S3-R2-02).
+
+        The observation branch returned, so a caller passing both got an `ok:`
+        line and exit 0 with the filing decision never compared. Driven at the
+        command rather than through the fixture, because a passing
+        `--observations` needs a bound observation prefix this module has no
+        other use for.
+        """
+        module = hexctl_module()
+        calls = []
+        originals = {
+            name: getattr(module, name)
+            for name in ("verify_run", "load_state",
+                         "verify_observation_bindings",
+                         "filing_decision_divergence")
+        }
+        module.verify_run = lambda base_dir: 1
+        module.load_state = lambda base_dir: {"receipts": {}}
+        module.verify_observation_bindings = lambda base_dir, state: (1, 0)
+        module.filing_decision_divergence = (
+            lambda base_dir, state: (calls.append(1), ([], [], ""))[1])
+        try:
+            module.cmd_verify(argparse.Namespace(
+                dir=".", observations=True, check_filing_decision=True))
+        finally:
+            for name, value in originals.items():
+                setattr(module, name, value)
+        self.assertEqual(len(calls), 1, "the filing decision was never compared")
 
 
 if __name__ == "__main__":
