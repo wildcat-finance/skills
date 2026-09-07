@@ -5022,6 +5022,41 @@ def issue_publication_from_payload(
     return issue_publication_contract_faults(title, labels, body, label)
 
 
+def admitted_issue_body(
+    payload: dict, repository: str, number: str, label: str
+) -> str:
+    """The issue body a filing-decision reader is allowed to read.
+
+    One response, two readers, and they did not agree about it. `init`
+    refuses a body that is not text in the transport shape and dies on one
+    above the cap; `filing_decision_divergence` substituted `""` for the
+    first and parsed the second, so `verify --check-filing-decision` reported
+    the SHA-256 of the empty string as the issue's current body digest under
+    "the filing decision has moved since this run read it" (S3-R3-01). Both
+    builders of the block go through here for the same reason
+    `rest_filing_stamps` exists.
+
+    A null body is not that case. GitHub sends it for an issue whose body is
+    empty, so `""` is what the response says rather than a substitution for
+    what it did not.
+    """
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(
+            label,
+            f"repos/{repository}/issues/{number}",
+            "returned a body that is not text",
+        )
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            f"reader will parse, so its filing decisions went unread"
+        )
+    return body
+
+
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     """The filing decisions one GitHub issue carries, read over REST.
 
@@ -5062,20 +5097,7 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     payload = github_rest(
         base_dir, f"repos/{repository}/issues/{number}", label
     )
-    body = payload.get("body")
-    if body is None:
-        body = ""
-    if not isinstance(body, str):
-        github_unreachable(
-            label,
-            f"repos/{repository}/issues/{number}",
-            "returned a body that is not text",
-        )
-    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
-        die(
-            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
-            f"reader will parse, so its filing decisions went unread"
-        )
+    body = admitted_issue_body(payload, repository, number, label)
     record, faults = issue_contract_faults(body, label)
     if faults:
         die(
@@ -5125,6 +5147,13 @@ reduces it to a value and a digest and never keeps it.
 ISSUE_EDIT_NODES_MAX = 20
 """Matched to the `first:` argument, so a response claiming more is refused
 rather than silently truncated into a smaller edit count than the issue has."""
+
+UNREADABLE_DECISION_DETAIL_MAX = 200
+"""How much of an unreadable-decision fault reaches stdout.
+
+The fault copies a value out of the issue body, and a body line runs to
+`ISSUE_BODY_BYTES_MAX`. Bounded here so a diagnostic cannot be made to print
+a quarter of a megabyte of somebody else's text."""
 
 FILING_PROVENANCE_UNKNOWN = "unknown"
 """What the reader records for a field it could not read at all.
@@ -12526,7 +12555,14 @@ def github_rest(base_dir: str, path: str, label: str) -> dict:
         github_unreachable(label, path, "returned output that is not UTF-8")
     try:
         payload = json.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):
+        # `RecursionError` derives from `RuntimeError`, so a deeply nested
+        # array walked the caller off the interpreter's stack instead of
+        # refusing in the transport shape. This is the REST sibling of the
+        # GraphQL parser S3-R1-02 repaired, and step 3 gave it a second call
+        # site inside `filing_decision_divergence`. 400000 bytes of `[`
+        # reaches it, well inside `GIT_OUTPUT_MAX`, so the cap is not the
+        # bound and the parser has to say so itself (S3-R3-03).
         github_unreachable(label, path, "returned a response that is not JSON")
     if not isinstance(payload, dict):
         github_unreachable(label, path, "returned a response that is not one object")
@@ -17577,9 +17613,28 @@ def filing_decision_divergence(
     repository, number = identity
     label = f"task issue {repository}#{number}"
     payload = github_rest(base_dir, f"repos/{repository}/issues/{number}", label)
-    body = payload.get("body")
-    body = body if isinstance(body, str) else ""
+    body = admitted_issue_body(payload, repository, number, label)
     now_record, _faults = issue_contract_faults(body, label)
+    # Only the `Fiat-Required` fault, because this comparison is about the
+    # filing decision and a body can fail the carryover or status-block rule
+    # while declaring a decision perfectly well. `issue_contract_faults`
+    # returns `None` for a body it could not read one decision out of -- the
+    # line declared twice, or a value that is neither 0 nor 1 -- and the fault
+    # saying which was dropped, so the report read `fiat_required: recorded 1,
+    # now None`, which is a third thing the issue does not say (S3-R3-02).
+    _now_value, filing_faults = fiat_required_value(body, label)
+    filing_unreadable = None
+    if filing_faults:
+        # The fault embeds a value copied out of the issue body, so it is
+        # cleaned and bounded before it reaches stdout, on the same terms as
+        # the divergence rows below.
+        detail = clean("; ".join(filing_faults))
+        if len(detail) > UNREADABLE_DECISION_DETAIL_MAX:
+            detail = detail[:UNREADABLE_DECISION_DETAIL_MAX] + "..."
+        filing_unreadable = (
+            f"the issue's body does not declare one readable filing "
+            f"decision -- {detail}"
+        )
     now_provenance = {
         **rest_filing_stamps(payload),
         **github_issue_edit_provenance(base_dir, repository, number),
@@ -17588,33 +17643,40 @@ def filing_decision_divergence(
     recorded_provenance = isinstance(recorded.get("provenance"), dict)
     divergences: list = []
     uncomparable: list = []
-    for field, was, now, from_provenance in (
+    for field, was, now, from_provenance, unreadable in (
         (
             "fiat_required",
             recorded.get("fiat_required"),
             now_record["fiat_required"],
             False,
+            filing_unreadable,
         ),
-        ("sha256", recorded.get("sha256"), now_record["sha256"], False),
+        ("sha256", recorded.get("sha256"), now_record["sha256"], False, None),
         (
             "updated_at",
             was_provenance.get("updated_at"),
             now_provenance["updated_at"],
             True,
+            None,
         ),
         (
             "edit_count",
             was_provenance.get("edit_count"),
             now_provenance["edit_count"],
             True,
+            None,
         ),
         (
             "last_edited_at",
             was_provenance.get("last_edited_at"),
             now_provenance["last_edited_at"],
             True,
+            None,
         ),
     ):
+        if unreadable:
+            uncomparable.append({"field": field, "why": unreadable})
+            continue
         if from_provenance and not recorded_provenance:
             uncomparable.append({
                 "field": field,

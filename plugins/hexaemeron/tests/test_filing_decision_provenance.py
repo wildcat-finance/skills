@@ -365,6 +365,93 @@ class FilingDecisionProvenanceTests(HexctlCase):
         for entry in uncomparable:
             self.assertIn("carries no provenance block", entry["why"])
 
+    EMPTY_BODY_SHA256 = (
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    )
+
+    def test_a_body_that_is_not_text_is_not_a_moved_decision(self):
+        """One response, two readers, opposite answers (S3-R3-01).
+
+        `init` refuses a body that is not text in the transport shape. The
+        divergence reader substituted `""` for it and reported the SHA-256 of
+        the empty string as the issue's current body digest, under "the filing
+        decision has moved since this run read it".
+        """
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        self.env["FAKE_GH_MODE"] = "issue-body-not-text"
+        proc = self.run_ctl("verify", "--check-filing-decision", expect=2)
+        self.assertIn("body that is not text", proc.stderr)
+        self.assertNotIn(self.EMPTY_BODY_SHA256, proc.stdout)
+        self.assertNotIn("has moved", proc.stdout)
+
+    def test_a_body_above_the_cap_is_refused_rather_than_hashed(self):
+        """`init` dies on a body above the cap; the re-read parsed it.
+
+        The same two-readers-one-response split as the case above, on the
+        second of the two rules `init` applies to a body (S3-R3-01).
+        """
+        module = hexctl_module()
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        over = self.body(1) + "x" * (module.ISSUE_BODY_BYTES_MAX + 1)
+        payload = json.dumps({
+            "number": 74, "body": over, "title": "t", "labels": [],
+            "created_at": "2026-09-06T09:17:50Z",
+            "updated_at": "2026-09-06T10:08:38Z",
+        }).encode("utf-8")
+        original = module.bounded_probe
+        module.bounded_probe = lambda *a, **k: (0, payload, None)
+        try:
+            with self.assertRaises(SystemExit):
+                module.filing_decision_divergence(self.dir, self.state())
+        finally:
+            module.bounded_probe = original
+
+    def test_an_unreadable_decision_now_is_not_reported_as_no_decision(self):
+        """A body declaring the line twice is not a body declaring nothing.
+
+        `issue_contract_faults` returns `None` for a body it cannot read one
+        decision out of, and the fault saying why was dropped, so the report
+        read `fiat_required: recorded 1, now None` (S3-R3-02).
+        """
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        twice = self.body(1).replace(
+            "Fiat-Required: 1", "Fiat-Required: 1\nFiat-Required: 0")
+        self.env["FAKE_GH_ISSUES"] = json.dumps({self.ISSUE: twice})
+        proc = self.run_ctl("verify", "--check-filing-decision", expect=1)
+        self.assertNotIn("now None", proc.stdout)
+        self.assertIn("fiat_required: not compared", proc.stdout)
+        self.assertIn("2 times", proc.stdout)
+
+    def test_a_deeply_nested_rest_response_refuses_rather_than_crashing(self):
+        """The REST sibling of the GraphQL parser S3-R1-02 repaired.
+
+        Step 3 gave `github_rest` a second call site inside
+        `filing_decision_divergence`, and its `except ValueError` does not
+        reach `RecursionError` (S3-R3-03). The exception is caught rather than
+        allowed to propagate, because an error rather than an assertion
+        failure is what `elenchus classify` reads as inconclusive.
+        """
+        module = hexctl_module()
+        deep = ("[" * 200_000 + "]" * 200_000).encode("utf-8")
+        self.assertLess(len(deep), module.GIT_OUTPUT_MAX)
+        original = module.bounded_probe
+        module.bounded_probe = lambda *a, **k: (0, deep, None)
+        outcome = "returned a payload"
+        try:
+            module.github_rest(
+                self.dir, "repos/wildcat-finance/example/issues/74",
+                "task issue wildcat-finance/example#74")
+        except SystemExit as exc:
+            outcome = f"refused with exit {exc.code}"
+        except RecursionError:
+            outcome = "walked off the interpreter's stack"
+        finally:
+            module.bounded_probe = original
+        self.assertEqual(outcome, "refused with exit 2")
+
 
 class VerifyFlagCompositionTests(unittest.TestCase):
     """`--observations` used to end the command before the filing check ran."""
