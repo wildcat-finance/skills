@@ -191,6 +191,57 @@ def opening_label(position: int, read) -> str:
     return f"opening read {position} {read['kind']} block {read['block']}"
 
 
+def preserved_result(response: str, identifier: int, page_limit, subject: str, result_subject: str, parse_label: str):
+    """The result of one preserved envelope, held to the rules `_ask` applied to the same bytes.
+
+    Every record in a staging tree or a release is an answer `_ask` accepted,
+    and `_ask` refuses an envelope that is not JSON-RPC 2.0, one answering
+    another request's id, one carrying an error, one carrying no result, one
+    marked truncated and one whose result stands at the provider's page limit.
+    A reader that takes `result` off the envelope and nothing else believes an
+    answer the collector would have stopped for.
+
+    That rule was written into the shard journals' reader alone, so the
+    opening journal -- the evidence that binds the interval's start hash and
+    derives the epoch table -- was read with `envelope.get("result")` by the
+    collector's resume path, the builder's replay and the release check alike.
+    This is the one reader all four sites use, so a rule added here reaches
+    every preserved read rather than the journal whose loop it was written in.
+    """
+    envelope = load_bytes(response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES)
+    if (
+        not isinstance(envelope, dict)
+        or envelope.get("jsonrpc") != "2.0"
+        or envelope.get("id") != identifier
+        or "error" in envelope
+        or "result" not in envelope
+    ):
+        raise AlexandriaError(f"the {subject} is not the answer its preserved request names")
+    if envelope.get("truncated") is True:
+        raise AlexandriaError(f"the {subject} is marked truncated")
+    result = envelope["result"]
+    if isinstance(result, list) and len(result) >= page_limit:
+        raise AlexandriaError(
+            f"the {result_subject} stands at the provider's page limit, so it is not a "
+            "complete read"
+        )
+    return result
+
+
+def opening_result(plan, position: int, response: str, parse_label: str):
+    """One preserved opening read's result, held to the same rules as a shard read."""
+    virtual = len(plan["shards"])
+    subject = f"epoch-evidence response for opening read {position}"
+    return preserved_result(
+        response,
+        opening_identifier(virtual, position),
+        plan["provider"]["page_limit"],
+        subject,
+        f"epoch-evidence result for opening read {position}",
+        parse_label,
+    )
+
+
 class OpeningRefusal(AlexandriaError):
     """An opening read the collector will not believe, named by its receipt code."""
 
@@ -381,11 +432,9 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
             raise AlexandriaError(
                 f"committed opening read {position} is not the read the plan names there"
             )
-        envelope = load_bytes(
-            entry["response"].encode(), f"staged opening read {position}",
-            max_bytes=MAX_RAW_COMPONENT_BYTES,
+        result = opening_result(
+            plan, position, entry["response"], f"staged opening read {position}"
         )
-        result = envelope.get("result") if isinstance(envelope, dict) else None
         value = phase.accept(read, result)
         replayed.append((position, read, value, payload))
         position += 1
@@ -771,10 +820,16 @@ class Collector:
                     raise AlexandriaError(
                         f"committed opening read {position} is not the read the plan names there"
                     )
-                envelope = load_bytes(
-                    entry["response"].encode(), f"staged {label}", max_bytes=MAX_RAW_COMPONENT_BYTES,
-                )
-                result = envelope.get("result") if isinstance(envelope, dict) else None
+                try:
+                    result = opening_result(
+                        self.plan, position, entry["response"], f"staged {label}"
+                    )
+                except AlexandriaError:
+                    self.record_error(
+                        virtual, OPENING_CLASS, "opening-journal-mismatch", position,
+                        block=read["block"],
+                    )
+                    raise
                 data = None
             else:
                 _payload, data, result = self._ask(
@@ -1706,53 +1761,28 @@ def check_interval(release_root: Path) -> dict:
                         f"the {name} record filed under shard {record['shard']} is not the "
                         "read the plan names there"
                     )
-                envelope = load_bytes(
-                    record["response"].encode(), f"{name} response for shard {record['shard']}",
-                    max_bytes=MAX_RAW_COMPONENT_BYTES,
+                # The envelope the collector accepted for this read, held to
+                # the rules `_ask` applied to the same bytes: the answer's id,
+                # its version, an absent error, a present result, no
+                # truncation marker and a page below the provider's limit.
+                # Those rules live in `preserved_result` now, which the
+                # opening journal's three readers share, so the release's
+                # shard evidence and its opening evidence are read under one
+                # rule rather than two that drift apart.
+                result = preserved_result(
+                    record["response"],
+                    request_identifier(record["shard"], name),
+                    plan["provider"]["page_limit"],
+                    f"{name} response for shard {record['shard']}",
+                    f"{name} result for shard {record['shard']}",
+                    f"{name} response for shard {record['shard']}",
                 )
-                # The envelope the collector accepted for this read. `_ask`
-                # refuses an answer whose id is not the request's, one
-                # carrying a JSON-RPC error and one carrying no result, and
-                # writes an error receipt rather than a journal record for
-                # each. None of that was re-read from the release, so a
-                # preserved error, or another read's answer, stood as the
-                # shard's evidence and counted as one record of it.
-                if (
-                    not isinstance(envelope, dict)
-                    or envelope.get("jsonrpc") != "2.0"
-                    or envelope.get("id") != request_identifier(record["shard"], name)
-                    or "error" in envelope
-                    or "result" not in envelope
-                ):
-                    raise AlexandriaError(
-                        f"the {name} response for shard {record['shard']} is not the answer "
-                        "its preserved request names"
-                    )
-                result = envelope["result"]
                 # A `logs` or `trace_filter` answer is a list of entries, and
                 # the entries are read below. A result of any other shape was
                 # counted as one read and never looked at.
                 if name in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
                     raise AlexandriaError(
                         f"the {name} result for shard {record['shard']} is not a list of entries"
-                    )
-                # The two truncation rules `_ask` applies to the same bytes: a
-                # marked envelope and a page filled to the provider's declared
-                # limit are refused there rather than kept, because neither is
-                # a complete answer to a bounded request. A release preserving
-                # one of them declared a shard complete on a read the
-                # collector would have stopped for.
-                if envelope.get("truncated") is True:
-                    raise AlexandriaError(
-                        f"the {name} response for shard {record['shard']} is marked truncated"
-                    )
-                if (
-                    isinstance(result, list)
-                    and len(result) >= plan["provider"]["page_limit"]
-                ):
-                    raise AlexandriaError(
-                        f"the {name} result for shard {record['shard']} stands at the "
-                        "provider's page limit, so it is not a complete read"
                     )
                 reads[(record["shard"], name)] = reads.get((record["shard"], name), 0) + 1
                 # Two records of one class for one shard are two reads, so
@@ -1917,10 +1947,9 @@ def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
             raise AlexandriaError(
                 f"epoch-evidence record {position} is not the opening read the plan names there"
             )
-        envelope = load_bytes(
-            entry["response"].encode(), f"opening read {position}", max_bytes=MAX_RAW_COMPONENT_BYTES,
+        phase.accept(
+            read, opening_result(plan, position, entry["response"], f"opening read {position}")
         )
-        phase.accept(read, envelope.get("result") if isinstance(envelope, dict) else None)
         position += 1
     if len(entries) > position:
         raise AlexandriaError(

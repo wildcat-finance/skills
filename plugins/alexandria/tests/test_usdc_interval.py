@@ -2758,6 +2758,57 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
             "the logs result for shard 0 stands at the provider's page limit",
         )
 
+    def test_a_preserved_opening_read_is_held_to_the_same_envelope_rule(self):
+        """The opening journal binds the start hash and the epochs, so it is read no weaker."""
+        cases = (
+            (
+                "json-rpc-error",
+                lambda envelope: envelope.__setitem__(
+                    "error", {"code": -32000, "message": "boom"}
+                ),
+                "the epoch-evidence response for opening read 0 is not the answer its "
+                "preserved request names",
+            ),
+            (
+                "another-read",
+                lambda envelope: envelope.__setitem__("id", 999),
+                "the epoch-evidence response for opening read 0 is not the answer its "
+                "preserved request names",
+            ),
+            (
+                "no-version",
+                lambda envelope: envelope.pop("jsonrpc"),
+                "the epoch-evidence response for opening read 0 is not the answer its "
+                "preserved request names",
+            ),
+            (
+                "truncated",
+                lambda envelope: envelope.__setitem__("truncated", True),
+                "the epoch-evidence response for opening read 0 is marked truncated",
+            ),
+        )
+        for label, edit, expected in cases:
+            with self.subTest(case=label):
+                output = self.released(f"opening-envelope-{label}")
+
+                def rewrite(document, edit=edit):
+                    record = document["records"][0]
+                    envelope = json.loads(record["response"])
+                    edit(envelope)
+                    record["response"] = json.dumps(
+                        envelope, separators=(",", ":"), sort_keys=True
+                    )
+
+                self.rewrite(output, "epoch-evidence", rewrite)
+                # A parent applied the envelope rule inside the shard
+                # journals' own loop, so the opening journal -- read by
+                # `_replay_release_opening` instead -- took `result` off the
+                # envelope and nothing else, and an answer the collector
+                # would have refused derived the epoch table.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), expected)
+
     def test_an_entry_naming_another_address_than_its_read_is_refused(self):
         """A bounded read names one address, so an entry naming another is not its answer."""
         foreign = "0x" + "de" * 20
