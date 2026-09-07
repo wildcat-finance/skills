@@ -3778,6 +3778,34 @@ class RoutedFilingDecisionTests(HexctlCase):
             "a reference carrying   a bell",
         )
 
+    def test_the_directive_strips_control_characters_from_keys_and_nesting(self):
+        """A row shape the parser does not currently produce is still clean.
+
+        Today `carryover_row_faults` emits three fixed string keys and refuses
+        a row carrying a control character first, so nothing dirty reaches the
+        builder. This holds the builder to the claim its docstring makes rather
+        than to the coupling that happens to make the claim true (S2-R1-04).
+        """
+        module = hexctl_module()
+        directive = module.routed_filing_directive({
+            "issue": "https://github.com/wildcat-finance/skills/issues/1337",
+            "repository": "wildcat-finance/skills",
+            "number": "1337",
+            "fiat_required": 0,
+            "carryover": [
+                {"i\x00d": "none",
+                 "nested": {"deep\x1b": ["a \x07 bell", 7, None, True]},
+                 "count": 3},
+            ],
+        })
+        rendered = json.dumps(directive)
+        for control in ("\x00", "\x07", "\x1b"):
+            self.assertNotIn(control, rendered)
+        row = directive["carryover"][0]
+        self.assertIn("i d", row)
+        self.assertEqual(row["nested"]["deep "], ["a   bell", 7, None, True])
+        self.assertEqual(row["count"], 3)
+
 
 class TestControls(HexctlCase):
     def test_halt_blocks_progress_and_resume_restores(self):

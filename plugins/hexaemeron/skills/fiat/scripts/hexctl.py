@@ -2221,9 +2221,15 @@ def held_lock(base_dir: str, command: str):
             yield
             return
         os.makedirs(root, exist_ok=True)
-        created_root = True
+        # This invocation found the root absent. It is not a claim to have
+        # created it: `makedirs(exist_ok=True)` is a no-op on a directory
+        # another process made a moment earlier, so two inits racing on a
+        # fresh checkout both set this. Exclusion does not depend on it. Only
+        # the flock winner reaches the teardown, and the teardown's own guard,
+        # no state file and nothing but the lock, is what makes removal safe.
+        root_was_absent = True
     else:
-        created_root = False
+        root_was_absent = False
 
     path = lock_path(base_dir)
     try:
@@ -2234,6 +2240,16 @@ def held_lock(base_dir: str, command: str):
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_NOFOLLOW", 0),
             0o600,
+        )
+    except FileNotFoundError:
+        # The state root went away between the check above and this open. The
+        # teardown below removes a root it found empty, so a contender can
+        # arrive in that window. Saying the lock is unsafe would name the wrong
+        # cause: it is absent, and starting again finds or makes a new one.
+        die(
+            "the run state directory went away while this command was starting;"
+            " nothing was changed, so run it again",
+            1,
         )
     except OSError:
         die("run lock is not a safe regular file", 1)
@@ -2276,15 +2292,22 @@ def held_lock(base_dir: str, command: str):
     finally:
         if acquired:
             try:
-                # An `init` that routed a filed `0` built nothing, and the
-                # directive it printed says so. This directory and this lock
-                # are the only things that would contradict it, so an
-                # invocation that created the root and left it otherwise empty
-                # takes it away again. The unlink happens while the lock is
-                # still held: a contender cannot be holding this inode, and one
-                # that opens the path afterwards creates its own and is right
-                # to, because nothing here owns the run any more.
-                if created_root and not os.path.exists(state_path(base_dir)):
+                # This lock lives in the *calling* checkout's state root. A
+                # run's own state goes to the worktree's, so every `init`
+                # started from a checkout without `.hexaemeron/` leaves this
+                # directory holding nothing but the lock, whether it routed a
+                # filed `0` or built a run. Nothing tracked ignores it there:
+                # the self-ignoring `.gitignore` is written into the worktree's
+                # root, not this one. So a leftover lock dirties `git status`
+                # and stops the next run at the clean-tree preflight, which is
+                # why this removes it rather than leaving a marker.
+                #
+                # The unlink happens while the lock is still held. A contender
+                # holding this inode cannot exist, one blocked on it dies at
+                # `flock` as before, and one that opens the path afterwards
+                # creates its own inode and is right to, because nothing here
+                # owns the run any more.
+                if root_was_absent and not os.path.exists(state_path(base_dir)):
                     try:
                         if os.listdir(root) == ["lock"]:
                             os.unlink(path)
@@ -5085,15 +5108,28 @@ def routed_filing_directive(contract: dict) -> dict:
     Every issue-derived string passes `clean`, because an agent consumes this
     object and an issue body is somebody else's text.
     """
+    def scrubbed(value):
+        """Every string this object carries, at any depth and keys included.
+
+        The row shape is three fixed string keys today and
+        `carryover_row_faults` refuses a row carrying a control character
+        before this is reached, so nothing currently arrives dirty. Neither
+        fact is pinned by anything here, and the cost of not depending on
+        them is one recursion (S2-R1-04).
+        """
+        if isinstance(value, str):
+            return clean(value)
+        if isinstance(value, dict):
+            return {clean(str(key)): scrubbed(inner)
+                    for key, inner in value.items()}
+        if isinstance(value, list):
+            return [scrubbed(inner) for inner in value]
+        return value
+
     issue = clean(str(contract["issue"]))
     repository = clean(str(contract["repository"]))
     number = clean(str(contract["number"]))
-    rows = []
-    for row in contract.get("carryover") or []:
-        rows.append({
-            key: clean(str(value)) if isinstance(value, str) else value
-            for key, value in row.items()
-        })
+    rows = scrubbed(list(contract.get("carryover") or []))
     return {
         "do": "pull-request",
         "reason": f"the task issue declares `{FIAT_REQUIRED_KEY}: 0`",
