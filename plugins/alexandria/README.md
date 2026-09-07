@@ -80,7 +80,7 @@ unharvested registry venues visible as gaps.
 - registered Aave v4 and Clearpool mappings with exact source and context
   selectors;
 - the offline [`credit-history-v0`](./examples/credit-history-v0/README.md)
-  path through Probitas's five gates; and
+  path through Probitas's five gates;
 - a checked-in [Compound v3 Phase 0 raw release](./examples/compound-v3-phase0-v0/README.md),
   separate explicit network capture command and pinned
   [production harvest specification](./docs/compound-v3-harvest.md);
@@ -266,7 +266,7 @@ its reported block was canonical.
 - [`docs/compound-v3-harvest.md`](docs/compound-v3-harvest.md) pins Compound's
   official registry and specifies production capture, revision, checkpoint,
   reconciliation and acceptance rules. Phase 0 proves the required methods;
-  the interval harvester remains a plan.
+  the interval collector now covers one of the 28 markets that document pins.
 - [`docs/compound-v3-phase0-study.md`](../../docs/compound-v3-phase0-study.md)
   records the method study, and
   [`docs/compound-v3-phase0-runbook.md`](../../docs/compound-v3-phase0-runbook.md)

@@ -104,8 +104,9 @@ local tool.
   the preserved live Ethereum mainnet interval from its committed staging tree.
   Both remove a partial output after failure and open no socket; `verify`
   changes no file in either.
-- `scripts/compound_v3_phase0.py capture` is the one explicit network path. It
-  reads the HTTPS endpoint from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed
+- `scripts/compound_v3_phase0.py capture` is the third and last explicit network
+  path, beside `collect` and `reconcile` above. It reads the HTTPS endpoint
+  from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed
   bounded corpus through a sibling temporary directory and never records the
   endpoint, headers or credentials.
 
