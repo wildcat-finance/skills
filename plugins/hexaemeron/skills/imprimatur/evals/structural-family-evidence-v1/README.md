@@ -112,6 +112,57 @@ here and are not rows, because the issue proposes no rule for any of them:
 4. "I.e." and other explicit technical restatements can be precise.
 5. A bare "due to" rule would turn grammar preference into policy.
 
+## Checking the fixture
+
+`scripts/check_family_evidence.py` is the checker. It reads only files below
+`--fixture`, and it refuses a symlink, a file over 1,048,576 bytes, an
+unreadable JSONL row and any path that resolves outside that directory.
+Specimen text is handled as bytes, so it is never executed, evaluated or
+passed to a shell. No socket opens unless `--verify-sources` is given.
+
+```bash
+python3 plugins/hexaemeron/skills/imprimatur/scripts/check_family_evidence.py \
+  --fixture plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1 \
+  --report /tmp/family-evidence.json
+```
+
+Its exit codes are three:
+
+- `0`: the fixture is clean.
+- `1`: the checker found something. It prints every finding of the first
+  class it meets, in the order `family-tier`, `family-schema`,
+  `family-duplicate`, `specimen-annotation-order`, `specimen-schema`,
+  `specimen-unknown-family`, `specimen-span`, `specimen-digest`,
+  `specimen-independence`, `tier-minimum`, `source-mismatch`.
+- `2`: the invocation or a read was refused, which covers a missing fixture
+  directory, an unknown `--tier`, a symlink, an oversized file and an
+  unreadable JSONL row.
+
+The flags are:
+
+- `--report <path>` writes one JSON report holding `families`, `specimens`,
+  `below_minimum` and `rejections_path`. `below_minimum` is the answer a
+  later run needs: the family id, its tier, the counted independent
+  positives and negatives, and the minimums its tier requires.
+  `rejections_path` points at `selection-rejections.jsonl`.
+- `--allow-below-minimum` records a tier-minimum shortfall in the report
+  rather than reporting it as a finding. **This flag exists for the build
+  phase only**, while specimens are still being collected. A released
+  fixture must exit 0 without it.
+- `--min-independent-positive <n>` and `--tier <tier>` restrict the
+  tier-minimum check to one evidence tier and override its
+  independent-positive minimum. The design record's
+  `two-independent-specimens` gate is resolved with
+  `--min-independent-positive 2 --tier high-value`.
+- `--verify-sources` replays every specimen against its immutable GitHub
+  object through `gh` and compares `text_sha256`. This is the only path that
+  opens a socket.
+
+`plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
+refusal, the clean-fixture exit, the copied issue wording and the frozen
+digests below. It builds every fixture it checks in a temporary directory, so
+the shipped fixture is never mutated.
+
 ## Frozen digests
 
 The fixture was built against `wildcat-finance/skills` at
@@ -143,9 +194,13 @@ sha256sum plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   rule, tier minimums, family count and frozen digests.
 - `schemas/family.schema.json`: the family row.
 - `schemas/specimen.schema.json`: the specimen row.
-- `families.jsonl`, `specimens.jsonl` and `selection-rejections.jsonl`:
-  added by later steps of the committed runbook, together with
-  `scripts/check_family_evidence.py` and its unittest module.
+- `issue-1298.md`: the exact body of issue #1298, checked in unedited so the
+  wording test has something to compare the catalogue against.
+- `families.jsonl`: the 42 family rows.
+- `specimens.jsonl`: the specimen rows, filled by a later step of the
+  committed runbook.
+- `selection-rejections.jsonl`: every rejected candidate with its reason,
+  written by the same later step.
 
 The accepted study and runbook are committed at
 `plugins/hexaemeron/docs/imprimatur-structural-family-evidence/`.
