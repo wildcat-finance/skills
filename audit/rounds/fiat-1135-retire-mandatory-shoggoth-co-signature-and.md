@@ -46,3 +46,19 @@ Elenchus verdict: guarded
 | S2-R1-02 | medium | docs/how-to-help-shoggoth.md:15 | Current contributor guidance still required a human identity and a GitHub-matched author address even though valid signature evidence is now the admission rule and unmatched attribution is recorded as unresolved. | fixed in this round's signed fixes commit |
 
 Leads not pursued: The digest-neutral agent-instruction fixtures changed only their bound source digests while preserving reviewed spans and measured projections; their checker and complete repository suite cover the rebind. The hosted identity workflow remains live until Step 3 removes its required status first.
+
+## Step 2, round 2 -- 2026-09-07T11:39:22Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: signature-loss=reviewed; residual-host-ban=reviewed; residual-trailer-mandate=reviewed; identity-job-wedge=reviewed; ruleset-overwrite=reviewed; connector-evidence-gap=reviewed; contributor-policy-leak=reviewed; shoggoth-lookalike-residue=reviewed; historical-record-rewrite=reviewed; generated-copy-drift=reviewed; signature-fixture-masking=reviewed; authority-confusion=reviewed
+
+Not checked: live ruleset mutation, the external Interceptor repository, and the hosted identity workflow reserved for Step 3; outside Step 2 local-policy scope
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Round 2 rechecked the complete risk register after `9a0a1bde0848359d11ae8a769a6c329b7d1e0ea3`. The two round-1 findings remain fixed. Runtime-host refusals under `scripts/check_commit_identity.py` belong to the hosted identity workflow that Step 3 removes after its required status; they do not reach Fiat admission or contributor ranking. No further Step 2 lead warrants another round.
