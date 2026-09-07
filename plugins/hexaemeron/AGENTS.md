@@ -122,10 +122,12 @@ the runtime or repository requires. Preserve every fail-closed check in the
 canonical skill. If a command, audit role, lint, test, issue write, or push did
 not happen, state that plainly and do not create its receipt.
 Fiat directives carry source-bound delegation packets. Its commit-bearing
-receipts require locally verified signatures and exact provenance trailers;
-pushed ranges and GitHub merge SHAs also require GitHub `verified: true` with
-`reason: valid`. Never copy raw signature material into state, ledgers, or
-reports.
+receipts require locally verified signatures; pushed ranges and GitHub merge
+SHAs also require GitHub `verified: true` with `reason: valid`. Attribution and
+provenance trailers are recorded but do not decide admission. Authenticated
+local GitHub access and an authenticated connector have equal standing for the
+same exact checked fields. Never copy raw signature material into state,
+ledgers, or reports.
 Every Fiat audit round declares `--audit-filter sapheneia:sapheneia`; this is a
 checked operator declaration, not proof of the semantic pass. A bound task
 issue's closing comment follows the repository's Sapheneia, Imprimatur,

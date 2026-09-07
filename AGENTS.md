@@ -162,6 +162,13 @@ cannot close it.
 
 ## Written-record publication
 
+Fiat admission is signature-only. A valid local cryptographic signature or
+GitHub platform verification is independent of author, committer, co-author,
+runtime, opener, byline, or provenance trailer. Authenticated local GitHub
+access and an authenticated connector have equal standing when they provide
+the same exact fields to the bounded check. Admission never grants publication
+authority.
+
 Before an agent writes prose into this repository or publishes it to a host,
 use this sequence on the complete candidate. It governs every record an agent
 writes down: an audit record, an issue title and body, an issue or pull request

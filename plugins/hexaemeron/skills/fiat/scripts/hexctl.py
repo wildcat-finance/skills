@@ -467,6 +467,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.52.1",
         "fiat-v5.53.1",
         "fiat-v5.54.1",
+        "fiat-v5.55.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -12183,8 +12184,22 @@ def github_unreachable(label: str, path: str, detail: str) -> None:
     )
 
 
+def checked_github_object(payload: object, path: str, label: str) -> dict:
+    """One exact GitHub response supplied by an authenticated transport.
+
+    Local ``gh`` and a connected GitHub interface have the same standing once
+    the caller has bound the response to ``path``.  This checker deliberately
+    starts after authentication and transport: it accepts only the closed
+    object shape every downstream repository, SHA, pull-request, and
+    verification check already consumes.
+    """
+    if not isinstance(payload, dict):
+        github_unreachable(label, path, "returned a response that is not one object")
+    return payload
+
+
 def github_rest(base_dir: str, path: str, label: str) -> dict:
-    """One bounded REST read of the GitHub API, parsed as one JSON object.
+    """One bounded REST read through the local authenticated GitHub adapter.
 
     Every receipt reader goes over REST because that is the transport the
     checks need. `gh <command> --json` speaks GraphQL, and an environment
@@ -12214,14 +12229,10 @@ def github_rest(base_dir: str, path: str, label: str) -> dict:
         payload = json.loads(text)
     except ValueError:
         github_unreachable(label, path, "returned a response that is not JSON")
-    if not isinstance(payload, dict):
-        github_unreachable(label, path, "returned a response that is not one object")
-    return payload
+    return checked_github_object(payload, path, label)
 
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
-COAUTHOR_TRAILER = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
-ORIGIN_TRAILER = "Wildcat-Origin: shoggoth"
 # Long key ids GitHub signs with when it creates a commit itself: the web-flow
 # key, used by the merge button, the Contents API, and the rebase performed by
 # the native stacked-pull-request flow. A commit carrying one of these was
@@ -12247,47 +12258,6 @@ SIGNATURE_VERIFIER_CONFIG = (
 )
 
 
-HOST_IDENTITY_NAMES = frozenset(
-    {
-        "aider",
-        "anthropic",
-        "chatgpt",
-        "claude",
-        "claude code",
-        "claude[bot]",
-        "codex",
-        "copilot",
-        "cursor",
-        "devin",
-        "gemini",
-        "gemini code assist",
-        "github copilot",
-        "openai",
-    }
-)
-HOST_IDENTITY_EMAILS = frozenset(
-    {
-        "noreply@anthropic.com",
-        "noreply@openai.com",
-    }
-)
-HOST_PR_LOGINS = frozenset(
-    {
-        "app/claude",
-        "chatgpt[bot]",
-        "claude[bot]",
-        "codex[bot]",
-        "copilot[bot]",
-    }
-)
-"""Runtime host accounts, which ADR-016 forbids as an author.
-
-Membership is a refusal, so this set holds runtime hosts and nothing else. A
-delivery agent that opens its own pull requests under a GitHub App identity is
-the contributing actor rather than a host, and belongs nowhere near this set:
-adding it would refuse every pull request it opens. `GITHUB_LOGIN_RE` already
-accepts a `[bot]` login for that reason.
-"""
 COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,
@@ -12310,86 +12280,11 @@ because the trailer count is attacker-influenceable and a receipt is not the
 place to discover that.
 """
 
-HOST_BYLINE_RE = re.compile(
-    r"(?:generated\s+(?:by|with)|(?:co-)?authored\s+by)\s+"
-    r"(?:\[(?:claude(?: code)?|codex|chatgpt|copilot|gemini(?: code assist)?)\]"
-    r"\([^\)]+\)|claude(?: code)?|codex|chatgpt|copilot|gemini(?: code assist)?)",
-    re.IGNORECASE,
-)
-
-# Why a refusal names a cause. ADR-016 makes a runtime host execution metadata,
-# never an author, co-author, byline or generated-by footer, and the hosts most
-# contributors run Fiat through add exactly those by default: their own git
-# identity, a Co-Authored-By trailer naming themselves, an attribution line or
-# a session link. A refusal that only names the gate sends the operator to
-# guess; one that names the usual host default and its recovery does not. The
-# clauses are module constants so that no byte of a commit message or
-# pull-request body can steer what a refusal says. The evidence for each
-# "usual cause" is the measurement table in the committed study,
-# docs/fiat-host-byline-readback/study.md (section 1); the texts are its
-# section 4 table.
-
-# verify_local_commit author and commit_attribution (ADR-016; the study's
-# section 4 table).
-CAUSE_HOST_AUTHOR = (
-    "The usual cause is the host's default git identity, such as "
-    "Claude <noreply@anthropic.com>; set git user.name and user.email to the "
-    "contributing actor and recreate the commit."
-)
-# verify_local_commit committer and commit_attribution (ADR-052).
-CAUSE_HOST_COMMITTER = (
-    "The usual cause is the runtime host's default committer identity; use the "
-    "explicitly authorised publisher's own name, address and signing key, then "
-    "recreate the commit without changing its author."
-)
-# verify_local_commit co-author and message_coauthors (ADR-016; the study's
-# section 4 table).
-CAUSE_HOST_COAUTHOR = (
-    "The usual cause is the host's standing instruction to end every commit "
-    "with a Co-Authored-By trailer naming itself; the repository rule wins: "
-    "end the message with the two exact provenance trailers and nothing else, "
-    "and recreate the commit."
-)
-# verify_local_commit byline (ADR-016; the study's section 4 table).
-CAUSE_HOST_BYLINE = (
-    "The usual cause is the host's default attribution line (Generated with "
-    "or by Claude Code, Codex or another host) or its session link in the "
-    "message; remove it and recreate the commit."
-)
-# inspect_pull_request author (ADR-016; the study's section 4 table).
-CAUSE_HOST_PR_AUTHOR = (
-    "The pull request was opened under the host app's GitHub identity, such "
-    "as claude[bot]; open it from the human contributor's account, or from "
-    "the explicitly authorised publisher's account for Shoggoth work."
-)
-# inspect_pull_request byline (ADR-016; the study's section 4 table).
-CAUSE_HOST_PR_BYLINE = (
-    "The usual cause is the host appending its attribution line or claude.ai "
-    "session link to the description after gh pr create returned; edit the "
-    "body without it (gh pr edit <url> --body-file <file>), read it back over "
-    "REST, and rerun this receipt."
-)
-# checked_login (ADR-016; the study's section 4 table).
-CAUSE_HOST_ACCOUNT = (
-    "The GitHub response links this identity to a runtime host account; use "
-    "the human contributor's account for their work, or the explicitly "
-    "authorised publisher's account for Shoggoth work."
-)
-
-
 def tool_text(data: bytes, label: str) -> str:
     try:
         return data.decode("utf-8")
     except UnicodeDecodeError:
         die(f"{label} returned non-UTF-8 output")
-
-
-def is_host_identity(name: str, email: str) -> bool:
-    """Recognise known runtime identities without reclassifying human authors."""
-    return (
-        name.strip().casefold() in HOST_IDENTITY_NAMES
-        or email.strip().casefold() in HOST_IDENTITY_EMAILS
-    )
 
 
 def identity_digest(email: str) -> str:
@@ -12421,8 +12316,6 @@ def checked_login(value: object, label: str) -> str | None:
     login = value.get("login")
     if not isinstance(login, str):
         die(f"{label} account login is not a string")
-    if login.casefold() in HOST_PR_LOGINS:
-        die(f"{label} links the commit to a runtime host account. {CAUSE_HOST_ACCOUNT}")
     if not GITHUB_LOGIN_RE.fullmatch(login):
         die(f"{label} account login is malformed")
     return login
@@ -12453,10 +12346,8 @@ def checked_identity(value: object, label: str) -> tuple[str, str]:
 def message_coauthors(message: object, label: str) -> list[dict]:
     """Every exact co-author trailer on one commit message.
 
-    Parsed with the same expression the local range gate uses, so the two
-    cannot disagree about what a trailer is. A host identity in a trailer
-    refuses here as well as locally: the two views are read from different
-    places and either one seeing a host is enough.
+    Names are attribution evidence only. Signature admission is checked at the
+    commit boundary and does not depend on a co-author classification.
     """
     if not isinstance(message, str):
         die(f"{label} commit message is missing")
@@ -12466,8 +12357,6 @@ def message_coauthors(message: object, label: str) -> list[dict]:
         if match is None:
             continue
         name, email = match.group("name"), match.group("email")
-        if is_host_identity(name, email):
-            die(f"{label} names a runtime host as co-author. {CAUSE_HOST_COAUTHOR}")
         if len(name) > ATTRIBUTION_NAME_MAX or len(email) > ATTRIBUTION_EMAIL_MAX:
             die(f"{label} co-author identity is malformed")
         found.append({"name": name, "email_sha256": identity_digest(email)})
@@ -12754,7 +12643,7 @@ def verify_local_commit(
     *,
     native_relation: bool = False,
 ) -> str:
-    """Verify one exact locally created commit and its required trailers."""
+    """Verify one exact locally created commit's native signature."""
     commit_sha = require_full_sha(commit_sha, label)
     verification_argv = [
         item
@@ -12792,62 +12681,6 @@ def verify_local_commit(
                 f"(signed with key {key}, which this keyring cannot validate)"
             )
         die(f"{label} commit {commit_sha} has no valid local signature")
-    author_name, author_email = commit_author(
-        base_dir,
-        commit_sha,
-        label,
-        native_relation=native_relation,
-    )
-    if is_host_identity(author_name, author_email):
-        die(
-            f"{label} commit {commit_sha} uses a runtime host as author; "
-            f"use Shoggoth or preserve the human contributor. {CAUSE_HOST_AUTHOR}"
-        )
-    committer_name, committer_email = commit_committer(
-        base_dir,
-        commit_sha,
-        label,
-        native_relation=native_relation,
-    )
-    if is_host_identity(committer_name, committer_email):
-        die(
-            f"{label} commit {commit_sha} uses a runtime host as committer. "
-            f"{CAUSE_HOST_COMMITTER}"
-        )
-    body = tool_text(
-        _exact_commit_git(
-            base_dir,
-            ["show", "-s", "--no-show-signature", "--format=%B", commit_sha],
-            f"{label} commit {commit_sha} message cannot be read",
-            native_relation=native_relation,
-        ),
-        f"{label} commit message",
-    )
-    lines = body.splitlines()
-    for line in lines:
-        match = COAUTHOR_RE.fullmatch(line)
-        if match and is_host_identity(match.group("name"), match.group("email")):
-            die(
-                f"{label} commit {commit_sha} uses a runtime host as co-author. "
-                f"{CAUSE_HOST_COAUTHOR}"
-            )
-    if HOST_BYLINE_RE.search(body):
-        die(
-            f"{label} commit {commit_sha} carries a runtime-host byline. "
-            f"{CAUSE_HOST_BYLINE}"
-        )
-    coauthors = lines.count(COAUTHOR_TRAILER)
-    origins = lines.count(ORIGIN_TRAILER)
-    if coauthors != 1:
-        die(
-            f"{label} commit {commit_sha} has {coauthors} exact Shoggoth "
-            "co-author trailers; expected 1"
-        )
-    if origins != 1:
-        die(
-            f"{label} commit {commit_sha} has {origins} exact Wildcat-Origin "
-            "trailers; expected 1"
-        )
     return commit_sha
 
 
@@ -13221,11 +13054,8 @@ def inspect_pull_request(
     author_login = author.get("login") if isinstance(author, dict) else None
     if not isinstance(author_login, str):
         die("pull request topology is missing its author")
-    if author_login.casefold() in HOST_PR_LOGINS:
-        die(
-            "pull request uses a runtime host as author; hand off before "
-            f"publication. {CAUSE_HOST_PR_AUTHOR}"
-        )
+    if not GITHUB_LOGIN_RE.fullmatch(author_login):
+        die("pull request topology author login is malformed")
     if "body" not in payload:
         die("pull request topology is missing its body")
     # REST spells an empty body as null rather than as an empty string. There
@@ -13233,8 +13063,6 @@ def inspect_pull_request(
     body = payload["body"] or ""
     if not isinstance(body, str):
         die("pull request topology is missing its body")
-    if HOST_BYLINE_RE.search(body):
-        die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
     closing_issue = None
     if expected_closing_issue is not None:
         references = github_issue_closing_references(
@@ -13360,16 +13188,10 @@ def commit_attribution(payload: dict, commit_sha: str) -> dict:
     if not isinstance(commit, dict):
         die(f"{label} is missing its commit object")
     name, email = checked_identity(commit.get("author"), label)
-    if is_host_identity(name, email):
-        die(f"{label} names a runtime host as author. {CAUSE_HOST_AUTHOR}")
     committer_label = f"{label} committer"
     committer_name, committer_email = checked_identity(
         commit.get("committer"), committer_label
     )
-    if is_host_identity(committer_name, committer_email):
-        die(
-            f"{committer_label} names a runtime host. {CAUSE_HOST_COMMITTER}"
-        )
     return {
         "commit": commit_sha,
         "login": checked_login(payload.get("author"), label),

@@ -1,20 +1,4 @@
-"""The checked-in Claude Code attribution switch holds exactly one object.
-
-ADR-016 makes a runtime host execution metadata, never an author, co-author or
-byline, and Fiat refuses those identities at its receipts. Claude Code adds
-them by default: a `Co-Authored-By` trailer naming the model on every commit,
-an attribution line on every pull-request description and, from a cloud or
-Remote Control session, a session link on both. Its settings reference
-documents one object that turns all three off and lists `.claude/settings.json`
-among the files it is read from, so this repository checks that object in and
-pins it here (skills#617).
-
-The pin is whole-document equality. A key added beside `attribution` would
-reach every session opened in this clone, and the study that added the file
-put every addition to it on the ask-first tier. The setting is not evidence:
-Fiat still reads the pull-request body back and refuses the host defaults by
-name whether or not the host honoured this file.
-"""
+"""The optional Claude presentation setting has no Fiat policy standing."""
 
 from pathlib import Path
 import json
@@ -42,6 +26,13 @@ class HostSettingsTests(unittest.TestCase):
         raw = SETTINGS.read_bytes()
         self.assertTrue(raw.endswith(b"\n"), "no newline at end of file")
         self.assertFalse(raw.endswith(b"\n\n"), "more than one newline at end of file")
+
+    def test_fiat_does_not_consult_the_presentation_setting(self):
+        controller = (ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn(".claude/settings.json", controller)
+        self.assertNotIn("HOST_BYLINE_RE", controller)
 
 
 if __name__ == "__main__":

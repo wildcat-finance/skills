@@ -7,22 +7,18 @@ Skills commits supply the first ordering key. Human authors of merged pull
 requests in Shoggoth Wave Atlas also qualify, and merged PRs across both
 repositories supply the second key.
 
-This module holds the classification primitives. Which identities are runtime
-hosts rather than contributors is decided by ADR-016, and the mechanical set it
-refers to lives in plugins/hexaemeron/skills/fiat/scripts/hexctl.py. The copy
-below is kept equal to that one by tests/test_contributors.py, which fails when
-either side is edited alone.
+This module owns the classification primitives used only by the human
+contributor ranking. They are deliberately independent of Fiat admission:
+Fiat verifies signed work and records attribution without classifying it as
+human or non-human.
 
-The Wildcat-Origin trailer is deliberately not part of the classification. It
-records which tool performed the work, not who decided it: every commit by this
-repository's external human contributors carries it, and some commits authored
-by a runtime host carry none. See docs/contributors/study.md, item 4.
+Commit provenance trailers are deliberately not part of this classification.
+The ranking uses GitHub account type and bounded attribution samples only.
 """
 
 from __future__ import annotations
 
 import argparse
-import ast
 import hashlib
 import json
 import os
@@ -34,8 +30,7 @@ import tempfile
 import urllib.parse
 import urllib.request
 
-# Kept equal to hexctl.py's frozensets by tests/test_contributors.py.
-HOST_IDENTITY_NAMES = frozenset(
+NON_HUMAN_IDENTITY_NAMES = frozenset(
     {
         "aider",
         "anthropic",
@@ -53,13 +48,13 @@ HOST_IDENTITY_NAMES = frozenset(
         "openai",
     }
 )
-HOST_IDENTITY_EMAILS = frozenset(
+NON_HUMAN_IDENTITY_EMAILS = frozenset(
     {
         "noreply@anthropic.com",
         "noreply@openai.com",
     }
 )
-HOST_PR_LOGINS = frozenset(
+NON_HUMAN_PR_LOGINS = frozenset(
     {
         "app/claude",
         "chatgpt[bot]",
@@ -68,6 +63,13 @@ HOST_PR_LOGINS = frozenset(
         "copilot[bot]",
     }
 )
+
+# The hosted identity status remains live until Step 3 removes its ruleset
+# requirement. Keep its imported names as contributor-owned compatibility
+# aliases; Fiat does not import or mirror them.
+HOST_IDENTITY_NAMES = NON_HUMAN_IDENTITY_NAMES
+HOST_IDENTITY_EMAILS = NON_HUMAN_IDENTITY_EMAILS
+HOST_PR_LOGINS = NON_HUMAN_PR_LOGINS
 
 # A GitHub login is 1 to 39 characters of ASCII alphanumerics and hyphens, and
 # may neither start nor end with a hyphen. Nothing matching this can carry
@@ -80,18 +82,13 @@ LOGIN_RE = re.compile(r"\A[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
 # derived from the history, so it is named here rather than inferred.
 EXCLUDED_MAINTAINERS = frozenset({"laurenceday"})
 
-# The Shoggoth is the author of governed agent work under ADR-016, so it is a
-# legitimate Git author and a legitimate GitHub contributor. It is still not a
-# human being thanked for helping. It is deliberately NOT in the runtime-host
-# set: a host identity is a transport that should never have been an author,
-# whereas this one should. Different reason, different set, different message.
+# This account is not a human being thanked by the contributor ranking. That
+# local ranking choice says nothing about whether its signed commits are valid.
 AGENT_LOGINS = frozenset({"shoggoth-wildcat"})
 
 REPOSITORY = "wildcat-finance/skills"
 WAVE_ATLAS_REPOSITORY = "wildcat-finance/shoggoth-wave-atlas"
 SUPPLEMENTAL_PR_REPOSITORIES = (WAVE_ATLAS_REPOSITORY,)
-HEXCTL_RELATIVE = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
-PARITY_SET_NAMES = ("HOST_IDENTITY_EMAILS", "HOST_IDENTITY_NAMES", "HOST_PR_LOGINS")
 API_HOST = "api.github.com"
 API_ROOT = f"https://{API_HOST}"
 REPO_RE = re.compile(r"\A[A-Za-z0-9._-]{1,100}/[A-Za-z0-9._-]{1,100}\Z")
@@ -108,115 +105,34 @@ class Stop(Exception):
     """A fail-closed stop. The message names the identity or field at fault."""
 
 
-def is_host_identity(name: str, email: str) -> bool:
-    """Recognise known runtime identities without reclassifying human authors."""
+def is_non_human_identity(name: str, email: str) -> bool:
+    """Recognise identities excluded only from the human ranking."""
     return (
-        name.strip().casefold() in HOST_IDENTITY_NAMES
-        or email.strip().casefold() in HOST_IDENTITY_EMAILS
+        name.strip().casefold() in NON_HUMAN_IDENTITY_NAMES
+        or email.strip().casefold() in NON_HUMAN_IDENTITY_EMAILS
     )
 
 
-def is_host_login(login: str) -> bool:
-    """Recognise a runtime identity by its GitHub login or app byline."""
+def is_non_human_login(login: str) -> bool:
+    """Recognise an account excluded only from the human ranking."""
     folded = login.strip().casefold()
-    return folded in HOST_PR_LOGINS or folded in HOST_IDENTITY_NAMES
+    return folded in NON_HUMAN_PR_LOGINS or folded in NON_HUMAN_IDENTITY_NAMES
+
+
+is_host_identity = is_non_human_identity
+is_host_login = is_non_human_login
 
 
 def valid_login(login: str) -> bool:
     """Accept only a login that cannot carry Markdown syntax into an artefact.
 
-    Classification must exclude runtime hosts BEFORE calling this. Some host
+    Classification must exclude known non-human accounts BEFORE calling this. Some
     logins are deliberately not valid logins: `claude[bot]` and `app/claude`
     both fail here. Validating first would turn a routine host exclusion into
-    the bad-grammar stop, which fails the run on an identity the host set
+    the bad-grammar stop, which fails the run on an identity the local set
     already knows how to drop.
     """
     return bool(LOGIN_RE.match(login))
-
-
-def host_set_payload() -> dict:
-    """Report the loaded classification set, for inspection and for tests."""
-    return {
-        "schema": "wildcat-contributors-host-set/v1",
-        "host_identity_names": sorted(HOST_IDENTITY_NAMES),
-        "host_identity_emails": sorted(HOST_IDENTITY_EMAILS),
-        "host_pr_logins": sorted(HOST_PR_LOGINS),
-    }
-
-
-def frozensets_from_source(path, prefix: str = "HOST_") -> dict:
-    """Read every `HOST_* = frozenset({...})` module-level literal without importing.
-
-    Discovery is by prefix, not by the names already known. A parity check that
-    compares only what it knows cannot notice a new set. If hexctl.py grows a
-    fourth host set, this module would miss a whole class of runtime identity
-    and every check would still pass, so the prefix scan turns that into a stop
-    naming the set nobody accounted for.
-    """
-    tree = ast.parse(Path(path).read_text(encoding="utf-8"), filename=str(path))
-    found = {}
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if not isinstance(target, ast.Name) or not target.id.startswith(prefix):
-            continue
-        call = node.value
-        if (
-            not isinstance(call, ast.Call)
-            or not isinstance(call.func, ast.Name)
-            or call.func.id != "frozenset"
-        ):
-            # A HOST_* name that is not a frozenset is not a classification set.
-            # hexctl.py has HOST_BYLINE_RE, a compiled pattern. Skipping it is
-            # deliberate; a genuinely missing set is caught by comparing the
-            # discovered names, not by asserting shape here.
-            continue
-        if len(call.args) != 1:
-            raise Stop(
-                f"{target.id} in {Path(path).name} is frozenset() with "
-                f"{len(call.args)} arguments, which cannot be read"
-            )
-        try:
-            members = ast.literal_eval(call.args[0])
-        except (ValueError, TypeError) as error:
-            raise Stop(
-                f"{target.id} in {Path(path).name} is a frozenset of something "
-                f"other than a literal: {error}"
-            ) from error
-        found[target.id] = frozenset(members)
-    return found
-
-
-def verify_host_set_parity(hexctl_path) -> None:
-    """Stop when this module's host set and Fiat's declaration have diverged.
-
-    ADR-016 names one mechanical set of runtime host identities and Fiat owns
-    it. The copy above exists so this stays a standalone root script. An
-    unchecked copy can stop agreeing and rank a runtime identity as a person,
-    so the divergence is a stop rather than a warning.
-    """
-    declared = frozensets_from_source(hexctl_path)
-    if sorted(declared) != sorted(PARITY_SET_NAMES):
-        missing = sorted(set(PARITY_SET_NAMES) - set(declared))
-        extra = sorted(set(declared) - set(PARITY_SET_NAMES))
-        raise Stop(
-            "host set drift: hexctl.py and this module disagree about which "
-            f"HOST_* sets exist (missing here: {missing or 'none'}; "
-            f"present there and unaccounted for here: {extra or 'none'})"
-        )
-    ours = {
-        "HOST_IDENTITY_EMAILS": HOST_IDENTITY_EMAILS,
-        "HOST_IDENTITY_NAMES": HOST_IDENTITY_NAMES,
-        "HOST_PR_LOGINS": HOST_PR_LOGINS,
-    }
-    for name in PARITY_SET_NAMES:
-        if ours[name] != declared[name]:
-            raise Stop(
-                f"host set drift: {name} differs from hexctl.py "
-                f"(only here: {sorted(ours[name] - declared[name]) or 'none'}; "
-                f"only there: {sorted(declared[name] - ours[name]) or 'none'})"
-            )
 
 
 def rate_limit_aware_message(path, error, authenticated):
@@ -324,15 +240,15 @@ def http_reader():
 
 def exclusion_reason(login, kind, excluded=EXCLUDED_MAINTAINERS):
     """Classify one account, returning a reason only when it is excluded."""
-    if is_host_login(login):
-        return "runtime host identity"
+    if is_non_human_login(login):
+        return "non-human account"
     if kind == "Bot":
         # ADR-016 records that the mechanical set does not cover unfamiliar
         # future host names. Ranking one would put a runtime in a file that
         # thanks people, so an unrecognised bot stops the run by name.
         raise Stop(
-            f"unknown identity: {login!r} is a Bot that is not in the host set; "
-            "extend HOST_PR_LOGINS in hexctl.py and here, then rerun"
+            f"unknown identity: {login!r} is a Bot that is not classified; "
+            "extend NON_HUMAN_PR_LOGINS in contributors.py, then rerun"
         )
     if kind != "User":
         raise Stop(f"unknown identity: {login!r} has account type {kind!r}, not User or Bot")
@@ -453,7 +369,7 @@ def merge_exclusions(groups):
 
 
 def corroborate_human_authorship(read, repo, login):
-    """Confirm at least one of a login's commits was authored by a non-host identity.
+    """Confirm at least one sampled commit has human attribution.
 
     The contributors endpoint resolves several author emails to one account,
     which is the whole reason it is used. This checks the resolution did not
@@ -467,10 +383,10 @@ def corroborate_human_authorship(read, repo, login):
     for item in items:
         author = (item.get("commit") or {}).get("author") or {}
         identities.append((str(author.get("name", "")), str(author.get("email", ""))))
-    human = [pair for pair in identities if not is_host_identity(*pair)]
+    human = [pair for pair in identities if not is_non_human_identity(*pair)]
     if not human:
         raise Stop(
-            f"every sampled commit for {login} was authored by a runtime host identity"
+            f"every sampled commit for {login} used non-human attribution"
         )
     return len(human), len(identities)
 
@@ -520,7 +436,7 @@ def issue_coverage(read, repo, ranked_logins, excluded_logins):
         if not login or login in seen:
             continue
         seen.add(login)
-        if login in ranked_logins or login in excluded_logins or is_host_login(login):
+        if login in ranked_logins or login in excluded_logins or is_non_human_login(login):
             continue
         uncounted.append(login)
     return sorted(uncounted), caveat
@@ -555,7 +471,6 @@ def validate_repository(repo):
 def compute(
     read,
     repo=REPOSITORY,
-    hexctl_path=None,
     excluded=EXCLUDED_MAINTAINERS,
     supplemental_pr_repositories=SUPPLEMENTAL_PR_REPOSITORIES,
 ):
@@ -574,8 +489,6 @@ def compute(
             raise Stop(f"duplicate pull-request repository: {supplemental}")
         seen_repositories.add(supplemental)
     pull_request_repositories = (repo,) + supplemental_pr_repositories
-    if hexctl_path is not None:
-        verify_host_set_parity(hexctl_path)
     rows = read_all_pages(
         read,
         f"/repos/{repo}/contributors?per_page={{per_page}}&page={{page}}",
@@ -894,16 +807,6 @@ def build_parser() -> argparse.ArgumentParser:
         description="Rank the repository's human contributors from resolved identity.",
     )
     parser.add_argument(
-        "--host-set",
-        action="store_true",
-        help="print the loaded runtime-host classification set as JSON and exit",
-    )
-    parser.add_argument(
-        "--verify-host-set",
-        action="store_true",
-        help="stop unless this module's host set matches hexctl.py's declaration",
-    )
-    parser.add_argument(
         "--json",
         action="store_true",
         help="compute the ranking and print it as JSON",
@@ -942,20 +845,11 @@ def repository_root() -> Path:
 def main(argv=None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    hexctl = repository_root() / HEXCTL_RELATIVE
     try:
-        if arguments.host_set:
-            print(json.dumps(host_set_payload(), indent=2, sort_keys=True))
-            return 0
-        if arguments.verify_host_set:
-            verify_host_set_parity(hexctl)
-            print("host set matches hexctl.py")
-            return 0
         if arguments.json or arguments.write or arguments.check:
             payload = compute(
                 http_reader(),
                 repo=arguments.repo,
-                hexctl_path=hexctl if hexctl.is_file() else None,
                 supplemental_pr_repositories=(
                     tuple(arguments.supplemental_pr_repositories)
                     if arguments.supplemental_pr_repositories

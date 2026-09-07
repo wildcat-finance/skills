@@ -7,8 +7,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY = ROOT / "SHOGGOTH.md"
-CONTRACT = "shoggoth-collective/v4"
-EXPECTED_SHA256 = "443791a7d70daaa89f3422069a725d52e64f007e20d07bbc4fa9046c8e49cbb1"
+CONTRACT = "shoggoth-collective/v5"
+EXPECTED_SHA256 = "8fc95b7e33d0dddb07671a641cebaadc17afe977ea3afcb1c419b602304aad4a"
 
 
 class ShoggothIdentityTests(unittest.TestCase):
@@ -56,21 +56,18 @@ class ShoggothIdentityTests(unittest.TestCase):
         self.assertIn("changes no authority, permission, authorship", text)
         self.assertIn("resolving a user's collective form of address", agent_text)
 
-    def test_governed_agent_work_uses_shoggoth_authorship(self):
+    def test_governed_work_uses_signature_only_admission(self):
         text = self.identity_text()
-        self.assertIn("Authorship follows the contributing actor", text)
-        self.assertIn("after invoking a Wildcat domain or phase skill", text)
-        self.assertIn("Every piece of work produced through the Shoggoth Interceptor", text)
-        self.assertIn("A human contributor keeps authorship", text)
-        self.assertIn("The human remains the Git author and signer", text)
-        self.assertIn("publishes through their own GitHub account", text)
-        self.assertIn("Never request, copy, upload or provision those Shoggoth credentials", text)
-        self.assertIn("Git authorship and publication are separate roles", text)
-        self.assertIn("committer and signer and uses their own repository account", text)
-        self.assertIn("while Shoggoth remains the author", text)
-        self.assertIn("Without explicit authority and a repository-valid signing route", text)
-        self.assertIn("An authorised human publisher of Shoggoth-authored work is not a human contributor", text)
-        self.assertIn("may retain the host's ordinary authorship", text)
+        self.assertIn("Fiat admission is signature-only", text)
+        self.assertIn("Author, committer, co-author", text)
+        self.assertIn("recorded attribution, not admission classes", text)
+        self.assertIn("Signature admission grants no publication authority", text)
+
+    def test_current_policy_is_signature_only_and_transport_neutral(self):
+        text = self.identity_text()
+        self.assertIn("Neither a Shoggoth co-author trailer", text)
+        self.assertIn("authenticated connector", text)
+        self.assertIn("equal standing", text)
 
 
 if __name__ == "__main__":

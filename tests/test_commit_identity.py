@@ -363,30 +363,29 @@ class RefusedIdentityTests(unittest.TestCase):
 
 
 class PolicyParityTests(unittest.TestCase):
-    def test_host_sets_are_the_existing_fiat_and_contributor_sets(self):
-        for name in (
-            "HOST_IDENTITY_NAMES",
-            "HOST_IDENTITY_EMAILS",
-            "HOST_PR_LOGINS",
-        ):
+    def test_host_sets_remain_local_to_the_hosted_status(self):
+        pairs = (
+            ("HOST_IDENTITY_NAMES", "NON_HUMAN_IDENTITY_NAMES"),
+            ("HOST_IDENTITY_EMAILS", "NON_HUMAN_IDENTITY_EMAILS"),
+            ("HOST_PR_LOGINS", "NON_HUMAN_PR_LOGINS"),
+        )
+        for compatibility_name, ranking_name in pairs:
             self.assertEqual(
-                getattr(policy.contributors, name), getattr(contributors, name)
+                getattr(policy.contributors, compatibility_name),
+                getattr(contributors, ranking_name),
             )
-            self.assertEqual(
-                getattr(policy.contributors, name), getattr(hexctl, name)
-            )
+            self.assertFalse(hasattr(hexctl, compatibility_name))
 
-    def test_message_and_login_grammars_match_fiat(self):
+    def test_only_shared_shape_grammars_match_fiat(self):
         self.assertEqual(policy.COAUTHOR_RE.pattern, hexctl.COAUTHOR_RE.pattern)
         self.assertEqual(policy.COAUTHOR_RE.flags, hexctl.COAUTHOR_RE.flags)
-        self.assertEqual(policy.HOST_BYLINE_RE.pattern, hexctl.HOST_BYLINE_RE.pattern)
-        self.assertEqual(policy.HOST_BYLINE_RE.flags, hexctl.HOST_BYLINE_RE.flags)
         self.assertEqual(policy.GITHUB_LOGIN_RE.pattern, hexctl.GITHUB_LOGIN_RE.pattern)
         self.assertEqual(policy.GITHUB_LOGIN_RE.flags, hexctl.GITHUB_LOGIN_RE.flags)
+        self.assertFalse(hasattr(hexctl, "HOST_BYLINE_RE"))
 
-    def test_provenance_trailers_match_fiat(self):
-        self.assertEqual(policy.COAUTHOR_TRAILER, hexctl.COAUTHOR_TRAILER)
-        self.assertEqual(policy.ORIGIN_TRAILER, hexctl.ORIGIN_TRAILER)
+    def test_hosted_status_trailers_are_not_fiat_requirements(self):
+        self.assertFalse(hasattr(hexctl, "COAUTHOR_TRAILER"))
+        self.assertFalse(hasattr(hexctl, "ORIGIN_TRAILER"))
 
 
 class WorkflowContractTests(unittest.TestCase):
