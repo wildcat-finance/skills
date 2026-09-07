@@ -62,3 +62,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: Round 2 rechecked the complete risk register after `9a0a1bde0848359d11ae8a769a6c329b7d1e0ea3`. The two round-1 findings remain fixed. Runtime-host refusals under `scripts/check_commit_identity.py` belong to the hosted identity workflow that Step 3 removes after its required status; they do not reach Fiat admission or contributor ranking. No further Step 2 lead warrants another round.
+
+## Step 3, round 1 -- 2026-09-07T13:44:45Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: signature-loss=reviewed; residual-host-ban=reviewed; residual-trailer-mandate=reviewed; identity-job-wedge=reviewed; ruleset-overwrite=reviewed; connector-evidence-gap=reviewed; contributor-policy-leak=reviewed; shoggoth-lookalike-residue=reviewed; historical-record-rewrite=reviewed; generated-copy-drift=reviewed; signature-fixture-masking=reviewed; authority-confusion=reviewed
+
+Not checked: the external Interceptor repository; outside Step 3 hosted-status retirement scope
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Fresh authenticated readback of `wildcat-finance/skills` ruleset `21830871` matched the recorded postimage canonical SHA-256 `2eff233ed09c08b0ca1ecbf31cc82df12658154e4c06fe9aa619e7a0e6b55239`: `invariants` remains the sole required context, and enforcement, bypass actors, conditions, and unrelated fields are unchanged. The exact comparator covers wrong repository, changed preimage, partial response, and unrelated drift. Commit `27a9622a10768c1f9acacc21e62c2c46b0f2b4d3` has a valid signature from `3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A`. The complete checked runner and the 2,447-test Elenchus report were green. No further Step 3 lead warrants another round.
