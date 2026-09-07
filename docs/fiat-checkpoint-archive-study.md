@@ -905,3 +905,32 @@ and the draft's numbering path was compared with the allocator's.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
 broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit broken.
 Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-09-07
+
+**What changed.** The study gains the closed Hypomnema design bridge below, so
+the join from the selected candidate to its decision home is machine-checked
+rather than only stated in section 12. Nothing else changes: the design record,
+its candidates, criteria, results and selection, every constraint, criterion,
+budget, refusal class and fixture id stand as receipted.
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | native-subcommands
+record | docs/decisions/drafts/build-the-outer-checkpoint-archive-natively.md
+```
+
+**Why.** Step 1's audit round 1 recorded S1-R1-01 (low): `python3
+plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py --study
+docs/fiat-checkpoint-archive-study.md --design-evidence
+.hexaemeron/design-evidence.json --repo-root .` exited 1 with `H008 study has
+no design bridge block`, and a probe copy carrying these exact three rows
+exited 0 against the same design record. The bridge is not part of any step's
+exit and the ordinary Hypomnema walk never infers one, so the finding is low;
+the fence costs three rows and makes the claim checkable.
+**Steps touched.** Step 1's tracked byte-identical copies of this study and the
+runbook, which are re-copied on the audit branch as the finding's fix. No
+step's entry, exit, files, tests or disciplines change.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
