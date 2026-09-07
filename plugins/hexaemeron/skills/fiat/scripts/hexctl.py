@@ -2221,6 +2221,9 @@ def held_lock(base_dir: str, command: str):
             yield
             return
         os.makedirs(root, exist_ok=True)
+        created_root = True
+    else:
+        created_root = False
 
     path = lock_path(base_dir)
     try:
@@ -2273,6 +2276,21 @@ def held_lock(base_dir: str, command: str):
     finally:
         if acquired:
             try:
+                # An `init` that routed a filed `0` built nothing, and the
+                # directive it printed says so. This directory and this lock
+                # are the only things that would contradict it, so an
+                # invocation that created the root and left it otherwise empty
+                # takes it away again. The unlink happens while the lock is
+                # still held: a contender cannot be holding this inode, and one
+                # that opens the path afterwards creates its own and is right
+                # to, because nothing here owns the run any more.
+                if created_root and not os.path.exists(state_path(base_dir)):
+                    try:
+                        if os.listdir(root) == ["lock"]:
+                            os.unlink(path)
+                            os.rmdir(root)
+                    except OSError:
+                        pass
                 os.ftruncate(fd, 0)
                 os.fsync(fd)
                 fcntl.flock(fd, fcntl.LOCK_UN)
@@ -2657,6 +2675,14 @@ def cmd_init(args) -> None:
     # question nobody asked.
     if args.task_issue is not None:
         task_issue_contract = read_task_issue_contract(args.dir, args.task_issue)
+        if task_issue_contract["fiat_required"] == 0:
+            # The filer answered that this work does not need a run, so the
+            # answer is reported and nothing is built. This sits before the
+            # first mutation deliberately: the directive's claim that no state,
+            # worktree or branch exists is true because none has been made yet,
+            # not because something was cleaned up afterwards.
+            print(json.dumps(routed_filing_directive(task_issue_contract)))
+            sys.exit(0)
     else:
         task_issue_contract = {
             "issue": None,
@@ -5028,22 +5054,69 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
             + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
             f"line and one `{CARRYOVER_INFO}` block, then start the run again"
         )
-    if record["fiat_required"] == 0:
-        die(
-            f"{label} declares `{FIAT_REQUIRED_KEY}: 0`: the filer decided this "
-            f"work does not need a Fiat run. No run state, worktree or branch "
-            f"was created. Do the work as one independent pull request, point "
-            f"the issue at that pull request, and close it there. If that "
-            f"decision was wrong, change the issue to "
-            f"`{FIAT_REQUIRED_KEY}: 1` and say why in the issue before "
-            f"starting a run.",
-            1,
-        )
+    # A filed `0` is not a fault, so it does not refuse here. This reader
+    # reports what the issue decided and `cmd_init` routes it, which keeps the
+    # decision about what to do with a `0` in one place instead of two.
+    # `adr/route-a-filed-zero-as-an-answer` records why it stopped being an
+    # error, and why the bytes that used to end this refusal are gone.
     return {
         "issue": issue_url,
         "repository": repository,
         "number": number,
         **record,
+    }
+
+
+def routed_filing_directive(contract: dict) -> dict:
+    """The directive a filed `Fiat-Required: 0` earns, in place of a refusal.
+
+    A `0` is the filer's answer to whether this work needs a run, so `init`
+    reports the route that answer chose rather than failing on it. The object
+    is the shape the loop's other directives already carry, and the closure
+    block is the one `done integrate` already emits, so a caller that parses a
+    directive parses this without new grammar.
+
+    It names no mechanism that would grant a run instead. That is the whole
+    point: the refusal this replaces ended by naming the edit that turned it
+    off, and an agent told to start a run read that as the instruction for
+    doing so. Nothing here can be read that way, because nothing here is a
+    door.
+
+    Every issue-derived string passes `clean`, because an agent consumes this
+    object and an issue body is somebody else's text.
+    """
+    issue = clean(str(contract["issue"]))
+    repository = clean(str(contract["repository"]))
+    number = clean(str(contract["number"]))
+    rows = []
+    for row in contract.get("carryover") or []:
+        rows.append({
+            key: clean(str(value)) if isinstance(value, str) else value
+            for key, value in row.items()
+        })
+    return {
+        "do": "pull-request",
+        "reason": f"the task issue declares `{FIAT_REQUIRED_KEY}: 0`",
+        "task_issue": issue,
+        "repository": repository,
+        "number": number,
+        "fiat_required": 0,
+        "route": (
+            "do the work as one independent pull request; no run state, "
+            "worktree or branch was created and none is owed"
+        ),
+        "run_state": None,
+        "worktree": None,
+        "branch": None,
+        "carryover": rows,
+        "task_issue_closure": {
+            "issue": issue,
+            "required_before_merge": f"Closes {repository}#{number}",
+            "gate": (
+                "the issue closes on that pull request; no Fiat receipt is "
+                "owed because no run exists to record one"
+            ),
+        },
     }
 
 
