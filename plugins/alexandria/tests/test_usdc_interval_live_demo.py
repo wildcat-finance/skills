@@ -11,7 +11,9 @@ The example is loaded by path under its own module name. The synthetic
 example's directory on `sys.path` would let one shadow the other.
 """
 
+import contextlib
 import importlib.util
+import io
 import json
 from pathlib import Path
 import shutil
@@ -336,6 +338,82 @@ class MissingArtefactTests(LiveDemoTestCase):
         for claim in ("finalized", "traces", "no network", "provider class"):
             self.assertIn(claim, readme)
         self.assertNotIn("https://", readme)
+
+
+class ConformanceHarnessBoundaryTests(unittest.TestCase):
+    """The live gate's harness hands each child exactly one endpoint variable.
+
+    The gate reads the primary endpoint from `ALEXANDRIA_COMPOUND_RPC_URL` and
+    the second transport from the harness-only
+    `ALEXANDRIA_CONFORMANCE_SECOND_RPC_URL`, and both are set on one command
+    line. A child that keeps the harness variable is a test holding an
+    endpoint, which the run's `endpoint-leak` risk refuses, so every path that
+    starts a child is held to the same rule here.
+    """
+
+    HARNESS = (
+        PLUGIN / "docs" / "usdc-interval-live" / "design" / "conformance.py"
+    )
+    PRIMARY = "https://primary.example.invalid/rpc"
+    SECOND = "https://second.example.invalid/rpc"
+
+    def harness(self):
+        if not self.HARNESS.is_file():
+            raise AssertionError(f"the conformance harness is missing at {self.HARNESS}")
+        name = "alexandria_live_conformance_harness"
+        if name in sys.modules:
+            return sys.modules[name]
+        spec = importlib.util.spec_from_file_location(name, self.HARNESS)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+        return module
+
+    def environment(self):
+        return {
+            "PATH": "/usr/bin",
+            "ALEXANDRIA_COMPOUND_RPC_URL": self.PRIMARY,
+            "ALEXANDRIA_CONFORMANCE_SECOND_RPC_URL": self.SECOND,
+        }
+
+    def test_a_live_child_receives_one_endpoint_under_the_collector_variable(self):
+        module = self.harness()
+        with mock.patch.dict("os.environ", self.environment(), clear=True):
+            for name, expected in (
+                (module.ENDPOINT_ENV, self.PRIMARY),
+                (module.SECOND_ENDPOINT_ENV, self.SECOND),
+            ):
+                child = module._endpoint_environment(name)
+                self.assertEqual(child[module.ENDPOINT_ENV], expected)
+                self.assertNotIn(module.SECOND_ENDPOINT_ENV, child)
+
+    def test_a_test_child_receives_neither_endpoint_variable(self):
+        module = self.harness()
+        captured = {}
+
+        class Completed:
+            returncode = 0
+
+        def record(argv, **keywords):
+            captured["env"] = keywords["env"]
+            return Completed()
+
+        with mock.patch.dict("os.environ", self.environment(), clear=True):
+            with mock.patch.object(module.subprocess, "run", record):
+                with mock.patch.object(module, "write_report", lambda *a, **k: self.HARNESS):
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        module.run("scope-binds-both-hashes")
+        child = captured["env"]
+        self.assertNotIn(module.ENDPOINT_ENV, child)
+        self.assertNotIn(module.SECOND_ENDPOINT_ENV, child)
+        self.assertNotIn(self.PRIMARY, child.values())
+        self.assertNotIn(self.SECOND, child.values())
+
+    def test_the_harness_names_no_endpoint_in_its_own_bytes(self):
+        source = self.HARNESS.read_text(encoding="utf-8")
+        self.assertIn("ALEXANDRIA_COMPOUND_RPC_URL", source)
+        self.assertIn("ALEXANDRIA_CONFORMANCE_SECOND_RPC_URL", source)
+        self.assertNotIn("https://", source)
 
 
 if __name__ == "__main__":

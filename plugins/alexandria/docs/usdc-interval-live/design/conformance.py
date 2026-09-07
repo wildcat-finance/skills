@@ -19,8 +19,8 @@ runs the collector's `collect` against the primary provider and its
 Each endpoint reaches exactly one child process, through the collector's own
 `ALEXANDRIA_COMPOUND_RPC_URL` and nothing else, and no endpoint is written to
 the report, the measurement or any other file. Every other criterion runs
-tests under the suite's socket denial with the endpoint variable stripped from
-the child's environment.
+tests under the suite's socket denial with both endpoint variables stripped
+from the child's environment, so no endpoint reaches a test.
 """
 
 from __future__ import annotations
@@ -230,7 +230,14 @@ def run(criterion: str) -> int:
         return 2
     root = repository_root()
     argv = [sys.executable, "-m", "unittest", *targets]
-    environment = {key: value for key, value in os.environ.items() if key != ENDPOINT_ENV}
+    # Both endpoint variables are stripped, not only the collector's own. The
+    # harness variable is set on the same command line as the collector's, so
+    # leaving it in place handed every test child the second endpoint under its
+    # own name -- an endpoint reaching a test, which `endpoint-leak` refuses.
+    environment = {
+        key: value for key, value in os.environ.items()
+        if key not in (ENDPOINT_ENV, SECOND_ENDPOINT_ENV)
+    }
     try:
         completed = subprocess.run(
             argv, cwd=root / "plugins" / "alexandria", env=environment,
