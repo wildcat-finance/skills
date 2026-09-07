@@ -82,6 +82,7 @@ RECONCILIATION_RECORD = "reconciliation.json"
 DISPUTED_RESPONSES = "disputed.jsonl"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
+BOUNDARY_CLASS = "boundary-blocks"
 CODE_COMPONENT = "implementation-code"
 CODE_FORMAT = "alexandria-interval-implementation-code/v1"
 RELEASE_NAME = "usdc-interval-v0"
@@ -440,7 +441,7 @@ def declared_classes(plan) -> tuple:
     the plan did not declare.
     """
     classes = tuple(plan["evidence_classes"])
-    if "boundary-blocks" not in classes:
+    if BOUNDARY_CLASS not in classes:
         raise AlexandriaError(
             "the plan must declare the boundary-blocks evidence class; every shard "
             "is bound by its boundary block"
@@ -1596,9 +1597,12 @@ def check_interval(release_root: Path) -> dict:
         raise AlexandriaError("the reconciliation record belongs to a different plan")
     validate_reconciliation(reconciliation["reconciliation"])
     validate_shard_coverage(reconciliation["shards"], plan["shards"], classes)
-    if [shard["status"] for shard in reconciliation["shards"]] != [
-        shard["status"] for shard in shards
-    ]:
+    # The two shard tables are one table written twice. Only their statuses
+    # were compared, so the reconciliation copy could carry another boundary
+    # hash or another record count than the receipt's -- neither of which any
+    # other check reads -- and a reader of the reconciliation alone would
+    # believe it. They must agree entry for entry.
+    if reconciliation["shards"] != shards:
         raise AlexandriaError("the reconciliation and the receipt disagree about a shard")
     # The receipt carries its own copy of the comparison, which the builder
     # takes from this record. Only the record's copy was checked, so a receipt
@@ -1613,7 +1617,14 @@ def check_interval(release_root: Path) -> dict:
         shard["index"] for shard in shards if shard["status"] != "complete"
     }
     captures = {capture["id"]: capture for capture in manifest["captures"]}
+    # Every component's coverage and scope are read under the component's own
+    # name below and in `_check_scopes`. The builder gives each capture the
+    # name of the component it preserves; a release whose captures name
+    # something else raised a KeyError there instead of refusing.
+    for name in sorted(expected_components - set(captures)):
+        raise AlexandriaError(f"the release carries no capture for its {name} component")
     derived = {shard["index"]: {} for shard in plan["shards"]}
+    boundary_headers = {}
     virtual = len(plan["shards"])
     for name in journal_names:
         journal = documents[name]
@@ -1672,9 +1683,15 @@ def check_interval(release_root: Path) -> dict:
                     max_bytes=MAX_RAW_COMPONENT_BYTES,
                 )
                 result = envelope.get("result")
-                derived[record["shard"]][name] = (
+                # Two records of one class for one shard are two reads, so
+                # their sizes add. Assigning here declared the last record's
+                # size alone, so a journal could carry a shard's evidence
+                # twice while the receipt's count named one read of it.
+                derived[record["shard"]][name] = derived[record["shard"]].get(name, 0) + (
                     len(result) if isinstance(result, list) else 1
                 )
+                if name == BOUNDARY_CLASS:
+                    boundary_headers[record["shard"]] = result
         gaps = captures[name]["coverage"]["gaps"]
         for index in sorted(disputed):
             if not any(f"shard {index}," in gap for gap in gaps):
@@ -1697,6 +1714,32 @@ def check_interval(release_root: Path) -> dict:
         if shard["record_counts"] != derived[shard["index"]]:
             raise AlexandriaError(
                 f"shard {shard['index']} declares record counts the journals do not carry"
+            )
+
+    # Every shard's boundary hash, re-read from the release's own
+    # `boundary-blocks` journal. The collector took each one from an
+    # `eth_getBlockByNumber` at that shard's last block and the journal
+    # preserves that read, so the declared hash is compared with the bytes it
+    # describes rather than believed. Without this the interval's own end
+    # hash was pinned only to the epoch table, which the derivation takes
+    # from the same declared value, so it was pinned to itself.
+    for shard in shards:
+        header = boundary_headers.get(shard["index"])
+        if not isinstance(header, dict) or not isinstance(header.get("hash"), str):
+            raise AlexandriaError(
+                f"the boundary-blocks record for shard {shard['index']} preserves no block header"
+            )
+        label = f"the boundary-blocks header for shard {shard['index']}"
+        if _hex(header.get("number"), f"{label} block number") != shard["end"]:
+            raise AlexandriaError(
+                f"{label} preserves block {header['number']}, not the shard's last "
+                f"block {shard['end']}"
+            )
+        if header["hash"] != shard["end_hash"]:
+            raise AlexandriaError(
+                f"shard {shard['index']} declares boundary hash {shard['end_hash']}, which "
+                f"its preserved boundary read does not carry; that read carries "
+                f"{header['hash']}"
             )
 
     # The opening reads, replayed from the release's own journal: they name
@@ -1834,13 +1877,26 @@ def _check_scopes(manifest, plan, journal_names, first_hash: str, end_hash: str)
     The start hash is compared with the hash the collector's own first-block
     read carries, never with the epoch table; the end hash with the last
     shard's boundary read. A scope with one hash and not the other, another
-    finality class, or a hash from elsewhere refuses by name.
+    finality class, a block range other than the plan's, or a hash from
+    elsewhere refuses by name.
     """
     expected_finality = scope_finality(plan)
+    planned = plan["interval"]
     captures = {capture["id"]: capture for capture in manifest["captures"]}
     for name in journal_names:
         scope = captures[name]["scope"]
         interval = scope["interval"]
+        # The block range beside the two hashes was declared and never
+        # compared, so a scope could name a range the release does not cover
+        # while carrying the hashes of the range it does.
+        if (
+            str(interval["start"]) != str(planned["start"])
+            or str(interval["end"]) != str(planned["end"])
+        ):
+            raise AlexandriaError(
+                f"the {name} scope declares blocks {interval['start']} to {interval['end']}, "
+                f"not the plan's {planned['start']} to {planned['end']}"
+            )
         has_start = "start_hash" in interval
         has_end = "end_hash" in interval
         if has_start != has_end:

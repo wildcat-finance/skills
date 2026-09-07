@@ -2343,6 +2343,213 @@ class CodeHashRecheckTests(ReleaseTestCase):
         self.assertEqual(after, before)
 
 
+class DeclaredValueRecheckTests(ReleaseTestCase):
+    """Every quantity the release declares is compared with the bytes it describes.
+
+    Against a check that reads a declared value without recomputing it, each
+    case here passes for the wrong reason: the shard table's boundary hash
+    stood beside the preserved read that produced it and was never compared
+    with it, the reconciliation record carried its own uncompared copy of the
+    shard table's hashes and counts, an evidence scope declared a block range
+    nothing held against the plan's, and a shard's record count named one
+    read where the journal carried two.
+    """
+
+    def released(self, name="declared"):
+        staging, output = self.pipeline(name)
+        self.build(staging, output)
+        return output
+
+    def rewrite(self, output, name, edit):
+        """Edit one component's document in place, leaving the manifest as it was."""
+        path = component_path(output, name)
+        document = json.loads(path.read_text())
+        edit(document)
+        path.write_bytes(canonical_bytes(document))
+        return document
+
+    def rewrite_manifest(self, output, edit):
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        edit(manifest)
+        path.write_bytes(canonical_bytes(manifest))
+        return manifest
+
+    def check_without_verify(self, output):
+        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
+        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+            return check_interval(output)
+
+    def refusal(self, output):
+        try:
+            self.check_without_verify(output)
+        except Exception as error:  # noqa: BLE001 - the type is the claim
+            return error
+        return None
+
+    def boundary_record(self, document, shard):
+        return next(
+            record for record in document["records"] if record["shard"] == shard
+        )
+
+    def set_boundary_result(self, output, shard, edit):
+        def rewrite(document):
+            record = self.boundary_record(document, shard)
+            envelope = json.loads(record["response"])
+            edit(envelope["result"])
+            record["response"] = json.dumps(
+                envelope, separators=(",", ":"), sort_keys=True
+            )
+
+        self.rewrite(output, "boundary-blocks", rewrite)
+
+    def test_a_shard_boundary_hash_is_compared_with_its_preserved_read(self):
+        """The declared hash and the read that produced it cannot move apart."""
+        fabricated = "0x" + "de" * 32
+        cases = (
+            (
+                "declared-hash",
+                lambda output: (
+                    self.rewrite(
+                        output, "epoch-table",
+                        lambda receipt: receipt["shards"][0].__setitem__("end_hash", fabricated),
+                    ),
+                    self.rewrite(
+                        output, "reconciliation",
+                        lambda record: record["shards"][0].__setitem__("end_hash", fabricated),
+                    ),
+                ),
+                "shard 0 declares boundary hash .* which its preserved boundary read does not carry",
+            ),
+            (
+                "preserved-hash",
+                lambda output: self.set_boundary_result(
+                    output, 0, lambda result: result.__setitem__("hash", fabricated)
+                ),
+                "shard 0 declares boundary hash .* which its preserved boundary read does not carry",
+            ),
+            (
+                "preserved-number",
+                lambda output: self.set_boundary_result(
+                    output, 0, lambda result: result.__setitem__("number", "0xdeadbe")
+                ),
+                "preserves block 0xdeadbe, not the shard's last block",
+            ),
+            (
+                "no-number",
+                lambda output: self.set_boundary_result(
+                    output, 0, lambda result: result.pop("number")
+                ),
+                "block number is not a hexadecimal quantity",
+            ),
+            (
+                "no-header",
+                lambda output: self.set_boundary_result(
+                    output, 0, lambda result: result.pop("hash")
+                ),
+                "the boundary-blocks record for shard 0 preserves no block header",
+            ),
+        )
+        for label, edit, expected in cases:
+            with self.subTest(label=label):
+                output = self.released(f"boundary-{label}")
+                edit(output)
+                # A parent compares the last shard's hash only with the epoch
+                # table, which its own derivation takes from that same
+                # declared value, so every case here is accepted there.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), expected)
+
+    def test_the_last_shards_boundary_hash_is_compared_with_its_preserved_read(self):
+        """The interval's own end hash is bound to a read, not to itself."""
+        output = self.released("boundary-last")
+        receipt = component_document(output, "epoch-table")
+        last = receipt["shards"][-1]
+        fabricated = "0x" + "ab" * 32
+        self.set_boundary_result(
+            output, last["index"], lambda result: result.__setitem__("hash", fabricated)
+        )
+        raised = self.refusal(output)
+        self.assertIsInstance(raised, AlexandriaError)
+        self.assertRegex(
+            str(raised),
+            f"shard {last['index']} declares boundary hash .* which its preserved "
+            "boundary read does not carry",
+        )
+
+    def test_a_reconciliation_shard_table_differing_from_the_receipts_is_refused(self):
+        """The two copies of one shard table must agree entry for entry."""
+        cases = (
+            ("end-hash", lambda entry: entry.__setitem__("end_hash", "0x" + "cd" * 32)),
+            ("record-counts", lambda entry: entry["record_counts"].__setitem__("logs", 9999)),
+        )
+        for label, edit in cases:
+            with self.subTest(label=label):
+                output = self.released(f"reconciliation-table-{label}")
+                # A parent compares only the two tables' statuses, so a
+                # fabricated hash or count in this copy is accepted there and
+                # read by nothing else.
+                self.rewrite(
+                    output, "reconciliation", lambda record: edit(record["shards"][0])
+                )
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), "disagree about a shard")
+
+    def test_an_evidence_scope_declaring_another_block_range_is_refused(self):
+        """The range beside the two checked hashes is checked as well."""
+        for name in JOURNAL_CLASSES:
+            with self.subTest(component=name):
+                output = self.released(f"scope-range-{name}")
+
+                def edit(manifest, component=name):
+                    for capture in manifest["captures"]:
+                        if capture["id"] == component:
+                            interval = capture["scope"]["interval"]
+                            interval["start"] = str(int(interval["start"]) + 1)
+
+                self.rewrite_manifest(output, edit)
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), f"the {name} scope declares blocks .* not the plan's")
+
+    def test_a_capture_that_names_no_component_of_the_release_is_refused(self):
+        """The coverage and the scope are read under the component's own name."""
+        output = self.released("capture-id")
+
+        def edit(manifest):
+            for capture in manifest["captures"]:
+                if capture["id"] == "traces":
+                    capture["id"] = "x"
+
+        self.rewrite_manifest(output, edit)
+        # A parent indexes the capture map straight, so this raises a KeyError
+        # where the coverage gaps are read rather than refusing by name.
+        raised = self.refusal(output)
+        self.assertIsInstance(raised, AlexandriaError)
+        self.assertRegex(str(raised), "carries no capture for its traces component")
+
+    def test_a_shard_carrying_one_class_twice_declares_both_reads(self):
+        """A record count names what the journal holds, not its last record alone."""
+        output = self.released("duplicate-read")
+        journal = component_document(output, "logs")
+        original = next(record for record in journal["records"] if record["shard"] == 0)
+
+        def duplicate(document):
+            record = next(item for item in document["records"] if item["shard"] == 0)
+            document["records"].insert(1, deepcopy(record))
+
+        self.rewrite(output, "logs", duplicate)
+        # A parent assigns each record's size to its shard rather than adding
+        # it, so the second read leaves the declared count untouched and the
+        # release carries evidence its own receipt does not count.
+        raised = self.refusal(output)
+        self.assertIsInstance(raised, AlexandriaError)
+        self.assertRegex(str(raised), "shard 0 declares record counts the journals do not carry")
+        self.assertEqual(original["shard"], 0)
+
+
 class CheckpointOpeningOffsetTests(CollectorTestCase):
     """A checkpoint below the plan's last shard cannot have committed an opening read."""
 
