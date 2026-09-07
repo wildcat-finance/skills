@@ -2254,6 +2254,52 @@ class CodeHashRecheckTests(ReleaseTestCase):
                     "a logs journal record carries a shard index that is not a whole number",
                 )
 
+    def test_a_reconciliation_component_of_an_unknown_shape_is_refused_by_name(self):
+        """The last record shape the check reads is shape-checked like the others."""
+        cases = (
+            ("null-record", lambda document: document.__setitem__("reconciliation", None),
+             "records no reconciliation"),
+            ("no-plan-digest", lambda document: document.pop("plan_sha256"),
+             "reconciliation component has an unknown shape"),
+            ("no-record", lambda document: document.pop("reconciliation"),
+             "reconciliation component has an unknown shape"),
+            ("wrong-format", lambda document: document.__setitem__("format", "other/v1"),
+             "reconciliation component has an unknown shape"),
+        )
+        for label, edit, expected in cases:
+            with self.subTest(label=label):
+                output = self.released(f"reconciliation-shape-{label}")
+                self.rewrite(output, "reconciliation", edit)
+                raised = None
+                try:
+                    self.check_without_verify(output)
+                except Exception as error:  # noqa: BLE001 - the type is the claim
+                    raised = error
+                # A parent that reads the component's fields without checking
+                # them raises a KeyError on an absent field and a TypeError on
+                # a null record where the status is read at the return, and
+                # accepts a wrong format, so the type is asserted rather than
+                # matched: the claim is a named refusal, not any failure.
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), expected)
+
+    def test_a_receipt_declaring_another_comparison_than_the_record_is_refused(self):
+        """The receipt's copy of the comparison is not believed on its own word."""
+        output = self.released("fabricated-comparison")
+        self.rewrite(
+            output, "reconciliation",
+            lambda document: document["reconciliation"].__setitem__("status", "unreconciled"),
+        )
+        raised = None
+        try:
+            self.check_without_verify(output)
+        except Exception as error:  # noqa: BLE001 - the type is the claim
+            raised = error
+        # A parent compares only the record's own copy, so it accepts the
+        # receipt's `agreed` beside a record that says otherwise.
+        self.assertIsInstance(raised, AlexandriaError)
+        self.assertRegex(str(raised), "declare different comparisons")
+
     def test_an_epoch_table_the_opening_reads_do_not_derive_is_refused(self):
         output = self.released("undeclared-epoch")
 

@@ -81,6 +81,7 @@ RECONCILIATION_DIRECTORY = "reconciliation"
 RECONCILIATION_RECORD = "reconciliation.json"
 DISPUTED_RESPONSES = "disputed.jsonl"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
+RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
 CODE_COMPONENT = "implementation-code"
 CODE_FORMAT = "alexandria-interval-implementation-code/v1"
 RELEASE_NAME = "usdc-interval-v0"
@@ -1080,7 +1081,7 @@ class Reconciler:
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         document = {
-            "format": "alexandria-interval-reconciliation/v1",
+            "format": RECONCILIATION_FORMAT,
             "plan_sha256": plan_digest(self.plan),
             "reconciliation": record,
             "shards": table,
@@ -1572,7 +1573,25 @@ def check_interval(release_root: Path) -> dict:
     if int(finality["block_number"]) < end:
         raise AlexandriaError("the release's interval ends above its finality boundary")
 
+    # The reconciliation component is the last record shape this check reads,
+    # and it was the only one read without a shape check: its fields were
+    # indexed straight, and `validate_reconciliation` tolerates a null record
+    # for a run that has not compared providers yet. So an absent field raised
+    # a KeyError, a null record raised a TypeError where the status is read at
+    # the return, and a wrong format was accepted. The shape is settled here,
+    # once, on the same terms as the epoch table and the journals.
     reconciliation = documents["reconciliation"]
+    if (
+        not isinstance(reconciliation, dict)
+        or set(reconciliation) != {"format", "plan_sha256", "reconciliation", "shards"}
+        or reconciliation["format"] != RECONCILIATION_FORMAT
+    ):
+        raise AlexandriaError("the reconciliation component has an unknown shape")
+    if reconciliation["reconciliation"] is None:
+        raise AlexandriaError(
+            "the reconciliation component records no reconciliation, so the release "
+            "carries no second-provider comparison"
+        )
     if reconciliation["plan_sha256"] != plan_digest(plan):
         raise AlexandriaError("the reconciliation record belongs to a different plan")
     validate_reconciliation(reconciliation["reconciliation"])
@@ -1581,6 +1600,14 @@ def check_interval(release_root: Path) -> dict:
         shard["status"] for shard in shards
     ]:
         raise AlexandriaError("the reconciliation and the receipt disagree about a shard")
+    # The receipt carries its own copy of the comparison, which the builder
+    # takes from this record. Only the record's copy was checked, so a receipt
+    # could declare `agreed` over any number of comparisons while the record
+    # said `unreconciled`, and a reader of the receipt alone would believe it.
+    if receipt["reconciliation"] != reconciliation["reconciliation"]:
+        raise AlexandriaError(
+            "the receipt and the reconciliation record declare different comparisons"
+        )
 
     disputed = {
         shard["index"] for shard in shards if shard["status"] != "complete"
