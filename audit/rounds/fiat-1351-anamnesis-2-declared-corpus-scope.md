@@ -1,0 +1,32 @@
+## Step 1, round 1 -- 2026-09-07T12:34:30Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=not-applicable; constant-removed=not-applicable; scope-both-ways=not-applicable; estate-provenance=not-applicable; private-origin-unnamed=reviewed; disclosure-assumption=reviewed; pilot-rebuild-drift=reviewed; killed-build=not-applicable; ledger-arithmetic=not-applicable; stale-prose=not-applicable; demo-status=not-applicable
+
+Not checked: the security suite is waived for this run and the waiver is on the ledger; this step adds Markdown, JSON and Python tests and changes no Solidity, so x-ray, solidity-auditor and fizz have no target. Eight register ids name artefacts that do not exist at this commit: the scope object, the removed constant, the both-ways check and the demonstration ledger are owed by step 2, the estate specimen's provenance and the killed-build guard by step 3, the ledger row and the prose reconciliation by step 4. Also unchecked: hosted CI, the controller receipt, push and publication, and whether the study's selection is correct, which this step commits rather than establishes.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | plugins/anamnesis/docs/corpus-scope/reports/resolve.py | `main` wrote its report to the fixed relative path `.hexaemeron/reports/<candidate>-<criterion>.json`, so one rerun of the committed copy from the repository root replaced the receipted `release-policy-scope-pilot-artefacts-rebuilt.json` and `design_evidence.py --transition design-lock` refused D005 until the report was restored from the committed copy. A reproducibility script that writes into controller state cannot be rerun safely. The report is now printed and written only to a caller-named `--out` path that must not already exist | fixed in this round |
+| S1-R1-02 | medium | plugins/anamnesis/docs/corpus-scope/reports/resolve.py | `pilot-artefacts-rebuilt` reran to 8 against the recorded 7 for `release-policy-scope` and 7 against 6 for `admission-policy-scope`, because the `git grep` over `plugins/anamnesis` counted the committed study copy, which quotes the pilot release id and program digest without being a pilot artefact. The grep now excludes `plugins/anamnesis/docs`; the four cells rerun to 7, 6, 0 and 1 at this tree and the 32 receipted reports are byte-identical to the committed ones | fixed in this round |
+
+Leads not pursued: the resolver reproduces the record only at a tree where the pilot's tokens and `seed_scope` stand as the study measured them, because `scope-recovery-by-policy-edit` exits when the literal bound is absent and `estate-findings-admissible-without-widening` calls `seed_scope`, so from step 2 onward those cells rerun only at commit 0bc39f27 or ce8c84f9; the guard reruns the four `pilot-artefacts-rebuilt` cells, whose file set later steps do not change, and no other. `acceptance-check-ms` is a timing and never reproduces exactly, as the record says. A stray `.hexaemeron/reports/probe-manifest-killed-probe-recovery.json` is a Surveyor probe the record does not name and the committed set omits; it stays out of the tree. Evidence for the covered concerns: phylax and ephoros exited 0 over the 40 changed paths passed through xargs, hypomnema exited 0 over the two docs copies and the record directory, the anamnesis suite ran 203 tests with 1 skip, the root suite ran green under greenlight at the record commit, `git diff --check`, `audit_synopsis.py --check .` and `horos.py check .` exited 0, the committed study, runbook and record are byte-identical to the receipted artefacts, `elenchus.py --step 8` refuses with exit 3 and writes no report, a tampered report fails `test_s7_records`, and no committed byte names a repository, branch or path of the maintainer-held documents.
+
+## Step 1, round 2 -- 2026-09-07T12:44:09Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=not-applicable; constant-removed=not-applicable; scope-both-ways=not-applicable; estate-provenance=not-applicable; private-origin-unnamed=reviewed; disclosure-assumption=reviewed; pilot-rebuild-drift=reviewed; killed-build=not-applicable; ledger-arithmetic=not-applicable; stale-prose=not-applicable; demo-status=not-applicable
+
+Not checked: unchanged from round 1. The suite waiver still holds and the eight not-applicable register ids are still owed by steps 2, 3 and 4. Round 2 re-ran the three lints and the check-map selection for this diff over the fixed tree (10 checks green, root suite 1623 tests in 218 s), then reviewed round 1's fix: `--out` refuses an existing path, including a symlink, with exit 2 and leaves it untouched; a rerun without `--out` prints the report and writes nothing; the exclude pathspec drops only `plugins/anamnesis/docs` from the four `pilot-artefacts-rebuilt` greps; the three guards pass on this tree and failed on the parent.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: none beyond round 1's, which stand as recorded.
