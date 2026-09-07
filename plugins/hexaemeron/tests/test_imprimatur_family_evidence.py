@@ -84,15 +84,20 @@ def jsonl(rows) -> str:
     return "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in rows)
 
 
-def issue_families() -> list[dict]:
+def issue_families(body: str | None = None) -> list[dict]:
     """Parse the checked-in issue body into one record per family heading."""
     group = None
     rows: list[dict] = []
     current = None
-    for line in ISSUE.read_text(encoding="utf-8").splitlines():
+    if body is None:
+        body = ISSUE.read_text(encoding="utf-8")
+    for line in body.splitlines():
         if line.startswith("## "):
             heading = line[3:].strip()
             group = heading if heading in GROUPS else None
+            # Leaving a family group closes the open record. Without this a
+            # field line under a later section is folded into the last family.
+            current = None
             continue
         if line.startswith("### ") and group is not None:
             current = {"family_id": line[4:].strip(), "group": group}
@@ -107,18 +112,41 @@ def issue_families() -> list[dict]:
     return rows
 
 
+def issue_evidence_targets() -> tuple[set[str], set[str]]:
+    """Read the 13 named evidence targets out of the issue's own packet."""
+    body = ISSUE.read_text(encoding="utf-8")
+    match = re.search(
+        r"The current high-value evidence targets are (.+?)\. "
+        r"The signal targets are (.+?)\.",
+        body,
+    )
+    assert match is not None, "the issue no longer names its evidence targets"
+    identifier = r"[a-z][a-z0-9]*(?:_[a-z0-9]+)+"
+    return (
+        set(re.findall(identifier, match.group(1))),
+        set(re.findall(identifier, match.group(2))),
+    )
+
+
 class FamilyEvidenceCheckerTest(unittest.TestCase):
     """Every refusal the fixture's checker owes its reader."""
 
     maxDiff = None
 
-    def run_checker(self, *args: str) -> subprocess.CompletedProcess:
+    def run_checker(self, *args: str, env=None) -> subprocess.CompletedProcess:
         return subprocess.run(
             [sys.executable, str(SCRIPT), *args],
             capture_output=True,
             text=True,
             check=False,
+            env=env,
         )
+
+    def env_without_gh(self) -> dict:
+        """An environment where `gh` cannot be found, so no test can fetch."""
+        empty = Path(tempfile.mkdtemp(prefix="family-evidence-nopath-"))
+        self.addCleanup(empty.rmdir)
+        return dict(os.environ, PATH=str(empty))
 
     def build_fixture(self, families=None, specimens=None, root=None) -> Path:
         """Write a throwaway fixture; the shipped one is never mutated."""
@@ -251,6 +279,27 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assertEqual(payload["rejections_path"], "selection-rejections.jsonl")
         self.assertEqual([entry["family_id"] for entry in payload["below_minimum"]], ["causal_fact_clause_wrapper"])
 
+    def test_refuses_verify_sources_on_a_row_missing_a_source_field(self):
+        row = dict(SPECIMEN_ROW)
+        del row["repository"]
+        root = self.build_fixture(specimens=[row])
+        result = self.run_checker(
+            "--fixture", str(root), "--verify-sources", env=self.env_without_gh()
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("schema missing keys", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_refuses_verify_sources_on_a_repository_outside_the_schema(self):
+        row = dict(SPECIMEN_ROW, repository="attacker-controlled/evil")
+        root = self.build_fixture(specimens=[row])
+        result = self.run_checker(
+            "--fixture", str(root), "--verify-sources", env=self.env_without_gh()
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("schema pattern mismatch", result.stderr)
+        self.assertNotIn("gh", result.stderr)
+
     def test_refuses_a_bad_invocation(self):
         result = self.run_checker("--fixture", str(FIXTURE), "--tier", "promising")
         self.assertEqual(result.returncode, 2, result.stderr)
@@ -302,6 +351,42 @@ class FamilyCatalogueWordingTest(unittest.TestCase):
         tiers = [row["evidence_tier"] for row in self.rows]
         self.assertEqual(tiers.count("high-value"), 5)
         self.assertEqual(tiers.count("signal"), 8)
+
+    def test_refuses_an_evidence_tier_the_issue_packet_does_not_name(self):
+        high_value, signal = issue_evidence_targets()
+        self.assertEqual(len(high_value), 5)
+        self.assertEqual(len(signal), 8)
+        tiers = {row["family_id"]: row["evidence_tier"] for row in self.rows}
+        self.assertEqual({fid for fid, tier in tiers.items() if tier == "high-value"}, high_value)
+        self.assertEqual({fid for fid, tier in tiers.items() if tier == "signal"}, signal)
+        rest = [tier for fid, tier in tiers.items() if fid not in high_value | signal]
+        self.assertEqual(len(rest), 29)
+        self.assertEqual(rest.count("boundary"), 9)
+        self.assertEqual(rest.count("existing-family"), 4)
+        self.assertEqual(rest.count("future"), 16)
+
+    def test_refuses_a_field_line_after_the_last_family(self):
+        body = "\n".join(
+            [
+                f"## {GROUPS[0]}",
+                "",
+                "### only_family",
+                "",
+                "Form: kept.",
+                "Reader cost: kept.",
+                "Direct rewrite: kept.",
+                "Boundary: kept.",
+                "Disposition: kept.",
+                "",
+                "## Questions left open",
+                "",
+                "Disposition: this line belongs to no family.",
+                "",
+            ]
+        )
+        parsed = issue_families(body)
+        self.assertEqual([row["family_id"] for row in parsed], ["only_family"])
+        self.assertEqual(parsed[0]["disposition"], "kept.")
 
     def test_readme_frozen_digests_match_the_current_files(self):
         table = re.findall(

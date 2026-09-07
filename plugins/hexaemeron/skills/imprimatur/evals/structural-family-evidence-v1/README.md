@@ -154,9 +154,11 @@ The flags are:
   independent-positive minimum. The design record's
   `two-independent-specimens` gate is resolved with
   `--min-independent-positive 2 --tier high-value`.
-- `--verify-sources` replays every specimen against its immutable GitHub
+- `--verify-sources` replays each specimen against its immutable GitHub
   object through `gh` and compares `text_sha256`. This is the only path that
-  opens a socket.
+  opens a socket. Only a row that cleared every local check is replayed, so a
+  row whose `repository`, `source_path` or `source_commit` failed its schema
+  never reaches the fetch.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen

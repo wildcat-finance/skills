@@ -263,6 +263,10 @@ def collect_findings(
 ) -> dict[str, list[str]]:
     findings: dict[str, list[str]] = {name: [] for name in FINDING_CLASSES}
     seen: set[str] = set()
+    # Only rows that cleared every local check reach the network. A row that
+    # failed its schema has an unchecked repository, path and commit, and
+    # fetch_source_object reads those fields straight into the gh endpoint.
+    verifiable: list[tuple[int, dict]] = []
     for index, row in enumerate(families, 1):
         label = row.get("family_id", f"row {index}")
         tier = row.get("evidence_tier")
@@ -307,6 +311,7 @@ def collect_findings(
                 f"{SPECIMENS_NAME}:{index}: {label}: text_sha256 does not match the text"
             )
             continue
+        verifiable.append((index, row))
         if row["polarity"] == "positive":
             positives.setdefault(row["family_id"], []).append(row)
 
@@ -331,9 +336,7 @@ def collect_findings(
             )
 
     if verify_sources:
-        for index, row in enumerate(specimens, 1):
-            if "specimen_id" not in row or "text" not in row:
-                continue
+        for index, row in verifiable:
             body = fetch_source_object(row)
             if row["text"] not in body:
                 findings["source-mismatch"].append(
