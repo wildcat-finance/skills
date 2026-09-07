@@ -2,12 +2,14 @@
 """Metron budget check.
 
 The mechanical subset of the skill: the part a file and a comparison can settle.
-Everything else in SKILL.md stays a judgement, and nothing here measures anything.
-A run arrives from whatever measured it, the same way `hexctl audit-round` takes a
-lint exit the caller reports.
+Everything else in SKILL.md stays a judgement. `check` and `record` measure
+nothing: a run arrives from whatever measured it, the same way `hexctl audit-round`
+takes a lint exit the caller reports. `time` is the one recorder shipped beside
+them, and it writes exactly the file `check` reads.
 
   check    compare a recorded run against the budgets and the baseline
   record   append a run to the ledger, and promote it to baseline when asked
+  time     run one fixed argv in its own process group and write the run file
 
 A budget carries a limit and a variance, because SKILL.md asks for both. A limit
 alone fails a run that is a fraction over on a noisy machine. A variance alone
@@ -33,11 +35,18 @@ file that cannot be read.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import math
 import os
+import platform
+import signal
+import statistics
+import subprocess
 import sys
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 MAX_BYTES = 4 * 1024 * 1024
@@ -53,6 +62,25 @@ REQUIRED = ("name", "unit", "limit", "variance", "direction")
 
 PASSING = ("neutral", "improved")
 FAILING = ("over-budget", "regressed", "unmeasured", "undeclared")
+
+RUN_SCHEMA = "metron-timed-run/v1"
+
+MAX_OUTPUT_BYTES = 1_048_576
+"""Per stream. The recorder keeps neither stream, only how many bytes each carried,
+so the cap bounds the pipe drain rather than memory: a command that never stops
+writing would otherwise never be seen to finish."""
+
+TIMEOUT_BOUNDS = (1, 3600)
+"""The same range `scripts/demonstrations.py` enforces. Zero would kill every
+command at once, and a day-long deadline is a run nobody is watching."""
+
+POLL_SECONDS = 0.02
+"""Fine enough that the deadline overshoots by less than the timing floor the
+design record measured (26 ms), coarse enough not to be the load itself."""
+
+TEARDOWN_SECONDS = 5.0
+"""How long a reader may stay blocked after its process group is dead. Only a
+process that left the group can still hold the pipe by then."""
 
 
 class BudgetError(ValueError):
@@ -399,6 +427,259 @@ def write_atomically(path: str, body: str) -> None:
         raise
 
 
+def drain(stream, counted: list[int], overflow: threading.Event) -> None:
+    """Count one stream's bytes until it closes or passes the cap.
+
+    The bytes themselves are dropped. A recorder that kept them would make the
+    run file a copy of whatever the workload printed, and a credential a command
+    echoes would land beside the number. Reading stops at the cap rather than
+    discarding past it, so an overflowing child blocks on a full pipe until the
+    group is killed instead of running on unobserved.
+    """
+    try:
+        while True:
+            chunk = os.read(stream.fileno(), 65_536)
+            if not chunk:
+                return
+            counted[0] += len(chunk)
+            if counted[0] > MAX_OUTPUT_BYTES:
+                overflow.set()
+                return
+    except (OSError, ValueError):
+        return
+
+
+def kill_group(proc: subprocess.Popen) -> None:
+    """Kill the child's whole process group, falling back to the child alone.
+
+    `start_new_session` makes the child the leader of its own group, so its pid
+    is the group id. A lookup failure means the group is already gone; any other
+    failure still leaves the child itself reachable.
+    """
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except OSError:
+        try:
+            proc.kill()
+        except OSError:
+            pass
+
+
+def time_once(argv: list[str], cwd: str, timeout_ms: int) -> dict:
+    """Run `argv` once, bounded, and report what happened.
+
+    The argv is handed to `Popen` as the list it arrived as. Nothing is joined into
+    a string and no shell is involved, so a word carrying `;` or `$HOME` reaches
+    the command as those characters (study risk `subprocess-argv`).
+
+    Raises OSError when the command cannot start, which the caller reports as a
+    bad invocation rather than a failed repetition: nothing ran, so there is no
+    number to refuse.
+    """
+    started = time.monotonic_ns()
+    proc = subprocess.Popen(
+        argv, cwd=cwd, stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        start_new_session=True, close_fds=True,
+    )
+    out_count, err_count = [0], [0]
+    out_over, err_over = threading.Event(), threading.Event()
+    readers = (
+        threading.Thread(target=drain, args=(proc.stdout, out_count, out_over),
+                         daemon=True),
+        threading.Thread(target=drain, args=(proc.stderr, err_count, err_over),
+                         daemon=True),
+    )
+    for reader in readers:
+        reader.start()
+    deadline = started + timeout_ms * 1_000_000
+    timed_out = False
+    finished_ns = None
+    try:
+        while proc.poll() is None:
+            if out_over.is_set() or err_over.is_set():
+                kill_group(proc)
+                break
+            # Monotonic rather than wall time, so a clock step during the run
+            # neither fires the deadline early nor postpones it (study risk
+            # `timeout-bound`).
+            if time.monotonic_ns() > deadline:
+                timed_out = True
+                kill_group(proc)
+                break
+            time.sleep(POLL_SECONDS)
+        try:
+            proc.wait(timeout=TEARDOWN_SECONDS)
+        except subprocess.TimeoutExpired:
+            kill_group(proc)
+            proc.wait()
+        finished_ns = time.monotonic_ns()
+    finally:
+        if finished_ns is None:
+            finished_ns = time.monotonic_ns()
+        # The command ends when its own process is reaped, and the number is
+        # taken there. Everything below is teardown, and timing it as part of
+        # the command made a grandchild's grip on the pipes the number recorded.
+        # The group is torn down on every path, not only on a timeout or an
+        # overflow: a command that exits 0 after forking leaves the grandchild
+        # holding the pipes and outliving the run (study risk
+        # `process-group-teardown`).
+        kill_group(proc)
+        # With the group dead, nothing inside it holds the pipes. A reader still
+        # blocked after the join is held by a process that left the group, which
+        # `setsid` in a grandchild is enough to do. That is outside the teardown
+        # this runner performs, so the repetition is refused rather than
+        # recorded as a clean command (study risk `group-escape`).
+        join_by = time.monotonic() + TEARDOWN_SECONDS
+        for reader in readers:
+            reader.join(timeout=max(0.0, join_by - time.monotonic()))
+        escaped = any(reader.is_alive() for reader in readers)
+        for stream in (proc.stdout, proc.stderr):
+            try:
+                stream.close()
+            except OSError:
+                pass
+    return {
+        "wall_clock_ms": round((finished_ns - started) / 1_000_000, 3),
+        "exit": proc.returncode,
+        "stdout_bytes": out_count[0],
+        "stderr_bytes": err_count[0],
+        "timed_out": timed_out,
+        "overflowed": out_over.is_set() or err_over.is_set(),
+        "escaped": escaped,
+    }
+
+
+def failure_cause(outcome: dict, expect_exit: int):
+    """The one word the stderr line carries for a repetition that cannot be kept.
+
+    Ordered by what happened first: a deadline or an overflow killed the child, so
+    its exit status is the signal rather than a result; an escape is judged after
+    the child itself is reaped; only a child that ran to its own end is held to
+    `--expect-exit`.
+    """
+    if outcome["timed_out"]:
+        return "timeout"
+    if outcome["overflowed"]:
+        return "output-cap"
+    if outcome["escaped"]:
+        return "escaped"
+    if outcome["exit"] != expect_exit:
+        return "exit"
+    return None
+
+
+def timed_run(name: str, argv: list[str], cwd: str, timeout_ms: int, expect_exit: int,
+              repetitions: list[dict], note) -> dict:
+    """The run file, in exactly the shape `load_measurements` reads.
+
+    Every recorder number lives under `recorder`. A number at the top level beside
+    `measurements` is refused by the check as a stray measurement, which is the
+    right refusal for a file somebody edited and the wrong one for a file this
+    script wrote (study risk `stray-top-level-number`). `spread` joins `recorder`
+    once more than one repetition can be kept.
+    """
+    samples = [entry["wall_clock_ms"] for entry in repetitions]
+    document = {
+        "measurements": {name: round(statistics.median(samples), 3)},
+        "recorder": {
+            "schema": RUN_SCHEMA,
+            "argv": list(argv),
+            "cwd": cwd,
+            "repeat": len(repetitions),
+            "warmup": 0,
+            "timeout_ms": timeout_ms,
+            "expect_exit": expect_exit,
+            "unit": "ms",
+            "aggregation": "median",
+            "repetitions": [
+                {
+                    "index": index,
+                    "wall_clock_ms": entry["wall_clock_ms"],
+                    "exit": entry["exit"],
+                    "stdout_bytes": entry["stdout_bytes"],
+                    "stderr_bytes": entry["stderr_bytes"],
+                }
+                for index, entry in enumerate(repetitions, start=1)
+            ],
+            "recorded_at": datetime.datetime.now(datetime.timezone.utc)
+            .isoformat(timespec="seconds"),
+            "platform": platform.platform(),
+            "python": platform.python_version(),
+        },
+    }
+    if note is not None:
+        document["note"] = note
+    return document
+
+
+def split_command(words: list[str]):
+    """The options before the first `--`, and the command after it.
+
+    Split by hand rather than left to argparse, so the command is exactly the
+    words the caller wrote: a later `--` inside the command stays in it, and an
+    option-shaped word such as `-c` is never read as one of the recorder's.
+    """
+    if "--" not in words:
+        return words, None
+    at = words.index("--")
+    return words[:at], words[at + 1:]
+
+
+def run_time(args, command) -> int:
+    """The `time` verb: bound the arguments, run once, write the file or refuse.
+
+    The bounds are checked before anything runs, and the output directory is
+    checked with them, so a ten-minute command is not run only to lose its number
+    to a path that was never writable.
+    """
+    if command is None:
+        raise BudgetError("time needs -- before the command to run")
+    if not command:
+        raise BudgetError("time needs a command after --")
+    low, high = TIMEOUT_BOUNDS
+    if not low <= args.timeout_seconds <= high:
+        raise BudgetError(
+            f"--timeout-seconds must be from {low} to {high}, got {args.timeout_seconds}"
+        )
+    out = Path(args.out)
+    if not out.parent.is_dir():
+        raise BudgetError(f"cannot write the run file: {out.parent} is not a directory")
+    cwd = os.path.abspath(args.cwd) if args.cwd else os.getcwd()
+    timeout_ms = args.timeout_seconds * 1000
+
+    try:
+        outcome = time_once(list(command), cwd, timeout_ms)
+    except OSError as error:
+        raise BudgetError(f"command {command[0]!r} could not start: {error}")
+    cause = failure_cause(outcome, args.expect_exit)
+    if cause is not None:
+        # No file on any failure. A run the check can read has every repetition
+        # green, and a previous run file keeps its bytes (study risks
+        # `failed-repetition-hidden`, `partial-run-file`).
+        detail = {
+            "timeout": f"still running after {args.timeout_seconds} s",
+            "output-cap": f"a stream passed {MAX_OUTPUT_BYTES} bytes",
+            "escaped": "a process outside the group still held the pipes after "
+                       f"{TEARDOWN_SECONDS:g} s",
+            "exit": f"exited {outcome['exit']}, expected {args.expect_exit}",
+        }[cause]
+        print(f"metron: time: repetition 1 failed: {cause}: {detail}", file=sys.stderr)
+        return 1
+
+    document = timed_run(args.name, command, cwd, timeout_ms, args.expect_exit,
+                         [outcome], args.note)
+    try:
+        write_atomically(args.out, json.dumps(document, indent=2) + "\n")
+    except OSError as error:
+        raise BudgetError(f"cannot write the run file {args.out}: {error}")
+    print(f"metron: timed {args.name} at {document['measurements'][args.name]} ms "
+          f"in {args.out}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Metron budget check.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -417,6 +698,17 @@ def build_parser() -> argparse.ArgumentParser:
     keep.add_argument("--note")
     keep.add_argument("--promote", action="store_true",
                       help="write this run over the baseline")
+
+    clock = sub.add_parser(
+        "time", help="run one command in its own process group and write the run file",
+        usage="%(prog)s --name NAME --out PATH [options] -- COMMAND [ARG ...]",
+    )
+    clock.add_argument("--name", required=True, help="the budget the number is for")
+    clock.add_argument("--out", required=True, help="the run file to write")
+    clock.add_argument("--timeout-seconds", type=int, default=600)
+    clock.add_argument("--expect-exit", type=int, default=0)
+    clock.add_argument("--cwd", help="run the command from here; default is the caller's")
+    clock.add_argument("--note")
     return parser
 
 
@@ -426,8 +718,23 @@ def promote_needs_baseline(args) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    words = list(sys.argv[1:] if argv is None else argv)
+    command = None
+    parser = build_parser()
+    if words[:1] == ["time"]:
+        words, command = split_command(words)
+        if command is None:
+            # Without the separator argparse would report the command's own
+            # words as unrecognised arguments, which names the symptom rather
+            # than the missing `--`. The options are still checked first.
+            parser.parse_known_args(words)
+            print("metron: error: time needs -- before the command to run",
+                  file=sys.stderr)
+            return 2
+    args = parser.parse_args(words)
     try:
+        if args.command == "time":
+            return run_time(args, command)
         if args.command == "record":
             promote_needs_baseline(args)
         budgets = load_budgets(args.budgets)

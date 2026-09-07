@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20115554,
+    "bytes_blob": 20139049,
     "bytes_generated": 98
   },
   "entries": [
@@ -75,6 +75,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.synopsis.md"
+    },
+    {
+      "bytes": 23495,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-371-metron-recorder-a-time-verb-that-writes-the.synopsis.md"
     },
     {
       "bytes": 55818,
