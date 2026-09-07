@@ -2,7 +2,7 @@
 name: anamnesis
 description: Preserve audit findings and the changes that answered them as a source-bound corpus. Admit a source only against an explicit rights basis, keep the producer's bytes and identifiers unchanged, curate submissions, adjudicated findings, occurrences, remediation attempts and verifications as separate records, and release checked read-only projections for Elenchus and Synkrisis. Use when someone asks to preserve, curate, release or query a corpus of audit findings and their remedies. Do not use it to judge whether a finding is real, to prove a fix correct, or to compare runs.
 metadata:
-  version: "3.1.0"
+  version: "4.1.0"
 ---
 
 <p align="center">
@@ -24,7 +24,7 @@ version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md). Read that ledger before starting work intended to
 advance Anamnesis itself.
 
-**Current frontier.** The whole seed path ships. Two fresh builds of the pilot agree on the release id, the file set and every component byte; the Elenchus view has no field a verdict could occupy; the Synkrisis view carries its cohort, denominators, policy, exclusions and unknowns; and restricted material reaches neither adapter.
+**Current frontier.** What a corpus preserves is declared in the curation policy the release manifest records and the release id hashes. Two corpora ship under their own declared scopes, the pilot's 41 Warden findings and 17 findings the capture estate recorded about itself, and neither builds under the other's scope.
 
 Three siblings sit next to it and none of them is a substitute:
 
@@ -66,12 +66,14 @@ python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit \
   --policy plugins/anamnesis/specimens/pilot/policy.json
 ```
 
-`admit-seed` runs the same admission and writes the closed conformance report
-the runbook names:
+`admit-seed` runs the same admission, holds the result to the scope the
+curation policy declares, and writes the closed conformance report the runbook
+names:
 
 ```bash
 python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit-seed \
   --policy plugins/anamnesis/specimens/pilot/policy.json \
+  --curation-policy plugins/anamnesis/specimens/pilot/curation-policy.json \
   --report .hexaemeron/reports/anamnesis-member-seed-source-rights-admitted.json
 ```
 
@@ -123,6 +125,14 @@ python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify \
 The build stages beside its destination and promotes it only once every
 component is written, so a killed run leaves nothing that could be mistaken for
 a release.
+
+The curation policy declares a `scope`: an id, one sentence saying what the
+corpus preserves, the source ids it admits, and the record bounds. `admit-seed`,
+`curate` and `release` refuse a source outside that scope, a scope source that
+was not admitted, and a record count outside the bounds, and `verify` refuses a
+release whose sources differ from the scope its policy declares. The release id
+covers the scope because it covers the policy, so a corpus cannot change what it
+preserves without changing its id.
 
 ### `analogues` and `observations` -- the consumer projections
 
@@ -233,7 +243,7 @@ did not run, say so plainly and do not describe its result as successful.
 - Boundary: Curation establishes what the sources said and how the policy joined it. It does not establish that a finding was real, that a remediation worked, that a duplicate cluster is correct, or that the taxonomy is the right one. `applied` is as far as any status string reaches; a verification state comes only from a verdict the source declared.
 - Authorises: Building a release from the graph, and passing it to the consumer projections runbook step 3 owes.
 - Consequence: 2
-- Refuses: A duplicate naming itself or another duplicate, a policy outside its closed shape, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
+- Refuses: A duplicate naming itself or another duplicate, a policy outside its closed shape, a malformed scope, an admitted source outside the declared scope, a scope source that was not admitted, a record count outside the declared bounds, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
 - Recovery: Inspect the quarantine list and the policy that produced it, correct the taxonomy, the duplicate map or the disclosure classes, and rerun `curate`.
 - Exceptions: none
 
@@ -245,7 +255,7 @@ did not run, say so plainly and do not describe its result as successful.
 - Boundary: The release establishes its own bytes and what it excluded. It does not establish that the corpus is complete, that its counts describe anything outside the sources it names, or that an excluded record was rightly excluded.
 - Authorises: Publishing the release under its recorded rights bases, and measuring it for the conformance report the design record names.
 - Consequence: 2
-- Refuses: An existing destination, a component whose digest or byte count differs from the manifest, a release directory holding a file the manifest does not name or missing one it does, a manifest declaring another schema, a non-regular entry in the release, and a total above the byte cap.
+- Refuses: An existing destination, a component whose digest or byte count differs from the manifest, a release directory holding a file the manifest does not name or missing one it does, a manifest declaring another schema, manifest sources that differ from the declared scope, a non-regular entry in the release, and a total above the byte cap.
 - Recovery: Inspect the failing component named by the refusal, rebuild the release from the same inputs and compare the release id, or correct the inputs and build a new release rather than editing one in place.
 - Exceptions: none
 

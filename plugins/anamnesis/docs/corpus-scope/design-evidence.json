@@ -1,0 +1,406 @@
+{
+  "candidates": [
+    {
+      "id": "release-policy-scope",
+      "summary": "Declare `scope` as a required closed object in the curation policy, the policy the release manifest records and release_id already hashes; admit-seed and release check the admitted sources and record count against it; the pilot declares its scope and is re-released; a second corpus declares its own."
+    },
+    {
+      "id": "admission-policy-scope",
+      "summary": "Declare `scope` in the admission policy (anamnesis-pilot-policy/v1) and extend release_id to hash that policy's canonical bytes; the pilot's events, release and projections all change and verify needs a document the release does not carry."
+    },
+    {
+      "id": "permanent-seed-record",
+      "summary": "Change no code. A decision record states that the hand-picked 41-record seed is the permanent shape of the corpus and names what governs additions; the record bound stays in seed_scope."
+    },
+    {
+      "id": "widen-constant",
+      "summary": "Keep seed_scope as a resolver-side constant and widen it, or add a second constant, so the estate corpus passes admit-seed; the release id stays a function of the curation policy alone."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "release-id-declared-function",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "scope-recorded-in-release",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "estate-findings-admissible-without-widening",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "foreign-ledgers-touched",
+      "kind": "gate",
+      "owner": "hypomnema",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "compatibility",
+      "id": "pilot-artefacts-rebuilt",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "policy-bytes-added",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "acceptance-check-ms",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "scope-recovery-by-policy-edit",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "release-id-declared-function",
+      "report": {
+        "path": "reports/release-policy-scope-release-id-declared-function.json",
+        "sha256": "667a176d8800c776addcc217efcb8cd2f0cf71ab02df3b0fa385c8bd2c155de7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "scope-recorded-in-release",
+      "report": {
+        "path": "reports/release-policy-scope-scope-recorded-in-release.json",
+        "sha256": "c247ac95e83fff525e4ca1c5b39b02337dfe0a1e52e968a745b5b70b4b8ed5db"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "estate-findings-admissible-without-widening",
+      "report": {
+        "path": "reports/release-policy-scope-estate-findings-admissible-without-widening.json",
+        "sha256": "d2acb5dbc25025e0a010c07540302dc4ba94c94bdc17f1489b03c1d89d99add5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "foreign-ledgers-touched",
+      "report": {
+        "path": "reports/release-policy-scope-foreign-ledgers-touched.json",
+        "sha256": "28766f27a02f101edd79f181bac29455d6b44e4d3d6688dd9bbc3b67795b091e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "pilot-artefacts-rebuilt",
+      "report": {
+        "path": "reports/release-policy-scope-pilot-artefacts-rebuilt.json",
+        "sha256": "66a7059986c066a523e51fab116de47209268d5d878f2345bdcc86d5e961c34c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "policy-bytes-added",
+      "report": {
+        "path": "reports/release-policy-scope-policy-bytes-added.json",
+        "sha256": "06cdc88b0fb6fa77400b8bab2c3bbc6cea53320feca40a37b173e48df022f1e4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/release-policy-scope-acceptance-check-ms.json",
+        "sha256": "a5110192ffe20ca336b425a4b9119d0a72482b3be96e878f0aa391af8c4251f0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "release-policy-scope",
+      "criterion": "scope-recovery-by-policy-edit",
+      "report": {
+        "path": "reports/release-policy-scope-scope-recovery-by-policy-edit.json",
+        "sha256": "948f6e862b826ee55ca9dcd5f8bea4f28dbb7e6c92fd5c433d7ebe86762a31f9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "release-id-declared-function",
+      "report": {
+        "path": "reports/admission-policy-scope-release-id-declared-function.json",
+        "sha256": "35a40b9a46e053782a3121ea14b5e8b7cbce053da77b31fbd593f3502c420e4a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "scope-recorded-in-release",
+      "report": {
+        "path": "reports/admission-policy-scope-scope-recorded-in-release.json",
+        "sha256": "5ffe2a6082feb0752993f4b19887b1882744e8274f9d1892d8d788514efb0301"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "estate-findings-admissible-without-widening",
+      "report": {
+        "path": "reports/admission-policy-scope-estate-findings-admissible-without-widening.json",
+        "sha256": "e6c774fea302cc19e06e928f2212b3c0c3f9432ae1905024d5750dec30feb894"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "foreign-ledgers-touched",
+      "report": {
+        "path": "reports/admission-policy-scope-foreign-ledgers-touched.json",
+        "sha256": "1c0ba8b76271a99008a5aab236bb347328fea9081769427ceb5163d9d0ff02f6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "pilot-artefacts-rebuilt",
+      "report": {
+        "path": "reports/admission-policy-scope-pilot-artefacts-rebuilt.json",
+        "sha256": "3e4be1cf8cd7c70a74e5d55171701d122ed0529d9c0753d860939f7a28b73731"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "policy-bytes-added",
+      "report": {
+        "path": "reports/admission-policy-scope-policy-bytes-added.json",
+        "sha256": "333366bf5d5d3b06ebab3fc4a498b0fe236691aad2d8a49af60490f5b95ff727"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/admission-policy-scope-acceptance-check-ms.json",
+        "sha256": "2550cb4210ac699d470129e540aaf66637d7fc672b229ff86642ecf18778d76d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "admission-policy-scope",
+      "criterion": "scope-recovery-by-policy-edit",
+      "report": {
+        "path": "reports/admission-policy-scope-scope-recovery-by-policy-edit.json",
+        "sha256": "b05627803234de96399e8a5c59439aa1599eef64f2901a9f27ea532baebdc95d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "release-id-declared-function",
+      "report": {
+        "path": "reports/permanent-seed-record-release-id-declared-function.json",
+        "sha256": "e0ec16e55688fe0b475bd1632c90afd928529fc3a1f5f71e1f27dab1546dfe54"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "scope-recorded-in-release",
+      "report": {
+        "path": "reports/permanent-seed-record-scope-recorded-in-release.json",
+        "sha256": "69d090e904e0a1650ad78b4dd832e03b9ad63cf6e80f70d565a3a576470482ce"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "estate-findings-admissible-without-widening",
+      "report": {
+        "path": "reports/permanent-seed-record-estate-findings-admissible-without-widening.json",
+        "sha256": "814ffd2fd51bc17cabd5e81125204a2a8bf2de42fd892bc724576ec1a6e746bd"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "foreign-ledgers-touched",
+      "report": {
+        "path": "reports/permanent-seed-record-foreign-ledgers-touched.json",
+        "sha256": "b736f96a5a3ad87e5a60fd8f2f9b0f06ac88b448d5e03eef8b27daf356039d40"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "pilot-artefacts-rebuilt",
+      "report": {
+        "path": "reports/permanent-seed-record-pilot-artefacts-rebuilt.json",
+        "sha256": "6bf975f0d3e06bf0d10073b7b75a8baf9006f892064b86cd24c5a2ffae18d2d1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "policy-bytes-added",
+      "report": {
+        "path": "reports/permanent-seed-record-policy-bytes-added.json",
+        "sha256": "a0e36b97d44cbf475e2d08b1a11f20abd541842d4bfd572eb7b48e6dddae740e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/permanent-seed-record-acceptance-check-ms.json",
+        "sha256": "d099a701a4b6e7c27ae930f7129dcc26162386f6dfe6f4033c4564a1ca50b648"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "permanent-seed-record",
+      "criterion": "scope-recovery-by-policy-edit",
+      "report": {
+        "path": "reports/permanent-seed-record-scope-recovery-by-policy-edit.json",
+        "sha256": "c4232ca1fa055c2d21f28cbd6c863f8207206e8c616352c822a160f76a7f6835"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "release-id-declared-function",
+      "report": {
+        "path": "reports/widen-constant-release-id-declared-function.json",
+        "sha256": "60448f7dabb0670b1f7d34ae3b33c48349a466341dc26371068305658771bf88"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "scope-recorded-in-release",
+      "report": {
+        "path": "reports/widen-constant-scope-recorded-in-release.json",
+        "sha256": "783d15a9161ca682e54dde19ceaf462356ba43b220c080e0b82fe5802b05e2c7"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "estate-findings-admissible-without-widening",
+      "report": {
+        "path": "reports/widen-constant-estate-findings-admissible-without-widening.json",
+        "sha256": "22e1283fc231a011234e8dad8a4960f1566db0d9db47958206b7d9faff244cdc"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "foreign-ledgers-touched",
+      "report": {
+        "path": "reports/widen-constant-foreign-ledgers-touched.json",
+        "sha256": "0020e5b7579de9c4bf2a5a316b329bee4a51d267855f449a85742f2a42a63a55"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "pilot-artefacts-rebuilt",
+      "report": {
+        "path": "reports/widen-constant-pilot-artefacts-rebuilt.json",
+        "sha256": "e1911b2906b66c7659ed0d9d35339f5120191e14d580e7867f9ec6e71258ca12"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "policy-bytes-added",
+      "report": {
+        "path": "reports/widen-constant-policy-bytes-added.json",
+        "sha256": "873b446826c00912ca08758a1c98d3f16026850dadebfe85070750ef5c0277e6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/widen-constant-acceptance-check-ms.json",
+        "sha256": "bf2a2166de331ec86b95d773f1da5c1f13a3c34bd8a236786e5e9a76b8f19878"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "widen-constant",
+      "criterion": "scope-recovery-by-policy-edit",
+      "report": {
+        "path": "reports/widen-constant-scope-recovery-by-policy-edit.json",
+        "sha256": "e639824fb5fc020f71fa21901e5f0b70d140c5d648d9b0a71a037398c1a92e28"
+      },
+      "state": "fail"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "release-policy-scope",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

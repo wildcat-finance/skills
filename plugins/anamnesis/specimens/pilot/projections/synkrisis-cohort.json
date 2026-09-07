@@ -1,6 +1,6 @@
 {
   "cohort": {
-    "id": "cohort:079ed18d172d6031",
+    "id": "cohort:41d640fb168049d5",
     "included": 41,
     "members": [
       "find:pandects-audit-rounds:S1-R1-01",
@@ -62,11 +62,11 @@
   "not_established": "Every count here is a count of the records this release holds. It does not establish how common anything is outside them, that the corpus is complete, or that an excluded record was rightly excluded.",
   "policy": {
     "cohort_rule": "every public finding in the release",
-    "curation_version": "curation-2026-08-31",
+    "curation_version": "curation-2026-09-06",
     "taxonomy": "warden-severity 1"
   },
   "producer": "anamnesis-synkrisis-observation/v1",
-  "release_id": "079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56",
+  "release_id": "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf",
   "schema": "anamnesis-synkrisis-observation/v1",
   "unknowns": {
     "finding.adjudication": 41,

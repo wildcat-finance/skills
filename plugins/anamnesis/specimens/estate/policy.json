@@ -1,0 +1,150 @@
+{
+  "schema": "anamnesis-pilot-policy/v1",
+  "policy_version": "estate-2026-09-06",
+  "engagement": "Wildcat Labs capture-estate verification findings and open actions of 31 August and 5 September 2026",
+  "max_source_bytes": 1000000,
+  "sources": [
+    {
+      "id": "archive-verification-2026-08-31",
+      "path": "sources/archive-verification-2026-08-31.md",
+      "sha256": "64124ce28d1123123ebbf2c0330ecfa9833aa67738dd6e7d1b37ceb0bf54f2f1",
+      "bytes": 5641,
+      "media_type": "text/markdown",
+      "producer": "Wildcat Labs, archive verification of 31 August 2026",
+      "provenance": {
+        "origin": "the 31 August 2026 archive verification, held by the maintainer, report SHA-256 f8d3391b031ac6eced37a02f3757515198f71490a843bc1e5d8dedf559b6350e",
+        "origin_path": "report: executive verdict lines 7-20, priority findings lines 39-105, family verdicts lines 111-156",
+        "retrieved": "2026-09-07"
+      },
+      "rights": {
+        "basis": "permission",
+        "disclosure": "public",
+        "holder": "Wildcat Labs",
+        "statement": "Written permission of 7 September 2026 from the maintainer, the rights holder, to preserve these findings as public derived text in this repository, cited by date, section and digest."
+      }
+    },
+    {
+      "id": "counterparty-history-2026-09-05",
+      "path": "sources/counterparty-history-2026-09-05.md",
+      "sha256": "11cae8637d2f6c8bf6078e22b9b17325b1f181aedab3c87e833949714e18c4c8",
+      "bytes": 1838,
+      "media_type": "text/markdown",
+      "producer": "Wildcat Labs, counterparty-history programme note of 5 September 2026",
+      "provenance": {
+        "origin": "the 5 September 2026 counterparty-history programme note, held by the maintainer, SHA-256 4349d5f93468acd0117b40765828a3ad974ab2295302a463239d23d85b5a8efa",
+        "origin_path": "section 2 lines 55-63; section 9 lines 261-268",
+        "retrieved": "2026-09-07"
+      },
+      "rights": {
+        "basis": "permission",
+        "disclosure": "public",
+        "holder": "Wildcat Labs",
+        "statement": "Written permission of 7 September 2026 from the maintainer, the rights holder, to preserve these findings as public derived text in this repository, cited by date, section and digest."
+      }
+    }
+  ],
+  "records": [
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-01",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-01",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-02",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-02",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-03",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-03",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-04",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-04",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-05",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-05",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-06",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-06",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-07",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-07",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-08",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-08",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-09",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-09",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-10",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-10",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-11",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-11",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R1-12",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R1-12",
+      "round": "Priority findings, round 1"
+    },
+    {
+      "id": "archive-verification-2026-08-31:V1-R2-01",
+      "source": "archive-verification-2026-08-31",
+      "native_id": "V1-R2-01",
+      "round": "Family verdicts, round 2"
+    },
+    {
+      "id": "counterparty-history-2026-09-05:P1-R1-01",
+      "source": "counterparty-history-2026-09-05",
+      "native_id": "P1-R1-01",
+      "round": "Capture inventory, round 1"
+    },
+    {
+      "id": "counterparty-history-2026-09-05:P1-R2-01",
+      "source": "counterparty-history-2026-09-05",
+      "native_id": "P1-R2-01",
+      "round": "Open actions carried from prior handovers, round 2"
+    },
+    {
+      "id": "counterparty-history-2026-09-05:P1-R2-02",
+      "source": "counterparty-history-2026-09-05",
+      "native_id": "P1-R2-02",
+      "round": "Open actions carried from prior handovers, round 2"
+    },
+    {
+      "id": "counterparty-history-2026-09-05:P1-R2-03",
+      "source": "counterparty-history-2026-09-05",
+      "native_id": "P1-R2-03",
+      "round": "Open actions carried from prior handovers, round 2"
+    }
+  ]
+}

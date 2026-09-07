@@ -1,7 +1,7 @@
 # Anamnesis runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Anamnesis.** Anamnesis keeps custody of audit findings and the changes that answered them: it admits sources against an explicit rights basis, preserves the producer's bytes and identifiers unchanged, and releases read-only projections for Elenchus and Synkrisis. It does not produce audit rounds, judge whether a finding was real, or compare runs. **Current frontier:** The whole seed path ships. Two fresh builds of the pilot agree on the release id, the file set and every component byte; the Elenchus view has no field a verdict could occupy; the Synkrisis view carries its cohort, denominators, policy, exclusions and unknowns; and restricted material reaches neither adapter.
+> **Marketplace context: Anamnesis.** Anamnesis keeps custody of audit findings and the changes that answered them: it admits sources against an explicit rights basis, preserves the producer's bytes and identifiers unchanged, and releases read-only projections for Elenchus and Synkrisis. It does not produce audit rounds, judge whether a finding was real, or compare runs. **Current frontier:** What a corpus preserves is declared in the curation policy the release manifest records and the release id hashes. Two corpora ship under their own declared scopes, the pilot's 41 Warden findings and 17 findings the capture estate recorded about itself, and neither builds under the other's scope.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -24,7 +24,8 @@ before admitting a source, curating a record, or releasing a corpus.
 - Treat the corpus named by the user as the target. Do not substitute this
   distribution checkout unless the user named it.
 - `admit` and `admit-seed` read a declared policy and its sources and write
-  nothing outside the report path the caller names.
+  nothing outside the report path the caller names; `admit-seed` also reads
+  the curation policy for the declared scope.
 - Names such as `$anamnesis`, `/anamnesis:anamnesis` and `anamnesis:anamnesis`
   are invocation aliases, not shell commands.
 
