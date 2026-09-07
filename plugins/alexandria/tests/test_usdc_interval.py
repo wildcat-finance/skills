@@ -2231,6 +2231,29 @@ class CodeHashRecheckTests(ReleaseTestCase):
                     f"a {component} journal record carries a {field} that is not text",
                 )
 
+    def test_a_journal_record_whose_shard_index_is_not_a_whole_number_is_refused_by_name(self):
+        """The shard index is a set element and a dictionary key, so its type is checked too."""
+        for value, label in ((["x"], "list"), ({"a": 1}, "object"), (True, "boolean")):
+            with self.subTest(label=label):
+                output = self.released(f"not-a-shard-{label}")
+                self.rewrite(
+                    output, "logs",
+                    lambda document: document["records"][0].__setitem__("shard", value),
+                )
+                raised = None
+                try:
+                    self.check_without_verify(output)
+                except Exception as error:  # noqa: BLE001 - the type is the claim
+                    raised = error
+                # A parent that checks only the key set raises a TypeError on
+                # the unhashable values and accepts the boolean as shard one,
+                # so the type is asserted rather than matched.
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(
+                    str(raised),
+                    "a logs journal record carries a shard index that is not a whole number",
+                )
+
     def test_an_epoch_table_the_opening_reads_do_not_derive_is_refused(self):
         output = self.released("undeclared-epoch")
 

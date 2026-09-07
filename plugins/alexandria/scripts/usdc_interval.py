@@ -1617,6 +1617,14 @@ def check_interval(release_root: Path) -> dict:
                     raise AlexandriaError(
                         f"a {name} journal record carries a {field} that is not text"
                     )
+            # The shard index becomes a set element on the next line and a
+            # dictionary key in the count derivation, so an unhashable value
+            # raises a TypeError there and a boolean silently shares shard
+            # one's key. Both are refused by name here instead.
+            if not isinstance(record["shard"], int) or isinstance(record["shard"], bool):
+                raise AlexandriaError(
+                    f"a {name} journal record carries a shard index that is not a whole number"
+                )
             if record["class"] != name:
                 raise AlexandriaError(
                     f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
