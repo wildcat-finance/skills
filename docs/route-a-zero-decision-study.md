@@ -297,3 +297,27 @@ Two prose surfaces are updated in place rather than recorded, because they descr
 One generation row is owed on `plugins/hexaemeron/skills/fiat/EVOLUTION.md`, with the `Next Fiat job` naming skills#363 unchanged.
 
 [hypomnema](../plugins/hexaemeron/skills/hypomnema/SKILL.md) owns which decisions earn a record and where each one lives.
+
+### Amendment -- 2026-09-07
+
+**What changed.** The study declares its design bridge, binding the selected
+candidate to the record that holds the decision:
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | decision-age-window
+record | docs/decisions/drafts/route-a-filed-zero-as-an-answer.md
+```
+
+**Why.** Item 12 names hypomnema as the owner of which decisions earn a record
+and where each one lives, and the study named neither the record nor the join to
+the checked selection. Without the fence `hypomnema.py --study` reports `H008
+study has no design bridge block` and exits 1, so the one claim the discipline
+can check mechanically was the one claim the study did not make. Raised as
+S1-R1-02 in step 1 round 1.
+
+**Steps touched.** Step 1, whose committed copy of this study carries the fence.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
