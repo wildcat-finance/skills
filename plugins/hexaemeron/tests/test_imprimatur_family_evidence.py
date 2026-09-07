@@ -306,7 +306,7 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.addCleanup(self.remove_tree, directory)
         log = directory / "argv.log"
         stub = directory / "gh"
-        body = json.dumps({"body": SPECIMEN_TEXT})
+        body = json.dumps({"body": SPECIMEN_TEXT, "commit": {"message": SPECIMEN_TEXT}})
         stub.write_text(
             "#!/bin/sh\n"
             f'printf "%s\\n" "$@" >> "{log}"\n'
@@ -363,6 +363,126 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
             log.read_text(encoding="utf-8").splitlines(),
             ["api", "repos/wildcat-finance/skills/issues/comments/42"],
         )
+
+    def test_refuses_a_source_commit_carrying_a_trailing_newline(self):
+        """The schema's `^[0-9a-f]{40}$` also matches before a trailing newline."""
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="commit_message",
+            source_path=None,
+            source_commit="a" * 40 + "\n",
+            source_url="https://github.com/wildcat-finance/skills/commit/" + "a" * 40,
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("unusable source_commit", result.stderr)
+        self.assertFalse(log.exists(), "the newline-bearing source_commit still reached gh")
+
+    def test_refuses_an_issue_number_that_is_not_ascii_digits(self):
+        """`str.isdigit()` is true for Arabic-Indic digits, which are not a number here."""
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="issue_body",
+            source_path=None,
+            source_url="https://github.com/wildcat-finance/skills/issues/\u0661\u0662\u0663",
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("cannot read an object number", result.stderr)
+        self.assertFalse(log.exists(), "the non-ASCII issue number still reached gh")
+
+    def test_refuses_a_comment_id_carrying_a_trailing_newline(self):
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="issue_comment",
+            source_path=None,
+            source_url="https://github.com/wildcat-finance/skills/issues/1298#issuecomment-42\n",
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("cannot read a comment id", result.stderr)
+        self.assertFalse(log.exists(), "the newline-bearing comment id still reached gh")
+
+    def test_refuses_a_duplicate_key_in_one_row(self):
+        """JSON's last-wins rule would enforce a tier the row does not appear to carry."""
+        root = self.build_fixture()
+        row = json.dumps(FAMILY_ROW)[:-1] + ', "evidence_tier": "high-value"}'
+        (root / "families.jsonl").write_text(row + "\n", encoding="utf-8")
+        self.assert_refused(root, "duplicate JSON key 'evidence_tier'", code=2)
+
+    def test_every_source_object_kind_replays_its_own_endpoint(self):
+        """One gate guards every endpoint segment; none of the six kinds lost its replay."""
+        expected = {
+            "markdown_paragraph": (
+                "https://github.com/wildcat-finance/skills/blob/" + "0" * 40 + "/README.md",
+                "repos/wildcat-finance/skills/contents/README.md?ref=" + "0" * 40,
+            ),
+            "commit_message": (
+                "https://github.com/wildcat-finance/skills/commit/" + "0" * 40,
+                "repos/wildcat-finance/skills/commits/" + "0" * 40,
+            ),
+            "issue_body": (
+                "https://github.com/wildcat-finance/skills/issues/1298",
+                "repos/wildcat-finance/skills/issues/1298",
+            ),
+            "pull_request_body": (
+                "https://github.com/wildcat-finance/skills/pull/1298",
+                "repos/wildcat-finance/skills/issues/1298",
+            ),
+            "issue_comment": (
+                "https://github.com/wildcat-finance/skills/issues/1298#issuecomment-42",
+                "repos/wildcat-finance/skills/issues/comments/42",
+            ),
+            "pull_request_comment": (
+                "https://github.com/wildcat-finance/skills/pull/1298#discussion_r99",
+                "repos/wildcat-finance/skills/pulls/comments/99",
+            ),
+        }
+        self.assertEqual(len(expected), 6, "the schema's source_object enum has six values")
+        for kind, (url, endpoint) in expected.items():
+            with self.subTest(source_object=kind):
+                row = dict(
+                    SPECIMEN_ROW,
+                    source_object=kind,
+                    source_url=url,
+                    source_path="README.md" if kind == "markdown_paragraph" else None,
+                )
+                root = self.build_fixture(specimens=[row])
+                env, log = self.recording_gh()
+                result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(endpoint, log.read_text(encoding="utf-8").splitlines())
+
+    def test_refuses_a_gh_reply_that_is_not_the_shape_its_kind_expects(self):
+        """A reply is outside data too; a KeyError here would exit 1, not 2."""
+        for payload in ('{"body": "x"}', '{"commit": {}}', "not json at all", "[]"):
+            with self.subTest(payload=payload):
+                directory = Path(tempfile.mkdtemp(prefix="family-evidence-gh-"))
+                self.addCleanup(self.remove_tree, directory)
+                stub = directory / "gh"
+                stub.write_text(
+                    "#!/bin/sh\nprintf '%s\\n' '" + payload + "'\n", encoding="utf-8"
+                )
+                stub.chmod(0o755)
+                row = dict(
+                    SPECIMEN_ROW,
+                    source_object="commit_message",
+                    source_path=None,
+                    source_url="https://github.com/wildcat-finance/skills/commit/" + "0" * 40,
+                )
+                root = self.build_fixture(specimens=[row])
+                result = self.run_checker(
+                    "--fixture", str(root), "--verify-sources",
+                    env=dict(os.environ, PATH=str(directory)),
+                )
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
 
     def test_refuses_a_bad_invocation(self):
         result = self.run_checker("--fixture", str(FIXTURE), "--tier", "promising")

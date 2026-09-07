@@ -33,15 +33,30 @@ TIER_MINIMUMS = {
     "existing-family": (0, 0),
     "future": (0, 0),
 }
-# The endpoint a replay reads is built from specimen fields, so each one is
-# pinned here rather than trusted to the schema: the schema's `^wildcat-finance/`
-# pattern admits `wildcat-finance/../other-org/repo`, and `source_path` carries
-# no pattern at all.
-REPOSITORY_PATTERN = re.compile(r"wildcat-finance/[A-Za-z0-9][A-Za-z0-9._-]*")
-SOURCE_PATH_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*")
+# Every value that becomes part of a gh endpoint passes endpoint_segment, which
+# fullmatches one pattern named here. The schema is not that boundary: it
+# validates with re.search, its `^wildcat-finance/` pattern admits
+# `wildcat-finance/../other-org/repo`, its `^[0-9a-f]{40}$` admits a trailing
+# newline, and `source_path` carries no pattern at all. Adding a field to an
+# endpoint means adding its row below; a field with no row cannot reach gh.
+ENDPOINT_SEGMENTS = {
+    "repository": (
+        re.compile(r"wildcat-finance/[A-Za-z0-9][A-Za-z0-9._-]*"),
+        "repository is not one pinned wildcat-finance repository",
+    ),
+    "source_path": (
+        re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*"),
+        "unusable source_path",
+    ),
+    "source_commit": (re.compile(r"[0-9a-f]{40}"), "unusable source_commit"),
+    "object_number": (re.compile(r"[0-9]{1,20}"), "cannot read an object number"),
+    "comment_id": (re.compile(r"[0-9]{1,20}"), "cannot read a comment id"),
+}
 # A comment's own id is in the URL fragment. The number before it is the issue
-# or pull request the comment sits under, which is a different object.
-COMMENT_FRAGMENT = re.compile(r"#(issuecomment-|discussion_r)([0-9]+)$")
+# or pull request the comment sits under, which is a different object. The
+# fragment ends at \Z rather than $, because $ also matches before a trailing
+# newline and would carry that newline's row into the endpoint.
+COMMENT_FRAGMENT = re.compile(r"#(issuecomment-|discussion_r)([0-9]+)\Z")
 FAMILIES_NAME = "families.jsonl"
 SPECIMENS_NAME = "specimens.jsonl"
 REJECTIONS_NAME = "selection-rejections.jsonl"
@@ -100,11 +115,26 @@ def read_bytes_below(fixture: Path, name: str) -> bytes:
         raise RefusalError(f"cannot read {name}: {exc}") from exc
 
 
+def object_without_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
+    """Build the object, refusing a key JSON's last-wins rule would hide.
+
+    A row carrying `evidence_tier` twice reads to a person as its first value
+    and is checked as its second, so the frozen bytes and the enforced meaning
+    disagree with nothing on screen to show it.
+    """
+    seen: set[str] = set()
+    for key, _ in pairs:
+        if key in seen:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        seen.add(key)
+    return dict(pairs)
+
+
 def read_json_below(fixture: Path, name: str):
     blob = read_bytes_below(fixture, name)
     try:
-        return json.loads(blob.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return json.loads(blob.decode("utf-8"), object_pairs_hook=object_without_duplicate_keys)
+    except (UnicodeDecodeError, ValueError) as exc:
         raise RefusalError(f"cannot parse {name}: {exc}") from exc
 
 
@@ -119,8 +149,8 @@ def read_jsonl_below(fixture: Path, name: str) -> list[dict]:
         if not line.strip():
             raise RefusalError(f"blank JSONL row at {name}:{number}")
         try:
-            value = json.loads(line)
-        except json.JSONDecodeError as exc:
+            value = json.loads(line, object_pairs_hook=object_without_duplicate_keys)
+        except ValueError as exc:
             raise RefusalError(f"unreadable JSON at {name}:{number}: {exc}") from exc
         if not isinstance(value, dict):
             raise RefusalError(f"row at {name}:{number} is not an object")
@@ -231,40 +261,76 @@ def gh_fetch(argv: list[str]) -> bytes:
     return completed.stdout
 
 
+def reply_value(blob: bytes, path: tuple[str, ...], specimen_id) -> str:
+    """Read one string out of a gh reply, refusing every other shape.
+
+    The reply is data from outside the process like the row is. Round 1 stopped
+    an unchecked row reaching the endpoint; this stops an unchecked reply
+    reaching a field access, where a KeyError exits 1 -- the code reserved for a
+    content finding -- and prints a traceback.
+    """
+    try:
+        value = json.loads(blob)
+    except ValueError as exc:
+        raise RefusalError(f"gh reply for {specimen_id} is not JSON: {exc}") from exc
+    for key in path:
+        if not isinstance(value, dict) or key not in value:
+            raise RefusalError(f"gh reply for {specimen_id} carries no {'.'.join(path)}")
+        value = value[key]
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise RefusalError(f"gh reply {'.'.join(path)} for {specimen_id} is not a string")
+    return value
+
+
+def endpoint_segment(field: str, value, specimen_id) -> str:
+    """Return ``value`` only when it fullmatches the pattern pinned for ``field``.
+
+    This is the one gate between a specimen row and a gh endpoint. Fullmatch,
+    not search: a pattern anchored only at its start admits a suffix, which is
+    how `^wildcat-finance/` once admitted `wildcat-finance/../evil-org/repo`.
+    """
+    pattern, message = ENDPOINT_SEGMENTS[field]
+    if not isinstance(value, str) or pattern.fullmatch(value) is None:
+        raise RefusalError(f"{message} for {specimen_id}: {value!r}")
+    return value
+
+
 def fetch_source_object(row: dict) -> str:
     """Replay one specimen's immutable GitHub object. Opens a socket."""
-    repository = row["repository"]
-    if not isinstance(repository, str) or REPOSITORY_PATTERN.fullmatch(repository) is None:
-        raise RefusalError(f"repository is not one pinned wildcat-finance repository: {repository!r}")
+    specimen_id = row.get("specimen_id")
+    repository = endpoint_segment("repository", row["repository"], specimen_id)
+    # Checked on every kind, not only the two that read it, so the pinned ref a
+    # replay claims to be immutable is one this checker validated.
+    commit = endpoint_segment("source_commit", row["source_commit"], specimen_id)
     source_object = row["source_object"]
     if source_object == "markdown_paragraph":
-        path = row["source_path"]
-        if not isinstance(path, str) or SOURCE_PATH_PATTERN.fullmatch(path) is None:
-            raise RefusalError(f"unusable source_path for {row['specimen_id']}")
+        path = endpoint_segment("source_path", row["source_path"], specimen_id)
         blob = gh_fetch(
             [
                 "api",
                 "-H",
                 "Accept: application/vnd.github.raw",
-                f"repos/{repository}/contents/{path}?ref={row['source_commit']}",
+                f"repos/{repository}/contents/{path}?ref={commit}",
             ]
         )
         return blob.decode("utf-8", "replace")
     if source_object == "commit_message":
-        blob = gh_fetch(["api", f"repos/{repository}/commits/{row['source_commit']}"])
-        return json.loads(blob)["commit"]["message"]
+        blob = gh_fetch(["api", f"repos/{repository}/commits/{commit}"])
+        return reply_value(blob, ("commit", "message"), specimen_id)
     if source_object in ("issue_body", "pull_request_body"):
-        number = row["source_url"].rstrip("/").rsplit("/", 1)[-1].split("#")[0]
-        if not number.isdigit():
-            raise RefusalError(f"cannot read an object number from {row['source_url']}")
+        tail = row["source_url"].rstrip("/").rsplit("/", 1)[-1].split("#")[0]
+        number = endpoint_segment("object_number", tail, specimen_id)
         blob = gh_fetch(["api", f"repos/{repository}/issues/{number}"])
-        return json.loads(blob)["body"] or ""
+        return reply_value(blob, ("body",), specimen_id)
     fragment = COMMENT_FRAGMENT.search(row["source_url"])
     if fragment is None:
         raise RefusalError(f"cannot read a comment id from {row['source_url']}")
     collection = "issues" if fragment.group(1) == "issuecomment-" else "pulls"
-    blob = gh_fetch(["api", f"repos/{repository}/{collection}/comments/{fragment.group(2)}"])
-    return json.loads(blob)["body"] or ""
+    comment = endpoint_segment("comment_id", fragment.group(2), specimen_id)
+    blob = gh_fetch(["api", f"repos/{repository}/{collection}/comments/{comment}"])
+    return reply_value(blob, ("body",), specimen_id)
 
 
 def collect_findings(

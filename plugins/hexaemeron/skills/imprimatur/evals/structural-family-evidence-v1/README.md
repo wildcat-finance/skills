@@ -136,8 +136,8 @@ Its exit codes are three:
   `specimen-independence`, `tier-minimum`, `source-mismatch`.
 - `2`: the invocation or a read was refused, which covers a missing fixture
   directory, an unknown `--tier`, a symlink, an oversized file, an
-  unreadable JSONL row, and a `--verify-sources` row whose `repository`,
-  `source_path` or comment URL cannot name one pinned object.
+  unreadable JSONL row, a row carrying the same JSON key twice, and a
+  `--verify-sources` row or reply that cannot name one pinned object.
 
 The flags are:
 
@@ -158,12 +158,19 @@ The flags are:
 - `--verify-sources` replays each specimen against its immutable GitHub
   object through `gh` and compares `text_sha256`. This is the only path that
   opens a socket. Only a row that cleared every local check is replayed. The
-  schema is not the boundary on the endpoint the replay builds: its
-  `^wildcat-finance/` pattern admits `wildcat-finance/../other-org/repo` and
-  `source_path` carries no pattern, so the checker pins both itself and
-  refuses anything else with exit 2. A comment's id is read from the
-  `#issuecomment-<id>` or `#discussion_r<id>` fragment, because the number
-  before it is the issue or pull request the comment sits under.
+  schema is not the boundary on the endpoint the replay builds: it validates
+  with `re.search`, its `^wildcat-finance/` pattern admits
+  `wildcat-finance/../other-org/repo`, its `^[0-9a-f]{40}$` admits a trailing
+  newline, and `source_path` carries no pattern at all. Every value that
+  becomes part of an endpoint therefore passes one gate, `endpoint_segment`,
+  which fullmatches the pattern pinned for that field in `ENDPOINT_SEGMENTS`
+  and refuses anything else with exit 2. A field with no row there cannot
+  reach `gh`, so adding a field to an endpoint means naming its pattern
+  first. A comment's id is read from the `#issuecomment-<id>` or
+  `#discussion_r<id>` fragment, because the number before it is the issue or
+  pull request the comment sits under. The reply is data from outside too,
+  and is refused with exit 2 unless it carries the string field its kind
+  expects.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen
