@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wildcat.finance/schemas/alexandria/interval-receipt-v1.schema.json",
   "title": "Alexandria interval receipt v1",
-  "description": "What a collected interval covers: its implementation epochs, its shards, and what a second provider said about it.",
+  "description": "What a collected interval covers: its implementation epochs, its shards, what a second provider said about it, and the release component whose bytes carry each epoch's implementation code. A release built from an epoch-evidence journal names that component here and its offline check re-hashes it; a receipt without the field predates the component.",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "epochs", "shards", "reconciliation"],
@@ -10,7 +10,16 @@
     "format": {"const": "alexandria-interval-receipt/v1"},
     "epochs": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"$ref": "#/$defs/epoch"}},
     "shards": {"type": "array", "minItems": 1, "maxItems": 4096, "items": {"$ref": "#/$defs/shard"}},
-    "reconciliation": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/reconciliation"}]}
+    "reconciliation": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/reconciliation"}]},
+    "implementation_code": {
+      "type": "object", "additionalProperties": false,
+      "description": "The release component holding each implementation's runtime bytes keyed by address, and the SHA-256 of that component's canonical bytes; each epoch's implementation_code_sha256 is the SHA-256 of its implementation's bytes inside it.",
+      "required": ["component", "sha256"],
+      "properties": {
+        "component": {"const": "implementation-code"},
+        "sha256": {"$ref": "#/$defs/digest"}
+      }
+    }
   },
   "$defs": {
     "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},

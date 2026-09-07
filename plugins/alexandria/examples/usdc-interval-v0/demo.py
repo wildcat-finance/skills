@@ -2,8 +2,9 @@
 """The resumable Ethereum USDC interval collector, end to end and offline.
 
 `build` runs the whole path against the two checked-in fixture providers: it
-collects the interval, is killed once mid-shard and resumed, reconciles against
-the second provider, builds the Alexandria release and verifies it. `verify`
+collects the interval and its opening reads, is killed once mid-shard and
+resumed, reconciles against the second provider, builds the Alexandria release
+from the journals alone and verifies it, re-hashing the implementation code. `verify`
 re-derives the release identifier and compares it with the one this example
 pins.
 
@@ -26,7 +27,6 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from alexandria_lib.canonical import canonical_bytes, load_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
-from alexandria_lib.interval import discover_epochs  # noqa: E402
 from usdc_interval import Builder, Collector, Reconciler, check_interval  # noqa: E402
 
 
@@ -43,13 +43,18 @@ class Interrupted(Exception):
 
 
 class FixtureProvider:
-    """Answers from preserved synthetic chain state, never from a socket."""
+    """Answers from preserved synthetic chain state, never from a socket.
 
-    def __init__(self, state, epochs, *, provider_class, stop_at=None) -> None:
+    `state` holds the interval plan and the shard answers, which both
+    providers share. `answers` holds the provider's own opening-read answers:
+    the first block's hash, the implementation slot word and the runtime code.
+    `build` takes none of these; it derives the epochs from what the collector
+    journaled.
+    """
+
+    def __init__(self, state, answers, *, provider_class, stop_at=None) -> None:
         self.state = state
-        # The opening reads the collector makes after the last shard are
-        # answered from the same epoch fixture `build` hands to discover_epochs.
-        self.epochs = epochs
+        self.answers = answers
         self.provider_class = provider_class
         self.stop_at = stop_at
 
@@ -71,19 +76,17 @@ class FixtureProvider:
                 if tag in ("finalized", "safe")
                 else int(tag, 16)
             )
-            known = self.state["blocks"].get(str(number))
-            result = {
-                "hash": known if known else self.epochs["block_hashes"][str(number)],
-                "number": hex(number),
-                "transactions": [],
-            }
+            known = self.answers["blocks"].get(str(number), self.state["blocks"].get(str(number)))
+            if known is None:
+                raise AlexandriaError(f"the fixture holds no block {number}")
+            result = {"hash": known, "number": hex(number), "transactions": []}
         elif method == "eth_getLogs":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["logs"][str(shard["index"])]
         elif method == "eth_getStorageAt":
-            result = self.epochs["slot_reads"][str(int(envelope["params"][2], 16))]
+            result = self.answers["slots"][str(int(envelope["params"][2], 16))]
         elif method == "eth_getCode":
-            result = self.epochs["code_reads"][envelope["params"][0]]
+            result = self.answers["code"][envelope["params"][0]]
         else:
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["traces"][str(shard["index"])]
@@ -103,7 +106,6 @@ def build(output: Path) -> dict:
         raise AlexandriaError("the demonstration output already exists")
     primary_state = _read(FIXTURES / "primary.json", "primary fixture")
     secondary = _read(FIXTURES / "secondary.json", "secondary fixture")
-    epoch_source = _read(FIXTURES / "epochs.json", "epoch fixture")
     registry = _read(REGISTRY, "pinned Comet registry")
     plan = primary_state["plan"]
 
@@ -116,7 +118,7 @@ def build(output: Path) -> dict:
         try:
             Collector(
                 plan, staging,
-                FixtureProvider(primary_state, epoch_source, provider_class="primary", stop_at=KILL_AT),
+                FixtureProvider(primary_state, primary_state, provider_class="primary", stop_at=KILL_AT),
             ).collect()
         except Interrupted:
             interrupted = 1
@@ -124,34 +126,22 @@ def build(output: Path) -> dict:
             raise AlexandriaError("the demonstration's interruption did not fire")
 
         resumed = Collector(
-            plan, staging, FixtureProvider(primary_state, epoch_source, provider_class="primary")
+            plan, staging, FixtureProvider(primary_state, primary_state, provider_class="primary")
         ).collect()
 
         reconciliation = Reconciler(
             plan, staging,
-            FixtureProvider(primary_state, epoch_source, provider_class="second"),
+            FixtureProvider(primary_state, secondary, provider_class="second"),
             secondary["provider_class"],
         ).reconcile()
 
-        epochs = discover_epochs(
-            chain=plan["chain"],
-            deployment=plan["deployment"],
-            proxy=plan["proxy"],
-            interval=plan["interval"],
-            upgrade_logs=epoch_source["upgrade_logs"],
-            slot_reads=epoch_source["slot_reads"],
-            code_reads=epoch_source["code_reads"],
-            block_hashes=epoch_source["block_hashes"],
-        )
-
-        release_id = Builder(
-            plan, staging, epochs, registry, created_at=CREATED_AT
-        ).build(output / "release")
+        release_id = Builder(plan, staging, registry, created_at=CREATED_AT).build(output / "release")
         checked = check_interval(output / "release")
 
         summary = {
             "epochs": checked["epochs"],
             "format": SUMMARY_FORMAT,
+            "implementations": checked["implementations"],
             "interval": checked["interval"],
             "interrupted_at": KILL_AT,
             "reconciliation": reconciliation["reconciliation"]["status"],
@@ -174,7 +164,7 @@ def verify(built: Path) -> dict:
         raise AlexandriaError("the demonstration summary has an unknown format")
     expected = _read(EXPECTED, "pinned expectation")
     checked = check_interval(built / "release")
-    for field in ("epochs", "interval", "reconciliation", "release_id", "shard_statuses"):
+    for field in ("epochs", "implementations", "interval", "reconciliation", "release_id", "shard_statuses"):
         if checked[field] != expected[field]:
             raise AlexandriaError(
                 f"the rebuilt release's {field} does not match the pinned expectation"

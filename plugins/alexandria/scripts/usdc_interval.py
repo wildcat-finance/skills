@@ -14,7 +14,10 @@ remembered boundary that still matches when a hash has changed under it. After
 the last shard it reads the interval's opening evidence, the first block's
 header, the implementation slot and header at each epoch boundary and each
 implementation's runtime code, into a fourth journal that is checkpointed and
-resumed like a shard and reconciled like one.
+resumed like a shard and reconciled like one. `build` discovers the epochs
+from that journal alone, ships each implementation's runtime bytes as a
+component the epoch table names by digest, and binds every evidence scope to
+the first block's hash and the last shard's; `check` re-hashes the bytes.
 """
 
 from __future__ import annotations
@@ -38,6 +41,8 @@ import shutil
 import tempfile
 
 from alexandria_lib.interval import (
+    ADDRESS_RE,
+    CODE_DIGEST_RE,
     EVIDENCE_CLASSES,
     JOURNAL_CLASSES,
     MAX_DISPUTES,
@@ -45,6 +50,7 @@ from alexandria_lib.interval import (
     RECEIPT_FORMAT,
     Staging,
     ZERO_ADDRESS,
+    discover_epochs,
     log_identity,
     FINALITY_POLICIES,
     HASH_RE,
@@ -76,7 +82,29 @@ RECONCILIATION_DIRECTORY = "reconciliation"
 RECONCILIATION_RECORD = "reconciliation.json"
 DISPUTED_RESPONSES = "disputed.jsonl"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
+RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
+BOUNDARY_CLASS = "boundary-blocks"
+ENTRY_BLOCK_CLASSES = ("logs", "traces")
+CODE_COMPONENT = "implementation-code"
+CODE_FORMAT = "alexandria-interval-implementation-code/v1"
 RELEASE_NAME = "usdc-interval-v0"
+# The components every interval release carries beside its journals: one per
+# declared evidence class, the opening-read journal, and these six.
+FIXED_COMPONENTS = (
+    "epoch-table", "error-receipts", CODE_COMPONENT, "interval-plan",
+    "reconciliation", "registry",
+)
+# What a plan's omitted class would have preserved, named on every evidence
+# scope of a release that omits it.
+OMISSION_REASONS = {
+    "boundary-blocks": "no shard boundary header was preserved",
+    "logs": (
+        "no proxy event log was preserved, so an Upgraded(address) inside the interval is "
+        "undetectable from these bytes and the epoch table cannot name a boundary the "
+        "interval's first block did not open"
+    ),
+    "traces": "no internal call to the proxy was preserved",
+}
 
 FINALITY_TAGS = {"finalized": "finalized", "safe": "safe"}
 TIMESTAMP_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
@@ -163,6 +191,57 @@ def opening_label(position: int, read) -> str:
     return f"opening read {position} {read['kind']} block {read['block']}"
 
 
+def preserved_result(response: str, identifier: int, page_limit, subject: str, result_subject: str, parse_label: str):
+    """The result of one preserved envelope, held to the rules `_ask` applied to the same bytes.
+
+    Every record in a staging tree or a release is an answer `_ask` accepted,
+    and `_ask` refuses an envelope that is not JSON-RPC 2.0, one answering
+    another request's id, one carrying an error, one carrying no result, one
+    marked truncated and one whose result stands at the provider's page limit.
+    A reader that takes `result` off the envelope and nothing else believes an
+    answer the collector would have stopped for.
+
+    That rule was written into the shard journals' reader alone, so the
+    opening journal -- the evidence that binds the interval's start hash and
+    derives the epoch table -- was read with `envelope.get("result")` by the
+    collector's resume path, the builder's replay and the release check alike.
+    This is the one reader all four sites use, so a rule added here reaches
+    every preserved read rather than the journal whose loop it was written in.
+    """
+    envelope = load_bytes(response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES)
+    if (
+        not isinstance(envelope, dict)
+        or envelope.get("jsonrpc") != "2.0"
+        or envelope.get("id") != identifier
+        or "error" in envelope
+        or "result" not in envelope
+    ):
+        raise AlexandriaError(f"the {subject} is not the answer its preserved request names")
+    if envelope.get("truncated") is True:
+        raise AlexandriaError(f"the {subject} is marked truncated")
+    result = envelope["result"]
+    if isinstance(result, list) and len(result) >= page_limit:
+        raise AlexandriaError(
+            f"the {result_subject} stands at the provider's page limit, so it is not a "
+            "complete read"
+        )
+    return result
+
+
+def opening_result(plan, position: int, response: str, parse_label: str):
+    """One preserved opening read's result, held to the same rules as a shard read."""
+    virtual = len(plan["shards"])
+    subject = f"epoch-evidence response for opening read {position}"
+    return preserved_result(
+        response,
+        opening_identifier(virtual, position),
+        plan["provider"]["page_limit"],
+        subject,
+        f"epoch-evidence result for opening read {position}",
+        parse_label,
+    )
+
+
 class OpeningRefusal(AlexandriaError):
     """An opening read the collector will not believe, named by its receipt code."""
 
@@ -192,8 +271,10 @@ class OpeningPhase:
         self.boundaries = opening_boundaries(self.start, self.end, self.upgrades)
         self.prefix = opening_prefix(plan, self.upgrades)
         self.implementations: dict[int, str] = {}
+        self.slot_words: dict[int, str] = {}
         self.hashes: dict[int, str] = {}
         self.code_digests: dict[tuple[str, int], str] = {}
+        self.codes: dict[str, str] = {}
 
     @property
     def total(self) -> int:
@@ -257,6 +338,7 @@ class OpeningPhase:
                     f"the implementation slot read there holds {implementation}",
                 )
             self.implementations[block] = implementation
+            self.slot_words[block] = result
             return implementation
         if kind == "implementation-code":
             try:
@@ -265,6 +347,7 @@ class OpeningPhase:
                 raise OpeningRefusal("code-not-hex", block, str(error)) from error
             digest = hashlib.sha256(code).hexdigest()
             self.code_digests[(read["address"], block)] = digest
+            self.codes[read["address"]] = result.lower()
             return digest
         raise AlexandriaError(f"unknown opening read kind {kind!r}")
 
@@ -292,6 +375,101 @@ def staged_log_records(staging: Staging, declared) -> list:
     return records
 
 
+def require_committed_journals(staging: Staging, state: dict, purpose: str) -> None:
+    """Refuse a tree whose journals hold bytes the checkpoint has not committed.
+
+    Once the last shard commits, `next_shard` stays one past the plan while the
+    opening reads are still being made, so it no longer says that every staged
+    byte is committed. The checkpoint's offsets do: a journal longer than its
+    offset holds a read the collector would truncate and re-issue on resume,
+    and a release or a reconciliation built over it would carry bytes the
+    collector does not stand behind. A journal shorter than its offset is a
+    tree something else has cut.
+    """
+    for name in staging.classes:
+        size = staging.journal_bytes(name)
+        offset = state["offsets"].get(name, 0)
+        if size > offset:
+            raise AlexandriaError(
+                f"the {name} journal holds bytes the checkpoint has not committed "
+                f"({size} bytes on disk, {offset} committed), so there is nothing to {purpose}"
+            )
+        if size < offset:
+            raise AlexandriaError(
+                f"the {name} journal is shorter than its committed offset "
+                f"({size} bytes on disk, {offset} committed), so there is nothing to {purpose}"
+            )
+
+
+def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]:
+    """Replay the committed opening reads against the plan they were made from.
+
+    Returns the phase, holding every accepted value, and one
+    `(position, read, value, payload)` per read in plan order. Refuses a
+    journal that stops short of the plan, runs past it, or holds a record the
+    plan does not name at that position. Reads no network and changes no file.
+    """
+    phase = OpeningPhase(plan, staged_log_records(staging, classes))
+    entries = list(staging.entries(OPENING_CLASS))
+    virtual = len(plan["shards"])
+    replayed = []
+    position = 0
+    for read in phase.reads():
+        if position >= len(entries):
+            raise AlexandriaError(
+                "the interval's opening reads are not completely collected, so the "
+                "epoch-evidence journal cannot be believed"
+            )
+        entry = entries[position]
+        payload = phase.request(position, read)
+        if (
+            not isinstance(entry, dict)
+            or set(entry) != {"class", "request", "response", "shard"}
+            or entry["class"] != OPENING_CLASS
+            or entry["shard"] != virtual
+            or entry["request"].encode() != payload
+        ):
+            raise AlexandriaError(
+                f"committed opening read {position} is not the read the plan names there"
+            )
+        result = opening_result(
+            plan, position, entry["response"], f"staged opening read {position}"
+        )
+        value = phase.accept(read, result)
+        replayed.append((position, read, value, payload))
+        position += 1
+    if len(entries) > position:
+        raise AlexandriaError(
+            "the epoch-evidence journal holds more committed reads than the plan names"
+        )
+    return phase, replayed
+
+
+def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str) -> list:
+    """The epoch table the preserved opening reads derive, and nothing else.
+
+    Every input is a value `OpeningPhase.accept` took from a journaled read:
+    the upgrade logs the shards preserved, the slot word at each boundary, the
+    code each implementation answered, and the header hashes at the first
+    block and around each upgrade. The interval's last block is bound by the
+    last shard's boundary read, which is the one hash the opening phase does
+    not make itself.
+    """
+    interval = plan["interval"]
+    block_hashes = {str(block): value for block, value in phase.hashes.items()}
+    block_hashes[str(int(interval["end"]))] = end_hash
+    return discover_epochs(
+        chain=plan["chain"],
+        deployment=plan["deployment"],
+        proxy=plan["proxy"],
+        interval=dict(interval),
+        upgrade_logs=[upgrade["record"] for upgrade in phase.upgrades],
+        slot_reads={str(block): word for block, word in phase.slot_words.items()},
+        code_reads=dict(phase.codes),
+        block_hashes=block_hashes,
+    )
+
+
 def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
     """The requests one shard makes: one per declared class, in the plan's order."""
     proxy = plan["proxy"]
@@ -314,7 +492,7 @@ def declared_classes(plan) -> tuple:
     the plan did not declare.
     """
     classes = tuple(plan["evidence_classes"])
-    if "boundary-blocks" not in classes:
+    if BOUNDARY_CLASS not in classes:
         raise AlexandriaError(
             "the plan must declare the boundary-blocks evidence class; every shard "
             "is bound by its boundary block"
@@ -514,6 +692,15 @@ class Collector:
                     f"the {policy} tag stands at block {current_number}, below the plan's "
                     f"boundary block {number}"
                 )
+            if current_number == number and current.get("hash") != declared["block_hash"]:
+                # The tag stands exactly on the boundary and names it by another
+                # hash: the provider contradicts its own by-number read, or the
+                # plan was written against a block the chain did not finalize.
+                self.record_error(-1, "finality", "tag-hash-mismatch", number)
+                raise AlexandriaError(
+                    f"the {policy} tag stands at block {number} under a hash other than "
+                    "the plan's boundary hash"
+                )
         return header
 
     def _boundary_hash(self, shard_index: int) -> str:
@@ -633,10 +820,16 @@ class Collector:
                     raise AlexandriaError(
                         f"committed opening read {position} is not the read the plan names there"
                     )
-                envelope = load_bytes(
-                    entry["response"].encode(), f"staged {label}", max_bytes=MAX_RAW_COMPONENT_BYTES,
-                )
-                result = envelope.get("result") if isinstance(envelope, dict) else None
+                try:
+                    result = opening_result(
+                        self.plan, position, entry["response"], f"staged {label}"
+                    )
+                except AlexandriaError:
+                    self.record_error(
+                        virtual, OPENING_CLASS, "opening-journal-mismatch", position,
+                        block=read["block"],
+                    )
+                    raise
                 data = None
             else:
                 _payload, data, result = self._ask(
@@ -734,55 +927,22 @@ class Reconciler:
         return envelope["result"], data
 
     def _opening(self) -> list:
-        """Replay the committed opening reads against the plan they were made from.
-
-        Returns one `(position, read, value, payload)` per read, in plan
-        order, and refuses a journal that stops short of the plan, runs past
-        it, or holds a record the plan does not name at that position.
-        """
-        phase = OpeningPhase(self.plan, staged_log_records(self.staging, self.classes))
-        entries = list(self.staging.entries(OPENING_CLASS))
-        virtual = len(self.plan["shards"])
-        replayed = []
-        position = 0
-        for read in phase.reads():
-            if position >= len(entries):
-                raise AlexandriaError(
-                    "the interval's opening reads are not completely collected, so there "
-                    "is nothing to reconcile"
-                )
-            entry = entries[position]
-            payload = phase.request(position, read)
-            if (
-                not isinstance(entry, dict)
-                or set(entry) != {"class", "request", "response", "shard"}
-                or entry["class"] != OPENING_CLASS
-                or entry["shard"] != virtual
-                or entry["request"].encode() != payload
-            ):
-                raise AlexandriaError(
-                    f"committed opening read {position} is not the read the plan names there"
-                )
-            envelope = load_bytes(
-                entry["response"].encode(), f"staged opening read {position}",
-                max_bytes=MAX_RAW_COMPONENT_BYTES,
-            )
-            result = envelope.get("result") if isinstance(envelope, dict) else None
-            value = phase.accept(read, result)
-            replayed.append((position, read, value, payload))
-            position += 1
-        if len(entries) > position:
-            raise AlexandriaError(
-                "the epoch-evidence journal holds more committed reads than the plan names"
-            )
-        return replayed
+        """The committed opening reads, replayed; see `replay_opening`."""
+        return replay_opening(self.plan, self.staging, self.classes)[1]
 
     def _compare_opening(self, read, value, second) -> tuple[bool, str, str]:
         """Whether the second provider's answer binds the same thing, and the kind it is."""
         kind = read["kind"]
         block = read["block"]
         if kind == "first-block-header":
+            # The header has to be the first block's own: the right hash under
+            # another number is a provider describing some other block.
             agreed = isinstance(second, dict) and second.get("hash") == value
+            if agreed:
+                try:
+                    agreed = _hex(second.get("number"), "first block number") == block
+                except AlexandriaError:
+                    agreed = False
             return agreed, "first-block-hash", f"block {block}"
         if kind == "implementation-slot":
             try:
@@ -833,18 +993,7 @@ class Reconciler:
             raise AlexandriaError(
                 "the interval is not completely collected, so there is nothing to reconcile"
             )
-        # Once the last shard commits, `next_shard` stays one past the plan
-        # while the opening reads are still being made, so it no longer says
-        # that every staged byte is committed. The checkpoint's offsets do: a
-        # journal longer than its offset holds a read the collector would
-        # truncate and re-issue on resume, and comparing it would reconcile
-        # bytes the release will never carry.
-        for name in self.staging.classes:
-            if self.staging.journal_bytes(name) != state["offsets"].get(name, 0):
-                raise AlexandriaError(
-                    f"the {name} journal holds bytes the checkpoint has not committed, "
-                    "so there is nothing to reconcile"
-                )
+        require_committed_journals(self.staging, state, "reconcile")
         staged = self._staged()
         for index in range(len(shards)):
             for name in self.classes:
@@ -990,7 +1139,7 @@ class Reconciler:
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         document = {
-            "format": "alexandria-interval-reconciliation/v1",
+            "format": RECONCILIATION_FORMAT,
             "plan_sha256": plan_digest(self.plan),
             "reconciliation": record,
             "shards": table,
@@ -1004,23 +1153,20 @@ class Reconciler:
 class Builder:
     """Turn a reconciled staging tree into an Alexandria release, offline.
 
-    Every count and every declared interval is derived from the preserved bytes
-    rather than asserted, so `ingest` can refuse an inflated coverage figure
-    against the component it describes.
+    Every count, every epoch and every declared interval is derived from the
+    preserved bytes rather than asserted, so `ingest` can refuse an inflated
+    coverage figure against the component it describes and `check` can
+    re-derive the epoch table and re-hash the implementation code from the
+    release alone. Nothing is taken from an operator: the epochs come from the
+    `epoch-evidence` journal the collector committed.
     """
 
-    def __init__(self, plan, staging_root, epochs, registry, *, created_at) -> None:
+    def __init__(self, plan, staging_root, registry, *, created_at) -> None:
         validate_plan(plan)
         self.plan = plan
         self.classes = declared_classes(plan)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
-        validate_epochs(
-            epochs,
-            int(plan["interval"]["start"]),
-            int(plan["interval"]["end"]),
-        )
-        self.epochs = epochs
         validate_registry(registry)
         self.registry = registry
         if not isinstance(created_at, str) or TIMESTAMP_RE.fullmatch(created_at) is None:
@@ -1070,27 +1216,67 @@ class Builder:
             "records": records,
         }
 
+    def _opening(self, state: dict) -> OpeningPhase:
+        """The opening phase the journal committed, or a refusal naming what is missing."""
+        if state["offsets"].get(OPENING_CLASS, 0) == 0:
+            raise AlexandriaError(
+                "the staging tree has no committed epoch-evidence journal; the opening "
+                "phase has not been collected, so there is no release to build"
+            )
+        return replay_opening(self.plan, self.staging, self.classes)[0]
+
+    def _epochs(self, phase: OpeningPhase, end_hash: str) -> list:
+        """The epoch table, derived from the opening reads; see `epochs_from_opening`."""
+        return epochs_from_opening(self.plan, phase, end_hash)
+
+    def _code_component(self, epochs, phase: OpeningPhase) -> dict:
+        """Each implementation's runtime bytes as the collector read them, keyed by address."""
+        records = []
+        for address in sorted({epoch["implementation"] for epoch in epochs}):
+            code = phase.codes.get(address)
+            if code is None:
+                raise AlexandriaError(
+                    f"implementation {address} opens an epoch but its runtime code was not read"
+                )
+            records.append({"address": address, "code": code})
+        return {"format": CODE_FORMAT, "records": records}
+
     def build(self, output: Path) -> str:
         state = self.staging.committed()
         if state["next_shard"] != len(self.plan["shards"]):
             raise AlexandriaError(
                 "the interval is not completely collected, so there is no release to build"
             )
+        require_committed_journals(self.staging, state, "build")
+        phase = self._opening(state)
         reconciliation = self._reconciliation()
+        shards = _receipt_shards(reconciliation["shards"])
+        end_hash = shards[-1]["end_hash"]
+        start_hash = phase.hashes[phase.start]
+        epochs = self._epochs(phase, end_hash)
+        validate_epochs(epochs, phase.start, phase.end)
+        code = self._code_component(epochs, phase)
+        code_bytes = canonical_bytes(code)
         documents = {
             "epoch-table": {
-                "epochs": self.epochs,
+                "epochs": epochs,
                 "format": RECEIPT_FORMAT,
+                "implementation_code": {
+                    "component": CODE_COMPONENT,
+                    "sha256": hashlib.sha256(code_bytes).hexdigest(),
+                },
                 "reconciliation": reconciliation["reconciliation"],
-                "shards": _receipt_shards(reconciliation["shards"]),
+                "shards": shards,
             },
             "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
+            CODE_COMPONENT: code,
             "interval-plan": self.plan,
             "reconciliation": reconciliation,
             "registry": self.registry,
         }
-        for name in self.classes:
+        for name in self.staging.classes:
             documents[name] = self._journal(name)
+        boundaries = {"end_hash": end_hash, "start_hash": start_hash}
 
         parent = output.absolute().parent
         parent.mkdir(parents=True, exist_ok=True)
@@ -1109,7 +1295,7 @@ class Builder:
                     "redistribution": "permitted",
                     "role": _role(component),
                 })
-                captures.append(self._capture(component, document, reconciliation))
+                captures.append(self._capture(component, document, reconciliation, boundaries))
             plan_document = {
                 "captures": captures,
                 "components": components,
@@ -1121,21 +1307,15 @@ class Builder:
         finally:
             shutil.rmtree(staging, ignore_errors=True)
 
-    def _capture(self, component: str, document, reconciliation) -> dict:
+    def _capture(self, component: str, document, reconciliation, boundaries) -> dict:
         interval = self.plan["interval"]
+        evidence = component in JOURNAL_CLASSES
         collections = []
         record_count = 0
-        if component in EVIDENCE_CLASSES:
+        if evidence or component in ("error-receipts", CODE_COMPONENT):
             record_count = len(document["records"])
             collections = [{
-                "name": component,
-                "record_count": record_count,
-                "selector": "/records",
-            }]
-        elif component == "error-receipts":
-            record_count = len(document["records"])
-            collections = [{
-                "name": "error-receipts",
+                "name": "implementations" if component == CODE_COMPONENT else component,
                 "record_count": record_count,
                 "selector": "/records",
             }]
@@ -1165,6 +1345,19 @@ class Builder:
             }]
         gaps = _gaps(component, self.plan, self.registry, reconciliation)
         unsupported = _unsupported(component)
+        scope_interval = {
+            "end": interval["end"],
+            "kind": "block-range",
+            "start": interval["start"],
+        }
+        if evidence:
+            # Both boundary hashes, from the collector's own reads: the start
+            # from the first-block header the opening phase preserved, the end
+            # from the last shard's boundary read. Neither is copied from the
+            # epoch table or supplied by an operator, so the scope's finality
+            # is the policy the plan bound rather than a provider's word.
+            scope_interval["end_hash"] = boundaries["end_hash"]
+            scope_interval["start_hash"] = boundaries["start_hash"]
         return {
             "chain": self.plan["chain"],
             "component": component,
@@ -1175,49 +1368,43 @@ class Builder:
                 "status": _status(gaps, unsupported, reconciliation),
                 "unsupported_collections": unsupported,
             },
-            "evidence_class": "recorded-rpc" if component in EVIDENCE_CLASSES else "header-bound",
+            "evidence_class": "recorded-rpc" if evidence else "header-bound",
             "id": component,
             "source": {
-                "kind": "json-rpc" if component in EVIDENCE_CLASSES else "local-fixture",
-                "locator_class": "provider-endpoint" if component in EVIDENCE_CLASSES else "local-fixture",
-                "reference": self.plan["provider"]["class"] if component in EVIDENCE_CLASSES
+                "kind": "json-rpc" if evidence else "local-fixture",
+                "locator_class": "provider-endpoint" if evidence else "local-fixture",
+                "reference": self.plan["provider"]["class"] if evidence
                 else f"derived offline from the collected interval, {component}",
             },
             "scope": {
                 "deployment": self.plan["deployment"],
-                # `provider-reported`, whatever the plan's policy is called. A
-                # `safe` or `finalized` scope owes Alexandria both of its
-                # block-range hashes, and this collector reads each shard's end
-                # block, never the interval's first one, so the start hash does
-                # not exist to give. The named policy and the boundary block it
-                # bound are in the plan and the interval receipt; what the
-                # release establishes about finality is that a provider
-                # reported it, which is the class Phase 0's captures use for
-                # the same reason.
-                "finality": "provider-reported",
-                # No scope hash. Alexandria wants a block-range's start and end
-                # hashes together or not at all, and this collector never reads
-                # the interval's first block: it reads each shard's end. Those
-                # hashes, the epoch boundaries and the finality boundary are all
-                # bound in the interval receipt, which is where they belong.
-                # Borrowing the operator's epoch evidence to fill a scope field
-                # would put one source's hash behind another source's claim.
-                "interval": {
-                    "end": interval["end"],
-                    "kind": "block-range",
-                    "start": interval["start"],
-                },
+                "finality": scope_finality(self.plan) if evidence else "provider-reported",
+                "interval": scope_interval,
                 "kind": "full-dataset",
             },
             "venue": self.plan["venue"],
         }
 
 
+def scope_finality(plan) -> str:
+    """The finality class an evidence scope carries: the plan's policy where Alexandria names it.
+
+    `finalized` and `safe` are Alexandria finality classes and the collector
+    bound the boundary under them, so the scope says so. A `confirmations`
+    policy is a depth this collector chose, not a class the chain reports, so
+    its scope stays `provider-reported` while still carrying both hashes.
+    """
+    policy = plan["finality"]["policy"]
+    return policy if policy in FINALITY_TAGS else "provider-reported"
+
+
 def _role(component: str) -> str:
     return {
         "boundary-blocks": "json-rpc-response",
+        OPENING_CLASS: "json-rpc-response",
         "epoch-table": "interval-receipt",
         "error-receipts": "error-receipt",
+        CODE_COMPONENT: "implementation-code",
         "interval-plan": "capture-contract",
         "logs": "json-rpc-response",
         "reconciliation": "provider-reconciliation",
@@ -1273,12 +1460,17 @@ def _gaps(component: str, plan, registry, reconciliation) -> list:
             )
     if reconciliation["reconciliation"]["status"] == "unreconciled":
         gaps.append("the interval was not reconciled against a second provider")
-    if component in EVIDENCE_CLASSES:
-        gaps.append(
-            f"the interval's first block, {plan['interval']['start']}, was not read, so this "
-            f"scope binds no start hash and its finality class is provider-reported rather "
-            f"than {plan['finality']['policy']}"
-        )
+    if component in JOURNAL_CLASSES:
+        # Every class the plan omitted is a gap on every evidence scope, with
+        # what its absence leaves unpreserved, so a release that never asked
+        # for logs says so where a reader of the logs scope would look.
+        declared = set(plan["evidence_classes"])
+        for name in EVIDENCE_CLASSES:
+            if name not in declared:
+                gaps.append(
+                    f"the {name} evidence class was not declared by the plan, so it was "
+                    f"never requested or preserved; {OMISSION_REASONS[name]}"
+                )
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
@@ -1355,7 +1547,11 @@ def check_interval(release_root: Path) -> dict:
 
     Reaches no network and changes no file. The Alexandria verifier settles
     canonical bytes, digests, paths and declared coverage counts; what follows
-    settles the things only an interval release can be wrong about.
+    settles the things only an interval release can be wrong about, and
+    believes nothing the release merely declares: the epoch table is
+    re-derived from the preserved opening reads, each implementation's digest
+    is re-hashed from the `implementation-code` component, and every evidence
+    scope's start hash is compared with the collector's own first-block read.
     """
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
@@ -1363,17 +1559,27 @@ def check_interval(release_root: Path) -> dict:
         read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
         "manifest",
     )
-    documents = {}
     plan = load_bytes(
         _component(release_root, manifest, "interval-plan"), "component interval-plan",
         max_bytes=MAX_RAW_COMPONENT_BYTES,
     )
     validate_plan(plan)
     classes = declared_classes(plan)
-    for name in ("epoch-table", "error-receipts", "reconciliation", "registry", *classes):
+    journal_names = (*classes, OPENING_CLASS)
+    expected_components = set(FIXED_COMPONENTS) | set(journal_names)
+    present = [item["name"] for item in manifest["components"]]
+    for name in sorted(set(present) - expected_components):
+        raise AlexandriaError(
+            f"the release carries a {name} component the plan does not declare"
+        )
+    for name in sorted(expected_components - set(present)):
+        raise AlexandriaError(f"the release lacks its {name} component")
+    documents = {}
+    component_bytes = {}
+    for name in sorted(expected_components):
+        component_bytes[name] = _component(release_root, manifest, name)
         documents[name] = load_bytes(
-            _component(release_root, manifest, name), f"component {name}",
-            max_bytes=MAX_RAW_COMPONENT_BYTES,
+            component_bytes[name], f"component {name}", max_bytes=MAX_RAW_COMPONENT_BYTES,
         )
 
     interval = plan["interval"]
@@ -1382,7 +1588,7 @@ def check_interval(release_root: Path) -> dict:
 
     receipt = documents["epoch-table"]
     if not isinstance(receipt, dict) or set(receipt) != {
-        "epochs", "format", "reconciliation", "shards",
+        "epochs", "format", "implementation_code", "reconciliation", "shards",
     } or receipt["format"] != RECEIPT_FORMAT:
         raise AlexandriaError("the interval receipt has an unknown shape")
     validate_epochs(receipt["epochs"], start, end)
@@ -1405,9 +1611,9 @@ def check_interval(release_root: Path) -> dict:
         raise AlexandriaError(f"the shard table leaves block {expected} uncovered")
 
     # An epoch boundary and a shard boundary can name the same block. Where they
-    # do, they came from different evidence and have to agree: the epoch hash
-    # from the operator's chain reads, the shard hash from what the collector
-    # itself saw at that block.
+    # do, they came from different reads and have to agree: the epoch hash from
+    # the opening phase's header reads, the shard hash from what the collector
+    # saw at that block while walking the shards.
     shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
     for epoch in receipt["epochs"]:
         boundary = int(epoch["end_block"])
@@ -1425,39 +1631,197 @@ def check_interval(release_root: Path) -> dict:
     if int(finality["block_number"]) < end:
         raise AlexandriaError("the release's interval ends above its finality boundary")
 
+    # The reconciliation component is the last record shape this check reads,
+    # and it was the only one read without a shape check: its fields were
+    # indexed straight, and `validate_reconciliation` tolerates a null record
+    # for a run that has not compared providers yet. So an absent field raised
+    # a KeyError, a null record raised a TypeError where the status is read at
+    # the return, and a wrong format was accepted. The shape is settled here,
+    # once, on the same terms as the epoch table and the journals.
     reconciliation = documents["reconciliation"]
+    if (
+        not isinstance(reconciliation, dict)
+        or set(reconciliation) != {"format", "plan_sha256", "reconciliation", "shards"}
+        or reconciliation["format"] != RECONCILIATION_FORMAT
+    ):
+        raise AlexandriaError("the reconciliation component has an unknown shape")
+    if reconciliation["reconciliation"] is None:
+        raise AlexandriaError(
+            "the reconciliation component records no reconciliation, so the release "
+            "carries no second-provider comparison"
+        )
     if reconciliation["plan_sha256"] != plan_digest(plan):
         raise AlexandriaError("the reconciliation record belongs to a different plan")
     validate_reconciliation(reconciliation["reconciliation"])
     validate_shard_coverage(reconciliation["shards"], plan["shards"], classes)
-    if [shard["status"] for shard in reconciliation["shards"]] != [
-        shard["status"] for shard in shards
-    ]:
+    # The two shard tables are one table written twice. Only their statuses
+    # were compared, so the reconciliation copy could carry another boundary
+    # hash or another record count than the receipt's -- neither of which any
+    # other check reads -- and a reader of the reconciliation alone would
+    # believe it. They must agree entry for entry.
+    if reconciliation["shards"] != shards:
         raise AlexandriaError("the reconciliation and the receipt disagree about a shard")
+    # The receipt carries its own copy of the comparison, which the builder
+    # takes from this record. Only the record's copy was checked, so a receipt
+    # could declare `agreed` over any number of comparisons while the record
+    # said `unreconciled`, and a reader of the receipt alone would believe it.
+    if receipt["reconciliation"] != reconciliation["reconciliation"]:
+        raise AlexandriaError(
+            "the receipt and the reconciliation record declare different comparisons"
+        )
 
     disputed = {
         shard["index"] for shard in shards if shard["status"] != "complete"
     }
     captures = {capture["id"]: capture for capture in manifest["captures"]}
+    # Every component's coverage and scope are read under the component's own
+    # name below and in `_check_scopes`. The builder gives each capture the
+    # name of the component it preserves; a release whose captures name
+    # something else raised a KeyError there instead of refusing.
+    for name in sorted(expected_components - set(captures)):
+        raise AlexandriaError(f"the release carries no capture for its {name} component")
     derived = {shard["index"]: {} for shard in plan["shards"]}
-    for name in classes:
+    boundary_headers = {}
+    # The read each shard and class makes, derived from the plan exactly as the
+    # collector derived it. A shard journal record was filed under a shard
+    # index that nothing held against the request the record preserves, so a
+    # `logs` read over two unrelated blocks, or a boundary record that asked
+    # for something other than the shard's last block, stood for the shard's
+    # coverage. The opening journal has been replayed against its own derived
+    # requests since it was written; the shard journals are held to the same
+    # rule here.
+    planned_requests = {
+        (shard["index"], name): request_bytes(
+            request_identifier(shard["index"], name), method, params
+        )
+        for shard in plan["shards"]
+        for name, method, params in shard_requests(plan, shard)
+    }
+    shard_bounds = {shard["index"]: (shard["start"], shard["end"]) for shard in plan["shards"]}
+    # The address every shard read filters on: `eth_getLogs` by the emitting
+    # contract, `trace_filter` by the recipient. An entry naming another
+    # address is one its own preserved request could not have returned.
+    proxy = plan["proxy"]
+    reads = {}
+    virtual = len(plan["shards"])
+    for name in journal_names:
         journal = documents[name]
-        if journal["format"] != JOURNAL_FORMAT or journal["class"] != name:
-            raise AlexandriaError(f"the {name} component is not its own journal")
+        if (
+            not isinstance(journal, dict)
+            or set(journal) != {"class", "format", "interval", "records"}
+            or journal["format"] != JOURNAL_FORMAT
+        ):
+            raise AlexandriaError(f"the {name} component is not an interval journal")
+        if journal["class"] != name:
+            raise AlexandriaError(
+                f"the {name} component carries a {str(journal['class'])[:64]} journal, "
+                "so the plan and the journals disagree about the declared classes"
+            )
         if journal["interval"] != interval:
             raise AlexandriaError(f"the {name} journal declares another interval")
-        staged = {record["shard"] for record in journal["records"]}
-        if staged != {shard["index"] for shard in plan["shards"]}:
-            raise AlexandriaError(f"the {name} journal does not cover every shard")
+        if not isinstance(journal["records"], list):
+            raise AlexandriaError(f"the {name} journal carries no record list")
         for record in journal["records"]:
-            envelope = load_bytes(
-                record["response"].encode(), f"{name} response for shard {record['shard']}",
-                max_bytes=MAX_RAW_COMPONENT_BYTES,
-            )
-            result = envelope.get("result")
-            derived[record["shard"]][name] = (
-                len(result) if isinstance(result, list) else 1
-            )
+            if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"}:
+                raise AlexandriaError(f"a {name} journal record has an unknown shape")
+            # The request and the response are read as text further down, by
+            # `_replay_release_opening` and by the count derivation. A release
+            # is somebody else's bytes, so the type is checked here rather
+            # than discovered as an attribute error on a number.
+            for field in ("request", "response"):
+                if not isinstance(record[field], str):
+                    raise AlexandriaError(
+                        f"a {name} journal record carries a {field} that is not text"
+                    )
+            # The shard index becomes a set element on the next line and a
+            # dictionary key in the count derivation, so an unhashable value
+            # raises a TypeError there and a boolean silently shares shard
+            # one's key. Both are refused by name here instead.
+            if not isinstance(record["shard"], int) or isinstance(record["shard"], bool):
+                raise AlexandriaError(
+                    f"a {name} journal record carries a shard index that is not a whole number"
+                )
+            if record["class"] != name:
+                raise AlexandriaError(
+                    f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
+                    "plan and the journals disagree about the declared classes"
+                )
+        staged = {record["shard"] for record in journal["records"]}
+        if name == OPENING_CLASS:
+            if staged and staged != {virtual}:
+                raise AlexandriaError(
+                    "the epoch-evidence journal holds a record outside the virtual shard index"
+                )
+        else:
+            if staged != {shard["index"] for shard in plan["shards"]}:
+                raise AlexandriaError(f"the {name} journal does not cover every shard")
+            for record in journal["records"]:
+                if record["request"].encode() != planned_requests[(record["shard"], name)]:
+                    raise AlexandriaError(
+                        f"the {name} record filed under shard {record['shard']} is not the "
+                        "read the plan names there"
+                    )
+                # The envelope the collector accepted for this read, held to
+                # the rules `_ask` applied to the same bytes: the answer's id,
+                # its version, an absent error, a present result, no
+                # truncation marker and a page below the provider's limit.
+                # Those rules live in `preserved_result` now, which the
+                # opening journal's three readers share, so the release's
+                # shard evidence and its opening evidence are read under one
+                # rule rather than two that drift apart.
+                result = preserved_result(
+                    record["response"],
+                    request_identifier(record["shard"], name),
+                    plan["provider"]["page_limit"],
+                    f"{name} response for shard {record['shard']}",
+                    f"{name} result for shard {record['shard']}",
+                    f"{name} response for shard {record['shard']}",
+                )
+                # A `logs` or `trace_filter` answer is a list of entries, and
+                # the entries are read below. A result of any other shape was
+                # counted as one read and never looked at.
+                if name in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
+                    raise AlexandriaError(
+                        f"the {name} result for shard {record['shard']} is not a list of entries"
+                    )
+                reads[(record["shard"], name)] = reads.get((record["shard"], name), 0) + 1
+                # Two records of one class for one shard are two reads, so
+                # their sizes add. Assigning here declared the last record's
+                # size alone, so a journal could carry a shard's evidence
+                # twice while the receipt's count named one read of it.
+                derived[record["shard"]][name] = derived[record["shard"]].get(name, 0) + (
+                    len(result) if isinstance(result, list) else 1
+                )
+                if name == BOUNDARY_CLASS:
+                    boundary_headers[record["shard"]] = result
+                if name in ENTRY_BLOCK_CLASSES:
+                    # An entry the read could not have returned: the record's
+                    # own request bounds the blocks its result can carry, and
+                    # an entry outside them contradicts the read it sits in.
+                    # `logs` names its block as a hexadecimal quantity and
+                    # `trace_filter` as a decimal number, so both are read.
+                    low, high = shard_bounds[record["shard"]]
+                    for entry in result:
+                        label = f"a {name} entry for shard {record['shard']}"
+                        block = _entry_block(
+                            entry.get("blockNumber") if isinstance(entry, dict) else None,
+                            f"{label} block number",
+                        )
+                        if not low <= block <= high:
+                            raise AlexandriaError(
+                                f"{label} names block {block}, outside the shard's blocks "
+                                f"{low} to {high}"
+                            )
+                        # The other half of the record's own filter: the read
+                        # names one address, so an entry naming another is one
+                        # the read could not have returned. The block was
+                        # bound and the address was not.
+                        address = _entry_address(entry, name, label)
+                        if address != proxy:
+                            raise AlexandriaError(
+                                f"{label} names address {address}, not the {proxy} its "
+                                "read asked for"
+                            )
         gaps = captures[name]["coverage"]["gaps"]
         for index in sorted(disputed):
             if not any(f"shard {index}," in gap for gap in gaps):
@@ -1468,6 +1832,13 @@ def check_interval(release_root: Path) -> dict:
             raise AlexandriaError(
                 f"the {name} coverage reports complete while a shard is not"
             )
+        for omitted in EVIDENCE_CLASSES:
+            if omitted not in classes and not any(
+                f"the {omitted} evidence class was not declared" in gap for gap in gaps
+            ):
+                raise AlexandriaError(
+                    f"the plan omits {omitted} but the {name} coverage does not name the gap"
+                )
 
     for shard in shards:
         if shard["record_counts"] != derived[shard["index"]]:
@@ -1475,8 +1846,73 @@ def check_interval(release_root: Path) -> dict:
                 f"shard {shard['index']} declares record counts the journals do not carry"
             )
 
+    # One read per shard and class is what the collector writes: it asks each
+    # request once and a resumed run truncates its journals back to the
+    # checkpoint before it continues. A second record was refused for the
+    # boundary class alone, where the later copy supplanted the read the
+    # shard's hash is compared with; for every other class a second record
+    # stood beside the genuine one and the receipt declared their sum as reads
+    # the collector never made. The rule is one rule, and it is applied after
+    # the counts so a journal carrying evidence its receipt does not count is
+    # still refused under that name.
+    for index, class_name in sorted(key for key, count in reads.items() if count > 1):
+        raise AlexandriaError(
+            f"the {class_name} journal holds shard {index} twice, so two reads claim "
+            f"that shard's {class_name} evidence"
+        )
+
+    # Every shard's boundary hash, re-read from the release's own
+    # `boundary-blocks` journal. The collector took each one from an
+    # `eth_getBlockByNumber` at that shard's last block and the journal
+    # preserves that read, so the declared hash is compared with the bytes it
+    # describes rather than believed. Without this the interval's own end
+    # hash was pinned only to the epoch table, which the derivation takes
+    # from the same declared value, so it was pinned to itself.
+    for shard in shards:
+        header = boundary_headers.get(shard["index"])
+        if not isinstance(header, dict) or not isinstance(header.get("hash"), str):
+            raise AlexandriaError(
+                f"the boundary-blocks record for shard {shard['index']} preserves no block header"
+            )
+        label = f"the boundary-blocks header for shard {shard['index']}"
+        if _hex(header.get("number"), f"{label} block number") != shard["end"]:
+            raise AlexandriaError(
+                f"{label} preserves block {header['number']}, not the shard's last "
+                f"block {shard['end']}"
+            )
+        if header["hash"] != shard["end_hash"]:
+            raise AlexandriaError(
+                f"shard {shard['index']} declares boundary hash {shard['end_hash']}, which "
+                f"its preserved boundary read does not carry; that read carries "
+                f"{header['hash']}"
+            )
+
+    # The opening reads, replayed from the release's own journal: they name
+    # the first block's hash and derive the epoch table the receipt has to
+    # match, so nothing the receipt declares about an epoch is believed on
+    # its own word.
+    phase = _replay_release_opening(plan, documents, classes)
+    first_hash = phase.hashes[start]
+
+    # The implementation code, re-hashed from the component's bytes: the
+    # receipt names the component's digest, and each epoch names the digest of
+    # its implementation's runtime bytes; both are recomputed here, before the
+    # table as a whole is compared, so a digest the bytes do not carry is
+    # refused under its own name.
+    implementations = _recheck_implementation_code(
+        receipt, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
+    )
+    derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"])
+    if derived_epochs != receipt["epochs"]:
+        raise AlexandriaError(
+            "the epoch table does not match the epochs the preserved opening reads derive"
+        )
+
+    _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
+
     return {
         "epochs": len(receipt["epochs"]),
+        "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
         "reconciliation": reconciliation["reconciliation"]["status"],
         "release_id": release_id,
@@ -1485,6 +1921,155 @@ def check_interval(release_root: Path) -> dict:
             for status in sorted({shard["status"] for shard in shards})
         },
     }
+
+
+def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
+    """Replay the release's `epoch-evidence` records against its plan, offline."""
+    logs = []
+    if "logs" in classes:
+        for record in documents["logs"]["records"]:
+            envelope = load_bytes(
+                record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
+            )
+            result = envelope.get("result") if isinstance(envelope, dict) else None
+            if isinstance(result, list):
+                logs.extend(result)
+    phase = OpeningPhase(plan, logs)
+    entries = documents[OPENING_CLASS]["records"]
+    position = 0
+    for read in phase.reads():
+        if position >= len(entries):
+            raise AlexandriaError(
+                "the epoch-evidence journal stops short of the opening reads the plan names"
+            )
+        entry = entries[position]
+        if entry["request"].encode() != phase.request(position, read):
+            raise AlexandriaError(
+                f"epoch-evidence record {position} is not the opening read the plan names there"
+            )
+        phase.accept(
+            read, opening_result(plan, position, entry["response"], f"opening read {position}")
+        )
+        position += 1
+    if len(entries) > position:
+        raise AlexandriaError(
+            "the epoch-evidence journal holds more records than the opening reads the plan names"
+        )
+    return phase
+
+
+def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
+    """Re-hash the component and every implementation's bytes; refuse by name what disagrees."""
+    named = receipt["implementation_code"]
+    if not isinstance(named, dict) or set(named) != {"component", "sha256"}:
+        raise AlexandriaError("the epoch table names its implementation-code component in an unknown shape")
+    if named["component"] != CODE_COMPONENT:
+        raise AlexandriaError(
+            f"the epoch table names {str(named['component'])[:64]} rather than the "
+            f"{CODE_COMPONENT} component"
+        )
+    if not isinstance(named["sha256"], str) or CODE_DIGEST_RE.fullmatch(named["sha256"]) is None:
+        raise AlexandriaError("the epoch table names no SHA-256 for the implementation-code component")
+    actual = hashlib.sha256(data).hexdigest()
+    if actual != named["sha256"]:
+        raise AlexandriaError(
+            f"the epoch table names implementation-code digest {named['sha256']} but the "
+            f"component's bytes hash to {actual}"
+        )
+    if (
+        not isinstance(component, dict)
+        or set(component) != {"format", "records"}
+        or component["format"] != CODE_FORMAT
+        or not isinstance(component["records"], list)
+    ):
+        raise AlexandriaError("the implementation-code component has an unknown shape")
+    codes = {}
+    for record in component["records"]:
+        if not isinstance(record, dict) or set(record) != {"address", "code"}:
+            raise AlexandriaError("an implementation-code record has an unknown shape")
+        address = record["address"]
+        if not isinstance(address, str) or not re.fullmatch(r"0x[0-9a-f]{40}", address):
+            raise AlexandriaError("an implementation-code record is not keyed by a lowercase address")
+        if address in codes:
+            raise AlexandriaError(f"the implementation-code component holds {address} twice")
+        codes[address] = hashlib.sha256(runtime_code(record["code"], address)).hexdigest()
+    implementations = {}
+    for epoch in receipt["epochs"]:
+        address = epoch["implementation"]
+        if address not in codes:
+            raise AlexandriaError(
+                f"implementation {address}, which opens the epoch at block "
+                f"{epoch['start_block']}, is missing from the implementation-code component"
+            )
+        if codes[address] != epoch["implementation_code_sha256"]:
+            raise AlexandriaError(
+                f"the epoch at block {epoch['start_block']} names implementation code digest "
+                f"{epoch['implementation_code_sha256']} for {address}, which the preserved "
+                f"bytes do not carry; they hash to {codes[address]}"
+            )
+        implementations[address] = codes[address]
+    for address in sorted(set(codes) - set(implementations)):
+        raise AlexandriaError(
+            f"the implementation-code component carries {address}, which no epoch names"
+        )
+    return implementations
+
+
+def _check_scopes(manifest, plan, journal_names, first_hash: str, end_hash: str) -> None:
+    """Every evidence scope carries the plan's finality class and both boundary hashes.
+
+    The start hash is compared with the hash the collector's own first-block
+    read carries, never with the epoch table; the end hash with the last
+    shard's boundary read. A scope with one hash and not the other, another
+    finality class, a block range other than the plan's, or a hash from
+    elsewhere refuses by name.
+    """
+    expected_finality = scope_finality(plan)
+    planned = plan["interval"]
+    captures = {capture["id"]: capture for capture in manifest["captures"]}
+    for name in journal_names:
+        scope = captures[name]["scope"]
+        interval = scope["interval"]
+        # The block range beside the two hashes was declared and never
+        # compared, so a scope could name a range the release does not cover
+        # while carrying the hashes of the range it does.
+        if (
+            str(interval["start"]) != str(planned["start"])
+            or str(interval["end"]) != str(planned["end"])
+        ):
+            raise AlexandriaError(
+                f"the {name} scope declares blocks {interval['start']} to {interval['end']}, "
+                f"not the plan's {planned['start']} to {planned['end']}"
+            )
+        has_start = "start_hash" in interval
+        has_end = "end_hash" in interval
+        if has_start != has_end:
+            raise AlexandriaError(
+                f"the {name} scope carries one boundary hash and not the other"
+            )
+        if not has_start:
+            raise AlexandriaError(f"the {name} scope carries no boundary hashes")
+        if scope["finality"] != expected_finality:
+            raise AlexandriaError(
+                f"the {name} scope carries finality {str(scope['finality'])[:64]} while the "
+                f"plan's policy binds {expected_finality}"
+            )
+        if interval["start_hash"] != first_hash:
+            raise AlexandriaError(
+                f"the {name} scope's start hash is not the hash the collector's first-block "
+                "read carries"
+            )
+        if interval["end_hash"] != end_hash:
+            raise AlexandriaError(
+                f"the {name} scope's end hash is not the last shard's boundary hash"
+            )
+    for name, capture in captures.items():
+        if name not in journal_names and (
+            "start_hash" in capture["scope"]["interval"] or "end_hash" in capture["scope"]["interval"]
+        ):
+            raise AlexandriaError(
+                f"the {name} scope carries boundary hashes although it preserves no chain read"
+            )
 
 
 def _component(release_root: Path, manifest, name: str) -> bytes:
@@ -1499,6 +2084,46 @@ def _component(release_root: Path, manifest, name: str) -> bytes:
 
 def _number(value) -> int:
     return int(value)
+
+
+def _entry_address(entry, name: str, label: str) -> str:
+    """The address one journal entry names as the party its read filtered on.
+
+    `eth_getLogs` filters on the emitting contract, which every log carries as
+    `address`. `trace_filter` filters on the recipient, which a trace names in
+    the field its own action carries: a call's `to`, a creation's
+    `result.address`, a self-destruct's `refundAddress`, a reward's `author`.
+    """
+    if not isinstance(entry, dict):
+        raise AlexandriaError(f"{label} is not an object")
+    if name == "logs":
+        value = entry.get("address")
+    else:
+        action = entry.get("action") if isinstance(entry.get("action"), dict) else {}
+        created = entry.get("result") if isinstance(entry.get("result"), dict) else {}
+        value = next(
+            (
+                candidate
+                for candidate in (
+                    action.get("to"),
+                    created.get("address"),
+                    action.get("refundAddress"),
+                    action.get("author"),
+                )
+                if isinstance(candidate, str)
+            ),
+            None,
+        )
+    if not isinstance(value, str) or ADDRESS_RE.fullmatch(value.lower()) is None:
+        raise AlexandriaError(f"{label} names no address its read could have filtered on")
+    return value.lower()
+
+
+def _entry_block(value, label: str) -> int:
+    """One journal entry's block, as a hexadecimal quantity or a whole number."""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    return _hex(value, label)
 
 
 def _hex(value, label: str) -> int:
@@ -1535,7 +2160,6 @@ def parser() -> argparse.ArgumentParser:
     build = commands.add_parser("build", help="build the Alexandria release offline")
     build.add_argument("--plan", required=True, type=Path)
     build.add_argument("--staging", required=True, type=Path)
-    build.add_argument("--epochs", required=True, type=Path)
     build.add_argument("--registry", required=True, type=Path)
     build.add_argument("--created-at", required=True)
     build.add_argument("--output", required=True, type=Path)
@@ -1557,10 +2181,9 @@ def main(argv=None) -> int:
         plan = load_control(args.plan, "interval plan")
         validate_plan(plan)
         if args.command == "build":
-            epochs = load_control(args.epochs, "epoch table")
             registry = load_control(args.registry, "Compound registry")
             release_id = Builder(
-                plan, args.staging, epochs, registry, created_at=args.created_at
+                plan, args.staging, registry, created_at=args.created_at
             ).build(args.output)
             print(release_id)
             return 0
