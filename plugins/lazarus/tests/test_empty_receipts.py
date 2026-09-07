@@ -38,6 +38,7 @@ GENESIS_HASH = "0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8f
 GENESIS_FIXTURE = Path(__file__).resolve(strict=True).parent / "fixtures" / (
     "ethereum-genesis-empty-receipts-v1"
 )
+GENESIS_DEMO = GENESIS_FIXTURE / "demo.py"
 
 
 def verify_material(material):
@@ -407,7 +408,7 @@ class EmptyReceiptFixtureTests(unittest.TestCase):
         self.assertEqual(report["fixture_digest"], fixture_digest(report["manifest"]))
         self.assertEqual(
             report["fixture_digest"],
-            "5b2f62a649c550e5b40619a9c0707248244301441888c1c6702c099f2f0a92b4",
+            "da15f6d08676c826d36564e59c5ebc2e9388d7dc5bd5f8f3e5a6d31e376bd044",
         )
         self.assertEqual(report["block_hash"], GENESIS_HASH)
         self.assertEqual(report["receipts_root"], EMPTY_ROOT)
@@ -499,6 +500,47 @@ class EmptyReceiptFixtureTests(unittest.TestCase):
         self.assertNotIn("receipt_trie_proved", legacy["evidence_counts"])
         self.assertEqual(scoped["receipt_trie_proved"]["mode"], "scoped")
         self.assertEqual(scoped["receipt_trie_proved"]["relations"], 2)
+
+
+class EmptyReceiptDemonstrationTests(unittest.TestCase):
+    def run_demo(self):
+        result = subprocess.run(
+            [sys.executable, str(GENESIS_DEMO)],
+            cwd=support.REPO_ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return json.loads(result.stdout)
+
+    def test_genesis_demonstration_verifies_fixture_statement_and_release_offline(self):
+        event = self.run_demo()
+        self.assertEqual(event["event"], "ethereum_genesis_empty_receipt_demo")
+        self.assertEqual(event["stage"], "complete")
+        self.assertEqual(event["network"], "denied")
+        self.assertEqual(event["relation"]["mode"], "empty")
+        self.assertEqual(event["relation"]["receipts_root"], EMPTY_ROOT)
+        self.assertEqual(event["relation"]["receipt_count"], 0)
+        self.assertEqual(event["relation"]["proved_relations"], 0)
+        self.assertEqual(event["evidence_counts"]["receipt_trie_proved"], 0)
+        self.assertEqual(event["versions"]["statement"], "https://ariadne.wildcat.finance/state-fixture/v2")
+        self.assertEqual(event["versions"]["release"], 2)
+        self.assertEqual(set(event["digests"]), {"fixture", "manifest", "statement", "release"})
+
+    def test_genesis_demonstration_rejects_each_materialised_hostile_copy(self):
+        event = self.run_demo()
+        self.assertEqual(
+            event["mutations"],
+            {
+                "component_digest": "rejected",
+                "count_inflation": "rejected",
+                "mixed_shape": "rejected",
+                "nonempty_root": "rejected",
+                "release": "rejected",
+            },
+        )
 
 
 if __name__ == "__main__":

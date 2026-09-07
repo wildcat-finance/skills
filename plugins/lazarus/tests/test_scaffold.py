@@ -158,19 +158,21 @@ class ScaffoldTests(unittest.TestCase):
             },
         )
 
-    def test_evolution_2_2_0_advances_the_completed_receipt_frontier_once(self):
-        self.assertEqual(support.skill_version(), "2.2.0")
+    def test_evolution_3_2_0_closes_the_empty_receipt_frontier_once(self):
+        self.assertEqual(support.skill_version(), "3.2.0")
         ledger = (support.SKILL.parent / "EVOLUTION.md").read_text(encoding="utf-8")
         self.assertEqual(ledger.count("| `lazarus-v1.2.0` |"), 1)
         self.assertEqual(ledger.count("| `lazarus-v2.2.0` |"), 1)
+        self.assertEqual(ledger.count("| `lazarus-v3.2.0` |"), 1)
         for line in (
-            "- Current version: `lazarus-v2.2.0`",
-            "- Frontier status: `open`",
+            "- Current version: `lazarus-v3.2.0`",
+            "- Frontier status: `mature`",
             "- Frontier revision: `empty-block-receipt-witnesses`",
+            "- Next Fiat job: None -- mature",
         ):
             self.assertIn(line, ledger)
-        self.assertIn("Aave v4 demonstration", ledger)
-        self.assertIn("empty block cannot yet be represented", ledger)
+        self.assertIn("empty-block demonstration", ledger)
+        self.assertIn("prove zero relations", ledger)
 
     def test_receipt_inclusion_proof_guide_is_discoverable(self):
         guide = support.PLUGIN_ROOT / "docs" / "receipt-inclusion-proofs.md"
