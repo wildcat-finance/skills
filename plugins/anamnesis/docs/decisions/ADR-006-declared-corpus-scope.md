@@ -83,6 +83,11 @@ Every corpus must now declare what it preserves before it can be built, and a
 release carries that declaration inside its own bytes, so a reader can check the
 manifest's sources against the scope without any document outside the release.
 
+A release built before this decision carries no scope, so `verify` refuses it
+`A077` rather than passing it as it did. The only Anamnesis release in the tree
+is the pilot, and this decision rebuilds it, but a release held elsewhere has to
+be rebuilt under a declared scope before it verifies again.
+
 The admission policy stays outside the release id. Admission events, the
 sources and the admission policy digest do not change when a scope is declared
 or amended.

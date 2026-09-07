@@ -14,9 +14,10 @@ definition is data in this file and the report names this command.
 The report is printed. It is written only to a path named by ``--out``, which
 must not already exist, so a rerun from the committed copy can never replace a
 receipted report under ``.hexaemeron/reports/``. The ``pilot-artefacts-rebuilt``
-grep excludes ``plugins/anamnesis/docs``, which holds this run's own records:
-they quote the pilot's tokens without being pilot artefacts, so counting them
-would move the value each time a record is committed.
+grep excludes ``plugins/anamnesis/docs`` and ``plugins/anamnesis/tests``: this
+run's own records quote the pilot's tokens, and a guard pins them, without
+either being one of the pilot artefacts the study enumerates, so counting them
+would move the value every time a record or a guard is committed.
 """
 
 from __future__ import annotations
@@ -110,7 +111,10 @@ def sha256_file(path):
 
 def git_grep_files(token, scope="plugins/anamnesis"):
     completed = subprocess.run(
-        ["git", "grep", "-l", "-F", token, "--", scope, ":(exclude)plugins/anamnesis/docs"],
+        [
+            "git", "grep", "-l", "-F", token, "--", scope,
+            ":(exclude)plugins/anamnesis/docs", ":(exclude)plugins/anamnesis/tests",
+        ],
         capture_output=True, text=True, check=False,
     )
     return {line.strip() for line in completed.stdout.splitlines() if line.strip()}
