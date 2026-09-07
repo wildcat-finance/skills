@@ -33,6 +33,15 @@ TIER_MINIMUMS = {
     "existing-family": (0, 0),
     "future": (0, 0),
 }
+# The endpoint a replay reads is built from specimen fields, so each one is
+# pinned here rather than trusted to the schema: the schema's `^wildcat-finance/`
+# pattern admits `wildcat-finance/../other-org/repo`, and `source_path` carries
+# no pattern at all.
+REPOSITORY_PATTERN = re.compile(r"wildcat-finance/[A-Za-z0-9][A-Za-z0-9._-]*")
+SOURCE_PATH_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*")
+# A comment's own id is in the URL fragment. The number before it is the issue
+# or pull request the comment sits under, which is a different object.
+COMMENT_FRAGMENT = re.compile(r"#(issuecomment-|discussion_r)([0-9]+)$")
 FAMILIES_NAME = "families.jsonl"
 SPECIMENS_NAME = "specimens.jsonl"
 REJECTIONS_NAME = "selection-rejections.jsonl"
@@ -225,10 +234,12 @@ def gh_fetch(argv: list[str]) -> bytes:
 def fetch_source_object(row: dict) -> str:
     """Replay one specimen's immutable GitHub object. Opens a socket."""
     repository = row["repository"]
+    if not isinstance(repository, str) or REPOSITORY_PATTERN.fullmatch(repository) is None:
+        raise RefusalError(f"repository is not one pinned wildcat-finance repository: {repository!r}")
     source_object = row["source_object"]
     if source_object == "markdown_paragraph":
         path = row["source_path"]
-        if not isinstance(path, str) or not path or path.startswith("/") or ".." in Path(path).parts:
+        if not isinstance(path, str) or SOURCE_PATH_PATTERN.fullmatch(path) is None:
             raise RefusalError(f"unusable source_path for {row['specimen_id']}")
         blob = gh_fetch(
             [
@@ -242,13 +253,17 @@ def fetch_source_object(row: dict) -> str:
     if source_object == "commit_message":
         blob = gh_fetch(["api", f"repos/{repository}/commits/{row['source_commit']}"])
         return json.loads(blob)["commit"]["message"]
-    number = row["source_url"].rstrip("/").rsplit("/", 1)[-1].split("#")[0]
-    if not number.isdigit():
-        raise RefusalError(f"cannot read an object number from {row['source_url']}")
     if source_object in ("issue_body", "pull_request_body"):
+        number = row["source_url"].rstrip("/").rsplit("/", 1)[-1].split("#")[0]
+        if not number.isdigit():
+            raise RefusalError(f"cannot read an object number from {row['source_url']}")
         blob = gh_fetch(["api", f"repos/{repository}/issues/{number}"])
         return json.loads(blob)["body"] or ""
-    blob = gh_fetch(["api", f"repos/{repository}/issues/comments/{number}"])
+    fragment = COMMENT_FRAGMENT.search(row["source_url"])
+    if fragment is None:
+        raise RefusalError(f"cannot read a comment id from {row['source_url']}")
+    collection = "issues" if fragment.group(1) == "issuecomment-" else "pulls"
+    blob = gh_fetch(["api", f"repos/{repository}/{collection}/comments/{fragment.group(2)}"])
     return json.loads(blob)["body"] or ""
 
 

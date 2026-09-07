@@ -300,6 +300,70 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assertIn("schema pattern mismatch", result.stderr)
         self.assertNotIn("gh", result.stderr)
 
+    def recording_gh(self) -> tuple[dict, Path]:
+        """A `gh` on PATH that records its arguments and opens no socket."""
+        directory = Path(tempfile.mkdtemp(prefix="family-evidence-gh-"))
+        self.addCleanup(self.remove_tree, directory)
+        log = directory / "argv.log"
+        stub = directory / "gh"
+        body = json.dumps({"body": SPECIMEN_TEXT})
+        stub.write_text(
+            "#!/bin/sh\n"
+            f'printf "%s\\n" "$@" >> "{log}"\n'
+            f"printf '%s\\n' '{body}'\n",
+            encoding="utf-8",
+        )
+        stub.chmod(0o755)
+        return dict(os.environ, PATH=str(directory)), log
+
+    def test_refuses_a_repository_outside_the_pinned_prefix(self):
+        row = dict(SPECIMEN_ROW, repository="wildcat-finance/../evil-org/evil-repo")
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("not one pinned wildcat-finance repository", result.stderr)
+        self.assertFalse(log.exists(), "the refused repository still reached gh")
+
+    def test_refuses_a_source_path_carrying_a_url_delimiter(self):
+        row = dict(SPECIMEN_ROW, source_path="README.md#x")
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("unusable source_path", result.stderr)
+        self.assertFalse(log.exists(), "the refused source_path still reached gh")
+
+    def test_refuses_a_comment_url_without_its_comment_id(self):
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="issue_comment",
+            source_path=None,
+            source_url="https://github.com/wildcat-finance/skills/issues/1298",
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("cannot read a comment id", result.stderr)
+        self.assertFalse(log.exists(), "the id-less comment URL still reached gh")
+
+    def test_a_comment_replays_its_own_comment_id_not_its_issue_number(self):
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="issue_comment",
+            source_path=None,
+            source_url="https://github.com/wildcat-finance/skills/issues/1298#issuecomment-42",
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            log.read_text(encoding="utf-8").splitlines(),
+            ["api", "repos/wildcat-finance/skills/issues/comments/42"],
+        )
+
     def test_refuses_a_bad_invocation(self):
         result = self.run_checker("--fixture", str(FIXTURE), "--tier", "promising")
         self.assertEqual(result.returncode, 2, result.stderr)

@@ -135,8 +135,9 @@ Its exit codes are three:
   `specimen-unknown-family`, `specimen-span`, `specimen-digest`,
   `specimen-independence`, `tier-minimum`, `source-mismatch`.
 - `2`: the invocation or a read was refused, which covers a missing fixture
-  directory, an unknown `--tier`, a symlink, an oversized file and an
-  unreadable JSONL row.
+  directory, an unknown `--tier`, a symlink, an oversized file, an
+  unreadable JSONL row, and a `--verify-sources` row whose `repository`,
+  `source_path` or comment URL cannot name one pinned object.
 
 The flags are:
 
@@ -156,9 +157,13 @@ The flags are:
   `--min-independent-positive 2 --tier high-value`.
 - `--verify-sources` replays each specimen against its immutable GitHub
   object through `gh` and compares `text_sha256`. This is the only path that
-  opens a socket. Only a row that cleared every local check is replayed, so a
-  row whose `repository`, `source_path` or `source_commit` failed its schema
-  never reaches the fetch.
+  opens a socket. Only a row that cleared every local check is replayed. The
+  schema is not the boundary on the endpoint the replay builds: its
+  `^wildcat-finance/` pattern admits `wildcat-finance/../other-org/repo` and
+  `source_path` carries no pattern, so the checker pins both itself and
+  refuses anything else with exit 2. A comment's id is read from the
+  `#issuecomment-<id>` or `#discussion_r<id>` fragment, because the number
+  before it is the issue or pull request the comment sits under.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen
