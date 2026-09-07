@@ -2664,6 +2664,166 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
                 self.assertIsInstance(raised, AlexandriaError)
                 self.assertRegex(str(raised), "names block 1, outside the shard's blocks")
 
+    def test_a_response_that_is_not_the_answer_to_its_request_is_refused(self):
+        """The collector refuses these envelopes; the release is held to the same rule."""
+        cases = (
+            (
+                "json-rpc-error",
+                "logs",
+                lambda envelope: (
+                    envelope.pop("result"),
+                    envelope.__setitem__("error", {"code": -32000, "message": "boom"}),
+                ),
+                "the logs response for shard 0 is not the answer its preserved request names",
+            ),
+            (
+                "another-read",
+                "logs",
+                lambda envelope: envelope.__setitem__("id", 999),
+                "the logs response for shard 0 is not the answer its preserved request names",
+            ),
+            (
+                "no-result",
+                "traces",
+                lambda envelope: envelope.pop("result"),
+                "the traces response for shard 0 is not the answer its preserved request names",
+            ),
+            (
+                "result-not-a-list",
+                "logs",
+                lambda envelope: envelope.__setitem__("result", {"note": "one read"}),
+                "the logs result for shard 0 is not a list of entries",
+            ),
+        )
+        for label, name, edit, expected in cases:
+            with self.subTest(case=label):
+                output = self.released(f"envelope-{label}")
+
+                def rewrite(document, edit=edit):
+                    record = next(
+                        item for item in document["records"] if item["shard"] == 0
+                    )
+                    envelope = json.loads(record["response"])
+                    edit(envelope)
+                    record["response"] = json.dumps(
+                        envelope, separators=(",", ":"), sort_keys=True
+                    )
+
+                self.rewrite(output, name, rewrite)
+                # A parent reads `result` off the envelope and nothing else, so
+                # a preserved error, another read's answer, or a result of any
+                # shape at all counts as one read of this shard.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), expected)
+
+    def test_a_preserved_read_the_collector_would_have_stopped_for_is_refused(self):
+        """A marked or page-filled answer is not a complete read of its shard."""
+        output = self.released("truncated-envelope")
+
+        def mark(document):
+            record = next(item for item in document["records"] if item["shard"] == 0)
+            envelope = json.loads(record["response"])
+            envelope["truncated"] = True
+            record["response"] = json.dumps(
+                envelope, separators=(",", ":"), sort_keys=True
+            )
+
+        self.rewrite(output, "logs", mark)
+        raised = self.refusal(output)
+        self.assertIsInstance(raised, AlexandriaError)
+        self.assertRegex(str(raised), "the logs response for shard 0 is marked truncated")
+
+        output = self.released("page-limit")
+        journal = component_document(output, "logs")
+        record = next(item for item in journal["records"] if item["shard"] == 0)
+        entries = len(json.loads(record["response"])["result"])
+        self.rewrite(
+            output, "interval-plan",
+            lambda plan: plan["provider"].__setitem__("page_limit", entries),
+        )
+        self.rewrite(
+            output, "reconciliation",
+            lambda reconciliation: reconciliation.__setitem__(
+                "plan_sha256", plan_digest(component_document(output, "interval-plan"))
+            ),
+        )
+        # A parent reads neither the marker nor the page limit from the
+        # release, so a read the collector would have refused stands as a
+        # complete shard.
+        raised = self.refusal(output)
+        self.assertIsInstance(raised, AlexandriaError)
+        self.assertRegex(
+            str(raised),
+            "the logs result for shard 0 stands at the provider's page limit",
+        )
+
+    def test_an_entry_naming_another_address_than_its_read_is_refused(self):
+        """A bounded read names one address, so an entry naming another is not its answer."""
+        foreign = "0x" + "de" * 20
+        cases = (
+            ("logs", lambda entry: entry.__setitem__("address", foreign)),
+            ("traces", lambda entry: entry["action"].__setitem__("to", foreign)),
+            ("traces-no-recipient", lambda entry: entry.pop("action")),
+        )
+        for label, edit in cases:
+            name = label.split("-")[0]
+            with self.subTest(component=label):
+                output = self.released(f"entry-address-{label}")
+
+                def rewrite(document, edit=edit):
+                    record = next(
+                        item for item in document["records"] if item["shard"] == 0
+                    )
+                    envelope = json.loads(record["response"])
+                    edit(envelope["result"][0])
+                    record["response"] = json.dumps(
+                        envelope, separators=(",", ":"), sort_keys=True
+                    )
+
+                self.rewrite(output, name, rewrite)
+                # A parent binds each entry's block and reads no other field,
+                # so another contract's entry is carried as this market's
+                # evidence.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(
+                    str(raised),
+                    f"a {name} entry for shard 0 names (address {foreign}, not the|no address)",
+                )
+
+    def test_a_second_read_of_any_class_for_one_shard_is_refused(self):
+        """One read per shard and class is what the collector writes, for every class."""
+        for name in ("logs", "traces"):
+            with self.subTest(component=name):
+                output = self.released(f"second-read-{name}")
+
+                def duplicate(document):
+                    record = next(
+                        item for item in document["records"] if item["shard"] == 0
+                    )
+                    document["records"].append(deepcopy(record))
+
+                def declare(table, component=name):
+                    entry = next(item for item in table if item["index"] == 0)
+                    entry["record_counts"][component] *= 2
+
+                self.rewrite(output, name, duplicate)
+                self.rewrite(output, "epoch-table", lambda receipt: declare(receipt["shards"]))
+                self.rewrite(
+                    output, "reconciliation", lambda record: declare(record["shards"])
+                )
+                # A parent refuses a second read for the boundary class alone,
+                # so a second read of this class stands beside the genuine one
+                # and the receipt declares their sum as reads that were made.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(
+                    str(raised),
+                    f"the {name} journal holds shard 0 twice, so two reads claim that "
+                    f"shard's {name} evidence",
+                )
+
 
 class CheckpointOpeningOffsetTests(CollectorTestCase):
     """A checkpoint below the plan's last shard cannot have committed an opening read."""

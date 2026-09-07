@@ -41,6 +41,7 @@ import shutil
 import tempfile
 
 from alexandria_lib.interval import (
+    ADDRESS_RE,
     CODE_DIGEST_RE,
     EVIDENCE_CLASSES,
     JOURNAL_CLASSES,
@@ -1642,6 +1643,11 @@ def check_interval(release_root: Path) -> dict:
         for name, method, params in shard_requests(plan, shard)
     }
     shard_bounds = {shard["index"]: (shard["start"], shard["end"]) for shard in plan["shards"]}
+    # The address every shard read filters on: `eth_getLogs` by the emitting
+    # contract, `trace_filter` by the recipient. An entry naming another
+    # address is one its own preserved request could not have returned.
+    proxy = plan["proxy"]
+    reads = {}
     virtual = len(plan["shards"])
     for name in journal_names:
         journal = documents[name]
@@ -1704,7 +1710,51 @@ def check_interval(release_root: Path) -> dict:
                     record["response"].encode(), f"{name} response for shard {record['shard']}",
                     max_bytes=MAX_RAW_COMPONENT_BYTES,
                 )
-                result = envelope.get("result")
+                # The envelope the collector accepted for this read. `_ask`
+                # refuses an answer whose id is not the request's, one
+                # carrying a JSON-RPC error and one carrying no result, and
+                # writes an error receipt rather than a journal record for
+                # each. None of that was re-read from the release, so a
+                # preserved error, or another read's answer, stood as the
+                # shard's evidence and counted as one record of it.
+                if (
+                    not isinstance(envelope, dict)
+                    or envelope.get("jsonrpc") != "2.0"
+                    or envelope.get("id") != request_identifier(record["shard"], name)
+                    or "error" in envelope
+                    or "result" not in envelope
+                ):
+                    raise AlexandriaError(
+                        f"the {name} response for shard {record['shard']} is not the answer "
+                        "its preserved request names"
+                    )
+                result = envelope["result"]
+                # A `logs` or `trace_filter` answer is a list of entries, and
+                # the entries are read below. A result of any other shape was
+                # counted as one read and never looked at.
+                if name in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
+                    raise AlexandriaError(
+                        f"the {name} result for shard {record['shard']} is not a list of entries"
+                    )
+                # The two truncation rules `_ask` applies to the same bytes: a
+                # marked envelope and a page filled to the provider's declared
+                # limit are refused there rather than kept, because neither is
+                # a complete answer to a bounded request. A release preserving
+                # one of them declared a shard complete on a read the
+                # collector would have stopped for.
+                if envelope.get("truncated") is True:
+                    raise AlexandriaError(
+                        f"the {name} response for shard {record['shard']} is marked truncated"
+                    )
+                if (
+                    isinstance(result, list)
+                    and len(result) >= plan["provider"]["page_limit"]
+                ):
+                    raise AlexandriaError(
+                        f"the {name} result for shard {record['shard']} stands at the "
+                        "provider's page limit, so it is not a complete read"
+                    )
+                reads[(record["shard"], name)] = reads.get((record["shard"], name), 0) + 1
                 # Two records of one class for one shard are two reads, so
                 # their sizes add. Assigning here declared the last record's
                 # size alone, so a journal could carry a shard's evidence
@@ -1713,18 +1763,8 @@ def check_interval(release_root: Path) -> dict:
                     len(result) if isinstance(result, list) else 1
                 )
                 if name == BOUNDARY_CLASS:
-                    # One read per shard is what the collector writes, and the
-                    # shard's boundary hash is compared with this one below.
-                    # A second record for the same shard was accepted and the
-                    # later one believed, so a release carrying the genuine
-                    # read and a fabricated one passed on the fabricated copy.
-                    if record["shard"] in boundary_headers:
-                        raise AlexandriaError(
-                            f"the boundary-blocks journal holds shard {record['shard']} twice, "
-                            "so two reads claim that shard's boundary"
-                        )
                     boundary_headers[record["shard"]] = result
-                if name in ENTRY_BLOCK_CLASSES and isinstance(result, list):
+                if name in ENTRY_BLOCK_CLASSES:
                     # An entry the read could not have returned: the record's
                     # own request bounds the blocks its result can carry, and
                     # an entry outside them contradicts the read it sits in.
@@ -1741,6 +1781,16 @@ def check_interval(release_root: Path) -> dict:
                             raise AlexandriaError(
                                 f"{label} names block {block}, outside the shard's blocks "
                                 f"{low} to {high}"
+                            )
+                        # The other half of the record's own filter: the read
+                        # names one address, so an entry naming another is one
+                        # the read could not have returned. The block was
+                        # bound and the address was not.
+                        address = _entry_address(entry, name, label)
+                        if address != proxy:
+                            raise AlexandriaError(
+                                f"{label} names address {address}, not the {proxy} its "
+                                "read asked for"
                             )
         gaps = captures[name]["coverage"]["gaps"]
         for index in sorted(disputed):
@@ -1765,6 +1815,21 @@ def check_interval(release_root: Path) -> dict:
             raise AlexandriaError(
                 f"shard {shard['index']} declares record counts the journals do not carry"
             )
+
+    # One read per shard and class is what the collector writes: it asks each
+    # request once and a resumed run truncates its journals back to the
+    # checkpoint before it continues. A second record was refused for the
+    # boundary class alone, where the later copy supplanted the read the
+    # shard's hash is compared with; for every other class a second record
+    # stood beside the genuine one and the receipt declared their sum as reads
+    # the collector never made. The rule is one rule, and it is applied after
+    # the counts so a journal carrying evidence its receipt does not count is
+    # still refused under that name.
+    for index, class_name in sorted(key for key, count in reads.items() if count > 1):
+        raise AlexandriaError(
+            f"the {class_name} journal holds shard {index} twice, so two reads claim "
+            f"that shard's {class_name} evidence"
+        )
 
     # Every shard's boundary hash, re-read from the release's own
     # `boundary-blocks` journal. The collector took each one from an
@@ -1990,6 +2055,39 @@ def _component(release_root: Path, manifest, name: str) -> bytes:
 
 def _number(value) -> int:
     return int(value)
+
+
+def _entry_address(entry, name: str, label: str) -> str:
+    """The address one journal entry names as the party its read filtered on.
+
+    `eth_getLogs` filters on the emitting contract, which every log carries as
+    `address`. `trace_filter` filters on the recipient, which a trace names in
+    the field its own action carries: a call's `to`, a creation's
+    `result.address`, a self-destruct's `refundAddress`, a reward's `author`.
+    """
+    if not isinstance(entry, dict):
+        raise AlexandriaError(f"{label} is not an object")
+    if name == "logs":
+        value = entry.get("address")
+    else:
+        action = entry.get("action") if isinstance(entry.get("action"), dict) else {}
+        created = entry.get("result") if isinstance(entry.get("result"), dict) else {}
+        value = next(
+            (
+                candidate
+                for candidate in (
+                    action.get("to"),
+                    created.get("address"),
+                    action.get("refundAddress"),
+                    action.get("author"),
+                )
+                if isinstance(candidate, str)
+            ),
+            None,
+        )
+    if not isinstance(value, str) or ADDRESS_RE.fullmatch(value.lower()) is None:
+        raise AlexandriaError(f"{label} names no address its read could have filtered on")
+    return value.lower()
 
 
 def _entry_block(value, label: str) -> int:
