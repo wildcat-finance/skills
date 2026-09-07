@@ -567,3 +567,33 @@ had already edited.
 **Steps touched.** Step 3, whose test law outgrew the file it was written into.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/hexctl_harness.py`, `plugins/hexaemeron/tests/test_filing_decision_provenance.py`, `plugins/hexaemeron/tests/test_issue_filing_contract.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`, `.horos/boundary.json`, `docs/route-a-zero-decision-runbook.md`. Complete replacement Tests: `plugins/hexaemeron/tests/test_filing_decision_provenance.py` gains cases for the provenance block against a readable and an unreachable GraphQL, for `unknown` carrying a reason rather than a field being absent, for no body text reaching any recorded surface, for `verify --check-filing-decision` reporting a divergence, and for the request count against a stubbed API. Expected new cases: 7. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-3.json --timeout 2400`, format `unittest-json-v1`, report file `.elenchus/step-3.json`, timeout 2400 seconds.
+
+**Why.** Files named eight paths and the step commit `f4f0d4b8` edits eight, but
+not the same eight. `.horos/boundary.json` is edited and unnamed.
+`plugins/hexaemeron/tests/test_hexctl.py` is named and its net change is zero,
+because the previous amendment moved this step's seven cases out of it before
+the commit was made and returned it to 259222 bytes. `boundary.json` moves in
+the step commit rather than in the audit loop's own output, which is the
+distinction that held `.horos/candidates.json` unowed, so it is owed here.
+
+Tests still named `test_hexctl.py` as the file the cases land in, which the same
+move made false, and its runner contract named no `--timeout`. `elenchus.py`
+defaults that to 900 seconds and returns `inconclusive` reading `the run did not
+finish inside 900s`. The suite the contract names does not finish inside it on
+this repository: `run_checks` timed `hexaemeron-suite` at 1297.9s, and the round
+1 contract run took 904 seconds of wall clock, 2026-09-07T15:36:36Z to 15:51:40Z,
+exiting 0 with that detail and an empty report. The contract as written could
+therefore return no verdict about a guard for any commit that changes a test
+file. 2400 seconds is chosen against the 1297.9s measurement. A second reason
+for `inconclusive` stands behind the clock and this replacement does not touch
+it: `classify` returns `inconclusive` whenever `errors` exceeds zero, tested
+before assertion failures are read.
+
+**Steps touched.** Step 3, whose Files and Tests both named a file the step does
+not edit.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
