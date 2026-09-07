@@ -259,8 +259,11 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_allows_a_storage_key_built_from_an_address(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "storage-key.ts"))
 
-    def test_it_allows_a_logger_message_interpolating_an_address(self):
-        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts"))
+    def test_a_message_interpolating_an_address_is_e001_and_not_an_e005_key(self):
+        # The address rides in the message rather than in a key, so E005 still
+        # stays quiet; E001 claims the message itself.
+        findings = ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts")
+        self.assertEqual(["E001"], [finding.code for finding in findings])
 
     def test_it_ignores_console_output_which_is_not_telemetry(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "console-output.ts"))
@@ -309,6 +312,52 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
         self.assertEqual(["E005"], ts_codes(
             "/* // ephoros: allow smuggled reason */\n"
             "eventLog[walletAddress] = event\n"))
+
+
+class TypeScriptInterpolatedMessageTests(unittest.TestCase):
+    """E001 on the TypeScript surface: a message built by formatting.
+
+    A template literal carrying no `${}` is a constant string here, which is
+    where this surface diverges from Python's placeholder-free f-string.
+    """
+
+    def test_it_flags_an_interpolated_message_at_the_call_line(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "interpolated-message.ts")
+        self.assertEqual(["E001"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
+
+    def test_a_constant_template_message_beside_fields_stays_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "constant-message.ts"))
+
+    def test_an_interpolated_message_in_a_comment_or_a_string_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            "/* logger.debug(`Got lenders ${lenders}`) */\n"))
+        self.assertEqual([], ts_codes(
+            'const note = "logger.debug(`Got lenders ${lenders}`)"\n'))
+
+    def test_console_output_with_an_interpolated_message_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            "console.log(`Got lenders ${lenders}`)\n"))
+
+    def test_a_reasoned_slash_pragma_on_the_line_suppresses_e001(self):
+        self.assertEqual([], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)"
+            "  // ephoros: allow one operator-only trace line\n"))
+
+    def test_a_reasoned_slash_pragma_on_the_line_above_suppresses_e001(self):
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one operator-only trace line\n"
+            "logger.debug(`Got lenders ${lenders}`)\n"))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e001(self):
+        self.assertEqual(["E001"], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)  // ephoros: allow\n"))
+
+    def test_an_unterminatable_file_reports_e000_alone_and_no_e001(self):
+        self.assertEqual(["E000"], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)\n"
+            "const s = `never terminated\n"))
 
 
 class TypeScriptBoundaries(unittest.TestCase):

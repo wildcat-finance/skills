@@ -40,7 +40,7 @@ suggestion cannot decide what telemetry a step keeps.
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** Five rules are executable: E001 to E003 read Python only, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer, running clean over this marketplace and the pinned application clone. TypeScript parity for E001 to E003 remains open.
+**Current state.** Five rules are executable: E001 reads Python and the TypeScript surface, E002 and E003 read Python only, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer. E005 runs clean over this marketplace and the pinned application clone; E001 reports 14 interpolated logger messages over that clone. TypeScript parity for E002 and E003 remains open.
 
 ## Write the questions before the code
 
@@ -188,7 +188,15 @@ block-YAML list entry starting with `alert:` that lacks its own nested
 `annotations.runbook` Markdown path. Comments, block scalars, top-level keys
 and neighbouring alert entries do not satisfy E004. The YAML pass establishes
 presence only: Hypomnema H003 resolves the path and H007 checks the target's
-answers. E001 to E003 read Python only.
+answers. E002 and E003 read Python only.
+
+E001 also reads `.ts`/`.tsx` through the shared masked lexer, under the same
+1 MiB boundary as E005: a log call whose first argument is an interpolated
+template literal or a concatenation involving a string literal reports a
+message built by formatting. A template literal carrying no `${}` is a
+constant string on this surface and stays clean, which is a deliberate
+divergence from Python, where `ast` gives a placeholder-free f-string the
+same `JoinedStr` node as an interpolated one and E001 fires on both.
 
 E005 reports telemetry keyed by wallet address: an address-shaped name or a
 40-hex literal used as a metric label, a dashboard key or a log index. It
