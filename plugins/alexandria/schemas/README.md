@@ -57,8 +57,16 @@ checks bind these contracts to the exact upstream commit and raw RPC objects.
 
 The resumable interval collector adds three more.
 `interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
-interval, shard width, evidence classes and the named finality policy that
-fixed the interval's end. `interval-checkpoint-v1.schema.json` covers the
+interval, shard width, the evidence classes the plan collects and the named
+finality policy that fixed the interval's end. The evidence classes are a
+non-empty subset of `boundary-blocks`, `logs` and `traces` in the plan's own
+order: the collector requests only those, opens one journal per declared
+class, and refuses an empty list, a duplicate or an unknown name by name. The
+finality boundary is a block number and the hash it carried: the collector
+reads that block by number and refuses a different hash, then under
+`finalized` or `safe` requires the tag's number to be at or above it, so the
+plan survives the tag advancing and fails only when its boundary block leaves
+the chain. `interval-checkpoint-v1.schema.json` covers the
 working state a killed collection resumes from: the next shard, the last
 accepted block and hash, and each journal's committed byte offset. It is not
 release truth and no release names it. `interval-receipt-v1.schema.json`

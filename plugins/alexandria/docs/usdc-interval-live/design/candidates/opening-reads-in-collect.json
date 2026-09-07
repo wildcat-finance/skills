@@ -1,0 +1,11 @@
+{
+  "id": "opening-reads-in-collect",
+  "summary": "collect gains an opening phase after the shard loop that reads the interval's first block, each epoch boundary's slot and header, and each implementation's runtime code into a journaled, checkpointed epoch-evidence class; build discovers the epochs from that journal, ships the code as a component the epoch table names, and check re-hashes it.",
+  "start_hash_from_collector_read": true,
+  "code_read_journaled": true,
+  "code_rechecked_offline": true,
+  "reachable_provider_pair": true,
+  "resume_safe_after_kill": true,
+  "network_commands": ["collect", "reconcile"],
+  "new_release_components": ["epoch-evidence", "implementation-code"]
+}

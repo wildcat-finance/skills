@@ -29,6 +29,9 @@ PLAN_FORMAT = "alexandria-interval-plan/v1"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 
+# Every class this collector knows how to request. A plan declares the ordered
+# subset it collects; a class it omits is a named coverage gap, never a journal
+# of zero records pretending to be one.
 EVIDENCE_CLASSES = ("boundary-blocks", "logs", "traces")
 FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 
@@ -119,8 +122,7 @@ def validate_plan(plan) -> None:
             raise AlexandriaError(f"interval plan {field} is not a name")
     if not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
         raise AlexandriaError("interval plan proxy is not a lowercase address")
-    if list(plan["evidence_classes"]) != list(EVIDENCE_CLASSES):
-        raise AlexandriaError("interval plan evidence classes do not match this collector")
+    validate_evidence_classes(plan["evidence_classes"])
 
     interval = plan["interval"]
     if not isinstance(interval, dict) or set(interval) != {"end", "start"}:
@@ -171,8 +173,43 @@ def validate_plan(plan) -> None:
         raise AlexandriaError("interval plan finality block hash is not a 32-byte hash")
 
 
-def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> None:
-    """Check one closed `alexandria-interval-checkpoint/v1` document."""
+def validate_evidence_classes(value) -> tuple:
+    """Check a plan's declared classes: a non-empty subset of the known ones.
+
+    The plan's order is the order the collector requests them in and the order
+    the receipts count them in.  A class the plan omits is never requested and
+    has no journal; the release names it as a gap.
+    """
+    if not isinstance(value, list) or not value:
+        raise AlexandriaError(
+            "interval plan evidence classes must name at least one of "
+            + ", ".join(EVIDENCE_CLASSES)
+        )
+    if len(value) > len(EVIDENCE_CLASSES):
+        raise AlexandriaError("interval plan evidence classes name more classes than exist")
+    seen = []
+    for name in value:
+        if not isinstance(name, str):
+            raise AlexandriaError("interval plan evidence class is not a name")
+        if name not in EVIDENCE_CLASSES:
+            raise AlexandriaError(
+                f"interval plan evidence class {name[:64]!r} is not one of "
+                + ", ".join(EVIDENCE_CLASSES)
+            )
+        if name in seen:
+            raise AlexandriaError(f"interval plan evidence class {name!r} is declared twice")
+        seen.append(name)
+    return tuple(seen)
+
+
+def validate_checkpoint(
+    checkpoint, expected_digest: str, shard_count: int, classes=EVIDENCE_CLASSES,
+) -> None:
+    """Check one closed `alexandria-interval-checkpoint/v1` document.
+
+    `classes` is the plan's declared evidence classes; the checkpoint's offsets
+    cover exactly those, so a plan that omits a class carries no journal for it.
+    """
     required = {
         "format", "history", "last_accepted", "next_shard", "offsets",
         "plan_sha256", "records",
@@ -190,8 +227,8 @@ def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> N
     if checkpoint["next_shard"] > shard_count:
         raise AlexandriaError("interval checkpoint names a shard outside its plan")
     offsets = checkpoint["offsets"]
-    if not isinstance(offsets, dict) or set(offsets) != set(EVIDENCE_CLASSES):
-        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class")
+    if not isinstance(offsets, dict) or set(offsets) != set(classes):
+        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class the plan declares")
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
@@ -221,9 +258,9 @@ def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> N
         if not isinstance(entry["records"], int) or isinstance(entry["records"], bool) or entry["records"] < 0:
             raise AlexandriaError("interval checkpoint history record count is not a count")
         entry_offsets = entry["offsets"]
-        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(EVIDENCE_CLASSES):
+        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(classes):
             raise AlexandriaError(
-                "interval checkpoint history offsets do not cover every evidence class"
+                "interval checkpoint history offsets do not cover every evidence class the plan declares"
             )
         for name, value in entry_offsets.items():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
@@ -305,6 +342,8 @@ class Staging:
         self.plan = plan
         self.digest = plan_digest(plan)
         self.shard_count = len(plan["shards"])
+        # The journals this tree holds are exactly the classes the plan declares.
+        self.classes = validate_evidence_classes(plan["evidence_classes"])
         self.root = resolve_root(root)
         self.journals = self.root / JOURNAL_DIRECTORY
         try:
@@ -354,6 +393,8 @@ class Staging:
             raise AlexandriaError("staged shard index is outside the plan")
         if name not in EVIDENCE_CLASSES:
             raise AlexandriaError(f"unknown evidence class {name!r}")
+        if name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
         for label, data in (("request", request), ("response", response)):
             if not isinstance(data, bytes):
                 raise AlexandriaError(f"staged {label} must be bytes")
@@ -382,7 +423,7 @@ class Staging:
         if not isinstance(block_hash, str) or HASH_RE.fullmatch(block_hash) is None:
             raise AlexandriaError("committed block hash is not a 32-byte hash")
         offsets = {}
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             handle = self._handles.get(name)
             if handle is None:
                 path = self._journal_path(name)
@@ -410,7 +451,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": self._records,
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -420,7 +461,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            for name in EVIDENCE_CLASSES:
+            for name in self.classes:
                 path = self._journal_path(name)
                 if path.is_file():
                     _truncate(path, 0)
@@ -432,8 +473,8 @@ class Staging:
             raise AlexandriaError("interval checkpoint is not a regular file")
         data = _read_control(self.checkpoint_path, "interval checkpoint")
         checkpoint = load_bytes(data, "interval checkpoint")
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
-        for name in EVIDENCE_CLASSES:
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        for name in self.classes:
             path = self._journal_path(name)
             offset = checkpoint["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -467,7 +508,7 @@ class Staging:
         checkpoint = load_bytes(
             _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
         )
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
         return {
             "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
@@ -492,7 +533,7 @@ class Staging:
             )
         entry = matches[0]
         self.close()
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             path = self._journal_path(name)
             offset = entry["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -514,7 +555,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": entry["records"],
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -523,7 +564,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         self.close()
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             path = self._journal_path(name)
             if path.is_file():
                 _truncate(path, 0)
@@ -851,8 +892,12 @@ def log_identity(record) -> str:
     return "|".join(fields)
 
 
-def validate_shard_coverage(shards, plan_shards) -> None:
-    """Check one shard-status table against the plan it claims to cover."""
+def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> None:
+    """Check one shard-status table against the plan it claims to cover.
+
+    `classes` is the plan's declared evidence classes: every shard counts
+    exactly those, so an omitted class is absent rather than counted as zero.
+    """
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
@@ -869,8 +914,8 @@ def validate_shard_coverage(shards, plan_shards) -> None:
         if not isinstance(entry["end_hash"], str) or HASH_RE.fullmatch(entry["end_hash"]) is None:
             raise AlexandriaError("a shard entry end hash is not a 32-byte hash")
         counts = entry["record_counts"]
-        if not isinstance(counts, dict) or set(counts) != set(EVIDENCE_CLASSES):
-            raise AlexandriaError("a shard entry does not count every evidence class")
+        if not isinstance(counts, dict) or set(counts) != set(classes):
+            raise AlexandriaError("a shard entry does not count every evidence class the plan declares")
         for value in counts.values():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise AlexandriaError("a shard entry record count is not a count")
@@ -1027,6 +1072,7 @@ __all__ = [
     "log_identity",
     "validate_checkpoint",
     "validate_epochs",
+    "validate_evidence_classes",
     "validate_reconciliation",
     "validate_shard_coverage",
     "validate_plan",
