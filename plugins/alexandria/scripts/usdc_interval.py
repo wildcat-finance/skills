@@ -83,6 +83,7 @@ DISPUTED_RESPONSES = "disputed.jsonl"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
 BOUNDARY_CLASS = "boundary-blocks"
+ENTRY_BLOCK_CLASSES = ("logs", "traces")
 CODE_COMPONENT = "implementation-code"
 CODE_FORMAT = "alexandria-interval-implementation-code/v1"
 RELEASE_NAME = "usdc-interval-v0"
@@ -1625,6 +1626,22 @@ def check_interval(release_root: Path) -> dict:
         raise AlexandriaError(f"the release carries no capture for its {name} component")
     derived = {shard["index"]: {} for shard in plan["shards"]}
     boundary_headers = {}
+    # The read each shard and class makes, derived from the plan exactly as the
+    # collector derived it. A shard journal record was filed under a shard
+    # index that nothing held against the request the record preserves, so a
+    # `logs` read over two unrelated blocks, or a boundary record that asked
+    # for something other than the shard's last block, stood for the shard's
+    # coverage. The opening journal has been replayed against its own derived
+    # requests since it was written; the shard journals are held to the same
+    # rule here.
+    planned_requests = {
+        (shard["index"], name): request_bytes(
+            request_identifier(shard["index"], name), method, params
+        )
+        for shard in plan["shards"]
+        for name, method, params in shard_requests(plan, shard)
+    }
+    shard_bounds = {shard["index"]: (shard["start"], shard["end"]) for shard in plan["shards"]}
     virtual = len(plan["shards"])
     for name in journal_names:
         journal = documents[name]
@@ -1678,6 +1695,11 @@ def check_interval(release_root: Path) -> dict:
             if staged != {shard["index"] for shard in plan["shards"]}:
                 raise AlexandriaError(f"the {name} journal does not cover every shard")
             for record in journal["records"]:
+                if record["request"].encode() != planned_requests[(record["shard"], name)]:
+                    raise AlexandriaError(
+                        f"the {name} record filed under shard {record['shard']} is not the "
+                        "read the plan names there"
+                    )
                 envelope = load_bytes(
                     record["response"].encode(), f"{name} response for shard {record['shard']}",
                     max_bytes=MAX_RAW_COMPONENT_BYTES,
@@ -1691,7 +1713,35 @@ def check_interval(release_root: Path) -> dict:
                     len(result) if isinstance(result, list) else 1
                 )
                 if name == BOUNDARY_CLASS:
+                    # One read per shard is what the collector writes, and the
+                    # shard's boundary hash is compared with this one below.
+                    # A second record for the same shard was accepted and the
+                    # later one believed, so a release carrying the genuine
+                    # read and a fabricated one passed on the fabricated copy.
+                    if record["shard"] in boundary_headers:
+                        raise AlexandriaError(
+                            f"the boundary-blocks journal holds shard {record['shard']} twice, "
+                            "so two reads claim that shard's boundary"
+                        )
                     boundary_headers[record["shard"]] = result
+                if name in ENTRY_BLOCK_CLASSES and isinstance(result, list):
+                    # An entry the read could not have returned: the record's
+                    # own request bounds the blocks its result can carry, and
+                    # an entry outside them contradicts the read it sits in.
+                    # `logs` names its block as a hexadecimal quantity and
+                    # `trace_filter` as a decimal number, so both are read.
+                    low, high = shard_bounds[record["shard"]]
+                    for entry in result:
+                        label = f"a {name} entry for shard {record['shard']}"
+                        block = _entry_block(
+                            entry.get("blockNumber") if isinstance(entry, dict) else None,
+                            f"{label} block number",
+                        )
+                        if not low <= block <= high:
+                            raise AlexandriaError(
+                                f"{label} names block {block}, outside the shard's blocks "
+                                f"{low} to {high}"
+                            )
         gaps = captures[name]["coverage"]["gaps"]
         for index in sorted(disputed):
             if not any(f"shard {index}," in gap for gap in gaps):
@@ -1940,6 +1990,13 @@ def _component(release_root: Path, manifest, name: str) -> bytes:
 
 def _number(value) -> int:
     return int(value)
+
+
+def _entry_block(value, label: str) -> int:
+    """One journal entry's block, as a hexadecimal quantity or a whole number."""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    return _hex(value, label)
 
 
 def _hex(value, label: str) -> int:

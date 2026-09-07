@@ -2549,6 +2549,121 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         self.assertRegex(str(raised), "shard 0 declares record counts the journals do not carry")
         self.assertEqual(original["shard"], 0)
 
+    def test_a_second_boundary_read_for_one_shard_is_refused(self):
+        """One shard has one boundary read, so a second cannot supplant it."""
+        fabricated = "0x" + "ab" * 32
+        for label, index in (("first", 0), ("last", -1)):
+            with self.subTest(shard=label):
+                output = self.released(f"boundary-twice-{label}")
+                receipt = component_document(output, "epoch-table")
+                shard = receipt["shards"][index]
+
+                def duplicate(document, target=shard["index"]):
+                    record = self.boundary_record(document, target)
+                    copied = deepcopy(record)
+                    envelope = json.loads(copied["response"])
+                    envelope["result"]["hash"] = fabricated
+                    copied["response"] = json.dumps(
+                        envelope, separators=(",", ":"), sort_keys=True
+                    )
+                    document["records"].append(copied)
+
+                def declare(table, target=shard["index"]):
+                    entry = next(item for item in table if item["index"] == target)
+                    entry["end_hash"] = fabricated
+                    entry["record_counts"]["boundary-blocks"] = 2
+
+                def rebind(receipt, target=shard["end"]):
+                    declare(receipt["shards"])
+                    for epoch in receipt["epochs"]:
+                        if int(epoch["end_block"]) == target:
+                            epoch["end_hash"] = fabricated
+
+                self.rewrite(output, "boundary-blocks", duplicate)
+                self.rewrite(output, "epoch-table", rebind)
+                self.rewrite(output, "reconciliation", lambda record: declare(record["shards"]))
+                # A parent keeps the last record it reads for the shard, so the
+                # fabricated read stands beside the genuine one and the
+                # comparison with the preserved bytes is made against it.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(
+                    str(raised),
+                    f"the boundary-blocks journal holds shard {shard['index']} twice",
+                )
+
+    def test_a_shard_record_that_is_not_the_planned_read_is_refused(self):
+        """The request a record preserves must be the read its shard names."""
+        cases = (
+            (
+                "logs-range",
+                "logs",
+                lambda request: request["params"][0].update(
+                    {"fromBlock": "0x1", "toBlock": "0x2"}
+                ),
+            ),
+            (
+                "logs-address",
+                "logs",
+                lambda request: request["params"][0].__setitem__(
+                    "address", "0x" + "11" * 20
+                ),
+            ),
+            (
+                "boundary-method",
+                "boundary-blocks",
+                lambda request: request.update({"method": "eth_chainId", "params": []}),
+            ),
+        )
+        for label, name, edit in cases:
+            with self.subTest(case=label):
+                output = self.released(f"planned-read-{label}")
+
+                def rewrite(document, edit=edit):
+                    record = next(
+                        item for item in document["records"] if item["shard"] == 0
+                    )
+                    request = json.loads(record["request"])
+                    edit(request)
+                    record["request"] = json.dumps(
+                        request, separators=(",", ":"), sort_keys=True
+                    )
+
+                self.rewrite(output, name, rewrite)
+                # A parent reads the response and never the request, so a read
+                # of another range, another address or another method stands
+                # for the shard it is filed under.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(
+                    str(raised),
+                    f"the {name} record filed under shard 0 is not the read the plan names there",
+                )
+
+    def test_an_entry_outside_its_shards_blocks_is_refused(self):
+        """A read bounded by the shard cannot return an entry from outside it."""
+        for name, block in (("logs", "0x1"), ("traces", 1)):
+            with self.subTest(component=name):
+                output = self.released(f"entry-outside-{name}")
+
+                def rewrite(document, block=block):
+                    record = next(
+                        item for item in document["records"] if item["shard"] == 0
+                    )
+                    envelope = json.loads(record["response"])
+                    envelope["result"][0]["blockNumber"] = block
+                    record["response"] = json.dumps(
+                        envelope, separators=(",", ":"), sort_keys=True
+                    )
+
+                self.rewrite(output, name, rewrite)
+                # A parent counts the entries and reads no entry's block, so an
+                # entry from any block at all is carried as the shard's
+                # evidence.
+                raised = self.refusal(output)
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(str(raised), "names block 1, outside the shard's blocks")
+
 
 class CheckpointOpeningOffsetTests(CollectorTestCase):
     """A checkpoint below the plan's last shard cannot have committed an opening read."""
