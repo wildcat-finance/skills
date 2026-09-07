@@ -354,6 +354,13 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
         self.assertEqual(["E001"], ts_codes(
             "logger.debug(`Got lenders ${lenders}`)  // ephoros: allow\n"))
 
+    def test_a_concatenation_with_a_string_literal_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes(
+            'logger.info("got lender " + lender)\n'))
+
+    def test_an_addition_with_no_string_literal_stays_clean(self):
+        self.assertEqual([], ts_codes("logger.info(a + b)\n"))
+
     def test_an_unterminatable_file_reports_e000_alone_and_no_e001(self):
         self.assertEqual(["E000"], ts_codes(
             "logger.debug(`Got lenders ${lenders}`)\n"
