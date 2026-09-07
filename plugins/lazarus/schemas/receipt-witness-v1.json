@@ -7,9 +7,7 @@
   "required": [
     "schema_version",
     "header",
-    "receipts",
-    "target_receipt",
-    "filtered_logs"
+    "receipts"
   ],
   "properties": {
     "schema_version": {
@@ -37,7 +35,6 @@
     },
     "receipts": {
       "type": "array",
-      "minItems": 1,
       "maxItems": 100000,
       "items": {
         "$ref": "#/$defs/receipt"
@@ -68,6 +65,40 @@
       }
     }
   },
+  "oneOf": [
+    {
+      "properties": {
+        "receipts": {
+          "maxItems": 0
+        }
+      },
+      "not": {
+        "anyOf": [
+          {
+            "required": [
+              "target_receipt"
+            ]
+          },
+          {
+            "required": [
+              "filtered_logs"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "required": [
+        "target_receipt",
+        "filtered_logs"
+      ],
+      "properties": {
+        "receipts": {
+          "minItems": 1
+        }
+      }
+    }
+  ],
   "$defs": {
     "quantity": {
       "type": "string",

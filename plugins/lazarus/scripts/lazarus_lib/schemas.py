@@ -27,7 +27,7 @@ SCHEMAS: dict[tuple[str, int], tuple[str, str]] = {
     ),
     ("plan", 3): (
         "plan-v3.json",
-        "3df68d061929d20127e930aa1211172dcef6f6acc8f83b5af74c3b6b6b1481ed",
+        "4edc85196449396148abd1397e5b462538fba0e972fea4833d2d7dd729aa3b58",
     ),
     ("header", 1): (
         "header-v1.json",
@@ -47,7 +47,7 @@ SCHEMAS: dict[tuple[str, int], tuple[str, str]] = {
     ),
     ("receipt-witness", 1): (
         "receipt-witness-v1.json",
-        "2aaf3f61c0b8bb84c32340b7adfd425098d8e47df4ac8a62ffdc25bf6788fede",
+        "1fbc4ef4cbdd4ee997ea5f0a5a65d400009ad4942eded2cf83131918b86299ee",
     ),
     ("manifest", 1): (
         "manifest-v1.json",
@@ -250,6 +250,9 @@ def _validate_receipt_plan(plan: dict[str, Any]) -> None:
             "plan-v3 eth_getBlockReceipts params must contain the fixed block hash"
         )
 
+    if set(relation) == {"block_receipts_request"}:
+        return
+
     target = _named_receipt_request(
         requests,
         relation["target_receipt_lookup_request"],
@@ -349,6 +352,9 @@ def _validate_receipt_witness(witness: dict[str, Any]) -> None:
     header = witness["header"]
     block_hash = header["hash"]
     receipts = witness["receipts"]
+
+    if not receipts:
+        return
 
     for index, receipt in enumerate(receipts):
         expected_index = hex(index)
