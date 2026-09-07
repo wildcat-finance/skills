@@ -8,9 +8,9 @@ description: >
   Clearpool derivation, disposable indexing, address queries and a checked-in
   offline demonstration, unsigned in-toto release statements, a bounded
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
-  collector are available.
+  collector with a preserved live Ethereum mainnet capture are available.
 metadata:
-  version: "1.5.0"
+  version: "2.5.0"
 ---
 
 <p align="center">
@@ -31,7 +31,7 @@ another frontier pass after that ledger becomes mature.
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+**Current frontier.** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 <!-- marketplace-context:end -->
 
 Alexandria is the archive and catalogue behind durable lending-protocol
@@ -224,19 +224,26 @@ python3 "$SKILL_DIR/../../scripts/usdc_interval.py" collect --plan plan.json --s
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" reconcile --plan plan.json --staging staging \
   --provider-class "<non-secret class>"
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" build --plan plan.json --staging staging \
-  --epochs epochs.json --registry registry.json --created-at <timestamp> --output release
+  --registry registry.json --created-at <timestamp> --output release
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" check release
 ```
 
-`collect` walks a declared block interval of the Ethereum USDC Comet in
-bounded shards, binding its end boundary under the plan's named finality policy
-before it asks for anything. It reads its endpoint from
-`ALEXANDRIA_COMPOUND_RPC_URL` alone and writes it nowhere. A checkpoint is
+`collect` walks a declared block interval of the Ethereum USDC Comet in bounded
+shards, over the evidence classes the plan declares, binding its end boundary
+under the plan's named finality policy before it asks for anything. It reads its
+endpoint from `ALEXANDRIA_COMPOUND_RPC_URL` alone and writes it nowhere, and
+sends exactly two headers, `Content-Type` and a constant `User-Agent` built from
+the package version, so no request can carry a credential. A checkpoint is
 written only after a shard's bytes are fsynced, so a killed run resumes to
 byte-identical journals; when a remembered boundary hash has changed, the run
 rewinds to the deepest one that still matches, and refuses a reorg deeper than
-its bounded trail. Every refused response leaves a receipt naming the code, the
-shard, the unresolved range and the provider class, and copying nothing the
+its bounded trail. After the last shard it makes its opening reads -- the
+interval's first block, the implementation slot at that block and at each
+upgrade block, and each implementation's runtime code -- into a fourth
+`epoch-evidence` journal under the same checkpoint rule, so a `finalized` or
+`safe` plan now earns that finality class on every evidence scope with both
+boundary hashes bound. Every refused response leaves a receipt naming the code,
+the shard, the unresolved range and the provider class, and copying nothing the
 provider or the transport said.
 
 `reconcile` runs the finished interval past a second provider and records
@@ -246,20 +253,26 @@ log's identity tuple. It settles nothing: a disputed shard becomes `partial` or
 leaves the interval `unreconciled`.
 
 `build` emits an ordinary capture plan and calls `ingest`; `check` verifies the
-release offline and re-derives every shard's record counts from the journals.
-Implementation epochs come from `discover_epochs` over preserved `Upgraded`
-logs, EIP-1967 slot reads and runtime code reads, and are bound by code hash
-because the pinned `CometExt.version()` returns the constant string `0`.
+release offline, re-derives every shard's record counts from the journals, and
+re-hashes each implementation's runtime code out of the `implementation-code`
+component. Implementation epochs come from `discover_epochs` over the preserved
+`Upgraded` logs, EIP-1967 slot reads and runtime code reads in the
+`epoch-evidence` journal, and are bound by code hash because the pinned
+`CometExt.version()` returns the constant string `0`. `build` takes no `--epochs`
+table: there is nothing left for an operator to supply.
 
 Read [the collector document](../../docs/usdc-interval-collector.md) for the
-finality, epoch and reconciliation boundaries, and run
+finality, epoch and reconciliation boundaries, run
 [`examples/usdc-interval-v0`](../../examples/usdc-interval-v0/README.md) to see
-the whole path offline. This release establishes no publisher identity, no
-provider completeness, no consensus finality and no canonical-chain membership,
-and derives no credit event; Tabularium owns the separate canonical mapping.
-The [harvest specification](../../docs/compound-v3-harvest.md) still describes
-more than this collector covers: one market of the pin's 28, no start-block
-read, and no preserved implementation code.
+the whole path offline over synthetic fixtures, and
+[`examples/usdc-interval-live-v0`](../../examples/usdc-interval-live-v0/README.md)
+to rebuild the preserved live Ethereum mainnet interval. This release
+establishes no publisher identity, no provider completeness, no consensus
+finality and no canonical-chain membership, and derives no credit event;
+Tabularium owns the separate canonical mapping. The
+[harvest specification](../../docs/compound-v3-harvest.md) still describes more
+than this collector covers: one market of the pin's 28, and no state call or
+configuration read.
 
 Read the [study](../../docs/study.md) for the selected construction and the
 [runbook](../../docs/runbook.md) for the implementation boundaries.
