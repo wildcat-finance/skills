@@ -1,0 +1,102 @@
+{
+  "components": [
+    {
+      "bytes": 36512,
+      "path": "assertions.json",
+      "sha256": "5c689b4ec89b9b6ea98faf1894783d0a4b8f8968b3d57f896014611c952cdc35"
+    },
+    {
+      "bytes": 1379,
+      "path": "engagements.json",
+      "sha256": "3c29d355a79480db49f4048580c6e4d4b6184a42764e73321c0b50aff09c4656"
+    },
+    {
+      "bytes": 671,
+      "path": "policy.json",
+      "sha256": "d38bd2a419f26af96cf21058bb02c83fc6ec3357172f380126fc7d6d8fae5b1a"
+    },
+    {
+      "bytes": 3,
+      "path": "quarantine.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "bytes": 10135,
+      "path": "relations.json",
+      "sha256": "e48433f029e061fe004627bdbc12b354fac9b1431303070931bf332cc050940c"
+    },
+    {
+      "bytes": 145,
+      "path": "unknowns.json",
+      "sha256": "86f7ff3fd733614ad0ffef3edfc99e7bffd4097ccf01738029d3598217ea8aa8"
+    }
+  ],
+  "counts": {
+    "engagements": 2,
+    "findings": 17,
+    "occurrences": 17,
+    "relations": 34,
+    "remediations": 0,
+    "rounds": 4,
+    "rounds_with_no_findings": 0,
+    "submissions": 17,
+    "verifications": 4
+  },
+  "exclusions": [],
+  "policy": {
+    "disclosure": {
+      "derived_text": [
+        "public"
+      ]
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "scope": {
+      "id": "capture-estate-findings",
+      "preserves": "The capture estate's own verification findings and open actions of 31 August and 5 September 2026.",
+      "records": {
+        "maximum": 40,
+        "minimum": 10
+      },
+      "sources": [
+        "archive-verification-2026-08-31",
+        "counterparty-history-2026-09-05"
+      ]
+    },
+    "taxonomy": {
+      "name": "estate-severity",
+      "severities": [
+        "high",
+        "medium",
+        "unrated"
+      ],
+      "version": "1"
+    },
+    "version": "estate-2026-09-06"
+  },
+  "release_id": "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3",
+  "schema": "anamnesis-release/v1",
+  "sources": [
+    {
+      "bytes": 5641,
+      "disclosure": "public",
+      "id": "archive-verification-2026-08-31",
+      "sha256": "64124ce28d1123123ebbf2c0330ecfa9833aa67738dd6e7d1b37ceb0bf54f2f1"
+    },
+    {
+      "bytes": 1838,
+      "disclosure": "public",
+      "id": "counterparty-history-2026-09-05",
+      "sha256": "11cae8637d2f6c8bf6078e22b9b17325b1f181aedab3c87e833949714e18c4c8"
+    }
+  ],
+  "unknowns": {
+    "finding.adjudication": 17,
+    "finding.remediation": 17,
+    "round.native_schema": 4,
+    "round.verdict": 4,
+    "submission.adjudication": 17
+  }
+}
