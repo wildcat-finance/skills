@@ -349,3 +349,87 @@ reader meets it.
 all five blocks.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `hexctl init --task-issue <a Fiat-Required: 0 issue>` prints one closed JSON directive on stdout and exits 0, naming the pull-request route, the issue it closes and what closing it requires. No run state, worktree or branch is created, and `git status --short` is clean afterwards. The refusal bytes name no mechanism that grants this same run: the sentence beginning "If that decision was wrong" is gone from `hexctl.py`, and no replacement text names an edit, a flag or an override. Any issue-derived field inside the directive passes the control-character stripping `hexctl` already applies to displayed text. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`. The bare command reports `outcome nothing-selected` on a clean tree and exits 0 without selecting a check, so it establishes nothing.
+
+**Why.** The five amendment blocks above each state that the bare command
+"reports `outcome green` for no scope". It does not: it reports `outcome
+nothing-selected`, and `run_checks.py` reaches `outcome green` only after checks
+have run. The error is worse than a misnamed token, because `outcome green` is
+the exact token this step's repaired Exit requires. Read as written, those
+blocks assert that a run selecting nothing yields what the new clause demands,
+which argues the repair is as empty as the clause it replaced. It is not.
+
+An earlier correction named step 1 alone. A step's packet composes its baseline
+with the amendments whose `Steps touched` names that step, so a worker
+delegated this step received the false claim and no correction. This block puts
+the true token in step 2's own packet. Raised as S1-R3-01 in step 1 round 3.
+
+**Steps touched.** Step 2, whose packet carried the false claim uncorrected.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: The init receipt carries a provenance block for the filing decision: the value read, the body digest, `created_at`, `updated_at`, and, where GraphQL is reachable, the edit count, the last edit time and the prior `Fiat-Required` value. Where it is not reachable, each of those is recorded as `unknown` with its reason, never omitted. Prior body text reaches neither the receipt, the ledger nor stderr: it is reduced to the value and a digest inside the reader. `hexctl verify` compares the recorded provenance against the issue as it stands and reports a divergence rather than treating the receipt as the whole truth. `cmd_record` still refuses `task_issue_contract`. `init` makes at most two network requests for the filing decision and no other command gains one, counted by a test against a stubbed API. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`. The bare command reports `outcome nothing-selected` on a clean tree and exits 0 without selecting a check, so it establishes nothing.
+
+**Why.** The five amendment blocks above each state that the bare command
+"reports `outcome green` for no scope". It does not: it reports `outcome
+nothing-selected`, and `run_checks.py` reaches `outcome green` only after checks
+have run. The error is worse than a misnamed token, because `outcome green` is
+the exact token this step's repaired Exit requires. Read as written, those
+blocks assert that a run selecting nothing yields what the new clause demands,
+which argues the repair is as empty as the clause it replaced. It is not.
+
+An earlier correction named step 1 alone. A step's packet composes its baseline
+with the amendments whose `Steps touched` names that step, so a worker
+delegated this step received the false claim and no correction. This block puts
+the true token in step 3's own packet. Raised as S1-R3-01 in step 1 round 3.
+
+**Steps touched.** Step 3, whose packet carried the false claim uncorrected.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `init` refuses when the task issue's body changed inside a bounded window before it ran, stating what it observed and naming no mechanism that grants this same run. Over REST alone the read is `updated_at` differing from `created_at` and falling inside the window; where GraphQL is reachable it refines to the body edits themselves and the prior value of the line. Where neither can say whether the body itself changed, `init` proceeds and the receipt names the read as undiscriminated, and no output reports the window as having been enforced. No override exists, and no flag, environment variable or argument clears the refusal. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`. The bare command reports `outcome nothing-selected` on a clean tree and exits 0 without selecting a check, so it establishes nothing.
+
+**Why.** The five amendment blocks above each state that the bare command
+"reports `outcome green` for no scope". It does not: it reports `outcome
+nothing-selected`, and `run_checks.py` reaches `outcome green` only after checks
+have run. The error is worse than a misnamed token, because `outcome green` is
+the exact token this step's repaired Exit requires. Read as written, those
+blocks assert that a run selecting nothing yields what the new clause demands,
+which argues the repair is as empty as the clause it replaced. It is not.
+
+An earlier correction named step 1 alone. A step's packet composes its baseline
+with the amendments whose `Steps touched` names that step, so a worker
+delegated this step received the false claim and no correction. This block puts
+the true token in step 4's own packet. Raised as S1-R3-01 in step 1 round 3.
+
+**Steps touched.** Step 4, whose packet carried the false claim uncorrected.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `AGENTS.md` no longer says `init` refuses a `0`, and says what it does instead. The `## Start or resume` filing paragraph and the `## Hard rules` bullet in `plugins/hexaemeron/skills/fiat/SKILL.md` say the same, and neither names an edit that would grant a run. Because that file's whole-file digest is bound and the filing paragraph sits before the reviewed span, the derived chain is re-pinned in this step: `python3 ~/.claude/tools/repin_fixture.py . fiat-study-runbook-phase <the pre-edit ref>` regenerates the manifest source and artefact digests, the model, source-spans and compact fixtures and the span offsets, and the recorded span bytes are unchanged, which the pending `reviewed-span-unchanged` cell checks. `plugins/hexaemeron/skills/fiat/EVOLUTION.md` gains one generation row whose `Frontier status`, `Frontier revision`, `Current frontier`, `Next Fiat job` naming skills#363 and `Frontier SHA-256` are retained byte for byte, with the evolution and epoch counters unmoved. `SKILL.md` frontmatter and the Hexaemeron package version agree at every site `tests/test_version_propagation.py` discovers. The demo path from study item 1 runs against the live API and its observed output is recorded at `docs/route-a-zero-decision-demo.md`. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green` and by the recorded demo commands reproducing byte for byte from the committed bytes. The bare command reports `outcome nothing-selected` on a clean tree and exits 0 without selecting a check, so it establishes nothing.
+
+**Why.** The five amendment blocks above each state that the bare command
+"reports `outcome green` for no scope". It does not: it reports `outcome
+nothing-selected`, and `run_checks.py` reaches `outcome green` only after checks
+have run. The error is worse than a misnamed token, because `outcome green` is
+the exact token this step's repaired Exit requires. Read as written, those
+blocks assert that a run selecting nothing yields what the new clause demands,
+which argues the repair is as empty as the clause it replaced. It is not.
+
+An earlier correction named step 1 alone. A step's packet composes its baseline
+with the amendments whose `Steps touched` names that step, so a worker
+delegated this step received the false claim and no correction. This block puts
+the true token in step 5's own packet. Raised as S1-R3-01 in step 1 round 3.
+
+**Steps touched.** Step 5, whose packet carried the false claim uncorrected.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
