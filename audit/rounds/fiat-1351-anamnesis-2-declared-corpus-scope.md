@@ -96,3 +96,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: round 1's four stand as recorded. Nothing new was found.
+
+## Step 4, round 1 -- 2026-09-07T22:02:19Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=not-applicable; constant-removed=not-applicable; scope-both-ways=not-applicable; estate-provenance=not-applicable; private-origin-unnamed=reviewed; disclosure-assumption=not-applicable; pilot-rebuild-drift=reviewed; killed-build=not-applicable; ledger-arithmetic=reviewed; stale-prose=reviewed; demo-status=reviewed
+
+Not checked: the security suite is waived for this run and the waiver is on the ledger; this step changes Markdown and two test files and no Solidity, so x-ray, solidity-auditor and fizz have no target. Six register ids name work completed in steps 2 and 3 and re-checked there rather than here. Also unchecked: hosted CI, the controller receipt, push, the base integration and the issue closure, all of which follow this round; whether the new held job is the most valuable one a reader could choose, which the ledger asserts and this round does not; and whether the next job's acceptance condition can be met, which depends on a foreign-format corpus the ledger declares absent.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: three observations carry forward. The plugin package version stays `0.3.0` while the skill moves to `anamnesis-v4.1.0`, so a marketplace consumer already holding `0.3.0` is not served the changed skill by a version-gated installer; the study declared moving it a non-goal, `tests/test_version_propagation.py` pins the current value, and the house convention agrees, with `horos` at package `0.1.1` against skill `horos-v12.3.3` over eighteen ledger rows and `synkrisis` at `0.5.1` against `synkrisis-v4.2.0`, so this is a repository-wide property rather than a defect of this step. The new held job's claim was verified rather than assumed and is sharper than the ledger states it: the module defines `MAPPER = {"name": "warden-audit-round-markdown", "version": "1"}` at one line and references it nowhere, `parse_source` is the only parser, and `curate` reads `policy["mapper"]` into every assertion, so the one place naming the implementation that actually runs is dead while the policy's declaration is what every record attests. The demonstration ledger's own held job asks for a second corpus from more than one producer and the estate corpus is one, but the registered demonstration still runs the pilot alone; the study's section 12 records why the estate is not added as a command, so the demo frontier stays where step 2 left it. Evidence for the covered concerns: the evolution counter moved once from 3.1.0 to 4.1.0 with generation and epoch retained, the `v3.1.0` row keeps revision `corpus-scope` and digest `1da8d2f843cb3b0ff1fd6dac5d41d4cafb5746388635c3f1ba5e41adde1d1f77`, the new frontier digest recomputes over its exact four-field line and differs from the prior row's, five history rows survive and only header lines changed; the frontmatter reads `4.1.0`, the front-door card names `anamnesis-v4.1.0`, the same current-frontier sentence stands in the landing README, `AGENTS.md` and the skill file, and the only surviving mention of a resolver-side constant is inside the append-only `v3.1.0` history row, which records what was true when it was written; both demo paths exit 0 and the pilot still rebuilds to `41d640fb`; and the declared-inputs block is one valid row naming the absent corpus the next job needs.
