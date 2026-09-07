@@ -1,5 +1,5 @@
 <!-- marketplace-context:start -->
-> **Marketplace context: Lazarus.** Lazarus captures the finite fixed-block Ethereum state and RPC evidence an application test needs, verifies the proof-backed part and replays only exact recorded requests. Use Alexandria for a lending-data archive, Tabularium for event interpretation and Ariadne to bind a released fixture to its evidence. **Current frontier:** Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
+> **Marketplace context: Lazarus.** Lazarus captures the finite fixed-block Ethereum state and RPC evidence an application test needs, verifies the proof-backed part and replays only exact recorded requests. Use Alexandria for a lending-data archive, Tabularium for event interpretation and Ariadne to bind a released fixture to its evidence. **Current frontier:** Receipt witnesses reconstruct receiptsRoot offline for full ordered receipt sets: scoped witnesses prove one consensus receipt payload and its log projection, while empty witnesses are accepted only at Ethereum's empty trie root and prove zero relations; transaction hashes and unrelated RPC results remain recorded evidence.
 <!-- marketplace-context:end -->
 
 # Preservation releases
@@ -138,10 +138,9 @@ long as the document says so.
 - **That the statement is signed.** Neither tool holds a key; `cosign` owns that
   boundary, and Ariadne reports signature state without checking signatures.
 - **That every receipt or log field is proved.** A release-v2 may carry the two
-  scoped relations checked against `receiptsRoot`: one consensus receipt
-  payload and its filtered consensus-log projection. Transaction hashes and
-  unrelated RPC fields remain recorded evidence. Release-v1 carries no receipt
-  relation at all.
+  scoped relations checked against `receiptsRoot`, or a verified empty root
+  with zero relations. Transaction hashes and unrelated RPC fields remain
+  recorded evidence. Release-v1 carries no receipt relation at all.
 - **Anything about a second fixture.** A release describes one.
 
 ## Why the fixture does not mention the release

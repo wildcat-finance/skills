@@ -45,3 +45,35 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: live-provider recapture, because no provider input belongs to this offline audit and the fixture claims only a recorded observation.
+
+## Step 3, round 1 -- 2026-09-07T09:04:58Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: empty-root-binding=reviewed; empty-set-completeness=reviewed; branch-shape-parity=reviewed; evidence-count-zero=reviewed; nonempty-regression=reviewed; rpc-surface-minimisation=reviewed; manifest-report-shape=reviewed; fixture-provenance=reviewed; atomic-fixture-write=reviewed; marketplace-prose-drift=reviewed
+
+Not checked: Pashov security suite, waived because step 3 changes no Solidity; the external truth of the operator-authored 2026-09-06 live-provider observation was not independently corroborated, and canonical-chain membership and provider independence remain explicitly unclaimed; controller source-refresh receipt and publication state remain outside this audit branch.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | low | docs/lazarus-empty-block-receipt-witness/proof.md | Brevitas B011: three two-column evidence tables violated the repository's minimum useful table shape. | fixed in this audit commit; exact parent fails and fixed proof passes the same gate |
+
+Leads not pursued: live-provider recapture, because no provider input belongs to this offline audit and the fixture claims only a recorded observation; controller source-refresh receipt, because the Warden may inspect but must not create controller receipts.
+
+## Step 3, round 2 -- 2026-09-07T10:12:15Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: empty-root-binding=reviewed; empty-set-completeness=reviewed; branch-shape-parity=reviewed; evidence-count-zero=reviewed; nonempty-regression=reviewed; rpc-surface-minimisation=reviewed; manifest-report-shape=reviewed; fixture-provenance=reviewed; atomic-fixture-write=reviewed; marketplace-prose-drift=reviewed
+
+Not checked: Pashov security suite, waived because step 3 changes no Solidity; the external truth of the operator-authored 2026-09-06 live-provider observation was not independently corroborated, and canonical-chain membership and provider independence remain explicitly unclaimed; controller source-refresh receipt and publication state remain outside this audit branch.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: live-provider recapture, because no provider input belongs to this offline audit and the fixture claims only a recorded observation; controller source-refresh receipt, because the Warden may inspect but must not create controller receipts; 16 Brevitas B023 glossary signals in `plugins/lazarus/docs/study.md`, because those lines were last changed in August 2026 and issue 1360 changes only that file's marketplace block.
