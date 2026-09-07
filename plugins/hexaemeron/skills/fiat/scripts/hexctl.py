@@ -2692,8 +2692,14 @@ def cmd_init(args) -> None:
     # The two network reads are the last pre-mutation checks, because every
     # cheaper refusal has already had its chance. The filing decision goes
     # first: whether this work earned a run at all precedes any question about
-    # the controller that would run it, and a `0` verdict must cost the operator
-    # nothing but the read. A run naming no issue reads no decision, and says so
+    # the controller that would run it, and a `0` verdict costs the operator
+    # the reads and nothing else. Since the provenance block, that is two
+    # reads rather than one: a `0` pays for a GraphQL request whose answer
+    # `routed_filing_directive` never carries, and can wait `GIT_TIMEOUT`
+    # twice. The reader builds the block unconditionally on purpose, because
+    # routing on the value inside it would put the decision about a `0` in two
+    # places, which the note at the end of `read_task_issue_contract` refuses
+    # (S3-R1-04). A run naming no issue reads no decision, and says so
     # rather than passing quietly for the same reason the carried-forward
     # heading is mandatory: an absent answer cannot be told apart from a
     # question nobody asked.
@@ -5193,7 +5199,12 @@ def github_issue_edit_provenance(
         )
     try:
         payload = json.loads(output.decode("utf-8"))
-    except (UnicodeDecodeError, ValueError):
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        # `RecursionError` is not a `ValueError`, so a deeply nested array
+        # walked the caller off the interpreter's stack instead of landing in
+        # the `unknown` every other malformed response produces. 400000 bytes
+        # of `[` reaches it, well inside the GIT_OUTPUT_MAX cap, so the cap is
+        # not the bound here and the parser has to say so itself (S3-R1-02).
         return unknown_filing_provenance(
             "the GraphQL response was not UTF-8 JSON"
         )
@@ -5205,7 +5216,17 @@ def github_issue_edit_provenance(
     edits = as_dict(edits)
     total = edits.get("totalCount")
     nodes = edits.get("nodes")
-    if not isinstance(total, int) or not isinstance(nodes, list):
+    # `bool` is a subclass of `int`, so a `totalCount` of `true` passed as a
+    # count, compared `False` against `ISSUE_EDIT_NODES_MAX`, and recorded
+    # `"edit_count": true`. It then compared equal to a real count of 1 in
+    # `filing_decision_divergence`, because `True == 1`, so a moved edit count
+    # reported no divergence at all. Rejected here rather than coerced, which
+    # is what the boundary is for (S3-R1-03).
+    if (
+        not isinstance(total, int)
+        or isinstance(total, bool)
+        or not isinstance(nodes, list)
+    ):
         return unknown_filing_provenance(
             "the GraphQL response did not carry an edit history"
         )
@@ -17514,10 +17535,28 @@ def filing_decision_divergence(base_dir: str, state: dict) -> tuple[list, str]:
         ("sha256", recorded.get("sha256"), now_record["sha256"]),
         ("updated_at", was_provenance.get("updated_at"), now_provenance["updated_at"]),
         ("edit_count", was_provenance.get("edit_count"), now_provenance["edit_count"]),
+        (
+            "last_edited_at",
+            was_provenance.get("last_edited_at"),
+            now_provenance["last_edited_at"],
+        ),
     ):
         if was != now:
             divergences.append({"field": field, "recorded": was, "now": now})
     return divergences, ""
+
+
+UNDISCRIMINATED_DIVERGENCE_FIELDS = frozenset({"updated_at"})
+"""Fields whose movement is not evidence that the body changed.
+
+`updated_at` moves on a comment and on a label, which
+`ISSUE_EDITS_QUERY`'s own docstring is the reason this reader asks GraphQL at
+all. Reporting it under "the filing decision has moved" named an
+undiscriminated read as a body edit, which is exactly what the
+`window-undiscriminated-read` line refuses at `init` (S3-R1-01). The two
+fields that do discriminate, `edit_count` and `last_edited_at`, are compared
+beside it.
+"""
 
 
 def cmd_verify(args) -> None:
@@ -17544,15 +17583,31 @@ def cmd_verify(args) -> None:
             )
             return
         if divergences:
+            moved = [
+                entry for entry in divergences
+                if entry["field"] not in UNDISCRIMINATED_DIVERGENCE_FIELDS
+            ]
+            headline = (
+                "the filing decision has moved since this run read it:"
+                if moved
+                else "the issue has been touched since this run read it, and "
+                     "nothing that records the body has moved:"
+            )
             print(
                 f"ok: {count} ledger entries, chain intact, state consistent; "
-                f"the filing decision has moved since this run read it:"
+                f"{headline}"
             )
             for entry in divergences:
+                note = (
+                    " (a comment or a label moves this too, so on its own it "
+                    "is not a body edit)"
+                    if entry["field"] in UNDISCRIMINATED_DIVERGENCE_FIELDS
+                    else ""
+                )
                 print(
                     f"  {entry['field']}: recorded "
                     f"{clean(str(entry['recorded']))}, now "
-                    f"{clean(str(entry['now']))}"
+                    f"{clean(str(entry['now']))}{note}"
                 )
             sys.exit(1)
         print(

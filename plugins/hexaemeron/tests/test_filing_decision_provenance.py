@@ -137,6 +137,112 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("stands as recorded", proc.stdout)
         self.assertNotIn("has moved", proc.stdout)
 
+    def test_a_moved_updated_at_alone_is_not_called_a_body_edit(self):
+        """A comment moves `updated_at` and nothing that records the body.
+
+        Reporting that as "the filing decision has moved" names an
+        undiscriminated read as a body edit, which is what
+        `window-undiscriminated-read` refuses at `init` (S3-R1-01).
+        """
+        nodes = [{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}]
+        self.edits(nodes)
+        self.start(value=1)
+        # Same body, same edit history; only the undiscriminated field moves.
+        self.stamps(updated="2026-09-07T11:00:00Z")
+        self.edits(nodes)
+        proc = self.run_ctl("verify", "--check-filing-decision", expect=1)
+        self.assertNotIn("the filing decision has moved", proc.stdout)
+        self.assertIn("nothing that records the body has moved", proc.stdout)
+        self.assertIn("not a body edit", proc.stdout)
+
+    def test_a_moved_body_still_reads_as_a_moved_decision(self):
+        """The qualifier above does not soften a real body edit."""
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        self.env["FAKE_GH_ISSUES"] = json.dumps({self.ISSUE: self.body(0)})
+        self.edits([
+            {"editedAt": "2026-09-07T11:00:00Z", "diff": self.body(0)},
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
+        ])
+        self.stamps(updated="2026-09-07T11:00:00Z")
+        proc = self.run_ctl("verify", "--check-filing-decision", expect=1)
+        self.assertIn("the filing decision has moved", proc.stdout)
+        self.assertIn("last_edited_at: recorded 2026-09-06T10:08:38Z, now "
+                      "2026-09-07T11:00:00Z", proc.stdout)
+
+    def test_a_deeply_nested_response_records_unknown_rather_than_crashing(self):
+        """`RecursionError` is not a `ValueError` (S3-R1-02).
+
+        400000 bytes of `[` sits well inside `GIT_OUTPUT_MAX`, so the byte cap
+        is not what bounds this and the parser has to catch it itself.
+        """
+        module = hexctl_module()
+        deep = ("[" * 200_000 + "]" * 200_000).encode("utf-8")
+        original = module.bounded_probe
+        module.bounded_probe = lambda *a, **k: (0, deep, None)
+        try:
+            out = module.github_issue_edit_provenance(
+                self.dir, "wildcat-finance/example", "74")
+        finally:
+            module.bounded_probe = original
+        self.assertEqual(out["edit_count"], "unknown")
+        self.assertEqual(out["prior_fiat_required"], "unknown")
+        self.assertIn("not UTF-8 JSON", out["reason"])
+
+    def test_a_boolean_edit_count_is_refused_rather_than_recorded(self):
+        """`bool` subclasses `int`, so `true` passed as a count (S3-R1-03).
+
+        It also compared equal to a real count of 1, so a moved edit count
+        reported no divergence at all.
+        """
+        self.env["FAKE_GH_EDITS"] = json.dumps({
+            "totalCount": True,
+            "nodes": [{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}],
+        })
+        provenance = self.start(value=1)
+        self.assertEqual(provenance["edit_count"], "unknown")
+        self.assertIn("did not carry an edit history", provenance["reason"])
+        with open(os.path.join(self.target, ".hexaemeron", "state.json"),
+                  encoding="utf-8") as handle:
+            self.assertNotIn('"edit_count": true', handle.read())
+
+    def test_no_prior_body_text_reaches_the_routed_zero_directive(self):
+        """The `0` route prints a directive an agent consumes (S3-R1-05).
+
+        `read_task_issue_contract` builds the provenance block before
+        `cmd_init` routes the value, so the reader has held a prior body by the
+        time this directive is composed.
+        """
+        self.edits([
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(0)},
+            {"editedAt": "2026-09-06T09:37:54Z",
+             "diff": self.body(1, extra=" " + self.PRIOR_MARKER)},
+        ])
+        self.env["FAKE_GH_ISSUES"] = json.dumps({self.ISSUE: self.body(0)})
+        self.stamps()
+        proc = self.run_ctl("init", "--topic", "Provenance topic",
+                            "--task-issue", self.ISSUE)
+        self.assertNotIn(self.PRIOR_MARKER, proc.stdout)
+        self.assertNotIn(self.PRIOR_MARKER, proc.stderr)
+        directive = json.loads(proc.stdout.strip().splitlines()[-1])
+        self.assertNotIn("provenance", directive)
+        self.assertEqual(directive["do"], "pull-request")
+
+    def test_no_prior_body_text_reaches_the_divergence_report(self):
+        """The other printer that holds a prior body (S3-R1-05)."""
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.start(value=1)
+        self.env["FAKE_GH_ISSUES"] = json.dumps({self.ISSUE: self.body(0)})
+        self.edits([
+            {"editedAt": "2026-09-07T11:00:00Z", "diff": self.body(0)},
+            {"editedAt": "2026-09-06T10:08:38Z",
+             "diff": self.body(1, extra=" " + self.PRIOR_MARKER)},
+        ])
+        proc = self.run_ctl("verify", "--check-filing-decision", expect=1)
+        self.assertIn("the filing decision has moved", proc.stdout)
+        self.assertNotIn(self.PRIOR_MARKER, proc.stdout)
+        self.assertNotIn(self.PRIOR_MARKER, proc.stderr)
+
     def test_init_makes_at_most_two_requests_and_plain_verify_makes_none(self):
         log = os.path.join(self.dir, "transport.log")
         self.env["FAKE_GH_LOG"] = log
