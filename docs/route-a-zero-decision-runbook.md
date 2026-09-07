@@ -246,3 +246,106 @@ performance claim is made here. elenchus: none, no failure in hand; the demo is 
 demonstration rather than a guard. hypomnema: the prose surfaces are updated in
 place rather than recorded, because they describe behaviour the step 1 record
 already decided.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `docs/route-a-zero-decision-study.md` is the receipted study with each of its five sibling-skill links given the `plugins/hexaemeron/skills/` prefix and nothing else changed. `docs/route-a-zero-decision-runbook.md` is this runbook. `docs/decisions/drafts/route-a-filed-zero-as-an-answer.md` opens `# Decision: `, carries its stable identity, holds no number, and records the three decisions of study item 12: that a filed `0` is an answer rather than an error and supersedes that clause of ADR-067, that no override exists, and that the gate reads no editor identity. The Horos boundary and census are regenerated after staging. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`.
+
+**Why.** The clause named a command that proves nothing. On a clean tree
+`python3 scripts/run_checks.py` reports `outcome green` for no scope, selects
+zero checks, omits the root suite and exits 0, so the exit code alone could not
+tell a passing suite from one that was never chosen. That is the state a step
+is in the moment it commits, which is the moment the clause is read. The
+repaired clause names the base the delta is computed from and the outcome word,
+neither of which a vacuous run produces. Raised as S1-R2-01 in step 1 round 2
+and filed against the runner as skills#1429.
+
+**Steps touched.** Step 1, whose Exit named the bare command.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `hexctl init --task-issue <a Fiat-Required: 0 issue>` prints one closed JSON directive on stdout and exits 0, naming the pull-request route, the issue it closes and what closing it requires. No run state, worktree or branch is created, and `git status --short` is clean afterwards. The refusal bytes name no mechanism that grants this same run: the sentence beginning "If that decision was wrong" is gone from `hexctl.py`, and no replacement text names an edit, a flag or an override. Any issue-derived field inside the directive passes the control-character stripping `hexctl` already applies to displayed text. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`.
+
+**Why.** The clause named a command that proves nothing. On a clean tree
+`python3 scripts/run_checks.py` reports `outcome green` for no scope, selects
+zero checks, omits the root suite and exits 0, so the exit code alone could not
+tell a passing suite from one that was never chosen. That is the state a step
+is in the moment it commits, which is the moment the clause is read. The
+repaired clause names the base the delta is computed from and the outcome word,
+neither of which a vacuous run produces. Raised as S1-R2-01 in step 1 round 2
+and filed against the runner as skills#1429.
+
+**Steps touched.** Step 2, whose Exit named the bare command.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: The init receipt carries a provenance block for the filing decision: the value read, the body digest, `created_at`, `updated_at`, and, where GraphQL is reachable, the edit count, the last edit time and the prior `Fiat-Required` value. Where it is not reachable, each of those is recorded as `unknown` with its reason, never omitted. Prior body text reaches neither the receipt, the ledger nor stderr: it is reduced to the value and a digest inside the reader. `hexctl verify` compares the recorded provenance against the issue as it stands and reports a divergence rather than treating the receipt as the whole truth. `cmd_record` still refuses `task_issue_contract`. `init` makes at most two network requests for the filing decision and no other command gains one, counted by a test against a stubbed API. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`.
+
+**Why.** The clause named a command that proves nothing. On a clean tree
+`python3 scripts/run_checks.py` reports `outcome green` for no scope, selects
+zero checks, omits the root suite and exits 0, so the exit code alone could not
+tell a passing suite from one that was never chosen. That is the state a step
+is in the moment it commits, which is the moment the clause is read. The
+repaired clause names the base the delta is computed from and the outcome word,
+neither of which a vacuous run produces. Raised as S1-R2-01 in step 1 round 2
+and filed against the runner as skills#1429.
+
+**Steps touched.** Step 3, whose Exit named the bare command.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `init` refuses when the task issue's body changed inside a bounded window before it ran, stating what it observed and naming no mechanism that grants this same run. Over REST alone the read is `updated_at` differing from `created_at` and falling inside the window; where GraphQL is reachable it refines to the body edits themselves and the prior value of the line. Where neither can say whether the body itself changed, `init` proceeds and the receipt names the read as undiscriminated, and no output reports the window as having been enforced. No override exists, and no flag, environment variable or argument clears the refusal. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`.
+
+**Why.** The clause named a command that proves nothing. On a clean tree
+`python3 scripts/run_checks.py` reports `outcome green` for no scope, selects
+zero checks, omits the root suite and exits 0, so the exit code alone could not
+tell a passing suite from one that was never chosen. That is the state a step
+is in the moment it commits, which is the moment the clause is read. The
+repaired clause names the base the delta is computed from and the outcome word,
+neither of which a vacuous run produces. Raised as S1-R2-01 in step 1 round 2
+and filed against the runner as skills#1429.
+
+**Steps touched.** Step 4, whose Exit named the bare command.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `AGENTS.md` no longer says `init` refuses a `0`, and says what it does instead. The `## Start or resume` filing paragraph and the `## Hard rules` bullet in `plugins/hexaemeron/skills/fiat/SKILL.md` say the same, and neither names an edit that would grant a run. Because that file's whole-file digest is bound and the filing paragraph sits before the reviewed span, the derived chain is re-pinned in this step: `python3 ~/.claude/tools/repin_fixture.py . fiat-study-runbook-phase <the pre-edit ref>` regenerates the manifest source and artefact digests, the model, source-spans and compact fixtures and the span offsets, and the recorded span bytes are unchanged, which the pending `reviewed-span-unchanged` cell checks. `plugins/hexaemeron/skills/fiat/EVOLUTION.md` gains one generation row whose `Frontier status`, `Frontier revision`, `Current frontier`, `Next Fiat job` naming skills#363 and `Frontier SHA-256` are retained byte for byte, with the evolution and epoch counters unmoved. `SKILL.md` frontmatter and the Hexaemeron package version agree at every site `tests/test_version_propagation.py` discovers. The demo path from study item 1 runs against the live API and its observed output is recorded at `docs/route-a-zero-decision-demo.md`. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green` and by the recorded demo commands reproducing byte for byte from the committed bytes.
+
+**Why.** The clause named a command that proves nothing. On a clean tree
+`python3 scripts/run_checks.py` reports `outcome green` for no scope, selects
+zero checks, omits the root suite and exits 0, so the exit code alone could not
+tell a passing suite from one that was never chosen. That is the state a step
+is in the moment it commits, which is the moment the clause is read. The
+repaired clause names the base the delta is computed from and the outcome word,
+neither of which a vacuous run produces. Raised as S1-R2-01 in step 1 round 2
+and filed against the runner as skills#1429.
+
+**Steps touched.** Step 5, whose Exit named the bare command.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: `docs/route-a-zero-decision-study.md` is the receipted study with each of its five sibling-skill links given the `plugins/hexaemeron/skills/` prefix and nothing else changed. `docs/route-a-zero-decision-runbook.md` is this runbook. `docs/decisions/drafts/route-a-filed-zero-as-an-answer.md` opens `# Decision: `, carries its stable identity, holds no number, and records the three decisions of study item 12: that a filed `0` is an answer rather than an error and supersedes that clause of ADR-067, that no override exists, and that the gate reads no editor identity. The Horos boundary and census are regenerated after staging. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`. The bare command reports `outcome nothing-selected` on a clean tree and exits 0 without selecting a check, so it establishes nothing.
+
+**Why.** This corrects the five amendment blocks above, which each state that
+the bare command "reports `outcome green` for no scope". It does not. The
+observed token is `outcome nothing-selected`, recorded at 2026-09-06 against
+commit 7c6f5ca8 and again on a clean tree here. The conclusion those blocks
+draw is unchanged and the Exit clauses they installed are unaffected: only the
+output token they name was wrong. Earlier amendment bytes cannot be edited, so
+the correction is appended and the true token now sits in step 1's Exit where a
+reader meets it.
+
+**Steps touched.** Step 1, whose Exit now carries the correction on behalf of
+all five blocks.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

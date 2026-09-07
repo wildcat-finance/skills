@@ -47,17 +47,24 @@ would grant a run instead. This supersedes ADR-067's clause that a `0` refuses s
 that the run does not get a chance to start; the rest of ADR-067 stands, and its
 bytes are left as the historical decision.
 
-**No override exists.** The gate this delivery adds refuses an `init` whose task
-issue carries a filing decision younger than a bounded window. The recovery is to
-wait for the window to pass, or to route the work as the pull request the `0`
-decided on. No flag, environment variable, argument or configuration key clears
-that refusal, and none will be added without superseding this record.
+## No override exists
 
-The reason is the failure above. A refusal that names its own bypass, delivered
-to an agent that wants the run, is an instruction for getting one. An override
-flag is that same failure with a flag in place of an issue edit, and it is worse
-in one respect: it is faster. Time cannot be named as an instruction, cannot be
-passed as an argument, and clears itself.
+The gate this delivery adds refuses an `init` whose task issue carries a filing
+decision younger than a bounded window. The recovery is to wait for the window to
+pass, or to route the work as the pull request the `0` decided on. No flag,
+environment variable, argument or configuration key clears that refusal, and none
+will be added without superseding this record.
+
+The reason is the failure this record opens with. A refusal that names its own
+bypass, delivered to an agent that wants the run, is an instruction for getting
+one. An override flag is that same failure with a flag in place of an issue edit,
+and it is worse in one respect: it is faster. Time cannot be named as an
+instruction, cannot be passed as an argument, and clears itself.
+
+The alternative, and why it is rejected: give the refusal an override that takes
+a written reason. A reason field is satisfied by whatever the caller types, and
+the caller here is the party the gate exists to slow down. Recording a reason
+answers a different question from refusing, and the run proceeds either way.
 
 ## Alternatives
 
@@ -72,9 +79,6 @@ passed as an argument, and clears itself.
   unless an override argument passes.** Rejected. The record does not survive a
   fresh clone and can be deleted, and the refusal has to name the override to be
   usable, which is the shape that started this.
-- **Give the window refusal an override that takes a written reason.** Rejected
-  for the reason the Decision states. A reason field is satisfied by whatever the
-  caller types, and the caller here is the party the gate exists to slow down.
 - **Refuse when the editor and the operator differ.** Rejected. The two are the
   same login in every observed case, so the rule would fire on nothing it is
   aimed at while implying a check that had been made.
