@@ -1,7 +1,7 @@
 # Ethereum USDC interval collector, v0
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 <!-- marketplace-context:end -->
 
 The whole collector, end to end, with no network:
@@ -11,18 +11,24 @@ python3 plugins/alexandria/examples/usdc-interval-v0/demo.py build --output <dir
 python3 plugins/alexandria/examples/usdc-interval-v0/demo.py verify <directory>
 ```
 
-`build` collects the fixture interval in bounded shards, is killed once
-mid-shard and resumed, reconciles the finished interval against the second
-fixture provider, builds the Alexandria release and verifies it. `verify`
-re-derives the release identifier from the built release and compares it, and
-the recorded summary, with `expected.json`.
+`build` collects the fixture interval in bounded shards and then its opening
+reads, is killed once mid-shard and resumed, reconciles the finished interval
+against the second fixture provider, builds the Alexandria release from the
+journals alone and verifies it. `verify` re-derives the release identifier
+from the built release, re-hashes the implementation code, and compares both,
+and the recorded summary, with `expected.json`.
 
 ## What it produces
 
 Five shards of twenty blocks over the Ethereum USDC Comet's declared interval,
 one implementation epoch covering all of it, an agreement between the two
-providers, and release
-`sha256:d286ba9f58a2ed6689957a763dfbd45decf54b3b6391db5aff37cf25dcfaa11d`. Two
+providers over 25 shard comparisons and 3 opening-read comparisons, and release
+`sha256:7cf794f07cb74c0383ae3fdd270758324b8036705c9845a7724043993dde40aa`. The
+release carries ten components: the three evidence journals, the
+`epoch-evidence` journal of opening reads, the `implementation-code` component
+the epoch table names by digest, the epoch table, the error receipts, the
+plan, the reconciliation record and the registry. Every evidence scope carries
+finality `finalized` with the first block's hash and the last shard's. Two
 builds of the same fixtures agree byte for byte.
 
 ## What it does not establish
@@ -41,10 +47,11 @@ event: the release's own coverage says all of that in its gaps.
 ## Files
 
 - `demo.py` is the whole path, `build` and `verify`.
-- `fixtures/primary.json` holds the first provider's synthetic chain state and
-  the interval plan it answers for.
-- `fixtures/secondary.json` names the second provider's class; it agrees with
-  the first everywhere, and the tests cover what a disagreement does.
-- `fixtures/epochs.json` holds the epoch evidence `build` consumes: one slot
-  read, one code read and two block hashes.
-- `expected.json` pins what the path produces.
+- `fixtures/primary.json` holds the first provider's synthetic chain state,
+  the interval plan it answers for, and its answers to the opening reads: the
+  first block's hash, one implementation slot word and one runtime code body.
+- `fixtures/secondary.json` names the second provider's class and carries its
+  own copies of the opening-read answers; it agrees with the first everywhere,
+  and the tests cover what a disagreement does.
+- `expected.json` pins what the path produces, including the implementation
+  digest `check` re-hashes from the release.
