@@ -4600,7 +4600,7 @@
         "transition": "keep or revert decision joined to the canonical Authorises field",
         "unknowns": "noise, unmeasured workloads and unexplained environmental changes"
       },
-      "sha256": "a4edb206a0b52ac252e5c346c792093e9eded320ca7fbb818a0ebd8854d4924a",
+      "sha256": "488c52b68f0c81964798902e42f7f95182265ad59ce4a6fc2be84133819000aa",
       "source": "plugins/hexaemeron/skills/metron/SKILL.md"
     },
     "pandects-search-record": {

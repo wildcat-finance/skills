@@ -5,12 +5,14 @@ the process, and the fault this marketplace keeps producing is a field that sati
 presence check while carrying nothing a comparison can use.
 """
 
+import ast
 import importlib.util
 import json
 import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -355,10 +357,12 @@ class CommandLineTests(TempFiles):
     def test_no_subcommand_exits_two(self):
         self.assertEqual(self.run_cli().returncode, 2)
 
-    def test_both_subcommands_are_offered(self):
+    def test_all_three_subcommands_are_offered(self):
+        """`check` and `record` measure nothing; `time` is the one recorder beside
+        them. A fourth verb is a design change, not a convenience."""
         parser = metron.build_parser()
         for action in parser._subparsers._group_actions:  # noqa: SLF001
-            self.assertEqual(sorted(action.choices), ["check", "record"])
+            self.assertEqual(sorted(action.choices), ["check", "record", "time"])
             return
         raise AssertionError("the parser offers no subcommands")
 
@@ -708,6 +712,544 @@ class RecordCommandTests(TempFiles):
         proc = self.run_cli("record", "--budgets", str(BUDGETS), "--baseline", str(BASELINE),
                             "--run", str(RUNS / "regressed.json"), "--ledger", ledger)
         self.assertEqual(proc.returncode, 0)
+
+
+class TimeCommandTests(TempFiles):
+    """The recorder opens the plugin's one subprocess boundary. Each case here is a
+    way the number or the file could be wrong: a shell reading the argv, a child
+    that outlives the run, a stream that never ends, a failure written as a result."""
+
+    NAME = "harvest.usdc.wall_clock"
+
+    def run_cli(self, *args):
+        return subprocess.run([sys.executable, str(SCRIPT), *args],
+                              capture_output=True, text=True)
+
+    def time(self, *options, command=(), out="run.json"):
+        """`time` on `command`, returning the process and the path it was to write."""
+        path = Path(self.tmp.name) / out
+        proc = self.run_cli("time", "--name", self.NAME, "--out", str(path), *options,
+                            "--", *command)
+        return proc, path
+
+    def python(self, source):
+        """A command running `source` in a fresh interpreter, as the caller would."""
+        return (sys.executable, "-c", source)
+
+    def one_budget(self, limit=60000):
+        return self.write("one-budget.json", {"budgets": [
+            budget(unit="ms", limit=limit),
+        ]})
+
+    def open_descriptors(self):
+        """The descriptor numbers this process holds, so a leak can be counted.
+
+        Read by probing rather than from `/proc`, which macOS does not carry.
+        """
+        found = set()
+        for descriptor in range(3, 256):
+            try:
+                os.fstat(descriptor)
+            except OSError:
+                continue
+            found.add(descriptor)
+        return found
+
+    def wait_gone(self, pid, seconds):
+        """True once `pid` no longer exists, polling for up to `seconds`."""
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return True
+            time.sleep(0.05)
+        return False
+
+    def test_a_clean_command_writes_the_run_file(self):
+        proc, path = self.time(command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(sorted(document), ["measurements", "recorder"])
+        value = document["measurements"][self.NAME]
+        self.assertIsInstance(value, float)
+        self.assertTrue(metron.number(value))
+        self.assertGreater(value, 0)
+        # With one repetition the median is that sample; a value that differed
+        # would have been computed from something the file does not show.
+        sample = document["recorder"]["repetitions"][0]["wall_clock_ms"]
+        self.assertEqual(value, sample)
+        self.assertEqual(sample, round(sample, 3))
+
+    def test_the_recorder_block_answers_what_ran_under_which_bounds(self):
+        """Ephoros' question for this file: which command produced the number, from
+        where, under what timeout, and what each repetition did."""
+        proc, path = self.time("--timeout-seconds", "30", "--expect-exit", "0",
+                               command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        recorder = json.loads(path.read_text(encoding="utf-8"))["recorder"]
+        self.assertEqual(sorted(recorder), sorted([
+            "schema", "argv", "cwd", "repeat", "warmup", "timeout_ms", "expect_exit",
+            "unit", "aggregation", "spread", "repetitions", "recorded_at", "platform",
+            "python",
+        ]))
+        self.assertEqual(recorder["schema"], "metron-timed-run/v1")
+        self.assertEqual(recorder["argv"], list(self.python("pass")))
+        self.assertEqual(recorder["cwd"], os.getcwd())
+        self.assertEqual(recorder["repeat"], 1)
+        self.assertEqual(recorder["warmup"], 0)
+        self.assertEqual(recorder["timeout_ms"], 30000)
+        self.assertEqual(recorder["expect_exit"], 0)
+        self.assertEqual(recorder["unit"], "ms")
+        self.assertEqual(recorder["aggregation"], "median")
+        self.assertEqual(len(recorder["repetitions"]), 1)
+        self.assertEqual(sorted(recorder["repetitions"][0]), sorted([
+            "index", "wall_clock_ms", "exit", "stdout_bytes", "stderr_bytes",
+        ]))
+        self.assertEqual(recorder["repetitions"][0]["index"], 1)
+        self.assertEqual(recorder["repetitions"][0]["exit"], 0)
+        self.assertEqual(recorder["python"], sys.version.split()[0])
+        self.assertTrue(recorder["recorded_at"].endswith("+00:00"))
+
+    def test_check_reads_the_run_file_unedited(self):
+        """The whole point: a run file the recorder wrote passes through the check with
+        no hand edit. A stray number beside `measurements` would be refused there."""
+        proc, path = self.time(command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        found = metron.load_measurements(str(path), "run")
+        self.assertEqual(list(found), [self.NAME])
+        proc = self.run_cli("check", "--budgets", self.one_budget(), "--run", str(path))
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("neutral", proc.stdout)
+
+    def test_the_output_byte_counts_are_recorded_but_not_the_bytes(self):
+        """A recorder that kept the streams would copy whatever the workload printed
+        into the run file, credential included."""
+        secret = Path(self.tmp.name) / "secret.txt"
+        secret.write_text("SECRET-TOKEN", encoding="utf-8")
+        proc, path = self.time(command=(
+            *self.python("import sys; sys.stdout.write('o' * 10); "
+                         "sys.stderr.write(open(sys.argv[1]).read())"),
+            str(secret),
+        ))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        text = path.read_text(encoding="utf-8")
+        entry = json.loads(text)["recorder"]["repetitions"][0]
+        self.assertEqual(entry["stdout_bytes"], 10)
+        self.assertEqual(entry["stderr_bytes"], 12)
+        self.assertNotIn("SECRET-TOKEN", text)
+
+    def test_a_note_is_kept_only_when_given(self):
+        proc, path = self.time("--note", "cold cache", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(document["note"], "cold cache")
+        self.assertEqual(sorted(document), ["measurements", "note", "recorder"])
+
+    def test_the_argv_reaches_the_command_as_written(self):
+        """No shell reads the argv. A word that a shell would expand or split arrives
+        at the command as exactly those characters, and only the first `--` is the
+        recorder's: a command with its own `--` keeps it."""
+        landing = Path(self.tmp.name) / "argv.txt"
+        words = ["$HOME; echo * | cat > /dev/null && `id`", "--", "after"]
+        proc, _path = self.time(command=(
+            *self.python("import sys, pathlib, json; "
+                         "pathlib.Path(sys.argv[1]).write_text(json.dumps(sys.argv[2:]))"),
+            str(landing), *words,
+        ))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(json.loads(landing.read_text(encoding="utf-8")), words)
+
+    def test_the_script_never_hands_a_command_to_a_shell(self):
+        """Phylax P001 and P002 in the test suite's own words: every subprocess call in
+        the script takes a list and never a string, and none asks for a shell."""
+        tree = ast.parse(SCRIPT.read_text(encoding="utf-8"))
+        calls = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "subprocess"
+        ]
+        self.assertEqual([call.func.attr for call in calls], ["Popen"])
+        call = calls[0]
+        self.assertIsInstance(call.args[0], ast.Name)
+        keywords = {keyword.arg: keyword.value for keyword in call.keywords}
+        self.assertNotIn("shell", keywords)
+        self.assertIs(keywords["start_new_session"].value, True)
+        self.assertNotIn("os.system", SCRIPT.read_text(encoding="utf-8"))
+
+    def test_the_run_is_taken_from_the_given_cwd(self):
+        inside = Path(self.tmp.name) / "inside"
+        inside.mkdir()
+        landing = inside / "cwd.txt"
+        proc, path = self.time("--cwd", str(inside), command=(
+            *self.python("import os, pathlib; pathlib.Path('cwd.txt').write_text(os.getcwd())"),
+        ))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(Path(landing.read_text(encoding="utf-8")).resolve(),
+                         inside.resolve())
+        recorder = json.loads(path.read_text(encoding="utf-8"))["recorder"]
+        self.assertEqual(recorder["cwd"], str(inside))
+
+    def test_a_wrong_exit_is_refused_and_no_file_is_written(self):
+        proc, path = self.time(command=self.python("import sys; sys.exit(3)"))
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(proc.stderr.count("\n"), 1)
+        self.assertIn("repetition 1", proc.stderr)
+        self.assertIn("exit", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_the_expected_exit_is_the_callers_to_choose(self):
+        """A workload whose success is exit 3 is still a workload."""
+        proc, path = self.time("--expect-exit", "3",
+                               command=self.python("import sys; sys.exit(3)"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["recorder"]
+                         ["repetitions"][0]["exit"], 3)
+
+    def test_a_command_past_the_timeout_is_killed_and_refused(self):
+        started = time.monotonic()
+        proc, path = self.time("--timeout-seconds", "1",
+                               command=self.python("import time; time.sleep(30)"))
+        self.assertLess(time.monotonic() - started, 10)
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("repetition 1", proc.stderr)
+        self.assertIn("timeout", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_a_stream_past_the_cap_is_killed_and_refused(self):
+        """A command that never stops writing would otherwise never be seen to
+        finish, and one that writes a great deal would land in memory."""
+        started = time.monotonic()
+        proc, path = self.time(command=self.python(
+            "import sys\n"
+            "while True: sys.stdout.write('x' * 65536)"
+        ))
+        self.assertLess(time.monotonic() - started, 10)
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("repetition 1", proc.stderr)
+        self.assertIn("output-cap", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_a_grandchild_does_not_outlive_a_command_that_exits_zero(self):
+        """Without the teardown the readers block on the pipe the grandchild still
+        holds, so the recorded duration becomes its lifetime and the grandchild
+        outlives the run that started it."""
+        pid_file = Path(self.tmp.name) / "grandchild.pid"
+        proc, path = self.time(command=self.python(
+            "import os, sys, time; "
+            "child = os.fork() == 0; "
+            f"(open({str(pid_file)!r}, 'w').write(str(os.getpid())), time.sleep(30), "
+            "os._exit(0)) if child else "
+            "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+        ))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertLess(document["recorder"]["repetitions"][0]["wall_clock_ms"], 4000)
+        pid = int(pid_file.read_text(encoding="utf-8"))
+        self.assertTrue(self.wait_gone(pid, 5), f"grandchild {pid} survived the run")
+
+    def test_a_grandchild_that_leaves_the_process_group_is_refused(self):
+        """A process group teardown cannot reach a grandchild that called `setsid`. It
+        survives and holds the command's pipes, which is both a boundary the recorder
+        claims and the number the check reads, so the repetition is refused rather
+        than recorded with an inflated duration."""
+        pid_file = Path(self.tmp.name) / "escapee.pid"
+        proc, path = self.time(command=self.python(
+            "import os, sys, time; "
+            "child = os.fork() == 0; "
+            f"(os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
+            "time.sleep(30), os._exit(0)) if child else "
+            "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+        ))
+        try:
+            self.assertEqual(proc.returncode, 1)
+            self.assertIn("repetition 1", proc.stderr)
+            self.assertIn("escaped", proc.stderr)
+            self.assertFalse(path.exists())
+        finally:
+            # The escapee is the case under test, not a process to leave behind.
+            try:
+                os.kill(int(pid_file.read_text(encoding="utf-8")), 9)
+            except (OSError, ValueError):
+                pass
+
+    def test_a_previous_run_file_survives_a_failure(self):
+        """A failed run that overwrote the last good file would leave the check reading
+        a number nobody produced this time; one that truncated it would leave nothing
+        the check could refuse by name."""
+        before = '{"measurements": {"harvest.usdc.wall_clock": 1.5}}\n'
+        path = Path(self.tmp.name) / "run.json"
+        path.write_text(before, encoding="utf-8")
+        proc, _path = self.time(command=self.python("import sys; sys.exit(1)"))
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(path.read_text(encoding="utf-8"), before)
+        leftovers = [n for n in os.listdir(self.tmp.name) if n.startswith(".metron-")]
+        self.assertEqual(leftovers, [])
+
+    def test_a_timeout_outside_its_bounds_is_refused_before_anything_runs(self):
+        landing = Path(self.tmp.name) / "ran.txt"
+        for value in ("0", "-1", "3601", "1.5", "ten"):
+            with self.subTest(timeout=value):
+                proc, path = self.time("--timeout-seconds", value, command=(
+                    *self.python("import pathlib, sys; pathlib.Path(sys.argv[1]).touch()"),
+                    str(landing),
+                ))
+                self.assertEqual(proc.returncode, 2)
+                self.assertIn("timeout-seconds", proc.stderr)
+                self.assertFalse(path.exists())
+                self.assertFalse(landing.exists())
+        for value in ("1", "3600"):
+            with self.subTest(timeout=value):
+                proc, _path = self.time("--timeout-seconds", value,
+                                        command=self.python("pass"))
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_a_missing_separator_is_refused(self):
+        path = Path(self.tmp.name) / "run.json"
+        proc = self.run_cli("time", "--name", self.NAME, "--out", str(path),
+                            *self.python("pass"))
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("--", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_an_empty_command_is_refused(self):
+        proc, path = self.time(command=())
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("command", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_a_command_that_cannot_start_is_a_bad_invocation(self):
+        """Nothing ran, so there is no number to refuse: this is 2, not 1."""
+        missing = str(Path(self.tmp.name) / "no-such-binary")
+        proc, path = self.time(command=(missing,))
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("could not start", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_an_unwritable_out_is_refused_before_the_command_runs(self):
+        landing = Path(self.tmp.name) / "ran.txt"
+        proc, path = self.time(out="absent/run.json", command=(
+            *self.python("import pathlib, sys; pathlib.Path(sys.argv[1]).touch()"),
+            str(landing),
+        ))
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("run file", proc.stderr)
+        self.assertFalse(path.exists())
+        self.assertFalse(landing.exists())
+
+    def test_an_escaped_reader_keeps_its_pipe_descriptors(self):
+        """Lead S2-R1. A reader still blocked in `os.read` holds that descriptor
+        number. Closing it frees the number for the next `open` in this process
+        while the thread is still reading from it, so a later file could be
+        handed the recycled number and have its bytes counted into a dead
+        repetition. The clean path closes both streams; the escaped path leaves
+        them open and the run exits 1 immediately after."""
+        held = self.open_descriptors()
+        kept = len(metron.ESCAPED_STREAMS)
+        clean = metron.time_once(list(self.python("pass")), os.getcwd(), 30000)
+        self.assertFalse(clean["escaped"])
+        self.assertEqual(self.open_descriptors() - held, set())
+        self.assertEqual(len(metron.ESCAPED_STREAMS), kept)
+
+        pid_file = Path(self.tmp.name) / "escapee.pid"
+        try:
+            escaped = metron.time_once(list(self.python(
+                "import os, sys, time; "
+                "child = os.fork() == 0; "
+                f"(os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
+                "time.sleep(30), os._exit(0)) if child else "
+                "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+            )), os.getcwd(), 30000)
+            self.assertTrue(escaped["escaped"])
+            self.assertEqual(len(self.open_descriptors() - held), 2)
+            # Held by name, not merely left unclosed: dropping the reference lets
+            # the interpreter finalise the reader and close the descriptor.
+            leaked = metron.ESCAPED_STREAMS[kept:]
+            self.assertEqual(len(leaked), 2)
+            self.assertFalse(any(stream.closed for stream in leaked))
+        finally:
+            try:
+                os.kill(int(pid_file.read_text(encoding="utf-8")), 9)
+            except (OSError, ValueError):
+                pass
+
+
+    def spread(self, path):
+        return json.loads(path.read_text(encoding="utf-8"))["recorder"]["spread"]
+
+    def test_the_block_value_is_the_p50_of_five_kept_samples(self):
+        proc, path = self.time("--repeat", "5", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        recorder = document["recorder"]
+        self.assertEqual(recorder["repeat"], 5)
+        self.assertEqual(recorder["warmup"], 0)
+        self.assertEqual(recorder["aggregation"], "median")
+        samples = sorted(entry["wall_clock_ms"] for entry in recorder["repetitions"])
+        self.assertEqual(len(samples), 5)
+        self.assertEqual(recorder["spread"]["p50"], samples[2])
+        self.assertEqual(document["measurements"][self.NAME], samples[2])
+        self.assertEqual(sorted(recorder["spread"]), sorted([
+            "samples", "min", "p50", "p95", "max", "relative_spread",
+        ]))
+        self.assertEqual(recorder["spread"]["samples"], 5)
+        self.assertEqual(recorder["spread"]["min"], samples[0])
+        self.assertEqual(recorder["spread"]["max"], samples[-1])
+
+    def test_every_percentile_is_a_sample_that_was_recorded(self):
+        """Nearest rank rather than interpolation, so p95 of five samples is the
+        largest one: with five there is no ninety-fifth percentile to reach."""
+        self.assertEqual(metron.nearest_rank([1.0, 2.0, 3.0, 4.0, 5.0], 0.95), 5.0)
+        self.assertEqual(metron.nearest_rank([1.0, 2.0, 3.0, 4.0, 5.0], 0.50), 3.0)
+        self.assertEqual(metron.nearest_rank([1.0, 2.0], 0.50), 1.0)
+        self.assertEqual(metron.nearest_rank([7.5], 0.95), 7.5)
+        # A rank of zero would index past the front of the list rather than
+        # naming the smallest sample.
+        self.assertEqual(metron.nearest_rank([1.0, 2.0, 3.0], 0.01), 1.0)
+        proc, path = self.time("--repeat", "5", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        spread = self.spread(path)
+        self.assertEqual(spread["p95"], spread["max"])
+
+    def test_the_aggregation_asked_for_is_the_one_named_and_carried(self):
+        proc, path = self.time("--repeat", "5", "--aggregate", "p95",
+                               command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(document["recorder"]["aggregation"], "p95")
+        self.assertEqual(document["measurements"][self.NAME],
+                         document["recorder"]["spread"]["p95"])
+
+    def test_there_is_no_mean_to_ask_for(self):
+        """`SKILL.md` reads durations at p95 and p99 and lists latency reported as
+        a mean among its red flags. A recorder offering one would make that flag
+        reachable from the file the check reads."""
+        self.assertEqual(metron.AGGREGATIONS, ("median", "p95"))
+        proc, path = self.time("--aggregate", "mean", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("aggregate", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_an_unnamed_aggregation_is_refused_rather_than_defaulted(self):
+        """S3-R1-01. Argparse holds the command line to the two names, but
+        `timed_run` writes whatever name it is handed into
+        `recorder.aggregation` while `aggregate` chose the value. A rule outside
+        `AGGREGATIONS` that fell through to p95 would write a file naming an
+        aggregation its number is not, which is exactly what study risk
+        `aggregation-declared` forbids."""
+        spread = metron.spread_of([10.0, 20.0])
+        self.assertEqual((spread["p50"], spread["p95"]), (10.0, 20.0))
+        for rule in ("mean", "p99", "MEDIAN", ""):
+            with self.subTest(rule=rule):
+                with self.assertRaises(metron.BudgetError) as refusal:
+                    metron.aggregate(spread, rule)
+                self.assertIn("--aggregate", str(refusal.exception))
+        for rule, expected in (("median", 10.0), ("p95", 20.0)):
+            with self.subTest(rule=rule):
+                self.assertEqual(metron.aggregate(spread, rule), expected)
+
+    def test_warm_up_repetitions_run_under_the_same_bounds_and_are_discarded(self):
+        """The warm-up buys the kept samples the same cache. It has to run to do
+        that, and it must not be counted once it has."""
+        landing = Path(self.tmp.name) / "ran.txt"
+        proc, path = self.time("--warmup", "2", "--repeat", "3", command=(
+            *self.python("import pathlib, sys; "
+                         "p = pathlib.Path(sys.argv[1]); "
+                         "p.write_text(p.read_text() + 'x' if p.exists() else 'x')"),
+            str(landing),
+        ))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(landing.read_text(encoding="utf-8"), "xxxxx")
+        recorder = json.loads(path.read_text(encoding="utf-8"))["recorder"]
+        self.assertEqual(recorder["warmup"], 2)
+        self.assertEqual(recorder["repeat"], 3)
+        self.assertEqual(len(recorder["repetitions"]), 3)
+        self.assertEqual([entry["index"] for entry in recorder["repetitions"]],
+                         [1, 2, 3])
+        self.assertEqual(recorder["spread"]["samples"], 3)
+
+    def test_a_single_kept_sample_reports_no_relative_spread(self):
+        """One sample says nothing about how repeatable it was. `null` says that;
+        a zero would claim the command ran identically every time."""
+        proc, path = self.time(command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        spread = self.spread(path)
+        self.assertEqual(spread["samples"], 1)
+        self.assertIsNone(spread["relative_spread"])
+        self.assertEqual(spread["min"], spread["max"])
+        self.assertEqual(spread["p50"], spread["p95"])
+        self.assertIn('"relative_spread": null', path.read_text(encoding="utf-8"))
+
+    def test_a_zero_median_admits_no_relative_spread(self):
+        """The same refusal the check makes of a zero baseline: there is no
+        proportion for the range to be a fraction of."""
+        self.assertIsNone(metron.spread_of([0.0, 0.0, 4.0])["relative_spread"])
+        self.assertIsNone(metron.spread_of([0.0])["relative_spread"])
+        self.assertEqual(metron.spread_of([0.0, 0.0, 4.0])["p50"], 0.0)
+
+    def test_the_relative_spread_is_the_range_over_the_median(self):
+        spread = metron.spread_of([10.0, 12.0, 20.0, 14.0, 16.0])
+        self.assertEqual(spread["samples"], 5)
+        self.assertEqual(spread["min"], 10.0)
+        self.assertEqual(spread["p50"], 14.0)
+        self.assertEqual(spread["p95"], 20.0)
+        self.assertEqual(spread["max"], 20.0)
+        # Recomputable from the three numbers beside it in the same file, which is
+        # why the quotient is recorded unrounded.
+        self.assertEqual(spread["relative_spread"], (20.0 - 10.0) / 14.0)
+        self.assertEqual(metron.spread_of([2.0, 2.0])["relative_spread"], 0.0)
+
+    def test_a_repeat_outside_its_bounds_is_refused_before_anything_runs(self):
+        landing = Path(self.tmp.name) / "ran.txt"
+        for value in ("0", "-1", "1001", "1.5", "five"):
+            with self.subTest(repeat=value):
+                proc, path = self.time("--repeat", value, command=(
+                    *self.python("import pathlib, sys; pathlib.Path(sys.argv[1]).touch()"),
+                    str(landing),
+                ))
+                self.assertEqual(proc.returncode, 2)
+                self.assertIn("repeat", proc.stderr)
+                self.assertFalse(path.exists())
+                self.assertFalse(landing.exists())
+        proc, _path = self.time("--repeat", "1", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_a_warmup_outside_its_bounds_is_refused_before_anything_runs(self):
+        landing = Path(self.tmp.name) / "ran.txt"
+        for value in ("-1", "101", "1.5", "five"):
+            with self.subTest(warmup=value):
+                proc, path = self.time("--warmup", value, command=(
+                    *self.python("import pathlib, sys; pathlib.Path(sys.argv[1]).touch()"),
+                    str(landing),
+                ))
+                self.assertEqual(proc.returncode, 2)
+                self.assertIn("warmup", proc.stderr)
+                self.assertFalse(path.exists())
+                self.assertFalse(landing.exists())
+        proc, _path = self.time("--warmup", "0", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_a_failing_warm_up_writes_no_file(self):
+        """A warm-up runs under the same bounds as a kept repetition, so a command
+        that fails one has failed. Running on would write a file whose samples came
+        from a command already known to be wrong."""
+        landing = Path(self.tmp.name) / "ran.txt"
+        proc, path = self.time("--warmup", "1", "--repeat", "3", command=(
+            *self.python("import pathlib, sys; "
+                         "p = pathlib.Path(sys.argv[1]); "
+                         "p.write_text(p.read_text() + 'x' if p.exists() else 'x'); "
+                         "sys.exit(3)"),
+            str(landing),
+        ))
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(proc.stderr.count("\n"), 1)
+        self.assertIn("warm-up 1", proc.stderr)
+        self.assertIn("exit", proc.stderr)
+        self.assertFalse(path.exists())
+        # It stopped at the first failure rather than running the kept three.
+        self.assertEqual(landing.read_text(encoding="utf-8"), "x")
 
 
 if __name__ == "__main__":

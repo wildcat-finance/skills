@@ -414,14 +414,19 @@ and release pipelines. The goal is an explainable failure, not more telemetry.
 
 **Today.** [Metron](./plugins/hexaemeron/skills/metron) accepts a declared
 workload, validates a recorded baseline and candidate measurement, and keeps or
-rejects one change against the stated budget.
+rejects one change against the stated budget. It also takes the measurement:
+`time` runs one command in its own process group under a timeout and an output
+cap, repeats it, and writes the run file the check reads, with the declared
+aggregation of the kept samples and the spread a variance is set from.
 
-**Missing.** The plugin checks measurement records but does not produce the
-measurements it consumes.
+**Missing.** The check compares a run against a baseline without reading the
+conditions the recorder wrote beside each, so two numbers taken on different
+machines or interpreters compare silently.
 
-**With enough contribution.** Metron could provide reproducible benchmark
-drivers, environment fingerprints, variance handling, and long-term regression
-tracking for off-chain tools. Hermes should continue to own Solidity gas.
+**With enough contribution.** Metron could hold a comparison to those recorded
+conditions, and could add variance handling beyond the declared spread and
+long-term regression tracking for off-chain tools. Hermes should continue to
+own Solidity gas.
 
 ### ELENCHUS
 

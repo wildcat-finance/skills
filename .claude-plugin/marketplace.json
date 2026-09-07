@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.29",
+      "version": "1.6.30",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -291,8 +291,8 @@
       "name": "alexandria",
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
-      "description": "Digest-bound lending-data releases with a resumable Ethereum USDC interval collector, unsigned evidence statements, reviewed credit views and address queries.",
-      "version": "0.5.0",
+      "description": "Digest-bound lending-data releases with a resumable Ethereum USDC interval collector proven against live providers, unsigned evidence statements, reviewed credit views and address queries.",
+      "version": "0.6.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

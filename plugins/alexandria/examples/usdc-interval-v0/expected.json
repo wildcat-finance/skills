@@ -1,12 +1,15 @@
 {
   "epochs": 1,
+  "implementations": {
+    "0x42f9505a376761b180e27a01ba0554244ed1de7d": "302225f1bb36d46cee282bbb0fd9eb92931eecc0f1fbe36b87a83b3411ff89e3"
+  },
   "interval": {
     "end": "15331685",
     "start": "15331586"
   },
-  "note": "What the demonstration's offline path produces. Every identity here is derived from the checked-in fixtures; nothing was observed on any chain.",
+  "note": "What the demonstration's offline path produces. Every identity here is derived from the checked-in fixtures; nothing was observed on any chain. The implementation digest is the SHA-256 of the synthetic runtime code the release's implementation-code component carries, re-hashed by check.",
   "reconciliation": "agreed",
-  "release_id": "sha256:d286ba9f58a2ed6689957a763dfbd45decf54b3b6391db5aff37cf25dcfaa11d",
+  "release_id": "sha256:7cf794f07cb74c0383ae3fdd270758324b8036705c9845a7724043993dde40aa",
   "resumed_from_shard": 2,
   "shard_statuses": {
     "complete": 5
