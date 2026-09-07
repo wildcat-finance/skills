@@ -741,6 +741,20 @@ class TimeCommandTests(TempFiles):
             budget(unit="ms", limit=limit),
         ]})
 
+    def open_descriptors(self):
+        """The descriptor numbers this process holds, so a leak can be counted.
+
+        Read by probing rather than from `/proc`, which macOS does not carry.
+        """
+        found = set()
+        for descriptor in range(3, 256):
+            try:
+                os.fstat(descriptor)
+            except OSError:
+                continue
+            found.add(descriptor)
+        return found
+
     def wait_gone(self, pid, seconds):
         """True once `pid` no longer exists, polling for up to `seconds`."""
         deadline = time.monotonic() + seconds
@@ -776,7 +790,8 @@ class TimeCommandTests(TempFiles):
         recorder = json.loads(path.read_text(encoding="utf-8"))["recorder"]
         self.assertEqual(sorted(recorder), sorted([
             "schema", "argv", "cwd", "repeat", "warmup", "timeout_ms", "expect_exit",
-            "unit", "aggregation", "repetitions", "recorded_at", "platform", "python",
+            "unit", "aggregation", "spread", "repetitions", "recorded_at", "platform",
+            "python",
         ]))
         self.assertEqual(recorder["schema"], "metron-timed-run/v1")
         self.assertEqual(recorder["argv"], list(self.python("pass")))
@@ -1024,6 +1039,217 @@ class TimeCommandTests(TempFiles):
         self.assertFalse(path.exists())
         self.assertFalse(landing.exists())
 
+    def test_an_escaped_reader_keeps_its_pipe_descriptors(self):
+        """Lead S2-R1. A reader still blocked in `os.read` holds that descriptor
+        number. Closing it frees the number for the next `open` in this process
+        while the thread is still reading from it, so a later file could be
+        handed the recycled number and have its bytes counted into a dead
+        repetition. The clean path closes both streams; the escaped path leaves
+        them open and the run exits 1 immediately after."""
+        held = self.open_descriptors()
+        kept = len(metron.ESCAPED_STREAMS)
+        clean = metron.time_once(list(self.python("pass")), os.getcwd(), 30000)
+        self.assertFalse(clean["escaped"])
+        self.assertEqual(self.open_descriptors() - held, set())
+        self.assertEqual(len(metron.ESCAPED_STREAMS), kept)
+
+        pid_file = Path(self.tmp.name) / "escapee.pid"
+        try:
+            escaped = metron.time_once(list(self.python(
+                "import os, sys, time; "
+                "child = os.fork() == 0; "
+                f"(os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
+                "time.sleep(30), os._exit(0)) if child else "
+                "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+            )), os.getcwd(), 30000)
+            self.assertTrue(escaped["escaped"])
+            self.assertEqual(len(self.open_descriptors() - held), 2)
+            # Held by name, not merely left unclosed: dropping the reference lets
+            # the interpreter finalise the reader and close the descriptor.
+            leaked = metron.ESCAPED_STREAMS[kept:]
+            self.assertEqual(len(leaked), 2)
+            self.assertFalse(any(stream.closed for stream in leaked))
+        finally:
+            try:
+                os.kill(int(pid_file.read_text(encoding="utf-8")), 9)
+            except (OSError, ValueError):
+                pass
+
+
+    def spread(self, path):
+        return json.loads(path.read_text(encoding="utf-8"))["recorder"]["spread"]
+
+    def test_the_block_value_is_the_p50_of_five_kept_samples(self):
+        proc, path = self.time("--repeat", "5", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        recorder = document["recorder"]
+        self.assertEqual(recorder["repeat"], 5)
+        self.assertEqual(recorder["warmup"], 0)
+        self.assertEqual(recorder["aggregation"], "median")
+        samples = sorted(entry["wall_clock_ms"] for entry in recorder["repetitions"])
+        self.assertEqual(len(samples), 5)
+        self.assertEqual(recorder["spread"]["p50"], samples[2])
+        self.assertEqual(document["measurements"][self.NAME], samples[2])
+        self.assertEqual(sorted(recorder["spread"]), sorted([
+            "samples", "min", "p50", "p95", "max", "relative_spread",
+        ]))
+        self.assertEqual(recorder["spread"]["samples"], 5)
+        self.assertEqual(recorder["spread"]["min"], samples[0])
+        self.assertEqual(recorder["spread"]["max"], samples[-1])
+
+    def test_every_percentile_is_a_sample_that_was_recorded(self):
+        """Nearest rank rather than interpolation, so p95 of five samples is the
+        largest one: with five there is no ninety-fifth percentile to reach."""
+        self.assertEqual(metron.nearest_rank([1.0, 2.0, 3.0, 4.0, 5.0], 0.95), 5.0)
+        self.assertEqual(metron.nearest_rank([1.0, 2.0, 3.0, 4.0, 5.0], 0.50), 3.0)
+        self.assertEqual(metron.nearest_rank([1.0, 2.0], 0.50), 1.0)
+        self.assertEqual(metron.nearest_rank([7.5], 0.95), 7.5)
+        # A rank of zero would index past the front of the list rather than
+        # naming the smallest sample.
+        self.assertEqual(metron.nearest_rank([1.0, 2.0, 3.0], 0.01), 1.0)
+        proc, path = self.time("--repeat", "5", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        spread = self.spread(path)
+        self.assertEqual(spread["p95"], spread["max"])
+
+    def test_the_aggregation_asked_for_is_the_one_named_and_carried(self):
+        proc, path = self.time("--repeat", "5", "--aggregate", "p95",
+                               command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        document = json.loads(path.read_text(encoding="utf-8"))
+        self.assertEqual(document["recorder"]["aggregation"], "p95")
+        self.assertEqual(document["measurements"][self.NAME],
+                         document["recorder"]["spread"]["p95"])
+
+    def test_there_is_no_mean_to_ask_for(self):
+        """`SKILL.md` reads durations at p95 and p99 and lists latency reported as
+        a mean among its red flags. A recorder offering one would make that flag
+        reachable from the file the check reads."""
+        self.assertEqual(metron.AGGREGATIONS, ("median", "p95"))
+        proc, path = self.time("--aggregate", "mean", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("aggregate", proc.stderr)
+        self.assertFalse(path.exists())
+
+    def test_an_unnamed_aggregation_is_refused_rather_than_defaulted(self):
+        """S3-R1-01. Argparse holds the command line to the two names, but
+        `timed_run` writes whatever name it is handed into
+        `recorder.aggregation` while `aggregate` chose the value. A rule outside
+        `AGGREGATIONS` that fell through to p95 would write a file naming an
+        aggregation its number is not, which is exactly what study risk
+        `aggregation-declared` forbids."""
+        spread = metron.spread_of([10.0, 20.0])
+        self.assertEqual((spread["p50"], spread["p95"]), (10.0, 20.0))
+        for rule in ("mean", "p99", "MEDIAN", ""):
+            with self.subTest(rule=rule):
+                with self.assertRaises(metron.BudgetError) as refusal:
+                    metron.aggregate(spread, rule)
+                self.assertIn("--aggregate", str(refusal.exception))
+        for rule, expected in (("median", 10.0), ("p95", 20.0)):
+            with self.subTest(rule=rule):
+                self.assertEqual(metron.aggregate(spread, rule), expected)
+
+    def test_warm_up_repetitions_run_under_the_same_bounds_and_are_discarded(self):
+        """The warm-up buys the kept samples the same cache. It has to run to do
+        that, and it must not be counted once it has."""
+        landing = Path(self.tmp.name) / "ran.txt"
+        proc, path = self.time("--warmup", "2", "--repeat", "3", command=(
+            *self.python("import pathlib, sys; "
+                         "p = pathlib.Path(sys.argv[1]); "
+                         "p.write_text(p.read_text() + 'x' if p.exists() else 'x')"),
+            str(landing),
+        ))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(landing.read_text(encoding="utf-8"), "xxxxx")
+        recorder = json.loads(path.read_text(encoding="utf-8"))["recorder"]
+        self.assertEqual(recorder["warmup"], 2)
+        self.assertEqual(recorder["repeat"], 3)
+        self.assertEqual(len(recorder["repetitions"]), 3)
+        self.assertEqual([entry["index"] for entry in recorder["repetitions"]],
+                         [1, 2, 3])
+        self.assertEqual(recorder["spread"]["samples"], 3)
+
+    def test_a_single_kept_sample_reports_no_relative_spread(self):
+        """One sample says nothing about how repeatable it was. `null` says that;
+        a zero would claim the command ran identically every time."""
+        proc, path = self.time(command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        spread = self.spread(path)
+        self.assertEqual(spread["samples"], 1)
+        self.assertIsNone(spread["relative_spread"])
+        self.assertEqual(spread["min"], spread["max"])
+        self.assertEqual(spread["p50"], spread["p95"])
+        self.assertIn('"relative_spread": null', path.read_text(encoding="utf-8"))
+
+    def test_a_zero_median_admits_no_relative_spread(self):
+        """The same refusal the check makes of a zero baseline: there is no
+        proportion for the range to be a fraction of."""
+        self.assertIsNone(metron.spread_of([0.0, 0.0, 4.0])["relative_spread"])
+        self.assertIsNone(metron.spread_of([0.0])["relative_spread"])
+        self.assertEqual(metron.spread_of([0.0, 0.0, 4.0])["p50"], 0.0)
+
+    def test_the_relative_spread_is_the_range_over_the_median(self):
+        spread = metron.spread_of([10.0, 12.0, 20.0, 14.0, 16.0])
+        self.assertEqual(spread["samples"], 5)
+        self.assertEqual(spread["min"], 10.0)
+        self.assertEqual(spread["p50"], 14.0)
+        self.assertEqual(spread["p95"], 20.0)
+        self.assertEqual(spread["max"], 20.0)
+        # Recomputable from the three numbers beside it in the same file, which is
+        # why the quotient is recorded unrounded.
+        self.assertEqual(spread["relative_spread"], (20.0 - 10.0) / 14.0)
+        self.assertEqual(metron.spread_of([2.0, 2.0])["relative_spread"], 0.0)
+
+    def test_a_repeat_outside_its_bounds_is_refused_before_anything_runs(self):
+        landing = Path(self.tmp.name) / "ran.txt"
+        for value in ("0", "-1", "1001", "1.5", "five"):
+            with self.subTest(repeat=value):
+                proc, path = self.time("--repeat", value, command=(
+                    *self.python("import pathlib, sys; pathlib.Path(sys.argv[1]).touch()"),
+                    str(landing),
+                ))
+                self.assertEqual(proc.returncode, 2)
+                self.assertIn("repeat", proc.stderr)
+                self.assertFalse(path.exists())
+                self.assertFalse(landing.exists())
+        proc, _path = self.time("--repeat", "1", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_a_warmup_outside_its_bounds_is_refused_before_anything_runs(self):
+        landing = Path(self.tmp.name) / "ran.txt"
+        for value in ("-1", "101", "1.5", "five"):
+            with self.subTest(warmup=value):
+                proc, path = self.time("--warmup", value, command=(
+                    *self.python("import pathlib, sys; pathlib.Path(sys.argv[1]).touch()"),
+                    str(landing),
+                ))
+                self.assertEqual(proc.returncode, 2)
+                self.assertIn("warmup", proc.stderr)
+                self.assertFalse(path.exists())
+                self.assertFalse(landing.exists())
+        proc, _path = self.time("--warmup", "0", command=self.python("pass"))
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_a_failing_warm_up_writes_no_file(self):
+        """A warm-up runs under the same bounds as a kept repetition, so a command
+        that fails one has failed. Running on would write a file whose samples came
+        from a command already known to be wrong."""
+        landing = Path(self.tmp.name) / "ran.txt"
+        proc, path = self.time("--warmup", "1", "--repeat", "3", command=(
+            *self.python("import pathlib, sys; "
+                         "p = pathlib.Path(sys.argv[1]); "
+                         "p.write_text(p.read_text() + 'x' if p.exists() else 'x'); "
+                         "sys.exit(3)"),
+            str(landing),
+        ))
+        self.assertEqual(proc.returncode, 1)
+        self.assertEqual(proc.stderr.count("\n"), 1)
+        self.assertIn("warm-up 1", proc.stderr)
+        self.assertIn("exit", proc.stderr)
+        self.assertFalse(path.exists())
+        # It stopped at the first failure rather than running the kept three.
+        self.assertEqual(landing.read_text(encoding="utf-8"), "x")
 
 
 if __name__ == "__main__":

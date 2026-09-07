@@ -9,7 +9,8 @@ them, and it writes exactly the file `check` reads.
 
   check    compare a recorded run against the budgets and the baseline
   record   append a run to the ledger, and promote it to baseline when asked
-  time     run one fixed argv in its own process group and write the run file
+  time     run one fixed argv in its own process group, as often as asked, and
+           write the run file with the declared aggregation and the spread
 
 A budget carries a limit and a variance, because SKILL.md asks for both. A limit
 alone fails a run that is a fraction over on a noisy machine. A variance alone
@@ -41,7 +42,6 @@ import math
 import os
 import platform
 import signal
-import statistics
 import subprocess
 import sys
 import tempfile
@@ -74,6 +74,20 @@ TIMEOUT_BOUNDS = (1, 3600)
 """The same range `scripts/demonstrations.py` enforces. Zero would kill every
 command at once, and a day-long deadline is a run nobody is watching."""
 
+REPEAT_BOUNDS = (1, 1000)
+"""One repetition is a number with no spread beside it, which the run file says
+rather than hides. The ceiling is where the run file passes 88 KB, still an
+order of magnitude inside the check's 4 MiB cap."""
+
+WARMUP_BOUNDS = (0, 100)
+"""A warm-up buys the same conditions for every kept sample, and a hundred of
+them is already more than the cache or the interpreter needs."""
+
+AGGREGATIONS = ("median", "p95")
+"""No mean. SKILL.md reads durations at p95 and p99 because the mean is where
+the worst experience hides, and it lists latency reported as a mean among the
+red flags; offering one here would make that flag reachable from this file."""
+
 POLL_SECONDS = 0.02
 """Fine enough that the deadline overshoots by less than the timing floor the
 design record measured (26 ms), coarse enough not to be the load itself."""
@@ -81,6 +95,10 @@ design record measured (26 ms), coarse enough not to be the load itself."""
 TEARDOWN_SECONDS = 5.0
 """How long a reader may stay blocked after its process group is dead. Only a
 process that left the group can still hold the pipe by then."""
+
+ESCAPED_STREAMS: list = []
+"""The pipes of a repetition whose reader never came back, held open until the
+process exits. `time_once` says why one is put here."""
 
 
 class BudgetError(ValueError):
@@ -536,11 +554,24 @@ def time_once(argv: list[str], cwd: str, timeout_ms: int) -> dict:
         for reader in readers:
             reader.join(timeout=max(0.0, join_by - time.monotonic()))
         escaped = any(reader.is_alive() for reader in readers)
-        for stream in (proc.stdout, proc.stderr):
-            try:
-                stream.close()
-            except OSError:
-                pass
+        if escaped:
+            # Not closed, and deliberately kept referenced. A reader still
+            # blocked in `os.read` holds this descriptor number; closing it
+            # frees the number for the next `open` in this process while that
+            # thread reads from it, and the recycled descriptor's bytes would be
+            # counted into a repetition that has already been refused (lead
+            # S2-R1). With `--repeat` the process outlives a repetition, so the
+            # number would be reused. The reference is what keeps the promise:
+            # dropped, the interpreter finalises the reader and closes the
+            # descriptor behind the thread's back. A pair held until exit costs
+            # two entries in a process that exits 1 immediately after.
+            ESCAPED_STREAMS.extend((proc.stdout, proc.stderr))
+        else:
+            for stream in (proc.stdout, proc.stderr):
+                try:
+                    stream.close()
+                except OSError:
+                    pass
     return {
         "wall_clock_ms": round((finished_ns - started) / 1_000_000, 3),
         "exit": proc.returncode,
@@ -571,29 +602,92 @@ def failure_cause(outcome: dict, expect_exit: int):
     return None
 
 
+def nearest_rank(ordered: list[float], fraction: float) -> float:
+    """The sample at `fraction` of the way through `ordered`, by nearest rank.
+
+    Nearest rank returns a sample that was actually recorded rather than an
+    interpolation between two of them, so every number in the spread object can
+    be found in `repetitions`. It is also why p95 of five samples is the maximum:
+    with five samples there is no ninety-fifth percentile to interpolate to, and
+    naming the largest one says so honestly (study risk `spread-from-samples`).
+    """
+    rank = math.ceil(fraction * len(ordered))
+    return ordered[max(1, rank) - 1]
+
+
+def spread_of(samples: list[float]) -> dict:
+    """How wide the kept samples were, which is what a budget's `variance` is set from.
+
+    `relative_spread` is left unrounded: the samples are already rounded to three
+    decimals, so the quotient recomputes exactly from `max`, `min` and `p50` in
+    the same file, and rounding it would leave a recorded number disagreeing with
+    its own recorded operands.
+    """
+    ordered = sorted(samples)
+    p50 = nearest_rank(ordered, 0.50)
+    relative = None
+    # One sample has no spread to report, and a p50 of zero has no proportion to
+    # be a fraction of. Both are `null` rather than 0, because a zero here would
+    # read as a command that ran identically every time.
+    if len(ordered) > 1 and p50 != 0:
+        relative = (ordered[-1] - ordered[0]) / p50
+    return {
+        "samples": len(ordered),
+        "min": ordered[0],
+        "p50": p50,
+        "p95": nearest_rank(ordered, 0.95),
+        "max": ordered[-1],
+        "relative_spread": relative,
+    }
+
+
+def aggregate(spread: dict, rule: str) -> float:
+    """The one number the measurements block carries, named by `rule`.
+
+    Read out of the spread rather than computed a second way, so the block value
+    and the spread beside it cannot disagree (study risk `aggregation-declared`).
+
+    A rule outside `AGGREGATIONS` is refused rather than falling through to one
+    of them. `timed_run` writes whatever name it was handed into
+    `recorder.aggregation`, so a fallback would produce a file naming an
+    aggregation its number is not, which is the one thing this risk is about.
+    Argparse holds the command line to the same two; this holds every other
+    caller of `timed_run` to them as well.
+    """
+    if rule not in AGGREGATIONS:
+        raise BudgetError(
+            f"--aggregate must be one of {', '.join(AGGREGATIONS)}, got {rule!r}"
+        )
+    return spread["p50"] if rule == "median" else spread["p95"]
+
+
 def timed_run(name: str, argv: list[str], cwd: str, timeout_ms: int, expect_exit: int,
-              repetitions: list[dict], note) -> dict:
+              repetitions: list[dict], note, warmup: int = 0,
+              aggregation: str = "median") -> dict:
     """The run file, in exactly the shape `load_measurements` reads.
 
     Every recorder number lives under `recorder`. A number at the top level beside
     `measurements` is refused by the check as a stray measurement, which is the
     right refusal for a file somebody edited and the wrong one for a file this
-    script wrote (study risk `stray-top-level-number`). `spread` joins `recorder`
-    once more than one repetition can be kept.
+    script wrote (study risk `stray-top-level-number`). `spread` sits beside
+    `repetitions` at every count, so a single sample says it is one sample rather
+    than leaving the reader to count.
     """
     samples = [entry["wall_clock_ms"] for entry in repetitions]
+    spread = spread_of(samples)
     document = {
-        "measurements": {name: round(statistics.median(samples), 3)},
+        "measurements": {name: round(aggregate(spread, aggregation), 3)},
         "recorder": {
             "schema": RUN_SCHEMA,
             "argv": list(argv),
             "cwd": cwd,
             "repeat": len(repetitions),
-            "warmup": 0,
+            "warmup": warmup,
             "timeout_ms": timeout_ms,
             "expect_exit": expect_exit,
             "unit": "ms",
-            "aggregation": "median",
+            "aggregation": aggregation,
+            "spread": spread,
             "repetitions": [
                 {
                     "index": index,
@@ -628,8 +722,15 @@ def split_command(words: list[str]):
     return words[:at], words[at + 1:]
 
 
+def bounded(value: int, bounds: tuple[int, int], flag: str) -> None:
+    """Refuse an out-of-range count, naming the flag the caller wrote."""
+    low, high = bounds
+    if not low <= value <= high:
+        raise BudgetError(f"{flag} must be from {low} to {high}, got {value}")
+
+
 def run_time(args, command) -> int:
-    """The `time` verb: bound the arguments, run once, write the file or refuse.
+    """The `time` verb: bound the arguments, run the repetitions, write or refuse.
 
     The bounds are checked before anything runs, and the output directory is
     checked with them, so a ten-minute command is not run only to lose its number
@@ -639,38 +740,50 @@ def run_time(args, command) -> int:
         raise BudgetError("time needs -- before the command to run")
     if not command:
         raise BudgetError("time needs a command after --")
-    low, high = TIMEOUT_BOUNDS
-    if not low <= args.timeout_seconds <= high:
-        raise BudgetError(
-            f"--timeout-seconds must be from {low} to {high}, got {args.timeout_seconds}"
-        )
+    bounded(args.timeout_seconds, TIMEOUT_BOUNDS, "--timeout-seconds")
+    bounded(args.repeat, REPEAT_BOUNDS, "--repeat")
+    bounded(args.warmup, WARMUP_BOUNDS, "--warmup")
     out = Path(args.out)
     if not out.parent.is_dir():
         raise BudgetError(f"cannot write the run file: {out.parent} is not a directory")
     cwd = os.path.abspath(args.cwd) if args.cwd else os.getcwd()
     timeout_ms = args.timeout_seconds * 1000
 
-    try:
-        outcome = time_once(list(command), cwd, timeout_ms)
-    except OSError as error:
-        raise BudgetError(f"command {command[0]!r} could not start: {error}")
-    cause = failure_cause(outcome, args.expect_exit)
-    if cause is not None:
-        # No file on any failure. A run the check can read has every repetition
-        # green, and a previous run file keeps its bytes (study risks
-        # `failed-repetition-hidden`, `partial-run-file`).
-        detail = {
-            "timeout": f"still running after {args.timeout_seconds} s",
-            "output-cap": f"a stream passed {MAX_OUTPUT_BYTES} bytes",
-            "escaped": "a process outside the group still held the pipes after "
-                       f"{TEARDOWN_SECONDS:g} s",
-            "exit": f"exited {outcome['exit']}, expected {args.expect_exit}",
-        }[cause]
-        print(f"metron: time: repetition 1 failed: {cause}: {detail}", file=sys.stderr)
-        return 1
+    kept: list[dict] = []
+    for attempt in range(1, args.warmup + args.repeat + 1):
+        warming = attempt <= args.warmup
+        try:
+            outcome = time_once(list(command), cwd, timeout_ms)
+        except OSError as error:
+            raise BudgetError(f"command {command[0]!r} could not start: {error}")
+        cause = failure_cause(outcome, args.expect_exit)
+        if cause is not None:
+            # No file on any failure, a warm-up included. A warm-up runs under
+            # the same bounds as a kept repetition, so a command that fails one
+            # has failed; continuing would write a file whose samples came from
+            # a run that was already known to be wrong (study risk
+            # `failed-repetition-hidden`). A previous run file keeps its bytes
+            # (study risk `partial-run-file`).
+            detail = {
+                "timeout": f"still running after {args.timeout_seconds} s",
+                "output-cap": f"a stream passed {MAX_OUTPUT_BYTES} bytes",
+                "escaped": "a process outside the group still held the pipes after "
+                           f"{TEARDOWN_SECONDS:g} s",
+                "exit": f"exited {outcome['exit']}, expected {args.expect_exit}",
+            }[cause]
+            where = (f"warm-up {attempt}" if warming
+                     else f"repetition {attempt - args.warmup}")
+            print(f"metron: time: {where} failed: {cause}: {detail}", file=sys.stderr)
+            return 1
+        # A warm-up buys the kept samples the same cache, the same page table and
+        # the same warm interpreter. Recording one would put a sample taken under
+        # different conditions beside the others.
+        if not warming:
+            kept.append(outcome)
 
     document = timed_run(args.name, command, cwd, timeout_ms, args.expect_exit,
-                         [outcome], args.note)
+                         kept, args.note, warmup=args.warmup,
+                         aggregation=args.aggregate)
     try:
         write_atomically(args.out, json.dumps(document, indent=2) + "\n")
     except OSError as error:
@@ -705,6 +818,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     clock.add_argument("--name", required=True, help="the budget the number is for")
     clock.add_argument("--out", required=True, help="the run file to write")
+    clock.add_argument("--repeat", type=int, default=1,
+                       help="how many repetitions to keep")
+    clock.add_argument("--warmup", type=int, default=0,
+                       help="repetitions to run and discard before the kept ones")
+    clock.add_argument("--aggregate", choices=AGGREGATIONS, default="median",
+                       help="which sample the measurements block carries")
     clock.add_argument("--timeout-seconds", type=int, default=600)
     clock.add_argument("--expect-exit", type=int, default=0)
     clock.add_argument("--cwd", help="run the command from here; default is the caller's")
