@@ -373,3 +373,18 @@ boundary is regenerated:
 ```bash
 python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
 ```
+
+`.horos/census.json` is the second generated artefact and moves for a
+different reason. The boundary lists classified sinks, so an ordinary source
+edit leaves it alone; the census counts bytes per filetype across every
+tracked file, so any change to any tracked file moves it. The root suite holds
+it to a fresh scan the same way, and a different flag rewrites it:
+
+```bash
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+```
+
+Run that before recording a green rather than after, and stage what it writes
+alongside the change. Every merge to `main` rewrites the census as well, so a
+branch left open across another merge conflicts on the byte counts: take
+`main`'s copy, run the command again, and stage the result.
