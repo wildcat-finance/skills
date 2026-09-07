@@ -45,8 +45,11 @@ class Interrupted(Exception):
 class FixtureProvider:
     """Answers from preserved synthetic chain state, never from a socket."""
 
-    def __init__(self, state, *, provider_class, stop_at=None) -> None:
+    def __init__(self, state, epochs, *, provider_class, stop_at=None) -> None:
         self.state = state
+        # The opening reads the collector makes after the last shard are
+        # answered from the same epoch fixture `build` hands to discover_epochs.
+        self.epochs = epochs
         self.provider_class = provider_class
         self.stop_at = stop_at
 
@@ -68,14 +71,19 @@ class FixtureProvider:
                 if tag in ("finalized", "safe")
                 else int(tag, 16)
             )
+            known = self.state["blocks"].get(str(number))
             result = {
-                "hash": self.state["blocks"][str(number)],
+                "hash": known if known else self.epochs["block_hashes"][str(number)],
                 "number": hex(number),
                 "transactions": [],
             }
         elif method == "eth_getLogs":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["logs"][str(shard["index"])]
+        elif method == "eth_getStorageAt":
+            result = self.epochs["slot_reads"][str(int(envelope["params"][2], 16))]
+        elif method == "eth_getCode":
+            result = self.epochs["code_reads"][envelope["params"][0]]
         else:
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["traces"][str(shard["index"])]
@@ -108,7 +116,7 @@ def build(output: Path) -> dict:
         try:
             Collector(
                 plan, staging,
-                FixtureProvider(primary_state, provider_class="primary", stop_at=KILL_AT),
+                FixtureProvider(primary_state, epoch_source, provider_class="primary", stop_at=KILL_AT),
             ).collect()
         except Interrupted:
             interrupted = 1
@@ -116,12 +124,12 @@ def build(output: Path) -> dict:
             raise AlexandriaError("the demonstration's interruption did not fire")
 
         resumed = Collector(
-            plan, staging, FixtureProvider(primary_state, provider_class="primary")
+            plan, staging, FixtureProvider(primary_state, epoch_source, provider_class="primary")
         ).collect()
 
         reconciliation = Reconciler(
             plan, staging,
-            FixtureProvider(primary_state, provider_class="second"),
+            FixtureProvider(primary_state, epoch_source, provider_class="second"),
             secondary["provider_class"],
         ).reconcile()
 

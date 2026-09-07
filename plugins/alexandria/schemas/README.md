@@ -68,12 +68,23 @@ reads that block by number and refuses a different hash, then under
 plan survives the tag advancing and fails only when its boundary block leaves
 the chain. `interval-checkpoint-v1.schema.json` covers the
 working state a killed collection resumes from: the next shard, the last
-accepted block and hash, and each journal's committed byte offset. It is not
+accepted block and hash, and each journal's committed byte offset. The
+offsets cover the declared classes and a fourth journal, `epoch-evidence`,
+which holds the opening reads the collector makes after the last shard: the
+first block's header, the EIP-1967 slot at the first block and at each
+upgrade block, the header at each upgrade block and the block before it, and
+each implementation's runtime code. Those reads are staged under the virtual
+shard index one past the plan's last, so a checkpoint whose next shard is one
+past the plan says the shards are done and its `epoch-evidence` offset says
+how many opening reads are committed. It is not
 release truth and no release names it. `interval-receipt-v1.schema.json`
 covers what a collected interval turns out to hold: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
-what a second provider said about it. Runtime checks bind a checkpoint to its
-own plan's digest and refuse a shard outside it.
+what a second provider said about it. A dispute names one of six kinds: the
+three shard kinds, `boundary-hash`, `log-identity` and `transaction-order`,
+and the three opening-read kinds, `first-block-hash`, `slot-word` and
+`code-digest`, filed under the virtual shard index. Runtime checks bind a
+checkpoint to its own plan's digest and refuse a shard outside it.
 
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per evidence class, format

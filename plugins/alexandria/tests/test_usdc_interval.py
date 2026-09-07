@@ -9,6 +9,7 @@ from pathlib import Path
 import socket
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 import urllib.request
@@ -20,7 +21,11 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import (  # noqa: E402
+    DISPUTE_KINDS,
     EVIDENCE_CLASSES,
+    IMPLEMENTATION_SLOT,
+    JOURNAL_CLASSES,
+    OPENING_CLASS,
     Staging,
     discover_epochs,
 )
@@ -32,6 +37,7 @@ from usdc_interval import (  # noqa: E402
     Reconciler,
     TransportError,
     check_interval,
+    opening_identifier,
     request_identifier,
 )
 
@@ -107,19 +113,54 @@ class FixtureTransport:
             }
         elif method == "eth_getLogs":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
-            result = self.state["logs"][str(shard["index"])]
-        else:
+            result = self.logs(shard)
+        elif method == "trace_filter":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["traces"][str(shard["index"])]
+        elif method == "eth_getStorageAt":
+            proxy, slot, tag = envelope["params"]
+            if proxy != self.state["plan"]["proxy"] or slot != IMPLEMENTATION_SLOT:
+                raise AssertionError(f"unexpected storage read {envelope['params']}")
+            result = self.slot_word(int(tag, 16))
+        elif method == "eth_getCode":
+            address, tag = envelope["params"]
+            result = self.code(address, int(tag, 16))
+        else:
+            raise AssertionError(f"the fixture answers no {method}")
         return canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": result})
+
+    def logs(self, shard):
+        """One shard's logs; under a reorg each log names the block hash the new chain has."""
+        records = deepcopy(self.state["logs"][str(shard["index"])])
+        if self.reorg_from is not None:
+            for record in records:
+                record["blockHash"] = self._hash(int(record["blockNumber"], 16))
+        return records
+
+    def slot_word(self, number):
+        return self.state["slots"][str(number)]
+
+    def code(self, address, _number):
+        return self.state["code"][address]
 
 
 def journals(root):
     return {
         name: (Path(root) / "journals" / f"{name}.jsonl").read_bytes()
-        for name in EVIDENCE_CLASSES
+        for name in JOURNAL_CLASSES
         if (Path(root) / "journals" / f"{name}.jsonl").is_file()
     }
+
+
+def opening_entries(root):
+    path = Path(root) / "journals" / f"{OPENING_CLASS}.jsonl"
+    if not path.is_file():
+        return []
+    return [json.loads(line) for line in path.read_bytes().splitlines() if line]
+
+
+def checkpoint(root):
+    return json.loads((Path(root) / "checkpoint.json").read_text())
 
 
 class _Killed(Exception):
@@ -171,7 +212,7 @@ class CollectionTests(CollectorTestCase):
         self.assertEqual(summary["collected_shards"], 5)
         self.assertEqual(summary["resumed_from"], 0)
         self.assertEqual(summary["record_counts"], {"boundary-blocks": 5, "logs": 15, "traces": 10})
-        self.assertEqual(sorted(journals(self.root)), sorted(EVIDENCE_CLASSES))
+        self.assertEqual(sorted(journals(self.root)), sorted(JOURNAL_CLASSES))
 
     def test_the_checkpoint_names_the_last_accepted_boundary(self):
         self.collect()
@@ -513,6 +554,10 @@ class SecondProviderTransport(FixtureTransport):
         return None if shard is None else str(shard["index"])
 
     def _hash(self, number):
+        if number == int(self.state["plan"]["interval"]["start"]):
+            override = self.disagreements.get("first_block_hash_override")
+            if override:
+                return override
         index = self._shard_index(number)
         override = self.disagreements.get("boundary_hash_overrides", {}).get(index)
         return override if override else super()._hash(number)
@@ -521,6 +566,14 @@ class SecondProviderTransport(FixtureTransport):
         index = self._shard_index(number)
         order = self.disagreements.get("transaction_orders", {}).get(index)
         return list(order) if order else super().transactions(number)
+
+    def slot_word(self, number):
+        override = self.disagreements.get("slot_word_overrides", {}).get(str(number))
+        return override if override else super().slot_word(number)
+
+    def code(self, address, number):
+        override = self.disagreements.get("code_overrides", {}).get(address)
+        return override if override else super().code(address, number)
 
     def request(self, payload, label):
         data = super().request(payload, label)
@@ -1213,11 +1266,11 @@ class DeclaredClassTests(CollectorTestCase):
             transport=transport, plan=self.declared(["boundary-blocks", "logs"])
         )
         self.assertEqual(summary["record_counts"], {"boundary-blocks": 5, "logs": 15})
-        self.assertEqual(sorted(journals(self.root)), ["boundary-blocks", "logs"])
+        self.assertEqual(sorted(journals(self.root)), ["boundary-blocks", OPENING_CLASS, "logs"])
         self.assertFalse((self.root / "journals" / "traces.jsonl").exists())
         self.assertNotIn("trace_filter", {method for method, _label in transport.calls})
-        checkpoint = json.loads((self.root / "checkpoint.json").read_text())
-        self.assertEqual(set(checkpoint["offsets"]), {"boundary-blocks", "logs"})
+        offsets = checkpoint(self.root)["offsets"]
+        self.assertEqual(set(offsets), {"boundary-blocks", "logs", OPENING_CLASS})
 
     def test_the_plan_order_is_the_request_order(self):
         transport = FixtureTransport(self.state)
@@ -1334,6 +1387,431 @@ class RequestHeaderTests(unittest.TestCase):
                 usdc_interval.package_version(missing)
             missing.write_text('{"name": "alexandria", "version": "7.8.9"}')
             self.assertEqual(usdc_interval.package_version(missing), "7.8.9")
+
+
+START = 15331586
+UPGRADE = 15331626
+IMPLEMENTATION_A = "0x42f9505a376761b180e27a01ba0554244ed1de7d"
+IMPLEMENTATION_B = "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b"
+OFFLINE_BUDGET_SECONDS = 5.0
+
+
+def opening_labels():
+    """The seven opening reads the fixture's one-upgrade interval names, in plan order."""
+    return [
+        f"opening read 0 first-block-header block {START}",
+        f"opening read 1 implementation-slot block {START}",
+        f"opening read 2 implementation-slot block {UPGRADE}",
+        f"opening read 3 epoch-boundary-header block {UPGRADE}",
+        f"opening read 4 epoch-boundary-header block {UPGRADE - 1}",
+        f"opening read 5 implementation-code block {START}",
+        f"opening read 6 implementation-code block {UPGRADE}",
+    ]
+
+
+class OpeningPhaseTests(CollectorTestCase):
+    """After the last shard, `collect` reads what binds the start and the epochs."""
+
+    def test_a_clean_collection_journals_exactly_the_plan_order_reads(self):
+        transport = FixtureTransport(self.state)
+        _collector, summary = self.collect(transport=transport)
+        self.assertEqual(summary["opening_reads"], {"issued": 7, "resumed_from": 0, "total": 7})
+        entries = opening_entries(self.root)
+        self.assertEqual([entry["class"] for entry in entries], [OPENING_CLASS] * 7)
+        self.assertEqual({entry["shard"] for entry in entries}, {5})
+        requests = [json.loads(entry["request"]) for entry in entries]
+        self.assertEqual([request["id"] for request in requests], list(range(16, 23)))
+        self.assertEqual(
+            [(request["method"], request["params"]) for request in requests],
+            [
+                ("eth_getBlockByNumber", [hex(START), False]),
+                ("eth_getStorageAt", [self.plan["proxy"], IMPLEMENTATION_SLOT, hex(START)]),
+                ("eth_getStorageAt", [self.plan["proxy"], IMPLEMENTATION_SLOT, hex(UPGRADE)]),
+                ("eth_getBlockByNumber", [hex(UPGRADE), False]),
+                ("eth_getBlockByNumber", [hex(UPGRADE - 1), False]),
+                ("eth_getCode", [IMPLEMENTATION_A, hex(START)]),
+                ("eth_getCode", [IMPLEMENTATION_B, hex(UPGRADE)]),
+            ],
+        )
+        labels = [label for _method, label in transport.calls if label.startswith("opening")]
+        self.assertEqual(labels, opening_labels())
+        shard_labels = [label for _method, label in transport.calls if label.startswith("shard")]
+        self.assertEqual(shard_labels[-1], "shard 4 traces")
+        self.assertLess(transport.calls.index(("eth_getLogs", "shard 4 logs")),
+                        transport.calls.index(("eth_getBlockByNumber", labels[0])))
+
+    def test_opening_ids_follow_every_shard_id(self):
+        self.assertEqual(opening_identifier(5, 0), request_identifier(4, "traces") + 1)
+        self.assertEqual(opening_identifier(5, 6), 22)
+
+    def test_the_checkpoint_commits_the_opening_reads_under_the_existing_fields(self):
+        self.collect()
+        state = checkpoint(self.root)
+        self.assertEqual(state["next_shard"], 5)
+        self.assertEqual(state["last_accepted"]["block_number"], str(self.plan["shards"][-1]["end"]))
+        journal = (self.root / "journals" / f"{OPENING_CLASS}.jsonl").stat().st_size
+        self.assertEqual(state["offsets"][OPENING_CLASS], journal)
+        self.assertEqual(state["records"], 15 + 7)
+        self.assertEqual(state["history"][-1]["offsets"], state["offsets"])
+        for entry in state["history"][:-1]:
+            self.assertEqual(entry["offsets"][OPENING_CLASS], 0)
+
+    def test_the_opening_reads_are_bound_to_the_staged_upgrade_log(self):
+        """The one-upgrade interval names two implementations from its own slot reads."""
+        self.collect()
+        results = [json.loads(entry["response"])["result"] for entry in opening_entries(self.root)]
+        self.assertEqual(results[0]["hash"], self.state["blocks"][str(START)])
+        self.assertEqual(results[1], self.state["slots"][str(START)])
+        self.assertEqual(results[2], self.state["slots"][str(UPGRADE)])
+        self.assertEqual(results[5], self.state["code"][IMPLEMENTATION_A])
+        self.assertEqual(results[6], self.state["code"][IMPLEMENTATION_B])
+
+    def test_a_plan_without_logs_reads_one_epoch(self):
+        plan = deepcopy(self.plan)
+        plan["evidence_classes"] = ["boundary-blocks"]
+        _collector, summary = self.collect(plan=plan)
+        self.assertEqual(summary["opening_reads"]["total"], 3)
+
+    def test_the_opening_phase_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_a_clean_collection_journals_exactly_the_plan_order_reads()
+
+
+class OpeningPhaseResumeTests(CollectorTestCase):
+    """The conformance evidence for `opening-reads-resumable`.
+
+    The `opening-phase-resume` guard: against a collector whose resume after
+    the last shard has no opening phase, or re-issues a committed read, every
+    case here fails.
+    """
+
+    def clean_journals(self):
+        root = self.scratch("clean")
+        Collector(self.plan, root, FixtureTransport(self.state)).collect()
+        return journals(root)
+
+    def killed_at(self, label, name="resumed"):
+        root = self.scratch(name)
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at=label)).collect()
+        return root
+
+    def resumed(self, root):
+        transport = FixtureTransport(self.state)
+        summary = Collector(self.plan, root, transport).collect()
+        issued = [label for _method, label in transport.calls if label.startswith("opening")]
+        return summary, issued
+
+    def test_a_kill_before_the_first_opening_read_resumes_into_the_opening_phase(self):
+        expected = self.clean_journals()
+        root = self.killed_at(opening_labels()[0])
+        state = checkpoint(root)
+        self.assertEqual((state["next_shard"], state["offsets"][OPENING_CLASS]), (5, 0))
+        self.assertEqual(opening_entries(root), [])
+        summary, issued = self.resumed(root)
+        self.assertEqual(summary["resumed_from"], 5)
+        self.assertEqual(summary["collected_shards"], 0)
+        self.assertEqual(summary["opening_reads"], {"issued": 7, "resumed_from": 0, "total": 7})
+        self.assertEqual(issued, opening_labels())
+        self.assertEqual(journals(root), expected)
+
+    def test_a_kill_between_two_opening_reads_re_issues_only_the_reads_past_the_checkpoint(self):
+        expected = self.clean_journals()
+        root = self.killed_at(opening_labels()[3])
+        state = checkpoint(root)
+        self.assertEqual(state["next_shard"], 5)
+        self.assertEqual(len(opening_entries(root)), 3)
+        self.assertEqual(
+            state["offsets"][OPENING_CLASS],
+            (root / "journals" / f"{OPENING_CLASS}.jsonl").stat().st_size,
+        )
+        summary, issued = self.resumed(root)
+        self.assertEqual(summary["opening_reads"], {"issued": 4, "resumed_from": 3, "total": 4 + 3})
+        self.assertEqual(issued, opening_labels()[3:])
+        self.assertEqual(journals(root), expected)
+
+    def test_a_kill_after_the_last_opening_read_resumes_with_nothing_to_issue(self):
+        expected = self.clean_journals()
+        root = self.scratch("complete")
+        Collector(self.plan, root, FixtureTransport(self.state)).collect()
+        summary, issued = self.resumed(root)
+        self.assertEqual(summary["opening_reads"], {"issued": 0, "resumed_from": 7, "total": 7})
+        self.assertEqual(issued, [])
+        self.assertEqual(journals(root), expected)
+
+    def test_a_kill_on_a_code_read_resumes_from_the_committed_slot_words(self):
+        expected = self.clean_journals()
+        root = self.killed_at(opening_labels()[6])
+        summary, issued = self.resumed(root)
+        self.assertEqual(summary["opening_reads"]["issued"], 1)
+        self.assertEqual(issued, opening_labels()[6:])
+        self.assertEqual(journals(root), expected)
+
+    def test_a_reorg_under_the_last_shard_rewinds_past_the_opening_reads(self):
+        """A rewound shard drops every opening read, which the new chain re-answers."""
+        reorged = self.plan["shards"][3]["end"]
+        clean = self.scratch("clean-reorg")
+        Collector(self.plan, clean, FixtureTransport(self.state, reorg_from=reorged)).collect()
+        root = self.killed_at(opening_labels()[4], "reorged")
+        self.assertEqual(len(opening_entries(root)), 4)
+        transport = FixtureTransport(self.state, reorg_from=reorged)
+        summary = Collector(self.plan, root, transport).collect()
+        self.assertEqual(summary["resumed_from"], 3)
+        self.assertEqual(summary["opening_reads"], {"issued": 7, "resumed_from": 0, "total": 7})
+        self.assertEqual(journals(root), journals(clean))
+
+    def test_a_committed_read_the_plan_does_not_name_refuses_with_a_receipt(self):
+        root = self.killed_at(opening_labels()[3], "foreign")
+        path = root / "journals" / f"{OPENING_CLASS}.jsonl"
+        lines = path.read_bytes().splitlines(keepends=True)
+        lines[1] = lines[1].replace(hex(START).encode(), hex(START + 1).encode(), 1)
+        path.write_bytes(b"".join(lines))
+        state = checkpoint(root)
+        self.assertEqual(state["offsets"][OPENING_CLASS], path.stat().st_size)
+        with self.assertRaisesRegex(AlexandriaError, "committed opening read 1 is not the read"):
+            Collector(self.plan, root, FixtureTransport(self.state)).collect()
+        receipt = self.receipts(root)[-1]
+        self.assertEqual((receipt["code"], receipt["class"], receipt["shard"]),
+                         ("opening-journal-mismatch", OPENING_CLASS, 5))
+
+    def test_a_clean_and_an_interrupted_collection_stay_inside_the_offline_budget(self):
+        """The study's 5,000 ms offline budget, re-measured with the opening phase inside it."""
+        started = time.perf_counter()
+        self.clean_journals()
+        root = self.killed_at(opening_labels()[2], "timed")
+        Collector(self.plan, root, FixtureTransport(self.state)).collect()
+        elapsed = time.perf_counter() - started
+        self.assertLess(elapsed, OFFLINE_BUDGET_SECONDS, f"took {elapsed * 1000:.0f} ms")
+
+    def test_the_resume_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_a_kill_between_two_opening_reads_re_issues_only_the_reads_past_the_checkpoint()
+
+
+class OpeningRefusalTests(CollectorTestCase):
+    """Each opening read is shape-checked and cross-checked before it is believed."""
+
+    def refuse(self, label, fault, pattern):
+        def answer(envelope):
+            return canonical_bytes({"id": envelope["id"], "jsonrpc": "2.0", "result": fault})
+
+        transport = FixtureTransport(self.state, faults={label: answer})
+        with self.assertRaisesRegex(AlexandriaError, pattern):
+            self.collect(transport=transport)
+        receipt = self.receipts()[-1]
+        self.assertEqual((receipt["class"], receipt["shard"]), (OPENING_CLASS, 5))
+        self.assertEqual(set(receipt), {"class", "code", "provider_class", "shard", "status", "unresolved"})
+        return receipt
+
+    def test_a_slot_word_that_is_not_a_left_padded_address_refuses(self):
+        receipt = self.refuse(
+            opening_labels()[1], "0x" + "ff" * 12 + IMPLEMENTATION_A[2:], "not a left-padded address",
+        )
+        self.assertEqual(receipt["code"], "slot-not-an-address")
+        self.assertEqual(receipt["unresolved"], {"end": START, "start": START})
+        self.assertEqual(receipt["status"], START)
+        self.assertEqual(len(opening_entries(self.root)), 1)
+
+    def test_a_slot_word_that_is_not_a_word_refuses_the_same_way(self):
+        receipt = self.refuse(opening_labels()[2], "0x1234", "not a 32-byte word")
+        self.assertEqual(receipt["code"], "slot-not-an-address")
+        self.assertEqual(receipt["unresolved"], {"end": UPGRADE, "start": UPGRADE})
+
+    def test_a_zero_address_slot_refuses(self):
+        receipt = self.refuse(opening_labels()[1], "0x" + "0" * 64, "is the zero address")
+        self.assertEqual(receipt["code"], "slot-zero-address")
+
+    def test_an_empty_or_non_hex_code_read_refuses(self):
+        cases = (("0x", "empty runtime code"), ("0xzz", "not hexadecimal"), ("", "not hexadecimal"), (None, "not hexadecimal"))
+        for index, (value, pattern) in enumerate(cases):
+            with self.subTest(value=value):
+                root = self.scratch(f"code-{index}")
+                collector = Collector(self.plan, root, FixtureTransport(self.state, faults={
+                    opening_labels()[5]: lambda envelope, value=value: canonical_bytes(
+                        {"id": envelope["id"], "jsonrpc": "2.0", "result": value}
+                    ),
+                }))
+                with self.assertRaisesRegex(AlexandriaError, pattern):
+                    collector.collect()
+                receipt = self.receipts(root)[-1]
+                self.assertEqual((receipt["code"], receipt["unresolved"]), ("code-not-hex", {"end": START, "start": START}))
+                self.assertEqual(len(opening_entries(root)), 5)
+
+    def test_an_upgrade_log_announcing_another_implementation_refuses(self):
+        receipt = self.refuse(
+            opening_labels()[2], "0x" + "0" * 24 + IMPLEMENTATION_A[2:], "announces .* while the implementation slot",
+        )
+        self.assertEqual(receipt["code"], "upgrade-log-mismatch")
+        self.assertEqual(receipt["unresolved"], {"end": UPGRADE, "start": UPGRADE})
+
+    def test_an_upgrade_log_naming_another_block_hash_refuses(self):
+        receipt = self.refuse(
+            opening_labels()[3],
+            {"hash": "0x" + "ee" * 32, "number": hex(UPGRADE), "transactions": []},
+            "names a different block hash",
+        )
+        self.assertEqual(receipt["code"], "upgrade-log-mismatch")
+        self.assertEqual(len(opening_entries(self.root)), 3)
+
+    def test_a_header_without_its_own_number_refuses(self):
+        receipt = self.refuse(
+            opening_labels()[0],
+            {"hash": self.state["blocks"][str(START)], "number": hex(START + 1), "transactions": []},
+            "carries another block number",
+        )
+        self.assertEqual(receipt["code"], "malformed-header")
+
+    def test_an_oversized_code_read_refuses_under_the_byte_ceiling(self):
+        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", 4096):
+            receipt = self.refuse(opening_labels()[5], "0x" + "ab" * 4096, "component byte ceiling")
+        self.assertEqual(receipt["code"], "oversized-response")
+
+    def test_no_opening_receipt_carries_the_endpoint(self):
+        leaked = "https://user:hunter2@rpc.example.invalid/v1/SECRET-KEY"
+
+        def leak(_envelope):
+            raise TransportError(f"POST {leaked} failed: connection reset")
+
+        transport = FixtureTransport(self.state, faults={opening_labels()[0]: leak})
+        with self.assertRaisesRegex(AlexandriaError, "connection reset"):
+            self.collect(transport=transport)
+        body = (self.root / "receipts" / "errors.jsonl").read_text()
+        for secret in ("https://", "rpc.example.invalid", "SECRET-KEY", "hunter2", usdc_interval.USER_AGENT):
+            self.assertNotIn(secret, body)
+        self.assertEqual(self.receipts()[-1]["code"], "transport")
+
+    def test_the_refusals_open_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_a_zero_address_slot_refuses()
+
+
+class OpeningReconciliationTests(CollectorTestCase):
+    """`reconcile` compares the opening reads as well as the shards."""
+
+    SHARD_COMPARISONS = 5 * (1 + 1 + 3)
+    OPENING_COMPARISONS = 1 + 2 + 2
+
+    def setUp(self):
+        super().setUp()
+        self.disagreements = second_fixture()
+
+    def collected(self, name="collected"):
+        root = self.scratch(name)
+        Collector(self.plan, root, FixtureTransport(self.state)).collect()
+        return root
+
+    def reconcile(self, root, transport):
+        return Reconciler(self.plan, root, transport, "second archive endpoint, class only").reconcile()
+
+    def disputed_entries(self, root):
+        kept = (root / "reconciliation" / "disputed.jsonl").read_bytes()
+        return [json.loads(line) for line in kept.splitlines() if line]
+
+    def test_two_agreeing_providers_count_the_opening_reads(self):
+        root = self.collected()
+        transport = FixtureTransport(self.state)
+        record = self.reconcile(root, transport)["reconciliation"]
+        self.assertEqual(record["status"], "agreed")
+        self.assertEqual(record["compared"], self.SHARD_COMPARISONS + self.OPENING_COMPARISONS)
+        self.assertEqual(record["matched"], record["compared"])
+        asked = [label for _method, label in transport.calls if label.startswith("opening")]
+        self.assertEqual(asked, [
+            f"{label} second provider" for index, label in enumerate(opening_labels()) if index not in (3, 4)
+        ])
+
+    def test_a_second_provider_disagreeing_on_one_slot_word_records_the_kind_and_keeps_both(self):
+        root = self.collected()
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(self.state, {"slot_word_overrides": self.disagreements["slot_word_overrides"]}),
+        )
+        record = document["reconciliation"]
+        self.assertEqual(record["status"], "disputed")
+        self.assertEqual(record["disputed"], [{
+            "identity": f"implementation slot at block {UPGRADE}",
+            "kind": "slot-word",
+            "shard": 5,
+        }])
+        self.assertEqual(record["compared"], self.SHARD_COMPARISONS + self.OPENING_COMPARISONS)
+        self.assertEqual(record["matched"], record["compared"] - 1)
+        self.assertEqual({shard["status"] for shard in document["shards"]}, {"complete"})
+        kept = self.disputed_entries(root)
+        self.assertEqual([(entry["class"], entry["shard"]) for entry in kept], [(OPENING_CLASS, 5)])
+        other = self.disagreements["slot_word_overrides"][str(UPGRADE)]
+        self.assertIn(other, kept[0]["response"])
+        staged = opening_entries(root)[2]["response"]
+        self.assertIn(self.state["slots"][str(UPGRADE)], staged)
+        self.assertNotIn(other, staged)
+
+    def test_a_second_provider_disagreeing_on_the_first_block_records_its_hash(self):
+        root = self.collected()
+        record = self.reconcile(
+            root,
+            SecondProviderTransport(self.state, {"first_block_hash_override": self.disagreements["first_block_hash_override"]}),
+        )["reconciliation"]
+        self.assertEqual([entry["kind"] for entry in record["disputed"]], ["first-block-hash"])
+        self.assertEqual(record["disputed"][0]["identity"], f"block {START}")
+
+    def test_a_second_provider_disagreeing_on_a_code_read_records_its_digest(self):
+        root = self.collected()
+        record = self.reconcile(
+            root,
+            SecondProviderTransport(self.state, {"code_overrides": self.disagreements["code_overrides"]}),
+        )["reconciliation"]
+        self.assertEqual([entry["kind"] for entry in record["disputed"]], ["code-digest"])
+        self.assertEqual(record["disputed"][0]["identity"], f"code of {IMPLEMENTATION_B} at block {UPGRADE}")
+
+    def test_a_second_provider_failing_on_an_opening_read_leaves_the_interval_unreconciled(self):
+        def fail(_envelope):
+            raise TransportError("second provider transport failed")
+
+        root = self.collected()
+        label = f"{opening_labels()[5]} second provider"
+        record = self.reconcile(
+            root, SecondProviderTransport(self.state, {}, faults={label: fail})
+        )["reconciliation"]
+        self.assertEqual(record["status"], "unreconciled")
+        self.assertEqual(record["compared"], self.SHARD_COMPARISONS + 3)
+
+    def test_an_interval_killed_in_the_opening_phase_refuses_to_reconcile(self):
+        root = self.scratch("half-open")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at=opening_labels()[4])).collect()
+        before = journals(root)
+        with self.assertRaisesRegex(AlexandriaError, "opening reads are not completely collected"):
+            self.reconcile(root, FixtureTransport(self.state))
+        self.assertEqual(journals(root), before)
+
+    def test_an_opening_read_the_checkpoint_has_not_committed_refuses_to_reconcile(self):
+        """A record past the committed offset is one the collector would re-issue on resume."""
+        clean = self.collected("clean")
+        lines = (clean / "journals" / f"{OPENING_CLASS}.jsonl").read_bytes().splitlines(keepends=True)
+        root = self.scratch("uncommitted")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at=opening_labels()[6])).collect()
+        path = root / "journals" / f"{OPENING_CLASS}.jsonl"
+        committed = checkpoint(root)["offsets"][OPENING_CLASS]
+        self.assertEqual(committed, path.stat().st_size)
+        path.write_bytes(b"".join(lines))
+        self.assertEqual(len(opening_entries(root)), 7)
+        self.assertGreater(path.stat().st_size, committed)
+        before = journals(root)
+        with self.assertRaisesRegex(
+            AlexandriaError, "epoch-evidence journal holds bytes the checkpoint has not committed",
+        ):
+            self.reconcile(root, FixtureTransport(self.state))
+        self.assertEqual(journals(root), before)
+        self.assertFalse((root / "reconciliation" / "reconciliation.json").exists())
+
+    def test_the_receipt_schema_names_every_dispute_kind(self):
+        schema = json.loads((PLUGIN / "schemas" / "interval-receipt-v1.schema.json").read_text())
+        kinds = schema["$defs"]["reconciliation"]["properties"]["disputed"]["items"]["properties"]["kind"]["enum"]
+        self.assertEqual(set(kinds), set(DISPUTE_KINDS))
+        self.assertTrue({"first-block-hash", "slot-word", "code-digest"} <= set(kinds))
+
+    def test_the_opening_reconciliation_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.test_two_agreeing_providers_count_the_opening_reads()
 
 
 if __name__ == "__main__":
