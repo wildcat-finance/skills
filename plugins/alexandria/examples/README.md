@@ -15,6 +15,12 @@ killed once mid-shard and resumed, reconciles against a second fixture
 provider, builds the release and verifies it. Its fixtures are synthetic and
 were not observed on any chain.
 
+[`usdc-interval-live-v0`](usdc-interval-live-v0/README.md) preserves a real
+Ethereum USDC interval, blocks 25,903,935 to 25,905,934, collected once from
+two live providers and agreed between them. The checked-in staging tree rebuilds
+the release offline to the identifier the example pins, across two
+implementation epochs whose runtime code the release carries and re-hashes.
+
 [`compound-v3-phase0-v0`](compound-v3-phase0-v0/README.md) preserves the
 pinned Comet registry and exact RPC corpus for one old and one recent Ethereum
 USDC transaction. It rebuilds and checks the raw release offline; it is a

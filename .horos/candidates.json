@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20132514,
+    "bytes_blob": 20648308,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,7 +63,14 @@
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
-      "bytes": 16960,
+      "bytes": 91032,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 45516",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1350-alexandria-1-interval-collector-run-against.md"
+    },
+    {
+      "bytes": 91683,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -516,6 +523,34 @@
       "evidence": "no newline in the first 4096 bytes of 28233 bytes",
       "grade": "candidate",
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/source/registry.json"
+    },
+    {
+      "bytes": 28233,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 28233 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/registry.json"
+    },
+    {
+      "bytes": 89228,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 89228 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/boundary-blocks.jsonl"
+    },
+    {
+      "bytes": 168101,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 168101 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/epoch-evidence.jsonl"
+    },
+    {
+      "bytes": 64477,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 64477 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/logs.jsonl"
     },
     {
       "bytes": 23932,
