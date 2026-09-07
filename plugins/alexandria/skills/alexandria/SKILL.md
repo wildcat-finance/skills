@@ -217,7 +217,7 @@ history, chain proof or independent finality check.
 
 ## Collect an Ethereum USDC interval
 
-Four commands, of which only the first reaches a network:
+Four commands, of which the first two reach a network:
 
 ```bash
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" collect --plan plan.json --staging staging

@@ -295,9 +295,11 @@ python3 plugins/alexandria/tests/run_tests.py \
 
 Alexandria's own implementation uses Python's standard library. Verifying a
 `proof-backed-state` capture loads the sibling Lazarus verifier from the same
-checkout with Lazarus's pinned packages. The six core Alexandria commands,
-Compound build/check commands and checked-in demonstrations reach no network.
-Only the explicit Compound `capture` command performs network I/O.
+checkout with Lazarus's pinned packages. The six core Alexandria commands, the
+Compound and interval `build` and `check` commands and the checked-in
+demonstrations reach no network. Three commands perform network I/O: the
+explicit Compound `capture`, and the interval collector's `collect` and
+`reconcile`.
 
 ## LICENCE
 
