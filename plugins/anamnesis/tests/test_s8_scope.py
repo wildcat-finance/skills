@@ -10,6 +10,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -26,6 +27,15 @@ PROJECTIONS = PILOT / "projections"
 LEDGER = PLUGIN_ROOT / "skills/anamnesis/DEMONSTRATION.md"
 README = WORKTREE / "README.md"
 DEMONSTRATIONS = WORKTREE / "scripts/demonstrations.py"
+RESOLVER = PLUGIN_ROOT / "docs/corpus-scope/reports/resolve.py"
+REPORTS = PLUGIN_ROOT / "docs/corpus-scope/reports"
+REBUILT = "pilot-artefacts-rebuilt"
+CANDIDATES = (
+    "release-policy-scope",
+    "admission-policy-scope",
+    "permanent-seed-record",
+    "widen-constant",
+)
 
 FENCE = re.compile(r"```shoggoth-demonstration\n(?P<body>.*?)\n```", re.S)
 CARD = re.compile(
@@ -211,6 +221,53 @@ class ThePilotUnderItsDeclaredScope(PilotFixture):
                 committed = (PROJECTIONS / name).read_text(encoding="utf-8")
                 self.assertEqual(json.loads(committed), payload)
                 self.assertEqual(committed, json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+class TheRebuiltCountSeesArtefactsAndNotGuards(unittest.TestCase):
+    """S2-R1-01: this step's own guards quote the pilot's tokens.
+
+    Declaring the scope moved the pilot's curation policy version, and the
+    suite below pins it, so the design record's `pilot-artefacts-rebuilt` grep
+    counted a test file and reran to 8 against the recorded 7. The study
+    enumerates the seven pilot artefacts the criterion counts; a guard that
+    pins a value is no more one of them than the study copy under `docs`. The
+    regression lives here rather than only in the step 7 suite, because this
+    step's runner contract runs this one.
+    """
+
+    def recorded(self, candidate: str):
+        report = REPORTS / f"{candidate}-{REBUILT}.json"
+        return json.loads(report.read_text(encoding="utf-8"))["value"]
+
+    def test_the_resolver_excludes_this_plugin_s_docs_and_tests(self) -> None:
+        source = RESOLVER.read_text(encoding="utf-8")
+        for excluded in ("plugins/anamnesis/docs", "plugins/anamnesis/tests"):
+            with self.subTest(excluded=excluded):
+                self.assertIn(f'":(exclude){excluded}"', source)
+
+    def test_every_rebuilt_count_reruns_to_its_recorded_value(self) -> None:
+        holder = scratch_directory()
+        self.addCleanup(holder.cleanup)
+        for candidate in CANDIDATES:
+            out = Path(holder.name) / f"{candidate}.json"
+            with self.subTest(candidate=candidate):
+                completed = subprocess.run(
+                    [sys.executable, str(RESOLVER), candidate, REBUILT, "--out", str(out)],
+                    cwd=WORKTREE, capture_output=True, text=True,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                self.assertEqual(
+                    json.loads(completed.stdout)["value"], self.recorded(candidate))
+
+    def test_a_guard_quoting_a_pilot_token_is_not_counted(self) -> None:
+        """The condition that produced the finding, held directly."""
+        version = json.loads(CURATION_POLICY.read_text(encoding="utf-8"))["version"]
+        listed = subprocess.run(
+            ["git", "grep", "-l", "-F", version, "--", "plugins/anamnesis"],
+            cwd=WORKTREE, capture_output=True, text=True,
+        ).stdout.split()
+        self.assertIn("plugins/anamnesis/tests/test_s8_scope.py", listed)
+        self.assertEqual(self.recorded("release-policy-scope"), 7)
 
 
 class TheBoundLeftTheProgram(unittest.TestCase):
