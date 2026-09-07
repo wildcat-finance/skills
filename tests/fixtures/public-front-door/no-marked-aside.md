@@ -5,9 +5,9 @@
 
 # THE SPECIMEN COLLECTIVE
 
-A synthetic front door for a synthetic tree. It holds
-<!-- front-door:count key="governed" -->{{count:governed}} governed skills in
-<!-- front-door:count key="plugins" -->{{count:plugins}} plugins. No id here is
+A synthetic front door for a synthetic tree. It
+holds <!-- front-door:count key="governed" -->{{count:governed}} governed skills
+in <!-- front-door:count key="plugins" -->{{count:plugins}} plugins. No id here is
 one this repository uses.
 
 ## SO, YOU WANT TO BUILD GOD?
@@ -46,6 +46,6 @@ these members. It does not certify that a domain claim is true.
 
 ## THE REST OF THE COLLECTIVE
 
-[The catalogue](./FUTUREPROOFING.md) lists every member, including the
-<!-- front-door:count key="domain" -->{{count:domain}} domain agents this tree
+[The catalogue](./FUTUREPROOFING.md) lists every member, including
+the <!-- front-door:count key="domain" -->{{count:domain}} domain agents this tree
 derives.

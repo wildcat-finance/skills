@@ -1,4 +1,4 @@
-# Decision: Record a timed run as its declared aggregation with the spread beside it
+# ADR-086: Record a timed run as its declared aggregation with the spread beside it
 
 ## Status
 
@@ -81,5 +81,5 @@ so it is a long float in a file people read.
 
 The shape is now something the check depends on. A field can be added under
 `recorder`, and moving or renaming one is a change to `metron-timed-run/v1` and
-to [the reference](../../../plugins/hexaemeron/skills/metron/references/budget-check.md)
+to `plugins/hexaemeron/skills/metron/references/budget-check.md`, the reference
 that documents it.

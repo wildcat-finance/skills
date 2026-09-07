@@ -49,7 +49,10 @@ naming the derived quantity it asserts, and the number is compared with what
 `shoggoth_topology` derives from both marketplace manifests and tree discovery
 together. A number in front of a topology noun with no marker in front of it is
 itself a refusal, because that is exactly how the stale literals got in. This
-module holds no count of its own to compare against.
+module holds no count of its own to compare against. A marker that begins its
+line with prose after it on the same line is refused too: CommonMark reads a
+line that opens with an HTML comment as an HTML block, which ends the paragraph
+and renders that prose as a detached line. The front door shipped three of them.
 
 **History.** A figure describing a dated measurement is not a claim about now,
 so it is not derivable and must not be rewritten to agree with today's tree.
@@ -521,6 +524,7 @@ REFUSALS = {
     "FD35": "landing-page member status names a member that page ships",
     "FD36": "generated-region claim is carried by the skill's own ledger",
     "FD37": "marked status prose names the version its marker declares",
+    "FD38": "a marker that begins its line carries no prose on that line",
 }
 
 
@@ -1171,6 +1175,30 @@ def check_counts(
     """Every current count claim names a derived quantity and agrees with it."""
 
     marked: set[int] = set()
+
+    for marker in markers(text):
+        # Rendering, not derivation. A line that opens with `<!--` is an HTML
+        # block to CommonMark, which interrupts the paragraph and leaves
+        # whatever follows the comment on that line as bare text outside it.
+        # GitHub showed "27 governed skills in" on a line of its own that way.
+        # Only the source shows this; the rendered form the count rules read
+        # has already lost the line break.
+        line_start = text.rfind("\n", 0, marker.start) + 1
+        if text[line_start : marker.start].strip():
+            continue
+        line_end = text.find("\n", marker.end)
+        if line_end == -1:
+            line_end = len(text)
+        if text[marker.end : line_end].strip():
+            _finding(
+                findings,
+                "FD38",
+                f"{where}: the front-door:{marker.kind} marker on line "
+                f"{text.count(chr(10), 0, marker.start) + 1} begins its line "
+                "and prose follows it there; a line opening with an HTML "
+                "comment is an HTML block, so that prose renders outside the "
+                "paragraph. Move the marker mid-line",
+            )
 
     for marker in markers(text):
         if marker.kind != "historical":

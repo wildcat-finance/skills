@@ -26,9 +26,9 @@ runtime paths has loaded the same law and the selected plugin contract.
 The router sees the complete collective. Each first-party specialist has its
 own plugin. Hexaemeron contains Fiat, Kronos, the engineering phase
 disciplines, the prose masks, the Fiat worker briefs, and the untouched Pashov
-security suite. Together the distribution exposes
-<!-- front-door:count key="governed" -->27 governed first-party skills, a number
-derived from the tree rather than typed here. The worker briefs are packets
+security suite. Together the distribution
+exposes <!-- front-door:count key="governed" -->27 governed first-party skills,
+a number derived from the tree rather than typed here. The worker briefs are packets
 Fiat may delegate; they are not canonical skills a user selects through this
 router.
 

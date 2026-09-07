@@ -85,6 +85,50 @@ true would admit every draft. The counts state confirmed dispositions,
 unconfirmed entries and undisposed items as three separate figures, so how much
 was drafted is never mistaken for how much was decided.
 
+## Attribution
+
+A confirmed entry says whose judgement admits it. It carries `confirmed_by`,
+a person, and may carry `rule`, the id of a row in the set's own `rules`
+table, whose row holds the rule's `text` and `stated_by`, the person who
+stated it. An entry naming a rule was confirmed under it, and its judgement is
+the rule author's; an entry naming no rule was decided individually by the
+person it names. See
+[ADR-003](decisions/ADR-003-attribution-names-a-person-and-a-stated-rule.md).
+
+The person is required and the rule is additional. A confirmed entry carrying
+no `confirmed_by`, or a blank or non-string one, refuses by name before it is
+counted; a rule with no person would attribute a judgement to a sentence. A
+`rule` id the table does not hold refuses, a row with blank `text` or blank
+`stated_by` refuses, and a `rules` value that is not an object refuses. A row
+no entry applies does not refuse; the record reports it as applied zero times.
+
+An unconfirmed entry carrying either field refuses. Nobody has confirmed it,
+so nothing may say who did, and a draft that pre-named its confirmer would
+read as attributed the moment somebody flipped the boolean. No generator
+writes either field.
+
+Absence is refused rather than defaulted, for the reason the previous section
+gives for `confirmed`. A set confirmed before this version refuses on its
+first confirmed entry, naming the item and the missing field, and is attributed
+by a person editing the file rather than by code.
+
+The record's `confirmations` block reports `people`, the count of distinct
+`confirmed_by` values; `by_person`, how many entries each confirmed; `by_rule`,
+every declared rule with its text, its author and its `applied` count; and
+`individual`, the entries confirmed with no rule. `by_person` sums to
+`disposed`, and so do `individual` and every `applied` count together, so the
+block reconciles with the ratio three ways. The canonical coverage digest
+covers it, so a changed attribution is a changed record.
+
+A person's name and a rule's text are strings a reviewer typed that reach the
+committed record, so each is bounded where it enters. The caps are parameters
+of the reconciler with defaults the record's `caps` block states:
+`confirmed_by` and `stated_by` at 128 bytes, a rule id at 64 bytes in one safe
+path segment, a rule's text at the 512-byte reason cap, and the table at 256
+rows. Nothing verifies that the named person exists or agreed: the field is a
+claim the file makes under a person's name, and making it a proof needs a key
+this plugin does not hold.
+
 ## Staleness
 
 A disposition set declares the inventory digest and the workbook digest it was

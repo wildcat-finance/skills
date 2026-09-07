@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20171860,
+    "bytes_blob": 20268682,
     "bytes_generated": 98
   },
   "entries": [
@@ -61,6 +61,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
+    },
+    {
+      "bytes": 29635,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -525,9 +532,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 77854,
+      "bytes": 66420,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 75806",
+      "evidence": "mean line length above 400 in a window at offset 33210",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
+    },
+    {
+      "bytes": 78621,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 76573",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

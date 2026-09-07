@@ -1,0 +1,137 @@
+{
+  "dispositions": [
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "action:src/actions/update-market.ts",
+      "oracle": "",
+      "proposed_sha256": "cca889d085da4c01f534521dd55f2ef6207d5f018317f60fc7d1c05476307b59",
+      "reason": "drafted from the compiled server action at src/actions/update-market.ts; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "api:src/app/api/health/route.ts",
+      "oracle": "",
+      "proposed_sha256": "d0d42590a7e415297a94c359bf05aa4d9933a32c9d48137eabfc8738a276580c",
+      "reason": "drafted from the compiled API handler at src/app/api/health/route.ts; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "api:src/app/api/markets/[marketId]/route.ts",
+      "oracle": "",
+      "proposed_sha256": "e682d8d5ca5ff10304c202bc2d945f2f8789e104f58d020099fedfe7adf55255",
+      "reason": "drafted from the compiled API handler at src/app/api/markets/[marketId]/route.ts; no reviewed case cites it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:ADM-01",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:ADM-02",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:ADM-04",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:M2-03",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "guard:src/components/RequireAuth.tsx",
+      "oracle": "",
+      "proposed_sha256": "15d1f78ede86aed8985bc7d8356e94bb8c10a8a673955aee901fe2b40079a9a2",
+      "reason": "drafted from the compiled guard at src/components/RequireAuth.tsx; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "guard:src/middleware.ts",
+      "oracle": "",
+      "proposed_sha256": "8f857cdebf558d3000cd30c05e73644ee73cee4194f1d55ff66b8bcb7d729089",
+      "reason": "drafted from the compiled guard at src/middleware.ts; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "route:src/app/(marketing)/about/page.tsx",
+      "oracle": "",
+      "proposed_sha256": "b983740fc1f6d76c26cea54502539911d2df7d045cf393a9f7b58a28d6ac7b6c",
+      "reason": "drafted from the compiled page route at src/app/(marketing)/about/page.tsx; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "route:src/app/@modal/login/page.tsx",
+      "oracle": "",
+      "proposed_sha256": "d26e0df5649c142ae393a162f1f1316e0373585c9e24cab46ca38d82afd9c118",
+      "reason": "drafted from the compiled page route at src/app/@modal/login/page.tsx; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "route:src/app/docs/[...slug]/page.tsx",
+      "oracle": "",
+      "proposed_sha256": "f09f6f12fb1ab913b3f0da0385ba51e1ddfc5249103786ab1791f27a5b535f6a",
+      "reason": "drafted from the compiled page route at src/app/docs/[...slug]/page.tsx; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "route:src/app/markets/[marketId]/lenders/page.tsx",
+      "oracle": "",
+      "proposed_sha256": "044cc24129374ad7b0df054de80897e9f532669abb0c2baae5cd75186908a207",
+      "reason": "drafted from the compiled page route at src/app/markets/[marketId]/lenders/page.tsx; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "route:src/app/markets/[marketId]/page.tsx",
+      "oracle": "",
+      "proposed_sha256": "9dbe9d805144339e62b39ba6d706508a544d349cfbb5474b67bb42c1a2fe64a4",
+      "reason": "drafted from the compiled page route at src/app/markets/[marketId]/page.tsx; no reviewed case cites it"
+    },
+    {
+      "confirmed": false,
+      "disposition": "excluded",
+      "item": "route:src/app/page.tsx",
+      "oracle": "",
+      "proposed_sha256": "a6a4282f4ac3dba1c5292011e7096f2f3a61d3c89108824f0114abc583f686c0",
+      "reason": "drafted from the compiled page route at src/app/page.tsx; no reviewed case cites it"
+    }
+  ],
+  "inventory_sha256": "130675b93b92e29657b6564faf53d54d07ed9c0f65b2a56b12181f89492cac6a",
+  "rules": {
+    "row-owner-walks-it": {
+      "stated_by": "Reviewer Two",
+      "text": "the reviewer who wrote a row walks it"
+    },
+    "stated-and-applied-to-nothing": {
+      "stated_by": "Reviewer One",
+      "text": "a rule the table holds and no entry names"
+    }
+  },
+  "schema": "dokimasia-dispositions/v1",
+  "workbook_sha256": "9ff1e5c476ad150598c29f0121a6b81d3c0b553cfffcb7d20f724852802898a8"
+}

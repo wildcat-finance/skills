@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.53.1"
+  version: "5.54.1"
 ---
 
 <p align="center">
@@ -109,7 +109,10 @@ of their own.
   removes the tree when git can remove it without force. A tree holding work is
   kept and named instead. Nothing is ever forced. Retirement is not inside
   `done integrate`, because `status` and `verify` still have to read the run
-  after it reports done. The self-ignored `.hexaemeron/` archive is controller
+  after it reports done. A run that was halted and will not resume is retired
+  the same way: `reset` accepts a recorded halt, appends one `retire` ledger
+  entry naming the phase and the halt reason, and archives under a
+  `halted-` name. A run that is merely incomplete is still refused. The self-ignored `.hexaemeron/` archive is controller
   evidence, not product content; do not stage, commit, or push it.
 
 Mutating commands hold a kernel lock for their whole run. Separate runs get
@@ -764,7 +767,11 @@ artefacts and state digest deterministically reconstruct the packet.
 
 Stop and ask the user when: `next` says `audit-verdict` or `blocked`; a push is rejected;
 the security suite cannot be resolved for a Solidity repo; or `verify` fails.
-Use `hexctl halt --reason ...` so the stop itself is on the ledger.
+Use `hexctl halt --reason ...` so the stop itself is on the ledger. When the
+user decides a halted run will not continue, run `hexctl reset` against it:
+the retirement is receipted, the evidence is archived, and the tree is removed
+when git can remove it without force. Do not remove a run's worktree, branch
+or state by hand.
 
 ## Hard rules
 
@@ -920,14 +927,14 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ### fiat-local-retirement
 
-- Promise: A successful `hexctl reset` establishes that the active run was complete, its state and append-only ledger verified, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, its fixed `.hexaemeron/checkpoints/` store remained outside that archive, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
-- Evidence: Zero-exit `verify_run`, terminal `phase: done`, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive, checkpoints and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
+- Promise: A successful `hexctl reset` establishes that the active run was complete or carried a recorded halt, its state and append-only ledger verified, a halted run's retirement appended to that ledger with its phase and reason, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, its fixed `.hexaemeron/checkpoints/` store remained outside that archive, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
+- Evidence: Zero-exit `verify_run`, terminal `phase: done` or a recorded `halted` reason with the appended `retire` entry, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive, checkpoints and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
 - Evidence classes: checked, recorded
 - Boundary: Retirement preserves and clears local controller evidence without opening or validating checkpoint archives; it does not strengthen any delivery receipt, publish an archive, prove that no external process copied it, or prevent an explicit forced Git add from overriding the self-ignore.
 - Authorises: Archiving a final verified run locally after its handoff data has been captured, leaving the fixed checkpoint store in place, clearing its active controller state, and retiring only a clean run worktree before the final report.
 - Consequence: 2
-- Refuses: An incomplete run, failed controller verification, an archive destination outside the local state root, or forced removal of a worktree whose Git status is not clean.
-- Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.
+- Refuses: An incomplete run without a recorded halt, failed controller verification, an archive destination outside the local state root, or forced removal of a worktree whose Git status is not clean.
+- Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, or record the stop with `hexctl halt --reason ...`, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.
 - Exceptions: none
 
 ### fiat-version-resolution

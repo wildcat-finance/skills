@@ -26,25 +26,25 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "coverage",
       "class": "production-run",
       "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.coverage.json",
-      "sha256": "833867da0900f38b179afbf79077378b216c6280bb61f96063bf102c7262c7b4"
+      "sha256": "37697359c7ac0209d56c73d127aebccf5d1de41ebf1f545fcc30471d4d4dd8cb"
     },
     {
       "id": "scrutiny",
       "class": "production-run",
       "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.scrutiny.json",
-      "sha256": "4d7640be8d19b2d568c691d095ff00fb7f0417614e00b7549ca3738d626437be"
+      "sha256": "eb0ad475c7015c4ac6f08ebf6ab1cec2bed1de125bb8e472fd4fc850519fb920"
     },
     {
       "id": "report",
       "class": "production-run",
       "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2-scrutiny.md",
-      "sha256": "f0555ad692e46c86965b0d4eaf363a41602510a27d51fd10587b5fbecb2c4264"
+      "sha256": "8b7a7190e54cb981680ff07cac426e25212d1454853d5d952f4186204a154fdd"
     },
     {
       "id": "program",
       "class": "repository",
       "path": "plugins/dokimasia/scripts/dokimasia.py",
-      "sha256": "34e4b03d422abe14c9c4269b56709027e9590af6b734d90dc906523eed7d7ece"
+      "sha256": "df2b88ed9b06fb7dc6d0f5cc98b3322d87bbad1e8de4937ccbe2728f62276e35"
     }
   ],
   "commands": [
