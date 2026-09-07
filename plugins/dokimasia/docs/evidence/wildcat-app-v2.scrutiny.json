@@ -5,6 +5,20 @@
     "numerator": 202,
     "value": 0.7739463601532567
   },
+  "confirmations": {
+    "by_person": {
+      "Laurence Day": 202
+    },
+    "by_rule": {
+      "row-author-owns-walking-it": {
+        "applied": 202,
+        "stated_by": "Laurence Day",
+        "text": "the reviewer who wrote a row owns walking it, which holds by construction of the workbook"
+      }
+    },
+    "individual": 0,
+    "people": 1
+  },
   "counts": {
     "by_disposition": {
       "covered": 0,
@@ -19,7 +33,7 @@
     "workbook_cases": 202
   },
   "examined": {
-    "coverage_sha256": "83c226869745f8312a568224b861f40f9af2ba1fa3d700902942a2b1dd95dc2c",
+    "coverage_sha256": "0c015a799121a78f74225a1a23944755ef7be37a238801dbc1d8ef8e1eba91f7",
     "inventory_items": 59,
     "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
     "scoped": 261,
@@ -28,8 +42,8 @@
   },
   "gaps": 202,
   "schema": "dokimasia-scrutiny/v1",
-  "scrutiny_sha256": "54a25d9b561bec224c9b31a5d0b277475465801021e721bbf05f573b86256295",
-  "skill_version": "2.1.0",
+  "scrutiny_sha256": "881ac25514daa197f3b54c00ba3ef904f5295f318386f091dcf403d3d812841d",
+  "skill_version": "3.1.0",
   "subject": {
     "application": {
       "commit": "bb9685fb7dbe9cd2f5b7683a9b3f164509dc2de9",

@@ -1,0 +1,9 @@
+{
+  "candidate": "rule-table",
+  "command": "python3 plugins/dokimasia/docs/design/build_attribution_design_evidence.py",
+  "criterion": "rule-statements-on-pinned-set",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

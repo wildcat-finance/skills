@@ -3709,6 +3709,45 @@ class TestControls(HexctlCase):
         self.init()
         proc = self.run_ctl("reset", expect=2)
         self.assertIn("refusing to reset an incomplete run", proc.stderr)
+        self.assertIn("hexctl halt --reason", proc.stderr)
+        self.assertEqual(self.next_json()["do"], "study")
+
+    def test_reset_retires_a_halted_run_and_records_the_retirement(self):
+        """A run started in error is halted, then cleared; nothing outside the
+        controller has to remove state by hand (skills#1411)."""
+        self.init()
+        self.run_ctl("halt", "--reason", "started against Fiat-Required: 0")
+        proc = self.run_ctl("reset")
+        self.assertIn("archived verified halted run", proc.stdout)
+        self.assertIn("stopped in phase 'study'", proc.stdout)
+        self.assertIn("started against Fiat-Required: 0", proc.stdout)
+
+        root = os.path.join(self.dir, ".hexaemeron")
+        self.assertFalse(os.path.exists(os.path.join(root, "state.json")))
+        archives = os.listdir(os.path.join(root, "archive"))
+        self.assertEqual(len(archives), 1)
+        self.assertIn("halted-", archives[0])
+        archived = os.path.join(root, "archive", archives[0])
+        with open(os.path.join(archived, "ledger.jsonl"), encoding="utf-8") as fh:
+            entries = [json.loads(line) for line in fh if line.strip()]
+        self.assertEqual([e["event"] for e in entries[-2:]], ["halt", "retire"])
+        with open(os.path.join(archived, "state.json"), encoding="utf-8") as fh:
+            halted = json.load(fh)["halted"]
+        self.assertEqual(entries[-1]["data"], {
+            "phase": "study",
+            "reason": "started against Fiat-Required: 0",
+            "halted_ts": halted["ts"],
+        })
+
+        self.init("next topic")
+        self.assertEqual(self.next_json()["do"], "study")
+
+    def test_reset_still_refuses_a_run_whose_halt_was_resumed(self):
+        self.init()
+        self.run_ctl("halt", "--reason", "second thoughts")
+        self.run_ctl("resume", "--note", "carrying on")
+        proc = self.run_ctl("reset", expect=2)
+        self.assertIn("refusing to reset an incomplete run", proc.stderr)
         self.assertEqual(self.next_json()["do"], "study")
 
     def test_config_get_set_roundtrip(self):
@@ -5285,6 +5324,22 @@ class ResumeAndRetirementTests(HexctlCase):
             os.path.join(held, "someone-was-working.txt")))
         archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
         self.assertEqual(len(archives), 1)
+
+    def test_a_halted_run_retires_its_clean_tree_into_the_origin_archive(self):
+        self.init()
+        self.run_ctl("halt", "--reason", "cut from an unsynced base")
+        self.assertTrue(os.path.isdir(self.retired))
+        self.run_ctl("reset")
+        self.assertFalse(os.path.isdir(self.retired))
+        archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
+        self.assertEqual(len(archives), 1)
+        self.assertIn("halted-", archives[0])
+        archived = os.path.join(self.dir, ".hexaemeron", "archive", archives[0])
+        for name in ("state.json", "ledger.jsonl"):
+            self.assertTrue(os.path.exists(os.path.join(archived, name)), name)
+        with open(os.path.join(self.dir, ".hexaemeron", "worktree"),
+                  encoding="utf-8") as handle:
+            self.assertEqual(handle.read().strip(), "")
 
     def test_a_retired_run_drops_out_of_the_breadcrumb(self):
         self.land_a_run()

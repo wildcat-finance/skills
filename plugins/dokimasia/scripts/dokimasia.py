@@ -36,7 +36,7 @@ LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 INSTALLED_LAW = PLUGIN / "PROMISE_MACHINE.md"
 ROOT_LAW = REPOSITORY / "PROMISE_MACHINE.md"
 
-VERSION = "2.1.0"
+VERSION = "3.1.0"
 CANDIDATE = "inventory-first"
 CRITERION = "scaffold-contract-check"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -410,8 +410,8 @@ def propose_command(
                 )
             sys.stdout.write(
                 "dokimasia propose: check clean; a drafted set covers every "
-                "scoped item, closes at zero, and a reviewer's edits survive "
-                "a regeneration\n"
+                "scoped item, closes at zero, and a reviewer's edits, "
+                "attributions and rules table survive a regeneration\n"
             )
             return 0
         missing = [
@@ -446,10 +446,19 @@ def propose_command(
         body = json.dumps(record, indent=2, sort_keys=True) + "\n"
         if target is not None:
             propose_lib.write_set(record, target)
+            # The study's third on-call question, answered where the run is
+            # read: did the last regeneration keep every attribution, and did
+            # the rules table travel with it.
+            table = (
+                f"rules table carried with {counts['rule_rows']} rows"
+                if counts["rules_carried"] else "no rules table"
+            )
             sys.stderr.write(
                 f"dokimasia propose: {counts['scoped']} scoped; "
-                f"{counts['preserved']} preserved, {counts['replaced']} replaced, "
-                f"{counts['added']} added, {counts['dropped']} dropped\n"
+                f"{counts['preserved']} preserved, of which "
+                f"{counts['attributed']} attributed; {counts['replaced']} "
+                f"replaced, {counts['added']} added, {counts['dropped']} "
+                f"dropped; {table}\n"
             )
         else:
             sys.stdout.write(body)
@@ -566,17 +575,25 @@ def demonstrate_command(
         return REFUSED
 
 
-def _committed_evidence_failures() -> list[str]:
+def _committed_evidence_failures(
+    coverage_path: Path | None = None,
+    scrutiny_path: Path | None = None,
+    prose_path: Path | None = None,
+) -> list[str]:
     """The committed evidence must be internally consistent and current.
 
     The pinned inputs are not in this repository, so this cannot recompute the
     record. It checks what a reader can check without them: that the coverage
     record is well formed, that its stated ratio agrees with its own counts,
-    and that the prose beside it reports the same figures.
+    that the scrutiny beside it carries the same confirmations, and that the
+    prose reports the same figures, the people count and every rule.
+
+    The three paths default to the committed evidence; a test passes its own
+    so a prose file that omits a figure can be shown to refuse.
     """
-    coverage_path = EVIDENCE / "wildcat-app-v2.coverage.json"
-    scrutiny_path = EVIDENCE / "wildcat-app-v2.scrutiny.json"
-    prose_path = EVIDENCE / "wildcat-app-v2-scrutiny.md"
+    coverage_path = coverage_path or EVIDENCE / "wildcat-app-v2.coverage.json"
+    scrutiny_path = scrutiny_path or EVIDENCE / "wildcat-app-v2.scrutiny.json"
+    prose_path = prose_path or EVIDENCE / "wildcat-app-v2-scrutiny.md"
     for path in (coverage_path, scrutiny_path, prose_path):
         if not path.is_file():
             return [f"the committed evidence file {path.name} is absent"]
@@ -625,6 +642,18 @@ def _committed_evidence_failures() -> list[str]:
                 f"the committed scrutiny prose does not name the {field} "
                 f"{short} its record carries"
             )
+    # Whose judgement the numerator is: the scrutiny carries the block the
+    # coverage record computed, and the prose states its figures and every
+    # declared rule. A prose file that omits the people count or a rule is
+    # refused, since it would report how much was decided without saying by
+    # whom.
+    if "confirmations" not in scrutiny:
+        failures.append("the committed scrutiny record carries no confirmations")
+    elif scrutiny["confirmations"] != record["confirmations"]:
+        failures.append(
+            "the committed scrutiny and its coverage disagree on the confirmations"
+        )
+    failures.extend(demonstrate_lib.prose_omissions(prose, record["confirmations"]))
     return failures
 
 

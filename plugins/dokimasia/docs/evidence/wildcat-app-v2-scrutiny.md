@@ -10,8 +10,8 @@ state that anything passed.
 - Workbook: `wildcat_v25_uat_v2-jack.xlsx`, sha256 `9da2f2e8bbdb`
 - Inventory digest: `88325a449814`
 - Workbook digest: `21493992f97e`
-- Coverage digest: `83c226869745`
-- Skill version: `dokimasia-v2.1.0`
+- Coverage digest: `0c015a799121`
+- Skill version: `dokimasia-v3.1.0`
 
 ## The denominator
 
@@ -38,6 +38,20 @@ can support.
 This is the finding, not a failure of the run. The application
 contributes a denominator that did not exist before, and the
 workbook contributes rows nobody has joined to it.
+
+## Who decided
+
+- People: **1** distinct person confirmed the numerator
+- Individually: **0** entries confirmed by a named person under no rule
+- Rules declared: **1**
+
+| Rule | Stated by | Applied | Text |
+| --- | --- | ---: | --- |
+| `row-author-owns-walking-it` | Laurence Day | 202 | the reviewer who wrote a row owns walking it, which holds by construction of the workbook |
+
+A person's name here is a claim the disposition set makes under that
+name; nothing verified that the person agreed. An entry confirmed
+under a rule carries the judgement of the person who stated the rule.
 
 ## Gaps
 
