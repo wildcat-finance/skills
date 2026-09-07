@@ -194,6 +194,37 @@ class TheSourcesCarryTheirRightsAndNotTheirLocation(EstateFixture):
                     self.assertIsNone(pattern.search(text))
 
 
+class TheCommittedStreamAndTheDemoDocumentAreCurrent(EstateFixture):
+    """S3-R1-01 and S3-R1-02: two artefacts this specimen ships that nothing held.
+
+    A committed event stream and a document naming one corpus both go stale in
+    silence. The projections already had a guard for exactly this reason; these
+    are the two the estate added.
+    """
+
+    def test_the_committed_event_stream_is_what_a_fresh_admission_writes(self) -> None:
+        stream = self.scratch / "admit.jsonl"
+        anamnesis.admit(str(ESTATE / "policy.json"), anamnesis.Events(str(stream)))
+        fresh = [json.loads(line) for line in stream.read_text(encoding="utf-8").splitlines()]
+        committed = [
+            json.loads(line)
+            for line in (ESTATE / "events/admit.jsonl").read_text(encoding="utf-8").splitlines()
+        ]
+        self.assertEqual(committed, fresh)
+        self.assertEqual(len(committed), len(self.policy["sources"]))
+        for event in committed:
+            self.assertEqual(event["event"], "anamnesis.source.admitted")
+            self.assertEqual(event["disclosure"], "public")
+            self.assertEqual(len(event["correlation_id"]), 16)
+
+    def test_the_demo_document_names_both_committed_specimens(self) -> None:
+        text = (PLUGIN_ROOT / "docs/demo.md").read_text(encoding="utf-8")
+        for specimen in ("specimens/pilot", "specimens/estate"):
+            with self.subTest(specimen=specimen):
+                self.assertIn(specimen, text)
+        self.assertIn(SCOPE_ID, text)
+
+
 class TheEstateTaxonomyAdmitsAnUnratedRecord(EstateFixture):
     def test_unrated_is_declared_and_nothing_is_quarantined(self) -> None:
         self.assertIn("unrated", self.curation["taxonomy"]["severities"])
