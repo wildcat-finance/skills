@@ -3750,7 +3750,7 @@ class RoutedFilingDecisionTests(HexctlCase):
         self.assertEqual(proc.stdout, "")
 
     def test_the_directive_strips_a_control_character_from_every_field(self):
-        """Defence in depth: the builder strips whatever reaches it.
+        """The builder strips whatever reaches it, parser or no parser.
 
         No body that gets this far can carry one, because
         `issue_contract_faults` refuses it first and the case above holds that

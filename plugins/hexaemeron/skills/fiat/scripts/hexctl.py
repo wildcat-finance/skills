@@ -2292,7 +2292,8 @@ def held_lock(base_dir: str, command: str):
     finally:
         if acquired:
             try:
-                # This lock lives in the *calling* checkout's state root. A
+                # `held_lock` opens this lock under the *calling* checkout's
+                # state root. A
                 # run's own state goes to the worktree's, so every `init`
                 # started from a checkout without `.hexaemeron/` leaves this
                 # directory holding nothing but the lock, whether it routed a
