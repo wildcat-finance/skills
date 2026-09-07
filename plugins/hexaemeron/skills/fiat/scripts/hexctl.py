@@ -5083,11 +5083,164 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     # decision about what to do with a `0` in one place instead of two.
     # `adr/route-a-filed-zero-as-an-answer` records why it stopped being an
     # error, and why the bytes that used to end this refusal are gone.
+    #
+    # The provenance block answers "why did this run start" from the run's own
+    # evidence. `created_at` and `updated_at` come out of the response already
+    # read, so the REST half costs nothing; the GraphQL half is the one extra
+    # request this command makes and it is never required.
+    created_at = payload.get("created_at")
+    updated_at = payload.get("updated_at")
+    provenance = {
+        "created_at": created_at if isinstance(created_at, str) else None,
+        "updated_at": updated_at if isinstance(updated_at, str) else None,
+        **github_issue_edit_provenance(base_dir, repository, number),
+    }
     return {
         "issue": issue_url,
         "repository": repository,
         "number": number,
         **record,
+        "provenance": provenance,
+    }
+
+
+ISSUE_EDITS_QUERY = (
+    "query($owner:String!,$name:String!,$number:Int!){"
+    "repository(owner:$owner,name:$name){"
+    "issue(number:$number){userContentEdits(first:20){"
+    "totalCount nodes{editedAt diff}}}}}"
+)
+"""The one GraphQL request this controller makes.
+
+`userContentEdits` is the only surface that says whether an issue's *body*
+changed, as opposed to `updated_at`, which a comment or a label also moves.
+`diff` is misnamed: it returns the whole body at that revision, newest first,
+including the revision the issue was created with. That is why the reader below
+reduces it to a value and a digest and never keeps it.
+"""
+
+ISSUE_EDIT_NODES_MAX = 20
+"""Matched to the `first:` argument, so a response claiming more is refused
+rather than silently truncated into a smaller edit count than the issue has."""
+
+
+def unknown_filing_provenance(reason: str) -> dict:
+    """Every readable field as `unknown`, with the reason it could not be read.
+
+    An absent field cannot be told apart from a question nobody asked, which is
+    the rule ADR-067 already applies to the nulls it records. So a transport
+    that failed says so in every field it would have filled, and the caller can
+    tell "no edit history" from "could not look".
+    """
+    return {
+        "edit_count": "unknown",
+        "last_edited_at": "unknown",
+        "prior_fiat_required": "unknown",
+        "reason": reason,
+    }
+
+
+def github_issue_edit_provenance(
+    base_dir: str, repository: str, number: str
+) -> dict:
+    """Reduce one issue's edit history to what the filing decision needs.
+
+    Three values leave this function: how many revisions the body has, when the
+    most recent one landed, and what the `Fiat-Required` line said in the
+    revision before it. Everything else, including every byte of every prior
+    body, is dropped here. Prior bodies are somebody else's text and there is
+    no receipt, ledger or stream they belong in.
+
+    The request is never required. GraphQL needs a token scope REST does not,
+    and `diff` needs write access on the repository, so an environment that can
+    read the issue may still not reach this. Every failure returns `unknown`
+    with its reason rather than a value that reads like an answer.
+    """
+    owner, _, name = repository.partition("/")
+    if not owner or not name or not number.isdigit():
+        return unknown_filing_provenance(
+            "the issue identity is not one GraphQL can be asked about"
+        )
+    returncode, output, failure = bounded_probe(
+        base_dir,
+        "gh",
+        [
+            "api",
+            "graphql",
+            "-f",
+            f"query={ISSUE_EDITS_QUERY}",
+            "-F",
+            f"owner={owner}",
+            "-F",
+            f"name={name}",
+            "-F",
+            f"number={number}",
+        ],
+    )
+    if failure == "start":
+        return unknown_filing_provenance("could not start the gh client")
+    if failure == "timeout":
+        return unknown_filing_provenance(
+            f"the GraphQL read timed out after {GIT_TIMEOUT} seconds"
+        )
+    if failure == "output-cap":
+        return unknown_filing_provenance(
+            f"the GraphQL response exceeded the {GIT_OUTPUT_MAX}-byte cap"
+        )
+    if returncode != 0:
+        return unknown_filing_provenance(
+            f"the GraphQL read failed with exit {returncode}"
+        )
+    try:
+        payload = json.loads(output.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        return unknown_filing_provenance(
+            "the GraphQL response was not UTF-8 JSON"
+        )
+    if as_dict(payload).get("errors"):
+        return unknown_filing_provenance("the GraphQL response carried errors")
+    edits = as_dict(
+        as_dict(as_dict(as_dict(payload).get("data")).get("repository")).get("issue")
+    ).get("userContentEdits")
+    edits = as_dict(edits)
+    total = edits.get("totalCount")
+    nodes = edits.get("nodes")
+    if not isinstance(total, int) or not isinstance(nodes, list):
+        return unknown_filing_provenance(
+            "the GraphQL response did not carry an edit history"
+        )
+    if total > ISSUE_EDIT_NODES_MAX:
+        return unknown_filing_provenance(
+            f"the issue has {total} revisions, above the "
+            f"{ISSUE_EDIT_NODES_MAX} this reader requests"
+        )
+    revisions = [as_dict(node) for node in nodes]
+    last_edited = revisions[0].get("editedAt") if revisions else None
+    prior = "unknown"
+    reason = None
+    if len(revisions) < 2:
+        prior = None
+        reason = "the body has one revision, so it has no prior value"
+    else:
+        body = revisions[1].get("diff")
+        if not isinstance(body, str):
+            reason = (
+                "the prior revision carried no readable body, which `diff` "
+                "withholds without write access on the repository"
+            )
+        else:
+            # The only thing taken from a prior body, before it goes out of
+            # scope. `fiat_required_value` reads outside fenced code, so a
+            # prior body quoting the line decides nothing here either.
+            value, _faults = fiat_required_value(body, "a prior revision")
+            prior = None if value is None else int(value)
+            if value is None:
+                reason = "the prior revision declared no `Fiat-Required` line"
+    return {
+        "edit_count": total,
+        "last_edited_at": last_edited if isinstance(last_edited, str) else None,
+        "prior_fiat_required": prior,
+        "reason": reason,
     }
 
 
@@ -17324,6 +17477,49 @@ def verify_run(
     return count
 
 
+def filing_decision_divergence(base_dir: str, state: dict) -> tuple[list, str]:
+    """What the issue says now, against what this run recorded when it started.
+
+    The receipt is what the run read, not what is true afterwards. A filing
+    decision can move under a run and the receipt cannot know, so this reads
+    the issue again and reports the difference rather than letting the
+    recorded value stand as the whole account.
+
+    It refuses nothing. A run already under way cannot be un-started by a
+    divergence, and a gate here would be a second place to argue about a
+    decision the window gate already settled at `init`.
+    """
+    recorded = as_dict(as_dict(state.get("receipts")).get("task_issue_contract"))
+    issue_url = recorded.get("issue")
+    if not isinstance(issue_url, str) or not issue_url:
+        return [], "this run named no task issue, so there is nothing to compare"
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        return [], f"{issue_url} is not a GitHub issue this reader can re-read"
+    repository, number = identity
+    label = f"task issue {repository}#{number}"
+    payload = github_rest(base_dir, f"repos/{repository}/issues/{number}", label)
+    body = payload.get("body")
+    body = body if isinstance(body, str) else ""
+    now_record, _faults = issue_contract_faults(body, label)
+    now_provenance = {
+        "created_at": payload.get("created_at"),
+        "updated_at": payload.get("updated_at"),
+        **github_issue_edit_provenance(base_dir, repository, number),
+    }
+    was_provenance = as_dict(recorded.get("provenance"))
+    divergences = []
+    for field, was, now in (
+        ("fiat_required", recorded.get("fiat_required"), now_record["fiat_required"]),
+        ("sha256", recorded.get("sha256"), now_record["sha256"]),
+        ("updated_at", was_provenance.get("updated_at"), now_provenance["updated_at"]),
+        ("edit_count", was_provenance.get("edit_count"), now_provenance["edit_count"]),
+    ):
+        if was != now:
+            divergences.append({"field": field, "recorded": was, "now": now})
+    return divergences, ""
+
+
 def cmd_verify(args) -> None:
     count = verify_run(args.dir)
     if args.observations:
@@ -17336,6 +17532,32 @@ def cmd_verify(args) -> None:
         print(
             f"ok: {count} ledger entries, chain intact, state consistent; "
             f"{observation_count} observation {noun} verified{suffix}"
+        )
+        return
+    if getattr(args, "check_filing_decision", False):
+        state = load_state(args.dir)
+        divergences, skipped = filing_decision_divergence(args.dir, state)
+        if skipped:
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"filing decision not compared: {skipped}"
+            )
+            return
+        if divergences:
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"the filing decision has moved since this run read it:"
+            )
+            for entry in divergences:
+                print(
+                    f"  {entry['field']}: recorded "
+                    f"{clean(str(entry['recorded']))}, now "
+                    f"{clean(str(entry['now']))}"
+                )
+            sys.exit(1)
+        print(
+            f"ok: {count} ledger entries, chain intact, state consistent; "
+            f"the filing decision stands as recorded"
         )
         return
     print(f"ok: {count} ledger entries, chain intact, state consistent")
@@ -17627,6 +17849,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--observations",
         action="store_true",
         help="also recompute every selected companion observation prefix",
+    )
+    sp.add_argument(
+        "--check-filing-decision",
+        action="store_true",
+        dest="check_filing_decision",
+        help=(
+            "also re-read the task issue and report any divergence from the "
+            "filing decision this run recorded; makes up to two network "
+            "requests, which plain verify never does"
+        ),
     )
     sp.set_defaults(fn=cmd_verify)
 

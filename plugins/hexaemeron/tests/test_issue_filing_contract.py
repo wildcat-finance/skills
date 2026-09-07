@@ -5,8 +5,10 @@ and the second is asked again of the run's own pull request body before its
 delivery merges.
 
 1. `Fiat-Required` is 1 when the work needs a Fiat run and 0 when one
-   independent pull request will do. `init` reads it and refuses to create any
-   state, worktree or branch on a 0, so the run does not get a chance to start.
+   independent pull request will do. `init` reads it and, on a 0, prints one
+   directive naming the pull-request route and exits 0, creating no state,
+   worktree or branch. It refused before
+   `adr/route-a-filed-zero-as-an-answer`.
 2. The `carryover` block gives every outstanding, carried-forward or
    unaddressed item an issue of its own, a pointer at the issue that already
    carries it, or a stated reason it earns neither.
