@@ -2,7 +2,7 @@
 
 Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
-- Current demonstration version: `anamnesis-demo-v0.1.0`
+- Current demonstration version: `anamnesis-demo-v0.2.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `second-preserved-audit-corpus`
 - Current demonstration: The pilot specimen runs the whole admission-to-projection path over preserved bytes.
@@ -32,7 +32,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "program",
       "class": "repository",
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "6318f3ae4cd74e35354d706a1216fa76fea2b6446a2fc2f5b45ad1a61401e645"
+      "sha256": "d1f5d8afea9dbf909af9cb814901f35e479763b0f65abbd51646f365a99eae80"
     }
   ],
   "commands": [
@@ -49,13 +49,13 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     }
   ],
   "observations": [
-    "run: line \"1. two fresh builds agree on 079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56 across 7 components\"",
+    "run: line \"1. two fresh builds agree on 41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf across 7 components\"",
     "run: line \"2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\"",
     "run: line \"3. Elenchus analogues for severity high: 2; verdict None\"",
-    "run: line \"4. Synkrisis cohort cohort:079ed18d172d6031: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
+    "run: line \"4. Synkrisis cohort cohort:41d640fb168049d5: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
   ],
   "frontier": {
-    "version": "anamnesis-demo-v0.1.0",
+    "version": "anamnesis-demo-v0.2.0",
     "status": "open",
     "revision": "second-preserved-audit-corpus",
     "sha256": "04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374",
@@ -70,3 +70,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
 | `anamnesis-demo-v0.1.0` | baseline | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `real-data` is decided by the material inputs above, not by the prose. |
+| `anamnesis-demo-v0.2.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `adr/declared-corpus-scope`, [test_s8_scope.py](../../tests/test_s8_scope.py) | The pilot was re-released under a declared corpus scope and the record re-pinned to the new program digest and release id without moving the demo frontier. |

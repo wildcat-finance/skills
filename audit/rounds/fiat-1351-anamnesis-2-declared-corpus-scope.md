@@ -30,3 +30,36 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: none beyond round 1's, which stand as recorded.
+
+## Step 2, round 1 -- 2026-09-07T20:44:39Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=reviewed; constant-removed=reviewed; scope-both-ways=reviewed; estate-provenance=not-applicable; private-origin-unnamed=reviewed; disclosure-assumption=not-applicable; pilot-rebuild-drift=reviewed; killed-build=reviewed; ledger-arithmetic=not-applicable; stale-prose=reviewed; demo-status=reviewed
+
+Not checked: the security suite is waived for this run and the waiver is on the ledger; this step changes Python, JSON and Markdown and no Solidity, so x-ray, solidity-auditor and fizz have no target. Two register ids name artefacts this step does not create: the estate sources and their rights statement are owed by step 3, and the ledger row by step 4. Also unchecked: hosted CI, the controller receipt, push and publication; whether the declared bounds of 25 to 50 are the right bounds for the pilot, which the study declares rather than establishes; and whether the pilot's 41 findings are the right 41, which stays a non-goal.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | plugins/anamnesis/docs/corpus-scope/reports/resolve.py | Step 1's guard is red on this tree: `pilot-artefacts-rebuilt` reran to 8 for `release-policy-scope` against the recorded 7, because `plugins/anamnesis/tests/test_s8_scope.py` quotes the new curation policy version `curation-2026-09-06`. `run_checks.py --base <step 1>` reported `anamnesis-suite failed` and outcome red, so CI refuses this step as committed. Round 1 of step 1 recorded that the four cells would stay reproducible because later steps leave their file set alone; that was wrong, and this is the step that falsified it. The study enumerates the seven files the criterion counts, and a guard pinning a value is no more one of them than the study copy under `docs`, so the grep now excludes `plugins/anamnesis/tests` as well; the four cells rerun to 7, 6, 0 and 1, no test carried those tokens at 0bc39f27, and the 32 receipted reports stay byte-identical | fixed in this round |
+| S2-R1-02 | low | plugins/anamnesis/docs/decisions/ADR-006-declared-corpus-scope.md | The Consequences section omits the compatibility boundary the new `A077` check creates: a release built before this decision carries no `policy.scope`, so `verify` now refuses it rather than passing it. The tree's only Anamnesis release is the pilot and this step rebuilds it, so nothing here breaks, but a reader of the record could not see that a release held elsewhere stops verifying until it is rebuilt. The section now says so | fixed in this round |
+
+Leads not pursued: three observations carry forward rather than changing code. The study's section 8 lists `A077` among the codes raised inside the `refusals_recorded` boundary, and `verify_release` takes no events sink, so `A077` emits no durable refusal event while `A073` to `A076` do; its seven neighbours in that function (`A103`, `A104`, `A105`, `A117`, `A118`, `A119`, `A123`) emit none either, so the code is consistent with the function it sits in and the study's sentence overreaches, and the study is receipted and immutable. Nothing loads `schemas/policy-v1.json` to validate a policy and the check map's `schemas` scope declares no checks, so the schema and `check_scope_shape` are held in agreement by review alone; both were compared field by field this round and agree on the identifier pattern, the 64-byte and 300-byte caps, the non-empty unique source list and the integer bounds. The declared record bounds are checked at admission, curation, release and rebuild but not at verify, because a manifest carries derived counts rather than the declared record list, and the study's construction names only the both-ways source check there. Evidence for the covered concerns: a one-byte change to any scope field changes the release id and a guard holds it; `seed_scope` and the literal bound are absent from the program; `A074` and `A075` each have their own specimen and run at build and at verify through `A077`; the pilot's admission policy, three sources, both event streams and four policy-free release components are byte-identical to step 1, checked file by file; the killed-build guards `A100` and `A103` still run over the pilot; the demonstration stays `real-data` with its frontier revision and digest unmoved; and no committed byte names a repository, branch or path of the maintainer-held documents.
+
+## Step 2, round 2 -- 2026-09-07T21:04:06Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: scope-in-release-id=reviewed; constant-removed=reviewed; scope-both-ways=reviewed; estate-provenance=not-applicable; private-origin-unnamed=reviewed; disclosure-assumption=not-applicable; pilot-rebuild-drift=reviewed; killed-build=reviewed; ledger-arithmetic=not-applicable; stale-prose=reviewed; demo-status=reviewed
+
+Not checked: unchanged from round 1, and one thing about this step's own order. The implementing worker was lost before it receipted, so round 1's review ran while the step was still in the implement phase and its first fix, a23c34f0, is inside the receipted implementation range rather than after it; the round's declared fixes commit is a73c7972, which completes that fix by moving its regression guard into the suite this step's runner contract actually runs. The suite waiver still holds, the estate sources and the ledger row are still owed by steps 3 and 4, and hosted CI, the receipt, push and publication remain outside every round. Round 2 asked one question round 1 did not: what does a declared scope leave unconstrained. Four answers, none a defect: a scope id is unique within its policy and nothing compares ids across corpora, which is what an id inside a hashed policy can promise; `ingest` reads admitted sources without a curation policy and so performs no scope check, exactly as the study's construction names admit-seed, curate, release and the rebuild and no other command; a rebuild refuses `A073` when the record count leaves the declared bounds, so the bounds bind the whole build path and not only admission; and one byte of `preserves` changes the release id, so the declaration cannot drift without the id moving.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1's three stand as recorded. Nothing new was found.

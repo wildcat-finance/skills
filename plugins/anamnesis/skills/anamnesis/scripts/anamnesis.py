@@ -81,8 +81,19 @@ CURATION_POLICY_KEYS = {
     "mapper": True,
     "taxonomy": True,
     "disclosure": True,
+    "scope": True,
     "duplicates": False,
 }
+SCOPE_KEYS = {
+    "id": True,
+    "preserves": True,
+    "sources": True,
+    "records": True,
+}
+SCOPE_RECORDS_KEYS = {"minimum": True, "maximum": True}
+SCOPE_ID = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+MAX_SCOPE_ID = 64
+MAX_SCOPE_PRESERVES = 300
 RECORD_KEYS = {
     "id": True,
     "source": True,
@@ -395,12 +406,40 @@ def validate_records(policy, known, events, version, policy_digest):
     return record_ids
 
 
-def seed_scope(record_count):
-    """The pilot's curation scope, which the runbook fixes at 25 to 50."""
-    if not 25 <= record_count <= 50:
+def check_scope(policy, admitted, record_count):
+    """Hold an admission result to the scope the curation policy declares.
+
+    The scope lives in the curation policy because that policy is a release
+    component and the release id already hashes it, so a corpus cannot change
+    what it preserves without changing its id. The bounds are read from the
+    policy and never from this file.
+    """
+    scope = policy["scope"]
+    declared = set(scope["sources"])
+    for source in admitted:
+        if source["id"] not in declared:
+            raise Refusal(
+                "A074",
+                f"admitted source {quote(source['id'])} is outside scope "
+                f"{quote(scope['id'])}",
+                source["id"],
+            )
+    present = {source["id"] for source in admitted}
+    for source_id in scope["sources"]:
+        if source_id not in present:
+            raise Refusal(
+                "A075",
+                f"scope {quote(scope['id'])} names source {quote(source_id)}, "
+                "which was not admitted",
+                source_id,
+            )
+    minimum = scope["records"]["minimum"]
+    maximum = scope["records"]["maximum"]
+    if not minimum <= record_count <= maximum:
         raise Refusal(
             "A073",
-            f"the pilot declares {record_count} records; the runbook requires 25 to 50",
+            f"the corpus declares {record_count} records; scope "
+            f"{quote(scope['id'])} requires {minimum} to {maximum}",
         )
 
 
@@ -485,13 +524,26 @@ def cmd_admit(args):
     return 0
 
 
+def _admitted_within_scope(events, result, curation_path):
+    """Load the curation policy and hold the admission result to its scope.
+
+    Both refusal families are raised inside the recorded span, so a scope
+    refusal leaves the same durable event an admission refusal does.
+    """
+    with refusals_recorded(events, result["policy_version"], result["policy_sha256"]):
+        policy = load_curation_policy(curation_path)
+        check_scope(policy, result["sources"], result["records"])
+    return policy
+
+
 def cmd_admit_seed(args):
     events = Events(args.events)
     result = admit(args.policy, events)
-    seed_scope(result["records"])
+    _admitted_within_scope(events, result, args.curation_policy)
     command = (
         "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit-seed "
-        f"--policy {args.policy} --report {args.report}"
+        f"--policy {args.policy} --curation-policy {args.curation_policy} "
+        f"--report {args.report}"
     )
     write_report(args.report, "seed-source-rights-admitted", True, command)
     print(
@@ -1090,6 +1142,19 @@ def verify_release(out):
         raise Refusal("A123", "manifest unknowns differ from the released unknowns")
     if manifest["counts"] != _counts(graph):
         raise Refusal("A119", "manifest counts differ from the released components")
+    # Both sides of this comparison are inside the release, so a release says
+    # for itself whether it holds exactly the sources its scope declares.
+    scope = manifest["policy"].get("scope")
+    if not isinstance(scope, dict) or not isinstance(scope.get("sources"), list):
+        raise Refusal("A077", "manifest policy declares no scope sources")
+    declared = set(scope["sources"])
+    listed = {source["id"] for source in manifest["sources"]}
+    if declared != listed:
+        raise Refusal(
+            "A077",
+            f"manifest sources {sorted(listed)} differ from the declared scope "
+            f"sources {sorted(declared)}",
+        )
     return manifest, checked_bodies
 
 
@@ -1104,6 +1169,43 @@ def measure_release(out):
     return total
 
 
+def check_scope_shape(scope):
+    """Hold a declared scope to its closed shape. Every defect refuses A076.
+
+    The shape is the same one schemas/policy-v1.json declares: an id, one
+    bounded sentence saying what the corpus preserves, the source ids it
+    admits, and integer record bounds with 1 <= minimum <= maximum.
+    """
+    try:
+        closed_object(scope, SCOPE_KEYS, "policy scope")
+        closed_object(scope["records"], SCOPE_RECORDS_KEYS, "policy scope records")
+    except Refusal as refusal:
+        raise Refusal("A076", refusal.message) from None
+    scope_id = scope["id"]
+    if (not isinstance(scope_id, str) or len(scope_id) > MAX_SCOPE_ID
+            or not SCOPE_ID.match(scope_id)):
+        raise Refusal("A076", "policy scope id is not a bounded kebab-case identifier")
+    preserves = scope["preserves"]
+    if not isinstance(preserves, str) or not preserves or len(preserves) > MAX_SCOPE_PRESERVES:
+        raise Refusal("A076", "policy scope preserves is not a bounded non-empty string")
+    sources = scope["sources"]
+    if not isinstance(sources, list) or not sources:
+        raise Refusal("A076", "policy scope declares no sources")
+    for source_id in sources:
+        if not isinstance(source_id, str) or not source_id:
+            raise Refusal("A076", "policy scope names a source without an id")
+    if len(set(sources)) != len(sources):
+        raise Refusal("A076", "policy scope names a source twice")
+    for name in ("minimum", "maximum"):
+        value = scope["records"][name]
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise Refusal("A076", f"policy scope records {name} is not an integer")
+    if not 1 <= scope["records"]["minimum"] <= scope["records"]["maximum"]:
+        raise Refusal(
+            "A076", "policy scope records must satisfy 1 <= minimum <= maximum")
+    return scope
+
+
 def load_curation_policy(path):
     raw = read_bounded(path, MAX_POLICY_BYTES, "curation policy")
     try:
@@ -1115,6 +1217,7 @@ def load_curation_policy(path):
     closed_object(policy["taxonomy"],
                   {"name": True, "version": True, "severities": True}, "policy taxonomy")
     closed_object(policy["disclosure"], {"derived_text": True}, "policy disclosure")
+    check_scope_shape(policy["scope"])
     text(policy["version"], "policy version", 100)
     if not isinstance(policy["taxonomy"]["severities"], list) or not policy["taxonomy"]["severities"]:
         raise Refusal("A111", "policy taxonomy declares no severities")
@@ -1370,8 +1473,9 @@ def _rebuild_once(specimen, destination):
     """Build the specimen's release into a fresh directory."""
     policy_path = os.path.join(specimen, "policy.json")
     curation_path = os.path.join(specimen, "curation-policy.json")
-    result = admit(policy_path, Events())
-    policy = load_curation_policy(curation_path)
+    events = Events()
+    result = admit(policy_path, events)
+    policy = _admitted_within_scope(events, result, curation_path)
     texts = _admitted_texts(policy_path, result["sources"])
     graph = curate(result["sources"], policy, texts)
     return build_release(destination, policy, result["sources"], graph)
@@ -1427,7 +1531,7 @@ def cmd_ingest(args):
 def cmd_curate(args):
     events = Events(args.events)
     result = admit(args.policy, events)
-    policy = load_curation_policy(args.curation_policy)
+    policy = _admitted_within_scope(events, result, args.curation_policy)
     texts = _admitted_texts(args.policy, result["sources"])
     graph = curate(result["sources"], policy, texts)
     print(
@@ -1441,7 +1545,7 @@ def cmd_curate(args):
 def cmd_release(args):
     events = Events(args.events)
     result = admit(args.policy, events)
-    policy = load_curation_policy(args.curation_policy)
+    policy = _admitted_within_scope(events, result, args.curation_policy)
     texts = _admitted_texts(args.policy, result["sources"])
     graph = curate(result["sources"], policy, texts)
     manifest = build_release(args.out, policy, result["sources"], graph)
@@ -1636,6 +1740,7 @@ def build_parser():
         "admit-seed", help="admit the pilot sources and write the conformance report"
     )
     seed.add_argument("--policy", required=True)
+    seed.add_argument("--curation-policy", required=True)
     seed.add_argument("--report", required=True)
     seed.add_argument("--events", default=None)
     seed.set_defaults(handler=cmd_admit_seed)

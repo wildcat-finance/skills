@@ -24,7 +24,8 @@ before admitting a source, curating a record, or releasing a corpus.
 - Treat the corpus named by the user as the target. Do not substitute this
   distribution checkout unless the user named it.
 - `admit` and `admit-seed` read a declared policy and its sources and write
-  nothing outside the report path the caller names.
+  nothing outside the report path the caller names; `admit-seed` also reads
+  the curation policy for the declared scope.
 - Names such as `$anamnesis`, `/anamnesis:anamnesis` and `anamnesis:anamnesis`
   are invocation aliases, not shell commands.
 

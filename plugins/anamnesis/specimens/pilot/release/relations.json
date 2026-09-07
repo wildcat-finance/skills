@@ -3,7 +3,7 @@
     "from": "find:pandects-audit-rounds:S1-R1-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R1-01:rem:pandects-audit-rounds:round:pandects-audit-rounds:1",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:1"
   },
@@ -11,7 +11,7 @@
     "from": "find:pandects-audit-rounds:S1-R1-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R1-02:rem:pandects-audit-rounds:round:pandects-audit-rounds:1",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:1"
   },
@@ -19,7 +19,7 @@
     "from": "find:pandects-audit-rounds:S1-R1-03",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R1-03:rem:pandects-audit-rounds:round:pandects-audit-rounds:1",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:1"
   },
@@ -27,7 +27,7 @@
     "from": "find:pandects-audit-rounds:S1-R1-04",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R1-04:rem:pandects-audit-rounds:round:pandects-audit-rounds:1",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:1"
   },
@@ -35,7 +35,7 @@
     "from": "find:pandects-audit-rounds:S1-R2-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R2-01:rem:pandects-audit-rounds:round:pandects-audit-rounds:2",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:2"
   },
@@ -43,7 +43,7 @@
     "from": "find:pandects-audit-rounds:S1-R2-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R2-02:rem:pandects-audit-rounds:round:pandects-audit-rounds:2",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:2"
   },
@@ -51,7 +51,7 @@
     "from": "find:pandects-audit-rounds:S1-R3-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S1-R3-01:rem:pandects-audit-rounds:round:pandects-audit-rounds:3",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:3"
   },
@@ -59,7 +59,7 @@
     "from": "find:pandects-audit-rounds:S2-R1-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R1-01:rem:pandects-audit-rounds:round:pandects-audit-rounds:5",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:5"
   },
@@ -67,7 +67,7 @@
     "from": "find:pandects-audit-rounds:S2-R1-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R1-02:rem:pandects-audit-rounds:round:pandects-audit-rounds:5",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:5"
   },
@@ -75,7 +75,7 @@
     "from": "find:pandects-audit-rounds:S2-R1-03",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R1-03:rem:pandects-audit-rounds:round:pandects-audit-rounds:5",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:5"
   },
@@ -83,7 +83,7 @@
     "from": "find:pandects-audit-rounds:S2-R2-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R2-01:rem:pandects-audit-rounds:round:pandects-audit-rounds:6",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:6"
   },
@@ -91,7 +91,7 @@
     "from": "find:pandects-audit-rounds:S2-R2-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R2-02:rem:pandects-audit-rounds:round:pandects-audit-rounds:6",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:6"
   },
@@ -99,7 +99,7 @@
     "from": "find:pandects-audit-rounds:S2-R2-03",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R2-03:rem:pandects-audit-rounds:round:pandects-audit-rounds:6",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:6"
   },
@@ -107,7 +107,7 @@
     "from": "find:pandects-audit-rounds:S2-R2-04",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S2-R2-04:rem:pandects-audit-rounds:round:pandects-audit-rounds:6",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:round:pandects-audit-rounds:6"
   },
@@ -115,7 +115,7 @@
     "from": "find:pandects-audit-rounds:S3-R1-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S3-R1-01:rem:pandects-audit-rounds:2429718",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:2429718"
   },
@@ -123,7 +123,7 @@
     "from": "find:pandects-audit-rounds:S3-R1-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S3-R1-02:rem:pandects-audit-rounds:2429718",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:2429718"
   },
@@ -131,7 +131,7 @@
     "from": "find:pandects-audit-rounds:S3-R1-03",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S3-R1-03:rem:pandects-audit-rounds:2429718",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:2429718"
   },
@@ -139,7 +139,7 @@
     "from": "find:pandects-audit-rounds:S3-R1-04",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S3-R1-04:rem:pandects-audit-rounds:2429718",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:2429718"
   },
@@ -147,7 +147,7 @@
     "from": "find:pandects-audit-rounds:S3-R2-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S3-R2-01:rem:pandects-audit-rounds:0b7ae32",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:0b7ae32"
   },
@@ -155,7 +155,7 @@
     "from": "find:pandects-audit-rounds:S3-R2-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S3-R2-02:rem:pandects-audit-rounds:0b7ae32",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:0b7ae32"
   },
@@ -163,7 +163,7 @@
     "from": "find:pandects-audit-rounds:S4-R1-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S4-R1-01:rem:pandects-audit-rounds:aa3df12",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:aa3df12"
   },
@@ -171,7 +171,7 @@
     "from": "find:pandects-audit-rounds:S4-R1-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S4-R1-02:rem:pandects-audit-rounds:aa3df12",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:aa3df12"
   },
@@ -179,7 +179,7 @@
     "from": "find:pandects-audit-rounds:S4-R1-03",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S4-R1-03:rem:pandects-audit-rounds:aa3df12",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:aa3df12"
   },
@@ -187,7 +187,7 @@
     "from": "find:pandects-audit-rounds:S4-R2-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S4-R2-01:rem:pandects-audit-rounds:cf9cf68",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:cf9cf68"
   },
@@ -195,7 +195,7 @@
     "from": "find:pandects-audit-rounds:S4-R2-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S4-R2-02:rem:pandects-audit-rounds:cf9cf68",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:cf9cf68"
   },
@@ -203,7 +203,7 @@
     "from": "find:pandects-audit-rounds:S5-R1-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S5-R1-01:rem:pandects-audit-rounds:ac37f14",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:ac37f14"
   },
@@ -211,7 +211,7 @@
     "from": "find:pandects-audit-rounds:S5-R1-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S5-R1-02:rem:pandects-audit-rounds:ac37f14",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:ac37f14"
   },
@@ -219,7 +219,7 @@
     "from": "find:pandects-audit-rounds:S5-R2-01",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S5-R2-01:rem:pandects-audit-rounds:9eb1314",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:9eb1314"
   },
@@ -227,7 +227,7 @@
     "from": "find:pandects-audit-rounds:S5-R2-02",
     "id": "rel:addressed-by:find:pandects-audit-rounds:S5-R2-02:rem:pandects-audit-rounds:9eb1314",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:pandects-audit-rounds:9eb1314"
   },
@@ -235,7 +235,7 @@
     "from": "find:tabularium-audit-rounds:E1-R1-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R1-01:rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc"
   },
@@ -243,7 +243,7 @@
     "from": "find:tabularium-audit-rounds:E1-R1-02",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R1-02:rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc"
   },
@@ -251,7 +251,7 @@
     "from": "find:tabularium-audit-rounds:E1-R1-03",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R1-03:rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc"
   },
@@ -259,7 +259,7 @@
     "from": "find:tabularium-audit-rounds:E1-R2-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R2-01:rem:tabularium-audit-rounds:ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe"
   },
@@ -267,7 +267,7 @@
     "from": "find:tabularium-audit-rounds:E1-R3-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R3-01:rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a"
   },
@@ -275,7 +275,7 @@
     "from": "find:tabularium-audit-rounds:E1-R3-02",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R3-02:rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a"
   },
@@ -283,7 +283,7 @@
     "from": "find:tabularium-audit-rounds:E1-R4-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:E1-R4-01:rem:tabularium-audit-rounds:e1e3fb71fb779aa2dc5d4295c69c66943a2f570c",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:e1e3fb71fb779aa2dc5d4295c69c66943a2f570c"
   },
@@ -291,7 +291,7 @@
     "from": "find:tabularium-audit-rounds:S2-R1-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:S2-R1-01:rem:tabularium-audit-rounds:f6131579cba199cea111f1e65de6d6e28c64b244",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:f6131579cba199cea111f1e65de6d6e28c64b244"
   },
@@ -299,7 +299,7 @@
     "from": "find:tabularium-audit-rounds:S3-R1-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:S3-R1-01:rem:tabularium-audit-rounds:dbcaf19c443493606a1eef807fc7982cd9607cb7",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:dbcaf19c443493606a1eef807fc7982cd9607cb7"
   },
@@ -307,7 +307,7 @@
     "from": "find:tabularium-audit-rounds:S3-R2-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:S3-R2-01:rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32"
   },
@@ -315,7 +315,7 @@
     "from": "find:tabularium-audit-rounds:S3-R2-02",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:S3-R2-02:rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32"
   },
@@ -323,7 +323,7 @@
     "from": "find:tabularium-audit-rounds:S4-R1-01",
     "id": "rel:addressed-by:find:tabularium-audit-rounds:S4-R1-01:rem:tabularium-audit-rounds:87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f",
     "kind": "addressed-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the finding's status names this remediation; several findings may name the same one",
     "to": "rem:tabularium-audit-rounds:87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f"
   },
@@ -331,294 +331,294 @@
     "from": "find:pandects-audit-rounds:S1-R1-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R1-01"
   },
   {
     "from": "find:pandects-audit-rounds:S1-R1-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R1-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R1-02"
   },
   {
     "from": "find:pandects-audit-rounds:S1-R1-03",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R1-03",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R1-03"
   },
   {
     "from": "find:pandects-audit-rounds:S1-R1-04",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R1-04",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R1-04"
   },
   {
     "from": "find:pandects-audit-rounds:S1-R2-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R2-01"
   },
   {
     "from": "find:pandects-audit-rounds:S1-R2-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R2-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R2-02"
   },
   {
     "from": "find:pandects-audit-rounds:S1-R3-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S1-R3-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S1-R3-01"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R1-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R1-01"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R1-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R1-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R1-02"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R1-03",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R1-03",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R1-03"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R2-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R2-01"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R2-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R2-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R2-02"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R2-03",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R2-03",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R2-03"
   },
   {
     "from": "find:pandects-audit-rounds:S2-R2-04",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S2-R2-04",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S2-R2-04"
   },
   {
     "from": "find:pandects-audit-rounds:S3-R1-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S3-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S3-R1-01"
   },
   {
     "from": "find:pandects-audit-rounds:S3-R1-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S3-R1-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S3-R1-02"
   },
   {
     "from": "find:pandects-audit-rounds:S3-R1-03",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S3-R1-03",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S3-R1-03"
   },
   {
     "from": "find:pandects-audit-rounds:S3-R1-04",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S3-R1-04",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S3-R1-04"
   },
   {
     "from": "find:pandects-audit-rounds:S3-R2-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S3-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S3-R2-01"
   },
   {
     "from": "find:pandects-audit-rounds:S3-R2-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S3-R2-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S3-R2-02"
   },
   {
     "from": "find:pandects-audit-rounds:S4-R1-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S4-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S4-R1-01"
   },
   {
     "from": "find:pandects-audit-rounds:S4-R1-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S4-R1-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S4-R1-02"
   },
   {
     "from": "find:pandects-audit-rounds:S4-R1-03",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S4-R1-03",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S4-R1-03"
   },
   {
     "from": "find:pandects-audit-rounds:S4-R2-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S4-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S4-R2-01"
   },
   {
     "from": "find:pandects-audit-rounds:S4-R2-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S4-R2-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S4-R2-02"
   },
   {
     "from": "find:pandects-audit-rounds:S5-R1-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S5-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S5-R1-01"
   },
   {
     "from": "find:pandects-audit-rounds:S5-R1-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S5-R1-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S5-R1-02"
   },
   {
     "from": "find:pandects-audit-rounds:S5-R2-01",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S5-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S5-R2-01"
   },
   {
     "from": "find:pandects-audit-rounds:S5-R2-02",
     "id": "rel:occurs-at:occ:pandects-audit-rounds:S5-R2-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:pandects-audit-rounds:S5-R2-02"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R1-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R1-01"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R1-02",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R1-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R1-02"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R1-03",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R1-03",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R1-03"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R2-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R2-01"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R3-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R3-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R3-01"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R3-02",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R3-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R3-02"
   },
   {
     "from": "find:tabularium-audit-rounds:E1-R4-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:E1-R4-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:E1-R4-01"
   },
   {
     "from": "find:tabularium-audit-rounds:S2-R1-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:S2-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:S2-R1-01"
   },
   {
     "from": "find:tabularium-audit-rounds:S3-R1-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:S3-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:S3-R1-01"
   },
   {
     "from": "find:tabularium-audit-rounds:S3-R2-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:S3-R2-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:S3-R2-01"
   },
   {
     "from": "find:tabularium-audit-rounds:S3-R2-02",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:S3-R2-02",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:S3-R2-02"
   },
   {
     "from": "find:tabularium-audit-rounds:S4-R1-01",
     "id": "rel:occurs-at:occ:tabularium-audit-rounds:S4-R1-01",
     "kind": "occurs-at",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "to": "occ:tabularium-audit-rounds:S4-R1-01"
   },
   {
     "from": "sub:pandects-audit-rounds:S1-R1-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R1-01"
   },
@@ -626,7 +626,7 @@
     "from": "sub:pandects-audit-rounds:S1-R1-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R1-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R1-02"
   },
@@ -634,7 +634,7 @@
     "from": "sub:pandects-audit-rounds:S1-R1-03",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R1-03",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R1-03"
   },
@@ -642,7 +642,7 @@
     "from": "sub:pandects-audit-rounds:S1-R1-04",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R1-04",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R1-04"
   },
@@ -650,7 +650,7 @@
     "from": "sub:pandects-audit-rounds:S1-R2-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R2-01"
   },
@@ -658,7 +658,7 @@
     "from": "sub:pandects-audit-rounds:S1-R2-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R2-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R2-02"
   },
@@ -666,7 +666,7 @@
     "from": "sub:pandects-audit-rounds:S1-R3-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S1-R3-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S1-R3-01"
   },
@@ -674,7 +674,7 @@
     "from": "sub:pandects-audit-rounds:S2-R1-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R1-01"
   },
@@ -682,7 +682,7 @@
     "from": "sub:pandects-audit-rounds:S2-R1-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R1-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R1-02"
   },
@@ -690,7 +690,7 @@
     "from": "sub:pandects-audit-rounds:S2-R1-03",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R1-03",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R1-03"
   },
@@ -698,7 +698,7 @@
     "from": "sub:pandects-audit-rounds:S2-R2-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R2-01"
   },
@@ -706,7 +706,7 @@
     "from": "sub:pandects-audit-rounds:S2-R2-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R2-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R2-02"
   },
@@ -714,7 +714,7 @@
     "from": "sub:pandects-audit-rounds:S2-R2-03",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R2-03",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R2-03"
   },
@@ -722,7 +722,7 @@
     "from": "sub:pandects-audit-rounds:S2-R2-04",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S2-R2-04",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S2-R2-04"
   },
@@ -730,7 +730,7 @@
     "from": "sub:pandects-audit-rounds:S3-R1-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S3-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S3-R1-01"
   },
@@ -738,7 +738,7 @@
     "from": "sub:pandects-audit-rounds:S3-R1-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S3-R1-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S3-R1-02"
   },
@@ -746,7 +746,7 @@
     "from": "sub:pandects-audit-rounds:S3-R1-03",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S3-R1-03",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S3-R1-03"
   },
@@ -754,7 +754,7 @@
     "from": "sub:pandects-audit-rounds:S3-R1-04",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S3-R1-04",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S3-R1-04"
   },
@@ -762,7 +762,7 @@
     "from": "sub:pandects-audit-rounds:S3-R2-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S3-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S3-R2-01"
   },
@@ -770,7 +770,7 @@
     "from": "sub:pandects-audit-rounds:S3-R2-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S3-R2-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S3-R2-02"
   },
@@ -778,7 +778,7 @@
     "from": "sub:pandects-audit-rounds:S4-R1-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S4-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S4-R1-01"
   },
@@ -786,7 +786,7 @@
     "from": "sub:pandects-audit-rounds:S4-R1-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S4-R1-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S4-R1-02"
   },
@@ -794,7 +794,7 @@
     "from": "sub:pandects-audit-rounds:S4-R1-03",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S4-R1-03",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S4-R1-03"
   },
@@ -802,7 +802,7 @@
     "from": "sub:pandects-audit-rounds:S4-R2-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S4-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S4-R2-01"
   },
@@ -810,7 +810,7 @@
     "from": "sub:pandects-audit-rounds:S4-R2-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S4-R2-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S4-R2-02"
   },
@@ -818,7 +818,7 @@
     "from": "sub:pandects-audit-rounds:S5-R1-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S5-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S5-R1-01"
   },
@@ -826,7 +826,7 @@
     "from": "sub:pandects-audit-rounds:S5-R1-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S5-R1-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S5-R1-02"
   },
@@ -834,7 +834,7 @@
     "from": "sub:pandects-audit-rounds:S5-R2-01",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S5-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S5-R2-01"
   },
@@ -842,7 +842,7 @@
     "from": "sub:pandects-audit-rounds:S5-R2-02",
     "id": "rel:reported-as:sub:pandects-audit-rounds:S5-R2-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:pandects-audit-rounds:S5-R2-02"
   },
@@ -850,7 +850,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R1-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R1-01"
   },
@@ -858,7 +858,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R1-02",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R1-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R1-02"
   },
@@ -866,7 +866,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R1-03",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R1-03",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R1-03"
   },
@@ -874,7 +874,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R2-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R2-01"
   },
@@ -882,7 +882,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R3-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R3-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R3-01"
   },
@@ -890,7 +890,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R3-02",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R3-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R3-02"
   },
@@ -898,7 +898,7 @@
     "from": "sub:tabularium-audit-rounds:E1-R4-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:E1-R4-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:E1-R4-01"
   },
@@ -906,7 +906,7 @@
     "from": "sub:tabularium-audit-rounds:S2-R1-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:S2-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:S2-R1-01"
   },
@@ -914,7 +914,7 @@
     "from": "sub:tabularium-audit-rounds:S3-R1-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:S3-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:S3-R1-01"
   },
@@ -922,7 +922,7 @@
     "from": "sub:tabularium-audit-rounds:S3-R2-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:S3-R2-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:S3-R2-01"
   },
@@ -930,7 +930,7 @@
     "from": "sub:tabularium-audit-rounds:S3-R2-02",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:S3-R2-02",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:S3-R2-02"
   },
@@ -938,7 +938,7 @@
     "from": "sub:tabularium-audit-rounds:S4-R1-01",
     "id": "rel:reported-as:sub:tabularium-audit-rounds:S4-R1-01",
     "kind": "reported-as",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "one submission, adjudicated to itself",
     "to": "find:tabularium-audit-rounds:S4-R1-01"
   },
@@ -946,7 +946,7 @@
     "from": "rem:pandects-audit-rounds:0b7ae32",
     "id": "rel:verified-by:rem:pandects-audit-rounds:0b7ae32:ver:round:pandects-audit-rounds:9",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:9"
   },
@@ -954,7 +954,7 @@
     "from": "rem:pandects-audit-rounds:2429718",
     "id": "rel:verified-by:rem:pandects-audit-rounds:2429718:ver:round:pandects-audit-rounds:8",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:8"
   },
@@ -962,7 +962,7 @@
     "from": "rem:pandects-audit-rounds:9eb1314",
     "id": "rel:verified-by:rem:pandects-audit-rounds:9eb1314:ver:round:pandects-audit-rounds:15",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:15"
   },
@@ -970,7 +970,7 @@
     "from": "rem:pandects-audit-rounds:aa3df12",
     "id": "rel:verified-by:rem:pandects-audit-rounds:aa3df12:ver:round:pandects-audit-rounds:11",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:11"
   },
@@ -978,7 +978,7 @@
     "from": "rem:pandects-audit-rounds:ac37f14",
     "id": "rel:verified-by:rem:pandects-audit-rounds:ac37f14:ver:round:pandects-audit-rounds:14",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:14"
   },
@@ -986,7 +986,7 @@
     "from": "rem:pandects-audit-rounds:cf9cf68",
     "id": "rel:verified-by:rem:pandects-audit-rounds:cf9cf68:ver:round:pandects-audit-rounds:12",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:12"
   },
@@ -994,7 +994,7 @@
     "from": "rem:pandects-audit-rounds:round:pandects-audit-rounds:1",
     "id": "rel:verified-by:rem:pandects-audit-rounds:round:pandects-audit-rounds:1:ver:round:pandects-audit-rounds:1",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:1"
   },
@@ -1002,7 +1002,7 @@
     "from": "rem:pandects-audit-rounds:round:pandects-audit-rounds:2",
     "id": "rel:verified-by:rem:pandects-audit-rounds:round:pandects-audit-rounds:2:ver:round:pandects-audit-rounds:2",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:2"
   },
@@ -1010,7 +1010,7 @@
     "from": "rem:pandects-audit-rounds:round:pandects-audit-rounds:3",
     "id": "rel:verified-by:rem:pandects-audit-rounds:round:pandects-audit-rounds:3:ver:round:pandects-audit-rounds:3",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:3"
   },
@@ -1018,7 +1018,7 @@
     "from": "rem:pandects-audit-rounds:round:pandects-audit-rounds:5",
     "id": "rel:verified-by:rem:pandects-audit-rounds:round:pandects-audit-rounds:5:ver:round:pandects-audit-rounds:5",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:5"
   },
@@ -1026,7 +1026,7 @@
     "from": "rem:pandects-audit-rounds:round:pandects-audit-rounds:6",
     "id": "rel:verified-by:rem:pandects-audit-rounds:round:pandects-audit-rounds:6:ver:round:pandects-audit-rounds:6",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:pandects-audit-rounds:6"
   },
@@ -1034,7 +1034,7 @@
     "from": "rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a:ver:round:tabularium-audit-rounds:4",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:4"
   },
@@ -1042,7 +1042,7 @@
     "from": "rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32:ver:round:tabularium-audit-rounds:10",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:10"
   },
@@ -1050,7 +1050,7 @@
     "from": "rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc:ver:round:tabularium-audit-rounds:2",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:2"
   },
@@ -1058,7 +1058,7 @@
     "from": "rem:tabularium-audit-rounds:87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f:ver:round:tabularium-audit-rounds:12",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:12"
   },
@@ -1066,7 +1066,7 @@
     "from": "rem:tabularium-audit-rounds:dbcaf19c443493606a1eef807fc7982cd9607cb7",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:dbcaf19c443493606a1eef807fc7982cd9607cb7:ver:round:tabularium-audit-rounds:9",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:9"
   },
@@ -1074,7 +1074,7 @@
     "from": "rem:tabularium-audit-rounds:e1e3fb71fb779aa2dc5d4295c69c66943a2f570c",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:e1e3fb71fb779aa2dc5d4295c69c66943a2f570c:ver:round:tabularium-audit-rounds:5",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:5"
   },
@@ -1082,7 +1082,7 @@
     "from": "rem:tabularium-audit-rounds:ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe:ver:round:tabularium-audit-rounds:3",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:3"
   },
@@ -1090,7 +1090,7 @@
     "from": "rem:tabularium-audit-rounds:f6131579cba199cea111f1e65de6d6e28c64b244",
     "id": "rel:verified-by:rem:tabularium-audit-rounds:f6131579cba199cea111f1e65de6d6e28c64b244:ver:round:tabularium-audit-rounds:7",
     "kind": "verified-by",
-    "policy_version": "curation-2026-08-31",
+    "policy_version": "curation-2026-09-06",
     "rationale": "the round that recorded the remediation; its verdict is the only verification evidence, and unknown when it declared none",
     "to": "ver:round:tabularium-audit-rounds:7"
   }
