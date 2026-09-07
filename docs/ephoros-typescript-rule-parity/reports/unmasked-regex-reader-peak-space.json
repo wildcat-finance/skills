@@ -1,0 +1,9 @@
+{
+  "candidate": "unmasked-regex",
+  "command": "python3 .hexaemeron/design-probes/space.py unmasked-regex",
+  "criterion": "reader-peak-space",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 132667
+}

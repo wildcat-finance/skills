@@ -1,0 +1,9 @@
+{
+  "candidate": "forward-scan",
+  "command": "python3 .hexaemeron/design-probes/deps.py forward-scan",
+  "criterion": "stdlib-only",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
