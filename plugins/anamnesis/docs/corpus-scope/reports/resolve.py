@@ -10,6 +10,13 @@ construction (which document holds the scope, which pilot tokens it moves, how
 many corpora its acceptance rebuilds). Nothing here predicts an implementation
 that does not exist; where a value follows from the candidate's definition, the
 definition is data in this file and the report names this command.
+
+The report is printed. It is written only to a path named by ``--out``, which
+must not already exist, so a rerun from the committed copy can never replace a
+receipted report under ``.hexaemeron/reports/``. The ``pilot-artefacts-rebuilt``
+grep excludes ``plugins/anamnesis/docs``, which holds this run's own records:
+they quote the pilot's tokens without being pilot artefacts, so counting them
+would move the value each time a record is committed.
 """
 
 from __future__ import annotations
@@ -103,7 +110,7 @@ def sha256_file(path):
 
 def git_grep_files(token, scope="plugins/anamnesis"):
     completed = subprocess.run(
-        ["git", "grep", "-l", "-F", token, "--", scope],
+        ["git", "grep", "-l", "-F", token, "--", scope, ":(exclude)plugins/anamnesis/docs"],
         capture_output=True, text=True, check=False,
     )
     return {line.strip() for line in completed.stdout.splitlines() if line.strip()}
@@ -245,8 +252,14 @@ CRITERIA = {
 
 
 def main(argv):
+    out = None
+    if len(argv) == 4 and argv[2] == "--out":
+        argv, out = argv[:2], argv[3]
     if len(argv) != 2 or argv[0] not in CANDIDATES or argv[1] not in CRITERIA:
         print(__doc__, file=sys.stderr)
+        return 2
+    if out is not None and os.path.lexists(out):
+        print(f"resolve.py: refusing to replace {out}", file=sys.stderr)
         return 2
     candidate, criterion = argv
     value, unit = CRITERIA[criterion](candidate)
@@ -259,11 +272,11 @@ def main(argv):
         "command": f"python3 {REPORTS}/resolve.py {candidate} {criterion}",
         "exit": 0,
     }
-    path = os.path.join(REPORTS, f"{candidate}-{criterion}.json")
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(report, handle, indent=2, sort_keys=True)
-        handle.write("\n")
-    print(json.dumps({"candidate": candidate, "criterion": criterion, "value": value, "unit": unit}))
+    body = json.dumps(report, indent=2, sort_keys=True) + "\n"
+    if out is not None:
+        with open(out, "x", encoding="utf-8") as handle:
+            handle.write(body)
+    print(body, end="")
     return 0
 
 

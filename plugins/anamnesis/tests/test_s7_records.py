@@ -7,6 +7,9 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 
@@ -17,7 +20,9 @@ REPORTS = RECORD_DIR / "reports"
 RESOLVER = REPORTS / "resolve.py"
 STUDY = PLUGIN_ROOT / "docs/corpus-scope-study.md"
 RUNBOOK = PLUGIN_ROOT / "docs/corpus-scope-runbook.md"
-CONTROLLER = PLUGIN_ROOT.parents[1] / ".hexaemeron"
+WORKTREE = PLUGIN_ROOT.parents[1]
+CONTROLLER = WORKTREE / ".hexaemeron"
+REBUILT = "pilot-artefacts-rebuilt"
 
 CONCERNS = {"correctness", "time", "space", "compatibility", "recovery"}
 CANDIDATES = {
@@ -107,6 +112,61 @@ class CommittedDesignRecord(unittest.TestCase):
         for name in CANDIDATES | CRITERIA:
             with self.subTest(name=name):
                 self.assertIn(f'"{name}"', source)
+
+
+def scratch_directory(prefix: str = "anamnesis-s7-"):
+    """Transient space under the ignored top-level tmp/, which git never sees."""
+    scratch = WORKTREE / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
+
+class ResolverReproducesTheCommittedCounts(unittest.TestCase):
+    """S1-R1-01 and S1-R1-02: the committed resolver reruns to the recorded
+    values from the repository root and writes into no controller state."""
+
+    def setUp(self) -> None:
+        holder = scratch_directory()
+        self.addCleanup(holder.cleanup)
+        self.scratch = Path(holder.name)
+
+    def committed_value(self, candidate: str):
+        report = REPORTS / f"{candidate}-{REBUILT}.json"
+        return json.loads(report.read_text(encoding="utf-8"))["value"]
+
+    def run_resolver(self, *arguments: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, str(RESOLVER), *arguments],
+            cwd=WORKTREE, capture_output=True, text=True,
+        )
+
+    def test_the_rebuilt_counts_rerun_to_their_recorded_values(self) -> None:
+        for candidate in sorted(CANDIDATES):
+            out = self.scratch / f"{candidate}.json"
+            with self.subTest(candidate=candidate):
+                completed = self.run_resolver(candidate, REBUILT, "--out", str(out))
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                printed = json.loads(completed.stdout)
+                written = json.loads(out.read_text(encoding="utf-8"))
+                self.assertEqual(printed["value"], self.committed_value(candidate))
+                self.assertEqual(written, printed)
+                self.assertEqual(written["schema"], "protasis-design-report/v1")
+
+    def test_a_rerun_without_out_writes_no_report(self) -> None:
+        target = CONTROLLER / "reports" / f"release-policy-scope-{REBUILT}.json"
+        before = target.read_bytes() if target.is_file() else None
+        completed = self.run_resolver("release-policy-scope", REBUILT)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        after = target.read_bytes() if target.is_file() else None
+        self.assertEqual(after, before)
+        self.assertEqual(json.loads(completed.stdout)["value"], self.committed_value("release-policy-scope"))
+
+    def test_an_existing_out_path_is_refused_rather_than_replaced(self) -> None:
+        out = self.scratch / "taken.json"
+        out.write_text("{}\n", encoding="utf-8")
+        completed = self.run_resolver("widen-constant", REBUILT, "--out", str(out))
+        self.assertEqual(completed.returncode, 2)
+        self.assertEqual(out.read_text(encoding="utf-8"), "{}\n")
 
 
 class CommittedCopiesAreTheReceiptedArtefacts(unittest.TestCase):
