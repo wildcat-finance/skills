@@ -2208,6 +2208,29 @@ class CodeHashRecheckTests(ReleaseTestCase):
         with self.assertRaisesRegex(AlexandriaError, "lacks its traces component"):
             self.check_without_verify(output)
 
+    def test_a_journal_record_whose_request_or_response_is_not_text_is_refused_by_name(self):
+        """A release is somebody else's bytes: a number where text belongs refuses by name."""
+        for component, field in ((OPENING_CLASS, "request"), ("logs", "response")):
+            with self.subTest(component=component, field=field):
+                output = self.released(f"not-text-{component}-{field}")
+                self.rewrite(
+                    output, component,
+                    lambda document: document["records"][0].__setitem__(field, 5),
+                )
+                raised = None
+                try:
+                    self.check_without_verify(output)
+                except Exception as error:  # noqa: BLE001 - the type is the claim
+                    raised = error
+                # A parent that reads the field without checking it raises an
+                # AttributeError here, which is why the type is asserted rather
+                # than matched: the claim is a named refusal, not any failure.
+                self.assertIsInstance(raised, AlexandriaError)
+                self.assertRegex(
+                    str(raised),
+                    f"a {component} journal record carries a {field} that is not text",
+                )
+
     def test_an_epoch_table_the_opening_reads_do_not_derive_is_refused(self):
         output = self.released("undeclared-epoch")
 

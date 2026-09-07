@@ -85,7 +85,7 @@ CODE_COMPONENT = "implementation-code"
 CODE_FORMAT = "alexandria-interval-implementation-code/v1"
 RELEASE_NAME = "usdc-interval-v0"
 # The components every interval release carries beside its journals: one per
-# declared evidence class, the opening-read journal, and these seven.
+# declared evidence class, the opening-read journal, and these six.
 FIXED_COMPONENTS = (
     "epoch-table", "error-receipts", CODE_COMPONENT, "interval-plan",
     "reconciliation", "registry",
@@ -1608,6 +1608,15 @@ def check_interval(release_root: Path) -> dict:
         for record in journal["records"]:
             if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"}:
                 raise AlexandriaError(f"a {name} journal record has an unknown shape")
+            # The request and the response are read as text further down, by
+            # `_replay_release_opening` and by the count derivation. A release
+            # is somebody else's bytes, so the type is checked here rather
+            # than discovered as an attribute error on a number.
+            for field in ("request", "response"):
+                if not isinstance(record[field], str):
+                    raise AlexandriaError(
+                        f"a {name} journal record carries a {field} that is not text"
+                    )
             if record["class"] != name:
                 raise AlexandriaError(
                     f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
