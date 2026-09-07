@@ -31,22 +31,18 @@ entry points patched to refuse use. Its one canonical JSON event reports
 receipts, zero proved relations, and the canonical empty trie root
 `0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421`.
 
-| Identity | SHA-256 |
-| --- | --- |
-| Fixture | `da15f6d08676c826d36564e59c5ebc2e9388d7dc5bd5f8f3e5a6d31e376bd044` |
-| Manifest file | `924a75fb58bb5f2045d725c28e4889886bb486b4f646cac809615888e4300fcb` |
-| State-fixture/v2 statement | `a01d28bc205896bc1073f9ce443e3eb5886bb13dca65a23ee561f226ec257bd9` |
-| Release-v2 | `ada99a120f0f7f1cc3900319a4fc7d948153ffe24f7c7ebbecc64a3e3fe0b650` |
+- Fixture: `da15f6d08676c826d36564e59c5ebc2e9388d7dc5bd5f8f3e5a6d31e376bd044`.
+- Manifest file: `924a75fb58bb5f2045d725c28e4889886bb486b4f646cac809615888e4300fcb`.
+- State-fixture/v2 statement: `a01d28bc205896bc1073f9ce443e3eb5886bb13dca65a23ee561f226ec257bd9`.
+- Release-v2: `ada99a120f0f7f1cc3900319a4fc7d948153ffe24f7c7ebbecc64a3e3fe0b650`.
 
 Five hostile copies change fixture or release bytes and are rejected:
 
-| Mutation | Guarded boundary |
-| --- | --- |
-| Non-empty root | An empty witness requires Ethereum's empty trie root. |
-| Mixed shape | Empty and scoped fields cannot coexist. |
-| Count inflation | Recomputed zero cannot become one by manifest assertion. |
-| Component digest | Changed component bytes fail their manifest binding. |
-| Release count | Release-v2 cannot change the verified zero count. |
+- Non-empty root: an empty witness requires Ethereum's empty trie root.
+- Mixed shape: empty and scoped fields cannot coexist.
+- Count inflation: recomputed zero cannot become one by manifest assertion.
+- Component digest: changed component bytes fail their manifest binding.
+- Release count: release-v2 cannot change the verified zero count.
 
 ## Existing-format compatibility
 
@@ -61,12 +57,10 @@ two-log projection, and two proved relations. Its receipt, index, log, root,
 count, and release mutations are rejected. Historical fixture bytes remain
 fixed at these digests:
 
-| Historical identity | SHA-256 |
-| --- | --- |
-| Fixture | `986287699f6e327be412b1503b7dfacec34faeff77b3bbb763215f274dc6f59f` |
-| Manifest file | `1be58bdeb2312b24ab7958fcdd7a5304a902d81ec7b6491d9cc5d7a0efff8bb3` |
-| Statement file | `cb5cfae539f91d814dcee0ddddf13f4fb60a03f2b17c1b7581f330a8353438ef` |
-| Release file | `de4eb122aa84c589bdd0c7370f43e01845d4b733bcf61599f6b9893d41c5be4e` |
+- Fixture: `986287699f6e327be412b1503b7dfacec34faeff77b3bbb763215f274dc6f59f`.
+- Manifest file: `1be58bdeb2312b24ab7958fcdd7a5304a902d81ec7b6491d9cc5d7a0efff8bb3`.
+- Statement file: `cb5cfae539f91d814dcee0ddddf13f4fb60a03f2b17c1b7581f330a8353438ef`.
+- Release file: `de4eb122aa84c589bdd0c7370f43e01845d4b733bcf61599f6b9893d41c5be4e`.
 
 ## Guards and governed state
 
