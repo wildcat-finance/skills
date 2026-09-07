@@ -646,7 +646,18 @@ def aggregate(spread: dict, rule: str) -> float:
 
     Read out of the spread rather than computed a second way, so the block value
     and the spread beside it cannot disagree (study risk `aggregation-declared`).
+
+    A rule outside `AGGREGATIONS` is refused rather than falling through to one
+    of them. `timed_run` writes whatever name it was handed into
+    `recorder.aggregation`, so a fallback would produce a file naming an
+    aggregation its number is not, which is the one thing this risk is about.
+    Argparse holds the command line to the same two; this holds every other
+    caller of `timed_run` to them as well.
     """
+    if rule not in AGGREGATIONS:
+        raise BudgetError(
+            f"--aggregate must be one of {', '.join(AGGREGATIONS)}, got {rule!r}"
+        )
     return spread["p50"] if rule == "median" else spread["p95"]
 
 
