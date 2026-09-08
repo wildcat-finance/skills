@@ -1504,3 +1504,52 @@ the folded test already implements this shape.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-08
+
+**What changed.** Complete replacement Tests: In
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`:
+`test_archive_reference_names_every_refusal_class_and_fixture_id` (the
+reference's 24 refusal classes and 35 fixture ids equal the sets in
+`docs/fiat-checkpoint-archive-study.md` sections 4 and 5, and every other value
+the Exit requires the reference to state equals what the study states: the six
+schema names, the nine entry paths, each manifest field row, the seven ceiling
+values, the zip metadata rule including entry mode `0100644`, the `git -c
+pack.threads=1 bundle create` determinism rule, the six secret patterns, the
+sidecar two-space rule and the `acceptance/current` rule, against the study's
+assumption list and sections 1, 3, 4, 5 and 6; the reference's `## Restore
+transaction` heading is pinned as a structural assertion over the reference
+alone, because section 12 names the restore transaction among that contract's
+contents without stating its content, and the native restore object name
+`fiat-controller-checkpoint-restore/v1` and the restore result's `outer_sha256`
+member are pinned the same way, because the study states neither: `grep -c
+fiat-controller-checkpoint-restore .hexaemeron/study.md` returns 0, and
+`outer_sha256` appears in the study only in the export result, the inspect
+result and section 8's first answer, never as a member of a restore result; a
+mutation of any one of those values, and a deletion of any one of them, fails
+the test) and `test_archive_budgets_declare_the_six_measured_limits`. In
+`tests/test_fiat_checkpoint_archive_record.py`:
+`test_run_artefacts_point_to_the_draft_record_and_adr_028_and_are_not_the_decision`,
+`test_adr_028_amendment_points_at_the_draft_record_and_stays_accepted` and
+`test_draft_record_states_the_three_commands_and_the_rejected_designs`, with a
+dead-relative-link check over both tracked artefacts. Five new tests; existing
+suites unchanged. For any audit repair, run `python3
+plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; report
+format `unittest-json-v1`; expected schema `elenchus.unittest.v1`; report file
+`.elenchus/fiat-861-step-1.json`. A missing, stale, empty, malformed, zero-test
+or infrastructure-failed report is `inconclusive`.
+**Why.** Round 6 finding S1-R6-03: four values the Exit requires the reference
+to state had no counterpart in the sections this field bound parity to, so no
+test the step may add could pin them and the residues of S1-R6-01 and S1-R6-02
+could not close. Checked against the study: the two boundary directory names
+are in assumption 5 at lines 26 and 27 and in section 6's glossary at line 660,
+both outside sections 1, 3, 4 and 5, so the section list widens to reach them;
+the native restore object name and the restore result's `outer_sha256` member
+are in the study nowhere, so they join `## Restore transaction` as
+reference-side structural assertions. This is round 4's S1-R4-03 shape and
+takes the same two remedies. No count, command, path or criterion outside this
+field moves.
+**Steps touched.** Step 1 Tests.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.

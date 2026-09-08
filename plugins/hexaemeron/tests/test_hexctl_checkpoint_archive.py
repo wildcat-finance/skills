@@ -9,27 +9,30 @@ reads and a specification the study fixed, disagreeing.
 The first test holds the reference to that study, item for item: the 24 refusal
 classes of study section 4 and the 35 hostile fixture ids on section 5's risk
 register `hostile-fixture-set` line, then the six schema names, the nine entry
-paths, the store path fence, the thirteen closed manifest fields with the
-content each is closed to, the seven ceiling values, the zip metadata rule
-including the entry mode, the bundle determinism command, the six secret
-patterns, the closed fields of the export, inspect, signature-proof and
-restore-transcript result objects, the sidecar two-space rule and the
-`acceptance/current` rule, against study sections 1, 3, 4 and 5.
+paths, the store path fence, the two boundary directory names, the thirteen
+closed manifest fields with the content each is closed to, the seven ceiling
+values, the zip metadata rule including the entry mode, the bundle determinism
+command, the six secret patterns, the closed fields of the export, inspect,
+signature-proof and restore-transcript result objects, the sidecar two-space
+rule and the `acceptance/current` rule, against the study's assumption list and
+sections 1, 3, 4, 5 and 6.
 
-Two assertions are over the reference alone, because the study states no
+The two documents abbreviate the boundary directories' head placeholder
+differently, `<sha>` in the study's assumption 5 and its section 6 glossary
+against `<full-head-sha>` in the reference, so each name is compared as the
+stem before that placeholder, and the reference's own placeholder is held equal
+to the one its store path fence uses -- a fence asserted equal to the study's,
+which binds the placeholder to study section 1.
+
+Four assertions are over the reference alone, because the study states no
 counterpart to compare: the `## Restore transaction` heading, which study
-section 12 names among this contract's contents without stating any of it, and
-each path the manifest's `joined against` column names, which must be a path
-the layout fence states -- and that fence is held equal to the study's, so the
-join is bound to study section 1 through it.
-
-Three values the Exit requires the reference to state are pinned by nothing
-here, because study sections 1, 3, 4 and 5 state no counterpart for them: the
-two boundary directory names, which the study states in its assumption 5 and
-its section 6 glossary, and the restore result's native
-`fiat-controller-checkpoint-restore/v1` object name and `outer_sha256`, which
-the study states nowhere. The restore result is bounded instead: the four
-members study section 1 does state must be among the reference's.
+section 12 names among this contract's contents without stating any of it; the
+restore result's native `fiat-controller-checkpoint-restore/v1` object name and
+its `outer_sha256` member, which the study states nowhere; and each path the
+manifest's `joined against` column names, which must be a path the layout fence
+states -- and that fence is held equal to the study's, so the join is bound to
+study section 1 through it. The restore result is bounded against the study as
+well: the four members section 1 does state must be among the reference's.
 
 A class missing from the reference is a refusal nobody tests; an id missing is
 a specimen nobody builds; a drifted ceiling, pattern or closed field is the
@@ -172,6 +175,22 @@ SIDECAR_ONE_SPACE = r"`<64 lowercase hex> checkpoint.zip\n`"
 STORE_PATH_ANCHOR = "The store path is derived from controller state and never supplied:"
 STUDY_STORE_PATH_ANCHOR = "publishes with a no-replace rename:"
 
+# The two boundary directory names, in the order both documents state them.
+# The name splits into the stem before its head placeholder and the
+# placeholder itself, because the study's prose abbreviates `<full-head-sha>`
+# to `<sha>` and the stem is what the two documents can be held equal on. The
+# optional segments are written out so a dropped `loop-<l>-` still parses and
+# fails as a stem that does not match, rather than passing as no match at all.
+BOUNDARY_NAME = re.compile(r"^((?:audit-verdict-)?step-.*?-)(<[^<>]+>)$")
+EXPECTED_BOUNDARY_STEMS = ("step-<n>-", "audit-verdict-step-<n>-loop-<l>-")
+BOUNDARY_SENTENCE_ANCHOR = "The two boundary directory names are"
+BOUNDARY_SENTENCE_END = "The sidecar is"
+STUDY_BOUNDARY_ASSUMPTION_ANCHOR = "5. Both accepted ADR-028 boundaries are in scope:"
+STUDY_BOUNDARY_ASSUMPTION_END = "\n6. "
+STUDY_GLOSSARY_HEADING = "6. Glossary seeds"
+STUDY_GLOSSARY_BOUNDARY_ANCHOR = "- **Boundary directory:**"
+STUDY_GLOSSARY_BOUNDARY_END = "\n- "
+
 # The closed fields of four of the five result objects. Each is a paragraph of
 # the reference's `## Results and proof` and a bullet or sentence of the study,
 # wrapped and punctuated differently, so the slices below are compared as
@@ -213,13 +232,17 @@ RESULT_OBJECTS = (
     ),
 )
 
-# The fifth result object is bounded rather than compared field for field. The
-# reference states six members; study section 1 states four of them and states
-# neither the native object's schema name nor `outer_sha256`, so those two are
-# outside any parity this test can assert against sections 1, 3, 4 and 5.
+# The fifth result object is bounded against the study rather than compared
+# field for field. The reference states six members; study section 1 states
+# four of them and states neither the native object's schema name nor
+# `outer_sha256`, so those two are pinned over the reference alone below. The
+# native object carries its qualifier into the assertion: an object of that
+# name that is not the controller's own is a different contract.
 RESTORE_RESULT_ANCHOR = "`fiat-checkpoint-archive-restore/v1`, from `restore --archive`:"
 STUDY_RESTORE_RESULT_ANCHOR = "relocation transaction with the manifest digest, recomputes"
 STUDY_RESTORE_RESULT_END = " prints one"
+NATIVE_RESTORE_OBJECT = "the native `fiat-controller-checkpoint-restore/v1` object"
+RESTORE_OUTER_DIGEST_MEMBER = "outer_sha256"
 
 RESTORE_HEADING = "Restore transaction"
 ACCEPTANCE_OUTSIDE = "`current` is the literal `outside`"
@@ -359,6 +382,23 @@ def secret_spans(text: str) -> list[str]:
     return code_spans(text)
 
 
+def boundary_names(candidates: list[str], what: str) -> list[tuple[str, str]]:
+    """Every boundary directory name among `candidates`, in written order.
+
+    Each is returned as its stem and its head placeholder, so the two can be
+    held against different evidence: the stem against the other document, the
+    placeholder against the store path fence.
+    """
+    found = [
+        (match.group(1), match.group(2))
+        for match in (BOUNDARY_NAME.match(candidate) for candidate in candidates)
+        if match
+    ]
+    if not found:
+        raise AssertionError(f"{what}: no boundary directory name is stated")
+    return found
+
+
 def study_fixture_ids(study: str) -> set[str]:
     """The whitespace-separated ids after `one test per id:` in the register."""
     for line in study.splitlines():
@@ -419,10 +459,79 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         # directory, a moved boundary segment or a changed sidecar suffix in
         # one document and not the other fails here.
         reference_store = section(reference, "Store path and boundaries")
+        reference_store_fence = fenced_block(
+            reference_store, STORE_PATH_ANCHOR, "reference store path fence"
+        )
         self.assertEqual(
             fenced_block(problem, STUDY_STORE_PATH_ANCHOR, "study section 1 store path fence"),
-            fenced_block(reference_store, STORE_PATH_ANCHOR, "reference store path fence"),
+            reference_store_fence,
         )
+
+        # The two boundary directory names, which the study states in its
+        # assumption 5 and again in its section 6 glossary. Each document must
+        # name both, in order, with the same stem: dropping `loop-<l>-` gives
+        # one directory for every audit loop of a step, and the section above
+        # states that an existing boundary directory is never replaced, so an
+        # exporter built from that reference would refuse the second loop as
+        # occupied rather than publish it.
+        boundary_slices = (
+            (
+                "reference",
+                anchored(
+                    flat(reference_store),
+                    BOUNDARY_SENTENCE_ANCHOR,
+                    BOUNDARY_SENTENCE_END,
+                    "reference boundary directory names",
+                ),
+            ),
+            (
+                "study assumption 5",
+                anchored(
+                    study,
+                    STUDY_BOUNDARY_ASSUMPTION_ANCHOR,
+                    STUDY_BOUNDARY_ASSUMPTION_END,
+                    "study assumption 5 boundary directory names",
+                ),
+            ),
+            (
+                "study section 6",
+                anchored(
+                    section(study, STUDY_GLOSSARY_HEADING),
+                    STUDY_GLOSSARY_BOUNDARY_ANCHOR,
+                    STUDY_GLOSSARY_BOUNDARY_END,
+                    "study section 6 boundary directory glossary",
+                ),
+            ),
+        )
+        stated = {}
+        for name, block in boundary_slices:
+            with self.subTest(document=name, value="boundary directory names"):
+                stated[name] = boundary_names(
+                    code_spans(block), f"{name} boundary directory names"
+                )
+                self.assertEqual(
+                    list(EXPECTED_BOUNDARY_STEMS),
+                    [stem for stem, _ in stated[name]],
+                )
+
+        # The reference's own head placeholder, held against the fence it
+        # states two lines earlier -- the fence asserted equal to the study's
+        # just above. `step-<n>-<head-sha>` in the prose beside
+        # `step-<n>-<full-head-sha>` in the fence is one contract naming two
+        # different directories for one boundary.
+        fence_placeholders = sorted(
+            {
+                placeholder
+                for _, placeholder in boundary_names(
+                    [line.split("/", 1)[0] for line in first_column(reference_store_fence)],
+                    "reference store path fence boundary directory",
+                )
+            }
+        )
+        self.assertEqual(1, len(fence_placeholders), fence_placeholders)
+        for stem, placeholder in stated["reference"]:
+            with self.subTest(boundary=stem, value="head placeholder"):
+                self.assertEqual(fence_placeholders[0], placeholder)
 
         # The thirteen closed manifest fields (study section 1). The reference
         # states them as table rows and the study as one sentence, so the rows
@@ -601,10 +710,12 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                     code_spans(anchored(results, start, end, f"reference {what} fields")),
                 )
 
-        # The restore result, bounded rather than compared field for field.
-        # Study section 1 states four of its six members and states neither the
-        # native object's schema name nor `outer_sha256`, so those four must be
-        # among the reference's and the other two are pinned by nothing here.
+        # The restore result. Study section 1 states four of its six members,
+        # so those four are a bound on the reference's rather than a
+        # field-for-field comparison.
+        reference_restore = anchored(
+            results, RESTORE_RESULT_ANCHOR, "\n\n", "reference restore result"
+        )
         self.assertLessEqual(
             set(
                 code_spans(
@@ -616,13 +727,19 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                     )
                 )
             ),
-            set(
-                code_spans(
-                    anchored(results, RESTORE_RESULT_ANCHOR, "\n\n", "reference restore result")
-                )
-            ),
+            set(code_spans(reference_restore)),
             "the reference's restore result drops a member study section 1 states",
         )
+
+        # Its other two members are pinned over the reference alone, because
+        # the study states neither: `fiat-controller-checkpoint-restore` does
+        # not appear in it, and `outer_sha256` appears only in the export
+        # result, the inspect result and section 8's first answer, never as a
+        # member of a restore result. The native object is pinned with its
+        # qualifier, because an object of that name that is not the
+        # controller's own is a different contract to build against.
+        self.assertIn(NATIVE_RESTORE_OBJECT, flat(reference_restore))
+        self.assertIn(RESTORE_OUTER_DIGEST_MEMBER, code_spans(reference_restore))
 
         # The `## Restore transaction` heading, which is where the reference
         # states the transaction the Exit requires it to state.
