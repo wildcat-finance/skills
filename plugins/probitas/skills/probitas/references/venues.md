@@ -54,7 +54,8 @@ checks. Goldfinch and Clearpool archive coverage remains separate.
 | Clearpool | Live, behind a bot challenge returning 403. An agreement is the way in, not a workaround |
 | TrueFi | Restructured through a token migration completing May 2026; no public endpoint answered |
 
-Five prior probes found keyless routes. Other probes encountered key, bot
+Five of the ten unbuilt adapter routes had keyless sources in the recorded
+probes. Other probes encountered key, bot
 protection or documentation gaps; a new adapter must verify its current source.
 
 ## The five venues read differently, and the dossier says so

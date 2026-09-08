@@ -2386,8 +2386,8 @@
         52
       ],
       "line_encoding": "individual line numbers",
-      "final_sha256": "eb559f82b936897dffd14947d5f93dc63c37030f220567b91aaf90e1f960747f",
-      "final_bytes": 3167,
+      "final_sha256": "eb7c043a3373e9ec39ee112de51f39d8b12dc63fb8614937e69b713d49218176",
+      "final_bytes": 3156,
       "candidate_review": "full candidate diff read; unchanged context retained"
     },
     {
@@ -2514,8 +2514,8 @@
         116
       ],
       "line_encoding": "individual line numbers",
-      "final_sha256": "0f338d342b67709e5bbd8f5c7f2a859464d195f68cfa55c96ceabdfc44ba6025",
-      "final_bytes": 13882,
+      "final_sha256": "4306d0ebe1e4c9818ce5a4c83af6d77cc4ccae58382c90c42652164e0b5b9095",
+      "final_bytes": 13871,
       "candidate_review": "full candidate diff read; unchanged context retained"
     },
     {
@@ -14614,8 +14614,8 @@
         363
       ],
       "line_encoding": "individual line numbers",
-      "final_sha256": "5895b3026a96711aa9b9b2808ae7fc733fff3f4f317c231612c949ac7273f69a",
-      "final_bytes": 20348,
+      "final_sha256": "6ce819ca00d948810755500514dea4523b94b48793ea0e34a4fddbbc9c3641b5",
+      "final_bytes": 20371,
       "candidate_review": "full candidate diff read; unchanged context retained"
     },
     {
@@ -16153,8 +16153,8 @@
         149
       ],
       "line_encoding": "individual line numbers",
-      "final_sha256": "26b948a99dd07640346d029ae97a545ca040c5775af38f3d3f7eb50c879b3f66",
-      "final_bytes": 9081,
+      "final_sha256": "e44b80ea475d756174de4663024137038b9cdb4fbce16a1ddc0eaee0107e2d9c",
+      "final_bytes": 9124,
       "candidate_review": "full candidate diff read; unchanged context retained"
     },
     {

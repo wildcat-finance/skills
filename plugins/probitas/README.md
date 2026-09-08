@@ -281,7 +281,8 @@ clean history.
 
 ## VENUES
 
-Fifteen venues are registered and five have adapters. Every requested route
+Fifteen venues are registered and five have adapters; the other ten have no
+adapter. Every requested route
 records its coverage or gap; verified Alexandria releases can separately supply
 Goldfinch and Clearpool through the archive route. The unbuilt-adapter notes
 below record prior probes, not current endpoint availability or entitlement.
@@ -310,7 +311,7 @@ refused because its account-attributed debt units are unproved. An overdue
 maturity closed by liquidation reads as settled late through liquidation, never
 as voluntary repayment.
 
-The recorded probes found five unbuilt adapter routes reachable without a key:
+Five of the ten gaps had keyless source routes in the recorded probes:
 Centrifuge, both Aave versions and Morpho's two other surfaces. The remaining
 probe gaps concerned keys, schemas or agreements. A new adapter still needs
 current source verification and its own evidence contract.

@@ -31,7 +31,12 @@ retaining generation 2 and epoch 0. Its completed release frontier is mature.
 The demonstration remains mixed because its answers are authored records;
 no model execution was supplied. Its existing actual-agent-answer job remains
 open. Sibling skill frontiers, versions and held jobs remain unchanged.
-Installed package patch counters advance for changed shipped sources.
+Independent package patch counters advance for changed shipped sources.
+Dokimasia retains package `3.1.0` and Homologia retains package `1.1.0`: their
+owner checks bind those package identities to their unchanged runtime versions.
+A version-only update will not refresh their changed prose. Reinstall those
+packages through the host’s supported installer and verify the recorded pin,
+as the Fiat plugin-currency contract requires for a behind install.
 
 All 18 Codex manifest description and interface summaries also received a
 structured-field prose review. Anamnesis now distinguishes its separately
