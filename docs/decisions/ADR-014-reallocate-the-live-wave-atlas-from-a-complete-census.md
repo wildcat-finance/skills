@@ -99,6 +99,109 @@ misstates what happened to the superseded alpha, beta, and Handover milestones.
 That correction needs its own amendment and a decision about whether closed
 issues should carry a Wave at all.
 
+## Amendment: Titles are in scope, and a refresh reuses the milestones it has (2026-09-08)
+
+The Context section lists titles among the surfaces outside the authorised
+mutation. That is wrong, and the maintainer corrected it on 2026-09-08. A title
+is where an issue declares its queue, so a census that may not touch titles
+cannot repair the one field the queue is read from.
+
+This amendment authorises two further mutations and withdraws one instruction.
+
+1. **An open issue's title may be edited to make it name its queue.** The four
+   forms are `{skill}-next: <summary>`, `{skill}-N: <summary>`,
+   `{skill}-wish: <summary>` and `framework-N: <summary>`, and
+   `hexctl issue-check` is the reader. The filed symptom carries over verbatim;
+   only the queue token and the separator are the census's to write.
+2. **A queue label may be corrected to the one the title's queue requires.**
+   The label set is mutually exclusive: `held-job` for `{skill}-next`, `wish`
+   for `{skill}-N`, `observation` for `framework-N`, and no queue label for
+   `{skill}-wish`. Every other label stays outside the mutation, as before.
+3. **Step 4's instruction to create fresh active milestones is withdrawn for a
+   refresh.** It reads "Create fresh active milestones instead of retitling the
+   prior beta milestones", which was right for the one-time move off the alpha
+   and beta queues and is wrong every time after: run repeatedly it grows the
+   milestone list rather than refreshing it, and Waves 19 to 22 were added that
+   way on 2026-09-06 on top of Wave 0 to 18, Δ, μ and Π. A refresh assigns into
+   the milestones that already exist. Creating a Wave now needs its own
+   decision.
+
+Filing prose outside the delimited status block is still never rewritten, and
+`framework-N` numbers are still assigned by hand, which is the defect recorded
+below rather than something this amendment fixes.
+
+### What was done under this amendment
+
+Read at `wildcat-finance/skills@f0ef9266` on 2026-09-08 across 269 open issues,
+with the filing contract as it landed in `0ad3e363` on 2026-09-05.
+
+- 70 titles took `: ` where an em or en dash stood between the queue token and
+  the summary. No summary changed and no numbered token moved.
+- 32 titles that carried no queue token were given one: 25 became
+  `framework-124` through `framework-148` with the `observation` label, and 7
+  became `{skill}-wish` under the skill whose code the filing names.
+- 4 `framework-N` numbers that named two open issues each were reassigned to
+  `framework-110` through `framework-123`, together with 10 observations that
+  had no number. `framework-64`, `-74`, `-76` and `-107` now resolve to one
+  issue. `framework-73` was left alone: its duplicate is closed and the four
+  citations in `plugins/dokimasia/docs/` pin the open issue by URL.
+- 7 queue labels were corrected, and #869's bare `elenchus-wish` title gained
+  the summary its body states.
+- 97 open issues that carried no Wave were assigned into 18 existing
+  milestones. The repository held 26 milestones before and after; none was
+  created, retitled or closed.
+- 6 status blocks were written recording what `main` had already answered, on
+  #882, #887, #901, #950, #1221 and #1300. The filing prose below each block
+  was read back and is unchanged.
+
+Contract-clean open issues went from 49 to 122 of the 269 open when the census
+was read. Four observations were then filed from what it found, and the reader
+change this amendment authorises clears the whole `framework-N` opening class,
+which takes the count to 208 of 273.
+
+What is left is 54 `kickoff/` titles, which need the fifth queue form named
+below, and 11 bodies missing a `Fiat-Required` line or a `carryover` block.
+Those 11 are body edits rule 3 still forbids, and unlike the opening they
+cannot be relaxed: `init` refuses on both, so the issue is unstartable rather
+than merely unchecked. They need their own decision.
+
+### The `framework-N` body opening binds a candidate, not a filed issue
+
+The contract requires such a body to open with exactly "Protasis decides which
+skill or skills this observation upgrades. The filer is the wrong party to
+guess.", and 90 open bodies do not carry that sentence at all. Rule 3 above
+keeps filing prose unrewritten, so the contract was refusing bodies it is not
+permitted to repair.
+
+The maintainer settled this on 2026-09-08: the rule is prospective, and it binds
+a candidate rather than an issue that is already filed. `issue-check --body`
+enforces the opening, because a candidate can still be edited before it is
+published. `issue-check --issue` does not, because that body is a filed record
+this document protects.
+
+Reading the rule this way rather than by filing date is what keeps the two
+readers agreeing. A date rule needs the issue's creation time, which only the
+REST path carries, so `--body` could not apply it at all; and it would still
+leave 13 filed bodies faulting on a sentence nothing may insert. The candidate
+reading needs no date, no exemption list and no edit to a filed body, and it
+refuses the next badly-formed filing exactly as before.
+
+Nothing here weakens the rule for new work. A `framework-N` issue filed after
+this is checked before it is published, which is the only moment the sentence
+can still be added.
+
+The kickoff queue is a separate matter. 54 open issues are titled
+`kickoff/{skill}-{n}: <summary>` and every one was filed after the contract
+landed, so none of them is legacy drift. They cannot become `{skill}-next`,
+because that queue is one held job per skill ledger, and calling them
+`{skill}-N` would file frontier work as wishes. They are a fifth queue, and they
+now carry a `kickoff` label created for them on 2026-09-08. Registering that
+queue is a change to the contract in `hexctl`, not to this record.
+
+Nothing here assigns a `framework-N` number automatically, and nothing here
+checks that two issues do not share one. That gap is what produced the six
+collisions above.
+
 ## Alternatives
 
 - **Patch only the issues added since the previous census.** This would be
