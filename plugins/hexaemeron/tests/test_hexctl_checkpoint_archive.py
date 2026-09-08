@@ -9,10 +9,12 @@ reads and a specification the study fixed, disagreeing.
 The first test holds the reference to that study, item for item: the 24 refusal
 classes of study section 4 and the 35 hostile fixture ids on section 5's risk
 register `hostile-fixture-set` line, then the six schema names, the nine entry
-paths, the thirteen closed manifest fields with the content each is closed to,
-the seven ceiling values, the zip metadata rule including the entry mode, the
-bundle determinism command, the six secret patterns, the sidecar two-space rule
-and the `acceptance/current` rule, against study sections 1, 3, 4 and 5.
+paths, the store path fence, the thirteen closed manifest fields with the
+content each is closed to, the seven ceiling values, the zip metadata rule
+including the entry mode, the bundle determinism command, the six secret
+patterns, the closed fields of the export, inspect, signature-proof and
+restore-transcript result objects, the sidecar two-space rule and the
+`acceptance/current` rule, against study sections 1, 3, 4 and 5.
 
 Two assertions are over the reference alone, because the study states no
 counterpart to compare: the `## Restore transaction` heading, which study
@@ -20,6 +22,14 @@ section 12 names among this contract's contents without stating any of it, and
 each path the manifest's `joined against` column names, which must be a path
 the layout fence states -- and that fence is held equal to the study's, so the
 join is bound to study section 1 through it.
+
+Three values the Exit requires the reference to state are pinned by nothing
+here, because study sections 1, 3, 4 and 5 state no counterpart for them: the
+two boundary directory names, which the study states in its assumption 5 and
+its section 6 glossary, and the restore result's native
+`fiat-controller-checkpoint-restore/v1` object name and `outer_sha256`, which
+the study states nowhere. The restore result is bounded instead: the four
+members study section 1 does state must be among the reference's.
 
 A class missing from the reference is a refusal nobody tests; an id missing is
 a specimen nobody builds; a drifted ceiling, pattern or closed field is the
@@ -158,6 +168,59 @@ EXPECTED_PEM_PROSE = "PEM private-key block"
 SIDECAR_SPAN = r"`<64 lowercase hex>  checkpoint.zip\n`"
 SIDECAR_ONE_SPACE = r"`<64 lowercase hex> checkpoint.zip\n`"
 
+# The store path fence, stated the same way in both documents.
+STORE_PATH_ANCHOR = "The store path is derived from controller state and never supplied:"
+STUDY_STORE_PATH_ANCHOR = "publishes with a no-replace rename:"
+
+# The closed fields of four of the five result objects. Each is a paragraph of
+# the reference's `## Results and proof` and a bullet or sentence of the study,
+# wrapped and punctuated differently, so the slices below are compared as
+# ordered code spans. `NO_RAW_GPG` bounds the signature proof because the
+# reference alone goes on to name `push.verified_commits`.
+NO_RAW_GPG = "No raw `gpg` output."
+RESULT_OBJECTS = (
+    (
+        "export result",
+        "`fiat-checkpoint-archive-export/v1`, from `archive`:",
+        "\n\n",
+        "options",
+        "- Export result `fiat-checkpoint-archive-export/v1`:",
+        "\n- ",
+    ),
+    (
+        "inspect result",
+        "`fiat-checkpoint-inspect/v1`, from `inspect`:",
+        "\n\n",
+        "options",
+        "- Inspect result `fiat-checkpoint-inspect/v1`:",
+        "\n- ",
+    ),
+    (
+        "signature proof",
+        "`fiat-checkpoint-signature-proof/v1`, the `proof/signatures.json` member:",
+        NO_RAW_GPG,
+        "options",
+        "- Signature proof `fiat-checkpoint-signature-proof/v1`:",
+        NO_RAW_GPG,
+    ),
+    (
+        "restore transcript",
+        "`fiat-checkpoint-restore-transcript/v1`, written by the clean-machine demo:",
+        " measurements.",
+        "problem",
+        "writes `fiat-checkpoint-restore-transcript/v1` with",
+        " measurements.",
+    ),
+)
+
+# The fifth result object is bounded rather than compared field for field. The
+# reference states six members; study section 1 states four of them and states
+# neither the native object's schema name nor `outer_sha256`, so those two are
+# outside any parity this test can assert against sections 1, 3, 4 and 5.
+RESTORE_RESULT_ANCHOR = "`fiat-checkpoint-archive-restore/v1`, from `restore --archive`:"
+STUDY_RESTORE_RESULT_ANCHOR = "relocation transaction with the manifest digest, recomputes"
+STUDY_RESTORE_RESULT_END = " prints one"
+
 RESTORE_HEADING = "Restore transaction"
 ACCEPTANCE_OUTSIDE = "`current` is the literal `outside`"
 ACCEPTANCE_NEVER_WRITTEN = "No `acceptance/current` entry is ever written."
@@ -287,8 +350,13 @@ def ceiling_numbers(text: str) -> list[int]:
     return [int(found.replace(",", "")) for found in CEILING_NUMBER.findall(text)]
 
 
-def secret_spans(text: str) -> list[str]:
+def code_spans(text: str) -> list[str]:
+    """Every backticked span, in written order, with the wrapping removed."""
     return CODE_SPAN.findall(flat(text))
+
+
+def secret_spans(text: str) -> list[str]:
+    return code_spans(text)
 
 
 def study_fixture_ids(study: str) -> set[str]:
@@ -345,6 +413,16 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertEqual(list(EXPECTED_ENTRY_PATHS), first_column(reference_layout_block))
         self.assertEqual(list(EXPECTED_ENTRY_PATHS), first_column(study_layout_block))
         self.assertEqual(study_layout_block, reference_layout_block)
+
+        # The store path (study section 1). Both documents carry it as one
+        # fenced block, so the blocks are compared whole: a renamed store
+        # directory, a moved boundary segment or a changed sidecar suffix in
+        # one document and not the other fails here.
+        reference_store = section(reference, "Store path and boundaries")
+        self.assertEqual(
+            fenced_block(problem, STUDY_STORE_PATH_ANCHOR, "study section 1 store path fence"),
+            fenced_block(reference_store, STORE_PATH_ANCHOR, "reference store path fence"),
+        )
 
         # The thirteen closed manifest fields (study section 1). The reference
         # states them as table rows and the study as one sentence, so the rows
@@ -501,6 +579,50 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertEqual(list(EXPECTED_SECRET_SPANS), secret_spans(study_secrets))
         self.assertIn(EXPECTED_PEM_PROSE, flat("\n".join(reference_secret_items)))
         self.assertIn(EXPECTED_PEM_PROSE, flat(study_secrets))
+
+        # The closed fields of the result objects (study sections 1 and 4).
+        # The reference states each as a paragraph and the study as a bullet or
+        # a sentence, wrapped and punctuated differently, so the ordered code
+        # spans are the comparison: a field dropped, renamed, retyped or
+        # reordered in one document and not the other fails here.
+        results = section(reference, "Results and proof")
+        study_sections = {"problem": problem, "options": options}
+        for what, start, end, where, study_start, study_end in RESULT_OBJECTS:
+            with self.subTest(result_object=what):
+                self.assertEqual(
+                    code_spans(
+                        anchored(
+                            study_sections[where],
+                            study_start,
+                            study_end,
+                            f"study {what} fields",
+                        )
+                    ),
+                    code_spans(anchored(results, start, end, f"reference {what} fields")),
+                )
+
+        # The restore result, bounded rather than compared field for field.
+        # Study section 1 states four of its six members and states neither the
+        # native object's schema name nor `outer_sha256`, so those four must be
+        # among the reference's and the other two are pinned by nothing here.
+        self.assertLessEqual(
+            set(
+                code_spans(
+                    anchored(
+                        problem,
+                        STUDY_RESTORE_RESULT_ANCHOR,
+                        STUDY_RESTORE_RESULT_END,
+                        "study section 1 restore result",
+                    )
+                )
+            ),
+            set(
+                code_spans(
+                    anchored(results, RESTORE_RESULT_ANCHOR, "\n\n", "reference restore result")
+                )
+            ),
+            "the reference's restore result drops a member study section 1 states",
+        )
 
         # The `## Restore transaction` heading, which is where the reference
         # states the transaction the Exit requires it to state.
