@@ -70,6 +70,25 @@ def boundary_hashes(release: Path) -> dict:
     return {"end_hash": epochs[-1]["end_hash"], "start_hash": epochs[0]["start_hash"]}
 
 
+class _HistoricalFixtureBuilder(Builder):
+    """Reconstruct only this demonstration's immutable block-only receipt."""
+
+    def _epochs(self, phase, end_hash):
+        from usdc_interval import epochs_from_opening
+        return epochs_from_opening(self.plan, phase, end_hash, legacy=True)
+
+    def _validate_epoch_table(self, epochs, start, end):
+        from alexandria_lib.interval import validate_block_epochs
+        validate_block_epochs(epochs, start, end)
+
+    def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
+        import hashlib
+        return {"format": "alexandria-interval-receipt/v1", "epochs": epochs,
+                "implementation_code": {"component": "implementation-code",
+                                        "sha256": hashlib.sha256(code_bytes).hexdigest()},
+                "reconciliation": reconciliation["reconciliation"], "shards": shards}
+
+
 def build(output: Path) -> dict:
     """Rebuild the release from the preserved bytes and check it, offline."""
     output = output.absolute()
@@ -85,7 +104,7 @@ def build(output: Path) -> dict:
     output.mkdir(parents=True)
     try:
         release = output / "release"
-        release_id = Builder(plan, STAGING, registry, created_at=CREATED_AT).build(release)
+        release_id = _HistoricalFixtureBuilder(plan, STAGING, registry, created_at=CREATED_AT).build(release)
         checked = check_interval(release)
         summary = {
             "epochs": checked["epochs"],

@@ -27,7 +27,8 @@ from .errors import AlexandriaError
 
 PLAN_FORMAT = "alexandria-interval-plan/v1"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
-RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
+LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
+RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
 
 # Every class this collector knows how to request. A plan declares the ordered
 # subset it collects; a class it omits is a named coverage gap, never a journal
@@ -679,7 +680,184 @@ class Staging:
 
 
 
-def discover_epochs(
+def proxy_log_positions(records, proxy, interval):
+    """Validate every preserved proxy coordinate before deriving ownership."""
+    proxy = _address(proxy, "position proxy")
+    if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
+        raise AlexandriaError("position interval has an unknown shape")
+    if not isinstance(records, (list, tuple)):
+        raise AlexandriaError("proxy logs are not a list")
+    if any(not isinstance(interval[key], str) or len(interval[key]) > 19 for key in ("start", "end")):
+        raise AlexandriaError("position interval blocks must be bounded decimal strings")
+    start = _decimal(interval["start"], "position interval start")
+    end = _decimal(interval["end"], "position interval end")
+    previous = None
+    hashes, transactions, indexes = {}, {}, {}
+    rows = []
+    upgrades = {}
+    for record in records:
+        if not isinstance(record, dict) or _address(record.get("address"), "log emitting contract") != proxy:
+            raise AlexandriaError("a preserved log was not emitted by the proxy")
+        values = []
+        for field in ("blockNumber", "transactionIndex", "logIndex"):
+            value = record.get(field)
+            if not isinstance(value, str) or re.fullmatch(r"0x(?:0|[1-9a-f][0-9a-f]*)", value) is None:
+                raise AlexandriaError(f"proxy log {field} is not a canonical non-negative quantity")
+            values.append(int(value, 16))
+        block, tx, log = values
+        if not start <= block <= end:
+            raise AlexandriaError(f"proxy log block {block} is outside the interval")
+        coordinate = (block, tx, log)
+        if previous is not None and (coordinate <= previous or
+                (block == previous[0] and (tx < previous[1] or log <= previous[2]))):
+            raise AlexandriaError(f"proxy log position {coordinate} is duplicated or unordered")
+        previous = coordinate
+        block_hash = _hash(record.get("blockHash"), "proxy log block hash")
+        tx_hash = _hash(record.get("transactionHash"), "proxy log transaction hash")
+        if hashes.setdefault(block, block_hash) != block_hash:
+            raise AlexandriaError(f"proxy log block {block} has contradictory hashes")
+        if transactions.setdefault((block, tx), tx_hash) != tx_hash or indexes.setdefault(tx_hash, (block, tx)) != (block, tx):
+            raise AlexandriaError(f"proxy log position {coordinate} has contradictory transaction hash/index pairs")
+        topics = record.get("topics")
+        if not isinstance(topics, list) or any(not isinstance(topic, str) or HASH_RE.fullmatch(topic) is None for topic in topics):
+            raise AlexandriaError(f"proxy log position {coordinate} has malformed topics")
+        is_upgrade = bool(topics and topics[0] == UPGRADED_TOPIC)
+        if is_upgrade:
+            _upgrade_log(record, proxy, len(rows))
+            if block == start:
+                raise AlexandriaError(f"first-block upgrade at {coordinate} has no preceding implementation evidence")
+            if block in upgrades:
+                raise AlexandriaError(f"multiple upgrades in block {block} are unsupported")
+            upgrades[block] = tx
+        rows.append({"block_number": str(block), "block_hash": block_hash,
+                     "transaction_hash": tx_hash, "transaction_index": tx,
+                     "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"})
+    for row in rows:
+        if row["kind"] == "proxy-log" and upgrades.get(int(row["block_number"])) == row["transaction_index"]:
+            raise AlexandriaError(f"ordinary proxy log at ({row['block_number']}, {row['transaction_index']}, {row['log_index']}) in an upgrade transaction is unsupported")
+    return rows
+
+
+def _position(block, tx=None, log=None):
+    return {"block_number": str(block), "transaction_index": tx, "log_index": log}
+
+
+def _position_key(position):
+    if not isinstance(position, dict) or set(position) != {"block_number", "transaction_index", "log_index"}:
+        raise AlexandriaError("epoch position has an unknown shape")
+    value = position["block_number"]
+    if not isinstance(value, str) or len(value) > 19 or re.fullmatch(r"0|[1-9][0-9]*", value) is None:
+        raise AlexandriaError("epoch position block must be a bounded decimal string")
+    block = int(value)
+    tx, log = position["transaction_index"], position["log_index"]
+    if block > MAX_BLOCK + (tx is None and log is None):
+        raise AlexandriaError("epoch position block is outside the supported range")
+    if tx is None and log is None:
+        return (block, -1, -1)
+    if any(type(value) is not int or value < 0 for value in (tx, log)):
+        raise AlexandriaError("epoch position indexes must both be null or non-negative integers")
+    return (block, tx, log)
+
+
+def discover_epochs(*, chain, deployment, proxy, interval, upgrade_logs, slot_reads, code_reads, block_hashes):
+    """Derive exclusive positional epochs from all preserved proxy logs."""
+    rows = proxy_log_positions(upgrade_logs, proxy, interval)
+    selected = [record for record, row in zip(upgrade_logs, rows) if row["kind"] == "upgrade-boundary"]
+    epochs = discover_block_epochs(chain=chain, deployment=deployment, proxy=proxy,
+        interval=interval, upgrade_logs=selected, slot_reads=slot_reads,
+        code_reads=code_reads, block_hashes=block_hashes)
+    starts = [_position(interval["start"])] + [
+        _position(row["block_number"], row["transaction_index"], row["log_index"])
+        for row in rows if row["kind"] == "upgrade-boundary"]
+    for index, epoch in enumerate(epochs):
+        epoch["start_position"] = starts[index]
+        epoch["end_position"] = starts[index + 1] if index + 1 < len(starts) else _position(int(interval["end"]) + 1)
+        if index + 1 < len(starts):
+            epoch["end_block"] = starts[index + 1]["block_number"]
+            epoch["end_hash"] = _block_hash(block_hashes, int(epoch["end_block"]))
+        if epoch["upgrade"] is not None:
+            epoch["upgrade"]["transaction_index"] = starts[index]["transaction_index"]
+    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    attribute_logs(upgrade_logs, proxy, interval, epochs)
+    return epochs
+
+
+def validate_epochs(epochs, start, end):
+    """Check exclusive position tiling; block envelopes overlap at upgrades."""
+    if not isinstance(epochs, list) or not epochs or len(epochs) > MAX_EPOCHS:
+        raise AlexandriaError("epoch table is empty or exceeds the epoch limit")
+    expected = _position(start)
+    for index, epoch in enumerate(epochs):
+        if not isinstance(epoch, dict) or set(epoch) != {"chain", "deployment", "proxy", "start_block", "end_block", "start_hash", "end_hash", "upgrade", "implementation", "implementation_code_sha256", "start_position", "end_position"}:
+            raise AlexandriaError("positional epoch has an unknown shape")
+        first, last = epoch["start_position"], epoch["end_position"]
+        first_key, last_key = _position_key(first), _position_key(last)
+        if first != expected or first_key >= last_key:
+            raise AlexandriaError("epoch positions leave a gap or overlap")
+        if index and first["transaction_index"] is None:
+            raise AlexandriaError("interior epoch boundary cannot be a block sentinel")
+        envelope_end = last_key[0] - (last["transaction_index"] is None)
+        if epoch["start_block"] != first["block_number"] or epoch["end_block"] != str(envelope_end):
+            raise AlexandriaError("epoch block envelope disagrees with its positions")
+        # Reuse v1's code and identifier checks on an isolated block envelope.
+        block_epoch = {key: value for key, value in epoch.items() if key not in ("start_position", "end_position")}
+        upgrade = epoch["upgrade"]
+        if index == 0:
+            if upgrade is not None:
+                raise AlexandriaError("initial epoch cannot claim an upgrade")
+        else:
+            if not isinstance(upgrade, dict) or set(upgrade) != {"block_number", "transaction_index", "log_index", "transaction_hash"}:
+                raise AlexandriaError("positional upgrade has an unknown shape")
+            _position_key({key: upgrade[key] for key in first})
+            if any(upgrade[key] != first[key] for key in first):
+                raise AlexandriaError("upgrade coordinates do not open their epoch")
+            _hash(upgrade["transaction_hash"], "epoch upgrade transaction hash")
+            block_epoch["upgrade"] = {key: value for key, value in upgrade.items() if key != "transaction_index"}
+        validate_block_epochs([block_epoch], first_key[0], envelope_end)
+        if index and epoch["start_hash"] != epochs[index - 1]["end_hash"]:
+            raise AlexandriaError("adjacent epoch boundary hashes disagree")
+        expected = last
+    if expected != _position(end + 1):
+        raise AlexandriaError("epoch positions leave the interval end uncovered")
+
+
+def attribute_logs(records, proxy, interval, epochs):
+    """Assign each accepted log once; announcements mark boundaries only."""
+    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    rows = proxy_log_positions(records, proxy, interval)
+    index = 0
+    for row in rows:
+        key = (int(row["block_number"]), row["transaction_index"], row["log_index"])
+        while index + 1 < len(epochs) and key >= _position_key(epochs[index]["end_position"]):
+            index += 1
+        epoch = epochs[index]
+        if not _position_key(epoch["start_position"]) <= key < _position_key(epoch["end_position"]):
+            raise AlexandriaError("proxy log has no positional epoch owner")
+        for boundary in ("start", "end"):
+            if row["block_number"] == epoch[boundary + "_block"] and row["block_hash"] != epoch[boundary + "_hash"]:
+                raise AlexandriaError("proxy log hash contradicts its epoch boundary")
+        row["epoch_index"] = index
+    return rows
+
+
+def validate_attributions(rows):
+    """Reject open shapes and Python bool/integer equality before replay comparison."""
+    required = {"block_number", "block_hash", "transaction_hash", "transaction_index", "log_index", "epoch_index", "kind"}
+    if not isinstance(rows, list):
+        raise AlexandriaError("log attributions are not a list")
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != required:
+            raise AlexandriaError("log attribution has an unknown shape")
+        _decimal(row["block_number"], "attribution block")
+        _hash(row["block_hash"], "attribution block hash")
+        _hash(row["transaction_hash"], "attribution transaction hash")
+        if any(type(row[key]) is not int or row[key] < 0 for key in ("transaction_index", "log_index", "epoch_index")):
+            raise AlexandriaError("log attribution indexes must be non-negative integers")
+        if row["epoch_index"] >= MAX_EPOCHS or row["kind"] not in ("proxy-log", "upgrade-boundary"):
+            raise AlexandriaError("log attribution has an unsupported owner or kind")
+
+
+def discover_block_epochs(
     *,
     chain: str,
     deployment: str,
@@ -766,11 +944,11 @@ def discover_epochs(
             "upgrade": openings[boundary],
         })
 
-    validate_epochs(epochs, start, end)
+    validate_block_epochs(epochs, start, end)
     return epochs
 
 
-def validate_epochs(epochs, start: int, end: int) -> None:
+def validate_block_epochs(epochs, start: int, end: int) -> None:
     """Check that an epoch table tiles its interval exactly, with no gap or overlap."""
     if not isinstance(epochs, list) or not epochs:
         raise AlexandriaError("epoch table is empty")

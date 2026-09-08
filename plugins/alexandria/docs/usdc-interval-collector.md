@@ -29,10 +29,12 @@ the argument is retired rather than deprecated.
 from `ALEXANDRIA_COMPOUND_RPC_URL` alone. The endpoint reaches no file, no
 receipt and no message. `build` and `check` are offline.
 
-Two demonstrations run the whole path with no network at all:
+Two historical demonstrations run the whole path with no network at all:
 `examples/usdc-interval-v0/demo.py` over synthetic fixtures, and
 `examples/usdc-interval-live-v0/demo.py` over the preserved bytes of a real
-Ethereum mainnet interval.
+Ethereum mainnet interval. Their confined reconstruction paths preserve the
+original v1 release identifiers. Ordinary `build` emits
+`alexandria-interval-receipt/v2`; it has no public legacy-build option.
 
 ## What a request carries
 
@@ -129,15 +131,15 @@ given. It is not consensus finality and not canonical-chain membership.
 cannot tell two implementations apart. An epoch is bound instead by the SHA-256
 of its implementation's runtime bytecode.
 
-`discover_epochs` takes the ordered `Upgraded(address)` logs for the proxy, the
+`discover_epochs` takes all preserved proxy logs, including `Upgraded(address)`, the
 EIP-1967 implementation slot read at each boundary and the runtime code read at
-each implementation, and returns epochs that tile the declared interval with no
-gap and no overlap. `build` takes all three out of the `epoch-evidence` journal
-the collector committed, so the table is derived from preserved bytes and there
-is nothing for an operator to assert. A boundary with no slot read of its own
+each implementation. V2 epochs tile transaction positions across the declared
+interval with no gap or overlap. `build` reads the logs from committed shard
+journals and the slot and code evidence from `epoch-evidence`, so the table is
+derived from preserved bytes. A boundary with no slot read of its own
 does not inherit the implementation beside it: it refuses. So do a zero-address slot, an empty code
-read, a slot that is not a left-padded address, a log from another contract, a
-log carrying another topic, unordered logs, a log outside the interval and a
+read, a slot that is not a left-padded address, a log from another contract,
+malformed upgrade topics, unordered logs, a log outside the interval and a
 missing block hash. Where the log's announced implementation and the slot read
 disagree, or the log's own block hash and the preserved block disagree, the
 epoch table refuses rather than choosing.
@@ -146,6 +148,50 @@ The implementation slot and the `Upgraded(address)` topic are pinned constants
 rather than computed values, because the standard library carries no keccak.
 Both are attested by the Phase 0 capture preserved in this repository, and a
 test binds them to it.
+
+## Transaction-position ownership
+
+Each v2 epoch adds `start_position` and exclusive `end_position`. A position
+contains exactly `block_number`, `transaction_index` and `log_index`: a decimal
+block string and non-negative integer indexes. Both indexes are null together
+only for a block-edge sentinel, meaning before every log in that block. The
+first epoch starts at the interval's first block; the last ends at the block
+after the interval's inclusive end. Interior boundaries use the preserved
+upgrade's transaction and log indexes, and adjacent epoch positions match.
+
+The existing `start_block`, `end_block`, `start_hash` and `end_hash` describe
+each epoch's block envelope. Adjacent envelopes share the upgrade block;
+exclusive positions determine ownership inside it. A non-null `upgrade` also
+carries `transaction_index`, and its coordinates match the epoch's start.
+
+The receipt's `log_attributions` array records every preserved proxy log in
+validated order. Each row contains `block_number`, `block_hash`,
+`transaction_hash`, `transaction_index`, `log_index`, zero-based `epoch_index`
+and `kind`. An ordinary log has kind `proxy-log`; the upgrade announcement has
+kind `upgrade-boundary`. A log in an earlier transaction belongs to the preceding
+implementation, and one in a later transaction belongs to the replacement.
+The announcement records a boundary without claiming which implementation
+executed it.
+
+Missing, boolean, negative, malformed, duplicate, contradictory, unordered or
+out-of-range coordinates refuse. Within a block, transaction indexes cannot
+decrease and block-wide log indexes must increase; transaction indexes and
+hashes must agree, as must block hashes. Three unsupported histories also
+refuse: an upgrade in the interval's first block without prior implementation
+evidence, more than one upgrade in a block, and an ordinary proxy log in the
+upgrade transaction, whether before or after the announcement. End-of-block
+slot reads and log order cannot establish intermediate execution state.
+
+A plan omitting logs keeps its omission gap and an empty attribution array.
+It claims neither unpreserved log coverage nor the absence of unseen upgrades.
+`check` re-derives the positions and ownership from preserved journals and
+compares the complete attribution array. Rebinding a changed receipt to new
+component digests does not make invented ownership pass.
+
+The check result names `receipt_semantics` as `v1-block-only` or
+`v2-positional`. V1 verification retains its block-only meaning and immutable
+schema; a valid v1 release gains no positional guarantee. The reasons for the v2 format and
+these refusals live in the [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision).
 
 ## Resuming, and rewinding
 
@@ -188,6 +234,11 @@ shard's boundary hash, the ordered transaction hashes in that block, and the
 identity tuple `(blockHash, transactionHash, logIndex, address, topics, data)`
 for every log.
 
+Both log streams undergo coordinate validation, but the preserved comparison
+tuple does not include `transactionIndex`. V2 ownership is derived from the
+primary journal; an `agreed` reconciliation does not establish second-provider
+agreement on transaction indexes.
+
 A disagreement is recorded, not resolved. Neither provider wins by answering
 first or by being in a majority of two. A shard whose boundary hash disagrees is
 `failed`; one whose logs or transaction order disagree is `partial`; the second
@@ -217,13 +268,16 @@ inflated receipt would otherwise be self-consistent.
 
 `check` runs Alexandria's own verification first, then the things only an
 interval release can be wrong about: shards contiguous and non-overlapping
-across the declared interval, epochs tiling it and naming this market's proxy,
+across the declared interval, epochs tiling it under their declared receipt
+version and naming this market's proxy,
 each epoch's declared code hash re-derived from the `implementation-code`
 component's bytes, the opening reads replayed against the plan so the journal
 holds exactly the reads the plan names and no others, a finality boundary with
 its hash above the interval's end, a reconciliation record for the same plan
 agreeing with the receipt about every shard, and every shard that is not
 complete named in the coverage of every evidence component.
+For v2, it also compares freshly derived log ownership with every attribution
+row. A v1 result remains block-only; it does not inherit that stronger check.
 
 ## The interval it has actually collected
 
@@ -245,12 +299,13 @@ demonstration rebuilds it offline to release identifier
 `sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32`.
 Neither provider's endpoint or hostname appears anywhere in it.
 
-One thing that interval does not settle. The epoch table tiles by block, so a
+The historical v1 epoch table tiles by block, so a
 proxy log emitted earlier in an upgrade block than the upgrade itself would be
 attributed to the implementation that replaced the one which produced it. Block
 25,904,935 here carries only the upgrade, at transaction index 193 and log index
-524, so nothing in this capture is misattributed; the gap is open in the
-derivation, not in these bytes.
+524, so nothing in this capture is misattributed. These preserved bytes do not
+demonstrate the before-upgrade defect, and their original identifier retains
+the v1 scope. A v2 reconstruction has its own identifier.
 
 ## What this does not establish
 
