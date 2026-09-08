@@ -1372,3 +1372,88 @@ command or path differs from the repair it re-binds.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-08
+
+**What changed.** Complete replacement Tests: In
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`:
+`test_archive_reference_names_every_refusal_class_and_fixture_id` (the
+reference's 24 classes and 35 ids equal the sets in
+`docs/fiat-checkpoint-archive-study.md` sections 4 and 5),
+`test_archive_budgets_declare_the_six_measured_limits`, and
+`test_archive_reference_pins_the_ceilings_metadata_bundle_command_and_secrets`
+(the reference's seven ceiling values, its zip metadata rule including the
+entry mode, its `git -c pack.threads=1 bundle create` determinism rule and its
+six secret patterns each equal what `docs/fiat-checkpoint-archive-study.md`
+sections 1, 3 and 4 state, and a mutation of any one of those values fails the
+test). In `tests/test_fiat_checkpoint_archive_record.py`:
+`test_run_artefacts_point_to_the_draft_record_and_adr_028_and_are_not_the_decision`,
+`test_adr_028_amendment_points_at_the_draft_record_and_stays_accepted` and
+`test_draft_record_states_the_three_commands_and_the_rejected_designs`, with
+a dead-relative-link check over both tracked artefacts. Six new tests;
+existing suites unchanged. For any audit repair, run
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`;
+report format `unittest-json-v1`; expected schema `elenchus.unittest.v1`;
+report file `.elenchus/fiat-861-step-1.json`. A missing, stale, empty,
+malformed, zero-test or infrastructure-failed report is `inconclusive`.
+
+**Why.** Round 3 finding S1-R3-02: five values this step's Exit requires the
+reference to state are pinned by no test, so each survived mutation with all
+five tests and all three gates green -- `4,200 entries` to `9,000`, `1,300 MiB
+expanded` to `9,300 MiB`, mode `0100644` to `0100755`, `git -c pack.threads=1
+bundle create` to `git bundle create`, and `AKIA[0-9A-Z]{16}` to
+`AKIB[0-9A-Z]{16}`. That list is the specification Step 2's exporter is built
+from. The baseline Tests field fixed the count at five and bound each named
+test to a scope that excludes these values, so the repair needed this field
+rather than another test under the old one. No Exit criterion, command or path
+changes; the sixth test pins values the Exit already requires.
+
+**Steps touched.** Step 1 Tests.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
+
+### Amendment -- 2026-09-08
+
+**What changed.** Complete replacement Tests: In
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`:
+`test_archive_reference_names_every_refusal_class_and_fixture_id` (the
+reference's 24 refusal classes and 35 fixture ids equal the sets in
+`docs/fiat-checkpoint-archive-study.md` sections 4 and 5, and every other
+value the Exit requires the reference to state equals what the study states:
+the six schema names, the nine entry paths, each manifest field row, the seven
+ceiling values, the zip metadata rule including entry mode `0100644`, the `git
+-c pack.threads=1 bundle create` determinism rule, the six secret patterns,
+the `## Restore transaction` heading, the sidecar two-space rule and the
+`acceptance/current` rule, against sections 1, 3 and 4; a mutation of any one
+of those values, and a deletion of any one of them, fails the test) and
+`test_archive_budgets_declare_the_six_measured_limits`. In
+`tests/test_fiat_checkpoint_archive_record.py`:
+`test_run_artefacts_point_to_the_draft_record_and_adr_028_and_are_not_the_decision`,
+`test_adr_028_amendment_points_at_the_draft_record_and_stays_accepted` and
+`test_draft_record_states_the_three_commands_and_the_rejected_designs`, with
+a dead-relative-link check over both tracked artefacts. Five new tests;
+existing suites unchanged. For any audit repair, run
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`;
+report format `unittest-json-v1`; expected schema `elenchus.unittest.v1`;
+report file `.elenchus/fiat-861-step-1.json`. A missing, stale, empty,
+malformed, zero-test or infrastructure-failed report is `inconclusive`.
+
+**Why.** Round 4 findings S1-R4-01 and S1-R4-02. The earlier amendment of this
+date took the count to six tests and claimed no Exit criterion changed, and
+that claim was wrong: the effective Exit of every step pins an unfiltered test
+count computed from five tests in two modules -- Step 1 `Ran 5 tests` and
+"five tests exist", Step 2 `Ran 17 tests`, Step 3 `Ran 55 tests`, Step 4 `Ran
+61 tests` and Step 5 `Ran 68 tests` -- so a sixth test broke five criteria to
+close one finding, and the tree as it stands runs six. Widening the first
+test's scope instead pins the same values, and the residue S1-R4-02 named, with
+no count anywhere changing. The step's fix folds the sixth test's assertions
+into the first and removes it, returning the tree to five. The filtered counts
+Step 3 `Ran 35 tests` and Step 4 `Ran 6 tests` were unaffected either way.
+
+**Steps touched.** Step 1 Tests.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
