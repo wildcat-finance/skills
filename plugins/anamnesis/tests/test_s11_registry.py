@@ -39,6 +39,18 @@ SCRIPT = PLUGIN_ROOT / "skills/anamnesis/scripts/anamnesis.py"
 RUNNER = PLUGIN_ROOT / "tests/elenchus.py"
 FIXTURE = PLUGIN_ROOT / "tests/fixtures/unknown-mapper-policy.json"
 
+# The receipted bytes of the three documents this step commits. A digest here
+# and the comparison against `.hexaemeron/` below say the same thing; only this
+# one can still say it once the run worktree is gone.
+PINNED_DIGESTS = {
+    PLUGIN_ROOT / "docs/resolved-mapper-study.md":
+        "52f6a11247782d6c6cdd537fa70f08809e197ecc6645f6a0416bbfe09806db06",
+    PLUGIN_ROOT / "docs/resolved-mapper-runbook.md":
+        "d666a6e7b864ef944c9db645bdf870d8a57dd621d18e67f8b6cd7413a1be9e19",
+    PLUGIN_ROOT / "docs/resolved-mapper/design-evidence.json":
+        "36170cc03cbd3ce3fab6b4d0ae2cec31bcc2f2024ba5ad397881a17815e54228",
+}
+
 PILOT = PLUGIN_ROOT / "specimens/pilot"
 ESTATE = PLUGIN_ROOT / "specimens/estate"
 
@@ -218,7 +230,23 @@ class TheCommittedDesignRecordIsWhatTheRunSelected(unittest.TestCase):
         # push. The report does not exist yet, and step 2 writes it.
         self.assertFalse((RECORD_HOME / PENDING_REPORT).exists())
 
+    def test_the_committed_documents_match_their_pinned_digests(self) -> None:
+        """The byte-identity claim, checked where there is no controller.
+
+        The comparison below reads `.hexaemeron/`, which exists only inside the
+        run's own worktree, so it skipped everywhere else and skipped in CI. A
+        claim nothing checks after the worktree is archived is not a claim. The
+        digests are the same bytes the controller receipted, recorded here so
+        the check survives the run. Step 4 re-syncs the documents after any
+        amendment and moves these three values with them.
+        """
+        for path, digest in PINNED_DIGESTS.items():
+            with self.subTest(document=path.name):
+                self.assertEqual(
+                    hashlib.sha256(path.read_bytes()).hexdigest(), digest)
+
     def test_the_committed_documents_equal_the_run_artefacts(self) -> None:
+        """And where the controller is present, that the pins track it."""
         for committed, artefact in ((STUDY, RUN_STUDY), (RUNBOOK, RUN_RUNBOOK)):
             with self.subTest(document=committed.name):
                 if not artefact.exists():
