@@ -68,6 +68,19 @@
   "producer": "anamnesis-synkrisis-observation/v1",
   "release_id": "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39",
   "schema": "anamnesis-synkrisis-observation/v1",
+  "scope": {
+    "id": "warden-synopsis-rendering",
+    "preserves": "The same three audit records the pilot preserves, for Hexaemeron, Pandects and Tabularium, rendered as fiat-audit-synopsis/v1: a second format over the pilot's findings, and not a second producer of them.",
+    "records": {
+      "maximum": 50,
+      "minimum": 25
+    },
+    "sources": [
+      "hexaemeron-audit-synopsis",
+      "pandects-audit-synopsis",
+      "tabularium-audit-synopsis"
+    ]
+  },
   "unknowns": {
     "finding.adjudication": 41,
     "round.native_schema": 31,

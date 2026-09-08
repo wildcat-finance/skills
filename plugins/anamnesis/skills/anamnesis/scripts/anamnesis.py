@@ -1582,6 +1582,11 @@ def observations(out, cohort_rule):
             "members": members,
         },
         "denominators": dict(sorted(denominators.items())),
+        # The scope travels with the counts. A release states what it set out
+        # to preserve, and that sentence is what tells a reader whether two
+        # cohorts of the same size hold the same findings or different ones.
+        # Left in the release alone it does not reach the consumer that counts.
+        "scope": dict(manifest["policy"]["scope"]),
         "policy": {
             "curation_version": manifest["policy"]["version"],
             "taxonomy": (

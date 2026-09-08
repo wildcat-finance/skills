@@ -68,6 +68,19 @@
   "producer": "anamnesis-synkrisis-observation/v1",
   "release_id": "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf",
   "schema": "anamnesis-synkrisis-observation/v1",
+  "scope": {
+    "id": "warden-seed-pilot",
+    "preserves": "Warden audit rounds from three first-party skills as preserved at commit 1c1137898bce.",
+    "records": {
+      "maximum": 50,
+      "minimum": 25
+    },
+    "sources": [
+      "hexaemeron-audit-rounds",
+      "pandects-audit-rounds",
+      "tabularium-audit-rounds"
+    ]
+  },
   "unknowns": {
     "finding.adjudication": 41,
     "round.native_schema": 31,

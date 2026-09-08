@@ -32,7 +32,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "program",
       "class": "repository",
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "391148bd2d826329304ffe3e2ef7fcf2db7610481d05e19ed060ed925c4325fe"
+      "sha256": "5674de5f5a21e47d7b614c2d9bcb0f8ec1f0d3b1290571e77a08e8660b67deed"
     }
   ],
   "commands": [

@@ -407,5 +407,62 @@ class TheConformanceReportIsCommitted(unittest.TestCase):
         self.assertEqual(len(sorted(REPORTS.glob("*.json"))), 33)
 
 
+
+SCOPE_FIELDS = ["id", "preserves", "records", "sources"]
+
+class TheViewCarriesWhatStopsTwoCorporaBeingCountedTwice(unittest.TestCase):
+    """S2-R1-01: the synopsis corpus holds the pilot's findings, and the count
+    a consumer reads has to say so.
+
+    Both releases carry 41 findings over a denominator of 41, and their
+    assertions carry the same native ids. The sentence that tells them apart is
+    the declared scope, which lived in the release and not in the view. A
+    reader with two projections and no releases could only see two cohorts of
+    the same size.
+    """
+
+    def observation(self, specimen: str):
+        return anamnesis.observations(
+            str(PLUGIN_ROOT / "specimens" / specimen / "release"),
+            "every public finding in the release",
+        )
+
+    def test_every_projection_carries_its_declared_scope(self) -> None:
+        for specimen in ("pilot", "estate", "synopsis"):
+            with self.subTest(specimen=specimen):
+                scope = self.observation(specimen)["scope"]
+                self.assertEqual(sorted(scope), SCOPE_FIELDS)
+                self.assertTrue(scope["preserves"].strip())
+                self.assertTrue(scope["sources"])
+                self.assertLessEqual(
+                    scope["records"]["minimum"], scope["records"]["maximum"])
+
+    def test_the_two_corpora_that_share_findings_are_told_apart_by_scope(self) -> None:
+        pilot = self.observation("pilot")
+        synopsis = self.observation("synopsis")
+        # Same size, same findings.
+        self.assertEqual(pilot["cohort"]["included"], synopsis["cohort"]["included"])
+        self.assertEqual(
+            pilot["denominators"]["findings"], synopsis["denominators"]["findings"])
+        # Different scopes, and the synopsis one says whose findings these are.
+        self.assertNotEqual(pilot["scope"]["id"], synopsis["scope"]["id"])
+        self.assertIn("pilot", synopsis["scope"]["preserves"])
+
+    def test_a_projection_without_its_scope_is_refused(self) -> None:
+        payload = self.observation("synopsis")
+        del payload["scope"]
+        with self.assertRaises(anamnesis.Refusal):
+            anamnesis.check_projection(
+                payload, anamnesis.OBSERVATION_SCHEMA, anamnesis.OBSERVATION_FIELDS)
+
+    def test_the_committed_projections_carry_it_too(self) -> None:
+        for specimen in ("pilot", "estate", "synopsis"):
+            with self.subTest(specimen=specimen):
+                committed = read(
+                    PLUGIN_ROOT / "specimens" / specimen
+                    / "projections/synkrisis-cohort.json")
+                self.assertEqual(committed, self.observation(specimen))
+
+
 if __name__ == "__main__":
     unittest.main()
