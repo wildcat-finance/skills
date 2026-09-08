@@ -425,6 +425,56 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("fiat_required: not compared", proc.stdout)
         self.assertIn("2 times", proc.stdout)
 
+    def test_an_unreadable_edit_time_is_not_called_a_moved_decision(self):
+        """A node carrying no readable `editedAt` was read as no edit time.
+
+        The sentinel closed the transport-level version of this in S3-R2-01,
+        and the field-level version stayed: `last_edited_at` fell to `None`,
+        which the comparison reads as a value, so an issue whose body never
+        moved reported `last_edited_at: recorded None, now <time>` under "the
+        filing decision has moved since this run read it" and exited 1
+        (S3-R4-01). `last_edited_at` is not in
+        `UNDISCRIMINATED_DIVERGENCE_FIELDS`, so it carries the strong headline
+        on its own.
+        """
+        self.edits([{"diff": self.body(1)}, {"diff": self.body(0)}], total=2)
+        provenance = self.start(value=1)
+        self.edits([
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
+            {"diff": self.body(0)},
+        ], total=2)
+        # Exit 0 first, because the defect is an exit 1 over an unmoved body
+        # and the harness reports the whole report with it.
+        proc = self.run_ctl("verify", "--check-filing-decision")
+        self.assertNotIn("has moved", proc.stdout)
+        self.assertIn("last_edited_at: not compared", proc.stdout)
+        self.assertIn("recorded it as `unknown`", proc.stdout)
+        self.assertEqual(provenance["last_edited_at"], "unknown")
+        self.assertIn("no readable `editedAt`", provenance["reason"])
+
+    def test_an_unread_rest_stamp_is_not_called_a_touched_issue(self):
+        """A `updated_at` the response did not carry as text is not a value.
+
+        `rest_filing_stamps` coerced it to `None` on both sides, so the two
+        builders agreed, and then the comparison read that absence as data: a
+        run whose `init` got a non-string stamp reported "the issue has been
+        touched since this run read it" against an issue nothing had touched
+        (S3-R4-02).
+        """
+        self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
+        self.env["FAKE_GH_ISSUES"] = json.dumps({self.ISSUE: self.body(1)})
+        self.env["FAKE_GH_ISSUE_STAMPS"] = json.dumps(
+            {"default": {"created_at": "2026-09-06T09:17:50Z", "updated_at": 17}}
+        )
+        self.init("Provenance topic", task_issue=self.ISSUE)
+        provenance = self.state()["receipts"]["task_issue_contract"]["provenance"]
+        self.stamps()
+        proc = self.run_ctl("verify", "--check-filing-decision")
+        self.assertNotIn("has been touched", proc.stdout)
+        self.assertNotIn("has moved", proc.stdout)
+        self.assertIn("updated_at: not compared", proc.stdout)
+        self.assertEqual(provenance["updated_at"], "unknown")
+
     def test_a_deeply_nested_rest_response_refuses_rather_than_crashing(self):
         """The REST sibling of the GraphQL parser S3-R1-02 repaired.
 

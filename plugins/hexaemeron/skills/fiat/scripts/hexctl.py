@@ -5172,13 +5172,23 @@ def rest_filing_stamps(payload: dict) -> dict:
     re-read halves normalise identically. They did not: `init` coerced a
     non-string `updated_at` to `None` and the divergence reader kept it, so the
     two sides of one comparison disagreed about the same response (S3-R2-01).
+
+    Agreeing with each other was not enough. A stamp the response did not
+    carry as text is a stamp this reader did not read, and coercing it to
+    `None` handed `filing_decision_divergence` an absence to compare as though
+    it were a value: a run whose `init` read a non-string `updated_at`
+    reported "the issue has been touched since this run read it" over an issue
+    nothing had touched (S3-R4-02). `FILING_PROVENANCE_UNKNOWN` is what says
+    "could not read", so it is what an unread stamp gets, and the comparison
+    already declines to read that as data.
     """
-    created_at = payload.get("created_at")
-    updated_at = payload.get("updated_at")
-    return {
-        "created_at": created_at if isinstance(created_at, str) else None,
-        "updated_at": updated_at if isinstance(updated_at, str) else None,
-    }
+    stamps = {}
+    for field in ("created_at", "updated_at"):
+        value = payload.get(field)
+        stamps[field] = (
+            value if isinstance(value, str) else FILING_PROVENANCE_UNKNOWN
+        )
+    return stamps
 
 
 def unknown_filing_provenance(reason: str) -> dict:
@@ -5287,9 +5297,27 @@ def github_issue_edit_provenance(
             f"{ISSUE_EDIT_NODES_MAX} this reader requests"
         )
     revisions = [as_dict(node) for node in nodes]
-    last_edited = revisions[0].get("editedAt") if revisions else None
+    # Three states, not two. A response carrying no revision at all was read
+    # and says there is no last-edit time, so that is `None`. A newest node
+    # whose `editedAt` is absent or is not text was not read, and recording
+    # `None` for it put an absence into the one compared field that carries
+    # the strong headline: an issue whose body never moved reported
+    # "the filing decision has moved since this run read it" on
+    # `last_edited_at: recorded None, now <time>` alone (S3-R4-01). The
+    # sibling field on the same node, `diff`, already takes the sentinel when
+    # it is withheld; this one did not.
+    last_edited = None
+    reasons: list[str] = []
+    if revisions:
+        edited = revisions[0].get("editedAt")
+        if isinstance(edited, str):
+            last_edited = edited
+        else:
+            last_edited = FILING_PROVENANCE_UNKNOWN
+            reasons.append(
+                "the newest revision carried no readable `editedAt`"
+            )
     prior = FILING_PROVENANCE_UNKNOWN
-    reason = None
     if len(revisions) < 2:
         prior = None
         # Counted off the nodes actually carried, not off `totalCount`. The
@@ -5297,7 +5325,7 @@ def github_issue_edit_provenance(
         # wrote `edit_count: 4` beside "the body has one revision", which is a
         # revision count the run never read (S3-R2-03). An empty node list
         # said the same thing about a body it had seen nothing of.
-        reason = (
+        reasons.append(
             f"the response carried {len(revisions)} "
             f"{'revision' if len(revisions) == 1 else 'revisions'}, so it "
             "carries no prior value"
@@ -5305,7 +5333,7 @@ def github_issue_edit_provenance(
     else:
         body = revisions[1].get("diff")
         if not isinstance(body, str):
-            reason = (
+            reasons.append(
                 "the prior revision carried no readable body, which `diff` "
                 "withholds without write access on the repository"
             )
@@ -5316,12 +5344,17 @@ def github_issue_edit_provenance(
             value, _faults = fiat_required_value(body, "a prior revision")
             prior = None if value is None else int(value)
             if value is None:
-                reason = "the prior revision declared no `Fiat-Required` line"
+                reasons.append(
+                    "the prior revision declared no `Fiat-Required` line"
+                )
     return {
         "edit_count": total,
-        "last_edited_at": last_edited if isinstance(last_edited, str) else None,
+        "last_edited_at": last_edited,
         "prior_fiat_required": prior,
-        "reason": reason,
+        # A list because one block can now carry two unread fields, and the
+        # single string this used to be could only explain whichever was
+        # written last.
+        "reason": "; ".join(reasons) if reasons else None,
     }
 
 
