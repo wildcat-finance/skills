@@ -8,7 +8,7 @@
     },
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "3d371d6fd53d28ef672e39a8dbf92d75a09685985346cc16a2fd606e6c805d6c"
+      "sha256": "b26f2dc5361e0440b586ed1c709c97353acc103830f1323ba822a03dc07f83b6"
     },
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
@@ -35,11 +35,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "9d86bf856916e0ff1920ae03725669f725c00e3bd54bfbe9707a0257449cdf33"
+        "sha256": "3e8ae091e91d5021650f6a99396f8d3b876166fa4f1fbb66f582a6f85685d728"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "821b243be07c109b3bfa886bf708936eb5458e9a506224637908a2ceaf6174e0"
+        "sha256": "f51b38c437c05c0eda2d84dbd234c9a065fd7b3b1174f337842680d7e0781f71"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -51,7 +51,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "a0cde7da7389a24b011ec4a9aa8334dd31c30ab5b865ecf9b04ea34d40b169d5"
+        "sha256": "a7927690f15a70e87cb2474ca31ff0c232f18c67eefdd3f26e767dac9ae6190e"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
