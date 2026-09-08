@@ -2,7 +2,7 @@
 
 Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
-- Current demonstration version: `anamnesis-demo-v0.4.0`
+- Current demonstration version: `anamnesis-demo-v0.5.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `second-preserved-audit-corpus`
 - Current demonstration: The pilot specimen runs the whole admission-to-projection path over preserved bytes.
@@ -32,7 +32,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "program",
       "class": "repository",
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "ae04669868b4c864f65c9fb259e744dd13ef0ae9fe1ff5f00adbadec2570641a"
+      "sha256": "391148bd2d826329304ffe3e2ef7fcf2db7610481d05e19ed060ed925c4325fe"
     }
   ],
   "commands": [
@@ -55,7 +55,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     "run: line \"4. Synkrisis cohort cohort:41d640fb168049d5: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
   ],
   "frontier": {
-    "version": "anamnesis-demo-v0.4.0",
+    "version": "anamnesis-demo-v0.5.0",
     "status": "open",
     "revision": "second-preserved-audit-corpus",
     "sha256": "04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374",
@@ -73,3 +73,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 | `anamnesis-demo-v0.2.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `adr/declared-corpus-scope`, [test_s8_scope.py](../../tests/test_s8_scope.py) | The pilot was re-released under a declared corpus scope and the record re-pinned to the new program digest and release id without moving the demo frontier. |
 | `anamnesis-demo-v0.3.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `issue/1465`, [test_s8_scope.py](../../tests/test_s8_scope.py) | `verify` takes an optional event sink, so the declared-scope refusal leaves the durable event an operator is told to read. The record is re-pinned to the new program digest; the release id, the observations and the demo frontier are unmoved. |
 | `anamnesis-demo-v0.4.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `issue/1464`, [test_s11_registry.py](../../tests/test_s11_registry.py) | The curation policy's declared mapper is resolved through a module-level registry: an unresolved name refuses `A078` before any record is written, and every assertion records the entry that ran. The record is re-pinned to the new program digest; both shipped release ids, the observations and the demo frontier are unmoved. |
+| `anamnesis-demo-v0.5.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `issue/1464`, [test_s12_synopsis.py](../../tests/test_s12_synopsis.py) | A second registry entry reads `fiat-audit-synopsis/v1`, refusing `A079` on a missing or non-matching schema header before any row, and a third specimen preserves the pilot's same 41 findings through it. The record is re-pinned to the new program digest; both shipped release ids, the observations and the demo frontier are unmoved. |

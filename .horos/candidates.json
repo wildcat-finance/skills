@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20893414,
+    "bytes_blob": 20918381,
     "bytes_generated": 98
   },
   "entries": [
@@ -572,6 +572,13 @@
       "evidence": "no newline in the first 4096 bytes of 64477 bytes",
       "grade": "candidate",
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/logs.jsonl"
+    },
+    {
+      "bytes": 24967,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/anamnesis/specimens/synopsis/sources/pandects-audit-synopsis.md"
     },
     {
       "bytes": 23932,

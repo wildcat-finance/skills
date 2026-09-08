@@ -108,6 +108,14 @@ release directory exists, and every assertion records the entry that ran rather
 than the string the policy carried. Nothing in a policy or in a source can add
 an entry.
 
+Two entries ship. `warden-audit-round-markdown` version 1 reads a Warden audit
+file, one producer line at a time. `fiat-audit-synopsis` version 1 reads the
+synopsis rendering of one: it requires `schema=fiat-audit-synopsis/v1` on the
+first line and refuses `A079` before any row is read, then splits each round
+line on `<br>` and hands the producer's own cells to the same grammar. That
+header check is what separates an empty corpus from bytes in a format the entry
+does not read, which the first entry cannot tell apart.
+
 A severity outside the policy's taxonomy is quarantined, not mapped to its
 nearest neighbour. A duplicate cluster is a curator's decision and arrives in
 the policy's `duplicates`; the mapper never invents one, and a duplicate keeps
@@ -252,7 +260,7 @@ did not run, say so plainly and do not describe its result as successful.
 - Boundary: Curation establishes what the sources said and how the policy joined it. It does not establish that a finding was real, that a remediation worked, that a duplicate cluster is correct, or that the taxonomy is the right one. `applied` is as far as any status string reaches; a verification state comes only from a verdict the source declared.
 - Authorises: Building a release from the graph, and passing it to the consumer projections runbook step 3 owes.
 - Consequence: 2
-- Refuses: A declared mapper no registry entry provides, a duplicate naming itself or another duplicate, a policy outside its closed shape, a malformed scope, an admitted source outside the declared scope, a scope source that was not admitted, a record count outside the declared bounds, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
+- Refuses: A declared mapper no registry entry provides, a source whose bytes do not declare the schema the resolved implementation reads, a duplicate naming itself or another duplicate, a policy outside its closed shape, a malformed scope, an admitted source outside the declared scope, a scope source that was not admitted, a record count outside the declared bounds, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
 - Recovery: Inspect the quarantine list and the policy that produced it, correct the taxonomy, the duplicate map or the disclosure classes, and rerun `curate`.
 - Exceptions: none
 
