@@ -19,6 +19,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path
 
 FIXTURE_SEED = "imprimatur-structural-family-evidence-v1"
@@ -70,8 +71,10 @@ FINDING_CLASSES = (
     "specimen-annotation-order",
     "specimen-schema",
     "specimen-unknown-family",
+    "specimen-family-mismatch",
     "specimen-span",
     "specimen-digest",
+    "specimen-group-id",
     "specimen-independence",
     "tier-minimum",
     "source-mismatch",
@@ -138,6 +141,43 @@ def read_json_below(fixture: Path, name: str):
         raise RefusalError(f"cannot parse {name}: {exc}") from exc
 
 
+def jsonl_rows(text: str) -> list[str]:
+    """Split a JSON Lines file on the newline, and on nothing else.
+
+    ``str.splitlines`` also splits on U+000B, U+000C, U+0085, U+2028 and
+    U+2029, and each of those is legal inside a JSON string. That cut both
+    ways. A file that ``wc -l``, a diff and every other JSON Lines reader see
+    as 42 rows could carry a further row this checker admitted and counted,
+    which is a frozen file whose bytes and whose meaning here disagree with
+    nothing on screen to show it. A specimen whose ``text`` carried one of
+    them raw -- the form ``json.dumps(..., ensure_ascii=False)`` emits -- was
+    split into fragments and refused as unreadable JSON. JSON Lines is
+    newline-delimited, so the newline is the whole separator.
+    """
+    if not text:
+        return []
+    if text.endswith("\n"):
+        text = text[:-1]
+    return text.split("\n")
+
+
+def group_id_problem(value: str) -> str | None:
+    """Return why a ``source_group_id`` cannot key the independence rule.
+
+    Independence is decided by comparing this value between two positives, so
+    the comparison is worth exactly what the value's visibility is worth. Two
+    ids differing by a space, a no-break space or a zero-width character read
+    as one group on screen and as two here, which is enough to carry a
+    high-value family's two independent positives out of a single document.
+    """
+    for character in value:
+        if character.isspace():
+            return f"carries whitespace ({character!r})"
+        if unicodedata.category(character) in ("Cc", "Cf", "Cn", "Co", "Cs"):
+            return f"carries a non-printing character ({character!r})"
+    return None
+
+
 def read_jsonl_below(fixture: Path, name: str) -> list[dict]:
     blob = read_bytes_below(fixture, name)
     try:
@@ -145,7 +185,7 @@ def read_jsonl_below(fixture: Path, name: str) -> list[dict]:
     except UnicodeDecodeError as exc:
         raise RefusalError(f"{name} is not UTF-8: {exc}") from exc
     rows: list[dict] = []
-    for number, line in enumerate(text.splitlines(), 1):
+    for number, line in enumerate(jsonl_rows(text), 1):
         if not line.strip():
             raise RefusalError(f"blank JSONL row at {name}:{number}")
         try:
@@ -383,6 +423,15 @@ def collect_findings(
                 f"{SPECIMENS_NAME}:{index}: {label} names unknown family {row['family_id']}"
             )
             continue
+        # One family named twice, in the two spellings the v1 and v2 schemas
+        # use. Nothing but this compared them, so a row could be counted under
+        # family_id while a v2 evaluator reading `family` saw another family.
+        if row["family"] != row["family_id"]:
+            findings["specimen-family-mismatch"].append(
+                f"{SPECIMENS_NAME}:{index}: {label}: family {row['family']!r} "
+                f"is not its family_id {row['family_id']!r}"
+            )
+            continue
         problem = span_problem(row)
         if problem is not None:
             findings["specimen-span"].append(f"{SPECIMENS_NAME}:{index}: {label}: {problem}")
@@ -390,6 +439,12 @@ def collect_findings(
         if sha256_text(row["text"]) != row["text_sha256"]:
             findings["specimen-digest"].append(
                 f"{SPECIMENS_NAME}:{index}: {label}: text_sha256 does not match the text"
+            )
+            continue
+        group_problem = group_id_problem(row["source_group_id"])
+        if group_problem is not None:
+            findings["specimen-group-id"].append(
+                f"{SPECIMENS_NAME}:{index}: {label}: source_group_id {group_problem}"
             )
             continue
         verifiable.append((index, row))

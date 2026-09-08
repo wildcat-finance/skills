@@ -132,8 +132,9 @@ Its exit codes are three:
 - `1`: the checker found something. It prints every finding of the first
   class it meets, in the order `family-tier`, `family-schema`,
   `family-duplicate`, `specimen-annotation-order`, `specimen-schema`,
-  `specimen-unknown-family`, `specimen-span`, `specimen-digest`,
-  `specimen-independence`, `tier-minimum`, `source-mismatch`.
+  `specimen-unknown-family`, `specimen-family-mismatch`, `specimen-span`,
+  `specimen-digest`, `specimen-group-id`, `specimen-independence`,
+  `tier-minimum`, `source-mismatch`.
 - `2`: the invocation or a read was refused, which covers a missing fixture
   directory, an unknown `--tier`, a symlink, an oversized file, an
   unreadable JSONL row, a row carrying the same JSON key twice, and a
@@ -171,6 +172,19 @@ The flags are:
   pull request the comment sits under. The reply is data from outside too,
   and is refused with exit 2 unless it carries the string field its kind
   expects.
+
+Three values could decide something while reading as something else, so each
+carries its own check. Rows split on the newline and on nothing else:
+`str.splitlines` also splits on U+000B, U+000C, U+0085, U+2028 and U+2029,
+each of which is legal inside a JSON string, so a file `wc -l` and a diff
+show as 42 rows could otherwise carry a further row the checker counted, and
+a specimen whose `text` carried one of them raw was split into fragments and
+refused as unreadable JSON. `family` is compared with `family_id`, because
+the two hold one family name in the spellings v1 and v2 use and nothing else
+tied them together. And a `source_group_id` carrying whitespace or a
+non-printing character is refused, because independence is decided by
+comparing that value between two positives, and two ids differing by a space
+read as one group on screen and as two here.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen

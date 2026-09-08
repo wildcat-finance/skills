@@ -416,6 +416,54 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         (root / "families.jsonl").write_text(row + "\n", encoding="utf-8")
         self.assert_refused(root, "duplicate JSON key 'evidence_tier'", code=2)
 
+    def test_refuses_a_row_hidden_behind_a_unicode_line_separator(self):
+        """`str.splitlines()` splits on five characters JSON allows in a string."""
+        for separator in ("\u2028", "\u2029", "\u0085", "\v", "\f"):
+            with self.subTest(separator=f"U+{ord(separator):04X}"):
+                root = self.build_fixture()
+                smuggled = dict(FAMILY_ROW, family_id="smuggled_row")
+                one_line = (
+                    json.dumps(FAMILY_ROW, ensure_ascii=False)
+                    + separator
+                    + json.dumps(smuggled, ensure_ascii=False)
+                )
+                (root / "families.jsonl").write_text(one_line + "\n", encoding="utf-8")
+                self.assert_refused(root, "unreadable JSON at families.jsonl:1", 2)
+
+    def test_a_separator_inside_specimen_text_stays_one_row(self):
+        """`json.dumps(..., ensure_ascii=False)` emits U+2028 raw; it is not a row break."""
+        text = "Publication failed due to\u2028the fact that the digest changed."
+        row = dict(
+            SPECIMEN_ROW,
+            text=text,
+            text_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            start_byte=0,
+            end_byte=len(text.encode("utf-8")),
+        )
+        root = self.build_fixture(specimens=[row])
+        result = self.run_checker("--fixture", str(root))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+
+    def test_refuses_a_specimen_whose_family_and_family_id_disagree(self):
+        """One family under two field names, with nothing tying them together."""
+        for other in ("reason_is_because", "no_such_family_anywhere"):
+            with self.subTest(family=other):
+                root = self.build_fixture(specimens=[dict(SPECIMEN_ROW, family=other)])
+                self.assert_refused(root, "is not its family_id")
+
+    def test_refuses_a_source_group_id_carrying_an_invisible_difference(self):
+        """Independence is decided by comparing this value, so it has to be visible."""
+        for character in (" ", "\u00a0", "\u200b"):
+            with self.subTest(character=f"U+{ord(character):04X}"):
+                second = dict(
+                    SPECIMEN_ROW,
+                    specimen_id="causal_fact_clause_wrapper-pos-02",
+                    source_group_id=SPECIMEN_ROW["source_group_id"] + character,
+                )
+                root = self.build_fixture(specimens=[SPECIMEN_ROW, second])
+                self.assert_refused(root, "source_group_id carries")
+
     def test_every_source_object_kind_replays_its_own_endpoint(self):
         """One gate guards every endpoint segment; none of the six kinds lost its replay."""
         expected = {
