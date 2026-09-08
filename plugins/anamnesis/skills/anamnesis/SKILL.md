@@ -79,12 +79,13 @@ python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit-seed \
 
 ### `ingest` -- read the admitted sources
 
-Read each admitted source into the rounds and findings its producer wrote.
-Nothing is normalised here.
+Read each admitted source into the rounds and findings its producer wrote,
+under the mapper the curation policy declares. Nothing is normalised here.
 
 ```bash
 python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py ingest \
-  --policy plugins/anamnesis/specimens/pilot/policy.json
+  --policy plugins/anamnesis/specimens/pilot/policy.json \
+  --curation-policy plugins/anamnesis/specimens/pilot/curation-policy.json
 ```
 
 ### `curate` -- the finding-to-remedy graph
@@ -98,6 +99,14 @@ python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py curate \
   --policy plugins/anamnesis/specimens/pilot/policy.json \
   --curation-policy plugins/anamnesis/specimens/pilot/curation-policy.json
 ```
+
+The policy's `mapper` declaration selects the implementation that reads a
+source. `curate` and `ingest` resolve its `{name, version}` against a
+module-level registry, exactly, with no fallback and no default; a declaration
+no entry provides refuses `A078` before any assertion, quarantine entry or
+release directory exists, and every assertion records the entry that ran rather
+than the string the policy carried. Nothing in a policy or in a source can add
+an entry.
 
 A severity outside the policy's taxonomy is quarantined, not mapped to its
 nearest neighbour. A duplicate cluster is a curator's decision and arrives in
@@ -243,7 +252,7 @@ did not run, say so plainly and do not describe its result as successful.
 - Boundary: Curation establishes what the sources said and how the policy joined it. It does not establish that a finding was real, that a remediation worked, that a duplicate cluster is correct, or that the taxonomy is the right one. `applied` is as far as any status string reaches; a verification state comes only from a verdict the source declared.
 - Authorises: Building a release from the graph, and passing it to the consumer projections runbook step 3 owes.
 - Consequence: 2
-- Refuses: A duplicate naming itself or another duplicate, a policy outside its closed shape, a malformed scope, an admitted source outside the declared scope, a scope source that was not admitted, a record count outside the declared bounds, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
+- Refuses: A declared mapper no registry entry provides, a duplicate naming itself or another duplicate, a policy outside its closed shape, a malformed scope, an admitted source outside the declared scope, a scope source that was not admitted, a record count outside the declared bounds, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
 - Recovery: Inspect the quarantine list and the policy that produced it, correct the taxonomy, the duplicate map or the disclosure classes, and rerun `curate`.
 - Exceptions: none
 

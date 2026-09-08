@@ -1,0 +1,449 @@
+{
+  "candidates": [
+    {
+      "id": "registry-and-synopsis-mapper",
+      "summary": "Resolve the policy's mapper through a name-and-version registry, ship a second implementation for fiat-audit-synopsis/v1, and admit the three committed synopses as a third corpus."
+    },
+    {
+      "id": "registry-and-red-team-mapper",
+      "summary": "Resolve through the same registry, but ship the second implementation for the external red-team FINDING block and admit that one preserved record."
+    },
+    {
+      "id": "registry-only",
+      "summary": "Resolve through the registry and refuse an unknown mapper, shipping no second implementation and no third corpus."
+    },
+    {
+      "id": "per-source-mapper",
+      "summary": "Move the mapper declaration from the curation policy to each admitted source, resolved through the registry, so one corpus can mix formats."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "unknown-mapper-refuses-at-curation",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "assertion-records-the-mapper-that-ran",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "second-format-declares-its-own-schema",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "shipped-release-policies-changed",
+      "kind": "gate",
+      "owner": "hypomnema",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "maximise",
+      "concern": "correctness",
+      "id": "second-format-findings-read",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "source-bytes-added",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "acceptance-check-ms",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "recovery-without-a-program-edit",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "second-corpus-rebuilds-deterministically",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "unknown-mapper-refuses-at-curation",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-unknown-mapper-refuses-at-curation.json",
+        "sha256": "059e26d5f5711e4410205ce276a2a7df0c241cba718c73e1b37be580c70fa82f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "assertion-records-the-mapper-that-ran",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-assertion-records-the-mapper-that-ran.json",
+        "sha256": "a5fb1cd0b20e5dd128a8058afde90d508b21c25c5a6937f73492e5233ac19a07"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "second-format-declares-its-own-schema",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-second-format-declares-its-own-schema.json",
+        "sha256": "70a9e52ae448c7460097cca9c5c36a25a5e79a18be4e5ae5d7fede285ca426ca"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "shipped-release-policies-changed",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-shipped-release-policies-changed.json",
+        "sha256": "4ca4ea68821c56c80869a899007d93c587e653621e66da34b4894352e7ab97fb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "second-format-findings-read",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-second-format-findings-read.json",
+        "sha256": "91668b556840166399d4241088e7e0cee4595c4a909f6359c66b737c7b5c42be"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "source-bytes-added",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-source-bytes-added.json",
+        "sha256": "1426f3f487a5bed66513a9c024c398c1e624aa595039a9d34e5c20b93867edab"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-acceptance-check-ms.json",
+        "sha256": "eac5517059a8d74bbd803218a7f7295ba5c69d1bbb37d3465f4612ea630bcf71"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "recovery-without-a-program-edit",
+      "report": {
+        "path": "reports/registry-and-synopsis-mapper-recovery-without-a-program-edit.json",
+        "sha256": "90452050bd16b0a58cc63d5cdeb53c449c99e156dc5592d4ba052771b998a44c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "registry-and-synopsis-mapper",
+      "criterion": "second-corpus-rebuilds-deterministically",
+      "report": "reports/registry-and-synopsis-mapper-second-corpus-rebuilds-deterministically.json",
+      "resolver": "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify-rebuild --specimen plugins/anamnesis/specimens/synopsis",
+      "state": "pending"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "unknown-mapper-refuses-at-curation",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-unknown-mapper-refuses-at-curation.json",
+        "sha256": "fbac743bc8887160da7b20c43d90002b5d5ce72d632ab99063ee1dfd3e820518"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "assertion-records-the-mapper-that-ran",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-assertion-records-the-mapper-that-ran.json",
+        "sha256": "9c6152a31cda221084bb93291d9be3df4e436943ba085ad7b62e91e667a30154"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "second-format-declares-its-own-schema",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-second-format-declares-its-own-schema.json",
+        "sha256": "f015093a4f68a26843dd068d2c2437e6ae00ccfcaa2655f7b9c64d6835acbc88"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "shipped-release-policies-changed",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-shipped-release-policies-changed.json",
+        "sha256": "169470b1f8bcdb77ecd769712c033df3fbd0b6c6b8281a31d04b74176ba0f7d0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "second-format-findings-read",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-second-format-findings-read.json",
+        "sha256": "bf3e340de9794a567aa34536694d24ea9955a1c26f52703ebd869341b348126f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "source-bytes-added",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-source-bytes-added.json",
+        "sha256": "1b18964ba9a919d6e621d61e4c3435a6b2889d92fdb43d789570204bd2114822"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-acceptance-check-ms.json",
+        "sha256": "429355bbd25060a891bcac81ec452675d5b8868a1c513ecbec01f21ccd69b049"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "recovery-without-a-program-edit",
+      "report": {
+        "path": "reports/registry-and-red-team-mapper-recovery-without-a-program-edit.json",
+        "sha256": "ab3ded5cb2dc20ee7efe340213c83c9e98653c4eddde7a8ca62972e0e93b92bd"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "registry-and-red-team-mapper",
+      "criterion": "second-corpus-rebuilds-deterministically",
+      "report": "reports/registry-and-red-team-mapper-second-corpus-rebuilds-deterministically.json",
+      "resolver": "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify-rebuild --specimen plugins/anamnesis/specimens/red-team",
+      "state": "pending"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "unknown-mapper-refuses-at-curation",
+      "report": {
+        "path": "reports/registry-only-unknown-mapper-refuses-at-curation.json",
+        "sha256": "85de93d906a4b5325dbd96dec9bc0c50b3a4ddbb4d240ed5b7ad8dac2825fa41"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "assertion-records-the-mapper-that-ran",
+      "report": {
+        "path": "reports/registry-only-assertion-records-the-mapper-that-ran.json",
+        "sha256": "1d2288304df0546562488a6af70ad3cf0bcba5a5033df26bb17e54817f4c1882"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "second-format-declares-its-own-schema",
+      "report": {
+        "path": "reports/registry-only-second-format-declares-its-own-schema.json",
+        "sha256": "6b1f869de2d9d3f786545bdcf580af04ff3b9414d8cfcd6a00b01a7ecac316e2"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "shipped-release-policies-changed",
+      "report": {
+        "path": "reports/registry-only-shipped-release-policies-changed.json",
+        "sha256": "5ceb89cd3032662b68db7536aafc7c9b8150d7ab9e2d10665400c799a053dbaf"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "second-format-findings-read",
+      "report": {
+        "path": "reports/registry-only-second-format-findings-read.json",
+        "sha256": "3411769ddb71574e4a46c383aaac430efe1e2e01c920e302488b068cd1443f17"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "source-bytes-added",
+      "report": {
+        "path": "reports/registry-only-source-bytes-added.json",
+        "sha256": "bb2432c070a109e54083189898b8e198e0a38f177e3bcad89a2cb11330ebdc78"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/registry-only-acceptance-check-ms.json",
+        "sha256": "783d28b4930c3fbae7f7e04d9c2d62641fcdcdac9f30e6bd70e629f78ba227f5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-only",
+      "criterion": "recovery-without-a-program-edit",
+      "report": {
+        "path": "reports/registry-only-recovery-without-a-program-edit.json",
+        "sha256": "46584dfbef22b8d3545f52e69c182f4df06f183ea73abfbfe6fd58fbbf92757a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "registry-only",
+      "criterion": "second-corpus-rebuilds-deterministically",
+      "report": "reports/registry-only-second-corpus-rebuilds-deterministically.json",
+      "resolver": "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify-rebuild --specimen plugins/anamnesis/specimens/pilot",
+      "state": "pending"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "unknown-mapper-refuses-at-curation",
+      "report": {
+        "path": "reports/per-source-mapper-unknown-mapper-refuses-at-curation.json",
+        "sha256": "abb1cd63279da1926c4b7846399ff7d54365779c278b1acb44dc2c56e36d318e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "assertion-records-the-mapper-that-ran",
+      "report": {
+        "path": "reports/per-source-mapper-assertion-records-the-mapper-that-ran.json",
+        "sha256": "47ddab891a53c8219330ae97a35ec877976f3d68b33e359a251e82517a3650ed"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "second-format-declares-its-own-schema",
+      "report": {
+        "path": "reports/per-source-mapper-second-format-declares-its-own-schema.json",
+        "sha256": "ab7a1aec441928ffc4c51d322774b27e3ba877de05d49f614373771e9b27c210"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "shipped-release-policies-changed",
+      "report": {
+        "path": "reports/per-source-mapper-shipped-release-policies-changed.json",
+        "sha256": "4c55a2efd4a77128228534fdfd248f4d66f9ddc8d2eaac308cef599882771b32"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "second-format-findings-read",
+      "report": {
+        "path": "reports/per-source-mapper-second-format-findings-read.json",
+        "sha256": "9353e828d7d4ab9138ad48424153c2011cadbf8da594b3d6f846b73712be0445"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "source-bytes-added",
+      "report": {
+        "path": "reports/per-source-mapper-source-bytes-added.json",
+        "sha256": "a722e1a2122de848b2e71ff7d6825b511e449d94baac15f093234855712cd651"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "acceptance-check-ms",
+      "report": {
+        "path": "reports/per-source-mapper-acceptance-check-ms.json",
+        "sha256": "ebb3d8d461f0d047440e5db4cc5bb52306e24c7dde956a9f1c081b605d83bd1d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-source-mapper",
+      "criterion": "recovery-without-a-program-edit",
+      "report": {
+        "path": "reports/per-source-mapper-recovery-without-a-program-edit.json",
+        "sha256": "09fc2ca897ee66b26a96ff095df68df6aa76557f707596313978cb32ca56cdfc"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "per-source-mapper",
+      "criterion": "second-corpus-rebuilds-deterministically",
+      "report": "reports/per-source-mapper-second-corpus-rebuilds-deterministically.json",
+      "resolver": "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify-rebuild --specimen plugins/anamnesis/specimens/synopsis",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "registry-and-synopsis-mapper",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
