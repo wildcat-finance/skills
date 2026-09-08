@@ -78,3 +78,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: Fresh authenticated readback of `wildcat-finance/skills` ruleset `21830871` matched the recorded postimage canonical SHA-256 `2eff233ed09c08b0ca1ecbf31cc82df12658154e4c06fe9aa619e7a0e6b55239`: `invariants` remains the sole required context, and enforcement, bypass actors, conditions, and unrelated fields are unchanged. The exact comparator covers wrong repository, changed preimage, partial response, and unrelated drift. Commit `27a9622a10768c1f9acacc21e62c2c46b0f2b4d3` has a valid signature from `3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A`. The complete checked runner and the 2,447-test Elenchus report were green. No further Step 3 lead warrants another round.
+
+## Step 4, round 1 -- 2026-09-08T11:13:24Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: signature-loss=reviewed; residual-host-ban=reviewed; residual-trailer-mandate=reviewed; identity-job-wedge=reviewed; ruleset-overwrite=reviewed; connector-evidence-gap=reviewed; contributor-policy-leak=reviewed; shoggoth-lookalike-residue=reviewed; historical-record-rewrite=reviewed; generated-copy-drift=reviewed; signature-fixture-masking=reviewed; authority-confusion=reviewed
+
+Not checked: a live connector session, a new live ruleset read, the external Interceptor repository, and final integration composition; the demonstration names its earlier ruleset readback and leaves version resolution and ADR assignment to integration.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Independent review of `843d232d9627e4b7614b84480a3947099e475f53` reproduced both native signed acceptances and the unsigned and tampered refusals. A fresh public GitHub read confirmed `80b34c365c8b7f6fd60247b9ef2fb967017f3937`, `verified: true`, `reason: valid`, author `codex`, committer `laurenceday`, and zero provenance trailers. All 20 focused signature and ruleset tests passed. `python3 -m unittest discover -s tests` passed all 1,599 tests in 163.296 seconds; output is retained in `.hexaemeron/step-4-warden-root.log`. Phylax, Ephoros and the complete Hypomnema walk exited zero. Portable copies, Promise Machine copies, audit synopses and demonstration Imprimatur passed. Ruleset fixture digests match the demonstration; historical ADRs and `audit/AUDIT.md` remain unchanged. The earlier complete checked-runner invocation remains red: its nested Hexaemeron command timed out and its root command found stale census bytes. The unchanged product's separate complete 2,447-test report and this fresh root pass supply the corresponding checks after census regeneration; no green result is attributed to the red invocation. Sapheneia, Imprimatur and Vulgate preserved this record's evidence and required fields. No further Step 4 lead warrants another round.
