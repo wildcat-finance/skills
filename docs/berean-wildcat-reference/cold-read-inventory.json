@@ -6061,6 +6061,20 @@
       "candidate_review": "baseline unchanged"
     },
     {
+      "path": "plugins/brevitas/skills/brevitas/evals/README.md",
+      "reader": "warden and parent",
+      "baseline_sha256": "d96841846327bd7230302d9c230bc062e6ffa639b7aaf49c35e4d0ce34fcafd2",
+      "baseline_bytes": 5247,
+      "baseline_read_lines": [
+        1,
+        109
+      ],
+      "line_encoding": "inclusive start/end",
+      "final_sha256": "7c48c1ce3727f10bd6101ea77bb149b358994fd15992c376f01b502f6908d719",
+      "final_bytes": 5218,
+      "candidate_review": "full guide read; command-only correction; baseline exclusion preserved"
+    },
+    {
       "path": "plugins/dokimasia/AGENTS.md",
       "reader": "parent",
       "baseline_sha256": "613add03170fdb42b90a42fa6fc42804c5327bddb9dd3021b06738e6ae208d8e",
@@ -8369,9 +8383,9 @@
         456
       ],
       "line_encoding": "inclusive start/end",
-      "final_sha256": "5e65b919c6a8dd18c0512961d47b18e39943ffce3d09f01aea14b785be8a057f",
-      "final_bytes": 24089,
-      "candidate_review": "baseline unchanged"
+      "final_sha256": "246490deb667b2e9f20e1db8d7d08a6fd1dc764c8135538de114fe8e0d060367",
+      "final_bytes": 24271,
+      "candidate_review": "full candidate diff read; Warden command correction reviewed"
     },
     {
       "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",

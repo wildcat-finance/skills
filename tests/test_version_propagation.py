@@ -41,7 +41,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "anamnesis": "0.3.1",
     "ariadne": "1.3.1",
     "berean": "0.1.3",
-    "brevitas": "0.2.2",
+    "brevitas": "0.2.3",
     "dokimasia": "3.1.0",
     "hermes": "0.1.2",
     "hexaemeron": "1.6.32",

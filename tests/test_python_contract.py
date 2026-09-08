@@ -118,7 +118,8 @@ EXACT_PIN = re.compile(
 RUNTIME_VERSION_CLAIM = re.compile(
     r"(?i)(?:\b(?:cpython|python)\s+(?:version(?:s)?\b|3(?:\.\d+){0,2}\b)"
     r"|\bsupported\s+python\s+versions\b"
-    r"|\buv\s+run\s+--python\s+3(?:\.\d+){1,2}\b)"
+    r"|\buv\s+run\s+--python\s+3(?:\.\d+){1,2}\b"
+    r"|\bmise\s+exec\s+python@3(?:\.\d+){1,2}\b)"
 )
 
 
@@ -229,6 +230,12 @@ def is_current_runtime_prose(path):
 
 
 class PythonRuntimeContractTests(unittest.TestCase):
+    def test_mise_version_claim_is_not_a_repository_pin(self):
+        self.assertIsNotNone(
+            RUNTIME_VERSION_CLAIM.search("mise exec python@3.13.15 -- python3 check.py")
+        )
+        self.assertIsNone(RUNTIME_VERSION_CLAIM.search("python3 check.py"))
+
     def test_durable_minor_contract_is_exact(self):
         document = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
         self.assertEqual(
