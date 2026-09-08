@@ -1,0 +1,9 @@
+{
+  "candidate": "route-restriction",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate route-restriction --criterion tracked-files-deleted",
+  "criterion": "tracked-files-deleted",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

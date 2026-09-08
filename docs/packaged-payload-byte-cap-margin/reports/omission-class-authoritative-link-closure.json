@@ -1,0 +1,9 @@
+{
+  "candidate": "omission-class",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate omission-class --criterion authoritative-link-closure",
+  "criterion": "authoritative-link-closure",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
