@@ -69,3 +69,23 @@ no standalone issue.
 
 This record covers local implementation evidence. It does not authorise a
 controller transition, publication, or resumption of #1144.
+
+## Audit correction
+
+S3-R1-01 found that the Phylax conformance command and four Brevitas evaluation
+commands still selected `3.13.15` rather than the repository's `3.14.6` pin.
+The Python-contract guard now recognises the `mise exec python@<version>`
+spelling. Both guides use the repository interpreter convention and link its
+pin. Brevitas's package advances from `0.2.2` to `0.2.3`; its skill, frontier,
+held corpus and recorded client provenance remain unchanged.
+
+The original 207-read account and 864-path exclusion snapshot above remain
+preserved. Warden and the parent read the complete Brevitas evaluation guide
+and reclassified it as mutable command documentation. The final review
+inventory therefore has 208 entries, including that guide's original identity,
+read span and reviewed final identity. Its baseline exclusion remains visible.
+
+The owned Python-contract emitter recorded 20 tests with one assertion failure
+and no errors on each of two unfixed runs, identifying both guides. The fixed
+run recorded 20 passes. This evidence concerns interpreter-command drift and
+adds no model execution or claim about held-corpus quality.

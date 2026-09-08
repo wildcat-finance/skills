@@ -203,11 +203,15 @@ action, or general network path. Its normative contract is
 [ADR-046](../../../../docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md)
 holds the design and rejected alternatives.
 
-Run its final component proof from the repository root:
+Run its final component proof from the repository root using the interpreter
+pinned in [`.python-version`](../../../../.python-version):
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py conformance --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json
+python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py conformance --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json
 ```
+
+On macOS, run this command with `TMPDIR=/private/tmp`; the default temporary
+path can fail the receipt-path check with `MP407`.
 
 The digest-bound manifest pins the accepted JobSpec and policy, with one
 positive row and thirteen fixed hostile rows. A missing, duplicate, reordered,

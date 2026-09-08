@@ -2,7 +2,8 @@
 
 The evaluation surface runs offline from
 `plugins/brevitas/skills/brevitas/`. It does not call a model or infer a model
-identity from prose, filenames or Git metadata.
+identity from prose, filenames or Git metadata. Use the interpreter pinned in
+[`.python-version`](../../../../../.python-version).
 
 ## Legacy cases
 
@@ -10,7 +11,7 @@ Each legacy case directory directly under `evals/cases/` contains `case.json`,
 `original.md` and `target.md`. Run all current unit and evaluation cases with:
 
 ```bash
-mise exec python@3.13.15 -- make -C plugins/brevitas/skills/brevitas test
+make -C plugins/brevitas/skills/brevitas test
 ```
 
 The three legacy cases predate the held cross-model corpus. They remain
@@ -68,7 +69,7 @@ unchanged.
 Validate only the held interface with:
 
 ```bash
-mise exec python@3.13.15 -- python3 \
+python3 \
   plugins/brevitas/skills/brevitas/scripts/run_evals.py \
   --validate-corpus-only
 ```
@@ -92,7 +93,7 @@ exact span must occur once in the output and match its own SHA-256 digest.
 The source-owned unit runner accepts one fresh report path below the worktree:
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/brevitas/tests/run_tests.py \
+python3 plugins/brevitas/tests/run_tests.py \
   .elenchus/brevitas-unittest.json
 ```
 
@@ -104,6 +105,6 @@ non-directory parent. A failed or interrupted write leaves no report.
 The equivalent Make target is:
 
 ```bash
-mise exec python@3.13.15 -- make -C plugins/brevitas/skills/brevitas report \
+make -C plugins/brevitas/skills/brevitas report \
   REPORT=.elenchus/brevitas-unittest.json
 ```
