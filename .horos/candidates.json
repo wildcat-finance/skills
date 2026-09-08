@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20893414,
+    "bytes_blob": 20964769,
     "bytes_generated": 98
   },
   "entries": [
@@ -579,6 +579,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 19126,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 19126 bytes",
+      "grade": "candidate",
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/header.json"
+    },
+    {
+      "bytes": 52229,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 52229 bytes",
+      "grade": "candidate",
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/proofs.jsonl"
     },
     {
       "bytes": 66420,

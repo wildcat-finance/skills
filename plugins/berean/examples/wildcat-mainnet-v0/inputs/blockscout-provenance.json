@@ -1,0 +1,8 @@
+{
+  "url": "https://eth.blockscout.com/api/v2/blocks/25907928",
+  "captured_at": "2026-09-06T00:39:04Z",
+  "sha256": "4f2c87ddba2a5a9d709be8a09a49f18fa7dccce647716b73180ab46dd5bebc46",
+  "bytes": 1290,
+  "http_status": 200,
+  "source": "Preserved HTTP response from existing Wildcat mainnet capture; copied with digest verification. Recorded provenance only."
+}
