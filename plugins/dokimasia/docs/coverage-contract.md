@@ -56,7 +56,7 @@ A `manual` or `excluded` entry naming an oracle refuses. Such a row would read
 as decided by a person and held to a case at once, which are two different
 claims about the same item.
 
-No code path proposes a disposition. The reconciler reads the set, checks it,
+The reconciler proposes no disposition. It reads the submitted set, checks it,
 and reports. An agent may draft a disposition set for a person to review, and
 it cannot mark anything covered by running this tool.
 

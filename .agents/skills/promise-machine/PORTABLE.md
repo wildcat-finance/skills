@@ -9,8 +9,8 @@ the omissions listed below.
 
 Use this path only when the router is installed as one Agent Skills package.
 The full-source path is valid only when `../../../PROMISE_MACHINE.md` identifies
-`promise-machine/v1` and the sibling `../../../plugins/` directory holds all
-sixteen runtime contracts. A target repository's own `AGENTS.md` does not make
+`promise-machine/v1` and the sibling `../../../plugins/` directory holds the
+first-party runtime contracts declared by this distribution. A target repository's own `AGENTS.md` does not make
 it a Wildcat Skills source checkout.
 
 ## Verify the copy

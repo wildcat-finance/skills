@@ -1,0 +1,241 @@
+{
+  "baseline_commit": "f05365a5980dcbe5bab9ebad789dad5ad5a3c89e",
+  "comparison": "Every listed working-tree file is byte-identical to the baseline Git blob. Rolling example README prose is outside this fixed inventory.",
+  "files": [
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/demo.py",
+      "sha256": "0de3dd948105fbefc45c30580e5a5db26fe7a5582d9758f64b7b10f3d8c77c1c",
+      "bytes": 3771
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/rebuild.py",
+      "sha256": "2cb93ccd5174f215469feb69a434447af4213ed7b62eaa30fa610d4627f44e42",
+      "bytes": 17107
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/answers/grounded.json",
+      "sha256": "d872c7398bbffbca9ffb56a40a2083e3ccd2ed5032d747a79cfa48ec7d6e9951",
+      "bytes": 995
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/answers/refusal.json",
+      "sha256": "dc2e338ec72e26bf792d8751fac0ea136e97d062c05985626fa29e48ba0a4621",
+      "bytes": 362
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/answers/stale.json",
+      "sha256": "dd9221c46271b5dd49f09e830215991fadd9932375f72822c7a6ac3e7afe100a",
+      "bytes": 1053
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/corpus-manifest.json",
+      "sha256": "5e7bd0585af5ae4ce077123c84a105e018e0133d6c4c193f6bf01b67634bfcc6",
+      "bytes": 479
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/corpus/appendix.md",
+      "sha256": "136377d8bd912ac3e66dd65d875aaa18751baf44d2f0d3534ea697c4028283f3",
+      "bytes": 626
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/corpus/history.md",
+      "sha256": "e486d0bc575d894686d23624811761968aef7e453c38d6d542569a533f9eff01",
+      "bytes": 444
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/corpus/terms.md",
+      "sha256": "8abcab0cea7f306b6f1a444978204711d211b140e62896b8eae746d428494119",
+      "bytes": 678
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/evals/cases.json",
+      "sha256": "f7b7590dcc00adb73b0236e9eff2a77381835dcf1cfffbde337f8bd79ad0cdef",
+      "bytes": 7819
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/evals/report.json",
+      "sha256": "1482bed186fbbc258960992329919c02ff16a370d12faf36a0cbc37e59cc1522",
+      "bytes": 330
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/promotions.jsonl",
+      "sha256": "481deeeae5b5a6087da968a62b8f1c60a86f1d961aedd8ad2da9142baca50826",
+      "bytes": 475
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/reads.jsonl",
+      "sha256": "db36030888f3802a3049e055bbaeb92674c26b3bd0b0bdf81473a58736aaf008",
+      "bytes": 13229
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/release/release.json",
+      "sha256": "3ae9bb5251a664eecf6c14fe5290055573497f809f2f1b21b796133b9364b392",
+      "bytes": 2052
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/grounded-agent.intoto.json",
+      "sha256": "0d315ca32edb9169de0f592fea631293813ccb4c8d6d5d17222465b0fa003c8a",
+      "bytes": 9971
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/blockscout-anchor.json",
+      "sha256": "4f2c87ddba2a5a9d709be8a09a49f18fa7dccce647716b73180ab46dd5bebc46",
+      "bytes": 1290
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/blockscout-provenance.json",
+      "sha256": "eaeb5b1335ef50219183a1fe5ae0545de961d40342ffae68f30e686718a18290",
+      "bytes": 362
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/capture-plan.json",
+      "sha256": "092553feafdf5ba72f19bfb48a99e044b148fda27f417f172a0373b74357161a",
+      "bytes": 1601
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/capture-result.json",
+      "sha256": "7d4f769fe01e940b61c1f95f17251fb19a63387501c9fd4411eea1957c0f78e3",
+      "bytes": 1894
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/docs-provenance.json",
+      "sha256": "2538cd5a485a92213bc543fa4183e23abb51ac96f613c2d54ab2676453865589",
+      "bytes": 801
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/fixtures/docs/technical-overview/contract-deployments.md",
+      "sha256": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541",
+      "bytes": 6844
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/fixtures/docs/using-wildcat/delinquency.md",
+      "sha256": "58ca49ebceb8585f9441efa47581a83c24a6b4ffddd75b648a11fef3100c3448",
+      "bytes": 7348
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/fixtures/docs/using-wildcat/terminology.md",
+      "sha256": "8b97202f0cde9611923736d57f56a6e09086a0badacb78abebabc0309a57b66c",
+      "bytes": 25809
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/header.json",
+      "sha256": "98da99bc823343dd4e67fb4303d907f65a3cdecaf05c22da1133772c6f02ceb4",
+      "bytes": 19126
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/manifest.json",
+      "sha256": "2834b87a5fd5b920d53489653f7b9daacb57df1fc6dec654a2b94e72d0f6f8db",
+      "bytes": 808
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/plan.json",
+      "sha256": "092553feafdf5ba72f19bfb48a99e044b148fda27f417f172a0373b74357161a",
+      "bytes": 1601
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/proofs.jsonl",
+      "sha256": "488d979366667497a830f4ceba87c3172933495dfb84e2d6a35ddf1e79786afd",
+      "bytes": 52229
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture/rpc.jsonl",
+      "sha256": "18b9ead3058f27f8e5260d0b65b50e27dea89951bca69fb85319481a01f7af95",
+      "bytes": 1929
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/rebuild.py",
+      "sha256": "4f70418299f7a29d60d63a99069df4f9cc1591907131202c285076217987bd11",
+      "bytes": 19288
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/grounded.json",
+      "sha256": "6ece153f0a313432b124f5be4379c81e2f605963a64881a2df272cbaa74a48d5",
+      "bytes": 2160
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/poisoned.json",
+      "sha256": "25353eeb094ca040daecb3cd49f2d65cf3ed51548fd49e106e84d8a7eec58864",
+      "bytes": 646
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/refusal-0.json",
+      "sha256": "48b0dada8991f55adb0cc447237da6c6039bdf35bd9bc8ecc8ca07cfbb57f16f",
+      "bytes": 313
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/refusal-1.json",
+      "sha256": "7c5fc06709aa4ca46d0bbc7d4c63f3e4e92688f47800def6f3e0266d41b3cfd5",
+      "bytes": 346
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/refusal-2.json",
+      "sha256": "b67aead96dbc1ca674402866e38f2a159d2190f61dc313478efe13127447fcda",
+      "bytes": 358
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/refusal-3.json",
+      "sha256": "4c0f4777fc09f492b75e37ba4362ca3a644ec9f0221829f4c2ea4f7c0ccbba7d",
+      "bytes": 331
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/answers/stale.json",
+      "sha256": "c6d6e9c5df8eb501e34fd18da78a8f5f806873084188b08a8ed983c116687b6a",
+      "bytes": 1213
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/corpus-manifest.json",
+      "sha256": "9d30fd65b787ffcdaf628d5c38cf682277ea4f642097d1188db3b9d3b0c2d084",
+      "bytes": 908
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/corpus/constructed/poison.md",
+      "sha256": "a9cdd0b6c01928f720cbc597fc89746eddb3736cb6593f9ff2e5e2d8e6544f15",
+      "bytes": 167
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/corpus/constructed/stale.md",
+      "sha256": "c2033c6e1da2e799bd7322a90a431a2119b3509f7817e5ca45180a67cdbace8a",
+      "bytes": 179
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/corpus/fixtures/docs/official/technical-overview/contract-deployments.md",
+      "sha256": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541",
+      "bytes": 6844
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/corpus/fixtures/docs/official/using-wildcat/delinquency.md",
+      "sha256": "58ca49ebceb8585f9441efa47581a83c24a6b4ffddd75b648a11fef3100c3448",
+      "bytes": 7348
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/corpus/fixtures/docs/official/using-wildcat/terminology.md",
+      "sha256": "8b97202f0cde9611923736d57f56a6e09086a0badacb78abebabc0309a57b66c",
+      "bytes": 25809
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/evals/cases.json",
+      "sha256": "1779468f654708e094e025e2b2f3a47315254c3712cbccbde7e3a109921c87db",
+      "bytes": 12815
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/evals/report.json",
+      "sha256": "7e52e75c37874975d877366bdb6b870224ae942faca2b343cdfd092ab3d113fa",
+      "bytes": 332
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/promotions.jsonl",
+      "sha256": "88728c643563f74042e5a63ca60160825bd6237d2b1ae6093f1c777a4f767a37",
+      "bytes": 516
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/reads.jsonl",
+      "sha256": "18b9ead3058f27f8e5260d0b65b50e27dea89951bca69fb85319481a01f7af95",
+      "bytes": 1929
+    },
+    {
+      "path": "plugins/berean/examples/wildcat-mainnet-v0/release/release.json",
+      "sha256": "2c119011b37fd8c2c14f6211d465f7069676e458e8ab40f15ccd027e51790495",
+      "bytes": 2490
+    }
+  ]
+}

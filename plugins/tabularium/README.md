@@ -94,18 +94,16 @@ mapped and what was not, and states the evidence gaps.
 Verification does not stop at those digests. It checks the capture against the
 source, confines every path to the release directory, requires one ordered
 source selector per event and rebuilds the canonical bytes from the preserved
-input. The worked release is unsigned and its block boundary is what the hosted
-indexer reported, so a clean run establishes internal consistency rather than
+input. The worked releases are unsigned and retain their recorded RPC or API
+source boundaries, so a clean run establishes internal consistency rather than
 publisher authenticity or an independent chain proof.
 
 ## WHAT IT SHIPS
 
 - the standard-library [`tabularium.py`](./scripts/tabularium.py)
   builder and offline verifier;
-- versioned event schemas [v1](./schemas/canonical-event-v2.json)
-  and [v2](./schemas/canonical-event-v2.json), plus coverage
-  schemas [v1](./schemas/coverage-manifest-v2.json) and
-  [v2](./schemas/coverage-manifest-v2.json);
+- the current [event schema v2](./schemas/canonical-event-v2.json) and
+  [coverage schema v2](./schemas/coverage-manifest-v2.json);
 - the complete [`aave-v4-v0`](./examples/aave-v4-v0/README.md)
   release, its data dictionary and a fresh-directory rebuild demonstration;
 - source-bound [`euler-v1-v0`](./examples/euler-v1-v0/README.md)
@@ -171,7 +169,7 @@ that do not match a fresh source rebuild.
 ## THE CHECKED-IN RELEASES
 
 [`examples/aave-v4-v0`](examples/aave-v4-v0/README.md) contains the
-unchanged source and capture manifest, the 511-row ledger, its coverage
+unchanged source and capture manifest, the 500-row ledger, its coverage
 manifest, a data dictionary and a rebuild demonstration.
 
 [`examples/euler-v1-v0`](examples/euler-v1-v0/README.md) preserves one real

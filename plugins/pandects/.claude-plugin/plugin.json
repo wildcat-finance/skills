@@ -1,7 +1,7 @@
 {
   "name": "pandects",
   "displayName": "Pandects",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Executable credit laws with broken specimens and reduced counterexamples.",
   "author": {
     "name": "Wildcat Labs",

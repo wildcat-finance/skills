@@ -9,10 +9,10 @@ lending venues: what they borrowed, whether they gave it back, and what could
 not be established. It reads lending venues through small adapters, one
 per venue, and it currently reads five of the fifteen it knows about.
 
-The other ten are the interesting part of this document. Each one is a named
-gap in every dossier the tool produces, and closing one is a self-contained
-piece of work that makes every future dossier better. This is what each gap
-actually is, and what it takes to close it.
+The other ten lack adapters. The archive route can separately cover Goldfinch
+and Clearpool through verified Alexandria releases; each requested route reports
+its own coverage or gap. This document records prior adapter probes and the
+work their results suggested, without establishing current endpoint availability.
 
 You don't need to know anything about Wildcat to write an adapter. You need to
 know one lending protocol well enough to say what its events mean.
@@ -41,10 +41,11 @@ that checks a venue whose registry flag claims an adapter it does not have
 fails its own test suite, so the table cannot drift into claiming coverage the
 tool does not have.
 
-## What is reachable today
+## Recorded source probes
 
-Probed directly rather than taken from documentation. Everything below was a
-live request.
+The probe notes below came from live requests recorded during this document's
+preparation. They are historical observations, not fresh availability or
+entitlement checks. The built-adapter table describes the shipped source paths.
 
 ### Built
 
@@ -54,10 +55,12 @@ live request.
 | Morpho Blue | `blue-api.morpho.org/graphql` | none |
 | Euler v1 | Canonical proxy log through `mainnet.gateway.tenderly.co` | none |
 | Euler v2 | `v3.euler.finance` activity, liquidation and EVK vault endpoints | none |
+| Morpho Midnight | `api.morpho.org/v0/midnight`, Base fixed-maturity markets | none |
 
 ### Reachable, keyless, and unbuilt
 
-These need an adapter and nothing else. No permission, no key, no negotiation.
+These probes found no key requirement. A new adapter still needs current source
+verification, permission where required and its own evidence contract.
 
 **Centrifuge** is the most build-ready of the lot. `api.centrifuge.io` serves a
 Ponder GraphQL API that introspects cleanly and answers without a key. Twenty

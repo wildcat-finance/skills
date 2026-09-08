@@ -147,10 +147,10 @@ retrieved sentence traceable to exact source bytes.
 evidence, proves and verifies the supported state offline, replays the exact
 recorded RPC requests over loopback, and packages preservation releases. It now
 reconstructs a scoped `receiptsRoot` relation for represented receipt payloads
-and log projections.
+and log projections. Empty witnesses establish Ethereum's empty receipt root
+and zero relations.
 
-**Missing.** Empty blocks have no receipt-witness representation. Transaction
-hashes and unrelated RPC evidence may be recorded but are not thereby proved;
+**Missing.** Transaction hashes and unrelated RPC evidence remain recorded;
 canonical-chain and provider-independence claims remain outside the fixture.
 
 **With enough contribution.** Lazarus could become a general historical-test
@@ -166,9 +166,11 @@ citations against exact bytes, ties live values to a chain and block, records
 evaluation, and governs promotion and rollback of a grounded protocol-agent
 release.
 
-**Missing.** The reference release uses a demonstration corpus and preserved
-Aave v4 readings. No live Wildcat reference release or Ariadne binding has
-been established.
+**Missing.** The Wildcat reference now binds captured official documents and
+five recorded market calls at block 25907928, with an unsigned Ariadne
+statement. Its answers remain authored fixtures, so live agent behaviour is
+unestablished and demonstration status stays `mixed`. The release frontier is
+mature.
 
 **With enough contribution.** Berean could support continuously evaluated
 protocol assistants whose releases fail closed when documents, deployments, or
@@ -211,12 +213,13 @@ It should never promote correlation into cause or authorise remediation.
 **Today.** [Anamnesis](./plugins/anamnesis) admits audit findings and the
 changes that answered them against an explicit rights basis, keeps the
 producer's bytes and identifiers unchanged, and curates, releases and projects
-read-only views for Elenchus and Synkrisis. Its committed pilot specimen
-rebuilds offline from preserved producer bytes.
+read-only views for Elenchus and a separately readable Synkrisis projection.
+Two corpora preserve 41 Warden findings and 17 capture-estate findings under
+separate declared scopes.
 
-**Missing.** One producer's corpus is admitted. Nothing here establishes that
-the corpus is complete, that a finding is real, or that a remediation is
-correct.
+**Missing.** Synkrisis does not yet admit the projection schema. Nothing here
+establishes that either corpus is complete, that a finding is real, or that a
+remediation is correct.
 
 **With enough contribution.** Anamnesis could hold a cross-producer record of
 what auditors found and what teams changed in reply, so a later reader can ask
@@ -290,12 +293,11 @@ visible rather than arguable.
 
 ### HOMOLOGIA
 
-**Today.** [Homologia](./plugins/homologia) is a packaged and selectable
-scaffold. Its substantive verbs refuse cleanly. There is no manifest validator,
-contract runner, off-chain mirror runner, integer comparison, or parity
-verdict.
+**Today.** [Homologia](./plugins/homologia) validates a manifest and
+evidence-classed expected integers.
 
-**Missing.** The operational skill itself.
+**Missing.** Contract execution, off-chain mirror execution, integer comparison
+and parity verdicts still refuse.
 
 **With enough contribution.** Homologia could compare one pinned on-chain
 calculation with one pinned TypeScript or Python mirror over declared vectors,
@@ -327,8 +329,9 @@ inputs by digest, emits verified derived views, creates unsigned release
 statements, and answers address queries without hiding source coverage. One
 Compound v3 Phase 0 execution witness exists.
 
-**Missing.** There is no resumable, reconciled collector for a declared
-Ethereum USDC interval.
+**Missing.** The resumable collector has run against two live providers over a
+finalized Ethereum USDC interval. Its epoch table still attributes logs by
+block rather than transaction position.
 
 **With enough contribution.** Alexandria could become a durable public archive
 of raw lending evidence across venues and time: resumable capture, independent
@@ -449,8 +452,8 @@ becoming a vague debugging persona.
 durable decision belongs in an ADR, comment, runbook, interface note, or
 pointer to an existing record, and checks several of those shapes mechanically.
 
-**Missing.** The bridge from a study to exactly one standing record is still a
-judgement rather than a deterministic check.
+**Missing.** The study bridge checks the one declared decision home and refuses
+a duplicate the study declares. It does not discover an undeclared second home.
 
 **With enough contribution.** Hypomnema could maintain a navigable explanation
 graph from code and alerts to decisions, assumptions, and operating procedures,
@@ -489,8 +492,9 @@ check without flattening every author's voice.
 ### SAPHENEIA
 
 **Today.** [Sapheneia](./plugins/sapheneia) shapes an agent's replies for AuDHD
-readers and has one bounded operation for durable audit records, issues, and
-comments. It preserves protected evidence and does not change another skill's
+readers and has one bounded operation for every durable record, including
+audit records, issues, comments, pull requests, repository documents and commit
+messages. It preserves protected evidence and does not change another skill's
 gates.
 
 **Missing.** The ten interaction rules have no published held cross-model task
@@ -576,7 +580,7 @@ when support is absent, and help a person decide what to do next.
 ### CROSS-PROTOCOL BEHAVIOUR
 
 Extend Janus with real host adapters, Pandects with more executable laws, and
-Homologia from scaffold to a tested parity operation. This could expose where
+Homologia from checked inputs to a tested parity operation. This could expose where
 different protocols use the same words for different state transitions.
 
 ### OPEN LENDING EVIDENCE
@@ -617,7 +621,7 @@ Good first contributions are small enough to verify and large enough to change
 what a user can establish. Examples from the current gaps include:
 
 - a held production cohort for Synkrisis;
-- a live Wildcat reference release for Berean;
+- real agent answer records for Berean's separate demonstration lane;
 - a second real host adapter for Janus;
 - a complete first Homologia operation with a deliberately divergent specimen;
 - structured Echidna or Medusa search records for Pandects;

@@ -63,7 +63,7 @@ record at the transition where each item of evidence becomes due.
 
 Report a refusal in three parts: what is missing, where you looked, and the one
 action that clears it. Say plainly that the phase is blocked rather than
-in progress. None of the four is a suggestion to proceed carefully.
+in progress. None of the five is a suggestion to proceed carefully.
 
 If the gap is an ambiguity rather than an absence, ask one literal question
 instead of picking a reading.

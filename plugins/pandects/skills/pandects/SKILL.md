@@ -138,9 +138,10 @@ held. Accrual: debt falls only against assets arriving, rises at rest only
 against assets leaving, and the same span costs the same however it is cut up.
 Withdrawal claims: a recorded claim is never written down smaller, nobody is
 paid ahead of somebody who has waited longer, and what a system declares
-payable it has set aside.
+payable it has set aside; pooled lender claims cover what remains owed on open
+withdrawal batches.
 
-Eight are exact. The ninth carries the corpus's only tolerance, and the bound
+Nine are exact. `path-independent` carries the corpus's only tolerance, and the bound
 is derived rather than chosen: linear accrual on principal truncates once per
 step, so `n` small steps differ from one long step by at most `n - 1` units.
 
@@ -163,7 +164,7 @@ is worth on its own.
 `adapters/` is where the corpus meets somebody else's system. Two shapes, and
 the difference is a limit rather than a convenience.
 
-`CorpusObserver` holds any address and offers the five one-state laws. Nothing
+`CorpusObserver` holds any address and offers the six one-state laws. Nothing
 routes calls through it, so it offers no pair law: one that never sees a call
 has no past to compare with, and would report holding forever.
 
@@ -218,7 +219,7 @@ else.
 for: a reduced model of a Wildcat market with batched withdrawals, a reserve
 the borrower may not touch, delinquency and penalty accrual.
 
-Six laws apply flatly. Three do not, and the three are what the integration is
+Seven laws apply flatly. Three do not, and the three are what the integration is
 for.
 
 `queue-order-preserved` applies at batch granularity and says nothing per

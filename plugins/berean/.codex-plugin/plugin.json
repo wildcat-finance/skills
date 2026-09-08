@@ -1,6 +1,6 @@
 {
   "name": "berean",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
   "author": {
     "name": "Wildcat Labs",
@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Berean",
     "shortDescription": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
-    "longDescription": "Berean checks protocol-agent releases without rerunning the model. A release pins its corpus by digest, proves citations against exact bytes, binds each live value to a chain and block, separates source classes, records refusals, and preserves the evaluation, promotion, or rollback decision. The checked-in reference still uses a demonstration corpus and preserved Aave v4 reads; no live Wildcat reference release or Ariadne binding exists yet.",
+    "longDescription": "Berean checks protocol-agent releases without rerunning the model. A release pins its corpus by digest, proves citations against exact bytes, binds each live value to a chain and block, separates source classes, records refusals, and preserves the evaluation, promotion, or rollback decision. The Wildcat reference pins three captured official documents and five fixed-block market calls, with an unsigned Ariadne binding. Its authored answers keep the demonstration mixed; it establishes no live model behaviour.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

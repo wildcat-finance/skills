@@ -1,0 +1,48 @@
+{
+  "schema": "berean-wildcat-router-regrade/v1",
+  "regraded_at": "2026-09-08T15:18:45.125949+00:00",
+  "new_model_execution": false,
+  "source_commit": "f05365a5980dcbe5bab9ebad789dad5ad5a3c89e",
+  "prior_run": {
+    "model": "codex-subagent-gpt-5",
+    "date": "2026-09-05",
+    "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
+    "corpus_sha256": "553913579a114838e6e583b359e190f072217942d240991f2041dfab7d90a9e4",
+    "cases": 41,
+    "passed": 39,
+    "failed": 2,
+    "failures": [
+      {
+        "case": "RS-33",
+        "selected": "elenchus"
+      },
+      {
+        "case": "RS-38",
+        "selected": "refuse:uncovered"
+      }
+    ]
+  },
+  "regraded_run": {
+    "model": "codex-subagent-gpt-5",
+    "date": "2026-09-05",
+    "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
+    "corpus_sha256": "5f0e8c5e931f83f0db2b9432f3df057cfb1c0c0cd7ebd5c39a2e742e8faefcfa",
+    "cases": 41,
+    "passed": 39,
+    "failed": 2,
+    "failures": [
+      {
+        "case": "RS-33",
+        "selected": "elenchus"
+      },
+      {
+        "case": "RS-38",
+        "selected": "refuse:uncovered"
+      }
+    ]
+  },
+  "answer_path": "docs/router-selection-driver/demonstration-answers.json",
+  "answer_sha256": "3981519d7915c24cb9d04c96c97b4c2aa3277b6e6b81126129a8436de3d1b078",
+  "emit_command": "python3 tests/router_selection_driver.py emit --out .hexaemeron/router-regrade-packet",
+  "tally_command": "python3 tests/router_selection_driver.py tally --packet .hexaemeron/router-regrade-packet --answers docs/router-selection-driver/demonstration-answers.json --model codex-subagent-gpt-5 --date 2026-09-05"
+}

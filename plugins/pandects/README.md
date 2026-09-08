@@ -118,6 +118,7 @@ which contract it is proven to catch.
 | `recorded-claim-never-shrinks` | A recorded claim keeps its owed amount and never loses payment made | `ClaimHaircut` |
 | `queue-order-preserved` | No claim is paid while an older claim is still owed something | `QueueJumped` |
 | `reserves-cover-payable` | Reserved assets cover everything owed on the claims declared payable | `PayableBeyondReserves` |
+| `pooled-claims-cover-open-batches` | Pooled lender claims cover everything still owed on open withdrawal batches | `FeeFromQueued` |
 
 Every one is independent of the others: a state or a transition can break any
 one while the rest hold, which is what makes a specimen per law possible at all.
@@ -210,8 +211,8 @@ your own system from the same start.
 
 | Adapter | Laws | Reach |
 | --- | --- | --- |
-| `CorpusObserver` | 5 one-state | any address |
-| `CorpusDriver` | 5 one-state, 3 succession | a target you front |
+| `CorpusObserver` | 6 one-state | any address |
+| `CorpusDriver` | 6 one-state, 3 succession | a target you front |
 | `PathIndependenceProbe` | 1 differential | two targets you built |
 
 `adapters/echidna/echidna.yaml` and `adapters/medusa/medusa.json` carry
@@ -297,7 +298,7 @@ It is a separate interface rather than three further functions on the core,
 because
 a system with no queue would have to implement all three and mean none of them,
 and an observable that means nothing is worse than an absent one: it reports
-zero, and zero reads like an answer. The three laws that need it say so in their
+zero, and zero reads like an answer. The four laws that need it say so in their
 applicability, and a target without it reverts on the read -- which is no
 verdict rather than a false one.
 
@@ -340,7 +341,7 @@ forge test --match-contract WildcatTest
 `integrations/wildcat/` models a market with batched withdrawals, a reserve the
 borrower may not touch, delinquency and penalty accrual.
 [`APPLICABILITY.md`](./integrations/wildcat/APPLICABILITY.md) is the operative
-source. Six laws apply flatly. `queue-order-preserved` applies at batch
+source. Seven laws apply flatly. `queue-order-preserved` applies at batch
 granularity and says nothing per lender. `path-independent` holds while the
 market is solvent and stops holding once the penalty is running. And
 `recorded-claim-never-shrinks` does not hold over a batch that is still open,
@@ -365,7 +366,7 @@ than only at contracts written to break it.
 
 None. Foundry's invariant runner works on a bare contract, so there is no
 `lib/`, no submodule, and nothing to fetch at build or test time. The catalogue
-checker is standard-library Python on 3.9 through 3.13.
+checker uses standard-library Python at the exact repository `.python-version` pin.
 
 ## WHAT THIS IS NOT
 

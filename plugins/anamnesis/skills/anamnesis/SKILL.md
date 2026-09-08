@@ -48,7 +48,7 @@ how common a weakness is beyond the records it holds, train a model, scrape
 arbitrary URLs, deploy a service, or write to a consumer's repository. Merged
 is not fixed, applied is not verified, and similar is not the same.
 
-## The three operations
+## Operations
 
 Each operation is a separate promise, declared below. An operation whose
 runbook step has not landed refuses by name rather than guessing.

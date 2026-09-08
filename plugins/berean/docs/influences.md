@@ -1,7 +1,7 @@
 # What shaped each component
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Berean.** Berean pins the corpus, chain readings and evaluation record a protocol agent's answers rest on, so a release can be checked without the model that produced it. Use Lemma to produce source-linked chunks, Lazarus to preserve the chain evidence itself, and Ariadne to bind a released artefact digest to its evidence. **Current frontier:** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+> **Marketplace context: Berean.** Berean pins the corpus, chain readings and evaluation record a protocol agent's answers rest on, so a release can be checked without the model that produced it. Use Lemma to produce source-linked chunks, Lazarus to preserve the chain evidence itself, and Ariadne to bind a released artefact digest to its evidence. **Current frontier:** The Wildcat reference release pins three captured official documents and five recorded market calls at Ethereum block 25907928, with an unsigned Ariadne statement binding all 18 release components. The release frontier is mature; authored answers keep its demonstration status mixed.
 <!-- marketplace-context:end -->
 
 The specification at [spec.md](spec.md) names three inputs: Project Aleph,
@@ -41,16 +41,16 @@ text, re-sliced and re-hashed at check time.
 
 - Ariadne (`plugins/ariadne/docs/design.md`) supplied the verification
   grammar: digest-only matching, closed field tables, named gates, and
-  conformance fixtures where every rule has a committed breach. Its core
-  refuses conclusion vocabulary inside a statement, which is one of the
-  two reasons berean's release document stands apart rather than becoming
-  a predicate; [design.md](design.md) records that decision.
+  conformance fixtures where every rule has a committed breach. Its registered
+  `grounded-agent/v1` adapter now binds the separate Wildcat release;
+  [design.md](design.md) records that ownership boundary.
 - Lazarus (`plugins/lazarus/docs/preservation-release.md`) supplied the
   evidence bundle and the binding pattern: recorded reads keyed by the
   digest of their canonical request, canonical JSON with floats refused,
   and two artefacts held together by recomputation rather than by runtime
-  import. The reference release's `reads.jsonl` is its aave-v4 fixture's
-  records, copied byte for byte and held by a drift test.
+  import. The historical Aave release's `reads.jsonl` retains that fixture's
+  records byte for byte. The Wildcat reference instead copies five calls
+  from its own pinned Lazarus fixture and preserves their `recorded-rpc` class.
 - Alexandria (`plugins/alexandria/docs/study.md`) named evidence-class
   inflation as a standing risk; berean's closed source and evidence
   vocabularies, never widened at read time, are that rule generalised.

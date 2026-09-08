@@ -1,8 +1,8 @@
 ---
 name: dokimasia
 description: >
-  Inspect or build the scaffold that compiles a frontend's routes, actions and
-  access guards into a coverage denominator and reconciles a reviewed UAT
+  Compile a frontend's routes, actions and
+  access guards into a coverage denominator and reconcile a reviewed UAT
   workbook against it, so every scoped item carries exactly one disposition.
   A closure ratio states that nothing is unaccounted for, never that anything
   passed, and no item may be reported as covered without a reviewed oracle a
@@ -69,7 +69,7 @@ space, which is unbounded and which no static compile enumerates.
 | inventory | compiles routes, API handlers, actions and guards from a pinned checkout |
 | workbook | imports a reviewed spreadsheet, preserving every row's identity |
 | propose | drafts an unconfirmed disposition set a reviewer edits rather than authors |
-| reconcile | joins both sides and assigns exactly one disposition per scoped item |
+| reconcile | joins both sides and checks exactly one submitted confirmed disposition per scoped item |
 | demonstrate | runs one complete scrutiny and emits its digest-bound record |
 | selftest | proves the packaging and the contract agree, and emits its report |
 

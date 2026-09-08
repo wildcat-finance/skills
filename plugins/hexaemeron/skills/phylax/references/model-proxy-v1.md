@@ -148,8 +148,8 @@ from an ambiguous offset.
 
 The framing core assigns sequence numbers from 1 in admission order. It also
 uses the compiled `max_requests` value as a parser and event-memory ceiling.
-Step 4 adds atomic runtime accounting and lifecycle enforcement; the framing
-ceiling does not claim those later controls.
+The lifecycle runtime adds atomic accounting and lifecycle enforcement; the
+framing ceiling alone does not establish those controls.
 
 ## Closed text request
 
@@ -750,7 +750,7 @@ Run from the repository root using the interpreter named by
 `.python-version`:
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py compile-policy --accepted-job plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json --expect plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json
+python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py compile-policy --accepted-job plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json --expect plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json
 ```
 
 `--expect` requires exact policy bytes followed by one line feed and the
@@ -761,7 +761,7 @@ provider non-retention, or provider non-exfiltration.
 Check the framing vectors with:
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py check-frames --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json
+python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py check-frames --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json
 ```
 
 The two cases exercise a one-byte-fragmented request and two concatenated
@@ -772,7 +772,7 @@ content-free diagnostic cases.
 Check the provider vectors with:
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py provider-demo --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json
+python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py provider-demo --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json
 ```
 
 The two cases exercise exact ASCII and Unicode mappings through an injected
@@ -791,7 +791,7 @@ response refusal retains confirmed content-free disclosure counts.
 Check the lifecycle, quota, receipt, and operator vectors with:
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py lifecycle-demo --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json
+python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py lifecycle-demo --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json
 ```
 
 The two cases exercise ASCII and Unicode input under injected clocks and an
@@ -807,7 +807,7 @@ truncated terminal input, unserved admission refusal, and operator-text parity.
 Run the complete positive and hostile component proof with:
 
 ```bash
-mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py conformance --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json
+python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py conformance --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json
 ```
 
 The command requires all fourteen rows and refuses a missing, duplicate,

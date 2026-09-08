@@ -47,7 +47,12 @@ readable, not whether its number is right. So a mirror that is wrong by one
 rounding direction, or by six orders of decimal magnitude, passes everything and
 shows a person the wrong figure.
 
-## What a verdict says, and what it never says
+## Planned comparison boundary
+
+The following verdict and mirror descriptions specify the planned operation.
+Only checked-input admission ships; execution and verdicts still refuse.
+
+### What a verdict says, and what it never says
 
 A verdict states that a named pair agreed, or diverged, over the vectors it was
 given, at the revisions it names. It never states that either implementation is
@@ -59,7 +64,7 @@ It also never claims coverage it was not given. Agreement over a vector set says
 nothing about the vectors nobody supplied, so a verdict reports the set it read
 rather than implying a class of inputs.
 
-## The pieces
+### The pieces
 
 - **A pair.** One pinned on-chain computation, named by chain, contract and
   function identity, and one pinned mirror.
@@ -72,7 +77,7 @@ rather than implying a class of inputs.
 - **A divergence specimen.** The preserved vector, both answers and their
   signed difference, for one disagreement.
 
-## Boundaries
+### Boundaries
 
 Homologia consumes vector files; it never generates, mutates or minimises them,
 which stays with fizz and Foundry. It executes no EVM: the chain side arrives as

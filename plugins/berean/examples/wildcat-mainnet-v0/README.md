@@ -2,7 +2,10 @@
 
 This release checks authored answer fixtures against captured Wildcat documents
 and five fixed-block market calls. It runs offline and executes no model.
-The demonstration and reference-default change belong to the next delivery step.
+Run `python3 plugins/berean/examples/wildcat-mainnet-v0/demo.py` from the
+repository root to rebuild and check it. The demo uses the sibling Ariadne
+scripts from this source distribution; ordinary Berean verification needs only
+the Berean plugin.
 
 The source subject is `wildcat-finance/wildcat-docs` at commit
 `636b1dcba90c816e699c0d876c22d39be2c58b06`. The deployed subject is market
@@ -44,7 +47,8 @@ Verification reports one account proof, one header and five recorded calls.
 Document verification compares each blob's bytes and SHA-256 against
 `inputs/docs-provenance.json`; the captured documents total `40,001` bytes.
 A passing input check establishes only the named input relation. The release
-adds recorded answers and evaluations; no frontier advancement is claimed here.
+adds recorded answers and evaluations. Its completed frontier is recorded in
+[EVOLUTION.md](../../skills/berean/EVOLUTION.md).
 
 ## Licence and experiment record
 
@@ -57,7 +61,9 @@ apply; no workflow or dependency is added.
 experiment source. Its original execution used `.hexaemeron/` and a local
 `wildcat-docs` checkout, as recorded in the study and reports. It is retained
 for inspection, not presented as a portable command from its copied location.
-The design matrix still marks final-release conformance pending.
+The original design matrix retains its pending resolver cells. The completed
+[conformance report](../../../../docs/berean-wildcat-reference/design-reports/selected-docs-final-release.json)
+is the evidence that now satisfies the selected final-release cell.
 
 ## Rebuild and check
 

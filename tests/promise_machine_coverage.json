@@ -2056,15 +2056,15 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "6f1ee314708b7873dafb7f93296de85a6811f67df1ba51c3f988ff31e4a14c86"
+        "sha256": "a4243443586123ce2a75e29471ba45c6145b41d9fd61fcd7b5314206a6b2ba0f"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
-        "sha256": "6c8a5eba777ca961b5cebc58fbb0990d5c0b6d0620f69efa768da66e110c873e"
+        "sha256": "c04d779ff9f99c45f8e2d24fa8192367baaf3f8c89c683be0770e27cfe0096d9"
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "e2b2ad10cc15a3c7a23dd099cf752649102ccefe44f748d5b7aa3d8f50e60845"
+        "sha256": "1698ea99e911bf7fe49c0d26345f56c0168e4bfd0775b9186bc95489c8c6fb6a"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
@@ -3936,7 +3936,7 @@
     },
     "documentation": {
       "path": "docs/fiat-run-observation-binding-v1.md",
-      "sha256": "eb6b6f9431e0b1f12d9d6d30f572b8b08689a730ca4c2df3a68263de8c936e4f"
+      "sha256": "bfb8567887ee76f61b425303d95fc73c97bce64a93b193d1cb5f5c28cec2d7c9"
     },
     "fixture_manifest": {
       "path": "plugins/hexaemeron/tests/fixtures/run-observation-binding/cases.json",

@@ -1,8 +1,8 @@
 {
   "name": "anamnesis",
   "displayName": "Anamnesis",
-  "version": "0.3.0",
-  "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+  "version": "0.3.1",
+  "description": "Preserve audit findings and their remedies as a source-bound corpus, with checked Elenchus and separately readable Synkrisis projections.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

@@ -1,7 +1,7 @@
 {
   "name": "horos",
   "displayName": "Horos",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Classify a repository's token sinks with evidence and emit the reading boundary agents respect.",
   "author": {
     "name": "Wildcat Labs",

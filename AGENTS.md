@@ -37,8 +37,7 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The seventeen plugins form one marketplace, not seventeen competing descriptions
-of the same job. Alexandria preserves lending inputs; Tabularium interprets
+The plugins form one marketplace with distinct jobs. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
 needs, while Ariadne binds a released artefact digest to its evidence. Berean
@@ -48,8 +47,8 @@ Pandects supplies reviewed credit laws, Hermes measures a single
 gas-optimisation class named by a rule from its pinned corpus,
 Hexaemeron controls a receipted delivery loop and holds each of its phases to a
 named skill, while Lemma stops after producing
-source-linked chunks. Homologia compares one pinned contract computation with one pinned off-chain
-mirror over declared vectors and preserves each divergence as a specimen,
+source-linked chunks. Homologia validates manifests and evidence-classed expected integers for a planned
+contract-to-mirror comparison; execution and parity verdicts currently refuse,
 where Pandects supplies the economic laws and Lazarus the proved chain-side
 answers such a comparison consumes as evidence. Horos decides what an agent
 does not read. Janus checks
@@ -64,7 +63,8 @@ redaction, receipt binding, causal triage, and every decision to act stay
 with their owners. Anamnesis keeps custody of audit findings and the
 changes that answered them: it admits a source only against an explicit rights
 basis, preserves the producer's bytes unchanged, and hands Elenchus a
-historical analogue and Synkrisis a checked cohort projection. The analogue is
+historical analogue and a separately readable Synkrisis projection. Synkrisis does
+not yet admit that projection schema. The analogue remains
 a hypothesis, so Elenchus still reproduces the present failure and still earns
 its own guard, and Synkrisis takes no custody of the source. Warden still
 produces a round's record; Anamnesis does not produce one. Dokimasia compiles a frontend's routes, actions and guards into a coverage
@@ -207,6 +207,8 @@ these instructions.
   running its skill or changing that plugin.
 - Brevitas is under `plugins/brevitas/`. Read `plugins/brevitas/AGENTS.md`
   before running its skill or changing that plugin.
+- Dokimasia is under `plugins/dokimasia/`. Read
+  `plugins/dokimasia/AGENTS.md` before running its skill or changing that plugin.
 - Hermes is under `plugins/hermes/`. Read `plugins/hermes/AGENTS.md` before
   running its skill or changing that plugin.
 - Hexaemeron is under `plugins/hexaemeron/`. Read

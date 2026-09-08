@@ -9,11 +9,11 @@ Write the JSONL stream beneath `.hexaemeron/observations/`. Use the controller's
 derived identity as every event's `run_id`:
 
 ```bash
-python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py status --json
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py status --field observation_run_id
 python3 scripts/run_observation.py check-prefix .hexaemeron/observations/run.jsonl
 ```
 
-The status object exposes `observation_run_id`. `check-prefix` permits a missing
+The status command prints only `observation_run_id`. `check-prefix` permits a missing
 final `run.finished`; it still requires `run.started`, contiguous sequence
 numbers, closed capabilities, backward references, bounded fields, and safe
 path bytes.

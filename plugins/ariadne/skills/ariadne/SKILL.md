@@ -94,11 +94,11 @@ python3 scripts/ariadne.py capture-state-fixture \
   --out fixture.json
 
 python3 scripts/ariadne.py capture-grounded-agent \
-  --release ../berean/examples/aave-v4-demo-v0/release \
-  --name aave-v4-demo-v0 \
+  --release ../berean/examples/wildcat-mainnet-v0/release \
+  --name wildcat-mainnet-v0 \
   --producer-tool berean --producer-version 0.2.0 \
   --producer-command python3 \
-  --producer-command plugins/berean/examples/aave-v4-demo-v0/rebuild.py \
+  --producer-command plugins/berean/examples/wildcat-mainnet-v0/rebuild.py \
   --first-capture-reason '<why there is no earlier capture>' \
   --output grounded-agent.intoto.json
 

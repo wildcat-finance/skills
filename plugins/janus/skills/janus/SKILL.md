@@ -6,7 +6,7 @@ description: >
   touch. Use when someone has a host protocol that calls hooks and wants to
   state and enforce the permitted effects, when reviewing a new hook against a
   host's economic contract rather than only its ABI, or when a hook must be
-  shown safe on its exit and revert paths, not only its entry. Do not use it to
+  tested against declared exit and revert boundaries as well as entry boundaries. Do not use it to
   fuzz one repository for generic Solidity defects; that is fizz. Never report a
   hook as conformant on a delta the recorder did not fully capture.
 metadata:

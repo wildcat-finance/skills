@@ -281,9 +281,10 @@ clean history.
 
 ## VENUES
 
-Fifteen in the registry, five with adapters. The other ten appear in every
-coverage table saying nobody checked, which is gate 2 working rather than an
-omission.
+Fifteen venues are registered and five have adapters. Every requested route
+records its coverage or gap; verified Alexandria releases can separately supply
+Goldfinch and Clearpool through the archive route. The unbuilt-adapter notes
+below record prior probes, not current endpoint availability or entitlement.
 
 - Wildcat: Shipped. Public Goldsky subgraph, no key.
 - Morpho Blue: Shipped. Borrowing on Blue markets, keyless public API.
@@ -309,16 +310,17 @@ refused because its account-attributed debt units are unproved. An overdue
 maturity closed by liquidation reads as settled late through liquidation, never
 as voluntary repayment.
 
-Five of the ten gaps need only an adapter and nothing from anyone: Centrifuge,
-both Aave versions, and Morpho's two other surfaces. The rest wait on a key,
-a schema, or an agreement.
+The recorded probes found five unbuilt adapter routes reachable without a key:
+Centrifuge, both Aave versions and Morpho's two other surfaces. The remaining
+probe gaps concerned keys, schemas or agreements. A new adapter still needs
+current source verification and its own evidence contract.
 
 Goldfinch is worth a line of its own. It wound down in June 2026 after
 defaults, which makes it a list of counterparties who did not repay, sitting on
 chain and directly relevant to anyone they approach next. A dead protocol is
 not a dead record.
 
-The four that ship read differently on purpose. Wildcat is undercollateralised,
+The five that ship read differently on purpose. Wildcat is undercollateralised,
 so a missed reserve ratio is about the borrower. Morpho is overcollateralised,
 so a liquidation is about a price, and the dossier says so in as many words.
 Bad debt is the one Morpho signal that bears on conduct, and it gets its own

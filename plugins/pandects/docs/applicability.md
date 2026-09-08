@@ -4,7 +4,7 @@
 > **Marketplace context: Pandects.** Pandects supplies executable laws for credit contracts, each paired with a deliberately broken specimen and a reduced counterexample. Use Hexaemeron Fizz to generate a protocol-specific fuzz harness and Ariadne to carry the resulting campaign evidence with a release. **Current frontier:** The search-record runner records only the Foundry campaign, so Echidna and Medusa results survive as audit prose rather than as records.
 <!-- marketplace-context:end -->
 
-The rules a law obeys, stated once here rather than nine times in nine
+The rules a law obeys, stated once here rather than ten times in ten
 docstrings.
 
 ## What a law may read
@@ -78,7 +78,7 @@ anything. That is the direction it is usually read.
 
 The other direction is what `integrations/wildcat/` is for. Pointed at a real
 design, the same contract has to say which laws that design supports and under
-what conditions, and two of the answers there are not yes or no.
+what conditions, and three of the answers there are conditional.
 
 `claims/queue-order-preserved/v1` is true of a Wildcat market at batch
 granularity and says nothing per lender, because a batch is paid pro rata and
@@ -90,6 +90,10 @@ about somebody's protocol.
 penalty accrual is running, because the grace timer advances when the market is
 poked. That is a condition, not a verdict, and the applicability note carries
 it.
+
+`claims/recorded-claim-never-shrinks/v1` applies to closed Wildcat batches.
+An open batch still accumulates requests, so its owed amount can grow; the
+recorded-claim law does not hold over that open interval.
 
 A law with no applicability contract is not in the corpus. A law whose contract
 says only "yes" has not met a real design.

@@ -67,8 +67,9 @@ module does not answer on.
 
 An item's presence says the source declares it. It does not say the item is
 reachable at runtime, that a route renders, that a handler responds, or that
-anything has been tested. Reachability, behaviour and coverage are other
-questions, and the later steps of the runbook own them.
+anything has been tested. Reconciliation accounts for submitted dispositions;
+runtime reachability and behaviour remain outside this plugin, with the
+application repository's execution harness.
 
 ## Changing these rules
 

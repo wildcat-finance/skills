@@ -4,9 +4,9 @@
 > **Marketplace context: Probitas.** Probitas builds a sourced record of what a counterparty did across lending venues from addresses they declared, without identifying a person or issuing a Wildcat verdict. Use Alexandria for archived lending inputs and Tabularium when the job is publishing a reusable credit-event release rather than assessing one counterparty. **Current frontier:** Morpho Midnight fixed-maturity coverage now ships API-scoped on Base; secondary-market borrow exits stay refused as unattributable and Morpho curation remains uncollected.
 <!-- marketplace-context:end -->
 
-Fifteen venues in the registry, five of them with adapters. The other ten
-still get a row in every dossier, saying plainly that nobody checked. That is
-gate 2 doing its job.
+Fifteen venues are registered and five have adapters. Every requested route
+reports coverage or a gap; an archive route can cover a venue without an
+adapter through a verified Alexandria release.
 
 [Adding a venue](../../../docs/adding-a-venue.md) covers what each gap is and
 what closing one takes. This file is the short form.
@@ -28,7 +28,7 @@ All five adapters name their chain in the coverage note. Wildcat is deployed on
 Plasma as well and Morpho on several chains, and a row that says only `checked`
 would let a reader take one chain's silence for all of them.
 
-These four are the adapter route. Goldfinch and Clearpool are reachable through
+These five are the adapter route. Goldfinch and Clearpool are reachable through
 the archive route instead, from verified Alexandria releases, and one `collect`
 run can ask for both: `--fixtures DIR` or `--live` backs the adapter route and
 `--alexandria-index X` adds the archive one. Every coverage row names which
@@ -36,7 +36,10 @@ route produced it, so a venue read from a preserved release never reads as one
 an adapter queried today. An index passed on its own still suppresses the
 adapter route and reaches no network.
 
-## What does not, and why
+## Recorded probes of unbuilt adapter routes
+
+These are prior source observations, not fresh availability or entitlement
+checks. Goldfinch and Clearpool archive coverage remains separate.
 
 | Venue | Blocker |
 | --- | --- |
@@ -51,8 +54,8 @@ adapter route and reaches no network.
 | Clearpool | Live, behind a bot challenge returning 403. An agreement is the way in, not a workaround |
 | TrueFi | Restructured through a token migration completing May 2026; no public endpoint answered |
 
-Five of the ten need only an adapter. The rest are blocked on somebody else's
-key, bot protection or documentation.
+Five prior probes found keyless routes. Other probes encountered key, bot
+protection or documentation gaps; a new adapter must verify its current source.
 
 ## The five venues read differently, and the dossier says so
 

@@ -115,7 +115,7 @@ header and keep ordinary RPC evidence outside that proof boundary.
 - **Recorded RPC evidence** preserves exact response decorations, unrelated
   receipt and log fields, calls or traces without describing them as proved.
 
-Multi-provider anchors are a fourth, separately counted observation surface.
+Multi-provider anchors are a separately counted observation surface.
 Plan v2 declares opaque source IDs and runtime environment-variable mappings;
 each source records only its UTC observation time and matching chain, height
 and hash. Matching records prove neither canonical-chain membership nor

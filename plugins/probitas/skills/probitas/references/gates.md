@@ -44,7 +44,7 @@ The five statuses mean different things and the difference matters:
 | `unimplemented` | No adapter exists yet |
 | `unconfigured` | An adapter exists but the operator supplied no credential |
 
-`empty` is a finding. The other three are gaps and become entries in the
+`empty` is a finding. `error`, `unimplemented` and `unconfigured` are gaps and become entries in the
 negative space section.
 
 Every row also names the route that produced it, and rows are counted on the

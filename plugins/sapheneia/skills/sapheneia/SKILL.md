@@ -37,10 +37,9 @@ Vulgate govern wording, and Brevitas governs engineering-prose structure.
 Sapheneia changes none of their facts or gates. Shaping one durable record does
 not activate the session contract.
 
-A Synkrisis report may pass through the prose layers, but Sapheneia will not
-change its evidence or conclusion. Synkrisis renders that report from fixed
-templates and verifies that it recomputes from the original inputs, so any
-reshaping happens after the verification, never inside it.
+A Synkrisis report keeps its exact fixed-template bytes after verification.
+Sapheneia may shape separately authored accompanying prose while preserving
+the report's evidence and conclusion; it does not rewrite the checked report.
 
 ## Activation contract
 

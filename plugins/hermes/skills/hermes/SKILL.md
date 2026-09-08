@@ -47,7 +47,7 @@ python3 "$HERMES_PY" corpus --validate
 python3 "$HERMES_PY" corpus --validate --json
 ```
 
-62 of the 120 rules name a class and can be selected. The other 58 constrain how a run is conducted, or they are architecture; the harness refuses them as candidates and says so rather than measuring something they do not describe.
+62 of the 120 rules name a class and can be selected. The other 58 have no selectable class; the harness refuses them as candidates. The held frontier names the remaining class-coverage work.
 
 ## Day to day
 
@@ -103,7 +103,7 @@ spends a Forge run, and `result.json` carries a `refusal` field naming which con
 - `corpus/unknown-rule`: no rule of that id
 - `corpus/myth-selected`: a rejected universal rule named as a candidate, answered with its correction
 - `corpus/myth-cited`: a rationale or obligation answer citing a rejected rule as its justification
-- `corpus/rule-names-no-class`: a rule that constrains the run or is architecture, so no candidate implements it
+- `corpus/rule-names-no-class`: a rule with no selectable class, so the harness has no candidate class to run
 - `corpus/class-disagreement`: the declared class is not the rule's class
 - `corpus/out-of-scope`: the target's compiler, fork or pipeline is outside the rule's declared scope
 - `corpus/scope-unresolved`: the target pins no readable `solc`, or names a fork the corpus does not order

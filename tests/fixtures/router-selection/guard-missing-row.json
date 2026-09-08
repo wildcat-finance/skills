@@ -398,7 +398,7 @@
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
-        "text": "Homologia compares one pinned contract computation with one pinned off-chain"
+        "text": "Homologia validates manifests and evidence-classed expected integers for a planned contract-to-mirror comparison; execution and parity verdicts currently refuse,"
       },
       "not_established": "Selecting Homologia does not establish that either implementation is correct; two implementations of the same misunderstanding agree."
     },

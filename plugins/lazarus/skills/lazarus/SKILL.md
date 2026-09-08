@@ -74,7 +74,7 @@ release ships the fixture, a statement about it and the document binding them,
 so a stranger can check that the statement describes that fixture and does not
 claim more than it holds.
 
-## Available offline commands
+## Available commands
 
 The current build validates versioned documents and binds their bytes in a
 manifest:
@@ -268,7 +268,7 @@ invents a zero value or leaves loopback to answer a miss.
 
 ### lazarus-preservation-release
 
-- Promise: A successful `release` followed by `verify-release` binds the verified fixture bytes to a separately supplied statement whose evidence counts do not exceed those recomputed from the fixture.
+- Promise: A successful `release` followed by `verify-release` binds the verified fixture bytes to a separately supplied statement whose evidence counts equal those recomputed from the fixture.
 - Evidence: The verified fixture, supplied statement, binding document, release-tree digests, recomputed evidence counts and passing release verification.
 - Evidence classes: recorded, checked, recomputed
 - Boundary: The release is unsigned, reaches no network and does not establish publisher identity, canonical-chain status, transaction-hash attribution or any statement claim beyond the binding checked here.

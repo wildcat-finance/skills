@@ -792,7 +792,7 @@
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
-        "text": "Homologia compares one pinned contract computation with one pinned off-chain"
+        "text": "Homologia validates manifests and evidence-classed expected integers for a planned contract-to-mirror comparison; execution and parity verdicts currently refuse,"
       },
       "not_established": "Selecting Homologia does not establish that either implementation is correct; two implementations of the same misunderstanding agree."
     },
@@ -853,7 +853,7 @@
       "model": "codex-subagent-gpt-5",
       "date": "2026-09-05",
       "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
-      "corpus_sha256": "553913579a114838e6e583b359e190f072217942d240991f2041dfab7d90a9e4",
+      "corpus_sha256": "5f0e8c5e931f83f0db2b9432f3df057cfb1c0c0cd7ebd5c39a2e742e8faefcfa",
       "cases": 41,
       "passed": 39,
       "failed": 2,

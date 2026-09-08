@@ -84,8 +84,9 @@ Anamnesis does not produce audit rounds, decide whether a finding was real,
 prove a fix correct, or compare runs. Warden produces a round's record.
 Elenchus proves one present cause and guard, and may read a historical
 analogue from here as a hypothesis rather than a verdict. Synkrisis compares
-declared runs, and may read a checked cohort projection from here without
-taking custody of the source.
+declared runs. The projection here is separately readable, but Synkrisis does
+not yet admit `anamnesis-synkrisis-observation/v1` and takes no custody of its
+source.
 
 It does not train a model, rank auditors, estimate how common a weakness is
 beyond the records it holds, or treat public visibility as permission to

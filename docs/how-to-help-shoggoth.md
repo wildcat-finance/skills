@@ -29,9 +29,9 @@ operation against a repository, dataset, historical block, or draft you are
 allowed to use. Report the first reproducible failure, missing precondition, or
 confusing instruction with the exact command and evidence.
 
-Real use is especially valuable where the project currently has only
-constructed examples: Synkrisis cohorts, a Berean reference release, a second
-Janus host, or held tasks for the prose and interaction skills.
+Real use is especially valuable where evidence still depends on constructed
+examples or authored records: Synkrisis cohorts, Berean answer records, a
+second Janus host, or held tasks for the prose and interaction skills.
 
 ### ADD ONE MISSING SPECIMEN OR ADAPTER
 

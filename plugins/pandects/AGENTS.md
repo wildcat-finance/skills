@@ -68,7 +68,7 @@ not route around them:
   identifier matching its catalogue entry. The checker enforces this; do not
   add a law by editing the catalogue alone.
 - No implementation names in a law. Laws read `ICreditObservables`, and the
-  three that need a withdrawal queue read `IWithdrawalQueueObservables` on top
+  four that need a withdrawal queue read `IWithdrawalQueueObservables` on top
   of it. A protocol's own names belong in the adapter that implements them.
 - No revert as a verdict. A law returns `(bool held, string detail)`, whether it
   judges one state or a pair of observations, because a revert under

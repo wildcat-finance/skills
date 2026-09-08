@@ -27,8 +27,9 @@ the native record attached to every mapped row.
 6. **Publish a new release.** Add source, capture, canonical and coverage files
    under a new release directory. Do not alter an earlier interpretation.
 
-Aave v4 uses canonical event and coverage schema v1. Euler uses v2 because it
-needs block numbers and nullable hashes, multiple exact amount legs,
+The historical Aave v4 hosted-entity mapping used schema v1. The current Aave
+v4 native-log release and Euler releases use schema v2, which
+carries block numbers and nullable hashes, multiple exact amount legs,
 owner/sub-account context and distinct debt-transfer and interest-accrual
 families. Add new schema versions rather than widening an old release's
 meaning in place.

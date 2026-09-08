@@ -42,6 +42,7 @@ Add the same marketplace and install a plugin from inside Claude Code:
 ```text
 /plugin marketplace add wildcat-finance/skills
 /plugin install alexandria@wildcat-labs
+/plugin install anamnesis@wildcat-labs
 /plugin install ariadne@wildcat-labs
 /plugin install berean@wildcat-labs
 /plugin install brevitas@wildcat-labs
@@ -68,6 +69,7 @@ Claude namespaces plugin skills, so each entry skill answers as:
 
 ```text
 /alexandria:alexandria
+/anamnesis:anamnesis
 /ariadne:ariadne
 /berean:berean
 /brevitas:brevitas

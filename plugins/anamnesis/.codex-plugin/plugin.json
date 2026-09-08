@@ -1,7 +1,7 @@
 {
   "name": "anamnesis",
-  "version": "0.3.0",
-  "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+  "version": "0.3.1",
+  "description": "Preserve audit findings and their remedies as a source-bound corpus, with checked Elenchus and separately readable Synkrisis projections.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -21,8 +21,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Anamnesis",
-    "shortDescription": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
-    "longDescription": "An audit finding and the change that answered it are usually recorded once, in one report, and then left where they fell. Anamnesis keeps them: it admits a source only with an explicit rights basis, preserves the producer's own bytes and identifiers unchanged, and curates a graph in which submissions, adjudicated findings, occurrences, remediation attempts and verifications stay separate records joined by many-to-many edges. Proposed, applied, released, deployed, reverted and verified never imply one another, unknown is never collapsed into none, and every release rebuilds to the same digest or refuses. Elenchus may read a historical analogue without inheriting its verdict, and Synkrisis may read a checked cohort projection without taking custody of the source.",
+    "shortDescription": "Preserve audit findings and their remedies as a source-bound corpus, with checked Elenchus and separately readable Synkrisis projections.",
+    "longDescription": "An audit finding and the change that answered it are usually recorded once, in one report, and then left where they fell. Anamnesis keeps them: it admits a source only with an explicit rights basis, preserves the producer's own bytes and identifiers unchanged, and curates a graph in which submissions, adjudicated findings, occurrences, remediation attempts and verifications stay separate records joined by many-to-many edges. Proposed, applied, released, deployed, reverted and verified never imply one another, unknown is never collapsed into none, and every release rebuilds to the same digest or refuses. Elenchus may read a historical analogue without inheriting its verdict, and the Synkrisis projection is separately readable. Synkrisis does not yet admit its schema and takes no custody of the source.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

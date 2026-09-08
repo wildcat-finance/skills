@@ -38,7 +38,7 @@ it would in a checkout that was never activated.
 
 ## What lands here
 
-Step 2 of the run behind this directory adds the gate scripts themselves: a
+This directory holds the gate scripts: a
 `pre-commit` hook that refuses a commit whose staged tree is not the tree a
 recorded green names, and a `greenlight` command that runs the suite and records
 the green when the suite passes.

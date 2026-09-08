@@ -174,5 +174,5 @@ write is atomic, so a baseline is either its old contents or its new ones.
 
 ## What it does not do
 
-No measurement, no Solidity gas, no statistics beyond the declared variance, and no CI
-workflow. Wiring it into a pipeline is a decision for the repository it guards.
+The check does no measurement; the separate `time` command records it. Neither
+handles Solidity gas or installs a CI workflow. Comparison uses the declared variance. Wiring it into a pipeline is a decision for the repository it guards.

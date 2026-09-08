@@ -45,7 +45,7 @@ newline still counts.
 
 ## What you have to tell it
 
-Four things the files cannot answer. None of them has a default, because a default
+Five things the files cannot answer. None of them has a default, because a default
 here is a value nobody supplied sitting in a field a gate reads as evidence.
 
 **Coverage.** `--coverage-dimension`, `--coverage-start` and `--coverage-end` are

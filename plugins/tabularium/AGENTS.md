@@ -76,8 +76,8 @@ facts and writes nothing. Neither command changes the Alexandria release.
   universal claim about repayment, delinquency or default.
 - No identity inference or score. The ledger records sourced events; it does
   not identify people or rate a counterparty.
-- No chain-proof claim. The captured block is what the hosted indexer reported;
-  neither it nor each event is independently proved against Ethereum here.
+- No chain-proof claim. Captured blocks and events retain their recorded RPC or
+  API source boundary; they are not independently proved against Ethereum here.
 
 If a build, verification, source check or test did not run, say so plainly and
 do not describe it as successful.

@@ -56,7 +56,7 @@ to public venue APIs. So does `--live`, which is how a run asks for the network
 beside an archive index; `--live` and `--fixtures` contradict each other and the
 run is refused with exit 2.
 It sends the addresses it was given and nothing else, and it needs no
-credential for either shipped venue. Ask for whatever approval the runtime or
+credential for the five shipped adapters. Ask for whatever approval the runtime or
 the target repository requires before running it against a live counterparty,
 and prefer a fixture directory when demonstrating rather than investigating.
 

@@ -107,5 +107,6 @@ install.
 
 Classification is fail-open. A file Horos cannot evidence stays readable, so
 Horos misses sinks a person would catch, and its report says what it skipped.
-The scanner reads at most a fixed prefix of any file, so a scan never costs
-more than a fraction of what it saves.
+Ordinary classification reads a fixed prefix. Content-addressed classification
+also hashes the whole file in bounded chunks to verify the path's digest; that
+read has the cost of the complete file.

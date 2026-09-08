@@ -1,0 +1,830 @@
+[
+  {
+    "path": ".agents/skills/promise-machine/PORTABLE.md",
+    "sha256": "7ad1076a53f7dcc5784b7f75bb07d64c63f147d44ef31068e9e64168e7afbd76",
+    "bytes": 2476,
+    "lines": [
+      1,
+      53
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": ".agents/skills/promise-machine/SKILL.md",
+    "sha256": "d42a50abf24cf0479c96a4d5e6a2bd73b3e1b71109cdaeb576cbef453a110c08",
+    "bytes": 7765,
+    "lines": [
+      1,
+      113
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": ".githooks/README.md",
+    "sha256": "78f4b8ce10349477ac3d6a24e6db37aca89086002e07beb53bc5e44283295835",
+    "bytes": 2076,
+    "lines": [
+      1,
+      47
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "AGENTS.md",
+    "sha256": "4a4d2db22e4b89ba28c761ec2b81c0cc54228988a05793a68027d1af8e72f837",
+    "bytes": 20421,
+    "lines": [
+      1,
+      390
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "FUTUREPROOFING.md",
+    "sha256": "7a76b3cbc867336f230b249da8bcfe28e35add6ab849b60c1ef6d0297908af6f",
+    "bytes": 29403,
+    "lines": [
+      1,
+      650
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "INSTALL.md",
+    "sha256": "abb86221832aaf1a7ac47e3555db52a60574d4077f45e39726d1e9bc8eb67dcf",
+    "bytes": 12848,
+    "lines": [
+      1,
+      310
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "PROMISE_MACHINE.md",
+    "sha256": "f996fb645c81a8f398a2384ed4d8da0e058a9c017ea37fbbee36e499c9ef2e15",
+    "bytes": 27732,
+    "lines": [
+      1,
+      305
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "README.md",
+    "sha256": "290907f5144eb437157d43023692653b8223db9ed897a9f00e4b10e91a30525b",
+    "bytes": 10349,
+    "lines": [
+      1,
+      207
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "SHOGGOTH.md",
+    "sha256": "443791a7d70daaa89f3422069a725d52e64f007e20d07bbc4fa9046c8e49cbb1",
+    "bytes": 5580,
+    "lines": [
+      1,
+      112
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "docs/agent-instruction-language-v1.md",
+    "sha256": "eb6a948898585fc14072917998f13e2f12b7dfd222abfceb9717ea6858e31731",
+    "bytes": 30967,
+    "lines": [
+      1,
+      580
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "docs/fiat-in-plain-english.md",
+    "sha256": "20d631336240b7acac35fdcf0741204d4de0288ca6d979e3342c518c128cce70",
+    "bytes": 7341,
+    "lines": [
+      1,
+      171
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "docs/fiat-run-observation-binding-v1.md",
+    "sha256": "eb6b6f9431e0b1f12d9d6d30f572b8b08689a730ca4c2df3a68263de8c936e4f",
+    "bytes": 3247,
+    "lines": [
+      1,
+      78
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "docs/how-to-help-shoggoth.md",
+    "sha256": "28d7a24438d7c8a4ff3a7c8bb82fda9c5422bcdfd57fc47dee9144eb07575f47",
+    "bytes": 16727,
+    "lines": [
+      1,
+      322
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "docs/skills-runtime-publication.md",
+    "sha256": "e03c32c5cc08638bd7ed7a49a8faf55e4004c52cac7870f2b367ae779d8b24ff",
+    "bytes": 3129,
+    "lines": [
+      1,
+      69
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "docs/the-promise-machine-explained-properly.md",
+    "sha256": "b82a984efe8a86868995301cd675c8b55f55f620ba3fa80588424af6a1b99348",
+    "bytes": 13737,
+    "lines": [
+      1,
+      282
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/AGENTS.md",
+    "sha256": "0c1210df274680e61239eb09e5022fd789da3de4ffc2b46743a3fdef7fab8046",
+    "bytes": 8550,
+    "lines": [
+      1,
+      133
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/PROMISES.md",
+    "sha256": "a383a45bb1c336f922ca019256544da14b9d7faab510bb58d03ea0204d139b60",
+    "bytes": 9619,
+    "lines": [
+      1,
+      77
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/README.md",
+    "sha256": "e00a91c3351847005a5305f2a1ada63dd5fe29634dcd1d3670795c2576b5b107",
+    "bytes": 22025,
+    "lines": [
+      1,
+      342
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/agents/mason.md",
+    "sha256": "63083c901757e274f8f7664f9a0e19e8b34e5b9aed7b697b573bc7987d916e98",
+    "bytes": 4443,
+    "lines": [
+      1,
+      75
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/agents/scribe.md",
+    "sha256": "83ed6fa93cba4f2ce523106f6ba4193e2d02af4886782d04d0c2552c7f331b5b",
+    "bytes": 4073,
+    "lines": [
+      1,
+      69
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/agents/surveyor.md",
+    "sha256": "b5ebcdc3a1041f71bff8d9cb4e49d2948175f50c7f2779dee0d0f42c43418efa",
+    "bytes": 4845,
+    "lines": [
+      1,
+      83
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/agents/warden.md",
+    "sha256": "ff49ed973554c5c821bcaa02823417a547cf28c51e02b75cec4e7e31a2423e02",
+    "bytes": 8963,
+    "lines": [
+      1,
+      141
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/DEMONSTRATIONS.md",
+    "sha256": "1fdc0bc5d5f13b16364dce79c812acaccb53cdbdc7baf5b50102ec722cf3421b",
+    "bytes": 22502,
+    "lines": [
+      1,
+      374
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/VERSIONING.md",
+    "sha256": "ca85e2e33e47aaca94c26b45578c7b88889dfeb0cc377984acd42f949408045f",
+    "bytes": 8935,
+    "lines": [
+      1,
+      162
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/elenchus/DEMONSTRATION.md",
+    "sha256": "24f128b30e60df4deea6e3ed58dd31a874a4c69ebe7b9d11cbda7de10d662c86",
+    "bytes": 2300,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/elenchus/EVOLUTION.md",
+    "sha256": "8b9538409151def14a4bd6798132adce01d426fa2501d731d781945150a2c61c",
+    "bytes": 6123,
+    "lines": [
+      1,
+      11
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
+    "sha256": "accf3ca04714f8ef2624875fa24652f592a7ee1018252dbf2a639ddc66837320",
+    "bytes": 24318,
+    "lines": [
+      1,
+      487
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/ephoros/DEMONSTRATION.md",
+    "sha256": "390f6c0b0343a8b8e2d9546adb9199a4c5aeee7e3ebb76ec899417ade6e2a6e5",
+    "bytes": 2365,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/ephoros/EVOLUTION.md",
+    "sha256": "da578c80d1fd6776ebedd137b2c0caa60c77a58fde1995cc512574712046c562",
+    "bytes": 3790,
+    "lines": [
+      1,
+      13
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
+    "sha256": "adc2a26989d11d50bc4b86be311857b56cc5022bce67913871d40e73aa03bbc8",
+    "bytes": 15409,
+    "lines": [
+      1,
+      303
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/DEMONSTRATION.md",
+    "sha256": "90366eb7d45f7d64a8de11d0a59809c9fce907b50de535d44aeb5be2bf5332e0",
+    "bytes": 2309,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+    "sha256": "db00390b7280881ecacee3c6e4ea6c68dc3803e3ac4a483bdee65a4e7cfc48c3",
+    "bytes": 66420,
+    "lines": [
+      1,
+      15
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+    "sha256": "babe74b138953a5d1dfcee0b67afb94d9bb7d99c1798df241f0eb073be09fdef",
+    "bytes": 78621,
+    "lines": [
+      1,
+      974
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+    "sha256": "9ffd766c1b0a35f4b105a246cd9cdb10f3a92ffe4a743bc2f2451c092a16629d",
+    "bytes": 14059,
+    "lines": [
+      1,
+      259
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md",
+    "sha256": "72ecec49468cb6ced7cb203fc380685e0629ce026ed29d5b7cda920102d530c6",
+    "bytes": 7504,
+    "lines": [
+      1,
+      209
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
+    "sha256": "24b54bb779904e8adf82ce415e059e471b18e4ef202a3875e55e49c6d9288433",
+    "bytes": 11632,
+    "lines": [
+      1,
+      230
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/plugin-currency.md",
+    "sha256": "1783e10195d782769742a1f4fe123ecddd5912c23a07a3139025ba37f938edc5",
+    "bytes": 13141,
+    "lines": [
+      1,
+      253
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/prose-pass.md",
+    "sha256": "272058351de2859cda8522877bcfeeb10960c1e1d0944b72ae19459e65e8ce93",
+    "bytes": 5716,
+    "lines": [
+      1,
+      114
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
+    "sha256": "e57e6bfe95b0b82599b9c8b75bc9df5bacec200d98d6c0925e917108a0d6ea91",
+    "bytes": 42794,
+    "lines": [
+      1,
+      794
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/wildcat-marketplace.md",
+    "sha256": "62bbf9f8aeaca8afae44eba80974661fc4c2b031a5ffb150b0011d15c7e051b0",
+    "bytes": 6031,
+    "lines": [
+      1,
+      113
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/wildcat-overlays.md",
+    "sha256": "78c681c0605eebefdd641313b76ada7c823699b64fe17db96477dd6115b4be5e",
+    "bytes": 4604,
+    "lines": [
+      1,
+      94
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/wildcat-sources.md",
+    "sha256": "24a23626bb00f174384abc4330c586a4c14388ab67ba69281d1b6890f770abef",
+    "bytes": 2566,
+    "lines": [
+      1,
+      51
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/fiat/references/xray-reuse.md",
+    "sha256": "214b31dd0e7d235b4c6a0f57343d86dc1fa325ba28199d2a8dadc68b8c488e88",
+    "bytes": 5768,
+    "lines": [
+      1,
+      103
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/hypomnema/DEMONSTRATION.md",
+    "sha256": "9ed6941f0054f957e81473df381cc4144941ad5282a15d51b7c4ca0023c792c9",
+    "bytes": 2355,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md",
+    "sha256": "38877c63d0236cac861efba9a1beb4ccec469cd260f2554199b092de45482e4b",
+    "bytes": 16438,
+    "lines": [
+      1,
+      13
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+    "sha256": "59cf1fea6bffe21b44477a7d1368d33d3b5fc42b05a7e0a4da0403ed911de4bf",
+    "bytes": 23929,
+    "lines": [
+      1,
+      397
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/imprimatur/DEMONSTRATION.md",
+    "sha256": "c61645562e7b90ef2905e5e5e6c6a6b492d60d9aa391f59356b2c14fc598a564",
+    "bytes": 2395,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/imprimatur/EVOLUTION.md",
+    "sha256": "19d88c8bbf1548c99509a964fd0828cc047e6319c4682292ea79973c42a1a606",
+    "bytes": 4188,
+    "lines": [
+      1,
+      11
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+    "sha256": "0c5185a240b9461a4b1222e367bc82a9f42b3e33d1bfcca58d06a197ea728bab",
+    "bytes": 11774,
+    "lines": [
+      1,
+      175
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/imprimatur/references/agent-replies.md",
+    "sha256": "16e49b60f7eb323666a2ef18fb41f6ae0af4b9d15b7f64251f591582ad7ec148",
+    "bytes": 2722,
+    "lines": [
+      1,
+      49
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/imprimatur/references/lexicon-rationale.md",
+    "sha256": "1f250b8a2064b57379332aed3f8fbcf0e62dfd26b80529738e4b985537fee727",
+    "bytes": 6015,
+    "lines": [
+      1,
+      75
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/imprimatur/references/rewriting.md",
+    "sha256": "143cc0da99dbc597086ffa846383c41a8c325a2b9f26f5b3daa87368f206b3d4",
+    "bytes": 2324,
+    "lines": [
+      1,
+      34
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/kronos/DEMONSTRATION.md",
+    "sha256": "5fd90212e15b4f575234a2ec994c32044fa63be9ce96c2aca2ff23f5d60fe921",
+    "bytes": 2321,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/kronos/EVOLUTION.md",
+    "sha256": "a42dac55d175c3be4f0a115a533aac09ae23ee9ec53674db64b740ba938b6427",
+    "bytes": 10736,
+    "lines": [
+      1,
+      11
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/kronos/SKILL.md",
+    "sha256": "7ab6a253ea37ab06cf0ae9b082ad58b739e96b260fbda6e5272157ea5e48ab68",
+    "bytes": 22935,
+    "lines": [
+      1,
+      378
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/metron/DEMONSTRATION.md",
+    "sha256": "d2054ae87c56ca728de0f77256505068abaae8a6708f3f0c443c3053bda4897a",
+    "bytes": 2325,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/metron/EVOLUTION.md",
+    "sha256": "f9aa38b5725ec7f5157a848917a98158d110c8a923927ad92bfcf50a135012a6",
+    "bytes": 3270,
+    "lines": [
+      1,
+      11
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/metron/SKILL.md",
+    "sha256": "488c52b68f0c81964798902e42f7f95182265ad59ce4a6fc2be84133819000aa",
+    "bytes": 12240,
+    "lines": [
+      1,
+      257
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/metron/references/budget-check.md",
+    "sha256": "f65ae8c97ae3e04f494f5da5a65545057ca95112f9767d95c3cbaf3f54bd1049",
+    "bytes": 7603,
+    "lines": [
+      1,
+      178
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/phylax/DEMONSTRATION.md",
+    "sha256": "70a03cfa10018de4da0e662f04e0a2a5f24241e865f01bebedcf68df45a7442e",
+    "bytes": 2312,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
+    "sha256": "4ceada44ebb9a69fd2445797060eee87615030221bd4e27c0b512b2ebbfdb2f4",
+    "bytes": 3560,
+    "lines": [
+      1,
+      16
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
+    "sha256": "5e65b919c6a8dd18c0512961d47b18e39943ffce3d09f01aea14b785be8a057f",
+    "bytes": 24089,
+    "lines": [
+      1,
+      456
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
+    "sha256": "dea4cc8ab57bab766513a30165391c14298a8d4b7ecae1bd9f6ad4a0259d8271",
+    "bytes": 47983,
+    "lines": [
+      1,
+      817
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/protasis/DEMONSTRATION.md",
+    "sha256": "e75e58fc8b7b4a00fc761bd072e48da1b1d85f377f8ade874c5c45bdc8639fcf",
+    "bytes": 2344,
+    "lines": [
+      1,
+      58
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+    "sha256": "bc6f135dc67ec0116f6e05b2817f425d008264a065a438ffe51a8205c20e7b9f",
+    "bytes": 13635,
+    "lines": [
+      1,
+      11
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/protasis/SKILL.md",
+    "sha256": "7dcf7e92e9617227890e0ed35406e96c6d15d2645f26f4eb1fe43a936f4f0e09",
+    "bytes": 32438,
+    "lines": [
+      1,
+      603
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/vulgate/DEMONSTRATION.md",
+    "sha256": "b13e1d145714cb1f4c82f7906be510bbb3c2a581d7e7a7aad935961bd40e8d5f",
+    "bytes": 1847,
+    "lines": [
+      1,
+      37
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/vulgate/EVOLUTION.md",
+    "sha256": "2203a6bab7eb2c423eda86d3698e4e1c70debe6890e93d2af4299b60e80ef910",
+    "bytes": 1105,
+    "lines": [
+      1,
+      11
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  },
+  {
+    "path": "plugins/hexaemeron/skills/vulgate/SKILL.md",
+    "sha256": "007908e9e5fc65eefeeb40a99b665602cceb5fb05265f9d05daa6b408b51e5f9",
+    "bytes": 7302,
+    "lines": [
+      1,
+      149
+    ],
+    "read": true,
+    "reader": "mason",
+    "method": "full bounded file/chunk reads; immutable ledger history omitted after current header"
+  }
+]

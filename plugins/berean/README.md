@@ -7,9 +7,9 @@
 
 Berean pins the corpus, chain reads, recorded answers and evaluation needed to check a grounded protocol-agent release without rerunning its model.
 
-**Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
+**Current frontier.** The Wildcat reference release pins three captured official documents and five recorded market calls at Ethereum block 25907928, with an unsigned Ariadne statement binding all 18 release components. The release frontier is mature; authored answers keep its demonstration status mixed.
 
-**Next Fiat job.** Use /hexaemeron:fiat to ship the first berean release grounded in captured Wildcat documentation and Wildcat market reads, replacing the demonstration corpus in the reference deployment. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** None -- mature.
 <!-- marketplace-context:end -->
 
 ## START HERE
@@ -19,9 +19,10 @@ and chain readings rather than judged from a plausible answer. It pins the
 corpus, verifies citation spans and block-bound reads, runs recorded evaluation
 cases, and records promotion or rollback without needing the original model.
 
-The machinery ships, but the reference release is still a demonstration using
-a frozen corpus and preserved Aave v4 reads. There is no live Wildcat
-reference release and no Ariadne statement binds a Berean release yet.
+The reference release checks captured Wildcat documentation and fixed-block
+market calls. Its unsigned Ariadne statement binds the release components.
+The answers are authored fixtures: no model ran, and the demonstration remains
+`mixed`. The earlier Aave release remains available unchanged.
 
 ## PLACE IN THE COLLECTIVE
 
@@ -75,11 +76,13 @@ records to the promotion chain; nothing edits a published release in place.
 
 Chain evidence arrives as preserved read records in the Lazarus record
 shape, held by recomputed request keys. The shipped reference release under
-[`examples/aave-v4-demo-v0`](./examples/aave-v4-demo-v0) answers,
-refuses and discloses a time-domain disagreement against a frozen
-demonstration corpus and preserved Aave v4 mainnet reads at block
-25870892, entirely offline. Its `reads.jsonl` is the Lazarus aave-v4
-fixture's records copied byte for byte, held by a drift test.
+[`examples/wildcat-mainnet-v0`](./examples/wildcat-mainnet-v0) checks three
+captured official documents and five recorded calls for one Wildcat market at
+Ethereum block 25907928. Its offline demo rebuilds every release byte and
+checks the unsigned Ariadne binding to all 18 components. Ten recorded cases
+cover ordinary answers, refusals and all five adversarial classes. The
+historical [`Aave example`](./examples/aave-v4-demo-v0) and its consumers remain
+unchanged. Neither release establishes live model behaviour.
 
 ## WHAT IT SHIPS
 
@@ -117,14 +120,16 @@ evaluation that release passed.
 ## RUN IT
 
 ```text
-python3 scripts/berean.py verify-release examples/aave-v4-demo-v0/release
-python3 scripts/berean.py run-evals examples/aave-v4-demo-v0/release
-python3 examples/aave-v4-demo-v0/demo.py
+python3 scripts/berean.py verify-release examples/wildcat-mainnet-v0/release
+python3 scripts/berean.py run-evals examples/wildcat-mainnet-v0/release
+python3 examples/wildcat-mainnet-v0/demo.py
 ```
 
 Run Berean with the exact interpreter in the suite
 [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). It
-has no other dependency, and no command reaches the network.
+has no third-party dependency, and no command reaches the network. The Wildcat
+demo also uses the sibling Ariadne scripts from this source distribution to
+recompute the statement binding; ordinary Berean verification remains standalone.
 
 ## TESTS
 
@@ -139,7 +144,7 @@ python3 -m unittest discover -s plugins/berean/tests -t plugins/berean
 - [`docs/spec.md`](./docs/spec.md), the Wildcat Commons specification this
   plugin was built from.
 - [`docs/design.md`](./docs/design.md), the decisions behind the formats and
-  the deferred Ariadne binding.
+  the separate Ariadne binding.
 - [`docs/release-policy.md`](./docs/release-policy.md) and
   [`docs/answers.md`](./docs/answers.md), the lifecycle and vocabulary
   records.
