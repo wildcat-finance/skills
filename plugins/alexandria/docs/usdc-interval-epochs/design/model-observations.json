@@ -1,0 +1,124 @@
+{
+  "block-only": {
+    "cases": [
+      [
+        [
+          19,
+          8,
+          10
+        ],
+        "old",
+        "old"
+      ],
+      [
+        [
+          20,
+          4,
+          8
+        ],
+        "old",
+        "new"
+      ],
+      [
+        [
+          20,
+          5,
+          9
+        ],
+        "new",
+        "new"
+      ],
+      [
+        [
+          20,
+          6,
+          10
+        ],
+        "new",
+        "new"
+      ],
+      [
+        [
+          21,
+          0,
+          0
+        ],
+        "new",
+        "new"
+      ]
+    ],
+    "spec": {
+      "components_added": [],
+      "preserved_inputs_rewritten": [],
+      "rpc_methods_added": []
+    },
+    "values": {
+      "ambiguous-emission-model": false,
+      "before-and-after-model": false,
+      "extra-release-components": 0,
+      "extra-rpc-methods": 0,
+      "preserved-inputs-retained": true
+    }
+  },
+  "position-boundary": {
+    "cases": [
+      [
+        [
+          19,
+          8,
+          10
+        ],
+        "old",
+        "old"
+      ],
+      [
+        [
+          20,
+          4,
+          8
+        ],
+        "old",
+        "old"
+      ],
+      [
+        [
+          20,
+          5,
+          9
+        ],
+        "new",
+        "new"
+      ],
+      [
+        [
+          20,
+          6,
+          10
+        ],
+        "new",
+        "new"
+      ],
+      [
+        [
+          21,
+          0,
+          0
+        ],
+        "new",
+        "new"
+      ]
+    ],
+    "spec": {
+      "components_added": [],
+      "preserved_inputs_rewritten": [],
+      "rpc_methods_added": []
+    },
+    "values": {
+      "ambiguous-emission-model": true,
+      "before-and-after-model": true,
+      "extra-release-components": 0,
+      "extra-rpc-methods": 0,
+      "preserved-inputs-retained": true
+    }
+  }
+}
