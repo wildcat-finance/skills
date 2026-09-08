@@ -1,0 +1,67 @@
+# Wildcat reference release runbook
+
+The accepted study is `.hexaemeron/study.md`. This run consumes its captured
+inputs and preserves Berean's existing formats. Each step starts from the
+previous checked step; only the completed stack merges into main.
+
+```design-lock
+schema | protasis-design-evidence/v1
+sha256 | 015087a6c80c8660edccd26d371b053a75e3f67eb6a9217af2b64e721b9fab88
+candidate | selected-docs
+```
+
+## Step 1: Preserve the specification and captured inputs
+
+**Goal.** Establish the reproducible source and evidence layout before building the release.
+
+**Entry.** The run branch begins at `41a21f8e065ce086d3ec4355c057b2623b28f205`; the study and selected-docs design are receipted, and `.hexaemeron/inputs/` contains the verified capture.
+
+**Exit.** Commit the study, runbook, design matrix, selection reports and experiment source under `docs/berean-wildcat-reference/`. Preserve the three official document blobs, provenance, Lazarus fixture and recorded Blockscout anchor under `plugins/berean/examples/wildcat-mainnet-v0/inputs/`. Add a README defining that layout, source and deployed subjects, licensing and the inherited Python 3.14.6 toolchain. Use the existing CI and licence; no new dependency or workflow is required. Captured bytes remain unchanged. `python3 plugins/lazarus/scripts/lazarus.py verify plugins/berean/examples/wildcat-mainnet-v0/inputs/lazarus-fixture` and `python3 scripts/run_checks.py --base origin/main` must exit zero. The read-only input verification also compares each document's bytes and SHA-256 with its provenance. No release or frontier advancement is claimed in this step.
+
+**Files.** `docs/berean-wildcat-reference/`, `plugins/berean/examples/wildcat-mainnet-v0/inputs/`, `plugins/berean/examples/wildcat-mainnet-v0/README.md`, and generated `.horos/boundary.json` and `.horos/census.json` when their scan changes. Update `tests/check-map-v1.json` only if the runner reports a new unowned path. Keep controller state outside Git.
+
+**Tests.** Run the existing Berean and selected repository checks. No test is added solely to mirror copied files. For a reproduced defect, use Elenchus command `python3 plugins/berean/tests/emit_report.py {report}`, report format `unittest-json-v1`, report file `tmp/elenchus/issue411-step1.json`; a later attempt uses a fresh filename. Verify the copied fixture and all source digests independently.
+
+**Disciplines.** phylax: preserve and validate external input bytes without following links. ephoros: record the finite verification command and exit. metron: no performance change; preserve the study measurements. elenchus: apply the declared runner if verification exposes a defect. hypomnema: retain the selected design, source boundaries and reproducible input locations.
+
+## Step 2: Build and test the grounded Wildcat release
+
+**Goal.** Produce a deterministic offline release with actual captured documentation and fixed-block calls.
+
+**Entry.** Step 1's preserved inputs and specifications pass their checks. The selected candidate and input digests are unchanged.
+
+**Exit.** Add `rebuild.py` using the existing Berean interfaces. It validates the preserved inputs, stages a new output directory, creates the existing corpus, answer, evaluation, release and promotion formats, and refuses an occupied destination without changing it. It never removes or rewrites a promotion chain. Commit the resulting `release/`. Recorded answers include exact source quotes, decoded configured fee and grace period, and bounded registration, borrower and asset readings. Every read binds its method, target, selector and block, and every displayed value follows the recorded ABI word. Scope refusals cover missing current state, other chains or markets, unpreserved lender positions and uncited instructions. Constructed adversarial inputs remain labelled and separate from the unchanged official corpus. Exercise all five existing adversarial classes. Capture one unsigned `grounded-agent.intoto.json` outside the release through Ariadne's existing adapter with the actual producer command. `python3 plugins/berean/scripts/berean.py verify-release plugins/berean/examples/wildcat-mainnet-v0/release`, `python3 plugins/berean/scripts/berean.py run-evals plugins/berean/examples/wildcat-mainnet-v0/release`, `python3 plugins/ariadne/scripts/ariadne.py verify plugins/berean/examples/wildcat-mainnet-v0/grounded-agent.intoto.json` and `python3 scripts/run_checks.py --base origin/main` must pass.
+
+**Files.** `plugins/berean/examples/wildcat-mainnet-v0/rebuild.py`, `release/`, `grounded-agent.intoto.json`, `README.md`, and `plugins/berean/tests/test_wildcat_reference.py`. The input files from Step 1 remain unchanged. Include generated Horos files as required; ownership-map changes are limited to the actual new check ownership. No core Berean, Lazarus or Ariadne format or verifier changes are planned.
+
+**Tests.** Add boundary tests for exact rebuild identity, altered source bytes, missing or changed reads, wrong chain/block, selector/target drift, invalid ABI word lengths, occupied output preservation, and unsupported claims. Test the new builder with network access disabled. Independently assert the pinned calls yield fee 0, grace 172800, registration true, asset `0xdac17f958d2ee523a2206206994597c13d831ec7`, and borrower `0xde8845ff1d67b84e755a57481097e712460ac21b`. Those assertions verify this finite specimen, not general answer truth. For a fix, Elenchus command is `python3 plugins/berean/tests/emit_report.py {report}`, format `unittest-json-v1`, file `tmp/elenchus/issue411-step2.json`, with a fresh filename on retries.
+
+**Disciplines.** phylax: enforce bounded local inputs, confined staging, no network and no secret retention. ephoros: name the failed stage and preserve verifier exits. metron: no speed claim or optimisation. elenchus: reproduce and guard failures with the declared report runner. hypomnema: record ABI assumptions, constructed cases and source/deployed limits beside the release.
+
+## Step 3: Demonstrate the release and advance the reference
+
+**Goal.** Make the verified Wildcat release the reference and record only the frontier advance it earns.
+
+**Entry.** Step 2's release, tests and unsigned statement pass; every captured byte remains pinned.
+
+**Exit.** Add `demo.py` that verifies the original, rebuilds into a fresh temporary directory, compares every release byte, checks the statement's binding to that exact release and demonstrates citation, block and missing-read refusals. It uses no endpoint and prints the named subject, block, classes and digest. Point mutable reference commands at this release, retain historical Aave bytes and their consumers, and update Berean's demonstration record with `mixed` status while authored answer fixtures remain. Cold-read every mutable first-party marketplace prose surface, record what was read and reconcile claims affected by this release. Add exactly one earned Berean evolution row, retaining generation and epoch; record a concrete evidenced successor or mature status without speculative work. Reconcile version and generated installation copies through the existing generators. `python3 plugins/berean/examples/wildcat-mainnet-v0/demo.py`, `python3 .hexaemeron/design_probe.py selected-docs`, `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition integration`, and `python3 scripts/run_checks.py --base origin/main` must pass. Prepare the exact release/statement identities and scope for #1144 without resuming it.
+
+**Files.** `plugins/berean/examples/wildcat-mainnet-v0/demo.py`, `README.md`, `plugins/berean/README.md`, `plugins/berean/AGENTS.md`, `plugins/berean/skills/berean/SKILL.md`, `EVOLUTION.md`, `DEMONSTRATION.md`, affected mutable first-party marketplace prose, `docs/berean-wildcat-reference/`, and the generated marketplace, portable runtime, coverage and Horos files their owners require. Keep historical corpus, release and audit bytes fixed. The final conformance report is written to its declared controller path and is never substituted by a claim in prose.
+
+**Tests.** Run the demo and all affected repository checks, including Berean, demonstration and version contracts. Verify that the old Aave release bytes did not change. The Elenchus command is `python3 plugins/berean/tests/emit_report.py {report}`, format `unittest-json-v1`, file `tmp/elenchus/issue411-step3.json`, using fresh report names for later attempts. Final conformance remains a measured result of the commands above, not an assumed exit.
+
+**Disciplines.** phylax: the demo must not reach a network or overwrite evidence. ephoros: expose the digest and failure stage. metron: preserve bounded timing claims only. elenchus: guard any demonstrated failure before completion. hypomnema: record the earned frontier decision, remaining boundaries and exact consumer handoff.
+
+### Amendment -- 2026-09-08
+
+**What changed.** Complete replacement Files: `docs/berean-wildcat-reference/`, `plugins/berean/examples/wildcat-mainnet-v0/inputs/` (with unchanged captured documents under `inputs/fixtures/docs/`), `plugins/berean/examples/wildcat-mainnet-v0/README.md`, and `plugins/berean/skills/berean/EVOLUTION.md` for the study's decision-only paragraph. Preserve the frontier header, version and evolution rows. Include generated `.horos/boundary.json` and `.horos/candidates.json` when their scan changes. Update `tests/check-map-v1.json` only if the runner reports a new unowned path. Keep controller state outside Git.
+**Why.** Study section 12 names `plugins/berean/skills/berean/EVOLUTION.md` as the decision home; Step 1 omitted it. This checkout's Horos scanner emits `candidates.json`. Captured upstream documents belong in the existing fixtures layout and retain their exact bytes.
+**Steps touched.** Step 1's Files.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-08
+
+**What changed.** Complete replacement Files: `docs/berean-wildcat-reference/`, `plugins/berean/examples/wildcat-mainnet-v0/inputs/` (with unchanged captured documents under `inputs/fixtures/docs/`), `plugins/berean/examples/wildcat-mainnet-v0/README.md`, and `plugins/berean/skills/berean/EVOLUTION.md` for the study's decision-only paragraph. Preserve the frontier header, version and evolution rows. Include generated `.horos/boundary.json`, `.horos/candidates.json` and `.horos/census.json` when their scans change. Update `tests/check-map-v1.json` only if the runner reports a new unowned path. Keep controller state outside Git.
+**Why.** `tests.test_demonstrations.HorosCensusCurrencyTests` reproduced a stale census after the scaffold was added. The separate census scan updates `.horos/census.json`; the prior amendment omitted that generated file. The packaging decision remains in `plugins/berean/skills/berean/EVOLUTION.md`.
+**Steps touched.** Step 1's Files.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

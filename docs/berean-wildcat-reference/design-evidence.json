@@ -1,0 +1,194 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "selected-docs",
+      "summary": "Freeze the three captured official documents needed by the finite market release."
+    },
+    {
+      "id": "whole-markdown",
+      "summary": "Freeze every Markdown document at the same official repository commit."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "source-bytes",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "berean",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "existing-schema",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "berean",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "build-verify-time",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "at-most",
+      "threshold": 1000,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "corpus-space",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "recover-pinned-bytes",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "berean",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "final-release",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "berean",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "selected-docs",
+      "criterion": "source-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/selected-docs-source-bytes.json",
+        "sha256": "69be45087c907aa8a81fe02f7899b77f72cf2e0ab5c32a3748a109f2431851b9"
+      }
+    },
+    {
+      "candidate": "selected-docs",
+      "criterion": "existing-schema",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/selected-docs-existing-schema.json",
+        "sha256": "ffd4dd50ebf8bb9147b8b3427508b6d4b180534bfd0ebba54d81d8a3dc6821ac"
+      }
+    },
+    {
+      "candidate": "selected-docs",
+      "criterion": "build-verify-time",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/selected-docs-build-verify-time.json",
+        "sha256": "6326bbe8808eb94c71dd39e305f893f992cddac5fa860dc89d8049d2f8b50825"
+      }
+    },
+    {
+      "candidate": "selected-docs",
+      "criterion": "corpus-space",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/selected-docs-corpus-space.json",
+        "sha256": "206669237a8fe44541bf30f07296681ae69de03966c5e7fdc49892586167c95a"
+      }
+    },
+    {
+      "candidate": "selected-docs",
+      "criterion": "recover-pinned-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/selected-docs-recover-pinned-bytes.json",
+        "sha256": "6f6dbbe5e29c4cadd5c251fcb7d5527f49d8db1125a73cf4b19050706dea14e6"
+      }
+    },
+    {
+      "candidate": "whole-markdown",
+      "criterion": "source-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/whole-markdown-source-bytes.json",
+        "sha256": "1100def99aa3245fc7fabebc7125b8d456410c6572cca7f4049742df9885b2c1"
+      }
+    },
+    {
+      "candidate": "whole-markdown",
+      "criterion": "existing-schema",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/whole-markdown-existing-schema.json",
+        "sha256": "729e3dfb7fcbb9f753cc7dd69657c5bc46ee951b4fcc510e005c8e42ec7e77d6"
+      }
+    },
+    {
+      "candidate": "whole-markdown",
+      "criterion": "build-verify-time",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/whole-markdown-build-verify-time.json",
+        "sha256": "4b26970becd5467e9219af92c3d450ef361d7fb4ccf1adc10d78b49f042c5a1a"
+      }
+    },
+    {
+      "candidate": "whole-markdown",
+      "criterion": "corpus-space",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/whole-markdown-corpus-space.json",
+        "sha256": "e39d00ba9dc8195ff77859cec43ea954d71e9e4cf02f3aa3762bd3aab3178af5"
+      }
+    },
+    {
+      "candidate": "whole-markdown",
+      "criterion": "recover-pinned-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/whole-markdown-recover-pinned-bytes.json",
+        "sha256": "7b6dc4d240ed2271f682273cccc08dcefa20334aa00136b279f2dd27dab80b16"
+      }
+    },
+    {
+      "candidate": "selected-docs",
+      "criterion": "final-release",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design_probe.py selected-docs",
+      "report": "design-reports/selected-docs-final-release.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "whole-markdown",
+      "criterion": "final-release",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design_probe.py whole-markdown",
+      "report": "design-reports/whole-markdown-final-release.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "selected-docs",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

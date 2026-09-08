@@ -1,0 +1,32 @@
+{
+  "selected-docs": {
+    "files": 3,
+    "bytes": 40001,
+    "duration_ms": [
+      0.431709,
+      0.257375,
+      0.238542,
+      0.226541,
+      0.229209
+    ],
+    "corpus_digest": "d93e0113e81a3f386ac27fd01b741120d52a4381230656743d869bbaf0aa891c",
+    "same_selected_source_bytes": true,
+    "tamper_refused": true,
+    "restored_pass": true
+  },
+  "whole-markdown": {
+    "files": 86,
+    "bytes": 496297,
+    "duration_ms": [
+      5.51475,
+      5.174,
+      5.247333,
+      5.158584,
+      5.085625
+    ],
+    "corpus_digest": "53bacbd425b246ad4912c457988d3e74860a74638bbab5555933d3c690708fe6",
+    "same_selected_source_bytes": true,
+    "tamper_refused": true,
+    "restored_pass": true
+  }
+}
