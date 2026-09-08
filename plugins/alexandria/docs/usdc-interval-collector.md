@@ -174,7 +174,9 @@ The announcement records a boundary without claiming which implementation
 executed it.
 
 Missing, boolean, negative, malformed, duplicate, contradictory, unordered or
-out-of-range coordinates refuse. Within a block, transaction indexes cannot
+out-of-range coordinates refuse. Transaction and log indexes retain the
+canonical JSON ceiling of 78 decimal digits, checked before conversion or
+diagnostic formatting. Within a block, transaction indexes cannot
 decrease and block-wide log indexes must increase; transaction indexes and
 hashes must agree, as must block hashes. Three unsupported histories also
 refuse: an upgrade in the interval's first block without prior implementation
