@@ -103,6 +103,13 @@ security review. Harnesses load those files at session start, so one paste
 makes the boundary effective for any instruction-following agent, with no
 install.
 
+A pasted boundary is only worth its last regeneration, so the adopting
+repository also needs `check` on every push. [The CI
+recipe](docs/adoption/ci.md) is the workflow for a repository that carries
+the boundary but not the skill: a pinned classifier, no install step, and
+a named cost, since any tracked file added or removed drifts the boundary
+until somebody commits a fresh one.
+
 ## WHERE IT IS HONEST ABOUT LIMITS
 
 Classification is fail-open. A file Horos cannot evidence stays readable, so

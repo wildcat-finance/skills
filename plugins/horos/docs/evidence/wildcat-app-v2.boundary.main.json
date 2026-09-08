@@ -1,0 +1,106 @@
+{
+  "counts": {
+    "bytes_binary": 2495808,
+    "bytes_generated": 9015991,
+    "bytes_lockfile": 1895407,
+    "files_skipped_unreadable": 0,
+    "files_walked": 1051
+  },
+  "entries": [
+    {
+      "bytes": 1895407,
+      "category": "lockfile",
+      "evidence": "lockfile name package-lock.json",
+      "grade": "hard",
+      "path": "package-lock.json"
+    },
+    {
+      "bytes": 126,
+      "category": "generated",
+      "evidence": "marker 'do not edit' in the first 4096 bytes",
+      "grade": "hard",
+      "path": "prisma/migrations/migration_lock.toml"
+    },
+    {
+      "bytes": 3434,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "src/assets/icons/avatarmob_icon.png"
+    },
+    {
+      "bytes": 2785,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "src/assets/icons/fire_icon.png"
+    },
+    {
+      "bytes": 1299338,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "src/assets/pictures/background.webp"
+    },
+    {
+      "bytes": 10410,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "src/assets/pictures/bannerBG.webp"
+    },
+    {
+      "bytes": 167999,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "src/assets/pictures/banner_bg.png"
+    },
+    {
+      "bytes": 6478,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "src/assets/pictures/ethereum-icon.webp"
+    },
+    {
+      "bytes": 94370,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "src/assets/pictures/login_page.webp"
+    },
+    {
+      "bytes": 899778,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "src/assets/pictures/overviewBG.webp"
+    },
+    {
+      "bytes": 11216,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "src/assets/pictures/plasma-icon.png"
+    },
+    {
+      "bytes": 1448802,
+      "category": "generated",
+      "evidence": "linguist-generated for 'src/config/elfs-by-country.json' in .gitattributes",
+      "grade": "hard",
+      "path": "src/config/elfs-by-country.json"
+    },
+    {
+      "bytes": 7567063,
+      "category": "generated",
+      "evidence": "directory name storybook-static corroborated by sample: 6 of 8 files minified, binary or generated",
+      "files": 72,
+      "grade": "hard",
+      "path": "storybook-static/"
+    }
+  ],
+  "schema": 2,
+  "tool": "horos",
+  "universe": "tracked"
+}

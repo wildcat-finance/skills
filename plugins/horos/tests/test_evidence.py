@@ -3,9 +3,15 @@
 from pathlib import Path
 import json
 import re
+import sys
 import unittest
 
 PLUGIN = Path(__file__).resolve().parents[1]
+
+sys.path.insert(0, str(PLUGIN / "skills" / "horos" / "scripts"))  # noqa: E402  (locates horos.py)
+
+import horos  # noqa: E402
+
 EVIDENCE = PLUGIN / "docs" / "evidence"
 BUNDLE = EVIDENCE / "wildcat-app-v2.md"
 BOUNDARY = EVIDENCE / "wildcat-app-v2.boundary.json"
@@ -25,6 +31,10 @@ RESULTS_7 = EVIDENCE / "v2-protocol-outline.results.json"
 BUNDLE_9 = EVIDENCE / "skills-markdown-outline.md"
 RESULTS_9 = EVIDENCE / "skills-markdown-outline.results.json"
 BUNDLE_8 = EVIDENCE / "three-repository-marking.md"
+BUNDLE_10 = EVIDENCE / "wildcat-app-v2-ci-gate.md"
+CI_GATE_COMMITTED = EVIDENCE / "wildcat-app-v2.boundary.main.json"
+CI_GATE_RESCAN = EVIDENCE / "wildcat-app-v2.boundary.main-rescan.json"
+CI_RECIPE = PLUGIN / "docs" / "adoption" / "ci.md"
 MARKING_V2P = EVIDENCE / "v2-protocol.boundary.json"
 MARKING_APP = EVIDENCE / "wildcat-app-v2.boundary.v2.json"
 # Frozen beside the other two marked repositories. Reading this repository's
@@ -295,6 +305,71 @@ class SecondCaptureTests(unittest.TestCase):
         )
         share = 100 * int(second["classified_bytes"]) / int(second["total_bytes"])
         self.assertAlmostEqual(share, 83.3, places=1)
+
+
+class CiGateBundleTests(unittest.TestCase):
+    """The default-branch capture and its drift claim stay checkable here.
+
+    The bundle's whole point is that two named causes, and only two, separate
+    the boundary wildcat-app-v2 committed from a rescan of the same tree. That
+    claim is reproducible in that repository and nowhere else, so both
+    documents are frozen beside the prose and the drift is recomputed with the
+    shipped comparison rather than restated.
+    """
+
+    def setUp(self):
+        self.lines = capture_lines(BUNDLE_10, "cigate")
+        self.committed = json.loads(CI_GATE_COMMITTED.read_text(encoding="utf-8"))
+        self.rescan = json.loads(CI_GATE_RESCAN.read_text(encoding="utf-8"))
+
+    def test_the_quoted_figures_equal_the_committed_boundary(self):
+        self.assertEqual(self.committed["schema"], 2)
+        self.assertEqual(self.committed["universe"], "tracked")
+        self.assertEqual(int(self.lines["entries"]), len(self.committed["entries"]))
+        self.assertEqual(
+            int(self.lines["hard_bytes"]),
+            sum(entry["bytes"] for entry in self.committed["entries"]),
+        )
+        self.assertEqual(
+            int(self.lines["committed_files_walked"]),
+            self.committed["counts"]["files_walked"],
+        )
+        self.assertTrue(
+            all(entry["grade"] == "hard" for entry in self.committed["entries"])
+        )
+
+    def test_the_rescan_carries_the_same_entries_at_a_moved_count(self):
+        self.assertEqual(
+            int(self.lines["rescan_files_walked"]),
+            self.rescan["counts"]["files_walked"],
+        )
+        self.assertEqual(len(self.rescan["entries"]), len(self.committed["entries"]))
+        self.assertEqual(
+            sum(entry["bytes"] for entry in self.rescan["entries"]),
+            sum(entry["bytes"] for entry in self.committed["entries"]),
+        )
+
+    def test_exactly_the_two_recorded_causes_drift(self):
+        drifted = horos.diff_boundary_documents(self.committed, self.rescan)
+        self.assertEqual(len(drifted), int(self.lines["drifted_paths"]))
+        paths = [path for path, _ in drifted]
+        self.assertEqual(
+            sorted(paths),
+            sorted([".horos/boundary.json#counts", "prisma/migrations/migration_lock.toml"]),
+        )
+        reasons = dict(drifted)
+        self.assertIn("field changed", reasons[".horos/boundary.json#counts"])
+        self.assertIn(
+            "on a comment-led line",
+            reasons["prisma/migrations/migration_lock.toml"],
+        )
+
+    def test_the_recipe_pins_a_commit_and_runs_the_check(self):
+        recipe = CI_RECIPE.read_text(encoding="utf-8")
+        pins = re.findall(r"HOROS_REF: ([0-9a-f]{40})\b", recipe)
+        self.assertEqual(len(pins), 1)
+        self.assertIn('"$HOROS_SCRIPT" check .', recipe)
+        self.assertIn("docs/adoption/ci.md", (PLUGIN / "README.md").read_text(encoding="utf-8"))
 
 
 class OutlineResultsShapeTests(unittest.TestCase):
