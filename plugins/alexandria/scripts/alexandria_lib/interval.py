@@ -21,7 +21,7 @@ import re
 import stat
 import tempfile
 
-from .canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes
+from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, canonical_bytes, load_bytes
 from .errors import AlexandriaError
 
 
@@ -680,6 +680,10 @@ class Staging:
 
 
 
+MAX_POSITION_INDEX = 10 ** MAX_INTEGER_DIGITS - 1
+MAX_POSITION_QUANTITY_LENGTH = len(hex(MAX_POSITION_INDEX))
+
+
 def proxy_log_positions(records, proxy, interval):
     """Validate every preserved proxy coordinate before deriving ownership."""
     proxy = _address(proxy, "position proxy")
@@ -703,6 +707,8 @@ def proxy_log_positions(records, proxy, interval):
             value = record.get(field)
             if not isinstance(value, str) or re.fullmatch(r"0x(?:0|[1-9a-f][0-9a-f]*)", value) is None:
                 raise AlexandriaError(f"proxy log {field} is not a canonical non-negative quantity")
+            if len(value) > MAX_POSITION_QUANTITY_LENGTH or int(value, 16) > MAX_POSITION_INDEX:
+                raise AlexandriaError(f"proxy log {field} exceeds the canonical integer limit")
             values.append(int(value, 16))
         block, tx, log = values
         if not start <= block <= end:
@@ -756,6 +762,8 @@ def _position_key(position):
         return (block, -1, -1)
     if any(type(value) is not int or value < 0 for value in (tx, log)):
         raise AlexandriaError("epoch position indexes must both be null or non-negative integers")
+    if tx > MAX_POSITION_INDEX or log > MAX_POSITION_INDEX:
+        raise AlexandriaError("epoch position indexes exceed the canonical integer limit")
     return (block, tx, log)
 
 
@@ -853,6 +861,8 @@ def validate_attributions(rows):
         _hash(row["transaction_hash"], "attribution transaction hash")
         if any(type(row[key]) is not int or row[key] < 0 for key in ("transaction_index", "log_index", "epoch_index")):
             raise AlexandriaError("log attribution indexes must be non-negative integers")
+        if any(row[key] > MAX_POSITION_INDEX for key in ("transaction_index", "log_index")):
+            raise AlexandriaError("log attribution indexes exceed the canonical integer limit")
         if row["epoch_index"] >= MAX_EPOCHS or row["kind"] not in ("proxy-log", "upgrade-boundary"):
             raise AlexandriaError("log attribution has an unsupported owner or kind")
 

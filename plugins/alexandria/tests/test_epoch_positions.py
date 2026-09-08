@@ -227,3 +227,46 @@ class ProductionConformanceTests(existing.ReleaseTestCase):
         value['block_hashes'][str(interval.MAX_BLOCK)] = value['block_hashes'][first]
         epochs = self.derive(value)
         self.assertEqual(epochs[-1]['end_position']['block_number'], str(interval.MAX_BLOCK + 1))
+
+    def test_oversized_coordinate_keeps_refusal_receipt(self):
+        log = self.state['logs']['2'][0]
+        log['transactionIndex'] = '0x' + 'f' * 5000
+        log['logIndex'] = '0x0'
+        ordinary = deepcopy(log)
+        ordinary.update(topics=['0x' + 'aa' * 32], logIndex='0x1')
+        self.state['logs']['2'].append(ordinary)
+        staging = self.scratch('oversized-position')
+        failure = None
+        collector = Collector(self.plan, staging, existing.FixtureTransport(self.state))
+        try:
+            collector.collect()
+        except Exception as exc:
+            failure = exc
+        finally:
+            collector.staging.close()
+        self.assertIsInstance(failure, AlexandriaError)
+        receipts = list((staging / 'receipts').glob('*.jsonl'))
+        self.assertTrue(receipts)
+        self.assertIn('malformed-upgrade-log', ''.join(path.read_text() for path in receipts))
+
+    def test_coordinate_uses_existing_json_integer_ceiling(self):
+        ceiling = 10 ** 78 - 1
+        for field in ('transactionIndex', 'logIndex'):
+            with self.subTest(field=field):
+                value, _ = evidence()
+                value['upgrade_logs'][-1][field] = hex(ceiling)
+                epochs = self.derive(value)
+                canonical_bytes(interval.attribute_logs(value['upgrade_logs'], value['proxy'], value['interval'], epochs))
+                value['upgrade_logs'][-1][field] = hex(ceiling + 1)
+                with self.assertRaises(AlexandriaError):
+                    self.derive(value)
+
+        for field in ('transaction_index', 'log_index'):
+            position = {'block_number': '1', 'transaction_index': 0, 'log_index': 0}
+            position[field] = ceiling + 1
+            with self.assertRaises(AlexandriaError):
+                interval._position_key(position)
+            row = dict(position, block_hash='0x' + '01' * 32,
+                       transaction_hash='0x' + '02' * 32, epoch_index=0, kind='proxy-log')
+            with self.assertRaises(AlexandriaError):
+                interval.validate_attributions([row])
