@@ -568,3 +568,22 @@ record.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-08
+
+**What changed.** The third demo command in section 1 is
+`python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify-rebuild --specimen plugins/anamnesis/specimens/pilot --report tmp/demo/pilot-rebuild.json`.
+It was written without `--report`, and the comment beneath it stands unchanged:
+the pilot still rebuilds to 41d640fb.
+
+**Why.** `verify-rebuild` has required `--report` since `d4ebacc4`, which
+predates this run's base, so the command as first written exits 2 on an
+argparse usage error and demonstrates nothing. Step 4's exit requires each of
+the three demo commands to behave as this study states, and that clause could
+not be met while one of them could not run. The report path is inside the
+worktree because the runner binds it there, and `tmp/` is ignored, so running
+the demonstration leaves the tree clean.
+
+**Steps touched.** Step 4
+
+**Still holding.** Step 4: entry holds; exit holds.
