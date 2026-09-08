@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "horos_boundary_scan": {
+          "authorised_transition": {
+            "action": "structurally bind horos-boundary-scan without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/horos/tests/test_boundary.py",
+                "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/horos/tests/test_boundary.py",
+                "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/horos/tests/test_boundary.py",
+                "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "horos-boundary-scan",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for horos-boundary-scan",
+            "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "horos-boundary-scan",
+        "scope": "structural binding for horos-boundary-scan",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary",
+        "transition": {
+          "action": "structurally bind horos-boundary-scan without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "horos_boundary_scan": {
+          "authorised_transition": {
+            "action": "structurally bind horos-boundary-scan without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/horos/tests/test_boundary.py",
+                "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/horos/tests/test_boundary.py",
+                "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/horos/tests/test_boundary.py",
+                "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "horos-boundary-scan",
+          "source": {
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          },
+          "target": {
+            "scope": "structural binding for horos-boundary-scan",
+            "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/horos/tests/test_boundary.py",
+            "sha256": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "horos-boundary-scan",
+        "scope": "structural binding for horos-boundary-scan",
+        "source_digest": "fccdca799b0b924246ccdb75accfd700d5d5d5cbab628b2fdff51aba3e713485",
+        "subject": "runtime source plugins/horos/tests/test_boundary.py#test_check_passes_on_a_fresh_boundary",
+        "transition": {
+          "action": "structurally bind horos-boundary-scan without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

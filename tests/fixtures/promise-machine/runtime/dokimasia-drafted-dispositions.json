@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "dokimasia_drafted_dispositions": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-drafted-dispositions without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_propose.py",
+                "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_propose.py",
+                "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-drafted-dispositions",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-drafted-dispositions",
+            "subject": "runtime source plugins/dokimasia/tests/test_propose.py#test_every_scoped_item_gets_exactly_one_entry"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_propose.py",
+            "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_propose.py",
+            "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-drafted-dispositions",
+        "scope": "structural binding for dokimasia-drafted-dispositions",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/dokimasia/tests/test_propose.py#test_every_scoped_item_gets_exactly_one_entry",
+        "transition": {
+          "action": "structurally bind dokimasia-drafted-dispositions without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "dokimasia_drafted_dispositions": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-drafted-dispositions without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_propose.py",
+                "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_propose.py",
+                "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-drafted-dispositions",
+          "source": {
+            "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-drafted-dispositions",
+            "subject": "runtime source plugins/dokimasia/tests/test_propose.py#test_every_scoped_item_gets_exactly_one_entry"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_propose.py",
+            "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_propose.py",
+            "sha256": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-drafted-dispositions",
+        "scope": "structural binding for dokimasia-drafted-dispositions",
+        "source_digest": "596f9fcb5ebe79f5b54e18dfef65ff9de769c3cac0809d62fc8a95e53e922783",
+        "subject": "runtime source plugins/dokimasia/tests/test_propose.py#test_every_scoped_item_gets_exactly_one_entry",
+        "transition": {
+          "action": "structurally bind dokimasia-drafted-dispositions without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}
