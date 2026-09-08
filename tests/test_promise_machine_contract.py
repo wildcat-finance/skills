@@ -64,7 +64,7 @@ RECEIPTED_OBLIGATION_STUDY_SHA256 = (
     "cd39131e527cfd0a670757610e1e42016c7a7eede27b403d563c10b22b40ae1c"
 )
 RECEIPTED_OBLIGATION_RUNBOOK_SHA256 = (
-    "1e8eabd850d57b51c7c9b76e61f55cabbf13c57ffdd770545ba536f067576562"
+    "d8aaf3989b3a28541a7c9abdf5ca52737df9c4751bbcb9e8b17367fbb2c18cc5"
 )
 
 
@@ -3575,15 +3575,15 @@ class PromiseHistoryTests(unittest.TestCase):
         document = json.loads(PROMISE_ID_HISTORY.read_text(encoding="utf-8"))
         self.assertEqual(document["entry_ref"], FIAT_ENTRY_REF)
         self.assertEqual(document["entry_count"], 80)
-        self.assertEqual(len(document["entries"]), 94)
+        self.assertEqual(len(document["entries"]), 98)
         self.assertEqual(
-            len({row["promise_id"] for row in document["entries"]}), 94
+            len({row["promise_id"] for row in document["entries"]}), 98
         )
         completed = run_cli("check", "--only", "history", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["history_entries"], 94)
-        self.assertEqual(report["counts"]["active_history_ids"], 94)
+        self.assertEqual(report["counts"]["history_entries"], 98)
+        self.assertEqual(report["counts"]["active_history_ids"], 98)
 
     def test_deleted_or_duplicated_history_id_is_refused(self):
         for name in ("deleted", "duplicated"):
@@ -4368,7 +4368,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "source_digest",
         }
         level_three_fields = {"authority", "inspectable_evidence"}
-        self.assertEqual(len(records), 45)
+        self.assertEqual(len(records), 47)
         self.assertEqual(set(coverage["runtime"]), set(records))
         native_maps = set()
         for promise_id, binding in coverage["runtime"].items():
@@ -4453,7 +4453,7 @@ class PromiseCoverageTests(unittest.TestCase):
                     completed.returncode, 0, completed.stdout + completed.stderr
                 )
                 self.assertEqual(report["findings"], [])
-                self.assertEqual(report["counts"]["runtime_bindings"], 45)
+                self.assertEqual(report["counts"]["runtime_bindings"], 47)
 
     def test_repository_runtime_specimens_use_the_production_reader(self):
         coverage = json.loads(
