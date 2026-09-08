@@ -173,6 +173,61 @@ class ScopeRefusals(PilotFixture):
                 refusal = self.refusal(lambda: anamnesis.verify_release(out))
                 self.assertEqual(refusal.code, "A077")
 
+    def test_the_scope_refusal_emits_its_rule_policy_and_correlation_id(self):
+        """The signal an operator is told to read: verify takes a sink, so the
+        one refusal the declared scope owns leaves a durable event rather than
+        only an exit code."""
+        policy = copy.deepcopy(self.policy)
+        policy["scope"]["sources"] = policy["scope"]["sources"][:-1]
+        out = str(self.scratch / "scope-refusal-emits")
+        anamnesis.build_release(out, policy, self.sources, self.graph)
+        events = anamnesis.Events()
+        self.refusal(lambda: anamnesis.verify_release(out, events))
+        refused = [e for e in events.emitted if e["event"] == "anamnesis.source.refused"]
+        self.assertEqual(len(refused), 1)
+        event = refused[0]
+        self.assertEqual(event["rule"], "A077")
+        self.assertEqual(event["policy_version"], policy["version"])
+        self.assertIsNone(event["record"])
+        self.assertEqual(len(event["correlation_id"]), 16)
+        self.assertIn("differ from the declared scope", event["reason"])
+
+    def test_the_scope_refusal_is_identical_without_a_sink(self):
+        """The sink is optional and adds nothing to the refusal itself."""
+        policy = copy.deepcopy(self.policy)
+        policy["scope"]["sources"] = policy["scope"]["sources"][:-1]
+        out = str(self.scratch / "scope-refusal-sinkless")
+        anamnesis.build_release(out, policy, self.sources, self.graph)
+        sunk = anamnesis.Events()
+        with_sink = self.refusal(lambda: anamnesis.verify_release(out, sunk))
+        without = self.refusal(lambda: anamnesis.verify_release(out))
+        self.assertEqual((without.code, without.message), (with_sink.code, with_sink.message))
+
+    def test_verify_writes_the_scope_refusal_to_a_named_stream(self):
+        """The command threads the sink, so an operator gets the event on disk."""
+        policy = copy.deepcopy(self.policy)
+        policy["scope"]["sources"] = policy["scope"]["sources"][:-1]
+        out = str(self.scratch / "scope-refusal-stream")
+        anamnesis.build_release(out, policy, self.sources, self.graph)
+        stream = self.scratch / "events.jsonl"
+        run = subprocess.run(
+            [sys.executable, str(SCRIPT), "verify", "--release", out,
+             "--events", str(stream)],
+            capture_output=True, text=True, cwd=str(WORKTREE),
+        )
+        self.assertEqual(run.returncode, 1)
+        lines = stream.read_text(encoding="utf-8").strip().splitlines()
+        self.assertEqual(len(lines), 1)
+        event = json.loads(lines[0])
+        self.assertEqual(event["event"], "anamnesis.source.refused")
+        self.assertEqual(event["rule"], "A077")
+
+    def test_a_verified_release_emits_nothing(self):
+        """No refusal, no event: the sink is for refusals alone."""
+        events = anamnesis.Events()
+        anamnesis.verify_release(str(RELEASE), events)
+        self.assertEqual(events.emitted, [])
+
 
 class ScopeInTheReleaseId(PilotFixture):
     def test_a_one_byte_change_to_any_scope_field_changes_the_release_id(self):

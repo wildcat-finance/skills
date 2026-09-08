@@ -1068,8 +1068,13 @@ def check_manifest_shape(manifest):
     return manifest
 
 
-def verify_release(out):
-    """Recompute every component digest from the bytes on disk."""
+def verify_release(out, events=None):
+    """Recompute every component digest from the bytes on disk.
+
+    `events` is optional. A caller that wants the declared-scope refusal on a
+    durable stream supplies a sink; a caller that does not gets the identical
+    refusal with nothing written.
+    """
     manifest_path = os.path.join(out, "manifest.json")
     raw = read_bounded(manifest_path, MAX_POLICY_BYTES, "release manifest")
     try:
@@ -1144,17 +1149,28 @@ def verify_release(out):
         raise Refusal("A119", "manifest counts differ from the released components")
     # Both sides of this comparison are inside the release, so a release says
     # for itself whether it holds exactly the sources its scope declares.
-    scope = manifest["policy"].get("scope")
-    if not isinstance(scope, dict) or not isinstance(scope.get("sources"), list):
-        raise Refusal("A077", "manifest policy declares no scope sources")
-    declared = set(scope["sources"])
-    listed = {source["id"] for source in manifest["sources"]}
-    if declared != listed:
-        raise Refusal(
-            "A077",
-            f"manifest sources {sorted(listed)} differ from the declared scope "
-            f"sources {sorted(declared)}",
-        )
+    #
+    # This is the one check the declared scope owns, and an operator asking why
+    # a release was refused is told to read that answer off the event stream, so
+    # it runs inside the recorded span. The refusals above it belong to release
+    # integrity and are raised before the policy bytes that key a correlation id
+    # have been recomputed, so they stay outside it.
+    with refusals_recorded(
+        events if events is not None else Events(),
+        policy.get("version"),
+        hashlib.sha256(bodies["policy.json"]).hexdigest(),
+    ):
+        scope = manifest["policy"].get("scope")
+        if not isinstance(scope, dict) or not isinstance(scope.get("sources"), list):
+            raise Refusal("A077", "manifest policy declares no scope sources")
+        declared = set(scope["sources"])
+        listed = {source["id"] for source in manifest["sources"]}
+        if declared != listed:
+            raise Refusal(
+                "A077",
+                f"manifest sources {sorted(listed)} differ from the declared scope "
+                f"sources {sorted(declared)}",
+            )
     return manifest, checked_bodies
 
 
@@ -1554,7 +1570,7 @@ def cmd_release(args):
 
 
 def cmd_verify(args):
-    manifest, _ = verify_release(args.release)
+    manifest, _ = verify_release(args.release, Events(args.events))
     print(
         f"verified {manifest['release_id']}: "
         f"{len(manifest['components'])} component(s), "
@@ -1768,6 +1784,7 @@ def build_parser():
     verify = sub.add_parser(
         "verify", help="recompute every component digest in a release")
     verify.add_argument("--release", required=True)
+    verify.add_argument("--events", default=None)
     verify.set_defaults(handler=cmd_verify)
 
     measure = sub.add_parser(
