@@ -4502,7 +4502,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "606c04c59f0e5b3adc7184afaf265a1b4cc1ada344a918ce4fa4cf53d9f8fc7e",
+      "sha256": "59cf1fea6bffe21b44477a7d1368d33d3b5fc42b05a7e0a4da0403ed911de4bf",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
@@ -4707,12 +4707,12 @@
         "evidence_references": "canonical report, base, product, result tree, ordered mappings and blob ids",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "bounded draft set, exact commits, active base ref and fixed transform",
+        "scope": "bounded draft set including exact unchanged inherited drafts, exact commits, active base ref and fixed transform",
         "subject": "repository object format and immutable base and product commits",
         "transition": "zero-exit replay joined to the canonical Authorises field",
         "unknowns": "commit signature, hosted exact-head status and repository admission policy"
       },
-      "sha256": "987a0ccb7a2e4e03cd0ef33570bbd9b09cc115e24d092f98304334e4997fe3a7",
+      "sha256": "6b1501e55ab494f79cc8e0df840cc92640a611015c55d26ccfba7ea0d201d6f2",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
     }
   },
