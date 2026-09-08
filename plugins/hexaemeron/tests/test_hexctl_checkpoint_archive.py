@@ -7,17 +7,25 @@ drifts in one document and not the other is a specification an implementer
 reads and a specification the study fixed, disagreeing.
 
 The first test holds the reference to that study, item for item: the 24 refusal
-classes of study section 4 and the 35 hostile fixture ids on the risk
-register's `hostile-fixture-set` line, then the six schema names, the nine
-entry paths, the thirteen closed manifest fields, the seven ceiling values, the
-zip metadata rule including the entry mode, the bundle determinism command, the
-six secret patterns, the `## Restore transaction` heading, the sidecar
-two-space rule and the `acceptance/current` rule, against study sections 1, 3
-and 4. A class missing from the reference is a refusal nobody tests; an id
-missing is a specimen nobody builds; a drifted ceiling or pattern is the limit
-an implementer builds to. Mutating any one of those values, or deleting it,
-fails this test. Both documents are read from the tracked copies, so the test
-runs outside a Fiat run worktree.
+classes of study section 4 and the 35 hostile fixture ids on section 5's risk
+register `hostile-fixture-set` line, then the six schema names, the nine entry
+paths, the thirteen closed manifest fields with the content each is closed to,
+the seven ceiling values, the zip metadata rule including the entry mode, the
+bundle determinism command, the six secret patterns, the sidecar two-space rule
+and the `acceptance/current` rule, against study sections 1, 3, 4 and 5.
+
+Two assertions are over the reference alone, because the study states no
+counterpart to compare: the `## Restore transaction` heading, which study
+section 12 names among this contract's contents without stating any of it, and
+each path the manifest's `joined against` column names, which must be a path
+the layout fence states -- and that fence is held equal to the study's, so the
+join is bound to study section 1 through it.
+
+A class missing from the reference is a refusal nobody tests; an id missing is
+a specimen nobody builds; a drifted ceiling, pattern or closed field is the
+limit an implementer builds to. Mutating any one of those values, or deleting
+it, fails this test. Both documents are read from the tracked copies, so the
+test runs outside a Fiat run worktree.
 
 The second test holds the budgets file to the six limits study section 10
 derived, read through the same loader `metron.py check --budgets` uses, and
@@ -53,6 +61,10 @@ TABLE_CLASS = re.compile(r"^\| `([a-z0-9]+(?:-[a-z0-9]+)+)` \|")
 LIST_ID = re.compile(r"^- `([a-z0-9]+(?:-[a-z0-9]+)+)`$")
 KEBAB_SPAN = re.compile(r"`([a-z0-9]+(?:-[a-z0-9]+)+)`")
 MANIFEST_ROW = re.compile(r"^\| `(?P<field>[a-z_]+)` \| (?P<closed>.+) \| (?P<joined>.+) \|$")
+# Study section 1 states each field's closed content as one parenthetical in
+# the `checkpoint.json` sentence; the reference states the same content as a
+# table cell. No parenthetical nests a bracket, so the class excludes both.
+STUDY_MANIFEST_FIELD = re.compile(r"`(?P<field>[a-z_]+)` \((?P<closed>[^()]*)\)")
 SCHEMA_NAME = re.compile(r"(?<![-\w])fiat-checkpoint-[a-z-]+/v[0-9]+")
 BUDGET_ROW = re.compile(
     r"^\| `(?P<name>checkpoint\.archive\.[a-z_]+)` \| (?P<unit>[a-z]+) \|"
@@ -222,6 +234,16 @@ def flat(text: str) -> str:
     return " ".join(text.split())
 
 
+def normalise_closed(cell: str) -> str:
+    """One line with no code-span backticks.
+
+    The two documents span the same words differently -- the study writes
+    ``format `zip` `` where the reference writes `` `format` `zip` `` -- so the
+    words are the evidence and the span punctuation is not.
+    """
+    return flat(cell.replace("`", ""))
+
+
 def anchored(text: str, start: str, end: str, what: str) -> str:
     """The slice between two literal anchors, or a named assertion failure.
 
@@ -353,6 +375,49 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertNotEqual(-1, at, f"the study does not name `{field}`")
                 self.assertGreater(at, seen, f"`{field}` is out of order in the study")
                 seen = at
+
+        # Each row's `closed to` cell against the study's parenthetical for the
+        # same field, so a sub-field dropped, renamed or retyped in one document
+        # and not the other fails here. `schema` carries no parenthetical in the
+        # study sentence and its cell is the schema name `EXPECTED_SCHEMAS`
+        # already holds, so it is asserted against that name instead.
+        study_closed = {
+            match.group("field"): normalise_closed(match.group("closed"))
+            for match in STUDY_MANIFEST_FIELD.finditer(flat(study_manifest))
+        }
+        self.assertEqual(
+            set(EXPECTED_MANIFEST_FIELDS) - {"schema"},
+            set(study_closed),
+            "study section 1 states no closed field list for each manifest field",
+        )
+        reference_closed = {
+            match.group("field"): normalise_closed(match.group("closed"))
+            for match in manifest_rows
+        }
+        self.assertEqual("fiat-checkpoint-archive/v1", reference_closed["schema"])
+        for field in EXPECTED_MANIFEST_FIELDS:
+            if field == "schema":
+                continue
+            with self.subTest(closed_field=field):
+                self.assertEqual(study_closed[field], reference_closed[field])
+
+        # Every path the `joined against` column names is a path the layout
+        # fence states, and that fence is asserted equal to the study's above,
+        # so a join renamed on its own is a reference naming one path in its
+        # layout and another in its manifest -- a contradiction Step 2's
+        # exporter would have to resolve by guessing. `proof/allowed_signers`
+        # is named in the fence's description column, so the whole block is the
+        # comparison rather than its first column.
+        for match in manifest_rows:
+            for span in CODE_SPAN.findall(match.group("joined")):
+                if "/" not in span:
+                    continue
+                with self.subTest(joined_path=span):
+                    self.assertIn(
+                        span,
+                        reference_layout_block,
+                        f"the manifest join names `{span}`, absent from the layout",
+                    )
 
         # The seven ceiling values (study section 1). The two documents wrap and
         # punctuate the list differently, so the values are compared as ordered

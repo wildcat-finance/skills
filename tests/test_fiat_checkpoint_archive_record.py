@@ -47,6 +47,32 @@ RELATIVE_LINK = re.compile(r"\[[^]]+\]\((?!https?://|#)([^)#]+)")
 DATED_STATUS = re.compile(r"^(?:Proposed|Accepted), \d{4}-\d{2}-\d{2}")
 SECTIONS = ("## Status", "## Context", "## Decision", "## Alternatives", "## Consequences")
 
+# The record's candidate table and study section 4's result matrix carry the
+# same three measured metrics per candidate. The Exit states them as four
+# ordered triples, so each row is compared to its own column of the matrix
+# rather than to the set of values the table happens to contain.
+RECORD_MATRIX_HEADER = "| candidate | pack ms | carrier bytes | spawned programs | gates |"
+RECORD_MATRIX_ROW = re.compile(
+    r"^\| (?P<letter>[A-D]) `(?P<candidate>[a-z-]+)`(?:, selected)? \|"
+    r" (?P<pack>[0-9,]+) \| (?P<carrier>[0-9,]+) \| (?P<spawned>[0-9,]+) \|"
+    r" (?P<gates>[^|]+) \|$"
+)
+STUDY_MATRIX_ROW = re.compile(
+    r"^\| `(?P<criterion>[a-z-]+)` (?:gate|minimise) \| [^|]+ \|"
+    r" (?P<a>[^|]+) \| (?P<b>[^|]+) \| (?P<c>[^|]+) \| (?P<d>[^|]+) \|$"
+)
+MEASURED_CRITERIA = (
+    ("pack", "pack-wall-milliseconds"),
+    ("carrier", "carrier-bytes"),
+    ("spawned", "subprocess-boundaries-per-export"),
+)
+CANDIDATE_ORDER = (
+    ("A", "native-subcommands"),
+    ("B", "sidecar-script"),
+    ("C", "inspector-only"),
+    ("D", "external-archiver"),
+)
+
 # The artefact's own words for not being the decision, matched with the
 # source's line wrapping collapsed.
 NOT_THE_DECISION = {
@@ -158,12 +184,40 @@ class FiatCheckpointArchiveRecord(unittest.TestCase):
         alternatives = text.split("\n## Alternatives\n", 1)[1].split("\n## ", 1)[0]
         for candidate in ("`sidecar-script`", "`inspector-only`", "`external-archiver`"):
             self.assertIn(candidate, alternatives)
-        for reading in (
-            "26", "1,977", "335",
-            "100,790,501", "100,470,196", "100,790,483",
-            "| 2 |", "| 3 |", "| 4 |",
-        ):
-            self.assertIn(reading, alternatives, f"{path.name} omits the measured reading {reading!r}")
+
+        # Each candidate's own readings, against study section 4's result
+        # matrix. Comparing the record's set of values instead let a reading
+        # drift wherever another row carried the same number: A and B measure
+        # the same pack milliseconds and the same carrier bytes, and B and D
+        # the same spawned-program count, so six of the twelve cells were
+        # satisfied by a neighbour. The two documents' column order is the
+        # candidate order below, which the matrix heads A to D.
+        self.assertIn(RECORD_MATRIX_HEADER, alternatives)
+        record_rows = {}
+        for line in alternatives.splitlines():
+            found = RECORD_MATRIX_ROW.match(line)
+            if found:
+                self.assertNotIn(found.group("letter"), record_rows, "a candidate row repeats")
+                record_rows[found.group("letter")] = found
+        self.assertEqual([letter for letter, _ in CANDIDATE_ORDER], sorted(record_rows))
+
+        study_rows = {}
+        for line in read(STUDY).splitlines():
+            found = STUDY_MATRIX_ROW.match(line)
+            if found:
+                study_rows[found.group("criterion")] = found
+        for _, criterion in MEASURED_CRITERIA:
+            self.assertIn(criterion, study_rows, f"study section 4 has no `{criterion}` row")
+
+        for letter, candidate in CANDIDATE_ORDER:
+            row = record_rows[letter]
+            self.assertEqual(candidate, row.group("candidate"))
+            for column, criterion in MEASURED_CRITERIA:
+                with self.subTest(candidate=candidate, criterion=criterion):
+                    self.assertEqual(
+                        study_rows[criterion].group(letter.lower()).strip(),
+                        row.group(column),
+                    )
 
         self.assertEqual([], dead_relative_links(path, text), f"dead relative links in {path.name}")
 

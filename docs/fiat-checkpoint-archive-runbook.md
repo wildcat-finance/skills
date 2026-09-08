@@ -1457,3 +1457,50 @@ Step 3 `Ran 35 tests` and Step 4 `Ran 6 tests` were unaffected either way.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-08
+
+**What changed.** Complete replacement Tests: In
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`:
+`test_archive_reference_names_every_refusal_class_and_fixture_id` (the
+reference's 24 refusal classes and 35 fixture ids equal the sets in
+`docs/fiat-checkpoint-archive-study.md` sections 4 and 5, and every other
+value the Exit requires the reference to state equals what the study states:
+the six schema names, the nine entry paths, each manifest field row, the seven
+ceiling values, the zip metadata rule including entry mode `0100644`, the `git
+-c pack.threads=1 bundle create` determinism rule, the six secret patterns,
+the sidecar two-space rule and the `acceptance/current` rule, against sections
+1, 3, 4 and 5; the reference's `## Restore transaction` heading is pinned as a
+structural assertion over the reference alone, because section 12 names the
+restore transaction among that contract's contents without stating its
+content; a mutation of any one of those values, and a deletion of any one of
+them, fails the test) and
+`test_archive_budgets_declare_the_six_measured_limits`. In
+`tests/test_fiat_checkpoint_archive_record.py`:
+`test_run_artefacts_point_to_the_draft_record_and_adr_028_and_are_not_the_decision`,
+`test_adr_028_amendment_points_at_the_draft_record_and_stays_accepted` and
+`test_draft_record_states_the_three_commands_and_the_rejected_designs`, with
+a dead-relative-link check over both tracked artefacts. Five new tests;
+existing suites unchanged. For any audit repair, run
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`;
+report format `unittest-json-v1`; expected schema `elenchus.unittest.v1`;
+report file `.elenchus/fiat-861-step-1.json`. A missing, stale, empty,
+malformed, zero-test or infrastructure-failed report is `inconclusive`.
+
+**Why.** Round 4 finding S1-R4-03: the previous clause of this date required
+ten families to equal what sections 1, 3 and 4 state, and two of the ten were
+misattributed. `## Restore transaction` has no study counterpart at all --
+`grep -n "Restore transaction"` over the study returns nothing -- and section
+12 at line 847 names the restore transaction only among the contents of the
+archive contract, stating none of it, so value parity was unsatisfiable as
+written and the heading is pinned reference-side instead. `acceptance/current
+refuses` is section 5 at line 642, not 1, 3 or 4, while its other half,
+`current` is the literal `outside`, is section 1 at line 104; the section list
+now reads 1, 3, 4 and 5. No pinned value, command, path or count changes, and
+the folded test already implements this shape.
+
+**Steps touched.** Step 1 Tests.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
