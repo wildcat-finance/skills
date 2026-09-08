@@ -64,13 +64,6 @@ NON_HUMAN_PR_LOGINS = frozenset(
     }
 )
 
-# The hosted identity status remains live until Step 3 removes its ruleset
-# requirement. Keep its imported names as contributor-owned compatibility
-# aliases; Fiat does not import or mirror them.
-HOST_IDENTITY_NAMES = NON_HUMAN_IDENTITY_NAMES
-HOST_IDENTITY_EMAILS = NON_HUMAN_IDENTITY_EMAILS
-HOST_PR_LOGINS = NON_HUMAN_PR_LOGINS
-
 # A GitHub login is 1 to 39 characters of ASCII alphanumerics and hyphens, and
 # may neither start nor end with a hyphen. Nothing matching this can carry
 # Markdown syntax, which is why the login is the only API field either artefact
@@ -117,10 +110,6 @@ def is_non_human_login(login: str) -> bool:
     """Recognise an account excluded only from the human ranking."""
     folded = login.strip().casefold()
     return folded in NON_HUMAN_PR_LOGINS or folded in NON_HUMAN_IDENTITY_NAMES
-
-
-is_host_identity = is_non_human_identity
-is_host_login = is_non_human_login
 
 
 def valid_login(login: str) -> bool:

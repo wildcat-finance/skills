@@ -174,7 +174,7 @@
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "4f96b77cc9425396903c33c763c59f4cdbd0d490a6ad4529175d9bac3fb75dc8"
+      "sha256": "3182ab59809a8a1ca66a9aea774c4bf20cc246cdd9124fa5f6f76c96e57c8e13"
     },
     "tests": {
       "path": "tests/test_contributors.py",
