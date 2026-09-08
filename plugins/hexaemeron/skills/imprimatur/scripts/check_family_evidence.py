@@ -58,6 +58,13 @@ ENDPOINT_SEGMENTS = {
 # fragment ends at \Z rather than $, because $ also matches before a trailing
 # newline and would carry that newline's row into the endpoint.
 COMMENT_FRAGMENT = re.compile(r"#(issuecomment-|discussion_r)([0-9]+)\Z")
+# The endpoint is built from `repository`, `source_commit` and `source_path`,
+# while `source_url` is the citation a reader follows to the same object.
+# Anchoring each segment's shape says the endpoint is one wildcat-finance
+# object; it does not say it is the object this specimen cites. Nothing
+# compared the two, so a row citing one object and replaying another passed
+# every check. cited_path and require_cited are that comparison.
+GITHUB_PREFIX = "https://github.com/"
 FAMILIES_NAME = "families.jsonl"
 SPECIMENS_NAME = "specimens.jsonl"
 REJECTIONS_NAME = "selection-rejections.jsonl"
@@ -169,12 +176,21 @@ def group_id_problem(value: str) -> str | None:
     ids differing by a space, a no-break space or a zero-width character read
     as one group on screen and as two here, which is enough to carry a
     high-value family's two independent positives out of a single document.
+
+    Refusing whitespace and non-printing characters left the same hole open
+    one composition down. A combining mark is neither, so the NFC and NFD
+    spellings of one path render identically and compare unequal, and two
+    positives from that one document counted as two independent groups. NFC
+    is required rather than applied, so the value a reader sees and the value
+    this compares are the same string.
     """
     for character in value:
         if character.isspace():
             return f"carries whitespace ({character!r})"
         if unicodedata.category(character) in ("Cc", "Cf", "Cn", "Co", "Cs"):
             return f"carries a non-printing character ({character!r})"
+    if value != unicodedata.normalize("NFC", value):
+        return "is not in Unicode normal form NFC"
     return None
 
 
@@ -337,16 +353,47 @@ def endpoint_segment(field: str, value, specimen_id) -> str:
     return value
 
 
+def cited_path(row: dict, repository: str, specimen_id) -> str:
+    """Return the ``source_url`` path below the repository being replayed.
+
+    A citation naming another repository is refused here rather than compared
+    later, because every endpoint below is built from ``repository`` and would
+    otherwise read an object in a repository the specimen never cited.
+    """
+    url = row["source_url"]
+    prefix = f"{GITHUB_PREFIX}{repository}/"
+    if not isinstance(url, str) or not url.startswith(prefix):
+        raise RefusalError(f"source_url for {specimen_id} does not cite {repository}: {url!r}")
+    return url[len(prefix):].split("#", 1)[0].rstrip("/")
+
+
+def require_cited(specimen_id, cited: str, allowed: tuple[str, ...]) -> None:
+    """Refuse a replay of an object the specimen's own citation does not name."""
+    if cited not in allowed:
+        raise RefusalError(
+            f"source_url for {specimen_id} cites {cited!r}, which is not the "
+            f"replayed object ({' or '.join(allowed)})"
+        )
+
+
 def fetch_source_object(row: dict) -> str:
-    """Replay one specimen's immutable GitHub object. Opens a socket."""
+    """Replay one specimen's cited GitHub object. Opens a socket.
+
+    Two of the six kinds replay an object GitHub cannot change under the
+    reference sent: a file at ``?ref=<sha>`` and a commit read by its sha. The
+    four body and comment kinds have no such reference, so their replay
+    compares the current body and is a live read rather than an immutable one.
+    ``source_commit`` is still checked on every kind, because a row carrying an
+    unusable commit is an unusable row whether this endpoint sends it or not.
+    """
     specimen_id = row.get("specimen_id")
     repository = endpoint_segment("repository", row["repository"], specimen_id)
-    # Checked on every kind, not only the two that read it, so the pinned ref a
-    # replay claims to be immutable is one this checker validated.
     commit = endpoint_segment("source_commit", row["source_commit"], specimen_id)
     source_object = row["source_object"]
     if source_object == "markdown_paragraph":
         path = endpoint_segment("source_path", row["source_path"], specimen_id)
+        cited = cited_path(row, repository, specimen_id)
+        require_cited(specimen_id, cited, (f"blob/{commit}/{path}", f"raw/{commit}/{path}"))
         blob = gh_fetch(
             [
                 "api",
@@ -357,13 +404,22 @@ def fetch_source_object(row: dict) -> str:
         )
         return blob.decode("utf-8", "replace")
     if source_object == "commit_message":
+        cited = cited_path(row, repository, specimen_id)
+        require_cited(specimen_id, cited, (f"commit/{commit}", f"commits/{commit}"))
         blob = gh_fetch(["api", f"repos/{repository}/commits/{commit}"])
         return reply_value(blob, ("commit", "message"), specimen_id)
     if source_object in ("issue_body", "pull_request_body"):
         tail = row["source_url"].rstrip("/").rsplit("/", 1)[-1].split("#")[0]
         number = endpoint_segment("object_number", tail, specimen_id)
+        cited = cited_path(row, repository, specimen_id)
+        collections = ("issues",) if source_object == "issue_body" else ("pull", "pulls")
+        require_cited(specimen_id, cited, tuple(f"{name}/{number}" for name in collections))
         blob = gh_fetch(["api", f"repos/{repository}/issues/{number}"])
         return reply_value(blob, ("body",), specimen_id)
+    cited_path(row, repository, specimen_id)
+    # The fragment, not source_object, decides the collection: a pull request's
+    # conversation comment is an issue comment on GitHub and legitimately
+    # carries #issuecomment-, so the two are not cross-checked here.
     fragment = COMMENT_FRAGMENT.search(row["source_url"])
     if fragment is None:
         raise RefusalError(f"cannot read a comment id from {row['source_url']}")
@@ -472,15 +528,15 @@ def collect_findings(
             )
 
     if verify_sources:
+        # The digest was compared against this row's own text above, and a row
+        # that failed it never reached here, so comparing it again after the
+        # replay could not fail. What the replay establishes is that the text
+        # is present in the object the specimen cites.
         for index, row in verifiable:
             body = fetch_source_object(row)
             if row["text"] not in body:
                 findings["source-mismatch"].append(
                     f"{SPECIMENS_NAME}:{index}: {row['specimen_id']}: text is absent from the replayed object"
-                )
-            elif sha256_text(row["text"]) != row["text_sha256"]:
-                findings["source-mismatch"].append(
-                    f"{SPECIMENS_NAME}:{index}: {row['specimen_id']}: replayed text_sha256 does not match"
                 )
     return findings
 

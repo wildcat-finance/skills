@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import unicodedata
 import unittest
 
 
@@ -463,6 +464,99 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 )
                 root = self.build_fixture(specimens=[SPECIMEN_ROW, second])
                 self.assert_refused(root, "source_group_id carries")
+
+    def test_refuses_a_source_group_id_that_is_not_normalised(self):
+        """A combining mark is neither whitespace nor a non-printing character."""
+        composed = "wildcat-finance/skills:docs/café.md"
+        decomposed = unicodedata.normalize("NFD", composed)
+        self.assertNotEqual(composed, decomposed)
+        first = dict(SPECIMEN_ROW, source_group_id=composed)
+        second = dict(
+            SPECIMEN_ROW,
+            specimen_id="causal_fact_clause_wrapper-pos-02",
+            source_group_id=decomposed,
+        )
+        root = self.build_fixture(specimens=[first, second])
+        self.assert_refused(root, "is not in Unicode normal form NFC")
+
+    def test_refuses_a_citation_naming_another_repository(self):
+        """The endpoint is built from `repository`, so the citation has to agree."""
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="issue_body",
+            source_path=None,
+            source_url="https://github.com/wildcat-finance/v2-protocol/issues/7",
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("does not cite wildcat-finance/skills", result.stderr)
+        self.assertFalse(log.exists(), "the mismatched citation still reached gh")
+
+    def test_refuses_a_citation_naming_another_object(self):
+        """Shape says one wildcat-finance object; identity says which one."""
+        cases = {
+            "markdown_paragraph": (
+                "https://github.com/wildcat-finance/skills/blob/" + "0" * 40 + "/docs/OTHER.md",
+                "blob/" + "0" * 40 + "/README.md",
+            ),
+            "commit_message": (
+                "https://github.com/wildcat-finance/skills/commit/" + "1" * 40,
+                "commit/" + "0" * 40,
+            ),
+            "pull_request_body": (
+                "https://github.com/wildcat-finance/skills/issues/1298",
+                "pull/1298",
+            ),
+        }
+        for kind, (url, expected) in cases.items():
+            with self.subTest(source_object=kind):
+                row = dict(
+                    SPECIMEN_ROW,
+                    source_object=kind,
+                    source_url=url,
+                    source_path="README.md" if kind == "markdown_paragraph" else None,
+                )
+                root = self.build_fixture(specimens=[row])
+                env, log = self.recording_gh()
+                result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn("is not the replayed object", result.stderr)
+                self.assertIn(expected, result.stderr)
+                self.assertFalse(log.exists(), "the mismatched citation still reached gh")
+
+    def test_an_agreeing_citation_still_replays_the_cited_file(self):
+        """A `#L10-L14` fragment cites lines, and `raw/` cites the same file."""
+        base = "https://github.com/wildcat-finance/skills/"
+        for url in (
+            SPECIMEN_ROW["source_url"] + "#L10-L14",
+            base + "raw/" + "0" * 40 + "/README.md",
+        ):
+            with self.subTest(url=url):
+                root = self.build_fixture(specimens=[dict(SPECIMEN_ROW, source_url=url)])
+                env, log = self.recording_gh()
+                result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(
+                    "repos/wildcat-finance/skills/contents/README.md?ref=" + "0" * 40,
+                    log.read_text(encoding="utf-8").splitlines(),
+                )
+
+    def test_a_replayed_object_without_the_text_is_a_finding(self):
+        """The replay's own comparison: the text is present, or it is not."""
+        directory = Path(tempfile.mkdtemp(prefix="family-evidence-gh-"))
+        self.addCleanup(self.remove_tree, directory)
+        stub = directory / "gh"
+        stub.write_text("#!/bin/sh\nprintf '%s\\n' 'nothing like the specimen'\n", encoding="utf-8")
+        stub.chmod(0o755)
+        root = self.build_fixture(specimens=[SPECIMEN_ROW])
+        result = self.run_checker(
+            "--fixture", str(root), "--verify-sources",
+            env=dict(os.environ, PATH=str(directory)),
+        )
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("text is absent from the replayed object", result.stderr)
 
     def test_every_source_object_kind_replays_its_own_endpoint(self):
         """One gate guards every endpoint segment; none of the six kinds lost its replay."""

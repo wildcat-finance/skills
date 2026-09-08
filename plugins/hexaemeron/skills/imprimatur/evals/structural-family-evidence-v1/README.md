@@ -138,7 +138,8 @@ Its exit codes are three:
 - `2`: the invocation or a read was refused, which covers a missing fixture
   directory, an unknown `--tier`, a symlink, an oversized file, an
   unreadable JSONL row, a row carrying the same JSON key twice, and a
-  `--verify-sources` row or reply that cannot name one pinned object.
+  `--verify-sources` row, citation or reply that cannot name one pinned
+  object.
 
 The flags are:
 
@@ -156,24 +157,47 @@ The flags are:
   independent-positive minimum. The design record's
   `two-independent-specimens` gate is resolved with
   `--min-independent-positive 2 --tier high-value`.
-- `--verify-sources` replays each specimen against its immutable GitHub
-  object through `gh` and compares `text_sha256`. This is the only path that
-  opens a socket. Only a row that cleared every local check is replayed. The
-  schema is not the boundary on the endpoint the replay builds: it validates
-  with `re.search`, its `^wildcat-finance/` pattern admits
-  `wildcat-finance/../other-org/repo`, its `^[0-9a-f]{40}$` admits a trailing
-  newline, and `source_path` carries no pattern at all. Every value that
-  becomes part of an endpoint therefore passes one gate, `endpoint_segment`,
-  which fullmatches the pattern pinned for that field in `ENDPOINT_SEGMENTS`
-  and refuses anything else with exit 2. A field with no row there cannot
-  reach `gh`, so adding a field to an endpoint means naming its pattern
-  first. A comment's id is read from the `#issuecomment-<id>` or
-  `#discussion_r<id>` fragment, because the number before it is the issue or
-  pull request the comment sits under. The reply is data from outside too,
-  and is refused with exit 2 unless it carries the string field its kind
-  expects.
+- `--verify-sources` replays each specimen against the GitHub object it cites
+  through `gh` and checks that the specimen's `text` is present in what comes
+  back. This is the only path that opens a socket. Only a row that cleared
+  every local check is replayed, and `text_sha256` is compared against the
+  row's own `text` before the replay rather than after it.
 
-Three values could decide something while reading as something else, so each
+Two things bound that replay, and one of them does not reach every kind.
+
+The endpoint is bounded by shape. The schema is not that boundary: it
+validates with `re.search`, its `^wildcat-finance/` pattern admits
+`wildcat-finance/../other-org/repo`, its `^[0-9a-f]{40}$` admits a trailing
+newline, and `source_path` carries no pattern at all. Every value that
+becomes part of an endpoint therefore passes one gate, `endpoint_segment`,
+which fullmatches the pattern pinned for that field in `ENDPOINT_SEGMENTS`
+and refuses anything else with exit 2. A field with no row there cannot reach
+`gh`, so adding a field to an endpoint means naming its pattern first.
+
+The endpoint is also bounded by identity, because shape alone says only that
+it is one `wildcat-finance` object and not that it is the one this specimen
+cites. The endpoint is built from `repository`, `source_commit` and
+`source_path`, so `source_url` has to agree with them: it must begin
+`https://github.com/<repository>/`, and its path must be `blob/<commit>/<path>`
+or `raw/<commit>/<path>` for `markdown_paragraph`, `commit/<sha>` or
+`commits/<sha>` for `commit_message`, `issues/<n>` for `issue_body` and
+`pull/<n>` or `pulls/<n>` for `pull_request_body`. A citation naming any other
+object is refused with exit 2. For the two comment kinds the id is read from
+the `#issuecomment-<id>` or `#discussion_r<id>` fragment of that same URL,
+because the number before it is the issue or pull request the comment sits
+under; the fragment rather than `source_object` decides the collection, since
+a pull request's conversation comment is an issue comment on GitHub.
+
+Only two of the six kinds replay an object GitHub cannot change under the
+reference sent: a file read at `?ref=<sha>`, and a commit read by its sha. The
+`issue_body`, `pull_request_body`, `issue_comment` and
+`pull_request_comment` kinds have no such reference on their endpoints, so
+their replay compares the current body. A body edited after annotation changes that answer, which is
+why `annotated_before_lint` and the recorded span carry the annotation order
+rather than the replay. The reply is data from outside too, and is refused
+with exit 2 unless it carries the string field its kind expects.
+
+Four values could decide something while reading as something else, so each
 carries its own check. Rows split on the newline and on nothing else:
 `str.splitlines` also splits on U+000B, U+000C, U+0085, U+2028 and U+2029,
 each of which is legal inside a JSON string, so a file `wc -l` and a diff
@@ -181,10 +205,12 @@ show as 42 rows could otherwise carry a further row the checker counted, and
 a specimen whose `text` carried one of them raw was split into fragments and
 refused as unreadable JSON. `family` is compared with `family_id`, because
 the two hold one family name in the spellings v1 and v2 use and nothing else
-tied them together. And a `source_group_id` carrying whitespace or a
-non-printing character is refused, because independence is decided by
-comparing that value between two positives, and two ids differing by a space
-read as one group on screen and as two here.
+tied them together. A `source_group_id` carrying whitespace or a non-printing
+character is refused, and so is one that is not in Unicode normal form NFC,
+because independence is decided by comparing that value between two
+positives, and two ids differing by a space or by a combining mark read as
+one group on screen and as two here. And `source_url` is compared with the
+fields the endpoint is built from, above.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen
