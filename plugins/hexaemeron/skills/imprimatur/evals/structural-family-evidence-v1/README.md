@@ -132,7 +132,8 @@ Its exit codes are three:
 - `1`: the checker found something. It prints every finding of the first
   class it meets, in the order `family-tier`, `family-schema`,
   `family-duplicate`, `specimen-annotation-order`, `specimen-schema`,
-  `specimen-unknown-family`, `specimen-family-mismatch`, `specimen-span`,
+  `specimen-duplicate`, `specimen-unknown-family`,
+  `specimen-family-mismatch`, `specimen-span`,
   `specimen-digest`, `specimen-group-id`, `specimen-independence`,
   `tier-minimum`, `source-mismatch`.
 - `2`: the invocation or a read was refused, which covers a missing fixture
@@ -182,11 +183,21 @@ cites. The endpoint is built from `repository`, `source_commit` and
 or `raw/<commit>/<path>` for `markdown_paragraph`, `commit/<sha>` or
 `commits/<sha>` for `commit_message`, `issues/<n>` for `issue_body` and
 `pull/<n>` or `pulls/<n>` for `pull_request_body`. A citation naming any other
-object is refused with exit 2. For the two comment kinds the id is read from
-the `#issuecomment-<id>` or `#discussion_r<id>` fragment of that same URL,
-because the number before it is the issue or pull request the comment sits
-under; the fragment rather than `source_object` decides the collection, since
-a pull request's conversation comment is an issue comment on GitHub.
+object is refused with exit 2. A query string is dropped with the fragment,
+because neither is part of the path and GitHub's own permalink for a Markdown
+file carries `?plain=1`.
+
+For the two comment kinds the id is read from the `#issuecomment-<id>` or
+`#discussion_r<id>` fragment of that same URL, because the number before it is
+the issue or pull request the comment sits under; the fragment rather than
+`source_object` decides the collection, since a pull request's conversation
+comment is an issue comment on GitHub. The path before the fragment still has
+to cite that thread, `issues/<n>`, `pull/<n>` or `pulls/<n>`: a fragment on a
+blob, a commit or a release named a comment the citation leads no reader to,
+and `#discussion_r` under an issue thread names a review comment an issue does
+not have. Which thread the comment belongs to is not established, because
+GitHub keys a comment by id alone and a citation naming another thread cannot
+be told apart from here.
 
 Only two of the six kinds replay an object GitHub cannot change under the
 reference sent: a file read at `?ref=<sha>`, and a commit read by its sha. The
@@ -197,7 +208,7 @@ why `annotated_before_lint` and the recorded span carry the annotation order
 rather than the replay. The reply is data from outside too, and is refused
 with exit 2 unless it carries the string field its kind expects.
 
-Four values could decide something while reading as something else, so each
+Five values could decide something while reading as something else, so each
 carries its own check. Rows split on the newline and on nothing else:
 `str.splitlines` also splits on U+000B, U+000C, U+0085, U+2028 and U+2029,
 each of which is legal inside a JSON string, so a file `wc -l` and a diff
@@ -209,8 +220,18 @@ tied them together. A `source_group_id` carrying whitespace or a non-printing
 character is refused, and so is one that is not in Unicode normal form NFC,
 because independence is decided by comparing that value between two
 positives, and two ids differing by a space or by a combining mark read as
-one group on screen and as two here. And `source_url` is compared with the
-fields the endpoint is built from, above.
+one group on screen and as two here. A `specimen_id` carried by a second row
+is refused the way a duplicate `family_id` is, because two byte-identical
+negative rows otherwise counted as two negatives and carried a high-value
+family's whole negative minimum out of one document; independence itself stays
+the positives-only rule the study's register asks for. And `source_url` is
+compared with the fields the endpoint is built from, above.
+
+Two of those measurements read raw fields, before anything is validated:
+`--report`'s `below_minimum` counts have to exist on a broken fixture as well
+as a clean one. A field read there is skipped when it is not a string, and reported by
+the validation that follows, so an object or an array in `source_group_id` or
+`evidence_tier` is a finding rather than a traceback.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen

@@ -601,6 +601,119 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn(endpoint, log.read_text(encoding="utf-8").splitlines())
 
+    def test_refuses_a_comment_citation_that_names_no_thread(self):
+        """A fragment cites a comment; the path before it has to cite its thread."""
+        base = "https://github.com/wildcat-finance/skills/"
+        cases = (
+            base + "blob/" + "0" * 40 + "/README.md#issuecomment-42",
+            base + "commit/" + "0" * 40 + "#issuecomment-42",
+            base + "releases/tag/v9#issuecomment-42",
+        )
+        for url in cases:
+            with self.subTest(url=url):
+                row = dict(
+                    SPECIMEN_ROW,
+                    source_object="issue_comment",
+                    source_path=None,
+                    source_url=url,
+                )
+                root = self.build_fixture(specimens=[row])
+                env, log = self.recording_gh()
+                result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn("is not an issue or pull request thread", result.stderr)
+                self.assertFalse(log.exists(), "the thread-less citation still reached gh")
+
+    def test_refuses_a_review_comment_cited_under_an_issue_thread(self):
+        """`#discussion_r` is a pull request review comment; an issue has none."""
+        row = dict(
+            SPECIMEN_ROW,
+            source_object="pull_request_comment",
+            source_path=None,
+            source_url="https://github.com/wildcat-finance/skills/issues/1298#discussion_r99",
+        )
+        root = self.build_fixture(specimens=[row])
+        env, log = self.recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("cites a review comment under 'issues/1298'", result.stderr)
+        self.assertFalse(log.exists(), "the mislabelled review comment still reached gh")
+
+    def test_a_citation_carrying_a_query_string_still_replays_its_object(self):
+        """A query is not part of the path, and `?plain=1` is GitHub's own permalink."""
+        cases = {
+            "markdown_paragraph": (
+                SPECIMEN_ROW["source_url"] + "?plain=1#L1-L4",
+                "repos/wildcat-finance/skills/contents/README.md?ref=" + "0" * 40,
+            ),
+            "issue_body": (
+                "https://github.com/wildcat-finance/skills/issues/1298?notification_referrer_id=x",
+                "repos/wildcat-finance/skills/issues/1298",
+            ),
+        }
+        for kind, (url, endpoint) in cases.items():
+            with self.subTest(source_object=kind):
+                row = dict(
+                    SPECIMEN_ROW,
+                    source_object=kind,
+                    source_url=url,
+                    source_path="README.md" if kind == "markdown_paragraph" else None,
+                )
+                root = self.build_fixture(specimens=[row])
+                env, log = self.recording_gh()
+                result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(endpoint, log.read_text(encoding="utf-8").splitlines())
+
+    def test_refuses_a_duplicate_specimen_id(self):
+        """Two rows for one specimen. A duplicate family_id was already refused."""
+        root = self.build_fixture(specimens=[SPECIMEN_ROW, dict(SPECIMEN_ROW)])
+        self.assert_refused(root, "duplicate specimen_id causal_fact_clause_wrapper-pos-01")
+
+    def test_duplicate_negatives_cannot_carry_a_tier_minimum(self):
+        """One document counted twice satisfied a high-value negative minimum."""
+        family = dict(
+            FAMILY_ROW,
+            evidence_tier="high-value",
+            minimum_positive=2,
+            minimum_negative=2,
+        )
+        negative = dict(
+            SPECIMEN_ROW,
+            specimen_id="causal_fact_clause_wrapper-neg-01",
+            polarity="negative",
+            decision="negative",
+        )
+        specimens = [
+            dict(SPECIMEN_ROW, source_group_id="wildcat-finance/skills:docs/A.md"),
+            dict(
+                SPECIMEN_ROW,
+                specimen_id="causal_fact_clause_wrapper-pos-02",
+                source_group_id="wildcat-finance/skills:docs/B.md",
+            ),
+            negative,
+            dict(negative),
+        ]
+        root = self.build_fixture(families=[family], specimens=specimens)
+        self.assert_refused(root, "duplicate specimen_id causal_fact_clause_wrapper-neg-01")
+
+    def test_refuses_a_raw_field_that_cannot_be_hashed(self):
+        """The tier-minimum measurement runs before validation, on raw fields."""
+        # `source_group_id` is only counted for a tier that has a minimum, so
+        # the family here carries one; `evidence_tier` is looked up before that.
+        measured = dict(FAMILY_ROW, evidence_tier="high-value", minimum_positive=2, minimum_negative=2)
+        cases = (
+            ([measured], [dict(SPECIMEN_ROW, source_group_id=["a"])], "specimen-schema"),
+            ([dict(FAMILY_ROW, evidence_tier=[])], [], "family-tier"),
+        )
+        for families, specimens, needle in cases:
+            with self.subTest(needle=needle):
+                root = self.build_fixture(families=families, specimens=specimens)
+                result = self.run_checker("--fixture", str(root), env=self.env_without_gh())
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(needle, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
     def test_refuses_a_gh_reply_that_is_not_the_shape_its_kind_expects(self):
         """A reply is outside data too; a KeyError here would exit 1, not 2."""
         for payload in ('{"body": "x"}', '{"commit": {}}', "not json at all", "[]"):

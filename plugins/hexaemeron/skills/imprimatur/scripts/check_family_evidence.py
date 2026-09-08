@@ -58,6 +58,13 @@ ENDPOINT_SEGMENTS = {
 # fragment ends at \Z rather than $, because $ also matches before a trailing
 # newline and would carry that newline's row into the endpoint.
 COMMENT_FRAGMENT = re.compile(r"#(issuecomment-|discussion_r)([0-9]+)\Z")
+# The path before a comment's fragment is the thread the comment sits under.
+# Nothing read it, so the fragment alone decided the endpoint and a citation
+# whose path was a blob, a commit or a release replayed a comment anyway. This
+# is that missing half. The number group is `[^/]+` rather than `[0-9]+` so a
+# non-ASCII digit still reaches endpoint_segment, which owns that refusal and
+# names the field it came from.
+THREAD_PATH = re.compile(r"(issues|pull|pulls)/([^/]+)")
 # The endpoint is built from `repository`, `source_commit` and `source_path`,
 # while `source_url` is the citation a reader follows to the same object.
 # Anchoring each segment's shape says the endpoint is one wildcat-finance
@@ -77,6 +84,7 @@ FINDING_CLASSES = (
     "family-duplicate",
     "specimen-annotation-order",
     "specimen-schema",
+    "specimen-duplicate",
     "specimen-unknown-family",
     "specimen-family-mismatch",
     "specimen-span",
@@ -359,12 +367,34 @@ def cited_path(row: dict, repository: str, specimen_id) -> str:
     A citation naming another repository is refused here rather than compared
     later, because every endpoint below is built from ``repository`` and would
     otherwise read an object in a repository the specimen never cited.
+
+    A query string is dropped with the fragment. Neither is part of the path,
+    and GitHub's own permalink for a Markdown file carries ``?plain=1``, which
+    was compared against the path and refused a citation that agreed.
     """
     url = row["source_url"]
     prefix = f"{GITHUB_PREFIX}{repository}/"
     if not isinstance(url, str) or not url.startswith(prefix):
         raise RefusalError(f"source_url for {specimen_id} does not cite {repository}: {url!r}")
-    return url[len(prefix):].split("#", 1)[0].rstrip("/")
+    return url[len(prefix):].split("#", 1)[0].split("?", 1)[0].rstrip("/")
+
+
+def cited_thread(row: dict, repository: str, specimen_id) -> tuple[str, str, str]:
+    """Return the cited path, its collection and its number for a thread citation.
+
+    Both body kinds and both comment kinds cite an issue or pull request
+    thread. Reading the number here rather than off the raw URL removes the
+    second parse: ``rsplit`` before the fragment split and ``rstrip`` after it
+    could disagree with this one about where the path ended.
+    """
+    cited = cited_path(row, repository, specimen_id)
+    thread = THREAD_PATH.fullmatch(cited)
+    if thread is None:
+        raise RefusalError(
+            f"source_url for {specimen_id} cites {cited!r}, which is not an "
+            "issue or pull request thread"
+        )
+    return cited, thread.group(1), thread.group(2)
 
 
 def require_cited(specimen_id, cited: str, allowed: tuple[str, ...]) -> None:
@@ -409,20 +439,26 @@ def fetch_source_object(row: dict) -> str:
         blob = gh_fetch(["api", f"repos/{repository}/commits/{commit}"])
         return reply_value(blob, ("commit", "message"), specimen_id)
     if source_object in ("issue_body", "pull_request_body"):
-        tail = row["source_url"].rstrip("/").rsplit("/", 1)[-1].split("#")[0]
+        cited, _, tail = cited_thread(row, repository, specimen_id)
         number = endpoint_segment("object_number", tail, specimen_id)
-        cited = cited_path(row, repository, specimen_id)
         collections = ("issues",) if source_object == "issue_body" else ("pull", "pulls")
         require_cited(specimen_id, cited, tuple(f"{name}/{number}" for name in collections))
         blob = gh_fetch(["api", f"repos/{repository}/issues/{number}"])
         return reply_value(blob, ("body",), specimen_id)
-    cited_path(row, repository, specimen_id)
+    cited, cited_collection, _ = cited_thread(row, repository, specimen_id)
     # The fragment, not source_object, decides the collection: a pull request's
     # conversation comment is an issue comment on GitHub and legitimately
-    # carries #issuecomment-, so the two are not cross-checked here.
+    # carries #issuecomment-, so the two are not cross-checked here. The cited
+    # path is checked, because a fragment on a blob, a commit or a release
+    # named a comment the citation does not lead a reader to.
     fragment = COMMENT_FRAGMENT.search(row["source_url"])
     if fragment is None:
         raise RefusalError(f"cannot read a comment id from {row['source_url']}")
+    if fragment.group(1) == "discussion_r" and cited_collection == "issues":
+        raise RefusalError(
+            f"source_url for {specimen_id} cites a review comment under {cited!r}, "
+            "which is an issue thread"
+        )
     collection = "issues" if fragment.group(1) == "issuecomment-" else "pulls"
     comment = endpoint_segment("comment_id", fragment.group(2), specimen_id)
     blob = gh_fetch(["api", f"repos/{repository}/{collection}/comments/{comment}"])
@@ -440,6 +476,7 @@ def collect_findings(
 ) -> dict[str, list[str]]:
     findings: dict[str, list[str]] = {name: [] for name in FINDING_CLASSES}
     seen: set[str] = set()
+    seen_specimens: set[str] = set()
     # Only rows that cleared every local check reach the network. A row that
     # failed its schema has an unchecked repository, path and commit, and
     # fetch_source_object reads those fields straight into the gh endpoint.
@@ -474,6 +511,17 @@ def collect_findings(
         except ValueError as exc:
             findings["specimen-schema"].append(f"{exc}")
             continue
+        # One specimen id on two rows. A duplicate family_id was refused and
+        # this was not, so two byte-identical negative rows counted as two
+        # negatives and carried a high-value family's whole negative minimum
+        # out of one document. Independence stays a positives-only rule, which
+        # is what the register asks for; this refuses one row counted twice.
+        if row["specimen_id"] in seen_specimens:
+            findings["specimen-duplicate"].append(
+                f"{SPECIMENS_NAME}:{index}: duplicate specimen_id {row['specimen_id']}"
+            )
+            continue
+        seen_specimens.add(row["specimen_id"])
         if row["family_id"] not in seen:
             findings["specimen-unknown-family"].append(
                 f"{SPECIMENS_NAME}:{index}: {label} names unknown family {row['family_id']}"
@@ -547,22 +595,34 @@ def measure_below_minimum(
     tier_filter: str | None,
     min_independent_positive: int | None,
 ) -> list[dict]:
+    # This runs before anything is validated, so every field it reads is raw.
+    # Two of them reached a hash: `source_group_id` a set element and
+    # `evidence_tier` a dict key. A row carrying either as a list or an object
+    # raised an uncaught TypeError, which printed a traceback and exited 1 --
+    # the code reserved for a content finding, not the 2 reserved for an
+    # unsafe read. Both are now skipped here and reported by collect_findings,
+    # which is the same shape the family_id and polarity guards already had.
     counted: dict[str, dict] = {}
     for row in specimens:
         family_id = row.get("family_id")
         polarity = row.get("polarity")
+        group = row.get("source_group_id")
         if not isinstance(family_id, str) or polarity not in ("positive", "negative"):
+            continue
+        if polarity == "positive" and not isinstance(group, str):
             continue
         entry = counted.setdefault(family_id, {"positive": [], "negative": 0})
         if polarity == "positive":
-            entry["positive"].append(row.get("source_group_id"))
+            entry["positive"].append(group)
         else:
             entry["negative"] += 1
     below = []
     for row in families:
         family_id = row.get("family_id")
         tier = row.get("evidence_tier")
-        if tier not in TIER_MINIMUMS or not isinstance(family_id, str):
+        if not isinstance(tier, str) or tier not in TIER_MINIMUMS:
+            continue
+        if not isinstance(family_id, str):
             continue
         if tier_filter is not None and tier != tier_filter:
             continue
@@ -572,7 +632,7 @@ def measure_below_minimum(
         if minimum_positive == 0 and minimum_negative == 0:
             continue
         entry = counted.get(family_id, {"positive": [], "negative": 0})
-        independent = len({group for group in entry["positive"] if group is not None})
+        independent = len(set(entry["positive"]))
         if independent >= minimum_positive and entry["negative"] >= minimum_negative:
             continue
         below.append(
