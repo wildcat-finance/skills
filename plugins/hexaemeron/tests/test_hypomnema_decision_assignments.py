@@ -664,7 +664,7 @@ class DecisionAssignments(unittest.TestCase):
         )
         self.assert_refused(result, "draft-placement")
 
-    def test_a_draft_already_in_the_base_is_refused(self):
+    def test_unchanged_base_drafts_are_assigned_with_new_drafts(self):
         self.repo.base = self.repo.product
         run_git(self.repo.path, "update-ref", self.repo.base_ref, self.repo.base)
         self.repo.commit_path(
@@ -674,7 +674,50 @@ class DecisionAssignments(unittest.TestCase):
         result = run_assignment(
             self.repo, "plan", base=self.repo.base, product=self.repo.product
         )
-        self.assert_refused(result, "base-draft")
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+        report = json.loads((self.repo.path / self.repo.report).read_text(encoding="utf-8"))
+        self.assertEqual(
+            [row["slug"] for row in report["mappings"]],
+            ["alpha-choice", "later-choice", "zeta-choice"],
+        )
+        self.assertEqual([row["number"] for row in report["mappings"]], [61, 62, 63])
+
+    def test_unchanged_base_drafts_can_be_assigned_without_new_drafts(self):
+        self.repo.base = self.repo.product
+        run_git(self.repo.path, "update-ref", self.repo.base_ref, self.repo.base)
+        result = run_assignment(
+            self.repo, "plan", base=self.repo.base, product=self.repo.product
+        )
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+
+    def test_inherited_draft_mutations_are_refused(self):
+        for mutation in ("body", "heading", "delete", "rename", "mode"):
+            with self.subTest(mutation=mutation):
+                repo = Repository(drafts=("alpha-choice",))
+                self.addCleanup(repo.close)
+                repo.base = repo.product
+                run_git(repo.path, "update-ref", repo.base_ref, repo.base)
+                path = repo.path / "docs/decisions/drafts/alpha-choice.md"
+                if mutation == "body":
+                    path.write_bytes(path.read_bytes() + b"\nChanged decision.\n")
+                elif mutation == "heading":
+                    path.write_bytes(path.read_bytes().replace(b"# Decision:", b"# Changed:", 1))
+                elif mutation == "delete":
+                    path.unlink()
+                elif mutation == "rename":
+                    path.rename(path.with_name("renamed-choice.md"))
+                else:
+                    pass
+                run_git(repo.path, "add", "-A")
+                if mutation == "mode":
+                    relative = str(path.relative_to(repo.path))
+                    current = run_git(repo.path, "ls-files", "--stage", "--", relative)
+                    change = "--chmod=-x" if current.startswith("100755 ") else "--chmod=+x"
+                    run_git(repo.path, "update-index", change, "--", relative)
+                run_git(repo.path, "commit", "-q", "-m", "mutate inherited draft")
+                repo.product = run_git(repo.path, "rev-parse", "HEAD")
+                result = run_assignment(repo, "plan", base=repo.base, product=repo.product)
+                self.assert_refused(result, "inherited-draft-drift")
 
     def test_report_path_traversal_is_refused_without_writing(self):
         outside = self.repo.path.parent / "escape.json"

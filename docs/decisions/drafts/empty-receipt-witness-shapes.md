@@ -13,7 +13,7 @@ target receipt and filter. Existing non-empty fixtures, manifests, statements,
 and releases already depend on these versions and their two-relation meaning.
 
 The accepted design and its comparison evidence are recorded in
-[`docs/lazarus-empty-block-receipt-witness/study.md`](../../lazarus-empty-block-receipt-witness/study.md).
+[`docs/lazarus-empty-block-receipt-witness/study.md`](https://github.com/wildcat-finance/skills/blob/474399e5506416a2203217dda7c6f5d0c077ee40/docs/lazarus-empty-block-receipt-witness/study.md).
 
 ## Decision
 
