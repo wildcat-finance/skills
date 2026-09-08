@@ -154,22 +154,43 @@ with the filing contract as it landed in `0ad3e363` on 2026-09-05.
   #882, #887, #901, #950, #1221 and #1300. The filing prose below each block
   was read back and is unchanged.
 
-Contract-clean open issues went from 49 to 122 of 269.
+Contract-clean open issues went from 49 to 122 of the 269 open when the census
+was read. Four observations were then filed from what it found, and the reader
+change this amendment authorises clears the whole `framework-N` opening class,
+which takes the count to 208 of 273.
 
-### What this amendment does not settle
+What is left is 54 `kickoff/` titles, which need the fifth queue form named
+below, and 11 bodies missing a `Fiat-Required` line or a `carryover` block.
+Those 11 are body edits rule 3 still forbids, and unlike the opening they
+cannot be relaxed: `init` refuses on both, so the issue is unstartable rather
+than merely unchecked. They need their own decision.
 
-Two classes are left open on purpose, because each needs a decision this
-document cannot make on its own.
+### The `framework-N` body opening binds a candidate, not a filed issue
 
-The first is the `framework-N` body opening. The contract requires such a body
-to open with exactly "Protasis decides which skill or skills this observation
-upgrades. The filer is the wrong party to guess.", and 90 open bodies do not
-carry that sentence at all. Rule 3 above keeps filing prose unrewritten, so the
-contract currently refuses bodies it is not permitted to repair. Either the rule
-is prospective from `0ad3e363` and the reader should say so, or the sentence is
-insertable and this document must authorise that too.
+The contract requires such a body to open with exactly "Protasis decides which
+skill or skills this observation upgrades. The filer is the wrong party to
+guess.", and 90 open bodies do not carry that sentence at all. Rule 3 above
+keeps filing prose unrewritten, so the contract was refusing bodies it is not
+permitted to repair.
 
-The second is the kickoff queue. 54 open issues are titled
+The maintainer settled this on 2026-09-08: the rule is prospective, and it binds
+a candidate rather than an issue that is already filed. `issue-check --body`
+enforces the opening, because a candidate can still be edited before it is
+published. `issue-check --issue` does not, because that body is a filed record
+this document protects.
+
+Reading the rule this way rather than by filing date is what keeps the two
+readers agreeing. A date rule needs the issue's creation time, which only the
+REST path carries, so `--body` could not apply it at all; and it would still
+leave 13 filed bodies faulting on a sentence nothing may insert. The candidate
+reading needs no date, no exemption list and no edit to a filed body, and it
+refuses the next badly-formed filing exactly as before.
+
+Nothing here weakens the rule for new work. A `framework-N` issue filed after
+this is checked before it is published, which is the only moment the sentence
+can still be added.
+
+The kickoff queue is a separate matter. 54 open issues are titled
 `kickoff/{skill}-{n}: <summary>` and every one was filed after the contract
 landed, so none of them is legacy drift. They cannot become `{skill}-next`,
 because that queue is one held job per skill ledger, and calling them

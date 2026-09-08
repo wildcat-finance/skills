@@ -411,9 +411,10 @@ class IssueQueueContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.hexctl = hexctl_module()
 
-    def check(self, title, labels=(), text=None):
+    def check(self, title, labels=(), text=None, candidate=True):
         return self.hexctl.issue_publication_contract_faults(
-            title, list(labels), body() if text is None else text, "candidate"
+            title, list(labels), body() if text is None else text, "candidate",
+            candidate=candidate,
         )
 
     def test_all_four_title_and_label_shapes_pass(self):
@@ -468,6 +469,48 @@ class IssueQueueContractTests(unittest.TestCase):
         )
         self.assertTrue(any("framework body must open" in fault
                             for fault in faults), faults)
+
+    def test_the_opening_is_asked_of_a_candidate_and_not_a_filed_issue(self):
+        """ADR-014's 2026-09-08 amendment makes the opening prospective.
+
+        Rule 3 of the 2026-08-31 amendment keeps filing prose unrewritten, so
+        asking a filed body for the sentence refuses a record nothing may
+        repair. A candidate can still be edited before publication, which is
+        the only moment the sentence can be added.
+        """
+        missing = body()
+        _, candidate_faults = self.check(
+            "framework-96: One", ["observation"], missing, candidate=True
+        )
+        self.assertTrue(any("framework body must open" in fault
+                            for fault in candidate_faults), candidate_faults)
+        _, filed_faults = self.check(
+            "framework-96: One", ["observation"], missing, candidate=False
+        )
+        self.assertEqual(filed_faults, [], filed_faults)
+
+    def test_a_filed_issue_still_owes_every_other_clause(self):
+        """Only the opening is relaxed. Title, labels and body stay checked."""
+        _, faults = self.check(
+            "framework-96: One", ["wish"], "Only prose.\n", candidate=False
+        )
+        self.assertTrue(any("observation" in fault for fault in faults), faults)
+        self.assertTrue(any("Fiat-Required" in fault for fault in faults), faults)
+        self.assertTrue(any("carryover" in fault for fault in faults), faults)
+        self.assertFalse(any("framework body must open" in fault
+                             for fault in faults), faults)
+
+    def test_the_publication_reader_defaults_to_the_filed_reading(self):
+        """Every REST replay path gets the reading ADR-014 protects.
+
+        `issue_publication_from_payload` and the integration replay call the
+        contract without naming a mode, so the default decides what they ask
+        of a record already on GitHub.
+        """
+        _, faults = self.hexctl.issue_publication_contract_faults(
+            "framework-96: One", ["observation"], body(), "filed"
+        )
+        self.assertEqual(faults, [], faults)
 
     def test_the_body_contract_is_part_of_the_same_result(self):
         _, faults = self.check("fiat-wish: One", [], "Only prose.\n")

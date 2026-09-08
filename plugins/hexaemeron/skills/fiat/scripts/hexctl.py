@@ -4849,7 +4849,8 @@ def issue_contract_faults(text: str, label: str) -> tuple[dict, list[str]]:
 
 
 def issue_queue_contract(
-    title: str, labels: list[str], text: str, label: str
+    title: str, labels: list[str], text: str, label: str,
+    candidate: bool = False,
 ) -> tuple[dict, list[str]]:
     """The canonical queue selected by one publishable issue title.
 
@@ -4857,6 +4858,14 @@ def issue_queue_contract(
     labels are checked as one mutually exclusive set while unrelated labels
     remain allowed. A framework observation also carries the exact opening
     that leaves ownership for Protasis to decide.
+
+    That opening is asked of a candidate only. ADR-014's 2026-09-08 amendment
+    settles it: rule 3 of the 2026-08-31 amendment keeps filing prose
+    unrewritten, so requiring the sentence of an issue that is already filed
+    refuses a body nothing is permitted to repair. A candidate can still be
+    edited before it is published, which is the only moment the sentence can be
+    added, so ``--body`` asks for it and ``--issue`` does not. Title, labels,
+    `Fiat-Required` and the carryover block are asked of both.
     """
     faults: list[str] = []
     queue = required_label = owner = None
@@ -4897,7 +4906,7 @@ def issue_queue_contract(
             f"{label} queue {queue} requires {wanted}; its queue labels are {actual}"
         )
 
-    if queue == "framework-N":
+    if queue == "framework-N" and candidate:
         lines = _unfenced_markdown_lines(text)
         span, _ = status_block_span(text, label)
         if span is not None:
@@ -4940,11 +4949,19 @@ def issue_label_names(payload: dict, label: str, path: str) -> list[str]:
 
 
 def issue_publication_contract_faults(
-    title: str, labels: list[str], text: str, label: str
+    title: str, labels: list[str], text: str, label: str,
+    candidate: bool = False,
 ) -> tuple[dict, list[str]]:
-    """The complete machine-checkable contract for a newly filed issue."""
+    """The complete machine-checkable contract for a newly filed issue.
+
+    ``candidate`` says whether these bytes can still be edited before they are
+    published. It is false by default, so every path that replays an issue
+    already on GitHub gets the reading ADR-014 protects.
+    """
     body_record, body_faults = issue_contract_faults(text, label)
-    queue_record, queue_faults = issue_queue_contract(title, labels, text, label)
+    queue_record, queue_faults = issue_queue_contract(
+        title, labels, text, label, candidate
+    )
     return {**queue_record, **body_record}, [*queue_faults, *body_faults]
 
 
@@ -5914,7 +5931,7 @@ def cmd_issue_check(args) -> None:
     if args.body:
         if skills_contract:
             record, faults = issue_publication_contract_faults(
-                args.title, args.label, text, label
+                args.title, args.label, text, label, candidate=True
             )
         else:
             record, faults = issue_contract_faults(text, label)
