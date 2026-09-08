@@ -99,6 +99,25 @@ def _read(path: Path, label: str):
     return load_bytes(path.read_bytes(), label)
 
 
+class _HistoricalFixtureBuilder(Builder):
+    """Reconstruct only this demonstration's immutable block-only receipt."""
+
+    def _epochs(self, phase, end_hash):
+        from usdc_interval import epochs_from_opening
+        return epochs_from_opening(self.plan, phase, end_hash, legacy=True)
+
+    def _validate_epoch_table(self, epochs, start, end):
+        from alexandria_lib.interval import validate_block_epochs
+        validate_block_epochs(epochs, start, end)
+
+    def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
+        import hashlib
+        return {"format": "alexandria-interval-receipt/v1", "epochs": epochs,
+                "implementation_code": {"component": "implementation-code",
+                                        "sha256": hashlib.sha256(code_bytes).hexdigest()},
+                "reconciliation": reconciliation["reconciliation"], "shards": shards}
+
+
 def build(output: Path) -> dict:
     """Collect, interrupt, resume, reconcile, build and verify, in one path."""
     output = output.absolute()
@@ -135,7 +154,7 @@ def build(output: Path) -> dict:
             secondary["provider_class"],
         ).reconcile()
 
-        release_id = Builder(plan, staging, registry, created_at=CREATED_AT).build(output / "release")
+        release_id = _HistoricalFixtureBuilder(plan, staging, registry, created_at=CREATED_AT).build(output / "release")
         checked = check_interval(output / "release")
 
         summary = {

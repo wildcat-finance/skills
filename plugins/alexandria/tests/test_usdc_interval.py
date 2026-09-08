@@ -586,7 +586,11 @@ class SecondProviderTransport(FixtureTransport):
             shard = self._shard_for(int(json.loads(payload)["params"][0]["toBlock"], 16))
             extra = self.disagreements.get("extra_logs", {}).get(str(shard["index"]))
             if extra:
-                envelope["result"] = list(envelope["result"]) + list(extra)
+                extras = deepcopy(extra)
+                for record in extras:
+                    record["blockHash"] = self._hash(int(record["blockNumber"], 16))
+                envelope["result"] = sorted(list(envelope["result"]) + extras,
+                    key=lambda record: tuple(int(record[key], 16) for key in ("blockNumber", "transactionIndex", "logIndex")))
                 return canonical_bytes(envelope)
         return data
 
@@ -991,7 +995,7 @@ class IntervalCheckTests(ReleaseTestCase):
                 return epochs
 
         staging, output = self.pipeline("short-epochs")
-        with self.assertRaisesRegex(AlexandriaError, "uncovered"):
+        with self.assertRaisesRegex(AlexandriaError, "block envelope"):
             self.build(staging, output, builder=Shortening)
 
     def test_an_epoch_from_another_market_refuses_at_check(self):
@@ -2309,7 +2313,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
             receipt["epochs"][1]["upgrade"]["block_number"] = str(UPGRADE + 1)
 
         self.rewrite(output, "epoch-table", move_boundary)
-        with self.assertRaisesRegex(AlexandriaError, "does not match the epochs the preserved opening reads derive|does not open its epoch"):
+        with self.assertRaisesRegex(AlexandriaError, "does not match the epochs the preserved opening reads derive|does not open its epoch|block envelope"):
             self.check_without_verify(output)
 
     def test_check_prints_the_epoch_count_and_the_rehashed_digests(self):

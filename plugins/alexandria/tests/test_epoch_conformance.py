@@ -113,3 +113,29 @@ class EpochConformanceTests(unittest.TestCase):
                     self.assertEqual((ROOT / relative).read_bytes(), (dest / relative).read_bytes())
             record = json.loads((dest / "design-evidence.json").read_text())
             self.assertEqual(sum(row["state"] == "pending" for row in record["results"]), 8)
+
+    def test_rerun_executes_fresh_and_accepts_only_identical_report(self):
+        name = 'resume-and-refusal'
+        observed = []
+        class Passed(unittest.TestCase):
+            def runTest(self):
+                self.assertEqual(2 + 2, 4)
+                observed.append('executed')
+        def loader():
+            return Loader(unittest.TestSuite(Passed() for _ in conformance.CASES[name]))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with mock.patch.object(conformance.Path, 'cwd', return_value=root), mock.patch.object(conformance.unittest, 'TestLoader', side_effect=loader):
+                with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(conformance.main([name]), 0)
+                    path = root / '.hexaemeron/reports/conformance/position-boundary-resume-and-refusal.json'
+                    original = path.read_bytes()
+                    self.assertEqual(conformance.main([name]), 0)
+                    self.assertEqual(path.read_bytes(), original)
+                    self.assertEqual(len(observed), 4)
+                    drifted = original.replace(b'"value": true', b'"value":false')
+                    path.write_bytes(drifted)
+                    with self.assertRaises(SystemExit):
+                        conformance.main([name])
+                    self.assertEqual(len(observed), 6)
+                    self.assertEqual(path.read_bytes(), drifted)
