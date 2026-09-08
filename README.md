@@ -49,9 +49,10 @@ No local harness holds a checked one-click Atlas launcher. The probe recorded ev
 Each harness carries the exact reason it stopped there in [the harness table](./docs/how-to-help-shoggoth.md#local-harnesses) and in [`docs/harness-classification.json`](./docs/harness-classification.json), which both surfaces are generated from.
 <!-- harness-roster:end -->
 
-You are the external contributor, not Shoggoth. Keep your own Git author,
-signing identity, and GitHub account. Shoggoth provenance supplements that
-authorship; it never authorises use of a private Shoggoth identity.
+Use any repository-valid signing identity for commits. Fiat admits valid
+signatures rather than a named author, trailer, runtime, or GitHub transport.
+Publication authority remains separate and must come from the repository or
+the user's explicit instruction.
 
 A daily job rebuilds [`CONTRIBUTORS.md`](./CONTRIBUTORS.md) and the thanks
 below from public history. Delivery records whether a pushed commit's author

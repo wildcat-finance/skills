@@ -1,6 +1,6 @@
 WAI1
 D i32:promise-machine-router-selection t32:Promise\sMachine\srouter\sselection
-  S i15:promise-machine p18:PROMISE_MACHINE.md h64:f996fb645c81a8f398a2384ed4d8da0e058a9c017ea37fbbee36e499c9ef2e15
+  S i15:promise-machine p18:PROMISE_MACHINE.md h64:7b0e498ca7d1e6df6b41d50d8b04fbe483772681a5de44d0373bb280d3ecf85c
   H i24:router-selection-promise t24:Router\sselection\spromise
     R i22:router-selection-check t174:Accept\srouter-selection\sevidence\sonly\safter\sthe\sclosed\scorpus,\ssource\squotations,\scanonical\sskill\snames,\scoverage,\spairs,\sand\sany\srecorded\srun\sall\spass\stheir\sdeclared\schecks.
       N t112:the\sevidence\sis\sabsent,\sstale,\smalformed,\smismatched,\sempty,\sunresolved,\sor\soutside\sthe\sclosed\sanswer\svocabulary
