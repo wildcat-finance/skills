@@ -6025,6 +6025,39 @@ class WardenContinuityTests(HexctlCase):
         with open(path, encoding="utf-8") as handle:
             return " ".join(handle.read().split())
 
+    def test_the_controller_reads_only_its_own_declared_check_ids(self):
+        """A check id from anywhere but a controller constant is not a name."""
+        controller = hexctl_module()
+        self.write(
+            "tests/check-map-v1.json",
+            json.dumps(
+                {
+                    "schema": "wildcat.check-map.v1",
+                    "checks": {
+                        "root-suite": {"argv": ["python3", "-m", "unittest"]},
+                        "hexaemeron-suite": {"argv": ["python3", "runner.py"]},
+                        "dead-code-suite": {"argv": ["python3", "dead.py"]},
+                    },
+                },
+                indent=2,
+            )
+            + "\n",
+        )
+        for check in controller.CHECK_MAP_KNOWN_CHECKS:
+            with self.subTest(check=check):
+                declared = controller.repository_check_command(
+                    self.target, check=check
+                )
+                self.assertEqual(check, declared["check"])
+                self.assertEqual("tests/check-map-v1.json", declared["source"])
+                self.assertEqual(".", declared["cwd"])
+        self.assertNotIn("dead-code-suite", controller.CHECK_MAP_KNOWN_CHECKS)
+        self.assertIsNone(
+            controller.repository_check_command(
+                self.target, check="dead-code-suite"
+            )
+        )
+
     def test_both_documents_keep_the_unreadable_host_fallback(self):
         warden = self.flowed(self.WARDEN_DOC)
         loop = self.flowed(self.LOOP_DOC)
