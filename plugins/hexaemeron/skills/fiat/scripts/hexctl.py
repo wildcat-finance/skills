@@ -101,7 +101,9 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
 ISSUE_TITLE_BYTES_MAX = 512
-ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation"))
+ISSUE_QUEUE_LABELS = frozenset(
+    ("held-job", "wish", "observation", "kickoff")
+)
 FRAMEWORK_ISSUE_OPENING = (
     "Protasis decides which skill or skills this observation upgrades. "
     "The filer is the wrong party to guess."
@@ -112,6 +114,15 @@ FRAMEWORK_ISSUE_TITLE_RE = re.compile(
 SKILL_ISSUE_TITLE_RE = re.compile(
     r"^(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
     r"(?P<kind>next|wish|[1-9][0-9]*): (?P<summary>\S.*)$"
+)
+# The kickoff queue holds a skill's ordered future frontier jobs, many per
+# skill, which is why it is not `{skill}-next`: that queue is the one held job
+# a ledger carries. It keeps `held-job` for exactly that reason, so closing a
+# kickoff issue still increments the evolution counter, and adds `kickoff` to
+# say which of the two queues it sits in.
+KICKOFF_ISSUE_TITLE_RE = re.compile(
+    r"^kickoff/(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
+    r"(?P<number>[1-9][0-9]*): (?P<summary>\S.*)$"
 )
 
 # The status block ADR-014's amendment authorises: one span at the top of an open
@@ -4854,9 +4865,10 @@ def issue_queue_contract(
 ) -> tuple[dict, list[str]]:
     """The canonical queue selected by one publishable issue title.
 
-    The repository has four queues, not a free-form title convention. Queue
-    labels are checked as one mutually exclusive set while unrelated labels
-    remain allowed. A framework observation also carries the exact opening
+    The repository has five queues, not a free-form title convention. Queue
+    labels are checked as one set while unrelated labels remain allowed. Four
+    of the five take exactly one label, or none; the kickoff queue takes two,
+    because it is a `held-job` that also says which queue holds it. A framework observation also carries the exact opening
     that leaves ownership for Protasis to decide.
 
     That opening is asked of a candidate only. ADR-014's 2026-09-08 amendment
@@ -4878,9 +4890,14 @@ def issue_queue_contract(
     if _contains_nonprinting_character(title):
         faults.append(f"{label} title contains a control character")
     framework = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
-    skill = None if framework else SKILL_ISSUE_TITLE_RE.fullmatch(title)
+    kickoff = None if framework else KICKOFF_ISSUE_TITLE_RE.fullmatch(title)
+    skill = None if framework or kickoff else SKILL_ISSUE_TITLE_RE.fullmatch(title)
     if framework:
         queue, required_label, owner = "framework-N", "observation", "framework"
+    elif kickoff:
+        queue = "kickoff/{skill}-N"
+        required_label = ["held-job", "kickoff"]
+        owner = kickoff.group("skill")
     elif skill:
         owner = skill.group("skill")
         kind = skill.group("kind")
@@ -4893,12 +4910,18 @@ def issue_queue_contract(
     else:
         faults.append(
             f"{label} title is not one of `{{skill}}-next: <summary>`, "
-            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, or "
+            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, "
+            f"`kickoff/{{skill}}-N: <summary>`, or "
             "`framework-N: <summary>`"
         )
 
     queue_labels = sorted(set(labels) & ISSUE_QUEUE_LABELS)
-    expected = [] if required_label is None else [required_label]
+    if required_label is None:
+        expected = []
+    elif isinstance(required_label, str):
+        expected = [required_label]
+    else:
+        expected = sorted(required_label)
     if queue is not None and queue_labels != expected:
         actual = ", ".join(f"`{value}`" for value in queue_labels) or "none"
         wanted = ", ".join(f"`{value}`" for value in expected) or "no queue label"
@@ -4930,6 +4953,47 @@ def issue_queue_contract(
         "title": title,
         "labels": sorted(set(labels)),
     }, faults
+
+
+def framework_number_owners(
+    base_dir: str, repository: str, number: str, label: str,
+) -> list[int]:
+    """Every issue whose title already claims one `framework-N` number.
+
+    Read over the search endpoint rather than by listing issues: the question is
+    about one number, and a listing would page through the whole queue to answer
+    it. Search decides for itself how a title tokenises, so each hit is
+    confirmed locally against the same expression the contract uses, and a hit
+    that does not confirm is discarded rather than reported.
+
+    The number is a title token that nothing allocates, which is why this read
+    exists at all. Six numbers named two issues each on 2026-09-08, four of them
+    open against open. Issue #1476 records that and the allocation half this
+    check does not solve: two filers reading at the same moment can still pick
+    the same number, and this catches it at the filing rather than before.
+    """
+    query = f'repo:{repository} in:title "framework-{number}"'
+    path = "search/issues?q=" + urllib.parse.quote(query) + "&per_page=100"
+    payload = github_rest(base_dir, path, label)
+    items = payload.get("items")
+    if not isinstance(items, list):
+        github_unreachable(label, path, "returned items that are not an array")
+    owners = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            github_unreachable(
+                label, path, f"returned item {index} as something other than an object"
+            )
+        title = item.get("title")
+        owner = item.get("number")
+        if not isinstance(title, str) or not isinstance(owner, int):
+            github_unreachable(
+                label, path, f"returned item {index} without a text title and a number"
+            )
+        match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+        if match is not None and match.group("number") == number:
+            owners.append(owner)
+    return sorted(owners)
 
 
 def issue_label_names(payload: dict, label: str, path: str) -> list[str]:
@@ -5884,6 +5948,7 @@ def cmd_issue_check(args) -> None:
     """
     if bool(args.body) == bool(args.issue):
         die("issue-check needs exactly one of --body <path> or --issue <url>")
+    own_number = None
     if args.body:
         repository = target_repository_binding(args.dir)
         skills_contract = repository == "wildcat-finance/skills"
@@ -5912,6 +5977,7 @@ def cmd_issue_check(args) -> None:
         if identity is None:
             die(f"--issue {args.issue} is not a canonical GitHub issue URL")
         repository, number = identity
+        own_number = int(number)
         skills_contract = repository.casefold() == "wildcat-finance/skills"
         label = f"{repository}#{number}"
         payload = github_rest(
@@ -5935,6 +6001,23 @@ def cmd_issue_check(args) -> None:
             )
         else:
             record, faults = issue_contract_faults(text, label)
+    if skills_contract and record.get("queue") == "framework-N":
+        claimed = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(record["title"])
+        taken = [
+            owner
+            for owner in framework_number_owners(
+                args.dir, repository, claimed.group("number"), label
+            )
+            if owner != own_number
+        ]
+        if taken:
+            held = ", ".join(f"#{owner}" for owner in taken)
+            faults.append(
+                f"{label} claims `framework-{claimed.group('number')}`, which "
+                f"{'issues' if len(taken) > 1 else 'issue'} {held} already "
+                f"carries. The number is a title token and nothing allocates "
+                f"it, so pick one no open or closed issue holds"
+            )
     for fault in faults:
         print(f"{label}: {fault}" if not fault.startswith(label) else fault,
               file=sys.stderr)

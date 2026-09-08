@@ -21,6 +21,7 @@ integration with its leftovers named in prose and disposed of nowhere.
 import json
 import os
 import subprocess
+import urllib.parse
 import unittest
 
 try:
@@ -417,11 +418,16 @@ class IssueQueueContractTests(unittest.TestCase):
             candidate=candidate,
         )
 
-    def test_all_four_title_and_label_shapes_pass(self):
+    def test_all_five_title_and_label_shapes_pass(self):
         cases = (
             ("fiat-next: Bind reused task names", ["held-job"], body()),
             ("fiat-13: Add a bounded report", ["wish"], body()),
             ("fiat-wish: Keep a later improvement", [], body()),
+            (
+                "kickoff/fiat-4: Take the next held entry",
+                ["held-job", "kickoff"],
+                body(),
+            ),
             (
                 "framework-96: Check prose quantities",
                 ["observation"],
@@ -448,6 +454,8 @@ class IssueQueueContractTests(unittest.TestCase):
             ("fiat-13: One", ["observation"], "wish"),
             ("fiat-wish: One", ["wish"], "no queue label"),
             ("framework-96: One", ["wish"], "observation"),
+            ("kickoff/fiat-4: One", ["held-job"], "`held-job`, `kickoff`"),
+            ("kickoff/fiat-4: One", ["kickoff"], "`held-job`, `kickoff`"),
         )
         for title, labels, expected in cases:
             text = body()
@@ -460,6 +468,39 @@ class IssueQueueContractTests(unittest.TestCase):
     def test_unrelated_labels_do_not_change_the_queue(self):
         _, faults = self.check(
             "fiat-wish: One", ["origin:ai", "only-pr-needed"]
+        )
+        self.assertEqual(faults, [], faults)
+
+    def test_the_kickoff_queue_keeps_held_job_and_adds_its_own_label(self):
+        """A kickoff issue is a held job that says which queue holds it.
+
+        It cannot be `{skill}-next`, because that queue is the one held job a
+        ledger carries and a skill has several kickoff entries. It cannot be
+        `{skill}-N` either, because that queue requires `wish` and would file
+        frontier work as an improvement, changing what closing it means.
+        """
+        record, faults = self.check(
+            "kickoff/alexandria-23: Component budget",
+            ["held-job", "kickoff", "origin:ai", "fiat-run-needed"],
+        )
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(record["queue"], "kickoff/{skill}-N")
+        self.assertEqual(record["owner"], "alexandria")
+
+    def test_a_kickoff_title_needs_a_skill_and_a_number(self):
+        for title in ("kickoff/fiat: No number", "kickoff/Fiat-4: Wrong case",
+                      "kickoff/fiat-0: Zero", "kickoff/fiat-4:No space",
+                      "kickoff/: Nothing"):
+            with self.subTest(title=title):
+                _, faults = self.check(title, ["held-job", "kickoff"])
+                self.assertTrue(any("title is not one of" in fault
+                                    for fault in faults), faults)
+
+    def test_a_kickoff_body_is_not_asked_for_the_framework_opening(self):
+        """The opening belongs to the framework queue, not to every queue."""
+        _, faults = self.check(
+            "kickoff/fiat-4: One", ["held-job", "kickoff"], body(),
+            candidate=True,
         )
         self.assertEqual(faults, [], faults)
 
@@ -516,6 +557,73 @@ class IssueQueueContractTests(unittest.TestCase):
         _, faults = self.check("fiat-wish: One", [], "Only prose.\n")
         self.assertTrue(any("Fiat-Required" in fault for fault in faults), faults)
         self.assertTrue(any("carryover" in fault for fault in faults), faults)
+
+
+class FrameworkNumberCollisionTests(unittest.TestCase):
+    """The `framework-N` number is a title token that nothing allocates.
+
+    Six numbers named two issues each on 2026-09-08, four of them open against
+    open, because no allocator and no check existed. These cover the check;
+    #1476 records the allocation half it does not solve.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.hexctl = hexctl_module()
+
+    def owners(self, items, number="107"):
+        """Read the owners of one number from a stubbed search response."""
+        calls = []
+
+        def stub(base_dir, path, label):
+            calls.append(path)
+            return {"total_count": len(items), "items": items}
+
+        original = self.hexctl.github_rest
+        self.hexctl.github_rest = stub
+        try:
+            result = self.hexctl.framework_number_owners(
+                ".", "wildcat-finance/skills", number, "candidate"
+            )
+        finally:
+            self.hexctl.github_rest = original
+        return result, calls
+
+    def test_a_number_no_issue_holds_has_no_owner(self):
+        owners, calls = self.owners([])
+        self.assertEqual(owners, [])
+        self.assertEqual(len(calls), 1)
+        self.assertIn("search/issues", calls[0])
+        self.assertIn("framework-107", urllib.parse.unquote(calls[0]))
+
+    def test_every_confirmed_owner_is_reported_in_issue_order(self):
+        owners, _ = self.owners([
+            {"number": 1451, "title": "framework-107: no check walks audit/"},
+            {"number": 1436, "title": "framework-107: a conformance criterion"},
+        ])
+        self.assertEqual(owners, [1436, 1451])
+
+    def test_a_search_hit_the_title_expression_rejects_is_discarded(self):
+        """Search decides how a title tokenises; the contract decides what counts."""
+        owners, _ = self.owners([
+            {"number": 1, "title": "framework-1077: a longer number"},
+            {"number": 2, "title": "Mentions framework-107 in prose"},
+            {"number": 3, "title": "framework-107 no colon"},
+            {"number": 4, "title": "kickoff/framework-107: wrong queue"},
+            {"number": 5, "title": "framework-107: the only real one"},
+        ])
+        self.assertEqual(owners, [5])
+
+    def test_a_response_without_items_is_a_transport_refusal(self):
+        original = self.hexctl.github_rest
+        self.hexctl.github_rest = lambda base_dir, path, label: {"total_count": 0}
+        try:
+            with self.assertRaises(SystemExit):
+                self.hexctl.framework_number_owners(
+                    ".", "wildcat-finance/skills", "107", "candidate"
+                )
+        finally:
+            self.hexctl.github_rest = original
 
 
 class IssueCheckCommandTests(HexctlCase):
