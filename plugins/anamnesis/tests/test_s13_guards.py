@@ -96,8 +96,23 @@ OUTCOME_FORMS = (
     re.compile(
         r"^Backtracking outcome: the source byte cap restated as the only "
         r"bound claimed\.$"),
-    re.compile(r"^Backtracking outcome: a measured bound of .+\.$"),
+    re.compile(r"^Backtracking outcome: a measured bound of .+?\.(?:\s|$)"),
 )
+
+
+def outcome_sentence(text: str) -> list[str]:
+    """The `Backtracking outcome:` sentence, read across its line wrapping.
+
+    A record is hard-wrapped, so the sentence is not a line. Reading it line by
+    line made the record's shape depend on where a wrap happened to fall, which
+    is a property of the margin and not of the claim.
+    """
+    found = []
+    for paragraph in text.split("\n\n"):
+        flat = " ".join(paragraph.split())
+        if flat.startswith(OUTCOME_MARKER):
+            found.append(flat)
+    return found
 
 RECORD_SECTIONS = ("Status", "Context", "Decision", "Alternatives", "Consequences")
 RECORD_HEADING = re.compile(r"^# ADR-\d{3}: \S.*$")
@@ -543,21 +558,20 @@ class TheWidestCellIsRunThroughEveryPattern(Fixture):
                     pattern.match(cell)
 
         record = committed_decision_record()
-        lines = record.read_text(encoding="utf-8").splitlines()
-        carried = [line for line in lines if line.startswith(OUTCOME_MARKER)]
+        text = record.read_text(encoding="utf-8")
+        carried = outcome_sentence(text)
         self.assertEqual(
             len(carried), 1,
-            f"{record.name} must carry exactly one {OUTCOME_MARKER!r} line")
+            f"{record.name} must carry exactly one {OUTCOME_MARKER!r} sentence")
         self.assertTrue(
             any(form.match(carried[0]) for form in OUTCOME_FORMS),
             f"{carried[0]!r} is neither a measured bound nor the byte cap "
             f"restated as the only bound claimed")
 
         # Whichever form it took, the consequences section is where it sits.
-        text = record.read_text(encoding="utf-8")
         consequences = text.split("\n## Consequences\n", 1)
         self.assertEqual(len(consequences), 2, "no consequences section")
-        self.assertIn(carried[0], consequences[1])
+        self.assertIn(carried[0], outcome_sentence(consequences[1]))
 
 
 # ---------------------------------------------------------------------------
@@ -635,6 +649,28 @@ class TheDecisionRecordCarriesWhatTheStudySentIt(Fixture):
         release_id, _ = anamnesis.verify_rebuild(str(ESTATE))
         self.assertEqual(release_id, ESTATE_RELEASE)
 
+
+
+class TheFindingRowPatternCannotBacktrackOverWhitespace(unittest.TestCase):
+    """S3-R1-01: the property the measured bound rests on, held structurally.
+
+    A greedy `\\s*` beside a lazy group lets the engine try every way of
+    splitting one span across both, and `FINDING_ROW` had six such pairs. The
+    duration is not asserted here, because study section 10 declares no budget
+    and a wall clock would be one. What is asserted is the shape that makes the
+    duration linear: no whitespace run in the pattern may be backtrackable.
+    """
+
+    def test_every_whitespace_run_in_the_row_pattern_is_possessive(self) -> None:
+        pattern = anamnesis.FINDING_ROW.pattern
+        # Every `\s*` must be written `\s*+`; a bare one is the ambiguity.
+        self.assertNotIn("|", pattern[:1], "pattern is anchored")
+        bare = re.findall(r"\\s\*(?!\+)", pattern)
+        self.assertEqual(
+            bare, [],
+            "FINDING_ROW carries a backtrackable whitespace run; every "
+            "`\\s*` must be possessive `\\s*+`")
+        self.assertGreaterEqual(len(re.findall(r"\\s\*\+", pattern)), 6)
 
 if __name__ == "__main__":
     unittest.main()

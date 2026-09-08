@@ -119,31 +119,38 @@ mapper, so a corpus whose sources come in two formats cannot be admitted until
 the declaration moves per source, and that move costs the two shipped release
 ids this decision protects.
 
-Backtracking outcome: the source byte cap restated as the only bound claimed.
-The five patterns the synopsis mapper runs, `SYNOPSIS_HEADER`, `ROUND_HEADING`,
-`OTHER_HEADING`, `ROUND_FIELD` and `FINDING_ROW`, were run over the widest cell
-any admitted source produces, 668 bytes on physical line 7 of
+Backtracking outcome: a measured bound of 4.6 milliseconds at the admission
+policy's own byte cap. The five patterns the synopsis mapper runs,
+`SYNOPSIS_HEADER`, `ROUND_HEADING`, `OTHER_HEADING`, `ROUND_FIELD` and
+`FINDING_ROW`, were run over the widest cell any admitted source produces, 668
+bytes on physical line 7 of
 `plugins/anamnesis/specimens/synopsis/sources/pandects-audit-synopsis.md`, and
 over all 434 cells the three admitted sources produce. Every pattern returns,
-and the slowest, `FINDING_ROW`, took about 7.5 microseconds on that cell on one
-machine. No budget is declared and none is implied: that figure is a recorded
-measurement, and study section 10's position is that this run declares no
-performance budget.
+and the slowest, `FINDING_ROW`, takes about 13 microseconds on that cell on one
+machine. Beyond the admitted corpus the same pattern was measured on a crafted
+cell shaped `| <id> | <severity> | ` followed by spaces: 0.009 milliseconds at
+1000 bytes, 0.055 at 10000, 0.661 at 100000 and 4.612 at 1000000, which is
+`max_source_bytes` in all three shipped policies. Growth is linear across three
+orders of magnitude. No budget is declared and none is implied: those figures
+are recorded measurements, and study section 10's position is that this run
+declares no performance budget.
 
-Beyond the admitted corpus no bound is claimed, and the cap is a weak stand-in
-for one. A cell's width is bounded only by the physical line the source byte
-cap bounds, which is `max_source_bytes` in the admission policy, 1000000 bytes
-in all three shipped policies, under a `MAX_SOURCE_BYTES_CEILING` of 8000000.
-`FINDING_ROW` was measured as super-linear on a crafted cell shaped
-`| <id> | <severity> | ` followed by spaces and no closing pipe: about 7
-milliseconds at 269 bytes, 51 at 519, 403 at 1019 and 3135 at 2019, so roughly
-eight times the work for twice the length. Three ambiguous pairs of `\s*` and a
-lazy group sit between the last three pipes, which is where the work comes
-from. No pattern was changed here, because a bound over the admitted corpus
-needed no change and a rewrite of `FINDING_ROW` is a change to the grammar both
-implementations share. The carried-forward obligation is named in the risk
-register as `mapper-backtracking`, and it belongs to a corpus that admits bytes
-this repository did not write.
+The bound exists because the pattern was changed. As first written,
+`FINDING_ROW` put a greedy `\s*` beside a lazy group at six places, so the
+engine could try each way of splitting one span of whitespace across both. On
+the same crafted cell it took 5.9 seconds at 2019 bytes and 45 seconds at 4019,
+roughly eight times the work for twice the length, with or without a closing
+pipe. A cell is bounded only by the physical line the source byte cap bounds,
+`max_source_bytes` at 1000000 under a `MAX_SOURCE_BYTES_CEILING` of 8000000, so
+that cap was not a bound on this: one crafted line inside an admitted source
+would have held curation indefinitely. Every whitespace run in the pattern is
+now possessive, which removes the ambiguity without changing what the pattern
+accepts. All three specimens rebuild to the release ids they shipped with, so
+the grammar both implementations share reads every admitted row exactly as
+before. `mapper-backtracking` is closed by that change rather than carried, and
+`tests/test_s13_guards.py` holds the structural property rather than a
+duration, because a guard asserting a wall clock would be the budget this run
+declines to declare.
 
 The `<br>` split loses a producer cell that carries the separator rather than
 shortening it. Neither fragment of such a cell matches the finding grammar,

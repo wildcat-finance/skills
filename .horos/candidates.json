@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20918381,
+    "bytes_blob": 20938328,
     "bytes_generated": 98
   },
   "entries": [
@@ -89,6 +89,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 19947,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
     },
     {
       "bytes": 173841,
