@@ -1,4 +1,4 @@
-# Decision: Keep receipt-aware formats with exclusive empty and scoped shapes
+# ADR-087: Keep receipt-aware formats with exclusive empty and scoped shapes
 
 ## Status
 
