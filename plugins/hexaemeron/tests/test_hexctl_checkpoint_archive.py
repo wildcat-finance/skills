@@ -940,6 +940,9 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertIn(SIDECAR_SPAN, document)
                 self.assertNotIn(SIDECAR_ONE_SPACE, document)
 
+        # The block paragraph, on the same terms as every other value above.
+        self.pin_the_reference_block_paragraph()
+
         # The `acceptance/current` rule, stated three ways in the reference and
         # two in the study, so an inverted sentence fails rather than passing on
         # a substring of itself.
@@ -954,6 +957,45 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertIn(ACCEPTANCE_OUTSIDE, section(reference, "Content manifest"))
         self.assertIn(ACCEPTANCE_OUTSIDE, study_manifest)
         self.assertIn(STUDY_ACCEPTANCE_REFUSES, study)
+
+    def pin_the_reference_block_paragraph(self):
+        """The reference's block paragraph, held to what study section 4 says.
+
+        Two assertions, and each one catches what the other cannot. The
+        equality catches a mutated or deleted value in the reference, which
+        was S2-R3-03: four anchored edits to this paragraph, one of them
+        deleting it and one inverting the truncated-key rule, left every test
+        that read the file green. The parity rows catch the drift the equality
+        would freeze in place: a dated study amendment that moves one of these
+        rules fails here, so the reference cannot quietly stay behind it.
+
+        It is called from the test above rather than from the export test that
+        first carried it, and rather than standing as a test of its own, which
+        step 5's exact count over this module forbids. That was S2-R4-01: the
+        export class skips itself whenever `gpg` is absent, and with the pin
+        inside it all eight anchored edits below passed again, deletion of the
+        paragraph included. Nothing this pin reads needs `gpg`, and this class
+        is where every other value shared by the two documents is held.
+        """
+        reference = read(REFERENCE)
+        study = flat(read(STUDY))
+        paragraph = REFERENCE_BLOCK_ANCHOR + anchored(
+            reference,
+            REFERENCE_BLOCK_ANCHOR,
+            REFERENCE_BLOCK_END,
+            "the reference's private-key block paragraph",
+        )
+        self.assertEqual(EXPECTED_BLOCK_PARAGRAPH, flat(paragraph))
+        for stated, restated in BLOCK_RULE_PARITY:
+            with self.subTest(rule=stated):
+                self.assertIn(stated, study)
+                self.assertIn(restated, EXPECTED_BLOCK_PARAGRAPH)
+        # The three counts the paragraph names are the shipped tuples, so a
+        # pattern added or dropped in the code contradicts the prose here.
+        module = hexctl_module()
+        self.assertEqual(2, len(module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS))
+        self.assertEqual(4, len(module.CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS))
+        self.assertEqual(6, len(module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS))
 
     def test_archive_budgets_declare_the_six_measured_limits(self):
         budgets = load_metron().load_budgets(str(BUDGETS))
@@ -1355,13 +1397,13 @@ class CheckpointArchiveExportTests(HexctlCase):
         self.assertEqual(before, self.controller_bytes())
 
     def test_archive_export_refuses_secret_shaped_member(self):
-        """The refusal, and the reference paragraph that states its rule.
+        """The refusal itself, over a really signed run.
 
-        The document half is here rather than in a test of its own because
-        step 5's Exit pins an exact test count over this module, so a pin that
-        arrives as a new test breaks a criterion three steps downstream.
+        The reference paragraph that states this rule is pinned in
+        `CheckpointArchiveScaffoldTests`, not here: this class skips whenever
+        `gpg` is absent, and a document pin that needs no `gpg` must not skip
+        with it.
         """
-        self.pin_the_reference_block_paragraph()
         self.to_post_push()
         planted = Path(self.target) / ".hexaemeron" / "notes.txt"
         planted.write_text("carry over: AKIA" + "A1B2C3D4E5F6G7H8"[:16] + "\n", encoding="utf-8")
@@ -1395,37 +1437,6 @@ class CheckpointArchiveExportTests(HexctlCase):
         self.assertFalse(sorted(self.store_root().glob("*/*")))
         carried.unlink()
         self.archive()
-
-    def pin_the_reference_block_paragraph(self):
-        """The reference's block paragraph, held to what study section 4 says.
-
-        Two assertions, and each one catches what the other cannot. The
-        equality catches a mutated or deleted value in the reference, which
-        was S2-R3-03: four anchored edits to this paragraph, one of them
-        deleting it and one inverting the truncated-key rule, left every test
-        that read the file green. The parity rows catch the drift the equality
-        would freeze in place: a dated study amendment that moves one of these
-        rules fails here, so the reference cannot quietly stay behind it.
-        """
-        reference = read(REFERENCE)
-        study = flat(read(STUDY))
-        paragraph = REFERENCE_BLOCK_ANCHOR + anchored(
-            reference,
-            REFERENCE_BLOCK_ANCHOR,
-            REFERENCE_BLOCK_END,
-            "the reference's private-key block paragraph",
-        )
-        self.assertEqual(EXPECTED_BLOCK_PARAGRAPH, flat(paragraph))
-        for stated, restated in BLOCK_RULE_PARITY:
-            with self.subTest(rule=stated):
-                self.assertIn(stated, study)
-                self.assertIn(restated, EXPECTED_BLOCK_PARAGRAPH)
-        # The three counts the paragraph names are the shipped tuples, so a
-        # pattern added or dropped in the code contradicts the prose here.
-        module = hexctl_module()
-        self.assertEqual(2, len(module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS))
-        self.assertEqual(4, len(module.CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS))
-        self.assertEqual(6, len(module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS))
 
     def test_secret_shaped_member_refuses_before_publish_on_a_truncated_key_block(self):
         """A block whose `-----END` is gone is still key material.
