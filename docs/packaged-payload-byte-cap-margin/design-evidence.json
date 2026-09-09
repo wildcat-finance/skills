@@ -1,0 +1,402 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "omission-class",
+      "summary": "Declare a package omission class for the 32 character-portrait assets, on the recorded ground that the repository's own Horos boundary classifies every one as binary/hard. The files stay tracked; only the generated package omits them. The packaged documents that referenced a portrait are left as they stand."
+    },
+    {
+      "id": "omission-class-with-reference-repair",
+      "summary": "The same omission class, and the generator additionally rewrites, in the packaged copy alone, every img tag whose target left the package, replacing that tag with an HTML comment naming the omitted path. Repository copies are unchanged and every file stays tracked."
+    },
+    {
+      "id": "second-package",
+      "summary": "Split the generated runtime into two published skills.sh packages, each below both extract caps, each with its own grouping and install address."
+    },
+    {
+      "id": "warning-gate",
+      "summary": "Change no bytes and no route. Move the package test's byte assertion off the cap onto a stated warning threshold, so CI fails with margin left rather than at the ceiling."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "tracked-files-deleted",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "authoritative-link-closure",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "dangling-image-references",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "extract-margin",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "maximise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "install-commands",
+      "concern": "compatibility",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "hypomnema",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "publication-files-written",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "foreign-repositories-touched",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "built-payload-margin",
+      "concern": "space",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "at-least",
+      "threshold": 5242880,
+      "blocks": "step:3"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "omission-class",
+      "criterion": "tracked-files-deleted",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-tracked-files-deleted.json",
+        "sha256": "45a018bfb9761832f6637fa8c4bc9df49968631c948db02484fbdceabbf328d4"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "authoritative-link-closure",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-authoritative-link-closure.json",
+        "sha256": "7140d49818e6485ed87065269b4826efc5564af4c080e76804a701733772baaf"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "dangling-image-references",
+      "state": "fail",
+      "report": {
+        "path": "reports/omission-class-dangling-image-references.json",
+        "sha256": "8f9e4dd542bcddef5f9b3f8681b9e83ed4a5e823310a182f0757f93ae4ee0241"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "extract-margin",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-extract-margin.json",
+        "sha256": "603cd67f840cb6501d5e08e6e6e34d229ce800cda7c5675edb4b48ab6fe585f6"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "install-commands",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-install-commands.json",
+        "sha256": "208ca75aaff8f578d41e1dcf236de264cec3f0ee587e1dd401e217abf43f884d"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "publication-files-written",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-publication-files-written.json",
+        "sha256": "84a2a6fbed8695d249a771e2500a0461accd175ccc562d7144e74c6e7d85c0df"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "foreign-repositories-touched",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-foreign-repositories-touched.json",
+        "sha256": "69e8e286dce476d7730c3675074b7c6266984d12817796fc0e74c9745998f4b7"
+      }
+    },
+    {
+      "candidate": "omission-class",
+      "criterion": "built-payload-margin",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/measure_built_margin.py --candidate omission-class --out .hexaemeron/reports/omission-class-built-payload-margin.json",
+      "report": "reports/omission-class-built-payload-margin.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "tracked-files-deleted",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-tracked-files-deleted.json",
+        "sha256": "6a3443dfff10c70cc833be932bf3f0000637090a3426ab62d9780bf0085f36eb"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "authoritative-link-closure",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-authoritative-link-closure.json",
+        "sha256": "156dd17ea5af11d9ca38df6a96393332beb4c0988748718e096de6345868a5a7"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "dangling-image-references",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-dangling-image-references.json",
+        "sha256": "66b482523b49f78b1c4fb3e07bff9a50f40735e7f555f6c0d6d0a77c804a0ce5"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "extract-margin",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-extract-margin.json",
+        "sha256": "2020dbeada53892f9541f29148ceebf166a6607118cce4c532bfbc6fc4135d6d"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "install-commands",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-install-commands.json",
+        "sha256": "f45f57665d7b5a77b1a4368cf3f714e0c72f2c8991650c247de2d4201093e3bf"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "publication-files-written",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-publication-files-written.json",
+        "sha256": "908ff1851e336d4518824393469cbf8f3d64863cfbdd300a3169af8d74dcd077"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "foreign-repositories-touched",
+      "state": "pass",
+      "report": {
+        "path": "reports/omission-class-with-reference-repair-foreign-repositories-touched.json",
+        "sha256": "99c4af8216e90d626a47e674e1543272cf3dbc50f6e128c45b5b11bb9875022c"
+      }
+    },
+    {
+      "candidate": "omission-class-with-reference-repair",
+      "criterion": "built-payload-margin",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/measure_built_margin.py --candidate omission-class-with-reference-repair --out .hexaemeron/reports/omission-class-with-reference-repair-built-payload-margin.json",
+      "report": "reports/omission-class-with-reference-repair-built-payload-margin.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "tracked-files-deleted",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-package-tracked-files-deleted.json",
+        "sha256": "ec1010f207c8d81ebc087135edc4351aecee4ddef1959dd674a5816b76af6e55"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "authoritative-link-closure",
+      "state": "fail",
+      "report": {
+        "path": "reports/second-package-authoritative-link-closure.json",
+        "sha256": "278610873a266f50d7d3db61dc153ac8e3255625bea053abd7b1f506cc170f55"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "dangling-image-references",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-package-dangling-image-references.json",
+        "sha256": "29e74e01797c6037971b795dbe916db4172d7b036814f5c9334ad0647367b1e0"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "extract-margin",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-package-extract-margin.json",
+        "sha256": "9279ff6d658930bc33cfea79649532ee7c2e3ebfde6374e74e0d33173b5d64ac"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "install-commands",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-package-install-commands.json",
+        "sha256": "0798f998770876abf6525ec3fc1b2d17518eaabd6b6ab590e7f50b3e48eb5844"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "publication-files-written",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-package-publication-files-written.json",
+        "sha256": "45e1f3749d7498151bea48242f3daa56442788e51e0afa14d732510c12f7a6cf"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "foreign-repositories-touched",
+      "state": "fail",
+      "report": {
+        "path": "reports/second-package-foreign-repositories-touched.json",
+        "sha256": "7564202585eec48e8a5fad9a3acaec2209965c34c91c91197c33847af160e877"
+      }
+    },
+    {
+      "candidate": "second-package",
+      "criterion": "built-payload-margin",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/measure_built_margin.py --candidate second-package --out .hexaemeron/reports/second-package-built-payload-margin.json",
+      "report": "reports/second-package-built-payload-margin.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "tracked-files-deleted",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-tracked-files-deleted.json",
+        "sha256": "d88efdd296d5baadad6ded7e269e2d776460bddf946e9106a2426ca924118b7f"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "authoritative-link-closure",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-authoritative-link-closure.json",
+        "sha256": "d08a21ec89b03eb4f07beebdf3f36f6918572eb50418d8903c9b2b9b4934db1b"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "dangling-image-references",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-dangling-image-references.json",
+        "sha256": "7e1dddbe8e24231f21b54eb3c4ad13af5e28ba034aacad33e3e2f2dfe18a7125"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "extract-margin",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-extract-margin.json",
+        "sha256": "d820492d3349284585df49715f3b3857f7dda9cf2e22fc756d0b82ffbb6fe844"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "install-commands",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-install-commands.json",
+        "sha256": "a90fc28eecd9323e9b52804c96ddf2a1b5420a3f3b6edfb604143c6d60ac181e"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "publication-files-written",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-publication-files-written.json",
+        "sha256": "2261f520135901a31c1dc717ab3ff8e1917707183516945098e6d2a617648c49"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "foreign-repositories-touched",
+      "state": "pass",
+      "report": {
+        "path": "reports/warning-gate-foreign-repositories-touched.json",
+        "sha256": "82f10a980cbd0c2ec055aa8154bb48d85c1db895df801270e627dcb5c3545a6b"
+      }
+    },
+    {
+      "candidate": "warning-gate",
+      "criterion": "built-payload-margin",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/measure_built_margin.py --candidate warning-gate --out .hexaemeron/reports/warning-gate-built-payload-margin.json",
+      "report": "reports/warning-gate-built-payload-margin.json",
+      "blocks": "step:3"
+    }
+  ],
+  "selection": {
+    "candidate": "omission-class-with-reference-repair",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

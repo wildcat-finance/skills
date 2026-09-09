@@ -1,0 +1,9 @@
+{
+  "candidate": "omission-class-with-reference-repair",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate omission-class-with-reference-repair --criterion foreign-repositories-touched",
+  "criterion": "foreign-repositories-touched",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

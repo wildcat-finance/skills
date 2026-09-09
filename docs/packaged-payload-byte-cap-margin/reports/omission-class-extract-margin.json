@@ -1,0 +1,9 @@
+{
+  "candidate": "omission-class",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate omission-class --criterion extract-margin",
+  "criterion": "extract-margin",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 10046025
+}

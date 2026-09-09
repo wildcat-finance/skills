@@ -1,0 +1,9 @@
+{
+  "candidate": "second-package",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate second-package --criterion foreign-repositories-touched",
+  "criterion": "foreign-repositories-touched",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}
