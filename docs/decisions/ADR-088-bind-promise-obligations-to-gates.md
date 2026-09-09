@@ -1,4 +1,4 @@
-# Decision: Bind explicit Promise Machine obligations to production gates
+# ADR-088: Bind explicit Promise Machine obligations to production gates
 
 ## Status
 
