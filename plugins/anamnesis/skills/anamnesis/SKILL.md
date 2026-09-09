@@ -2,7 +2,7 @@
 name: anamnesis
 description: Preserve audit findings and the changes that answered them as a source-bound corpus. Admit a source only against an explicit rights basis, keep the producer's bytes and identifiers unchanged, curate submissions, adjudicated findings, occurrences, remediation attempts and verifications as separate records, and release checked read-only projections for Elenchus and Synkrisis. Use when someone asks to preserve, curate, release or query a corpus of audit findings and their remedies. Do not use it to judge whether a finding is real, to prove a fix correct, or to compare runs.
 metadata:
-  version: "4.1.0"
+  version: "5.1.0"
 ---
 
 <p align="center">
@@ -24,7 +24,7 @@ version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md). Read that ledger before starting work intended to
 advance Anamnesis itself.
 
-**Current frontier.** What a corpus preserves is declared in the curation policy the release manifest records and the release id hashes. Two corpora ship under their own declared scopes, the pilot's 41 Warden findings and 17 findings the capture estate recorded about itself, and neither builds under the other's scope.
+**Current frontier.** The curation policy's declared mapper is resolved through a registry keyed by name and version: an unresolved name refuses before any record is written, every assertion records the entry that read the source, and three corpora ship, the third preserving the pilot's same 41 findings read from their synopsis rendering under a second registered implementation.
 
 Three siblings sit next to it and none of them is a substitute:
 

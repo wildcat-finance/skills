@@ -44,7 +44,7 @@ FIXTURE = PLUGIN_ROOT / "tests/fixtures/unknown-mapper-policy.json"
 # one can still say it once the run worktree is gone.
 PINNED_DIGESTS = {
     PLUGIN_ROOT / "docs/resolved-mapper-study.md":
-        "52f6a11247782d6c6cdd537fa70f08809e197ecc6645f6a0416bbfe09806db06",
+        "9f60a85d4a6ab37500cae74e7872d436aa39ca9d841d4bab2a84af1607ec6b9d",
     PLUGIN_ROOT / "docs/resolved-mapper-runbook.md":
         "d666a6e7b864ef944c9db645bdf870d8a57dd621d18e67f8b6cd7413a1be9e19",
     PLUGIN_ROOT / "docs/resolved-mapper/design-evidence.json":

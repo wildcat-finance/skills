@@ -21,6 +21,7 @@ SKILL = PLUGIN_ROOT / "skills/anamnesis/SKILL.md"
 README = PLUGIN_ROOT / "README.md"
 
 VERSION = "anamnesis-v4.1.0"
+REVISION = "declared-scope"
 PRIOR_VERSION = "anamnesis-v3.1.0"
 PRIOR_REVISION = "corpus-scope"
 PRIOR_DIGEST = "1da8d2f843cb3b0ff1fd6dac5d41d4cafb5746388635c3f1ba5e41adde1d1f77"
@@ -53,11 +54,19 @@ class LedgerRecordsTheCompletedJob(unittest.TestCase):
         self.text = LEDGER.read_text(encoding="utf-8")
         self.rows = rows(self.text)
 
-    def test_the_header_version_matches_the_newest_row(self) -> None:
-        header = header_field(self.text, "Current version").strip("`")
-        self.assertEqual(header, VERSION)
-        self.assertEqual(self.rows[-1][0].strip("`"), header)
-        self.assertEqual(self.rows[-1][1], "evolution")
+    def test_this_run_s_row_is_the_evolution_it_recorded(self) -> None:
+        """By version, not by position.
+
+        This suite recorded the row it wrote as the newest one. A later
+        frontier job appends its own, and the header then names that one, so
+        the assertion moved to the version this step is about. The current
+        header and its digest belong to whichever step wrote them; step 14
+        holds those.
+        """
+        row = [r for r in self.rows if r[0].strip("`") == VERSION]
+        self.assertEqual(len(row), 1)
+        self.assertEqual(row[0][1], "evolution")
+        self.assertEqual(row[0][2].strip("`"), REVISION)
 
     def test_the_frontier_digest_recomputes_over_its_exact_line(self) -> None:
         line = "{}|{}|{}|{}\n".format(
@@ -75,8 +84,10 @@ class LedgerRecordsTheCompletedJob(unittest.TestCase):
         def parts(version: str) -> tuple[int, ...]:
             return tuple(int(n) for n in version.strip("`").removeprefix("anamnesis-v").split("."))
 
-        self.assertEqual(parts(self.rows[-1][0]), (4, 1, 0))
-        self.assertEqual(parts(self.rows[-2][0]), (3, 1, 0))
+        index = [i for i, row in enumerate(self.rows) if row[0].strip("`") == VERSION]
+        self.assertEqual(len(index), 1)
+        self.assertEqual(parts(self.rows[index[0]][0]), (4, 1, 0))
+        self.assertEqual(parts(self.rows[index[0] - 1][0]), (3, 1, 0))
 
     def test_the_superseded_row_keeps_its_revision_and_digest(self) -> None:
         prior = [row for row in self.rows if row[0].strip("`") == PRIOR_VERSION]
@@ -86,20 +97,31 @@ class LedgerRecordsTheCompletedJob(unittest.TestCase):
 
     def test_the_skill_frontmatter_version_matches_the_ledger(self) -> None:
         declared = re.search(r'^  version: "(.+)"$', SKILL.read_text(encoding="utf-8"), re.M)
-        self.assertEqual(f"anamnesis-v{declared.group(1)}", VERSION)
+        self.assertEqual(
+            f"anamnesis-v{declared.group(1)}",
+            header_field(self.text, "Current version").strip("`"),
+        )
 
-    def test_the_declared_input_the_next_job_needs_is_one_valid_row(self) -> None:
+    def test_the_declared_input_the_held_job_needs_is_one_valid_row(self) -> None:
+        """The shape, not the id.
+
+        This step declared `foreign-format-corpus`, and the frontier job that
+        followed shipped exactly the corpus that row called absent, so the id
+        moved with the held job it belonged to. What survives the move is the
+        rule: whatever the ledger declares is one row of four valid fields.
+        Step 14 holds the id the ledger declares today.
+        """
         block = self.text.split("```declared-inputs", 1)[1].split("```", 1)[0]
         lines = [line for line in block.splitlines() if line.strip()]
         self.assertEqual(len(lines), 1)
         self.assertRegex(lines[0], INPUT_ROW)
-        self.assertTrue(lines[0].startswith("foreign-format-corpus | corpus | absent | "))
 
 
 class LiveProseAgreesWithTheLedger(unittest.TestCase):
     def test_the_front_door_card_names_the_current_version(self) -> None:
+        current = header_field(LEDGER.read_text(encoding="utf-8"), "Current version").strip("`")
         text = README.read_text(encoding="utf-8")
-        self.assertIn(f'<!-- front-door:status skill="anamnesis" version="{VERSION}" -->', text)
+        self.assertIn(f'<!-- front-door:status skill="anamnesis" version="{current}" -->', text)
 
     def test_no_live_document_still_describes_the_question_as_open(self) -> None:
         for path in SWEPT:
