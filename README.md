@@ -73,7 +73,7 @@ command writes a report to a path that must not already exist.
 
 ### ANAMNESIS REBUILDS A PRESERVED AUDIT CORPUS
 
-<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="4fe2837b8e4990b6645f525c9be3eb25f81d12e51f4e1f79d588a98c7d1ae4fb" -->
+<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="a862e3b018241f9e30f45404d1a83957a9185fa3fc1ed540b042baa7c9448a07" -->
 [Anamnesis](./plugins/anamnesis) admits, curates and projects the pilot audit
 specimen from the producer's own bytes.
 

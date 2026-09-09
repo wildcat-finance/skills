@@ -588,12 +588,21 @@ ROUND_HEADING = re.compile(
     r"^## (?P<label>.+?,\s*round\s*(?P<round>\d+))\s*--\s*(?P<date>.+?)\s*$"
 )
 OTHER_HEADING = re.compile(r"^## (?P<label>.+?)\s*$")
+# Every whitespace run below is possessive. A greedy `\s*` beside a lazy group
+# lets the engine try each way of splitting one span across both, and a row is
+# six such pairs: a cell of spaces took 5.9 s at 2 KB and 45 s at 4 KB, about
+# eightfold per doubling, whether or not it closed with a pipe. A source is
+# bounded only by `max_source_bytes`, a megabyte in every shipped policy, so
+# that cap is not a bound on this. Possessive runs cannot give whitespace back,
+# which removes the ambiguity and answers the same cells in microseconds. Every
+# row an admitted source holds parses as before: all three specimens rebuild to
+# the release ids they shipped with.
 FINDING_ROW = re.compile(
-    r"^\|\s*`?(?P<native>[A-Z]?\d*S?\d+-R\d+-\d+)`?\s*\|"
-    r"\s*(?P<severity>[a-z-]+)\s*\|"
-    r"\s*(?P<file>[^|]*?)\s*\|"
-    r"\s*(?P<finding>.*?)\s*\|"
-    r"\s*(?P<status>.*?)\s*\|$"
+    r"^\|\s*+`?(?P<native>[A-Z]?\d*S?\d+-R\d+-\d+)`?\s*+\|"
+    r"\s*+(?P<severity>[a-z-]+)\s*+\|"
+    r"\s*+(?P<file>[^|]*?)\s*+\|"
+    r"\s*+(?P<finding>.*?)\s*+\|"
+    r"\s*+(?P<status>.*?)\s*+\|$"
 )
 ROUND_FIELD = re.compile(
     r"^(?P<name>Audit schema|Covered|Not checked|Elenchus verdict):\s*(?P<value>.*)$"
