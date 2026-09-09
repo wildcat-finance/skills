@@ -210,3 +210,35 @@ Removing a promise id now requires a retained retirement, rename, or split
 row. Reusing one unchanged id for different semantics fails even when its
 current digest is updated in the history file. A newly introduced id is
 visible as such and cannot silently replace an entry id.
+
+## Extending ADR-003
+
+ADR-003 bound each vendored Hexaemeron skill to a local digest. That was
+enough to detect local drift and not enough to say what the bytes drifted
+from. This delivery extends it rather than rewriting it, because the earlier
+decision is still the one that was taken.
+
+Every Wildcat declaration in `plugins/hexaemeron/PROMISES.md` now names the
+discovered vendored canonical path, the HTTPS GitHub clone URI, an immutable
+full commit, the repository-relative upstream path, the upstream SHA-256, the
+local SHA-256, and one closed verification status. The status says whether the
+two byte streams are identical or modified, and retains
+`publisher-authentication-unknown` in both cases: neither state authenticates
+the upstream publisher.
+
+The core checker recomputes each digest from local committed data alone. It
+refuses a missing or duplicated overlay, an unsafe or absent path, a
+first-party target, incomplete fields, an uncovered vendored skill, a mutable
+commit, an unsupported repository URI, a strengthened publisher claim, a false
+byte relationship, and local drift.
+
+`scripts/verify_vendored_provenance.py` is the separate upstream check and the
+core neither imports nor runs it. It takes explicit affected local paths,
+constructs only their immutable `raw.githubusercontent.com` locations, uses
+verified HTTPS, refuses every redirect, caps total time and response bytes,
+and writes into fresh temporary storage.
+
+At commit `aadee2ca49cae20246af378ef791d2d4f941e237` the Fizz Convert, Fizz
+Sync, X-Ray and Solidity Auditor bytes are identical to upstream and the
+top-level Fizz bytes are recorded as modified.
+
