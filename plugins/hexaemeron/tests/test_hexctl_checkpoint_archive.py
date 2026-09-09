@@ -193,14 +193,31 @@ EXPECTED_CONTAINER_CLAUSES = (
     "no extra fields",
     "sorted by UTF-8 bytes",
 )
+# Study section 4's own bullet still lists the set the study was receipted
+# with. The dated amendment of 2026-09-09 replaces one member of it: the
+# OpenSSH header is dropped, because the PEM pattern before it already matches
+# that header, and the OpenPGP block takes the free place. The reference and
+# the code carry the amended set, so the two expectations below are held
+# against different parts of the same study rather than against each other.
+SUBSUMED_PATTERN_SPAN = "-----BEGIN OPENSSH PRIVATE KEY-----"
+ADDED_PATTERN_SPAN = "-----BEGIN PGP PRIVATE KEY BLOCK-----"
 EXPECTED_SECRET_SPANS = (
-    "-----BEGIN OPENSSH PRIVATE KEY-----",
+    SUBSUMED_PATTERN_SPAN,
     "ghp_[A-Za-z0-9]{36}",
     "github_pat_[A-Za-z0-9_]{22,}",
     "AKIA[0-9A-Z]{16}",
     "xox[baprs]-",
 )
+EXPECTED_AMENDED_SECRET_SPANS = tuple(
+    ADDED_PATTERN_SPAN if span == SUBSUMED_PATTERN_SPAN else span
+    for span in EXPECTED_SECRET_SPANS
+)
+PATTERN_AMENDMENT_HEADING = "### Amendment -- 2026-09-09"
 EXPECTED_PEM_PROSE = "PEM private-key block"
+
+# A well-formed fingerprint that is not the fixture's, for the proof's
+# comparison against the set the manifest pins. It is never imported anywhere.
+UNPINNED_FINGERPRINT = "0123456789ABCDEF0123456789ABCDEF01234567"
 
 # The sidecar's two spaces are what `shasum -a 256 -c` reads, so the one-space
 # form is rejected by name in both documents.
@@ -719,11 +736,52 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
             "study section 4 secret pattern list",
         )
         self.assertEqual(
-            list(EXPECTED_SECRET_SPANS), secret_spans("\n".join(reference_secret_items))
+            list(EXPECTED_AMENDED_SECRET_SPANS),
+            secret_spans("\n".join(reference_secret_items)),
         )
         self.assertEqual(list(EXPECTED_SECRET_SPANS), secret_spans(study_secrets))
         self.assertIn(EXPECTED_PEM_PROSE, flat("\n".join(reference_secret_items)))
         self.assertIn(EXPECTED_PEM_PROSE, flat(study_secrets))
+
+        # The reference is allowed to differ from section 4's bullet only where
+        # a dated study amendment says so, so the amendment is read here too:
+        # it must name both the span it drops and the span it puts in its
+        # place. Without this the two expectations above would be a constant
+        # holding the reference to itself, and an amended value could drift.
+        amendment = flat(
+            anchored(
+                study,
+                PATTERN_AMENDMENT_HEADING,
+                "\n**Steps touched.**",
+                "study amendment 2026-09-09",
+            )
+        )
+        self.assertIn(f"`{SUBSUMED_PATTERN_SPAN}`", amendment)
+        self.assertIn(f"`{ADDED_PATTERN_SPAN}`", amendment)
+
+        # The exporter compiles what the reference states. Five bullets are the
+        # pattern source verbatim; the sixth is the PEM prose, held instead to
+        # what it must and must not match, including the OpenSSH header the
+        # amendment dropped as subsumed and the OpenPGP block it added.
+        module = hexctl_module()
+        compiled = [
+            pattern.pattern.decode("utf-8")
+            for pattern in module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS
+        ]
+        self.assertEqual(6, len(compiled), compiled)
+        self.assertEqual(list(EXPECTED_AMENDED_SECRET_SPANS), compiled[1:])
+        pem = module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS[0]
+        for header in (
+            b"-----BEGIN PRIVATE KEY-----",
+            b"-----BEGIN RSA PRIVATE KEY-----",
+            b"-----BEGIN EC PRIVATE KEY-----",
+            b"-----BEGIN ENCRYPTED PRIVATE KEY-----",
+            SUBSUMED_PATTERN_SPAN.encode("utf-8"),
+        ):
+            with self.subTest(pem_header=header):
+                self.assertTrue(pem.search(header), header)
+        self.assertIsNone(pem.search(ADDED_PATTERN_SPAN.encode("utf-8")))
+        self.assertIsNone(pem.search(b"-----BEGIN PGP PUBLIC KEY BLOCK-----"))
 
         # The closed fields of the result objects (study sections 1 and 4).
         # The reference states each as a paragraph and the study as a bullet or
@@ -1212,9 +1270,14 @@ class CheckpointArchiveExportTests(HexctlCase):
         result, _ = self.archive(expect=1)
         self.assertEqual("secret-shaped-member\n", result.stderr)
         self.assertFalse(sorted(self.store_root().glob("*/*")))
-        planted.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n", encoding="utf-8")
-        result, _ = self.archive(expect=1)
-        self.assertEqual("secret-shaped-member\n", result.stderr)
+        # The OpenSSH header, which the PEM pattern matches on its own, and the
+        # OpenPGP block, which the 2026-09-09 study amendment added because no
+        # pattern reached it: its header ends `PRIVATE KEY BLOCK-----`.
+        for header in (SUBSUMED_PATTERN_SPAN, ADDED_PATTERN_SPAN):
+            with self.subTest(header=header):
+                planted.write_text(header + "\n", encoding="utf-8")
+                result, _ = self.archive(expect=1)
+                self.assertEqual("secret-shaped-member\n", result.stderr)
         planted.unlink()
         self.archive()
 
@@ -1482,6 +1545,152 @@ class CheckpointArchiveExportTests(HexctlCase):
         result, _ = self.archive(expect=1)
         self.assertEqual("signature-unverified\n", result.stderr)
         self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_signature_unverified_refuses_before_publish_on_a_status_other_than_good(self):
+        """A good signature by a key the keyring does not trust is not a proof.
+
+        Ownertrust is the only thing between Git's `G` and its `U`, and the
+        disposable keyring writes it for exactly the fingerprints the export
+        pinned, so the happy path can never reach this guard: every commit the
+        fixture signs is `G` because the export made it so. Seeding the same
+        keyring without that trust is what an operator meets when the key
+        material travels and the trust does not. Measured on this fixture's
+        key: `git verify-commit` still exits 0 and `%G?` answers `U`, so the
+        status comparison is the only check that can refuse, and it must, with
+        nothing published.
+        """
+        self.to_post_push()
+        module = hexctl_module()
+
+        def untrusted(base_dir, home, key_path, fingerprints):
+            environment = module._checkpoint_archive_keyring_environment(home)
+            if module.bounded_run(
+                base_dir,
+                "gpg",
+                ["--batch", "--quiet", "--no-autostart", "--import", key_path],
+                environment=environment,
+            )[0] != 0:
+                module._checkpoint_archive_refuse("signature-unverified")
+
+        code, _, error = self.in_process(
+            (("_checkpoint_archive_seed_keyring", untrusted),)
+        )
+        self.assertEqual(1, code)
+        self.assertEqual("signature-unverified\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_signature_unverified_refuses_before_publish_on_an_unpinned_fingerprint(self):
+        """The key that verified must be the key the manifest pins.
+
+        The export reads each commit twice: once against the operator's own
+        keyring, which is where the pinned fingerprint set and the exported
+        public key come from, and once inside the disposable keyring, which is
+        what the proof records. Nothing makes those two answers the same
+        object, so the second is compared against the pinned set. The seam is
+        patched here for the same reason the ref-disagreement and
+        manifest-mismatch cases above are: two keys that both verify one commit
+        cannot be built from outside the process. Status stays `G` and both
+        trailers stay correct, so the fingerprint comparison is the only check
+        that can refuse.
+        """
+        self.to_post_push()
+        module = hexctl_module()
+        honest = module._checkpoint_archive_commit_read
+        self.assertNotEqual(self.fingerprint, UNPINNED_FINGERPRINT)
+
+        def read_as_another_key(base_dir, commit_sha, environment, verifier=None):
+            status, fingerprint, body = honest(base_dir, commit_sha, environment, verifier)
+            if environment is None:
+                # The first pass, which is what pins the fingerprint set.
+                return status, fingerprint, body
+            return status, UNPINNED_FINGERPRINT, body
+
+        code, _, error = self.in_process(
+            (("_checkpoint_archive_commit_read", read_as_another_key),)
+        )
+        self.assertEqual(1, code)
+        self.assertEqual("signature-unverified\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+
+class CheckpointArchiveSecretScanTests(unittest.TestCase):
+    """The carried window against the headers the patterns can match.
+
+    `_checkpoint_archive_scan` reads a member in `CHECKPOINT_IO_CHUNK` pieces
+    and carries `CHECKPOINT_ARCHIVE_SECRET_WINDOW` bytes of each into the next
+    search, so a header lying across a chunk boundary is still one string when
+    the patterns run. The window is derived from the headers rather than
+    declared, and this is where that derivation is held: a header longer than
+    the carry is a secret that leaves in an archive, silently, only when it
+    happens to land on a boundary.
+    """
+
+    def scan(self, payload: bytes):
+        """One scan of `payload` as a file, returning the refusal or None."""
+        module = hexctl_module()
+        error = StringIO()
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "member")
+            with open(path, "wb") as handle:
+                handle.write(payload)
+            with redirect_stderr(error):
+                try:
+                    module._checkpoint_archive_scan(path)
+                except SystemExit as stopped:
+                    self.assertEqual(1, stopped.code)
+                    return error.getvalue()
+        return None
+
+    def test_secret_shaped_member_refuses_across_a_chunk_boundary(self):
+        module = hexctl_module()
+        chunk = module.CHECKPOINT_IO_CHUNK
+        patterns = module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS
+        # Read through `getattr` so a tree whose window is still a bare literal
+        # fails here as a stated assertion rather than as an AttributeError.
+        # An error and a failure are different report rows, and only the second
+        # says the guard did its job.
+        headers = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_HEADERS", None)
+        self.assertIsNotNone(
+            headers, "the scan declares no headers, so its window is not derived"
+        )
+        self.assertEqual(len(patterns), len(headers))
+        self.assertEqual(
+            max(len(header) for header in headers),
+            module.CHECKPOINT_ARCHIVE_SECRET_WINDOW,
+        )
+
+        # Each header is the longest run its own pattern can need, and no other
+        # pattern's: a header that two patterns match would hide the loss of
+        # one of them here.
+        for index, header in enumerate(headers):
+            with self.subTest(header=header):
+                matched = [i for i, p in enumerate(patterns) if p.search(header)]
+                self.assertEqual([index], matched, header)
+
+        filler = b"a" * chunk
+        for header in headers:
+            for split in (1, len(header) // 2, len(header) - 1):
+                # `split` bytes of the header sit in the first chunk and the
+                # rest in the second, so the whole spread is walked, ending at
+                # the worst case the window has to cover.
+                start = chunk - split
+                payload = bytearray(filler + filler)
+                payload[start : start + len(header)] = header
+                with self.subTest(header=header, bytes_before_the_boundary=split):
+                    self.assertEqual(
+                        "secret-shaped-member\n", self.scan(bytes(payload))
+                    )
+
+    def test_secret_scan_passes_a_member_that_carries_no_header(self):
+        module = hexctl_module()
+        chunk = module.CHECKPOINT_IO_CHUNK
+        clean = (
+            b"a" * chunk
+            + b"-----BEGIN PGP PUBLIC KEY BLOCK-----\n-----BEGIN CERTIFICATE-----\n"
+            + b"a" * chunk
+        )
+        self.assertIsNone(self.scan(clean))
+
 
 if __name__ == "__main__":
     unittest.main()

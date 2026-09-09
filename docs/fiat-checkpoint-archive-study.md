@@ -934,3 +934,37 @@ step's entry, exit, files, tests or disciplines change.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Two statements this run's step 2 found false against the
+tools they name. First, section 9's subprocess line lists `--no-tags` among the
+controls without saying which command takes it: `git bundle create` has no such
+argument and git 2.50.1 answers `error: unrecognized argument: --no-tags`,
+while `git fetch` at restore does take it. The flag belongs to the restore
+fetch alone; the bundle excludes tags because it is built from the explicit
+`_checkpoint_refs` list, not because a flag suppresses them. Second, section
+4's secret scan lists six patterns of which one is dead and one class is
+missing: `-----BEGIN OPENSSH PRIVATE KEY-----` is already matched by the PEM
+private-key pattern before it, and no pattern matches `-----BEGIN PGP PRIVATE
+KEY BLOCK-----`, whose header ends `PRIVATE KEY BLOCK-----` rather than
+`PRIVATE KEY-----`. The subsumed pattern is dropped and the PGP block takes its
+place, so the set stays six. The scan's chunk overlap is now required to be
+derived from the longest header the patterns can match rather than fixed, and
+the PEM pattern's label is bounded so that length exists. No refusal class,
+ceiling, schema field, entry path, budget or fixture id changes, and the design
+record is untouched.
+**Why.** Step 2's audit round 1 raised S2-R1-03 and S2-R1-04. Both were checked
+against the tools rather than read: `git bundle create /tmp/probe.bundle
+--no-tags HEAD` in a scratch repository prints the unrecognized-argument error
+on git 2.50.1, and the PEM pattern `-----BEGIN (?:[A-Z0-9]+(?: [A-Z0-9]+)*
+)?PRIVATE KEY-----` matches the OpenSSH header while matching no PGP block. The
+controller at `hexctl.py:17056` already omits the flag, so the product was
+right and these two sentences were wrong. Round 1's S2-R1-05 is answered in
+part here: its stated 77-byte specimen does not exist, since the longest header
+among the amended patterns is 37 bytes and the current 64-byte window covers
+it, but the window is still not derived from the patterns and an unbounded
+label leaves no length to derive it from.
+**Steps touched.** Step 2's Exit, and the reference text steps 2 and 3 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

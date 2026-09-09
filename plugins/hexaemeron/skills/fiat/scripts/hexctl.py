@@ -609,16 +609,53 @@ CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
 Closed here so a new refusal site cannot invent a class the reference does not
 name, and so the inspector of the next step reads the same vocabulary.
 """
+CHECKPOINT_ARCHIVE_SECRET_LABEL = rb"[A-Z0-9]{1,16}(?: [A-Z0-9]{1,16}){0,3}"
+"""The PEM armour label the pattern below admits: up to four words of up to 16.
+
+Bounded so the longest header the set can match is a number. The study's
+2026-09-09 amendment requires the scan's carry to be derived from that number,
+and an unbounded label leaves no number to derive it from. Every armour label
+in use is far shorter: `RSA`, `EC`, `DSA`, `ENCRYPTED`, `OPENSSH`.
+"""
 CHECKPOINT_ARCHIVE_SECRET_PATTERNS = (
-    re.compile(rb"-----BEGIN (?:[A-Z0-9]+(?: [A-Z0-9]+)* )?PRIVATE KEY-----"),
-    re.compile(rb"-----BEGIN OPENSSH PRIVATE KEY-----"),
+    re.compile(rb"-----BEGIN (?:" + CHECKPOINT_ARCHIVE_SECRET_LABEL + rb" )?PRIVATE KEY-----"),
+    re.compile(rb"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
     re.compile(rb"ghp_[A-Za-z0-9]{36}"),
     re.compile(rb"github_pat_[A-Za-z0-9_]{22,}"),
     re.compile(rb"AKIA[0-9A-Z]{16}"),
     re.compile(rb"xox[baprs]-"),
 )
-CHECKPOINT_ARCHIVE_SECRET_WINDOW = 64
-"""Bytes carried between scan chunks, longer than the longest pattern prefix."""
+"""The six shapes a member may not carry, as the study's amended section 4.
+
+The OpenSSH header the earlier set listed separately is dropped: the PEM
+pattern above matches it on its own, so it was a sixth name for five patterns.
+OpenPGP armour takes its place, which no pattern reached before, because its
+header ends `PRIVATE KEY BLOCK-----` rather than `PRIVATE KEY-----` and this is
+the one private-key armour a command that exports OpenPGP material can meet.
+"""
+CHECKPOINT_ARCHIVE_SECRET_HEADERS = (
+    b"-----BEGIN " + b" ".join([b"A" * 16] * 4) + b" PRIVATE KEY-----",
+    b"-----BEGIN PGP PRIVATE KEY BLOCK-----",
+    b"ghp_" + b"A" * 36,
+    b"github_pat_" + b"A" * 22,
+    b"AKIA" + b"A" * 16,
+    b"xoxb-",
+)
+"""The longest run each pattern above needs in view, in the same order.
+
+One of the six, `github_pat_`, has an open-ended tail. Wherever it matches at
+all a match of the length recorded here also exists at the same offset, because
+the tail repeats one character class, so this length is still what the scan has
+to carry to see it across a chunk boundary.
+"""
+CHECKPOINT_ARCHIVE_SECRET_WINDOW = max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
+"""Bytes carried between scan chunks: the longest header the patterns can match.
+
+Derived rather than declared, so a pattern whose header outgrows the carry
+cannot be added without moving it. A match of n bytes that straddles a boundary
+leaves at most n - 1 of them in the chunk before it, so carrying n bytes forward
+always brings the whole match into one search.
+"""
 CHECKPOINT_ARCHIVE_README = """Fiat checkpoint archive
 
 This archive carries one Fiat run at one accepted boundary: the controller

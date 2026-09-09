@@ -75,9 +75,11 @@ acceptance/prior/<n>.json            prior acceptance receipts when any exist
 
 No `acceptance/current` entry is ever written. The bundle is built by
 `git -c pack.threads=1 bundle create` from exactly the controller's bounded ref
-set with `--no-tags`; default threading produced two different bundles from one
-state, single threading produced one digest four times. `checkpoint.json` is
-written last, after every other member's digest is known.
+set. No `--no-tags` argument is passed: bundle creation has no such option, and
+the explicit ref list already excludes tags. Default threading produced two
+different bundles from one state, single threading produced one digest four
+times. `checkpoint.json` is written last, after every other member's digest is
+known.
 
 ## Content manifest
 
@@ -187,11 +189,14 @@ also inherits every inspector class because it runs the inspector first.
 ## Secret patterns
 
 Export scans every outer member and, inside the capsule, `state.json`,
-`ledger.jsonl` and every opaque controller file for six patterns. A hit
-refuses with `secret-shaped-member`; nothing is redacted in place.
+`ledger.jsonl` and every opaque controller file for six patterns. The scan
+reads in bounded chunks and carries between them the longest header the six can
+match, so a header lying across a chunk boundary still refuses; that carry is
+derived from the patterns rather than fixed. A hit refuses with
+`secret-shaped-member`; nothing is redacted in place.
 
-- A PEM private-key block.
-- The OpenSSH private-key header, `-----BEGIN OPENSSH PRIVATE KEY-----`.
+- A PEM private-key block, whose armour label also matches the OpenSSH header.
+- The OpenPGP private-key header, `-----BEGIN PGP PRIVATE KEY BLOCK-----`.
 - `ghp_[A-Za-z0-9]{36}`.
 - `github_pat_[A-Za-z0-9_]{22,}`.
 - `AKIA[0-9A-Z]{16}`.
