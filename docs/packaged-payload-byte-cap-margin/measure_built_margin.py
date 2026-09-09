@@ -26,6 +26,11 @@ ROOT = next(
     p for p in HERE.parents if (p / "scripts" / "portable_promise_machine.py").is_file()
 )
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
+# The report's `command` names the path this file occupies, relative to the
+# repository root, so a report written from the committed location does not
+# claim the controller copy under `.hexaemeron/` ran. The same source placed
+# at `.hexaemeron/` yields the exact string the 35 receipted reports carry.
+SELF = Path(__file__).resolve().relative_to(ROOT).as_posix()
 EXTRACT_CAP = 25 * 1024 * 1024
 
 CANDIDATES = (
@@ -64,7 +69,7 @@ def main(argv=None):
         "value": max(0, EXTRACT_CAP - manifest["total_bytes"]),
         "unit": "bytes",
         "command": (
-            "python3 .hexaemeron/measure_built_margin.py "
+            f"python3 {SELF} "
             f"--candidate {args.candidate}"
         ),
         "exit": 0,
