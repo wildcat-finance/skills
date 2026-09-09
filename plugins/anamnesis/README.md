@@ -107,9 +107,11 @@ expensive to reverse in [docs/decisions/](docs/decisions/).
 This version admits sources, curates them into a finding graph, builds and
 verifies a release, and reads that release back through the Elenchus and
 Synkrisis projections. Each corpus declares in its policy what it preserves and
-which sources it admits, and two ship: the Warden seed pilot and the capture
-estate's own findings. What the declared mapper selects is the question its
-[ledger](skills/anamnesis/EVOLUTION.md) now holds open.
+which sources it admits, and three ship: the Warden seed pilot, the capture
+estate's own findings, and the pilot's same three records read from their
+synopsis rendering under a second registered mapper. What the declared mapper
+selects is the question its [ledger](skills/anamnesis/EVOLUTION.md) now holds
+open.
 
 ## LICENCE
 

@@ -544,6 +544,18 @@ def _admitted_within_scope(events, result, curation_path):
     return policy
 
 
+def _curated_within_span(events, result, policy, texts):
+    """Build the graph with the mapper's own refusals on the recorded stream.
+
+    A mapper that reads its own format refuses bytes that are not it, and that
+    refusal is the answer to the on-call question the empty round set used to
+    swallow. It leaves the same durable `anamnesis.source.refused` event an
+    admission refusal does, keyed by the same policy version and digest.
+    """
+    with refusals_recorded(events, result["policy_version"], result["policy_sha256"]):
+        return curate(result["sources"], policy, texts)
+
+
 def cmd_admit_seed(args):
     events = Events(args.events)
     result = admit(args.policy, events)
@@ -613,15 +625,21 @@ def _strip_code(value):
     return stripped
 
 
-def parse_source(text, source_id):
-    """Read one Warden Markdown record into its native rounds and findings.
+def read_cells(cells, source_id):
+    """Read numbered producer cells into native rounds and findings.
+
+    A cell is one line as its producer wrote it. Warden's Markdown puts one on
+    each physical line; the synopsis format below packs a whole round onto one
+    line with the cells joined. The grammar is about what a round says rather
+    than how the producer packed it, so both formats read it here and only the
+    unpacking differs.
 
     Nothing here normalises: the round label, date and every finding field are
     the producer's own bytes. Curation reads this, and never the file again.
     """
     rounds = []
     current = None
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in cells:
         heading = ROUND_HEADING.match(line)
         if heading:
             current = {
@@ -658,6 +676,67 @@ def parse_source(text, source_id):
     return rounds
 
 
+def parse_source(text, source_id):
+    """Read one Warden Markdown record: one producer cell per physical line."""
+    return read_cells(enumerate(text.splitlines(), start=1), source_id)
+
+
+# ---------------------------------------------------------------------------
+# The second format.
+#
+# `fiat-audit-synopsis/v1` is what the audit synopsis renderer writes from a
+# Warden audit file: a header line declaring the schema, the source it was
+# rendered from and that source's digest, then one line for each `##` heading
+# with the producer's own lines joined by a literal `<br>`. Splitting a round
+# line on that separator returns exactly the cells the grammar above reads.
+#
+# The header check is the control the first implementation never had. Handed
+# bytes in some other shape, the grammar above finds no round heading and
+# returns an empty list, and downstream an empty list is a corpus with nothing
+# in it rather than a refusal: "0 findings" and "not my format" arrive as the
+# same observation. This implementation reads the header first and refuses
+# A079 before a single cell is read, so it never returns a partial or empty
+# round set from bytes it did not accept.
+
+SYNOPSIS_SCHEMA = "fiat-audit-synopsis/v1"
+SYNOPSIS_SEPARATOR = "<br>"
+SYNOPSIS_HEADER = re.compile(r"^Synopsis schema=(?P<schema>[^\s|]+)(?:\s*\|.*)?$")
+
+
+def parse_synopsis(text, source_id):
+    """Read one fiat-audit-synopsis/v1 record into its native rounds.
+
+    The `<br>` split is bounded by the physical line the source byte cap
+    already bounds, and every cell is handed to the same grammar unchanged, so
+    a producer's cell reaches curation as the producer wrote it.
+    """
+    lines = text.splitlines()
+    declared = SYNOPSIS_HEADER.match(lines[0]) if lines else None
+    if declared is None:
+        raise Refusal(
+            "A079",
+            f"source {source_id} declares no {SYNOPSIS_SCHEMA} header on its "
+            f"first line: {quote(lines[0] if lines else '')}",
+            source_id,
+        )
+    if declared.group("schema") != SYNOPSIS_SCHEMA:
+        raise Refusal(
+            "A079",
+            f"source {source_id} header declares schema "
+            f"{quote(declared.group('schema'))}, not {SYNOPSIS_SCHEMA}",
+            source_id,
+        )
+    # The line number stays the physical one, which is where the producer put
+    # the whole round. Every finding in a round shares it, because the producer
+    # wrote them on one line and a locator should say where to look.
+    cells = (
+        (number, cell)
+        for number, line in enumerate(lines[1:], start=2)
+        for cell in line.split(SYNOPSIS_SEPARATOR)
+    )
+    return read_cells(cells, source_id)
+
+
 # ---------------------------------------------------------------------------
 # The registry.
 #
@@ -679,6 +758,8 @@ Mapper = collections.namedtuple("Mapper", ("name", "version", "parse"))
 MAPPER_REGISTRY = types.MappingProxyType({
     ("warden-audit-round-markdown", "1"): Mapper(
         "warden-audit-round-markdown", "1", parse_source),
+    ("fiat-audit-synopsis", "1"): Mapper(
+        "fiat-audit-synopsis", "1", parse_synopsis),
 })
 
 
@@ -1501,6 +1582,11 @@ def observations(out, cohort_rule):
             "members": members,
         },
         "denominators": dict(sorted(denominators.items())),
+        # The scope travels with the counts. A release states what it set out
+        # to preserve, and that sentence is what tells a reader whether two
+        # cohorts of the same size hold the same findings or different ones.
+        # Left in the release alone it does not reach the consumer that counts.
+        "scope": dict(manifest["policy"]["scope"]),
         "policy": {
             "curation_version": manifest["policy"]["version"],
             "taxonomy": (
@@ -1565,7 +1651,7 @@ def _rebuild_once(specimen, destination):
     result = admit(policy_path, events)
     policy = _admitted_within_scope(events, result, curation_path)
     texts = _admitted_texts(policy_path, result["sources"])
-    graph = curate(result["sources"], policy, texts)
+    graph = _curated_within_span(events, result, policy, texts)
     return build_release(destination, policy, result["sources"], graph)
 
 
@@ -1614,7 +1700,9 @@ def cmd_ingest(args):
     texts = _admitted_texts(args.policy, result["sources"])
     total = 0
     for source in result["sources"]:
-        rounds = mapper.parse(texts[source["id"]], source["id"])
+        with refusals_recorded(
+                events, result["policy_version"], result["policy_sha256"]):
+            rounds = mapper.parse(texts[source["id"]], source["id"])
         found = sum(len(r["findings"]) for r in rounds)
         total += found
         print(f"{source['id']}: {len(rounds)} round(s), {found} finding(s)")
@@ -1627,7 +1715,7 @@ def cmd_curate(args):
     result = admit(args.policy, events)
     policy = _admitted_within_scope(events, result, args.curation_policy)
     texts = _admitted_texts(args.policy, result["sources"])
-    graph = curate(result["sources"], policy, texts)
+    graph = _curated_within_span(events, result, policy, texts)
     print(
         f"curated {len(graph['engagements'])} engagement(s), "
         f"{len(graph['assertions'])} assertion(s), {len(graph['relations'])} relation(s), "
@@ -1641,7 +1729,7 @@ def cmd_release(args):
     result = admit(args.policy, events)
     policy = _admitted_within_scope(events, result, args.curation_policy)
     texts = _admitted_texts(args.policy, result["sources"])
-    graph = curate(result["sources"], policy, texts)
+    graph = _curated_within_span(events, result, policy, texts)
     manifest = build_release(args.out, policy, result["sources"], graph)
     print(f"released {manifest['release_id']} to {args.out}")
     return 0

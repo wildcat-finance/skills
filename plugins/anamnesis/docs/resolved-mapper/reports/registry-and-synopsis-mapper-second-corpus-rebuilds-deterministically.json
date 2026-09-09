@@ -1,0 +1,9 @@
+{
+  "candidate": "registry-and-synopsis-mapper",
+  "command": "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify-rebuild --specimen plugins/anamnesis/specimens/synopsis",
+  "criterion": "second-corpus-rebuilds-deterministically",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

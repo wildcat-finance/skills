@@ -227,8 +227,16 @@ class TheCommittedDesignRecordIsWhatTheRunSelected(unittest.TestCase):
             cell for cell in self.pending if cell["candidate"] == SELECTED)
         self.assertEqual(selected["report"], PENDING_REPORT)
         # Due by the step:3 transition, which the controller checks at step 2's
-        # push. The report does not exist yet, and step 2 writes it.
-        self.assertFalse((RECORD_HOME / PENDING_REPORT).exists())
+        # push, so step 2 wrote the selected candidate's report. The three
+        # rejected candidates keep theirs unresolved: each already failed a
+        # selection gate, and a candidate nothing was built from owes no
+        # conformance evidence.
+        self.assertTrue((RECORD_HOME / PENDING_REPORT).exists())
+        for cell in self.pending:
+            if cell["candidate"] == SELECTED:
+                continue
+            with self.subTest(candidate=cell["candidate"]):
+                self.assertFalse((RECORD_HOME / cell["report"]).exists())
 
     def test_the_committed_documents_match_their_pinned_digests(self) -> None:
         """The byte-identity claim, checked where there is no controller.
@@ -401,9 +409,11 @@ class TheAssertionRecordsTheEntryThatRan(Fixture):
             re.search(r"\bMAPPER\b", source),
             "the constant nothing referenced is replaced by the registry")
         self.assertFalse(hasattr(anamnesis, "MAPPER"))
+        # Step 2 added the second entry beside it. Both are listed, so a third
+        # arriving unremarked is a failure here rather than a surprise later.
         self.assertEqual(
             list(anamnesis.MAPPER_REGISTRY),
-            [("warden-audit-round-markdown", "1")])
+            [("warden-audit-round-markdown", "1"), ("fiat-audit-synopsis", "1")])
 
 
 class ResolutionIsExactWithNoFallback(Fixture):
