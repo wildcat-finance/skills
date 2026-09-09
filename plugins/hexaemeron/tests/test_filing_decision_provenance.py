@@ -66,14 +66,17 @@ class FilingDecisionProvenanceTests(HexctlCase):
         return self.state()["receipts"]["task_issue_contract"]["provenance"]
 
     def test_a_readable_history_records_the_count_time_and_prior_value(self):
+        # `totalCount` matches the node list because the reader refuses a
+        # response whose two halves disagree about how many revisions exist
+        # (S3-R4-03); this case previously declared 4 against 2 nodes.
         self.edits([
             {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
             {"editedAt": "2026-09-06T09:37:54Z", "diff": self.body(0)},
-        ], total=4)
+        ], total=2)
         provenance = self.start(value=1)
         self.assertEqual(provenance["created_at"], "2026-09-06T09:17:50Z")
         self.assertEqual(provenance["updated_at"], "2026-09-06T10:08:38Z")
-        self.assertEqual(provenance["edit_count"], 4)
+        self.assertEqual(provenance["edit_count"], 2)
         self.assertEqual(provenance["last_edited_at"], "2026-09-06T10:08:38Z")
         self.assertEqual(provenance["prior_fiat_required"], 0)
         self.assertIsNone(provenance["reason"])
@@ -269,6 +272,11 @@ class FilingDecisionProvenanceTests(HexctlCase):
         they disagree wrote `edit_count: 4` beside a sentence claiming one
         revision, and an empty node list claimed one revision of a body it had
         seen nothing of. Neither count was read.
+
+        Both halves now carry counts that agree, because a response whose two
+        halves disagree is refused outright (S3-R4-03). The empty list is the
+        discriminating input either way: the wording this repair replaced said
+        "the body has one revision" for a response carrying none.
         """
         self.edits([], total=0)
         provenance = self.start(value=1)
@@ -277,9 +285,9 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.tearDown()
         self.setUp()
         self.edits(
-            [{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}], total=4)
+            [{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}], total=1)
         provenance = self.start(value=1)
-        self.assertEqual(provenance["edit_count"], 4)
+        self.assertEqual(provenance["edit_count"], 1)
         self.assertIn("carried 1 revision", provenance["reason"])
         self.assertNotIn("the body has", provenance["reason"])
 
@@ -474,6 +482,68 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertNotIn("has moved", proc.stdout)
         self.assertIn("updated_at: not compared", proc.stdout)
         self.assertEqual(provenance["updated_at"], "unknown")
+
+    def test_a_count_without_its_nodes_is_not_a_history_that_was_read(self):
+        """A response answering the same question twice, believed both times.
+
+        `totalCount` and `len(nodes)` were validated separately and never
+        against each other, so a response claiming 3 revisions and carrying
+        none recorded `edit_count: 3` beside `last_edited_at: None` -- and
+        that `None` means "read, and there is no last-edit time", which this
+        response did not say. The comparison then read it as a value: against
+        the same three revisions delivered, `verify --check-filing-decision`
+        printed "the filing decision has moved since this run read it" on
+        `last_edited_at: recorded None, now 2026-09-06T10:08:38Z` and exited 1,
+        over a body whose digest, decision, `updated_at` and `edit_count` were
+        all identical (S3-R4-03). This is S3-R4-01's failure reached through
+        the count rather than through a node's `editedAt`.
+        """
+        self.edits([], total=3)
+        provenance = self.start(value=1)
+        self.edits([
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
+            {"editedAt": "2026-09-06T09:37:54Z", "diff": self.body(1)},
+            {"editedAt": "2026-09-06T09:17:50Z", "diff": self.body(1)},
+        ], total=3)
+        # Exit 0 first: the defect is an exit 1 over an unmoved body, and the
+        # harness prints the whole report with the returncode assertion.
+        proc = self.run_ctl("verify", "--check-filing-decision")
+        self.assertNotIn("has moved", proc.stdout)
+        self.assertIn("last_edited_at: not compared", proc.stdout)
+        self.assertIn("edit_count: not compared", proc.stdout)
+        self.assertIn("recorded it as `unknown`", proc.stdout)
+        for field in ("edit_count", "last_edited_at", "prior_fiat_required"):
+            self.assertEqual(provenance[field], "unknown", field)
+        self.assertIn("claimed 3 revisions and carried 0", provenance["reason"])
+
+    def test_a_count_and_a_node_list_that_disagree_are_never_read_as_values(self):
+        """Both directions of the disagreement, and a count below zero.
+
+        The mirror recorded `edit_count: 0` beside a `last_edited_at` read out
+        of a node, and a negative `totalCount` passed the type check and the
+        ceiling and recorded `edit_count: -3`. One rule refuses all three: no
+        list length can equal a negative count either (S3-R4-03).
+        """
+        cases = (
+            ([], 3, "claimed 3 revisions and carried 0"),
+            ([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}], 0,
+             "claimed 0 revisions and carried 1"),
+            ([], -3, "claimed -3 revisions and carried 0"),
+        )
+        for index, (nodes, total, expected) in enumerate(cases):
+            if index:
+                self.tearDown()
+                self.setUp()
+            with self.subTest(total=total, carried=len(nodes)):
+                self.edits(nodes, total=total)
+                provenance = self.start(value=1)
+                for field in ("edit_count", "last_edited_at",
+                              "prior_fiat_required"):
+                    self.assertEqual(provenance[field], "unknown", field)
+                self.assertIn(expected, provenance["reason"])
+                # The REST half costs no request of its own and is unaffected.
+                self.assertEqual(provenance["created_at"],
+                                 "2026-09-06T09:17:50Z")
 
     def test_a_deeply_nested_rest_response_refuses_rather_than_crashing(self):
         """The REST sibling of the GraphQL parser S3-R1-02 repaired.

@@ -5296,6 +5296,26 @@ def github_issue_edit_provenance(
             f"the issue has {total} revisions, above the "
             f"{ISSUE_EDIT_NODES_MAX} this reader requests"
         )
+    # `totalCount` and `nodes` were validated separately and never against
+    # each other, so one response could answer the same question twice and be
+    # believed both times. A response claiming 3 revisions and carrying none
+    # recorded `edit_count: 3` beside `last_edited_at: None`, and that `None`
+    # is the "read, and there is no last-edit time" of the note below, which
+    # the response did not say: the comparison then read it as a value and
+    # printed "the filing decision has moved since this run read it" on
+    # `last_edited_at: recorded None, now <time>` over a body whose digest,
+    # decision, `updated_at` and `edit_count` were all identical (S3-R4-03).
+    # `first:` equals `ISSUE_EDIT_NODES_MAX` and a larger `totalCount` is
+    # already refused above, so a well-formed response carries exactly `total`
+    # nodes. Anything else is one read the two halves disagree about, and a
+    # count no node list supports is not a count this reader read. This also
+    # refuses a negative `totalCount`, which passed both checks above and
+    # recorded `edit_count: -3`, because no list length can equal it.
+    if len(nodes) != total:
+        return unknown_filing_provenance(
+            f"the GraphQL response claimed {total} revisions and carried "
+            f"{len(nodes)}, so its edit history was not read"
+        )
     revisions = [as_dict(node) for node in nodes]
     # Three states, not two. A response carrying no revision at all was read
     # and says there is no last-edit time, so that is `None`. A newest node
