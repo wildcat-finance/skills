@@ -83,6 +83,11 @@ positive specimens for one family are independent only when their
 | `existing-family` | see families.jsonl | 0 | 0 |
 | `future` | see families.jsonl | 0 | 0 |
 
+Each row carries this table's pair as its own `minimum_positive` and
+`minimum_negative`, and the checker compares the two: the table above is what
+it enforces, so a row declaring anything else is a finding rather than a
+second answer.
+
 The `high-value` families are `causal_subject_has_no`,
 `causal_fact_clause_wrapper`, `reason_is_because`, `empty_expletive_case`
 and the narrow adversative form of `redundant_connective_pair`. The `signal`
@@ -131,13 +136,15 @@ Its exit codes are three:
 - `0`: the fixture is clean.
 - `1`: the checker found something. It prints every finding of the first
   class it meets, in the order `family-tier`, `family-schema`,
-  `family-duplicate`, `specimen-annotation-order`, `specimen-schema`,
+  `family-duplicate`, `family-minimum`, `specimen-annotation-order`,
+  `specimen-schema`,
   `specimen-duplicate`, `specimen-unknown-family`,
   `specimen-family-mismatch`, `specimen-span`,
   `specimen-digest`, `specimen-group-id`, `specimen-independence`,
   `tier-minimum`, `source-mismatch`.
 - `2`: the invocation or a read was refused, which covers a missing fixture
-  directory, an unknown `--tier`, a symlink, an oversized file, an
+  directory, an unknown `--tier`, `--min-independent-positive` without
+  `--tier`, a symlink, an oversized file, an
   unreadable JSONL row, a row carrying the same JSON key twice, and a
   `--verify-sources` row, citation or reply that cannot name one pinned
   object.
@@ -157,14 +164,29 @@ The flags are:
   tier-minimum check to one evidence tier and override its
   independent-positive minimum. The design record's
   `two-independent-specimens` gate is resolved with
-  `--min-independent-positive 2 --tier high-value`.
+  `--min-independent-positive 2 --tier high-value`. The override applies to
+  every tier the run measures, so it needs `--tier` to name the one it is
+  overriding and is refused with exit 2 on its own; `boundary`,
+  `existing-family` and `future` require nothing, and the flag alone put all
+  42 families below a minimum no tier declares.
 - `--verify-sources` replays each specimen against the GitHub object it cites
-  through `gh` and checks that the specimen's `text` is present in what comes
-  back. This is the only path that opens a socket. Only a row that cleared
+  through `gh`, at the pinned host, and checks that the specimen's `text` is
+  present in what comes back. This is the only path that opens a socket. The
+  flag's own `--help` text says the same thing: it described the replay as
+  reaching an immutable object for a round after that claim was corrected
+  here, and `--help` is the copy an operator reads. Only a row that cleared
   every local check is replayed, and `text_sha256` is compared against the
   row's own `text` before the replay rather than after it.
 
-Two things bound that replay, and one of them does not reach every kind.
+The replay is bounded in three places, and one of those bounds does not reach
+every kind.
+
+The host is pinned in the argv. Every endpoint below is a relative API path,
+and `gh` resolves a relative path against `--hostname`, then `GH_HOST`, then
+the working directory's own remote, so a path alone named an object only once
+somebody else's environment had chosen a host. `gh api --hostname github.com`
+is what the checker runs, and `GH_HOST` and `GH_REPO` are removed from the
+child so neither can name a host or a repository the specimen never cited.
 
 The endpoint is bounded by shape. The schema is not that boundary: it
 validates with `re.search`, its `^wildcat-finance/` pattern admits
@@ -226,6 +248,13 @@ negative rows otherwise counted as two negatives and carried a high-value
 family's whole negative minimum out of one document; independence itself stays
 the positives-only rule the study's register asks for. And `source_url` is
 compared with the fields the endpoint is built from, above.
+
+A sixth value sits on the family row rather than the specimen. Each row
+declares `minimum_positive` and `minimum_negative`, and the tier table above
+is what the checker enforces; nothing joined the two, so the declared pair
+could read as one answer while the checked pair was another, with the report
+printing the enforced number beside a row declaring a different one and the
+suite green either way. The two are compared now.
 
 Two of those measurements read raw fields, before anything is validated:
 `--report`'s `below_minimum` counts have to exist on a broken fixture as well

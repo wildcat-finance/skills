@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -26,6 +27,16 @@ FIXTURE_SEED = "imprimatur-structural-family-evidence-v1"
 MAX_FILE_BYTES = 1_048_576
 GH_TIMEOUT_SECONDS = 30
 MAX_FETCH_BYTES = 4_194_304
+# The endpoint is a path, and a path names an object only once a host is fixed.
+# `gh`'s own documentation gives `GH_HOST` as "the GitHub hostname for commands
+# where a hostname has not been provided, or cannot be inferred from the context
+# of a local Git repository", and this command provided neither, so an operator
+# environment or the working directory's remote decided where a specimen's text
+# was sent and compared. Both halves close that: the argv pins the host, where a
+# reader and a test can see it, and the two variables that could still name one
+# are dropped from the child.
+GH_HOSTNAME = "github.com"
+GH_HOST_ENVIRONMENT = ("GH_HOST", "GH_REPO")
 TIERS = ("high-value", "signal", "boundary", "existing-family", "future")
 TIER_MINIMUMS = {
     "high-value": (2, 2),
@@ -82,6 +93,7 @@ FINDING_CLASSES = (
     "family-tier",
     "family-schema",
     "family-duplicate",
+    "family-minimum",
     "specimen-annotation-order",
     "specimen-schema",
     "specimen-duplicate",
@@ -303,17 +315,33 @@ def span_problem(row: dict) -> str | None:
 
 
 def gh_fetch(argv: list[str]) -> bytes:
-    """Run one fixed-argv gh call with no shell and a bounded result."""
+    """Run one fixed-argv ``gh api`` call with no shell and a bounded result.
+
+    The host is pinned here rather than left to the environment. Every endpoint
+    below is a relative API path, and ``gh`` resolves a relative path against
+    ``--hostname``, then ``GH_HOST``, then the working directory's own remote.
+    Only the first of those is this checker's to state, so it states it, and
+    ``GH_HOST`` and ``GH_REPO`` are removed from the child so neither can name
+    a host or a repository the specimen never cited.
+    """
+    if not argv or argv[0] != "api":
+        raise RefusalError(f"refusing a gh call that is not `gh api`: {argv!r}")
     for value in argv:
         if value.startswith("-") and value not in ("-H",):
             raise RefusalError(f"refusing an option-shaped gh argument: {value!r}")
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if name not in GH_HOST_ENVIRONMENT
+    }
     try:
         completed = subprocess.run(  # noqa: S603 - fixed argv, shell=False
-            ["gh", *argv],
+            ["gh", "api", "--hostname", GH_HOSTNAME, *argv[1:]],
             capture_output=True,
             shell=False,
             timeout=GH_TIMEOUT_SECONDS,
             check=False,
+            env=environment,
         )
     except (OSError, subprocess.SubprocessError) as exc:
         raise RefusalError(f"gh call failed: {exc}") from exc
@@ -497,6 +525,23 @@ def collect_findings(
                 f"{FAMILIES_NAME}:{index}: duplicate family_id {row['family_id']}"
             )
         seen.add(row["family_id"])
+        # The row declares its minimums and TIER_MINIMUMS enforces them, and
+        # nothing joined the two. Every measurement reads the table, so the
+        # declared pair could say one thing while the checked pair said
+        # another: dropping `signal` to (1, 0) in the table left the catalogue
+        # still declaring (2, 1), the report printing 1 and 0 beside that
+        # family, `below_minimum` still 13 so the step's own proof command
+        # held, and the whole suite green, because the only other copy of the
+        # table is a literal in the test module and no test reads this one.
+        # The amended Exit already states that these two fields are set from
+        # the tier; this is that sentence as a comparison.
+        declared = (row["minimum_positive"], row["minimum_negative"])
+        if declared != TIER_MINIMUMS[tier]:
+            findings["family-minimum"].append(
+                f"{FAMILIES_NAME}:{index}: {row['family_id']} declares minimum_positive "
+                f"{declared[0]} and minimum_negative {declared[1]}, but tier {tier} "
+                f"is enforced as {TIER_MINIMUMS[tier][0]} and {TIER_MINIMUMS[tier][1]}"
+            )
 
     positives: dict[str, list[dict]] = {}
     for index, row in enumerate(specimens, 1):
@@ -683,13 +728,19 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--min-independent-positive",
         type=int,
-        help="override the independent-positive minimum for the checked tier",
+        help="override the independent-positive minimum for the tier --tier names; requires --tier",
     )
     parser.add_argument("--tier", help="restrict the tier-minimum check to one evidence tier")
     parser.add_argument(
         "--verify-sources",
         action="store_true",
-        help="replay every specimen against its immutable GitHub object; this is the only path that opens a socket",
+        help=(
+            "replay every specimen against the GitHub object it cites, at the pinned host. "
+            "Two of the six kinds send a reference GitHub cannot change under, a file at "
+            "?ref=<sha> and a commit read by its sha; the four body and comment kinds have "
+            "no such reference and compare the current body. This is the only path that "
+            "opens a socket."
+        ),
     )
     return parser.parse_args(argv)
 
@@ -704,6 +755,14 @@ def run(args: argparse.Namespace) -> int:
         raise RefusalError(f"unknown tier: {args.tier}")
     if args.min_independent_positive is not None and args.min_independent_positive < 0:
         raise RefusalError("--min-independent-positive cannot be negative")
+    # The override reaches every tier the run measures, so without --tier it
+    # reached all five. `boundary`, `existing-family` and `future` require
+    # nothing, and the flag alone put all 42 families in `below_minimum` with a
+    # minimum_positive their tier does not require, in the field the README
+    # documents as "the minimums its tier requires". The flag overrides one
+    # tier's minimum, so it now names the tier it overrides.
+    if args.min_independent_positive is not None and args.tier is None:
+        raise RefusalError("--min-independent-positive overrides one tier and needs --tier")
 
     family_schema = read_json_below(fixture, f"schemas/{FAMILY_SCHEMA_NAME}")
     specimen_schema = read_json_below(fixture, f"schemas/{SPECIMEN_SCHEMA_NAME}")

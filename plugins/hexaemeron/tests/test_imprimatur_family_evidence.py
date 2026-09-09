@@ -317,6 +317,92 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         stub.chmod(0o755)
         return dict(os.environ, PATH=str(directory)), log
 
+    def hostname_recording_gh(self) -> tuple[dict, Path, Path]:
+        """A `gh` recording its arguments and its own GH_HOST, opening no socket.
+
+        Its log paths and its reply come from the environment rather than from
+        interpolation, so no value reaches the generated shell script's quoting.
+        """
+        directory = Path(tempfile.mkdtemp(prefix="family-evidence-host-"))
+        self.addCleanup(self.remove_tree, directory)
+        argv_log = directory / "argv.log"
+        host_log = directory / "host.log"
+        stub = directory / "gh"
+        stub.write_text(
+            "#!/bin/sh\n"
+            'printf "%s\\n" "$@" >> "$FAMILY_EVIDENCE_ARGV_LOG"\n'
+            'printf "[%s]\\n" "${GH_HOST-unset}" >> "$FAMILY_EVIDENCE_HOST_LOG"\n'
+            'printf "%s\\n" "$FAMILY_EVIDENCE_BODY"\n',
+            encoding="utf-8",
+        )
+        stub.chmod(0o755)
+        environment = dict(
+            os.environ,
+            PATH=str(directory),
+            GH_HOST="ghe.attacker.example",
+            FAMILY_EVIDENCE_ARGV_LOG=str(argv_log),
+            FAMILY_EVIDENCE_HOST_LOG=str(host_log),
+            FAMILY_EVIDENCE_BODY=SPECIMEN_TEXT,
+        )
+        return environment, argv_log, host_log
+
+    def test_the_replay_pins_the_github_host(self):
+        """A relative path names an object only once a host is fixed.
+
+        `gh` takes the host from `--hostname`, then `GH_HOST`, then the working
+        directory's own remote. Only the first is this checker's to state.
+        """
+        root = self.build_fixture(specimens=[SPECIMEN_ROW])
+        env, argv_log, host_log = self.hostname_recording_gh()
+        result = self.run_checker("--fixture", str(root), "--verify-sources", env=env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        recorded = argv_log.read_text(encoding="utf-8").splitlines()
+        self.assertIn("--hostname", recorded)
+        self.assertEqual(recorded[recorded.index("--hostname") + 1], "github.com")
+        self.assertEqual(host_log.read_text(encoding="utf-8").splitlines(), ["[unset]"])
+
+    def test_refuses_a_declared_minimum_that_disagrees_with_its_tier(self):
+        """The row declares its minimums and TIER_MINIMUMS enforces them."""
+        agreeing = self.build_fixture(
+            families=[dict(FAMILY_ROW, evidence_tier="signal", minimum_positive=2, minimum_negative=1)]
+        )
+        self.assert_refused(agreeing, "below the 2 and 1 its tier requires")
+        drifted = self.build_fixture(
+            families=[dict(FAMILY_ROW, evidence_tier="signal", minimum_positive=1, minimum_negative=0)]
+        )
+        self.assert_refused(
+            drifted,
+            "declares minimum_positive 1 and minimum_negative 0, but tier signal "
+            "is enforced as 2 and 1",
+        )
+
+    def test_refuses_an_independent_positive_override_without_a_tier(self):
+        """The override reaches every tier the run measures, so it names one."""
+        alone = self.run_checker(
+            "--fixture", str(FIXTURE), "--allow-below-minimum",
+            "--min-independent-positive", "2",
+            env=self.env_without_gh(),
+        )
+        self.assertEqual(alone.returncode, 2, alone.stderr)
+        self.assertIn("needs --tier", alone.stderr)
+        paired = self.run_checker(
+            "--fixture", str(FIXTURE), "--allow-below-minimum",
+            "--min-independent-positive", "2", "--tier", "high-value",
+            env=self.env_without_gh(),
+        )
+        self.assertEqual(paired.returncode, 0, paired.stderr)
+
+    def test_help_does_not_call_the_replay_immutable(self):
+        """The claim round 4 removed from the README shipped on in `--help`.
+
+        Four of the six kinds send no reference, so their replay compares the
+        current body, and `--help` is the copy an operator reads.
+        """
+        result = self.run_checker("--help", env=self.env_without_gh())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--verify-sources", result.stdout)
+        self.assertNotIn("immutable", result.stdout)
+
     def test_refuses_a_repository_outside_the_pinned_prefix(self):
         row = dict(SPECIMEN_ROW, repository="wildcat-finance/../evil-org/evil-repo")
         root = self.build_fixture(specimens=[row])
@@ -362,7 +448,12 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             log.read_text(encoding="utf-8").splitlines(),
-            ["api", "repos/wildcat-finance/skills/issues/comments/42"],
+            [
+                "api",
+                "--hostname",
+                "github.com",
+                "repos/wildcat-finance/skills/issues/comments/42",
+            ],
         )
 
     def test_refuses_a_source_commit_carrying_a_trailing_newline(self):
