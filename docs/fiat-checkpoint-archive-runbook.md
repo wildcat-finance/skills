@@ -2528,3 +2528,106 @@ criterion, command, path or count differs from the re-issue it replaces.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Complete replacement Exit: `python3
+plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir <run-worktree>
+checkpoint archive`, run immediately after `done push` or at an active
+`audit-verdict`, writes
+`<origin>/.hexaemeron/checkpoints/<run-worktree-name>/<boundary>/checkpoint.zip`
+and `checkpoint.zip.sha256` (`<64 lowercase hex>  checkpoint.zip\n`), prints
+one `fiat-checkpoint-archive-export/v1` object (`archive`, `sidecar`,
+`outer_sha256`, `manifest_sha256`, `snapshot_id` or `null`, `bundle_sha256`,
+`entries`, `bytes`, `boundary`, `next`, `timing_ms` for `export`, `identity`,
+`bundle`, `proof`, `pack`, `inspect`, `publish`), appends no ledger entry and
+holds the run lock through `verify_run` exactly as `checkpoint export` does.
+The layout and metadata are exactly the reference's; `checkpoint.json` is
+closed to the fields in study section 1 and written last; the bundle is built
+by `git -c pack.threads=1 bundle create` from exactly `_checkpoint_refs`, which
+carries no `--no-tags` because `git bundle create` has no such argument and the
+explicit ref list already excludes tags, and its heads, the capsule's
+`boundary.refs` and the manifest's `refs` agree three ways; the proof runs `git
+verify-commit` for every commit in `push.verified_commits` inside a disposable
+`GNUPGHOME` (mode 0700, `--no-autostart`, removed after use) and requires
+status `G` and exactly one `Co-authored-by: Shoggoth
+<shoggoth@wildcat.finance>` and one `Wildcat-Origin: shoggoth` trailer each;
+`proof/pubkey.asc` is exported for the pinned fingerprints, or
+`proof/allowed_signers` for `gpg.format ssh`; the identity member is the
+in-process `checkpoint identity` result; the study's amended six secret
+patterns, which drop the subsumed OpenSSH header and add `-----BEGIN PGP
+PRIVATE KEY BLOCK-----`, are scanned with a chunk overlap derived from the
+longest header they can match, over every member and over `state.json`,
+`ledger.jsonl` and every opaque controller file; the self-check re-reads the
+packed zip's central directory and every entry digest against `checkpoint.json`
+before the sidecar is written (Step 3 replaces this self-check with the
+inspector). The export refusal classes exist: `boundary-unaccepted`,
+`worktree-dirty`, `boundary-occupied`, `ref-disagreement`, `bundle-incomplete`,
+`bundle-oversized`, `signature-unverified`, `signature-format-unsupported`,
+`identity-unavailable` (export continues with `status: unavailable` only for a
+legacy symbolic base), `secret-shaped-member` and `manifest-mismatch`. Then
+`python3 -m unittest plugins.hexaemeron.tests.test_hexctl_checkpoint_archive
+-v` exits 0 with at least 17 tests, among them one that fails when the proof
+admits a signature status other than `G` and one that fails when the proof
+stops comparing a signer fingerprint to the manifest's pinned set; a count is a
+floor here rather than an equality, because the Elenchus discipline requires
+every audit repair to add a guard and an exact count would forbid one. Then
+`python3 .hexaemeron/measure_design.py --conformance
+existing-checkpoint-suites-green --candidate native-subcommands` exits 0 and
+`.hexaemeron/reports/native-subcommands-existing-checkpoint-suites-green.json`
+carries `"value": true` (both existing modules, 82 tests, pass); Fiat checks
+this `step:3` transition at this step's `done push`. Then, on the clean
+detached snapshot of the step head: `python3 scripts/run_checks.py --base
+0bc39f278e24d8cdd79abed5da16bd5ce81e4c5a`, `python3
+plugins/hexaemeron/tests/run_tests.py` and `python3 -m unittest discover -s
+tests`, each exit 0. Then, in the run worktree: `python3
+plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests`, `python3
+plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests`, `python3
+plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md
+.agents/skills/promise-machine/SKILL.md
+.agents/skills/promise-machine/PORTABLE.md plugins docs`, `python3
+plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <path>` and `python3
+plugins/brevitas/skills/brevitas/scripts/brevitas.py <path>` for every changed
+Markdown file this run may edit, which excludes the append-only audit record
+and its synopsis and the two digest-bound copies of the study and runbook,
+`python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write`
+after `git add` followed by `python3
+plugins/horos/skills/horos/scripts/horos.py check .` and `git diff --check`,
+each exit 0. Complete replacement Tests: Fifteen new tests in
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`:
+`test_archive_export_is_byte_identical_across_two_exports_and_two_absolute_paths`
+(C2), `test_archive_reserves_prior_acceptance_entries` (C4),
+`test_archive_export_refuses_every_unaccepted_boundary`,
+`test_archive_export_refuses_dirty_worktree`,
+`test_archive_export_refuses_secret_shaped_member` (which also holds the
+reference's private-key block paragraph to what study section 4 states,
+including the escaped-newline delimiter, so that a mutation of any value in
+that paragraph, and its deletion, each fail the test),
+`test_archive_export_refuses_oversized_bundle`,
+`test_archive_export_refuses_ref_disagreement`,
+`test_archive_export_refuses_occupied_boundary_directory`,
+`test_archive_export_refuses_unsupported_signature` (C5),
+`test_archive_layout_and_entry_metadata_are_fixed`,
+`test_archive_manifest_carries_no_path_hostname_or_environment_value`,
+`test_archive_export_appends_no_ledger_entry_and_reports_timing_stages`,
+`test_archive_export_self_check_refuses_manifest_mismatch`,
+`test_archive_bundle_is_built_single_threaded_from_exactly_the_checkpoint_refs`
+and
+`test_archive_signature_proof_requires_good_status_and_exactly_one_trailer_each`.
+Signing tests generate an ephemeral OpenPGP key in a temporary `GNUPGHOME`;
+none touches the operator's keyring. The 82 existing checkpoint and identity
+tests stay green. For any audit repair, run `python3
+plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; report
+format `unittest-json-v1`; expected schema `elenchus.unittest.v1`; report file
+`.elenchus/fiat-861-step-2.json`. A missing, stale, empty, malformed, zero-test
+or infrastructure-failed report is `inconclusive`.
+**Why.** Round 3 finding S2-R3-02. Fiat re-transcribed this Exit during the
+re-bind that followed the second 2026-09-09 study amendment and collapsed the
+sidecar's two spaces to one. The two-space form is what the product does and
+what the specification says: `hexctl.py:18006` writes `f"{outer}
+{CHECKPOINT_ARCHIVE_FILE}\n"` and study line 76 reads `(two spaces, relative
+name; `shasum -a 256 -c` reads it)`. Only the criterion was wrong, so no
+behaviour changes and no other clause of this field moves.
+**Steps touched.** Step 2 Exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
