@@ -1663,12 +1663,29 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
         commit onto a branch that moves, which is the one property the whole
         selection rests on.
         """
-        for path in ("docs/Scale Factor.md", "docs/x?ref=main&z=.md",
-                     "docs/a#b.md", ".agents/skills/promise-machine/SKILL.md",
-                     "../etc/passwd.md"):
-            self.assertFalse(collector.endpoint_path_ok(path), path)
-            with self.assertRaises(collector.RefusalError, msg=path):
-                collector.fetch_document("wildcat-finance/skills", "0" * 40, path)
+        # S3-R2-01. `gh_fetch` is patched and asserted unused, because the
+        # refusal alone proved nothing: on the unfixed body every one of these
+        # paths still raised `RefusalError`, from `gh` answering HTTP 404 to a
+        # request that carried the bad path in its line, or from no `gh` on
+        # PATH at all, so the guard passed without the fix and sent the very
+        # request the fix exists to stop when `gh` was present.
+        with unittest.mock.patch.object(collector, "gh_fetch") as fetched:
+            for path in ("docs/Scale Factor.md", "docs/x?ref=main&z=.md",
+                         "docs/a#b.md", ".agents/skills/promise-machine/SKILL.md",
+                         "../etc/passwd.md"):
+                self.assertFalse(collector.endpoint_path_ok(path), path)
+                with self.assertRaises(collector.RefusalError, msg=path):
+                    collector.fetch_document("wildcat-finance/skills", "0" * 40, path)
+            fetched.assert_not_called()
+            fetched.return_value = b"# A document\n"
+            self.assertEqual(
+                collector.fetch_document("wildcat-finance/skills", "0" * 40,
+                                         "docs/hooks/templates/access.md"),
+                "# A document\n")
+            fetched.assert_called_once_with(
+                ["api", "-H", "Accept: application/vnd.github.raw",
+                 "repos/wildcat-finance/skills/contents/docs/hooks/templates/access.md"
+                 "?ref=" + "0" * 40])
         self.assertTrue(collector.endpoint_path_ok("docs/hooks/templates/access.md"))
 
     def test_an_unfetchable_tree_path_is_recorded_rather_than_requested(self):
@@ -1873,6 +1890,143 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
             fetched.assert_called_once_with(
                 ["api", "repos/wildcat-finance/skills/commits?sha=" + "1" * 40
                  + "&path=docs/a.md&per_page=1"])
+
+    def test_every_endpoint_builder_gates_its_own_values(self):
+        """S3-R2-02. Four more builders took their values on trust.
+
+        S3-R1-05 gated `fetch_origin` and stated the rule: every value is
+        gated where the endpoint is assembled, because a second caller would
+        not inherit `run`'s order. `fetch_tree`, `thread_ceiling`,
+        `fetch_threads`, `fetch_commits` and `fetch_comments` still
+        interpolated `repository` and `commit` as handed to them, so the rule
+        above `ENDPOINT_SEGMENTS` held for three builders of eight. Each bad
+        value is refused before any `gh` call; each clean call sends the exact
+        argv. `thread_ceiling` also gates the number GitHub answered with,
+        since a zero or negative ceiling would enumerate an empty thread
+        universe rather than refuse.
+        """
+        skills = "wildcat-finance/skills"
+        bad_repositories = ("other-org/repo", "wildcat-finance/skills?x=", "-H",
+                            "wildcat-finance/skills/../other")
+        bad_commits = ("main", "1" * 39, "1" * 40 + "\n", "?sha=main")
+        with unittest.mock.patch.object(collector, "gh_json") as fetched, \
+                unittest.mock.patch.object(collector, "gh_fetch_optional") as probed:
+            for repository in bad_repositories:
+                for builder, arguments in (
+                    (collector.fetch_tree, (repository, "1" * 40)),
+                    (collector.thread_ceiling, (repository,)),
+                    (collector.fetch_threads, (repository,)),
+                    (collector.fetch_commits, (repository, "1" * 40)),
+                    (collector.fetch_comments, (repository, {})),
+                ):
+                    with self.assertRaises(collector.RefusalError, msg=(builder.__name__, repository)):
+                        builder(*arguments)
+            for commit in bad_commits:
+                for builder in (collector.fetch_tree, collector.fetch_commits):
+                    with self.assertRaises(collector.RefusalError, msg=(builder.__name__, commit)):
+                        builder(skills, commit)
+            fetched.assert_not_called()
+            probed.assert_not_called()
+
+            fetched.return_value = {"tree": [{"type": "blob", "path": "docs/a.md"}], "truncated": False}
+            self.assertEqual(collector.fetch_tree(skills, "1" * 40), ["docs/a.md"])
+            fetched.assert_called_once_with(
+                ["api", f"repos/{skills}/git/trees/" + "1" * 40 + "?recursive=1"])
+
+            fetched.reset_mock()
+            fetched.side_effect = [[{"sha": "a" * 40, "commit": {"message": "m"}}], []]
+            self.assertEqual([row["sha"] for row in collector.fetch_commits(skills, "1" * 40)],
+                             ["a" * 40])
+            self.assertEqual(
+                [call.args[0] for call in fetched.call_args_list],
+                [["api", f"repos/{skills}/commits?sha=" + "1" * 40 + "&per_page=100&page=1"],
+                 ["api", f"repos/{skills}/commits?sha=" + "1" * 40 + "&per_page=100&page=2"]])
+
+            fetched.reset_mock()
+            fetched.side_effect = [[], []]
+            self.assertEqual(collector.fetch_comments(skills, {}), [])
+            self.assertEqual(
+                [call.args[0] for call in fetched.call_args_list],
+                [["api", f"repos/{skills}/issues/comments?per_page=100&page=1"],
+                 ["api", f"repos/{skills}/pulls/comments?per_page=100&page=1"]])
+
+            fetched.reset_mock()
+            fetched.side_effect = None
+            fetched.return_value = [{"number": 7}]
+            probed.side_effect = [b"{}", None]
+            self.assertEqual(collector.thread_ceiling(skills), 8)
+            fetched.assert_called_once_with(
+                ["api", f"repos/{skills}/issues?state=all&per_page=1&sort=created&direction=desc"])
+            self.assertEqual(
+                [call.args[0] for call in probed.call_args_list],
+                [["api", f"repos/{skills}/issues/8"], ["api", f"repos/{skills}/issues/9"]])
+
+            # A ceiling GitHub answers below one is refused before it is probed.
+            probed.reset_mock()
+            probed.side_effect = None
+            for highest in (-1, 0):
+                fetched.return_value = [{"number": highest}]
+                with self.assertRaises(collector.RefusalError, msg=highest):
+                    collector.thread_ceiling(skills)
+            probed.assert_not_called()
+
+    def test_a_shipped_row_from_a_v1_document_is_named_as_a_collision(self):
+        """S3-R2-03. The holdout check compared ids from two namespaces.
+
+        labelled-prose-v1 names its groups `H-TD-01` and `M-GH-02`; this
+        collector names them `<repository>:<path>`. The final check in `run`
+        intersected those two sets and so could never fire, while its comment
+        said a group derived another way still could not collide. It now reads
+        the document identities v1's groups are made of, so a shipped row from
+        a v1 document or commit is named whatever either side calls the group.
+        """
+        # Asserted rather than left to raise: on the parent the check was three
+        # lines inside `run` with no name, and Elenchus reads an `AttributeError`
+        # as an infrastructure error, not as this guard failing.
+        self.assertTrue(
+            hasattr(collector, "holdout_collisions"),
+            "the collector has no holdout check that reads document identities")
+        v1_groups = {"M-DR-02", "M-GH-01"}
+        v1_documents = {("wildcat-finance/skills", "docs/compound-v3-phase0-study.md")}
+        v1_commits = {("wildcat-finance/skills", "7" * 40)}
+        document_row = {
+            "repository": "wildcat-finance/skills", "source_object": "markdown_paragraph",
+            "source_path": "docs/compound-v3-phase0-study.md", "source_commit": "1" * 40,
+            "source_group_id": "wildcat-finance/skills:docs/compound-v3-phase0-study.md",
+        }
+        commit_row = {
+            "repository": "wildcat-finance/skills", "source_object": "commit_message",
+            "source_path": None, "source_commit": "7" * 40,
+            "source_group_id": "wildcat-finance/skills:commit/" + "7" * 40,
+        }
+        clean_row = {
+            "repository": "wildcat-finance/skills", "source_object": "markdown_paragraph",
+            "source_path": "docs/other.md", "source_commit": "1" * 40,
+            "source_group_id": "wildcat-finance/skills:docs/other.md",
+        }
+        # A Markdown row at a v1 commit is not a v1 commit message; only the
+        # commit kind is keyed by its sha.
+        markdown_at_v1_commit = {**clean_row, "source_commit": "7" * 40}
+        self.assertEqual(
+            collector.holdout_collisions(
+                [document_row, commit_row, clean_row, markdown_at_v1_commit],
+                v1_groups, v1_documents, v1_commits),
+            sorted([document_row["source_group_id"], commit_row["source_group_id"]]))
+        self.assertEqual(
+            collector.holdout_collisions([clean_row], v1_groups, v1_documents, v1_commits), [])
+        # The id comparison is kept for a row that does carry a v1 id.
+        self.assertEqual(
+            collector.holdout_collisions(
+                [{**clean_row, "source_group_id": "M-DR-02"}], v1_groups, v1_documents, v1_commits),
+            ["M-DR-02"])
+        # The shipped fixture names none, on the identities as well as the ids.
+        groups, documents, commits = collector.v1_exclusions(
+            SKILL_ROOT / "evals" / "labelled-prose-v1" / "samples.jsonl")
+        shipped = [json.loads(line) for line in
+                   (FIXTURE / "specimens.jsonl").read_text(encoding="utf-8").splitlines()
+                   if line.strip()]
+        self.assertEqual(len(shipped), 38)
+        self.assertEqual(collector.holdout_collisions(shipped, groups, documents, commits), [])
 
 
 if __name__ == "__main__":

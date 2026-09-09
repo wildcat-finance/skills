@@ -447,7 +447,18 @@ def parse_head(value: str) -> tuple[str, str]:
 
 
 def fetch_tree(repository: str, commit: str) -> list[str]:
-    reply = gh_json(["api", f"repos/{repository}/git/trees/{commit}?recursive=1"])
+    # Every builder gates its own values where the endpoint is assembled. The
+    # rule stated above `ENDPOINT_SEGMENTS` used to hold for `fetch_document`,
+    # `fetch_origin` and `replay` only; this and the four thread and commit
+    # builders below took `repository` and `commit` on trust from `run`, which
+    # is the ordering `fetch_origin`'s fix said no builder may rely on.
+    reply = gh_json(
+        [
+            "api",
+            f"repos/{segment('repository', repository)}/git/trees/"
+            f"{segment('commit', commit)}?recursive=1",
+        ]
+    )
     if not isinstance(reply, dict) or not isinstance(reply.get("tree"), list):
         raise RefusalError(f"tree reply for {repository}@{commit} carries no tree")
     if reply.get("truncated") is True:
@@ -501,6 +512,7 @@ def thread_ceiling(repository: str) -> int:
     above it are then probed one by one until GitHub returns 404, so a thread
     the listing omitted at the top cannot lower the ceiling.
     """
+    repository = segment("repository", repository)
     reply = gh_json(
         ["api", f"repos/{repository}/issues?state=all&per_page=1&sort=created&direction=desc"]
     )
@@ -509,7 +521,15 @@ def thread_ceiling(repository: str) -> int:
     highest = reply[0].get("number")
     if not isinstance(highest, int) or isinstance(highest, bool):
         raise RefusalError(f"issue listing for {repository} carries no number")
-    while gh_fetch_optional(["api", f"repos/{repository}/issues/{highest + 1}"]) is not None:
+    # The number is GitHub's answer, so it is gated like every other outside
+    # value before it is interpolated. A ceiling below one would otherwise be
+    # probed once, answered 404, and returned, and `fetch_threads` would then
+    # enumerate nothing and call the thread half of the universe read.
+    if highest < 1:
+        raise RefusalError(f"issue listing for {repository} names thread {highest}")
+    while gh_fetch_optional(
+        ["api", f"repos/{repository}/issues/{segment('number', str(highest + 1))}"]
+    ) is not None:
         highest += 1
     return highest
 
@@ -529,6 +549,7 @@ def fetch_threads(repository: str) -> list[dict]:
     carried a family.
     """
     out: list[dict] = []
+    repository = segment("repository", repository)
     ceiling = thread_ceiling(repository)
     missing = 0
     for number in range(1, ceiling + 1):
@@ -593,6 +614,8 @@ def fetch_commits(repository: str, commit: str) -> list[dict]:
     band on its own.
     """
     out: list[dict] = []
+    repository = segment("repository", repository)
+    commit = segment("commit", commit)
     page = 1
     while True:
         reply = gh_json(
@@ -622,6 +645,7 @@ def fetch_comments(repository: str, threads: dict[int, str]) -> list[dict]:
     excluded issue is dropped here with the thread it belongs to.
     """
     out: list[dict] = []
+    repository = segment("repository", repository)
     for collection, key, fragment in (
         ("issues", "issue_url", "issuecomment-"),
         ("pulls", "pull_request_url", "discussion_r"),
@@ -1283,6 +1307,35 @@ def replay(candidate: dict) -> tuple[str, str | None]:
     return body, None
 
 
+def holdout_collisions(specimens: list[dict], groups: set[str],
+                       v1_documents: set[tuple[str, str]],
+                       v1_commits: set[tuple[str, str]]) -> list[str]:
+    """Name every shipped row that shares a source group with the v1 holdout.
+
+    The id comparison alone could never fire: labelled-prose-v1 names its
+    groups `H-TD-01` and `M-GH-02`, and this collector names them
+    `<repository>:<path>`, so the two sets are disjoint whatever the rows
+    hold, and a check that read only them asserted nothing while claiming to
+    catch a group derived another way. The document identities are what v1's
+    groups are made of, so a row is compared on those as well: its repository
+    and path against every v1 document, and its repository and commit against
+    every v1 commit message. `document_rejection` keeps such a candidate out
+    of the pool; this is the check on what was shipped, and it now reads the
+    same identities that exclusion did.
+    """
+    collisions: set[str] = set()
+    for row in specimens:
+        repository = row["repository"]
+        if row["source_group_id"] in groups:
+            collisions.add(row["source_group_id"])
+        if (repository, row["source_path"]) in v1_documents:
+            collisions.add(row["source_group_id"])
+        if row["source_object"] == "commit_message" and \
+                (repository, row["source_commit"]) in v1_commits:
+            collisions.add(row["source_group_id"])
+    return sorted(collisions)
+
+
 def read_families(fixture: Path) -> list[dict]:
     rows: list[dict] = []
     text = (fixture / FAMILIES_NAME).read_text(encoding="utf-8")
@@ -1381,10 +1434,8 @@ def run(args: argparse.Namespace) -> int:
     )
     rejections.extend(more)
 
-    # No specimen may share a source group with any of the 16 v1 groups. The
-    # exclusion above works on documents; this compares the ids themselves, so
-    # a group derived another way still cannot collide with the spent holdout.
-    collisions = sorted({row["source_group_id"] for row in specimens} & groups)
+    # No specimen may share a source group with any of the 16 v1 groups.
+    collisions = holdout_collisions(specimens, groups, v1_documents, v1_commits)
     if collisions:
         raise RefusalError(f"specimens share a v1 source group: {collisions}")
 
