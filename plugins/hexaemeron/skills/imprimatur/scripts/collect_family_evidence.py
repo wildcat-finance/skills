@@ -120,6 +120,7 @@ INVENTED_PROSE = (("wildcat-finance/skills", "plugins/lemma/baseline/"),)
 REJECTION_REASONS = (
     "not-prose",
     "path-carries-whitespace",
+    "unusable-source-path",
     "vendored-or-mirrored-path",
     "invented-corpus",
     "imprimatur-own-prose",
@@ -135,6 +136,7 @@ REJECTION_REASONS = (
     "duplicate-fivegram-jaccard",
     "group-already-used",
     "minimum-already-met",
+    "tier-has-no-minimum",
     "annotator-rejected",
 )
 
@@ -463,13 +465,30 @@ def fetch_tree(repository: str, commit: str) -> list[str]:
     return sorted(paths)
 
 
+def endpoint_path_ok(path: object) -> bool:
+    """True when ``path`` may be interpolated into a contents endpoint."""
+    try:
+        segment("source_path", path)
+    except RefusalError:
+        return False
+    return True
+
+
 def fetch_document(repository: str, commit: str, path: str) -> str:
+    # The tree listing is data from outside the process, and its paths used to
+    # reach this endpoint unchecked: a run over `v2-protocol` sent
+    # `docs/Scale Factor.md` with a literal space in the request line. A git
+    # path may also carry `?`, `#` or `&`, and `?ref=main&x=` would have moved
+    # the fetch off the pinned commit onto a branch that moves, which is the
+    # one property the whole selection rests on. Both repository and commit
+    # were already gated here; the path is now gated with them, so the pattern
+    # table's claim that no unmatched value reaches `gh` is true.
     blob = gh_fetch(
         [
             "api",
             "-H",
             "Accept: application/vnd.github.raw",
-            f"repos/{repository}/contents/{path}?ref={commit}",
+            f"repos/{repository}/contents/{segment('source_path', path)}?ref={commit}",
         ]
     )
     return blob.decode("utf-8", "replace")
@@ -543,9 +562,22 @@ def fetch_threads(repository: str) -> list[dict]:
 
 
 def fetch_origin(repository: str, commit: str, path: str) -> str:
-    """Classify one document's origin from the commit that last touched it."""
+    """Classify one document's origin from the commit that last touched it.
+
+    The three values are gated here, where the endpoint is built, and not
+    left to the caller. `build_specimen` reaches this only after `replay` has
+    gated the same three, so the call was safe by ordering alone; the pattern
+    table's rule is that no value reaches `gh` without its own gate at the
+    point the endpoint is assembled, and a second caller would not inherit
+    `replay`'s order.
+    """
     reply = gh_json(
-        ["api", f"repos/{repository}/commits?sha={commit}&path={path}&per_page=1"]
+        [
+            "api",
+            f"repos/{segment('repository', repository)}/commits"
+            f"?sha={segment('commit', commit)}"
+            f"&path={segment('source_path', path)}&per_page=1",
+        ]
     )
     if not isinstance(reply, list) or not reply or not isinstance(reply[0], dict):
         return "unknown"
@@ -649,12 +681,26 @@ def corpus_from_network(args: argparse.Namespace) -> list[dict]:
                 }
             )
     total = len(documents)
+    unfetchable = 0
     for index, document in enumerate(documents, 1):
+        # A path the contents endpoint cannot carry is not fetched at all. The
+        # document stays in the list with empty text, so `document_rejection`
+        # still records it and the rejection file still says the tree held it;
+        # only the request is dropped.
+        if not endpoint_path_ok(document["path"]):
+            unfetchable += 1
+            continue
         document["text"] = fetch_document(
             document["repository"], document["commit"], document["path"]
         )
         if index % 100 == 0 or index == total:
             print(f"corpus: fetched {index} of {total} documents", file=sys.stderr)
+    if unfetchable:
+        print(
+            f"corpus: {unfetchable} of {total} tree paths cannot be an endpoint "
+            "segment and were not fetched",
+            file=sys.stderr,
+        )
     for repository, commit in args.head:
         for entry in fetch_commits(repository, commit):
             documents.append(
@@ -833,10 +879,16 @@ def document_rejection(document: dict, excluded_issues: set[int],
     # space read as one group on screen and as two in the independence count.
     if any(character.isspace() for character in path):
         return "path-carries-whitespace"
+    # A path the endpoint pattern refuses is not the same fault, and recording
+    # it as one made the record wrong: four of the six rows the first pass
+    # wrote as `path-carries-whitespace` carry no whitespace at all. They are
+    # `.agents/...` and `.githooks/...`, refused because a segment may not
+    # begin with a dot, and a reader reproducing the selection would look for
+    # a space and find none.
     try:
         segment("source_path", path)
     except RefusalError:
-        return "path-carries-whitespace"
+        return "unusable-source-path"
     return None
 
 
@@ -1057,6 +1109,15 @@ def select(families: list[dict], candidates: list[dict],
         tier = family["evidence_tier"]
         minimum_positive, minimum_negative = TIER_MINIMUMS[tier]
         if (minimum_positive, minimum_negative) == (0, 0):
+            # A tier with no minimum ships nothing, and its candidates used to
+            # leave the walk here without a row, so the rejection file would
+            # have been silent about them. It is silent today only because no
+            # such family records a discovery phrase; the moment one does, the
+            # file has to say the candidate was seen and why it was not taken.
+            for candidate in by_family.get(family_id, []):
+                rejections.append(rejection_row(
+                    candidate, "tier-has-no-minimum",
+                    f"tier {tier} has no positive or negative minimum, so it ships no specimen"))
             continue
         taken_positive: dict[str, str] = {}
         taken_negative = 0

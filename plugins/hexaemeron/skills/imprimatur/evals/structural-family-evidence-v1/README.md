@@ -243,10 +243,24 @@ origin class: model_assisted 21, unknown 17. Every rejection reason and its coun
 | `invented-corpus` | 11 |
 | `minimum-already-met` | 313 |
 | `outside-word-band` | 102 |
-| `path-carries-whitespace` | 6 |
+| `path-carries-whitespace` | 2 |
 | `unknown-thread` | 19 |
+| `unusable-source-path` | 4 |
 | `v1-source-group` | 32 |
 | `vendored-or-mirrored-path` | 90 |
+
+Two of those reasons are about the same field and are not the same fault, and
+the first pass recorded both as the first. A path with a space in it
+(`v2-protocol:docs/Scale Factor.md` and
+`v2-protocol:docs/hooks/templates/Access Control Hooks.md`) is refused because
+two source group ids differing by a space read as one group on screen and as
+two in the independence count. A path a contents endpoint cannot carry is
+refused for a different reason: `.agents/skills/promise-machine/PORTABLE.md`,
+`.agents/skills/promise-machine/SKILL.md`, `.githooks/README.md` and
+`tests/fixtures/promise-machine/unresolved-router/.agents/skills/promise-machine/SKILL.md`
+all begin a segment with a dot, which the endpoint pattern does not admit, and
+none of them carries whitespace. They are `unusable-source-path`, and a
+document under that reason is not fetched at all.
 
 Four target families end the collection below their tier minimum, and the
 shortfall is the evidence rather than a gap in the collection. Each was
@@ -635,7 +649,7 @@ left every test green, because nothing held the oracle's bytes.
 | `issue-1298.md` | `ccff01a9db78693b183a3193b5cd76edbd908f75f3d48b4e25c46fda907f1e46` |
 | `schemas/family.schema.json` | `46244a6a6a9386b903aa16731f4b4f30df07945b2e3221320544b243aafa8185` |
 | `schemas/specimen.schema.json` | `ed8de25920f263308ed22928b603dcbd351230595b521af471d1f144dd1700c9` |
-| `selection-rejections.jsonl` | `85a8c1ecccbfbcd97717da94aaa88d586434e550bdd2caca25d8aa6ee6d47df9` |
+| `selection-rejections.jsonl` | `5d63342e63f7c83688652db0153bd73fcaf47e10f2a296b122c951a7ad87f533` |
 | `specimens.jsonl` | `406ed81594b9691a20b0c7c5c25e6839d6ba873c4bb616d427ecd2e07d5dcc0a` |
 Paths are relative to this directory.
 `test_the_fixture_digest_table_covers_every_fixture_file` walks the fixture

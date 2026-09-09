@@ -1651,6 +1651,229 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
                 collector.gh_fetch(["api", "repos/a/b/issues/1"])
         self.assertEqual(self.gh_attempts(env), 2)
 
+    def test_a_tree_path_cannot_reach_the_contents_endpoint_unchecked(self):
+        """S3-R1-01. The tree listing is outside data and its paths are gated.
+
+        `fetch_tree` returns whatever paths the repository holds, and
+        `corpus_from_network` handed them straight to `fetch_document`, which
+        interpolated them into `repos/<r>/contents/<path>?ref=<commit>`. The
+        first pass really did send `docs/Scale Factor.md` with a literal space
+        in the request line. A git path may also carry `?`, `#` or `&`, and
+        `docs/x?ref=main&z=.md` would have moved the fetch off the pinned
+        commit onto a branch that moves, which is the one property the whole
+        selection rests on.
+        """
+        for path in ("docs/Scale Factor.md", "docs/x?ref=main&z=.md",
+                     "docs/a#b.md", ".agents/skills/promise-machine/SKILL.md",
+                     "../etc/passwd.md"):
+            self.assertFalse(collector.endpoint_path_ok(path), path)
+            with self.assertRaises(collector.RefusalError, msg=path):
+                collector.fetch_document("wildcat-finance/skills", "0" * 40, path)
+        self.assertTrue(collector.endpoint_path_ok("docs/hooks/templates/access.md"))
+
+    def test_an_unfetchable_tree_path_is_recorded_rather_than_requested(self):
+        """The document stays in the record; only the request is dropped.
+
+        Skipping the fetch must not skip the document, or the rejection file
+        would stop saying that the tree held it.
+        """
+        tree = ["docs/good.md", ".githooks/README.md", "docs/Scale Factor.md"]
+        requested = []
+
+        def stub_document(repository, commit, path):
+            requested.append(path)
+            return self.sentence(30)
+
+        arguments = collector.argparse.Namespace(
+            head=[("wildcat-finance/skills", "1" * 40)], threads=set())
+        with unittest.mock.patch.object(collector, "fetch_tree", lambda *_: tree), \
+                unittest.mock.patch.object(collector, "fetch_commits", lambda *_: []), \
+                unittest.mock.patch.object(collector, "fetch_document", stub_document):
+            documents = collector.corpus_from_network(arguments)
+        self.assertEqual(requested, ["docs/good.md"])
+        self.assertEqual([row["path"] for row in documents], tree)
+        self.assertEqual([row["text"] for row in documents][1:], ["", ""])
+
+    def test_a_dot_prefixed_path_is_not_recorded_as_carrying_whitespace(self):
+        """S3-R1-02. Four of the six rows the first pass wrote were mislabelled.
+
+        `.agents/...` and `.githooks/...` are refused because an endpoint
+        segment may not begin with a dot, and they carry no whitespace at all.
+        A reader reproducing the selection from `path-carries-whitespace`
+        would look for a space and find none, so the two faults carry two
+        reasons and `selection-rejections.jsonl` was relabelled to match.
+        """
+        for path in (".agents/skills/promise-machine/SKILL.md", ".githooks/README.md",
+                     "tests/fixtures/promise-machine/unresolved-router/"
+                     ".agents/skills/promise-machine/SKILL.md"):
+            self.assertFalse(any(character.isspace() for character in path), path)
+            self.assertEqual(
+                collector.document_rejection(self.document("", path=path), {1298}, set(), set()),
+                "unusable-source-path", path)
+        for path in ("docs/Scale Factor.md", "docs/hooks/templates/Access Control Hooks.md"):
+            self.assertEqual(
+                collector.document_rejection(self.document("", path=path), {1298}, set(), set()),
+                "path-carries-whitespace", path)
+        for reason in ("unusable-source-path", "path-carries-whitespace"):
+            self.assertIn(reason, collector.REJECTION_REASONS)
+        # The shipped record carries the same split, so the reason a reader
+        # reads is the fault the collector found.
+        recorded = [
+            json.loads(line)
+            for line in (FIXTURE / "selection-rejections.jsonl").read_text(
+                encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        split = {
+            row["source_path"]: row["reason"]
+            for row in recorded
+            if row["reason"] in ("unusable-source-path", "path-carries-whitespace")
+        }
+        self.assertEqual(len(split), 6)
+        for path, reason in split.items():
+            self.assertEqual(
+                reason,
+                "path-carries-whitespace" if any(c.isspace() for c in path)
+                else "unusable-source-path", path)
+
+    def test_a_tier_with_no_minimum_still_records_its_candidates(self):
+        """S3-R1-03. A zero-minimum family left the walk without a row.
+
+        `boundary`, `existing-family` and `future` ship nothing, and their
+        candidates used to leave `select` before any rejection was written.
+        The rejection file is silent about them today only because no such
+        family records a discovery phrase; the moment one does, the file has
+        to say the candidate was seen and why it was not taken.
+        """
+        for tier in ("boundary", "existing-family", "future"):
+            family = self.family(family_id="broad_fact_clause", tier=tier)
+            documents = [self.document(self.sentence(40), path=f"docs/{n}.md") for n in range(3)]
+            candidates, _ = collector.build_candidates(
+                [family], documents, "", {1298}, set(), set())
+            self.assertEqual(len(candidates), 3, tier)
+            specimens, rejections, shortfalls = collector.select(
+                [family], candidates, {}, False)
+            self.assertEqual(specimens, [], tier)
+            self.assertEqual(shortfalls, [], tier)
+            self.assertEqual([row["reason"] for row in rejections],
+                             ["tier-has-no-minimum"] * 3, tier)
+            self.assertEqual({row["candidate_id"] for row in rejections},
+                             {row["candidate_id"] for row in candidates}, tier)
+        self.assertIn("tier-has-no-minimum", collector.REJECTION_REASONS)
+
+    def test_a_recorded_corpus_is_read_back_against_its_own_digest(self):
+        """S3-R1-04. `--corpus-in` is an ingestion path and had no test.
+
+        The recorded universe is read back the way any other outside input is.
+        Its stored digest sits beside the text in the same file, so it catches
+        a corrupted or truncated row and not a deliberate edit that recomputes
+        the digest; a shipped row's provenance rests on the per-specimen
+        replay, which `--no-verify` skips, so on that path the digest is the
+        whole check.
+        """
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "corpus.jsonl"
+            documents = [self.document("first text"),
+                         self.document("second text", path="docs/b.md")]
+            collector.write_corpus(path, documents)
+            read = collector.read_corpus(path)
+            self.assertEqual([row["text"] for row in read], ["first text", "second text"])
+            self.assertEqual(read[0]["text_sha256"], hashlib.sha256(b"first text").hexdigest())
+            rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+            rows[1]["text"] = "second text, edited after the digest was taken"
+            path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+                            encoding="utf-8")
+            with self.assertRaises(collector.RefusalError) as caught:
+                collector.read_corpus(path)
+            self.assertIn("does not match its digest", str(caught.exception))
+            for body, expected in (
+                ("{not json}\n", "unreadable JSON"),
+                ('["a list"]\n', "is not an object"),
+                ('{"text": "t"}\n', "carries no text and digest"),
+                ('{"text_sha256": "' + "0" * 64 + '"}\n', "carries no text and digest"),
+            ):
+                path.write_text(body, encoding="utf-8")
+                with self.assertRaises(collector.RefusalError) as caught:
+                    collector.read_corpus(path)
+                self.assertIn(expected, str(caught.exception), body)
+            link = Path(directory) / "link.jsonl"
+            link.symlink_to(path)
+            with self.assertRaises(collector.RefusalError) as caught:
+                collector.read_corpus(link)
+            self.assertIn("symlink refused", str(caught.exception))
+
+    def test_an_annotation_record_that_cannot_be_keyed_is_refused(self):
+        """S3-R1-04. `--annotations` is the other untested ingestion path.
+
+        One paragraph can be a candidate for two families and carry two
+        different annotations, so the key is the pair. A record naming no
+        family, or naming the same pair twice, is refused rather than guessed:
+        guessing would ship one annotation's span under the other's polarity.
+        """
+        good = {"candidate_id": "a" * 64, "family_id": "purpose_periphrasis"}
+        other = {"candidate_id": "a" * 64, "family_id": "reason_is_because"}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "annotations.jsonl"
+
+            def write(rows):
+                path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+            write([good, other])
+            keyed = collector.read_annotations(path)
+            self.assertEqual(sorted(keyed), [("purpose_periphrasis", "a" * 64),
+                                             ("reason_is_because", "a" * 64)])
+            for rows, expected in (
+                ([good, good], "repeats"),
+                ([{"family_id": "purpose_periphrasis"}], "names no candidate_id"),
+                ([{"candidate_id": "a" * 64}], "names no family_id"),
+                ([{"candidate_id": 7, "family_id": "x"}], "names no candidate_id"),
+                (["not an object"], "is not an object"),
+            ):
+                write(rows)
+                with self.assertRaises(collector.RefusalError) as caught:
+                    collector.read_annotations(path)
+                self.assertIn(expected, str(caught.exception), rows)
+            path.write_text("{not json}\n", encoding="utf-8")
+            with self.assertRaises(collector.RefusalError) as caught:
+                collector.read_annotations(path)
+            self.assertIn("unreadable JSON", str(caught.exception))
+            link = Path(directory) / "link.jsonl"
+            link.symlink_to(path)
+            with self.assertRaises(collector.RefusalError) as caught:
+                collector.read_annotations(link)
+            self.assertIn("symlink refused", str(caught.exception))
+
+    def test_fetch_origin_gates_its_own_endpoint_values(self):
+        """S3-R1-05. One endpoint builder took its values on trust.
+
+        `fetch_origin` interpolated `repository`, `commit` and `path` into
+        `repos/<r>/commits?sha=<c>&path=<p>` without calling `segment`. It was
+        safe only because `build_specimen` runs `replay`, which gates the same
+        three values, first; a second caller would not inherit that order, and
+        the module's own rule is that every value is gated where the endpoint
+        is built. Each bad value is refused before any `gh` call is made.
+        """
+        with unittest.mock.patch.object(collector, "gh_json") as fetched:
+            for repository, commit, path in (
+                ("other-org/repo", "1" * 40, "docs/a.md"),
+                ("wildcat-finance/skills", "main", "docs/a.md"),
+                ("wildcat-finance/skills", "1" * 40, "docs/x?ref=main&z=.md"),
+                ("wildcat-finance/skills", "1" * 40, "docs/Scale Factor.md"),
+            ):
+                with self.assertRaises(collector.RefusalError, msg=(repository, commit, path)):
+                    collector.fetch_origin(repository, commit, path)
+            fetched.assert_not_called()
+            fetched.return_value = [
+                {"commit": {"message": "m\n\nWildcat-Origin: shoggoth",
+                            "committer": {"date": "2026-01-02T03:04:05Z"}}}
+            ]
+            self.assertEqual(
+                collector.fetch_origin("wildcat-finance/skills", "1" * 40, "docs/a.md"),
+                "model_assisted")
+            fetched.assert_called_once_with(
+                ["api", "repos/wildcat-finance/skills/commits?sha=" + "1" * 40
+                 + "&path=docs/a.md&per_page=1"])
+
 
 if __name__ == "__main__":
     unittest.main()
