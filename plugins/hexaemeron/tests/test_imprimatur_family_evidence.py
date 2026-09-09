@@ -20,6 +20,25 @@ SCHEMAS = FIXTURE / "schemas"
 ISSUE = FIXTURE / "issue-1298.md"
 README = FIXTURE / "README.md"
 
+# The checker is imported, not restated. Every test below still runs it as a
+# subprocess, because its exit code is half of what it promises; what the
+# import buys is its declarations. The tier table was a literal here as well
+# as in the checker, in the README and on every catalogue row, and only the
+# last two were compared, so this module could not see the checker's table
+# change. It reads that table now.
+if str(SCRIPT.parent) not in sys.path:
+    sys.path.insert(0, str(SCRIPT.parent))
+import check_family_evidence as checker  # noqa: E402
+
+# Two fixture files carry no frozen digest, and the reason is per file rather
+# than a rule: this README holds the table and cannot hold its own digest, and
+# `specimens.jsonl` is written by a later runbook step. Everything else in the
+# fixture has to be pinned, so a new file cannot arrive unpinned by omission.
+UNPINNED_FIXTURE_FILES = {
+    "README.md": "carries the digest table and cannot hold its own digest",
+    "specimens.jsonl": "a later runbook step writes it",
+}
+
 SOURCE_ISSUE = "https://github.com/wildcat-finance/skills/issues/1298"
 GROUPS = (
     "Missing conditions and causal wrappers",
@@ -149,14 +168,26 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.addCleanup(empty.rmdir)
         return dict(os.environ, PATH=str(empty))
 
-    def build_fixture(self, families=None, specimens=None, root=None) -> Path:
-        """Write a throwaway fixture; the shipped one is never mutated."""
+    def build_fixture(self, families=None, specimens=None, root=None, schemas=None) -> Path:
+        """Write a throwaway fixture; the shipped one is never mutated.
+
+        ``schemas`` takes a callable per file name, applied to the shipped
+        schema before it is written, for the cases where the declaration
+        rather than a row is what drifts.
+        """
         if root is None:
             root = Path(tempfile.mkdtemp(prefix="family-evidence-"))
             self.addCleanup(self.remove_tree, root)
         (root / "schemas").mkdir(parents=True, exist_ok=True)
         for name in ("family.schema.json", "specimen.schema.json"):
-            (root / "schemas" / name).write_bytes((SCHEMAS / name).read_bytes())
+            edit = (schemas or {}).get(name)
+            if edit is None:
+                (root / "schemas" / name).write_bytes((SCHEMAS / name).read_bytes())
+                continue
+            declared = edit(json.loads((SCHEMAS / name).read_text(encoding="utf-8")))
+            (root / "schemas" / name).write_text(
+                json.dumps(declared, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
         rows = [FAMILY_ROW] if families is None else families
         (root / "families.jsonl").write_text(jsonl(rows), encoding="utf-8")
         (root / "specimens.jsonl").write_text(jsonl(specimens or []), encoding="utf-8")
@@ -375,6 +406,120 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
             "declares minimum_positive 1 and minimum_negative 0, but tier signal "
             "is enforced as 2 and 1",
         )
+
+    def test_refuses_a_required_field_no_enforcement_accounts_for(self):
+        """A field can be required and enforced by nothing.
+
+        The schema states requirements and the checker states checks, and the
+        two were separate lists: dropping `origin` from the specimen schema's
+        `required` list, and adding a field nothing reads, each left all 54
+        tests green. Both directions are a finding now, so a field cannot
+        enter or leave a schema without a decision about who enforces it.
+        """
+        dropped = self.build_fixture(
+            schemas={
+                "specimen.schema.json": lambda declared: dict(
+                    declared,
+                    required=[name for name in declared["required"] if name != "origin"],
+                )
+            }
+        )
+        self.assert_refused(
+            dropped,
+            "specimen.schema.json: field enforcement names ['origin'], which required does not declare",
+        )
+        added = self.build_fixture(
+            schemas={
+                "family.schema.json": lambda declared: dict(
+                    declared,
+                    required=[*declared["required"], "weight"],
+                    properties=dict(declared["properties"], weight={"type": "integer"}),
+                )
+            }
+        )
+        self.assert_refused(
+            added,
+            "family.schema.json: required names ['weight'], which no field enforcement accounts for",
+        )
+
+    def test_refuses_a_schema_tier_the_checker_does_not_enforce(self):
+        """The tier set was declared in the schema and again in the checker.
+
+        Adding a sixth tier to the enum left all 54 tests green while the
+        checker would have refused every row carrying it, so the schema could
+        offer a tier no fixture could use.
+        """
+        def sixth(declared):
+            properties = json.loads(json.dumps(declared["properties"]))
+            properties["evidence_tier"]["enum"].append("promising")
+            return dict(declared, properties=properties)
+
+        root = self.build_fixture(schemas={"family.schema.json": sixth})
+        self.assert_refused(root, "family.schema.json: evidence_tier declares")
+
+    def test_refuses_a_schema_seed_that_is_not_the_fixture_seed(self):
+        """`FIXTURE_SEED` and the schema's `selection_seed` const were two copies.
+
+        Changing the constant left all 54 tests green, and the report's `seed`
+        then named a seed no specimen was allowed to declare.
+        """
+        def other(declared):
+            properties = json.loads(json.dumps(declared["properties"]))
+            properties["selection_seed"]["const"] = "some-other-seed"
+            return dict(declared, properties=properties)
+
+        root = self.build_fixture(schemas={"specimen.schema.json": other})
+        self.assert_refused(root, "selection_seed declares 'some-other-seed'")
+
+    def test_refuses_an_overlaps_entry_that_names_no_family(self):
+        """`overlaps` declared a link to another family and nothing resolved it."""
+        root = self.build_fixture(families=[dict(FAMILY_ROW, overlaps=["no_such_family"])])
+        self.assert_refused(
+            root,
+            "causal_fact_clause_wrapper overlaps 'no_such_family', which is not a family in this catalogue",
+        )
+        sibling = self.build_fixture(
+            families=[
+                FAMILY_ROW,
+                dict(FAMILY_ROW, family_id="reason_is_because", overlaps=["causal_fact_clause_wrapper"]),
+            ]
+        )
+        result = self.run_checker("--fixture", str(sibling), env=self.env_without_gh())
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_the_report_names_every_field_this_step_does_not_enforce(self):
+        """Eight required fields are deferred, and the report says which.
+
+        Four audit rounds found them one at a time from `grep` output. The
+        step that writes them reads them here instead.
+        """
+        directory = Path(tempfile.mkdtemp(prefix="family-evidence-report-"))
+        self.addCleanup(self.remove_tree, directory)
+        report = directory / "report.json"
+        result = self.run_checker(
+            "--fixture", str(FIXTURE), "--allow-below-minimum", "--report", str(report),
+            env=self.env_without_gh(),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        written = json.loads(report.read_text(encoding="utf-8"))
+        self.assertIn("unenforced_fields", written)
+        entries = written.get("unenforced_fields", [])
+        self.assertEqual(
+            [(entry["row"], entry["field"]) for entry in entries],
+            [
+                ("families.jsonl", "discovery_phrases"),
+                ("specimens.jsonl", "decision"),
+                ("specimens.jsonl", "origin"),
+                ("specimens.jsonl", "reason"),
+                ("specimens.jsonl", "rewrite"),
+                ("specimens.jsonl", "selection_rank_within_group"),
+                ("specimens.jsonl", "source_end_line"),
+                ("specimens.jsonl", "source_start_line"),
+            ],
+        )
+        for entry in entries:
+            self.assertEqual(entry["owner"], "step-3")
+            self.assertTrue(entry["note"])
 
     def test_refuses_an_independent_positive_override_without_a_tier(self):
         """The override reaches every tier the run measures, so it names one."""
@@ -868,13 +1013,7 @@ class FamilyCatalogueWordingTest(unittest.TestCase):
                 self.assertEqual(shipped[key], source[key], f"{shipped['family_id']}/{key}")
 
     def test_tier_minimums_follow_the_evidence_tier(self):
-        minimums = {
-            "high-value": (2, 2),
-            "signal": (2, 1),
-            "boundary": (0, 0),
-            "existing-family": (0, 0),
-            "future": (0, 0),
-        }
+        minimums = checker.TIER_MINIMUMS
         for row in self.rows:
             expected = minimums[row["evidence_tier"]]
             self.assertEqual((row["minimum_positive"], row["minimum_negative"]), expected, row["family_id"])
@@ -918,16 +1057,68 @@ class FamilyCatalogueWordingTest(unittest.TestCase):
         self.assertEqual([row["family_id"] for row in parsed], ["only_family"])
         self.assertEqual(parsed[0]["disposition"], "kept.")
 
+    @staticmethod
+    def digest_rows(section: str) -> list[tuple[str, str]]:
+        """Return the digest rows of one README section.
+
+        The README carries two digest tables with different bases, so a
+        pattern applied to the whole file cannot say which base a row belongs
+        to. Splitting on the heading keeps each table with its own base. An
+        absent heading returns no rows rather than raising, so its caller
+        fails on the comparison it came to make.
+        """
+        body = README.read_text(encoding="utf-8")
+        if section not in body:
+            return []
+        start = body.index(section) + len(section)
+        remainder = body[start:]
+        heading = re.search(r"^#{2,3} ", remainder, flags=re.M)
+        if heading is not None:
+            remainder = remainder[: heading.start()]
+        return re.findall(r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$", remainder, flags=re.M)
+
     def test_readme_frozen_digests_match_the_current_files(self):
-        table = re.findall(
-            r"^\| `([^`]+)` \| `([0-9a-f]{64})` \|$",
-            README.read_text(encoding="utf-8"),
-            flags=re.M,
-        )
+        table = self.digest_rows("\n## Frozen digests\n")
         self.assertEqual(len(table), 5)
         for relative, expected in table:
             blob = (SKILL_ROOT / relative).read_bytes()
             self.assertEqual(hashlib.sha256(blob).hexdigest(), expected, relative)
+
+    def test_the_fixture_digest_table_covers_every_fixture_file(self):
+        """The oracle the wording test reads was itself unpinned.
+
+        `issue-1298.md` carried no frozen digest for six audit rounds, so an
+        edit made consistently to it and to the catalogue left every test
+        green. Requiring the table to cover the whole fixture closes the way
+        that happened, which was omission rather than a wrong digest.
+        """
+        table = dict(self.digest_rows("\n### Fixture inputs\n"))
+        present = {
+            str(path.relative_to(FIXTURE))
+            for path in sorted(FIXTURE.rglob("*"))
+            if path.is_file()
+        }
+        self.assertEqual(sorted(table), sorted(present - set(UNPINNED_FIXTURE_FILES)))
+        self.assertEqual(sorted(set(UNPINNED_FIXTURE_FILES) - present), [])
+        for relative, expected in table.items():
+            blob = (FIXTURE / relative).read_bytes()
+            self.assertEqual(hashlib.sha256(blob).hexdigest(), expected, relative)
+
+    def test_the_readme_tier_table_states_the_enforced_minimums(self):
+        """The README says of its own table that it is what the checker enforces.
+
+        Nothing held it to that. Editing the `signal` row to 1 and 0 while the
+        checker enforced 2 and 1 left all 54 tests green, so the document that
+        claimed to be the source of the contract was the one copy joined to
+        nothing.
+        """
+        rows = re.findall(
+            r"^\| `([a-z-]+)` \| [^|]+ \| ([0-9]+)(?: independent)? \| ([0-9]+) \|$",
+            README.read_text(encoding="utf-8"),
+            flags=re.M,
+        )
+        stated = {tier: (int(positive), int(negative)) for tier, positive, negative in rows}
+        self.assertEqual(stated, dict(checker.TIER_MINIMUMS))
 
 
 if __name__ == "__main__":

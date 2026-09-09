@@ -37,7 +37,6 @@ MAX_FETCH_BYTES = 4_194_304
 # are dropped from the child.
 GH_HOSTNAME = "github.com"
 GH_HOST_ENVIRONMENT = ("GH_HOST", "GH_REPO")
-TIERS = ("high-value", "signal", "boundary", "existing-family", "future")
 TIER_MINIMUMS = {
     "high-value": (2, 2),
     "signal": (2, 1),
@@ -45,6 +44,15 @@ TIER_MINIMUMS = {
     "existing-family": (0, 0),
     "future": (0, 0),
 }
+# One tier set, declared once. TIERS was a second literal naming the same five
+# tiers: collect_findings refused a tier outside TIERS and then indexed
+# TIER_MINIMUMS with it, so a name in one list and not the other raised an
+# uncaught KeyError, printed a traceback and exited 1 -- the code the amended
+# Exit reserves for a content finding, not the 2 it reserves for an unsafe
+# read. Reproduced by adding a sixth tier to TIERS and to the family schema's
+# enum. Deriving the tuple makes that divergence unwritable rather than
+# guarded, which is what the rest of this file's tier joins assume.
+TIERS = tuple(TIER_MINIMUMS)
 # Every value that becomes part of a gh endpoint passes endpoint_segment, which
 # fullmatches one pattern named here. The schema is not that boundary: it
 # validates with re.search, its `^wildcat-finance/` pattern admits
@@ -89,11 +97,98 @@ REJECTIONS_NAME = "selection-rejections.jsonl"
 FAMILY_SCHEMA_NAME = "family.schema.json"
 SPECIMEN_SCHEMA_NAME = "specimen.schema.json"
 
+# A schema states what a row must carry. This file states what is checked. They
+# were two lists with nothing between them, so a field could be required and
+# enforced by nothing, and that fact was visible in neither: not in the schema,
+# which states requirements, and not here, which states checks. Ten required
+# fields were in that position, and finding them one at a time is what four
+# audit rounds did. Every required field now names its enforcement, and
+# `schema-contract` refuses a schema whose `required` list is not exactly these
+# keys, so a field added or dropped without a decision is a finding rather than
+# a silence. An `OWNED_ELSEWHERE` owner is a field this step deliberately does
+# not enforce, with the runbook step that writes it; `--report` carries those
+# under `unenforced_fields` so a later step reads them rather than re-deriving
+# them from grep. Adding a field to a schema means adding its row below.
+OWNED_ELSEWHERE = "step-3"
+FIELD_ENFORCEMENT = {
+    FAMILIES_NAME: {
+        "family_id": (
+            "checker",
+            "family-duplicate refuses a second row, and specimen-unknown-family joins every specimen to one of these ids",
+        ),
+        "group": ("tests", "compared with the issue's five section headings"),
+        "evidence_tier": (
+            "checker",
+            "family-tier refuses a tier TIER_MINIMUMS does not enforce, and family-minimum compares the declared pair with it",
+        ),
+        "form": ("tests", "compared with the issue's Form line"),
+        "reader_cost": ("tests", "compared with the issue's Reader cost line"),
+        "direct_rewrite": ("tests", "compared with the issue's Direct rewrite line"),
+        "boundary": ("tests", "compared with the issue's Boundary line"),
+        "disposition": ("tests", "compared with the issue's Disposition line"),
+        "overlaps": ("checker", "family-overlaps refuses an entry naming no row in this catalogue"),
+        "discovery_phrases": (
+            OWNED_ELSEWHERE,
+            "step 3's Exit finds candidate paragraphs by each family's discovery_phrases; nothing reads them here and 29 rows carry none",
+        ),
+        "minimum_positive": ("checker", "family-minimum compares it with TIER_MINIMUMS"),
+        "minimum_negative": ("checker", "family-minimum compares it with TIER_MINIMUMS"),
+        "source_issue": ("schema", "a const, so its schema clause is the whole check"),
+    },
+    SPECIMENS_NAME: {
+        "specimen_id": ("checker", "specimen-duplicate refuses one id on two rows"),
+        "family_id": ("checker", "specimen-unknown-family refuses an id no family row carries"),
+        "tier": ("schema", "a const, so its schema clause is the whole check"),
+        "family": ("checker", "specimen-family-mismatch compares it with family_id"),
+        "polarity": ("checker", "specimen-independence and the tier-minimum count read it"),
+        "decision": (
+            OWNED_ELSEWHERE,
+            "step 3's Exit records decision with the annotation; nothing compares it with polarity or rewrite here",
+        ),
+        "text": ("checker", "specimen-span, specimen-digest and the --verify-sources comparison read it"),
+        "text_sha256": ("checker", "specimen-digest compares it with the row's own text"),
+        "start_byte": ("checker", "specimen-span"),
+        "end_byte": ("checker", "specimen-span"),
+        "reason": (OWNED_ELSEWHERE, "step 3's Exit records reason with the annotation; nothing reads it here"),
+        "rewrite": (
+            OWNED_ELSEWHERE,
+            "step 3's Exit records rewrite with the annotation; nothing requires one on an actionable positive here",
+        ),
+        "repository": (
+            "checker",
+            "endpoint_segment gates it, and cited_path refuses a citation naming another repository",
+        ),
+        "source_url": ("checker", "cited_path, cited_thread and require_cited compare the citation with the replayed object"),
+        "source_commit": ("checker", "endpoint_segment gates it on every kind"),
+        "source_path": ("checker", "endpoint_segment gates it and require_cited compares it with the citation"),
+        "source_start_line": (
+            OWNED_ELSEWHERE,
+            "S2-R4-05: step 3's collector writes it and no line contract is in this step's Exit refusal list",
+        ),
+        "source_end_line": (
+            OWNED_ELSEWHERE,
+            "S2-R4-05: step 3's collector writes it and no line contract is in this step's Exit refusal list",
+        ),
+        "source_object": ("checker", "fetch_source_object chooses the endpoint from it"),
+        "source_group_id": ("checker", "group_id_problem and specimen-independence"),
+        "origin": (OWNED_ELSEWHERE, "step 3's collector records it; nothing reads it here"),
+        "annotated_before_lint": ("checker", "specimen-annotation-order refuses a row that is not true"),
+        "selection_seed": ("checker", "schema-contract compares its schema const with FIXTURE_SEED"),
+        "selection_rank_within_group": (
+            OWNED_ELSEWHERE,
+            "step 3's Exit orders candidates by the seed digest and this records the rank; nothing reads it here",
+        ),
+    },
+}
+ROW_SCHEMA_NAMES = {FAMILIES_NAME: FAMILY_SCHEMA_NAME, SPECIMENS_NAME: SPECIMEN_SCHEMA_NAME}
+
 FINDING_CLASSES = (
+    "schema-contract",
     "family-tier",
     "family-schema",
     "family-duplicate",
     "family-minimum",
+    "family-overlaps",
     "specimen-annotation-order",
     "specimen-schema",
     "specimen-duplicate",
@@ -493,6 +588,69 @@ def fetch_source_object(row: dict) -> str:
     return reply_value(blob, ("body",), specimen_id)
 
 
+def unenforced_fields() -> list[dict]:
+    """Return every required field this step declares and does not enforce.
+
+    A deferral that lives only in a source comment is found by whoever greps
+    for it. This is the same fact as a report key, so the step that owns each
+    field reads it instead of re-deriving it.
+    """
+    return [
+        {"row": row_name, "field": field, "owner": owner, "note": note}
+        for row_name in sorted(FIELD_ENFORCEMENT)
+        for field, (owner, note) in sorted(FIELD_ENFORCEMENT[row_name].items())
+        if owner == OWNED_ELSEWHERE
+    ]
+
+
+def schema_contract_problems(schemas: dict[str, dict]) -> list[str]:
+    """Return where a schema's declarations and this file's checks disagree.
+
+    Three joins, each of which was two unjoined copies of one contract. The
+    `required` list against FIELD_ENFORCEMENT: dropping `origin` from the
+    specimen schema's `required` list left all 54 tests green, so the
+    declaration itself could shrink unnoticed. The family schema's
+    `evidence_tier` enum against the enforced tier set: adding a sixth tier
+    left all 54 green while the checker would refuse every row carrying it.
+    The specimen schema's `selection_seed` const against FIXTURE_SEED:
+    changing the constant left all 54 green, and the report's `seed` then
+    names a seed no specimen may declare.
+    """
+    problems: list[str] = []
+    for row_name in sorted(FIELD_ENFORCEMENT):
+        schema_name = ROW_SCHEMA_NAMES[row_name]
+        register = FIELD_ENFORCEMENT[row_name]
+        required = schemas[row_name].get("required")
+        if not isinstance(required, list):
+            problems.append(f"{schema_name}: required is not a list")
+            continue
+        declared = set(required)
+        if len(declared) != len(required):
+            problems.append(f"{schema_name}: required names a field twice")
+        unaccounted = sorted(declared - set(register))
+        if unaccounted:
+            problems.append(
+                f"{schema_name}: required names {unaccounted}, which no field enforcement accounts for"
+            )
+        absent = sorted(set(register) - declared)
+        if absent:
+            problems.append(
+                f"{schema_name}: field enforcement names {absent}, which required does not declare"
+            )
+    properties = schemas[FAMILIES_NAME].get("properties", {})
+    enum = properties.get("evidence_tier", {}).get("enum")
+    if not isinstance(enum, list) or sorted(set(enum)) != sorted(TIERS) or len(enum) != len(TIERS):
+        problems.append(
+            f"{FAMILY_SCHEMA_NAME}: evidence_tier declares {enum!r}, and {sorted(TIERS)} is enforced"
+        )
+    seed = schemas[SPECIMENS_NAME].get("properties", {}).get("selection_seed", {}).get("const")
+    if seed != FIXTURE_SEED:
+        problems.append(
+            f"{SPECIMEN_SCHEMA_NAME}: selection_seed declares {seed!r}, and {FIXTURE_SEED!r} is the fixture seed"
+        )
+    return problems
+
+
 def collect_findings(
     families: list[dict],
     specimens: list[dict],
@@ -503,6 +661,9 @@ def collect_findings(
     verify_sources: bool,
 ) -> dict[str, list[str]]:
     findings: dict[str, list[str]] = {name: [] for name in FINDING_CLASSES}
+    findings["schema-contract"].extend(
+        schema_contract_problems({FAMILIES_NAME: family_schema, SPECIMENS_NAME: specimen_schema})
+    )
     seen: set[str] = set()
     seen_specimens: set[str] = set()
     # Only rows that cleared every local check reach the network. A row that
@@ -542,6 +703,22 @@ def collect_findings(
                 f"{declared[0]} and minimum_negative {declared[1]}, but tier {tier} "
                 f"is enforced as {TIER_MINIMUMS[tier][0]} and {TIER_MINIMUMS[tier][1]}"
             )
+
+    # `overlaps` declares a link to another family and nothing resolved it, so
+    # a row could name a family that does not exist and exit 0; round 6 read
+    # the shipped list by hand instead. This is `specimen-unknown-family`'s
+    # check on the catalogue's own referential field. It runs after the loop
+    # above because it needs every id the catalogue carries.
+    for index, row in enumerate(families, 1):
+        overlaps = row.get("overlaps")
+        if not isinstance(overlaps, list):
+            continue
+        for name in overlaps:
+            if name not in seen:
+                findings["family-overlaps"].append(
+                    f"{FAMILIES_NAME}:{index}: {row.get('family_id')} overlaps {name!r}, "
+                    "which is not a family in this catalogue"
+                )
 
     positives: dict[str, list[dict]] = {}
     for index, row in enumerate(specimens, 1):
@@ -708,6 +885,7 @@ def build_report(fixture: Path, families: list[dict], specimens: list[dict], bel
         "specimens": len(specimens),
         "tiers": tiers,
         "below_minimum": below_minimum,
+        "unenforced_fields": unenforced_fields(),
         "rejections_path": REJECTIONS_NAME,
     }
 

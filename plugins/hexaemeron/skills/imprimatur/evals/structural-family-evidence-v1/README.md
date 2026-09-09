@@ -88,6 +88,15 @@ Each row carries this table's pair as its own `minimum_positive` and
 it enforces, so a row declaring anything else is a finding rather than a
 second answer.
 
+That sentence was itself unjoined. The table above, the checker's
+`TIER_MINIMUMS`, the test module's own literal and every catalogue row were
+four copies of one contract, and only the last two were compared: editing the
+`signal` row here to 1 and 0 while the checker enforced 2 and 1 left all 54
+tests green. `test_the_readme_tier_table_states_the_enforced_minimums` reads
+this table and compares it with `TIER_MINIMUMS`, and the test module imports
+that table rather than restating it, so one source states the contract and the
+other three are checked against it.
+
 The `high-value` families are `causal_subject_has_no`,
 `causal_fact_clause_wrapper`, `reason_is_because`, `empty_expletive_case`
 and the narrow adversative form of `redundant_connective_pair`. The `signal`
@@ -135,13 +144,35 @@ Its exit codes are three:
 
 - `0`: the fixture is clean.
 - `1`: the checker found something. It prints every finding of the first
-  class it meets, in the order `family-tier`, `family-schema`,
-  `family-duplicate`, `family-minimum`, `specimen-annotation-order`,
+  class it meets, in the order `schema-contract`, `family-tier`,
+  `family-schema`,
+  `family-duplicate`, `family-minimum`, `family-overlaps`,
+  `specimen-annotation-order`,
   `specimen-schema`,
   `specimen-duplicate`, `specimen-unknown-family`,
   `specimen-family-mismatch`, `specimen-span`,
   `specimen-digest`, `specimen-group-id`, `specimen-independence`,
   `tier-minimum`, `source-mismatch`.
+
+  `schema-contract` is first because it reports a schema whose own
+  declarations this checker cannot account for, and every other class is
+  measured against that schema. It covers three joins: each schema's
+  `required` list against the checker's `FIELD_ENFORCEMENT` register, which
+  names for every required field either the check that enforces it beyond its
+  own schema clause or the runbook step that writes it; the family schema's
+  `evidence_tier` enum against the enforced tier set; and the specimen
+  schema's `selection_seed` const against the checker's `FIXTURE_SEED`. Each
+  of the three was two unjoined copies of one contract, and each could be
+  edited with the whole suite green: dropping `origin` from the specimen
+  schema's `required` list, adding a sixth `evidence_tier` the checker would
+  refuse on every row, and changing `FIXTURE_SEED` away from the const every
+  specimen must declare. Adding a field to either schema now means adding its
+  row to the register.
+
+  `family-overlaps` resolves the `overlaps` link. A row could name a family
+  that does not exist in this catalogue and exit 0, which is
+  `specimen-unknown-family`'s check applied to the catalogue's own referential
+  field.
 - `2`: the invocation or a read was refused, which covers a missing fixture
   directory, an unknown `--tier`, `--min-independent-positive` without
   `--tier`, a symlink, an oversized file, an
@@ -152,10 +183,15 @@ Its exit codes are three:
 The flags are:
 
 - `--report <path>` writes one JSON report holding `families`, `specimens`,
-  `below_minimum` and `rejections_path`. `below_minimum` is the answer a
+  `below_minimum`, `unenforced_fields` and `rejections_path`.
+  `below_minimum` is the answer a
   later run needs: the family id, its tier, the counted independent
   positives and negatives, and the minimums its tier requires.
-  `rejections_path` points at `selection-rejections.jsonl`.
+  `unenforced_fields` is the second: the eight required fields this step
+  declares and does not enforce, each with the row file it belongs to and the
+  step that writes it. Those eight were found one at a time by four audit
+  rounds reading `grep` output, so they are a report key rather than a source
+  comment. `rejections_path` points at `selection-rejections.jsonl`.
 - `--allow-below-minimum` records a tier-minimum shortfall in the report
   rather than reporting it as a finding. **This flag exists for the build
   phase only**, while specimens are still being collected. A released
@@ -291,6 +327,35 @@ sha256sum plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   plugins/hexaemeron/skills/imprimatur/lexicon/structural.json \
   plugins/hexaemeron/skills/imprimatur/EVOLUTION.md
 ```
+
+### Fixture inputs
+
+The five rows above are the lint and lexicon files this delivery does not
+touch, and they do not cover the fixture's own inputs. `issue-1298.md` in
+particular is the oracle the wording test compares the catalogue against, and
+it was unpinned: an edit made consistently to the oracle and to the catalogue
+left every test green, because nothing held the oracle's bytes.
+
+| Fixture path | SHA-256 |
+| --- | --- |
+| `families.jsonl` | `97ec47f13248b60a269123e116e2689a1285b693b14520abb127ec9b7258d8e8` |
+| `issue-1298.md` | `ccff01a9db78693b183a3193b5cd76edbd908f75f3d48b4e25c46fda907f1e46` |
+| `schemas/family.schema.json` | `46244a6a6a9386b903aa16731f4b4f30df07945b2e3221320544b243aafa8185` |
+| `schemas/specimen.schema.json` | `ed8de25920f263308ed22928b603dcbd351230595b521af471d1f144dd1700c9` |
+
+Paths are relative to this directory.
+`test_the_fixture_digest_table_covers_every_fixture_file` walks the fixture
+and requires every file to appear above or to be named in the test's own
+exclusion set, so a file cannot arrive unpinned by being left out. Two are
+excluded: this `README.md`, which carries the table and cannot hold its own
+digest, and `specimens.jsonl`, which a later runbook step writes. That step
+also adds `selection-rejections.jsonl` and refills `families.jsonl`, so it
+updates this table and that exclusion set; the test going red is how it finds
+out.
+
+Pinning the oracle does not settle whether it is the issue's current body.
+It raises a consistent edit from two files to three, and closing it needs a
+network read.
 
 ## Files
 
