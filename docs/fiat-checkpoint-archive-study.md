@@ -994,3 +994,30 @@ after it still catches a key whose footer was truncated.
 **Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Section 4's body witness reads an escaped newline as a line
+delimiter. A header counts as secret-shaped when at least one line of base64
+body or a matching `-----END` marker follows it within the scanned window, and
+a line ends at a newline character or at the two-character escape `\n` that
+carries one inside a JSON string value. The base64 body requirement itself is
+unchanged, so a document that names a header in prose or inside a code span is
+still not a secret. The set stays six, the scanned window keeps its current
+size, and every refusal class, ceiling, schema field, entry path, budget and
+fixture id is untouched.
+**Why.** Step 2's audit round 3 raised S2-R3-01 against the block rule this
+study adopted earlier today: the rule fails open. A PEM key carried as a JSON
+string value supplies no physical body line, and past the 1,792-byte lookahead
+it shows no footer either, so the witness never arrives. Measured with
+ephemeral keys, deleted after: as raw members the 2,048, 3,072 and 4,096-bit
+keys all refuse, while as `json.dumps({"deploy_key": <pem>})` the 2,048-bit
+refuses with its footer at 1,678 bytes and the 3,072-bit at 2,470 bytes and the
+4,096-bit at 3,266 bytes both exit 0. The matcher before the block rule refused
+all three, so the repair for S2-R2-02 released something. `state.json` and
+`ledger.jsonl` are exactly that shape, and the capsule snapshots both. Reading
+the escape as a delimiter closes the whole hole, where widening the lookahead
+closes part of it and moves a cost step 5 measures.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

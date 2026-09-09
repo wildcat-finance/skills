@@ -223,6 +223,88 @@ EXPECTED_PEM_PROSE = "PEM private-key block"
 # must now publish.
 ARMOURED_BODY_LINE = "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbg=="
 ARMOURED_BLOCK_TRUNCATED = SUBSUMED_PATTERN_SPAN + "\n" + ARMOURED_BODY_LINE + "\n"
+# The same block held as a JSON string value, which is how `state.json` and a
+# `ledger.jsonl` line carry one: `json.dumps` writes every newline as the two
+# characters `\` and `n`, so the member has no newline byte anywhere. Forty
+# body lines put the footer further past the header than the lookahead
+# reaches, so neither witness arrived and the member published. That was
+# S2-R3-01, and it is the shape a real deploy key in controller state has.
+ARMOURED_BLOCK_JSON_CARRIED = json.dumps(
+    {
+        "deploy_key": (
+            SUBSUMED_PATTERN_SPAN
+            + "\n"
+            + (ARMOURED_BODY_LINE + "\n") * 40
+            + "-----END OPENSSH PRIVATE KEY-----\n"
+        )
+    }
+)
+
+# The reference's block paragraph is the contract home steps 3 to 5 read for
+# the block rule, and until this pin nothing held it: four anchored edits to
+# it, including deleting it outright and inverting the truncated-key rule,
+# left every test that reads the file green. That was S2-R3-03.
+#
+# The pin is an equality, so mutating any value in the paragraph fails, and
+# the anchors below fail by name when the paragraph is deleted. The equality
+# alone would only say the reference still reads as somebody once typed it,
+# so each rule in it is also required to be a rule study section 4 states:
+# a dated amendment that moves one moves this test, and the reference has to
+# follow rather than drift quietly behind it.
+REFERENCE_BLOCK_ANCHOR = "The two armour forms refuse as blocks."
+REFERENCE_BLOCK_END = "\n\n- A PEM private-key block"
+EXPECTED_BLOCK_PARAGRAPH = (
+    "The two armour forms refuse as blocks. A header is secret-shaped only "
+    "when key material follows it within the scanned window: one whole line "
+    "of base64 body, or the `-----END` marker matching that header. A line "
+    "ends at a newline character or at the two-character escape `\\n` that "
+    "carries one inside a JSON string value, so a key held as a JSON string "
+    "value in `state.json` or on one `ledger.jsonl` line carries body lines "
+    "like any other. A file naming a header in prose or quoting one in a code "
+    "span supplies neither, so a run can archive its own specification text. "
+    "A key whose footer was truncated still carries body lines and still "
+    "refuses. The four token patterns are self-delimiting and refuse on the "
+    "match alone. The scan reads in bounded chunks and carries between them "
+    "the longest header the six can match plus that lookahead, so a block "
+    "lying across a chunk boundary still refuses; the carry is derived from "
+    "the patterns rather than fixed."
+)
+# Each row is one rule: what study section 4 states, and the words the
+# reference paragraph has to restate it in. Neither side may be absent.
+BLOCK_RULE_PARITY = (
+    (
+        "at least one line of base64 body or a matching `-----END` marker",
+        "one whole line of base64 body, or the `-----END` marker matching "
+        "that header",
+    ),
+    (
+        "a line ends at a newline character or at the two-character escape "
+        "`\\n` that carries one inside a JSON string value",
+        "A line ends at a newline character or at the two-character escape "
+        "`\\n` that carries one inside a JSON string value",
+    ),
+    (
+        "A document that names a header in prose or inside a code span is "
+        "not a secret",
+        "A file naming a header in prose or quoting one in a code span "
+        "supplies neither",
+    ),
+    (
+        "still catches a key whose footer was truncated",
+        "A key whose footer was truncated still carries body lines and still "
+        "refuses",
+    ),
+    (
+        "The four token patterns are unchanged, because each is "
+        "self-delimiting",
+        "The four token patterns are self-delimiting and refuse on the match "
+        "alone",
+    ),
+    (
+        "The set stays six",
+        "the longest header the six can match plus that lookahead",
+    ),
+)
 
 # A well-formed fingerprint that is not the fixture's, for the proof's
 # comparison against the set the manifest pins. It is never imported anywhere.
@@ -1273,6 +1355,13 @@ class CheckpointArchiveExportTests(HexctlCase):
         self.assertEqual(before, self.controller_bytes())
 
     def test_archive_export_refuses_secret_shaped_member(self):
+        """The refusal, and the reference paragraph that states its rule.
+
+        The document half is here rather than in a test of its own because
+        step 5's Exit pins an exact test count over this module, so a pin that
+        arrives as a new test breaks a criterion three steps downstream.
+        """
+        self.pin_the_reference_block_paragraph()
         self.to_post_push()
         planted = Path(self.target) / ".hexaemeron" / "notes.txt"
         planted.write_text("carry over: AKIA" + "A1B2C3D4E5F6G7H8"[:16] + "\n", encoding="utf-8")
@@ -1292,7 +1381,51 @@ class CheckpointArchiveExportTests(HexctlCase):
                 result, _ = self.archive(expect=1)
                 self.assertEqual("secret-shaped-member\n", result.stderr)
         planted.unlink()
+        # The same block carried as a JSON string value, which is the shape
+        # `state.json` and a `ledger.jsonl` line give a credential and the
+        # shape the block rule published until the escape became a delimiter.
+        # It is planted alone: with another refusing member still in the
+        # capsule this assertion passes against a scan that never read it,
+        # which is what the first draft of this test did.
+        self.assertNotIn("\n", ARMOURED_BLOCK_JSON_CARRIED)
+        carried = Path(self.target) / ".hexaemeron" / "notes.json"
+        carried.write_text(ARMOURED_BLOCK_JSON_CARRIED, encoding="utf-8")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("secret-shaped-member\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        carried.unlink()
         self.archive()
+
+    def pin_the_reference_block_paragraph(self):
+        """The reference's block paragraph, held to what study section 4 says.
+
+        Two assertions, and each one catches what the other cannot. The
+        equality catches a mutated or deleted value in the reference, which
+        was S2-R3-03: four anchored edits to this paragraph, one of them
+        deleting it and one inverting the truncated-key rule, left every test
+        that read the file green. The parity rows catch the drift the equality
+        would freeze in place: a dated study amendment that moves one of these
+        rules fails here, so the reference cannot quietly stay behind it.
+        """
+        reference = read(REFERENCE)
+        study = flat(read(STUDY))
+        paragraph = REFERENCE_BLOCK_ANCHOR + anchored(
+            reference,
+            REFERENCE_BLOCK_ANCHOR,
+            REFERENCE_BLOCK_END,
+            "the reference's private-key block paragraph",
+        )
+        self.assertEqual(EXPECTED_BLOCK_PARAGRAPH, flat(paragraph))
+        for stated, restated in BLOCK_RULE_PARITY:
+            with self.subTest(rule=stated):
+                self.assertIn(stated, study)
+                self.assertIn(restated, EXPECTED_BLOCK_PARAGRAPH)
+        # The three counts the paragraph names are the shipped tuples, so a
+        # pattern added or dropped in the code contradicts the prose here.
+        module = hexctl_module()
+        self.assertEqual(2, len(module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS))
+        self.assertEqual(4, len(module.CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS))
+        self.assertEqual(6, len(module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS))
 
     def test_secret_shaped_member_refuses_before_publish_on_a_truncated_key_block(self):
         """A block whose `-----END` is gone is still key material.

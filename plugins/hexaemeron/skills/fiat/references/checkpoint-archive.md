@@ -194,14 +194,17 @@ with `secret-shaped-member`; nothing is redacted in place.
 
 The two armour forms refuse as blocks. A header is secret-shaped only when key
 material follows it within the scanned window: one whole line of base64 body,
-or the `-----END` marker matching that header. A file naming a header in prose
-or quoting one in a code span supplies neither, so a run can archive its own
-specification text. A key whose footer was truncated still carries body lines
-and still refuses. The four token patterns are self-delimiting and refuse on
-the match alone. The scan reads in bounded chunks and carries between them the
-longest header the six can match plus that lookahead, so a block lying across a
-chunk boundary still refuses; the carry is derived from the patterns rather
-than fixed.
+or the `-----END` marker matching that header. A line ends at a newline
+character or at the two-character escape `\n` that carries one inside a JSON
+string value, so a key held as a JSON string value in `state.json` or on one
+`ledger.jsonl` line carries body lines like any other. A file naming a header
+in prose or quoting one in a code span supplies neither, so a run can archive
+its own specification text. A key whose footer was truncated still carries body
+lines and still refuses. The four token patterns are self-delimiting and refuse
+on the match alone. The scan reads in bounded chunks and carries between them
+the longest header the six can match plus that lookahead, so a block lying
+across a chunk boundary still refuses; the carry is derived from the patterns
+rather than fixed.
 
 - A PEM private-key block, whose armour label also matches the OpenSSH header.
 - The OpenPGP private-key block, opened by `-----BEGIN PGP PRIVATE KEY BLOCK-----`.

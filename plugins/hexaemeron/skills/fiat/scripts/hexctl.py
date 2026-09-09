@@ -668,7 +668,22 @@ all a match of the length recorded here also exists at the same offset, because
 the tail repeats one character class, so this length is still what the scan has
 to carry to see it across a chunk boundary.
 """
-CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(rb"^[A-Za-z0-9+/=]{16,}[ \t]*\r?$", re.MULTILINE)
+CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK = rb"(?:\x0a|\\n)"
+"""What ends a line for the body witness: a newline byte, or the escape for one.
+
+The study's third 2026-09-09 amendment settles this. A PEM key held as a JSON
+string value carries no newline byte at all: `json.dumps` writes each one as
+the two characters `\\` and `n`, so a key inside `state.json` or on one
+`ledger.jsonl` line is one physical line however many body lines it had, and a
+witness that only reads the byte never arrives. Both of those files are scan
+targets the study names, so reading the escape as a delimiter is what makes the
+block rule cover the shape a controller file actually carries a credential in.
+"""
+CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
+    rb"(?:\A|(?<=\x0a)|(?<=\\n))"
+    rb"[A-Za-z0-9+/=]{16,}[ \t]*\r?"
+    rb"(?=\Z|" + CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK + rb")"
+)
 """One whole line of base64, which is what a key's body looks like.
 
 The line rather than a run: a bare run of base64 characters is also what a
@@ -676,6 +691,12 @@ SHA-256 digest, a commit id and half the identifiers in this repository look
 like, and a document quoting an armour header near one of those is exactly the
 false refusal the amendment removes. A body line is the whole line, so prose
 around a header never supplies one.
+
+Both delimiters are zero-width, so a match still starts at the body's first
+byte and the lookahead comparison against the header below is unchanged. The
+alternative, consuming the delimiter, would make `finditer` skip every second
+body line in a run of them, because one match's trailing delimiter is the
+next one's leading delimiter.
 """
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
 """The longest line the scan will read between a header and the key material.
@@ -16951,6 +16972,11 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
     footer is derived from the header that matched rather than looked for
     generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not completed by an
     unrelated `-----END CERTIFICATE-----` further down the file.
+
+    A body line ends at a newline byte or at the two-character escape for one,
+    which the study's third 2026-09-09 amendment requires: a key carried as a
+    JSON string value supplies no newline byte, and past the lookahead it
+    supplies no footer either, so before that the block rule published it.
 
     The body positions are found once for the whole buffer and then walked with
     one forward index per pattern, because `finditer` yields matches in
