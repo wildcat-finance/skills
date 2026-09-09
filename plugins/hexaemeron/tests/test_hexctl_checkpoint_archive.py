@@ -48,6 +48,15 @@ Every slice below is taken through `anchored` or `fenced_block`, which name the
 missing anchor in an assertion rather than raising `IndexError` on a reworded
 study.
 
+The remaining class exports one archive from one really signed run. The
+controller fixture the rest of the suite uses fakes every delivery tool, which
+is correct for receipts and useless here: a bundle built from invented SHAs
+carries no objects, and a signature proof read from a canned trailer block
+proves nothing. So that class points the fake ref reader at the commits it
+really made, signs them with a key generated into a temporary `GNUPGHOME`, and
+lets the archive's bundle, digests and proof run against real bytes. The
+operator's keyring is never opened.
+
 No test or class name here contains `hostile` or `restore_from_archive`: the
 design record's conformance resolvers select later steps' tests with
 `-k hostile` and `-k restore_from_archive`, and a match here would change
@@ -56,10 +65,37 @@ their counts.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
+import os
 import re
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
 import unittest
+import zipfile
+from contextlib import ExitStack, redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
+
+# The capsule refuses a symlinked output parent by design, and macOS resolves
+# TMPDIR under /var, a symlink to /private/var. Canonicalising the temporary
+# root hands the controller a real path and leaves the refusal untouched.
+tempfile.tempdir = os.path.realpath(tempfile.gettempdir())
+os.environ["TMPDIR"] = tempfile.tempdir
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from test_hexctl import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module  # noqa: E402
+
+ORIGIN_URL = "https://github.com/wildcat-finance/example.git"
+COAUTHOR = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
+ORIGIN_TRAILER = "Wildcat-Origin: shoggoth"
 
 HERE = Path(__file__).resolve().parent
 PLUGIN = HERE.parent
@@ -804,6 +840,648 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertEqual(entry["unit"], fields.group("unit"))
                 self.assertEqual(entry["limit"], int(fields.group("limit")))
 
+
+class CheckpointArchiveExportTests(HexctlCase):
+    """`checkpoint archive` over one real, really signed run.
+
+    The controller fixture fakes the delivery tools a run talks to, which is
+    right for receipts and wrong for an archive: a bundle built from invented
+    SHAs carries no objects, and a signature proof read from a canned trailer
+    block proves nothing. So this fixture keeps the fake `gh` and the fake ref
+    reader, points the fake ref map at the commits it really made, and signs
+    those commits with an OpenPGP key generated into a temporary `GNUPGHOME`
+    for the class. Nothing here reads or writes the operator's keyring.
+    """
+
+    key_home = None
+    fingerprint = None
+
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which("gpg") is None:
+            return
+        # A gpg-agent's socket lives in its home and AF_UNIX paths are capped
+        # near 104 bytes, so the names below stay short. The system temporary
+        # root, canonicalised above, leaves room; a name under the tree would
+        # not, and `tests/test_scratch_quiescence.py` forbids anchoring there
+        # anyway.
+        cls.key_root = tempfile.mkdtemp(prefix="fiat861-")
+        cls.key_home = os.path.join(cls.key_root, "h")
+        os.mkdir(cls.key_home, 0o700)
+        generated = subprocess.run(
+            [
+                "gpg",
+                "--batch",
+                "--quiet",
+                "--pinentry-mode",
+                "loopback",
+                "--passphrase",
+                "",
+                "--quick-generate-key",
+                "Fiat Fixture <fixture@example.invalid>",
+                "ed25519",
+                "sign",
+                "never",
+            ],
+            env={**os.environ, "GNUPGHOME": cls.key_home},
+            capture_output=True,
+            text=True,
+        )
+        if generated.returncode != 0:
+            cls.key_home = None
+            return
+        listed = subprocess.run(
+            ["gpg", "--batch", "--with-colons", "--list-secret-keys"],
+            env={**os.environ, "GNUPGHOME": cls.key_home},
+            capture_output=True,
+            text=True,
+        )
+        for line in listed.stdout.splitlines():
+            if line.startswith("fpr:"):
+                cls.fingerprint = line.split(":")[9]
+                break
+        if cls.fingerprint is None:
+            cls.key_home = None
+
+    @classmethod
+    def tearDownClass(cls):
+        if getattr(cls, "key_home", None) is None:
+            return
+        subprocess.run(
+            ["gpgconf", "--homedir", cls.key_home, "--kill", "all"],
+            capture_output=True,
+        )
+        shutil.rmtree(cls.key_root, ignore_errors=True)
+
+    def setUp(self):
+        if self.key_home is None:
+            self.skipTest("gpg is unavailable, so no fixture key can be generated")
+        super().setUp()
+        self.env["GNUPGHOME"] = self.key_home
+        self.git("remote", "add", "origin", ORIGIN_URL)
+        self.git("config", "user.signingkey", self.fingerprint)
+        self.git("config", "gpg.program", "gpg")
+        self.fake_refs["main"] = self.head_sha()
+
+    # -- fixture ---------------------------------------------------------
+
+    def head_sha(self, ref="HEAD"):
+        return self.git("rev-parse", ref).stdout.strip()
+
+    def commit_signed(self, message, *, amend=False):
+        """One real commit, really signed by the fixture key and nothing else."""
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "commit.gpgsign=true",
+                "-c",
+                f"user.signingkey={self.fingerprint}",
+                "-c",
+                "gpg.program=gpg",
+                "commit",
+                "-q",
+                *(("--amend",) if amend else ()),
+                "-m",
+                message,
+            ],
+            cwd=self.target,
+            env={**os.environ, "GNUPGHOME": self.key_home},
+            check=True,
+            capture_output=True,
+        )
+        return self.head_sha()
+
+    def signed_commit(self, message, path="work.txt"):
+        full = os.path.join(self.target, path)
+        with open(full, "a", encoding="utf-8") as handle:
+            handle.write(message + "\n")
+        self.git("add", path)
+        return self.commit_signed(message)
+
+    @staticmethod
+    def trailers(subject="fixture work"):
+        return f"{subject}\n\n{COAUTHOR}\n{ORIGIN_TRAILER}\n"
+
+    def to_receipted_steps(self, titles=("First", "Second")):
+        self.init()
+        study = self.write(
+            "study.md",
+            "# Study\n\n```risk-register\npacket | boundary | check\n```\n",
+        )
+        self.run_ctl(
+            "done", "study", "--artifact", study, "--skills", "hexaemeron:imprimatur"
+        )
+        runbook = self.write(
+            "runbook.md",
+            "# Runbook\n\n"
+            + "\n".join(
+                f"## Step {number}: {title}\n\n**Goal.** Ship {title}.\n"
+                for number, title in enumerate(titles, 1)
+            ),
+        )
+        steps = self.write("steps.json", json.dumps(list(titles)))
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-q", "-m", "fixture sources")
+        state = self.state()
+        self.fake_refs[state["run_branch"]] = self.head_sha()
+        for step in state["steps"]:
+            self.git("branch", self.step_branch(step["n"], state))
+            self.fake_refs[self.step_branch(step["n"], state)] = self.head_sha()
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        return state
+
+    def implement_step(self, number):
+        """Put one really signed commit on the step branch and receipt it."""
+        branch = self.step_branch(number)
+        self.git("checkout", "-q", branch)
+        head = self.signed_commit(self.trailers(f"step {number}"))
+        self.fake_refs[branch] = head
+        self.run_ctl("done", "implement", "--branch", branch, "--commit", head)
+        return head
+
+    def to_post_push(self, titles=("First", "Second"), message=None):
+        """One run standing at its post-push boundary with a really signed head.
+
+        The harness commits the fixture audit record itself, unsigned, so the
+        branch tip after a round is not the commit the step signed. Amending
+        that commit into a signed one keeps the receipted head and the real
+        head the same object, which is the state a genuine run is in.
+        """
+        self.to_receipted_steps(titles=titles)
+        branch = self.step_branch(1)
+        self.implement_step(1)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        head = self.commit_signed(message or self.trailers("step 1"), amend=True)
+        self.fake_refs[branch] = head
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "3",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", head,
+            "--pr-base", self.step_base(1),
+        )
+        return head
+
+    def archive(self, *, expect=0):
+        result = self.run_ctl("checkpoint", "archive", expect=expect)
+        payload = json.loads(result.stdout) if expect == 0 else None
+        return result, payload
+
+    def store_root(self):
+        state = self.state()
+        return Path(state["config"]["git"]["origin"]) / ".hexaemeron" / "checkpoints"
+
+    def published(self):
+        found = sorted(self.store_root().glob("*/*/checkpoint.zip"))
+        self.assertEqual(1, len(found), found)
+        return found[0]
+
+    def controller_bytes(self):
+        root = Path(self.target) / ".hexaemeron"
+        return (
+            root.joinpath("state.json").read_bytes(),
+            root.joinpath("ledger.jsonl").read_bytes(),
+        )
+
+    def manifest_of(self, archive):
+        with zipfile.ZipFile(archive) as container:
+            return json.loads(container.read("checkpoint.json"))
+
+    def direct_environment(self):
+        environment = dict(self.env)
+        environment["FAKE_GIT_REFS"] = json.dumps(self.fake_refs)
+        environment["FAKE_GIT_PARENTS"] = json.dumps(self.fake_parents)
+        environment["FAKE_GH_PRS"] = json.dumps(self.fake_prs)
+        return environment
+
+    def in_process(self, patches=()):
+        """Run one export in this process, so a ceiling or reader can be replaced.
+
+        The subprocess surface is what an operator uses and is what every other
+        case here drives. Three refusals -- an oversized bundle, a disagreeing
+        ref map and a manifest that stopped matching its members -- cannot be
+        produced from outside the process without corrupting the fixture into
+        something no run could reach, so they are provoked at the seam instead.
+        """
+        module = hexctl_module()
+        error = StringIO()
+        output = StringIO()
+        stack = ExitStack()
+        with stack:
+            stack.enter_context(mock.patch.dict(os.environ, self.direct_environment(), clear=True))
+            for name, value in patches:
+                stack.enter_context(mock.patch.object(module, name, value))
+            stack.enter_context(redirect_stderr(error))
+            stack.enter_context(redirect_stdout(output))
+            try:
+                module.cmd_checkpoint_archive(SimpleNamespace(dir=self.target))
+            except SystemExit as stopped:
+                return stopped.code, output.getvalue(), error.getvalue()
+        return 0, output.getvalue(), error.getvalue()
+
+    # -- cases -----------------------------------------------------------
+
+    def test_archive_export_is_byte_identical_across_two_exports_and_two_absolute_paths(self):
+        self.to_post_push()
+        _, first = self.archive()
+        original = self.published().read_bytes()
+        sidecar = self.published().with_name("checkpoint.zip.sha256").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(f"{first['outer_sha256']}  checkpoint.zip\n", sidecar)
+
+        shutil.rmtree(self.store_root())
+        _, second = self.archive()
+        self.assertEqual(original, self.published().read_bytes())
+        self.assertEqual(first["outer_sha256"], second["outer_sha256"])
+        self.assertEqual(first["manifest_sha256"], second["manifest_sha256"])
+        self.assertEqual(first["bundle_sha256"], second["bundle_sha256"])
+
+        shutil.rmtree(self.store_root())
+        elsewhere = self.relocated_copy()
+        moved = subprocess.run(
+            [sys.executable, HEXCTL, "checkpoint", "archive"],
+            cwd=elsewhere,
+            capture_output=True,
+            text=True,
+            env=self.direct_environment(),
+        )
+        self.assertEqual(0, moved.returncode, moved.stderr)
+        self.assertEqual(original, self.published().read_bytes())
+        self.assertEqual(first["outer_sha256"], json.loads(moved.stdout)["outer_sha256"])
+
+    def relocated_copy(self):
+        """The same run at another absolute path, with its recorded paths untouched.
+
+        Copying rather than editing is the point: the controller state, and so
+        the capsule, stays byte for byte what it was, and only the producer's
+        location changes. The linked worktree's two pointers are the only
+        things that have to follow it.
+        """
+        other = tempfile.mkdtemp(prefix="fiat861-elsewhere-")
+        self.addCleanup(shutil.rmtree, other, True)
+        destination = os.path.join(other, "origin")
+        shutil.copytree(self.dir, destination, symlinks=True)
+        name = os.path.basename(self.target)
+        worktree = os.path.join(destination, "tmp", "fiat", name)
+        with open(os.path.join(worktree, ".git"), "w", encoding="utf-8") as handle:
+            handle.write(f"gitdir: {destination}/.git/worktrees/{name}\n")
+        with open(
+            os.path.join(destination, ".git", "worktrees", name, "gitdir"),
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            handle.write(f"{worktree}/.git\n")
+        return worktree
+
+    def test_archive_reserves_prior_acceptance_entries(self):
+        self.to_post_push()
+        _, result = self.archive()
+        manifest = self.manifest_of(self.published())
+        self.assertEqual("outside", manifest["acceptance"]["current"])
+        self.assertEqual([], manifest["acceptance"]["prior"])
+        self.assertEqual({"current", "prior"}, set(manifest["acceptance"]))
+        with zipfile.ZipFile(self.published()) as container:
+            names = container.namelist()
+        self.assertNotIn("acceptance/current", names)
+        self.assertFalse([name for name in names if name.startswith("acceptance/")])
+        self.assertEqual(64, manifest["limits"]["prior_acceptances"])
+        self.assertEqual(result["entries"], len(names))
+
+    def test_archive_export_refuses_every_unaccepted_boundary(self):
+        def refused(label):
+            before = self.controller_bytes()
+            result, _ = self.archive(expect=1)
+            self.assertEqual("boundary-unaccepted\n", result.stderr, label)
+            self.assertFalse(self.store_root().exists(), label)
+            self.assertEqual(before, self.controller_bytes(), label)
+
+        self.init()
+        refused("study")
+        study = self.write(
+            "study.md",
+            "# Study\n\n```risk-register\npacket | boundary | check\n```\n",
+        )
+        self.run_ctl(
+            "done", "study", "--artifact", study, "--skills", "hexaemeron:imprimatur"
+        )
+        refused("runbook")
+        runbook = self.write(
+            "runbook.md", "# Runbook\n\n## Step 1: One\n\n**Goal.** One.\n"
+        )
+        steps = self.write("steps.json", '["One"]\n')
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-q", "-m", "fixture sources")
+        state = self.state()
+        self.fake_refs[state["run_branch"]] = self.head_sha()
+        self.git("branch", self.step_branch(1, state))
+        self.fake_refs[self.step_branch(1, state)] = self.head_sha()
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        refused("implement")
+        self.implement_step(1)
+        refused("audit-before-round")
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        refused("close-audit")
+        self.run_ctl("done", "audit")
+        refused("prose")
+
+    def test_archive_export_refuses_dirty_worktree(self):
+        self.to_post_push()
+        # A tracked file the receipts do not pin: a receipted source would
+        # refuse at the controller's own verification, one check earlier, and
+        # the dirty-tree rule would never be reached.
+        with open(os.path.join(self.target, "work.txt"), "a", encoding="utf-8") as handle:
+            handle.write("uncommitted\n")
+        before = self.controller_bytes()
+        result, _ = self.archive(expect=1)
+        self.assertEqual("worktree-dirty\n", result.stderr)
+        self.assertFalse(self.store_root().exists())
+        self.assertEqual(before, self.controller_bytes())
+
+    def test_archive_export_refuses_secret_shaped_member(self):
+        self.to_post_push()
+        planted = Path(self.target) / ".hexaemeron" / "notes.txt"
+        planted.write_text("carry over: AKIA" + "A1B2C3D4E5F6G7H8"[:16] + "\n", encoding="utf-8")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("secret-shaped-member\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        planted.write_text("-----BEGIN OPENSSH PRIVATE KEY-----\n", encoding="utf-8")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("secret-shaped-member\n", result.stderr)
+        planted.unlink()
+        self.archive()
+
+    def test_archive_export_refuses_oversized_bundle(self):
+        self.to_post_push()
+        code, _, error = self.in_process(
+            (("CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX", 1),)
+        )
+        self.assertEqual(1, code)
+        self.assertEqual("bundle-oversized\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_archive_export_refuses_ref_disagreement(self):
+        self.to_post_push()
+        module = hexctl_module()
+        honest = module._checkpoint_refs
+
+        def drifted(base_dir, state):
+            refs = honest(base_dir, state)
+            return {**refs, state["run_branch"]: "0" * 40}
+
+        code, _, error = self.in_process((("_checkpoint_refs", drifted),))
+        self.assertEqual(1, code)
+        self.assertEqual("ref-disagreement\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_archive_export_refuses_occupied_boundary_directory(self):
+        self.to_post_push()
+        _, first = self.archive()
+        published = self.published()
+        before = published.read_bytes()
+        result, _ = self.archive(expect=1)
+        self.assertEqual("boundary-occupied\n", result.stderr)
+        self.assertEqual(before, published.read_bytes())
+        self.assertEqual(
+            [], [entry for entry in published.parent.parent.iterdir() if entry.name.startswith(".")]
+        )
+
+    def test_archive_export_refuses_unsupported_signature(self):
+        self.to_post_push()
+        self.git("config", "gpg.format", "x509")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("signature-format-unsupported\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        self.git("config", "gpg.format", "openpgp")
+        self.archive()
+
+    def test_archive_layout_and_entry_metadata_are_fixed(self):
+        self.to_post_push()
+        _, result = self.archive()
+        archive = self.published()
+        with zipfile.ZipFile(archive) as container:
+            infos = container.infolist()
+            names = [info.filename for info in infos]
+            for info in infos:
+                self.assertEqual(zipfile.ZIP_STORED, info.compress_type, info.filename)
+                self.assertEqual(3, info.create_system, info.filename)
+                self.assertEqual(0o100644, info.external_attr >> 16, info.filename)
+                self.assertEqual((1980, 1, 1, 0, 0, 0), info.date_time, info.filename)
+                self.assertEqual(b"", info.extra, info.filename)
+                self.assertEqual(b"", info.comment, info.filename)
+                self.assertFalse(info.filename.endswith("/"), info.filename)
+                self.assertEqual(info.file_size, info.compress_size, info.filename)
+            self.assertEqual(b"", container.comment)
+        self.assertEqual(
+            sorted(names, key=lambda name: name.encode("utf-8")), names
+        )
+        self.assertNotIn(b"PK\x06\x06", archive.read_bytes()[-65536:])
+        for expected in (
+            "README.txt",
+            "checkpoint.json",
+            "controller-capsule/MANIFEST.json",
+            "controller-capsule/controller/state.json",
+            "git/repository.bundle",
+            "identity/checkpoint-identity.json",
+            "proof/pubkey.asc",
+            "proof/signatures.json",
+        ):
+            self.assertIn(expected, names)
+        manifest = self.manifest_of(archive)
+        self.assertEqual("fiat-checkpoint-archive/v1", manifest["schema"])
+        self.assertEqual("zip", manifest["archive"]["format"])
+        self.assertEqual("stored", manifest["archive"]["compression"])
+        listed = [entry["path"] for entry in manifest["archive"]["entries"]]
+        self.assertEqual(sorted(set(names) - {"checkpoint.json"}, key=lambda n: n.encode()), listed)
+        self.assertEqual(archive.stat().st_size, result["bytes"])
+        self.assertEqual(
+            hashlib.sha256(archive.read_bytes()).hexdigest(), result["outer_sha256"]
+        )
+
+    def test_archive_manifest_carries_no_path_hostname_or_environment_value(self):
+        self.to_post_push()
+        self.archive()
+        manifest = self.manifest_of(self.published())
+        forbidden = {
+            self.dir,
+            self.target,
+            os.path.realpath(self.dir),
+            socket.gethostname(),
+            self.key_home,
+        }
+        forbidden |= {
+            value
+            for name, value in os.environ.items()
+            if name in ("HOME", "USER", "LOGNAME", "TMPDIR", "PWD") and value
+        }
+        strings = []
+
+        def walk(value):
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    strings.append(key)
+                    walk(item)
+            elif isinstance(value, list):
+                for item in value:
+                    walk(item)
+            elif isinstance(value, str):
+                strings.append(value)
+
+        walk(manifest)
+        for text in strings:
+            self.assertFalse(text.startswith("/"), text)
+            for secret in forbidden:
+                if secret:
+                    self.assertNotIn(secret, text)
+        self.assertEqual(
+            os.path.basename(self.target), manifest["run"]["worktree_name"]
+        )
+        self.assertEqual("wildcat-finance/example", manifest["run"]["repository"])
+
+    def test_archive_export_appends_no_ledger_entry_and_reports_timing_stages(self):
+        self.to_post_push()
+        before = self.controller_bytes()
+        raw, result = self.archive()
+        self.assertEqual(before, self.controller_bytes())
+        # The reference has every one of these commands print one canonical
+        # JSON object, which is the form the next steps read back.
+        self.assertEqual(
+            json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n",
+            raw.stdout,
+        )
+        self.assertEqual("", raw.stderr)
+        self.assertEqual(
+            {"export", "identity", "bundle", "proof", "pack", "inspect", "publish"},
+            set(result["timing_ms"]),
+        )
+        for stage, value in result["timing_ms"].items():
+            self.assertIsInstance(value, int, stage)
+            self.assertGreaterEqual(value, 0, stage)
+        self.assertEqual("fiat-checkpoint-archive-export/v1", result["schema"])
+        self.assertEqual(
+            {
+                "schema", "archive", "sidecar", "outer_sha256", "manifest_sha256",
+                "snapshot_id", "bundle_sha256", "entries", "bytes", "boundary",
+                "next", "timing_ms",
+            },
+            set(result),
+        )
+        self.assertEqual("post-push", result["boundary"])
+        self.assertEqual("implement", result["next"]["do"])
+        self.assertRegex(result["snapshot_id"], r"^[0-9a-f]{64}$")
+        manifest = self.manifest_of(self.published())
+        self.assertEqual(
+            {"status": "bound", "snapshot_id": result["snapshot_id"]},
+            manifest["identity"],
+        )
+
+    def test_archive_export_self_check_refuses_manifest_mismatch(self):
+        self.to_post_push()
+        module = hexctl_module()
+        honest = module._checkpoint_archive_manifest
+
+        def drifted(**kwargs):
+            entries = [dict(entry) for entry in kwargs.pop("entries")]
+            entries[0]["sha256"] = "0" * 64
+            return honest(entries=entries, **kwargs)
+
+        code, _, error = self.in_process((("_checkpoint_archive_manifest", drifted),))
+        self.assertEqual(1, code)
+        self.assertEqual("manifest-mismatch\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_archive_bundle_is_built_single_threaded_from_exactly_the_checkpoint_refs(self):
+        self.to_post_push()
+        self.git("tag", "fixture-tag")
+        module = hexctl_module()
+        honest = module.bounded_run
+        seen = []
+
+        def recorded(base_dir, program, argv, **kwargs):
+            if program == "git" and "bundle" in argv:
+                seen.append(list(argv))
+            return honest(base_dir, program, argv, **kwargs)
+
+        code, output, error = self.in_process((("bounded_run", recorded),))
+        self.assertEqual(0, code, error)
+        creation = next(argv for argv in seen if argv[:4] == ["-c", "pack.threads=1", "bundle", "create"])
+        state = self.state()
+        # The bounded ref set is the base, the run branch and every step branch
+        # that has an implement receipt. Step 2 has none, so it is not a head:
+        # "exactly `_checkpoint_refs`" is what this pins, not "every branch".
+        expected = sorted(
+            f"refs/heads/{name}"
+            for name in (state["run_branch"], self.step_branch(1, state))
+        )
+        self.assertEqual(expected, creation[5 : 5 + len(expected)])
+        self.assertEqual([state["base"]], creation[5 + len(expected) :])
+
+        archive = self.published()
+        with zipfile.ZipFile(archive) as container:
+            header = container.read("git/repository.bundle").split(b"\n\n", 1)[0]
+        heads = {}
+        for line in header.decode("utf-8").splitlines()[1:]:
+            value, _, name = line.partition(" ")
+            heads[name] = value
+        self.assertEqual(set(expected), set(heads))
+        self.assertFalse([name for name in heads if name.startswith("refs/tags/")])
+        manifest = self.manifest_of(archive)
+        self.assertEqual(
+            {name.removeprefix("refs/heads/"): value for name, value in heads.items()},
+            {
+                name: value
+                for name, value in manifest["refs"].items()
+                if not re.fullmatch(r"[0-9a-f]{40}", name)
+            },
+        )
+        self.assertIn(state["base"], manifest["refs"])
+        self.assertEqual("sha1", manifest["bundle"]["hash_algorithm"])
+        self.assertTrue(manifest["bundle"]["complete_history"])
+        self.assertEqual(
+            json.loads(output)["bundle_sha256"], manifest["bundle"]["sha256"]
+        )
+
+    def test_archive_signature_proof_requires_good_status_and_exactly_one_trailer_each(self):
+        head = self.to_post_push()
+        self.archive()
+        with zipfile.ZipFile(self.published()) as container:
+            proof = json.loads(container.read("proof/signatures.json"))
+            key = container.read("proof/pubkey.asc")
+        self.assertEqual("fiat-checkpoint-signature-proof/v1", proof["schema"])
+        self.assertEqual([head], [record["sha"] for record in proof["commits"]])
+        record = proof["commits"][0]
+        self.assertEqual("G", record["status"])
+        self.assertEqual("openpgp", record["format"])
+        self.assertEqual(self.fingerprint, record["fingerprint"])
+        self.assertEqual(
+            {"coauthored_by_shoggoth": 1, "wildcat_origin": 1}, record["trailers"]
+        )
+        self.assertTrue(record["github_verified"])
+        self.assertIn(b"BEGIN PGP PUBLIC KEY BLOCK", key)
+        self.assertNotIn(b"PRIVATE", key)
+        manifest = self.manifest_of(self.published())
+        self.assertEqual([self.fingerprint], manifest["signer"]["fingerprints"])
+        self.assertEqual("proof/pubkey.asc", manifest["signer"]["key_path"])
+        self.assertEqual(1, manifest["proof"]["commits"])
+
+        # A second run of the same fixture, this time with the trailer counted
+        # twice. `done push` reads the message through the fake delivery tool
+        # and accepts it; the proof reads the commit itself and does not.
+        self.tearDown()
+        self.setUp()
+        self.to_post_push(
+            message=f"step 1\n\n{COAUTHOR}\n{ORIGIN_TRAILER}\n{ORIGIN_TRAILER}\n"
+        )
+        result, _ = self.archive(expect=1)
+        self.assertEqual("signature-unverified\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
 
 if __name__ == "__main__":
     unittest.main()
