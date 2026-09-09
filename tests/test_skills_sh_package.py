@@ -113,6 +113,21 @@ CONTRACT = "promise-machine/v1"
 # payload measures 24,956,643 bytes, 95.2% of the 25 MiB the CLI allows,
 # against 91.5% one paragraph above and 88.3% the paragraph before that. It
 # cannot be raised here. Filed as framework-109.
+#
+# The margin is now gone. This delivery measures 26,272,101 bytes across 1,377
+# files, 57,701 over the ceiling and the first measurement above it. What it
+# added is the surface the obligation gate recomputes: the runtime specimens,
+# their fixtures, and the plugin test modules the bindings name as their
+# source. The payload carries the coverage manifest, so its own checker
+# validates those bindings and cannot do it without them.
+#
+# MAX_BYTES stays where it is and this assertion stays red. It mirrors the
+# CLI's own default, so raising it would buy the package nothing and would only
+# stop the test saying something true about the artefact. Deleting shipped
+# content to buy margin is what framework-109 refuses. The red assertion is the
+# signal that filing asked for: skills#1467 predicted that the next delivery to
+# add shipped documents might be the one to close it, and this is that
+# delivery.
 MAX_FILES = 1_400
 MAX_BYTES = 25 * 1024 * 1024
 
@@ -127,6 +142,12 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
 PORTABLE_TEST_FILES = {
+    "plugins/alexandria/tests/test_release.py",
+    "plugins/ariadne/tests/test_examples.py",
+    "plugins/ariadne/tests/test_gates.py",
+    "plugins/berean/tests/test_corpus.py",
+    "plugins/berean/tests/test_examples.py",
+    "plugins/berean/tests/test_promote.py",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
@@ -139,6 +160,15 @@ PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
+    "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+    "plugins/hexaemeron/tests/test_hexctl.py",
+    "plugins/hexaemeron/tests/test_run_observation_binding.py",
+    "plugins/lazarus/tests/test_capture.py",
+    "plugins/lazarus/tests/test_verifier.py",
+    "plugins/lemma/tests/test_markdown.py",
+    "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+    "plugins/synkrisis/tests/test_cohort.py",
+    "plugins/synkrisis/tests/test_verify.py",
 }
 
 
@@ -259,8 +289,22 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-                if plugin.name != "hexaemeron":
-                    self.assertFalse((plugin / "tests").exists())
+                # Runtime bindings name a plugin's own test module as the
+                # source they recompute, so the payload carries exactly those
+                # and nothing else.  Banning the directory outright would drop
+                # the surface the portable checker verifies against; leaving it
+                # unchecked would let an unreviewed test file ride along.
+                present = {
+                    path.relative_to(RUNTIME).as_posix()
+                    for path in (plugin / "tests").rglob("*")
+                    if path.is_file() or path.is_symlink()
+                }
+                declared = {
+                    name
+                    for name in PORTABLE_TEST_FILES
+                    if name.startswith(f"plugins/{plugin.name}/tests/")
+                }
+                self.assertEqual(present, declared)
         portable_tests = RUNTIME / "plugins/hexaemeron/tests"
         self.assertEqual(
             {
@@ -268,7 +312,11 @@ class SkillsShPackageTests(unittest.TestCase):
                 for path in portable_tests.rglob("*")
                 if path.is_file() or path.is_symlink()
             },
-            PORTABLE_TEST_FILES,
+            {
+                name
+                for name in PORTABLE_TEST_FILES
+                if name.startswith("plugins/hexaemeron/tests/")
+            },
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())

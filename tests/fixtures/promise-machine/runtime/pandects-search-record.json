@@ -1,0 +1,187 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "pandects_search_record": {
+          "authorised_by": {
+            "id": "promise-owner:pandects-search-record",
+            "reference": {
+              "path": "plugins/pandects/skills/pandects/EVOLUTION.md",
+              "sha256": "958bfbc0c1068fca02c027362b9718fe085c598bd910315cd5b341253f2a2653"
+            }
+          },
+          "binding": {
+            "promise_id": "pandects-search-record",
+            "scope": "structural binding for pandects-search-record",
+            "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/pandects/tests/test_checker.py",
+              "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind pandects-search-record without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:pandects-search-record",
+          "reference": {
+            "path": "plugins/pandects/skills/pandects/EVOLUTION.md",
+            "sha256": "958bfbc0c1068fca02c027362b9718fe085c598bd910315cd5b341253f2a2653"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/pandects/tests/test_checker.py",
+          "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+        },
+        "promise_id": "pandects-search-record",
+        "scope": "structural binding for pandects-search-record",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes",
+        "transition": {
+          "action": "structurally bind pandects-search-record without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "pandects_search_record": {
+          "authorised_by": {
+            "id": "promise-owner:pandects-search-record",
+            "reference": {
+              "path": "plugins/pandects/skills/pandects/EVOLUTION.md",
+              "sha256": "958bfbc0c1068fca02c027362b9718fe085c598bd910315cd5b341253f2a2653"
+            }
+          },
+          "binding": {
+            "promise_id": "pandects-search-record",
+            "scope": "structural binding for pandects-search-record",
+            "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "inspectable": {
+            "evidence_class": "checked",
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/pandects/tests/test_checker.py",
+              "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+            }
+          ],
+          "source_digest": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb",
+          "transition": {
+            "action": "structurally bind pandects-search-record without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:pandects-search-record",
+          "reference": {
+            "path": "plugins/pandects/skills/pandects/EVOLUTION.md",
+            "sha256": "958bfbc0c1068fca02c027362b9718fe085c598bd910315cd5b341253f2a2653"
+          }
+        },
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/pandects/tests/test_checker.py",
+            "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/pandects/tests/test_checker.py",
+          "sha256": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb"
+        },
+        "promise_id": "pandects-search-record",
+        "scope": "structural binding for pandects-search-record",
+        "source_digest": "2a462cfbf954e67f18897e2ebfd3ccde5b099bc2759831f35cea10fb33f7a8cb",
+        "subject": "runtime source plugins/pandects/tests/test_checker.py#test_a_law_with_every_part_passes",
+        "transition": {
+          "action": "structurally bind pandects-search-record without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

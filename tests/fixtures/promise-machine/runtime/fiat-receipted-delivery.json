@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_receipted_delivery": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-receipted-delivery without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-receipted-delivery",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-receipted-delivery",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_push_advances_steps_then_the_stack_integrates"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-receipted-delivery",
+        "scope": "structural binding for fiat-receipted-delivery",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_push_advances_steps_then_the_stack_integrates",
+        "transition": {
+          "action": "structurally bind fiat-receipted-delivery without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_receipted_delivery": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-receipted-delivery without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-receipted-delivery",
+          "source": {
+            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          },
+          "target": {
+            "scope": "structural binding for fiat-receipted-delivery",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_push_advances_steps_then_the_stack_integrates"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-receipted-delivery",
+        "scope": "structural binding for fiat-receipted-delivery",
+        "source_digest": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_push_advances_steps_then_the_stack_integrates",
+        "transition": {
+          "action": "structurally bind fiat-receipted-delivery without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}
