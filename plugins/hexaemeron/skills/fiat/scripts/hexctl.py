@@ -617,13 +617,33 @@ Bounded so the longest header the set can match is a number. The study's
 and an unbounded label leaves no number to derive it from. Every armour label
 in use is far shorter: `RSA`, `EC`, `DSA`, `ENCRYPTED`, `OPENSSH`.
 """
-CHECKPOINT_ARCHIVE_SECRET_PATTERNS = (
+CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS = (
     re.compile(rb"-----BEGIN (?:" + CHECKPOINT_ARCHIVE_SECRET_LABEL + rb" )?PRIVATE KEY-----"),
     re.compile(rb"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
+)
+"""The two armour headers, which refuse only with key material after them.
+
+These match a header and nothing more, so on their own they cannot tell a key
+from a document that names one. The study's second 2026-09-09 amendment settles
+that: these two forms count as secret-shaped only as a block, meaning the header
+plus at least one line of base64 body or its matching `-----END` marker. A
+header named in prose or quoted in a code span is not a secret, which is what
+lets a run archive its own specification text.
+"""
+CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS = (
     re.compile(rb"ghp_[A-Za-z0-9]{36}"),
     re.compile(rb"github_pat_[A-Za-z0-9_]{22,}"),
     re.compile(rb"AKIA[0-9A-Z]{16}"),
     re.compile(rb"xox[baprs]-"),
+)
+"""The four token shapes, which refuse on the match alone.
+
+Each is self-delimiting: the characters that make it a credential are the whole
+match, so there is no surrounding block to read and the amendment leaves them
+unchanged.
+"""
+CHECKPOINT_ARCHIVE_SECRET_PATTERNS = (
+    CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS + CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS
 )
 """The six shapes a member may not carry, as the study's amended section 4.
 
@@ -648,13 +668,42 @@ all a match of the length recorded here also exists at the same offset, because
 the tail repeats one character class, so this length is still what the scan has
 to carry to see it across a chunk boundary.
 """
-CHECKPOINT_ARCHIVE_SECRET_WINDOW = max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
-"""Bytes carried between scan chunks: the longest header the patterns can match.
+CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(rb"^[A-Za-z0-9+/=]{16,}[ \t]*\r?$", re.MULTILINE)
+"""One whole line of base64, which is what a key's body looks like.
+
+The line rather than a run: a bare run of base64 characters is also what a
+SHA-256 digest, a commit id and half the identifiers in this repository look
+like, and a document quoting an armour header near one of those is exactly the
+false refusal the amendment removes. A body line is the whole line, so prose
+around a header never supplies one.
+"""
+CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
+"""The longest line the scan will read between a header and the key material.
+
+RFC 4880 armour puts optional `Version`, `Comment`, `MessageID`, `Hash` and
+`Charset` lines after the header, and a `Comment` is free text; PEM and OpenSSH
+put none. This bounds one of them.
+"""
+CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES = 7
+"""How many such lines: the five armour headers, one blank line, one body line."""
+CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD = (
+    CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE * CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES
+)
+"""Bytes after a header in which the body or the footer has to appear."""
+CHECKPOINT_ARCHIVE_SECRET_WINDOW = (
+    max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
+    + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+)
+"""Bytes carried between scan chunks: the longest header plus its lookahead.
 
 Derived rather than declared, so a pattern whose header outgrows the carry
-cannot be added without moving it. A match of n bytes that straddles a boundary
-leaves at most n - 1 of them in the chunk before it, so carrying n bytes forward
-always brings the whole match into one search.
+cannot be added without moving it. Both terms are load-bearing. A match of n
+bytes that straddles a boundary leaves at most n - 1 of them in the chunk
+before it, so the header term brings the whole header into one search. Block
+semantics then need the bytes after it as well, and a header sitting more than
+the lookahead before the end of a chunk would otherwise be dropped from the
+carry while its body lies in the next chunk, so the carry has to cover the
+header and everything the block decision reads after it.
 """
 CHECKPOINT_ARCHIVE_README = """Fiat checkpoint archive
 
@@ -16893,7 +16942,42 @@ def _checkpoint_archive_elapsed_ms(started: float) -> int:
 
 
 def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
-    return any(pattern.search(data) for pattern in CHECKPOINT_ARCHIVE_SECRET_PATTERNS)
+    """Whether these bytes carry one of the study's six secret shapes.
+
+    A token match is the whole answer. An armour header is only half of one:
+    the study's second 2026-09-09 amendment requires the block, so the header
+    refuses only when its own `-----END` marker or a whole line of base64 body
+    follows it within `CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD` bytes. The
+    footer is derived from the header that matched rather than looked for
+    generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not completed by an
+    unrelated `-----END CERTIFICATE-----` further down the file.
+
+    The body positions are found once for the whole buffer and then walked with
+    one forward index per pattern, because `finditer` yields matches in
+    increasing order. Searching the lookahead separately for every header would
+    make a member of repeated headers cost work in the square of their count.
+    """
+    for pattern in CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS:
+        if pattern.search(data):
+            return True
+    if not any(
+        pattern.search(data) for pattern in CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS
+    ):
+        return False
+    bodies = [found.start() for found in CHECKPOINT_ARCHIVE_SECRET_BODY.finditer(data)]
+    for pattern in CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS:
+        index = 0
+        for match in pattern.finditer(data):
+            start = match.end()
+            limit = start + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+            footer = b"-----END " + match.group(0)[len(b"-----BEGIN ") :]
+            if data.find(footer, start, limit) != -1:
+                return True
+            while index < len(bodies) and bodies[index] < start:
+                index += 1
+            if index < len(bodies) and bodies[index] < limit:
+                return True
+    return False
 
 
 def _checkpoint_archive_scan(path: str) -> None:

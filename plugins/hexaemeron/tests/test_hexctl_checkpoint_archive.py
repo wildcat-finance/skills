@@ -215,6 +215,15 @@ EXPECTED_AMENDED_SECRET_SPANS = tuple(
 PATTERN_AMENDMENT_HEADING = "### Amendment -- 2026-09-09"
 EXPECTED_PEM_PROSE = "PEM private-key block"
 
+# The second amendment of 2026-09-09 refuses an armour header only when key
+# material follows it, so every specimen that must still refuse is a block. The
+# body line below is base64 of ASCII letters and carries nothing private; its
+# job is to be shaped like material. A bare header is the opposite specimen:
+# it is what this study, this reference and this test file all carry, and it
+# must now publish.
+ARMOURED_BODY_LINE = "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbg=="
+ARMOURED_BLOCK_TRUNCATED = SUBSUMED_PATTERN_SPAN + "\n" + ARMOURED_BODY_LINE + "\n"
+
 # A well-formed fingerprint that is not the fixture's, for the proof's
 # comparison against the set the manifest pins. It is never imported anywhere.
 UNPINNED_FINGERPRINT = "0123456789ABCDEF0123456789ABCDEF01234567"
@@ -1272,13 +1281,47 @@ class CheckpointArchiveExportTests(HexctlCase):
         self.assertFalse(sorted(self.store_root().glob("*/*")))
         # The OpenSSH header, which the PEM pattern matches on its own, and the
         # OpenPGP block, which the 2026-09-09 study amendment added because no
-        # pattern reached it: its header ends `PRIVATE KEY BLOCK-----`.
+        # pattern reached it: its header ends `PRIVATE KEY BLOCK-----`. Each is
+        # planted as a block, because the second amendment of that date refuses
+        # an armour header only when key material follows it.
         for header in (SUBSUMED_PATTERN_SPAN, ADDED_PATTERN_SPAN):
             with self.subTest(header=header):
-                planted.write_text(header + "\n", encoding="utf-8")
+                planted.write_text(
+                    header + "\n" + ARMOURED_BODY_LINE + "\n", encoding="utf-8"
+                )
                 result, _ = self.archive(expect=1)
                 self.assertEqual("secret-shaped-member\n", result.stderr)
         planted.unlink()
+        self.archive()
+
+    def test_secret_shaped_member_refuses_before_publish_on_a_truncated_key_block(self):
+        """A block whose `-----END` is gone is still key material.
+
+        The block rule admits two witnesses, the footer and a body line, and a
+        key truncated in transit carries only the second. Reading the footer
+        alone would publish it. The same header with prose after it instead of
+        material publishes, which is the refusal S2-R2-02 recorded: the capsule
+        carries every controller file, and this run's study quotes that header
+        while specifying the scan.
+        """
+        self.to_post_push()
+        planted = Path(self.target) / ".hexaemeron" / "notes.txt"
+        # The body witness alone, then the footer witness alone. Each has to
+        # refuse by itself, or dropping the other one goes unnoticed.
+        footer_only = (
+            SUBSUMED_PATTERN_SPAN
+            + "\nthis line is not base64\n-----END OPENSSH PRIVATE KEY-----\n"
+        )
+        for specimen in (ARMOURED_BLOCK_TRUNCATED, footer_only):
+            with self.subTest(witness=specimen.splitlines()[1]):
+                planted.write_text(specimen, encoding="utf-8")
+                result, _ = self.archive(expect=1)
+                self.assertEqual("secret-shaped-member\n", result.stderr)
+                self.assertFalse(sorted(self.store_root().glob("*/*")))
+        planted.write_text(
+            f"the scan names {SUBSUMED_PATTERN_SPAN} here, and nothing follows it\n",
+            encoding="utf-8",
+        )
         self.archive()
 
     def test_archive_export_refuses_oversized_bundle(self):
@@ -1653,9 +1696,20 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         self.assertIsNotNone(
             headers, "the scan declares no headers, so its window is not derived"
         )
+        lookahead = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD", None)
+        self.assertIsNotNone(
+            lookahead, "the scan declares no lookahead, so its window is not derived"
+        )
+        blocks = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS", ())
         self.assertEqual(len(patterns), len(headers))
+        # Both terms are load-bearing. The header term brings a header that
+        # straddles the boundary into one search; the lookahead term keeps it in
+        # the carry while the material the block rule reads lies in the next
+        # chunk. A header further back than the sum has its whole decision
+        # region inside the chunk it starts in, so nothing beyond the sum is
+        # needed and nothing below it is enough.
         self.assertEqual(
-            max(len(header) for header in headers),
+            max(len(header) for header in headers) + lookahead,
             module.CHECKPOINT_ARCHIVE_SECRET_WINDOW,
         )
 
@@ -1667,19 +1721,40 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                 matched = [i for i, p in enumerate(patterns) if p.search(header)]
                 self.assertEqual([index], matched, header)
 
-        filler = b"a" * chunk
-        for header in headers:
-            for split in (1, len(header) // 2, len(header) - 1):
-                # `split` bytes of the header sit in the first chunk and the
+        # `#` is outside the base64 alphabet and the lines are short, so the
+        # filler supplies no body line of its own. Filling with base64 would
+        # hand every planted header the material the block rule looks for, and
+        # the test would pass against a scan that never read a block at all.
+        body = ARMOURED_BODY_LINE.encode("utf-8")
+        filler = (b"#" * 63 + b"\n") * (chunk // 64)
+        self.assertEqual(chunk, len(filler))
+        for pattern, header in zip(patterns, headers):
+            specimen = header if pattern not in blocks else header + b"\n" + body + b"\n"
+            for split in (1, len(specimen) // 2, len(specimen) - 1):
+                # `split` bytes of the specimen sit in the first chunk and the
                 # rest in the second, so the whole spread is walked, ending at
                 # the worst case the window has to cover.
                 start = chunk - split
                 payload = bytearray(filler + filler)
-                payload[start : start + len(header)] = header
+                payload[start : start + len(specimen)] = specimen
                 with self.subTest(header=header, bytes_before_the_boundary=split):
                     self.assertEqual(
                         "secret-shaped-member\n", self.scan(bytes(payload))
                     )
+
+        # The placement the window's lookahead term exists for: the header sits
+        # as far back as it can while its material still lands past the
+        # boundary, which puts its first byte exactly one inside the carry.
+        pad = b"#" * (lookahead - 2) + b"\n"
+        for pattern, header in zip(patterns, headers):
+            if pattern not in blocks:
+                continue
+            specimen = header + pad + body + b"\n"
+            start = chunk - lookahead + 1 - len(header)
+            payload = bytearray(filler + filler)
+            payload[start : start + len(specimen)] = specimen
+            with self.subTest(header=header, placement="material past the boundary"):
+                self.assertEqual("secret-shaped-member\n", self.scan(bytes(payload)))
 
     def test_secret_scan_passes_a_member_that_carries_no_header(self):
         module = hexctl_module()
@@ -1690,6 +1765,44 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
             + b"a" * chunk
         )
         self.assertIsNone(self.scan(clean))
+        # A header with prose after it rather than material. Both armour forms
+        # are named, because the block rule has to reach each of them.
+        for header in (SUBSUMED_PATTERN_SPAN, ADDED_PATTERN_SPAN):
+            with self.subTest(header=header):
+                named = f"the scan names `{header}` and nothing follows it.\n"
+                self.assertIsNone(self.scan(named.encode("utf-8")))
+        # The footer witness is the marker matching the header that opened the
+        # block, not any `-----END`. A document quoting a header near an
+        # unrelated end marker is still prose.
+        mismatched = (
+            SUBSUMED_PATTERN_SPAN
+            + "\nquoted in prose\n-----END PGP PUBLIC KEY BLOCK-----\n"
+        )
+        self.assertIsNone(self.scan(mismatched.encode("utf-8")))
+
+    def test_secret_scan_passes_the_run_s_own_specification_documents(self):
+        """The scan does not read a document's own pattern list as a key.
+
+        `checkpoint archive` snapshots every controller file into the capsule
+        and scans each one, so a run whose study quotes an armour header could
+        not archive itself. That was S2-R2-02, and steps 4 and 5 export this run
+        for real. Each document is read as it stands rather than as a fixture
+        copy, so the guard keeps holding as it grows.
+        """
+        checked = [STUDY, REFERENCE]
+        run_study = ROOT / ".hexaemeron" / "study.md"
+        if run_study.exists():
+            # Untracked run state: present in a Fiat run worktree, absent in a
+            # clean checkout, and byte-equal to `STUDY` by this step's binding.
+            checked.append(run_study)
+        for path in checked:
+            with self.subTest(document=path.name):
+                text = read(path)
+                self.assertTrue(
+                    SUBSUMED_PATTERN_SPAN in text or ADDED_PATTERN_SPAN in text,
+                    f"{path.name} names no armour header, so it guards nothing",
+                )
+                self.assertIsNone(self.scan(path.read_bytes()))
 
 
 if __name__ == "__main__":

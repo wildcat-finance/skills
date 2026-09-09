@@ -968,3 +968,29 @@ label leaves no length to derive it from.
 **Steps touched.** Step 2's Exit, and the reference text steps 2 and 3 hold to it.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Section 4's private-key patterns match a complete block
+rather than a bare header: the `-----BEGIN ... PRIVATE KEY-----` and
+`-----BEGIN PGP PRIVATE KEY BLOCK-----` forms count as secret-shaped only when
+the header is followed by key material, meaning at least one line of base64
+body or a matching `-----END` marker within the scanned window. A document that
+names a header in prose or inside a code span is not a secret. The four token
+patterns are unchanged, because each is self-delimiting. The set stays six and
+every refusal class, ceiling, schema field, entry path, budget and fixture id
+is untouched.
+**Why.** Step 2's audit round 2 raised S2-R2-02: `checkpoint archive` refuses
+`secret-shaped-member` on this run. The capsule snapshots all of
+`.hexaemeron/`, this study quotes `-----BEGIN OPENSSH PRIVATE KEY-----` at
+lines 591 and 948 while specifying the scan, and the shipped matcher hits it.
+That was confirmed by calling the pattern set at `hexctl.py:613` against
+`.hexaemeron/study.md`, which matches. Steps 4 and 5 run `checkpoint archive`
+against this run, so the export cannot complete until the matcher stops reading
+its own specification as a key. Block semantics were the study's own word:
+section 4 says `PEM private-key blocks`, and a block is a header, a body and a
+footer. Matching the header alone was the deviation, and requiring material
+after it still catches a key whose footer was truncated.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

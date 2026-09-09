@@ -1860,3 +1860,319 @@ and changes nothing else.
 **Steps touched.** Step 5 Exit.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Complete replacement Exit: `python3
+plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir <run-worktree>
+checkpoint archive`, run immediately after `done push` or at an active
+`audit-verdict`, writes
+`<origin>/.hexaemeron/checkpoints/<run-worktree-name>/<boundary>/checkpoint.zip`
+and `checkpoint.zip.sha256` (`<64 lowercase hex> checkpoint.zip\n`), prints one
+`fiat-checkpoint-archive-export/v1` object (`archive`, `sidecar`,
+`outer_sha256`, `manifest_sha256`, `snapshot_id` or `null`, `bundle_sha256`,
+`entries`, `bytes`, `boundary`, `next`, `timing_ms` for `export`, `identity`,
+`bundle`, `proof`, `pack`, `inspect`, `publish`), appends no ledger entry and
+holds the run lock through `verify_run` exactly as `checkpoint export` does.
+The layout and metadata are exactly the reference's; `checkpoint.json` is
+closed to the fields in study section 1 and written last; the bundle is built
+by `git -c pack.threads=1 bundle create` from exactly `_checkpoint_refs`, which
+carries no `--no-tags` because `git bundle create` has no such argument and the
+explicit ref list already excludes tags, and its heads, the capsule's
+`boundary.refs` and the manifest's `refs` agree three ways; the proof runs `git
+verify-commit` for every commit in `push.verified_commits` inside a disposable
+`GNUPGHOME` (mode 0700, `--no-autostart`, removed after use) and requires
+status `G` and exactly one `Co-authored-by: Shoggoth
+<shoggoth@wildcat.finance>` and one `Wildcat-Origin: shoggoth` trailer each;
+`proof/pubkey.asc` is exported for the pinned fingerprints, or
+`proof/allowed_signers` for `gpg.format ssh`; the identity member is the
+in-process `checkpoint identity` result; the study's amended six secret
+patterns, which drop the subsumed OpenSSH header and add `-----BEGIN PGP
+PRIVATE KEY BLOCK-----`, are scanned with a chunk overlap derived from the
+longest header they can match, over every member and over `state.json`,
+`ledger.jsonl` and every opaque controller file; the self-check re-reads the
+packed zip's central directory and every entry digest against `checkpoint.json`
+before the sidecar is written (Step 3 replaces this self-check with the
+inspector). The export refusal classes exist: `boundary-unaccepted`,
+`worktree-dirty`, `boundary-occupied`, `ref-disagreement`, `bundle-incomplete`,
+`bundle-oversized`, `signature-unverified`, `signature-format-unsupported`,
+`identity-unavailable` (export continues with `status: unavailable` only for a
+legacy symbolic base), `secret-shaped-member` and `manifest-mismatch`. Then
+`python3 -m unittest plugins.hexaemeron.tests.test_hexctl_checkpoint_archive
+-v` exits 0 with at least 17 tests, among them one that fails when the proof
+admits a signature status other than `G` and one that fails when the proof
+stops comparing a signer fingerprint to the manifest's pinned set; a count is a
+floor here rather than an equality, because the Elenchus discipline requires
+every audit repair to add a guard and an exact count would forbid one. Then
+`python3 .hexaemeron/measure_design.py --conformance
+existing-checkpoint-suites-green --candidate native-subcommands` exits 0 and
+`.hexaemeron/reports/native-subcommands-existing-checkpoint-suites-green.json`
+carries `"value": true` (both existing modules, 82 tests, pass); Fiat checks
+this `step:3` transition at this step's `done push`. Then, on the clean
+detached snapshot of the step head: `python3 scripts/run_checks.py --base
+0bc39f278e24d8cdd79abed5da16bd5ce81e4c5a`, `python3
+plugins/hexaemeron/tests/run_tests.py` and `python3 -m unittest discover -s
+tests`, each exit 0. Then, in the run worktree: `python3
+plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests`, `python3
+plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests`, `python3
+plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md
+.agents/skills/promise-machine/SKILL.md
+.agents/skills/promise-machine/PORTABLE.md plugins docs`, `python3
+plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <path>` and `python3
+plugins/brevitas/skills/brevitas/scripts/brevitas.py <path>` for every changed
+Markdown file this run may edit, which excludes the append-only audit record
+and its synopsis and the two digest-bound copies of the study and runbook,
+`python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write`
+after `git add` followed by `python3
+plugins/horos/skills/horos/scripts/horos.py check .` and `git diff --check`,
+each exit 0.
+**Why.** The secret-block study amendment of 2026-09-09 changed the study
+digest, so the runbook amendments bound to the previous one no longer apply and
+this step's Exit reverted to a baseline whose `python3
+scripts/portable_promise_machine.py check` cannot pass. This restates the
+current text against the new digest and adds round 2's S2-R2-03 repair: the
+per-file prose clause reached four changed Markdown files the run may not edit,
+and all four exit 1 at the step head as well, so the clause now names only the
+files the run owns.
+**Steps touched.** Step 2 Exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Complete replacement Exit: `python3
+plugins/hexaemeron/skills/fiat/scripts/hexctl.py checkpoint inspect --archive
+<zip> --sha256 <outer-hex> [--scratch <new-dir>]` prints one
+`fiat-checkpoint-inspect/v1` object (`outer_sha256`, `entries`, `bytes`,
+`findings`, `bundle`, `signatures` per commit with `sha`, `status`,
+`fingerprint`, `trailers`, `identity`, `refs`), exits 0 with empty `findings`
+on the step-2 checkpoint, exits 1 with one class on every hostile fixture,
+writes nothing outside a scratch root created 0700 and removed unless
+`--scratch` names it, and prints no entry content. Checks run in this order and
+stop at the first refusal: the outer digest recomputed over the exact zip bytes
+against `--sha256` and, when present, the sidecar (`outer-digest-mismatch`,
+`sidecar-mismatch`); the central directory under the ceilings, the name policy,
+uniqueness after NFC and `casefold()`, method 0, no encryption flag, mode
+`0100644`, no ZIP64 record, no prefix, gap or trailing bytes (`entry-limit`,
+`entry-name-policy`, `entry-mode`, `entry-compressed`, `entry-encrypted`,
+`zip64-present`, `trailing-data`); `checkpoint.json` parsed bounded at depth
+128 against the closed schema with a supported `schema` and a controller
+version inside the compatibility set (`schema-unsupported`); every entry's
+digest and size streamed against the manifest with the ceilings re-enforced
+(`manifest-mismatch`); the capsule `MANIFEST.json` digest equal to
+`controller_capsule.manifest_sha256`; the three-way ref join over `git bundle
+list-heads`, the capsule's `boundary.refs` and the manifest's `refs`
+(`ref-disagreement`); `git bundle verify` in a disposable `git init` root with
+complete history, the recorded hash algorithm and no prerequisite
+(`bundle-incomplete`, `bundle-oversized`); `proof/pubkey.asc` imported into a
+disposable `GNUPGHOME` whose reported fingerprints equal `signer.fingerprints`,
+then `git verify-commit` for each `proof.commits` sha in the bundle clone with
+status `G` and trailer counts exactly one each, or `gpg.ssh.allowedSignersFile`
+from `proof/allowed_signers` for `ssh` (`signature-unverified`,
+`signature-format-unsupported`); `identity/checkpoint-identity.json` shape and
+`snapshot_id` equal to the manifest's (`identity-mismatch`);
+`acceptance/current` refused and `acceptance/prior/<n>.json` counted at most 64
+and digested, never read for authority (`acceptance-self-reference`); the six
+secret patterns over every member (`secret-shaped-member`). `archive` now runs
+this inspector over the packed bytes before writing the sidecar and renaming,
+recorded as `timing_ms.inspect`. Then `python3 -m unittest -k hostile
+plugins.hexaemeron.tests.test_hexctl_checkpoint_archive` exits 0 with `Ran 35
+tests`, and `python3 -m unittest
+plugins.hexaemeron.tests.test_hexctl_checkpoint_archive -v` exits 0 with `Ran
+55 tests`. Then `python3 .hexaemeron/measure_design.py --conformance
+hostile-fixtures-refused --candidate native-subcommands` exits 0 and
+`.hexaemeron/reports/native-subcommands-hostile-fixtures-refused.json` carries
+`"value": true`; Fiat checks this `step:4` transition at this step's `done
+push`. Then, on the clean detached snapshot of the step head: `python3
+scripts/run_checks.py --base 0bc39f278e24d8cdd79abed5da16bd5ce81e4c5a`,
+`python3 plugins/hexaemeron/tests/run_tests.py` and `python3 -m unittest
+discover -s tests`, each exit 0. Then, in the run worktree: `python3
+plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests`, `python3
+plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests`, `python3
+plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md
+.agents/skills/promise-machine/SKILL.md
+.agents/skills/promise-machine/PORTABLE.md plugins docs`, `python3
+plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <path>` and `python3
+plugins/brevitas/skills/brevitas/scripts/brevitas.py <path>` for every changed
+Markdown file this run may edit, which excludes the append-only audit record
+and its synopsis and the two digest-bound copies of the study and runbook,
+`python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write`
+after `git add` followed by `python3
+plugins/horos/skills/horos/scripts/horos.py check .` and `git diff --check`,
+each exit 0.
+**Why.** The secret-block study amendment of 2026-09-09 changed the study
+digest, so the runbook amendments bound to the previous one no longer apply and
+this step's Exit reverted to a baseline whose `python3
+scripts/portable_promise_machine.py check` cannot pass. This restates the
+current text against the new digest and adds round 2's S2-R2-03 repair: the
+per-file prose clause reached four changed Markdown files the run may not edit,
+and all four exit 1 at the step head as well, so the clause now names only the
+files the run owns.
+**Steps touched.** Step 3 Exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Complete replacement Exit: `python3
+plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir <empty-destination>
+checkpoint restore --archive <zip> --sha256 <outer-hex>` (mutually exclusive
+with `--from` and `--manifest-sha256`) requires the destination to be absent or
+an empty directory checked through an opened descriptor and never a symlink
+(`destination-occupied`); runs the Step 3 inspector first and refuses on any
+finding before any write; runs `git init`, `git fetch <bundle>
++refs/heads/*:refs/heads/*` with `--no-tags` through `bounded_tool`, and checks
+out `config.git.base`; writes `remote.origin.url` as
+`https://github.com/<owner>/<name>.git` from the validated `run.repository` and
+fetches nothing; refuses unless the working commit descends from
+`run.initial_base_sha` and every ref equals the manifest map
+(`ref-disagreement`); extracts the capsule into
+`<destination>/.git/fiat-checkpoint-restore/<outer-sha256>/`; calls the
+existing relocation transaction with `controller_capsule.manifest_sha256`,
+leaving its marker, retry and refusal rules unchanged; recomputes identity from
+the relocated state and refuses a `snapshot_id` mismatch or a claimed
+`unavailable` when identity can be minted (`identity-mismatch`); runs `verify`,
+`status` and `next`; prints one `fiat-checkpoint-archive-restore/v1` object
+carrying the native restore object, the `verify` exit, the `status` digest, the
+semantic `next`, `outer_sha256` and `snapshot_id`; and executes no directive.
+Then `python3 -m unittest -k restore_from_archive
+plugins.hexaemeron.tests.test_hexctl_checkpoint_archive` exits 0 with `Ran 6
+tests`, and `python3 -m unittest
+plugins.hexaemeron.tests.test_hexctl_checkpoint_archive -v` exits 0 with `Ran
+61 tests`. Then `python3 .hexaemeron/measure_design.py --conformance
+offline-empty-directory-restore --candidate native-subcommands` exits 0 and
+`.hexaemeron/reports/native-subcommands-offline-empty-directory-restore.json`
+carries `"value": true`; Fiat checks this `step:5` transition at this step's
+`done push`. Then, on the clean detached snapshot of the step head: `python3
+scripts/run_checks.py --base 0bc39f278e24d8cdd79abed5da16bd5ce81e4c5a`,
+`python3 plugins/hexaemeron/tests/run_tests.py` and `python3 -m unittest
+discover -s tests`, each exit 0. Then, in the run worktree: `python3
+plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests`, `python3
+plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests`, `python3
+plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md
+.agents/skills/promise-machine/SKILL.md
+.agents/skills/promise-machine/PORTABLE.md plugins docs`, `python3
+plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <path>` and `python3
+plugins/brevitas/skills/brevitas/scripts/brevitas.py <path>` for every changed
+Markdown file this run may edit, which excludes the append-only audit record
+and its synopsis and the two digest-bound copies of the study and runbook,
+`python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write`
+after `git add` followed by `python3
+plugins/horos/skills/horos/scripts/horos.py check .` and `git diff --check`,
+each exit 0. After this step's `done push`, Fiat produces the step checkpoint
+under `/usr/bin/time -l` exactly as assumption 3 states; Step 5's entry depends
+on those two files.
+**Why.** The secret-block study amendment of 2026-09-09 changed the study
+digest, so the runbook amendments bound to the previous one no longer apply and
+this step's Exit reverted to a baseline whose `python3
+scripts/portable_promise_machine.py check` cannot pass. This restates the
+current text against the new digest and adds round 2's S2-R2-03 repair: the
+per-file prose clause reached four changed Markdown files the run may not edit,
+and all four exit 1 at the step head as well, so the clause now names only the
+files the run owns.
+**Steps touched.** Step 4 Exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Complete replacement Exit: `python3
+plugins/hexaemeron/skills/fiat/scripts/checkpoint_clean_machine.py --archive
+<origin>/.hexaemeron/checkpoints/<run-worktree-name>/step-4-<sha>/checkpoint.zip
+--sha256 <outer-hex> --image python:3.14-slim --transcript
+.hexaemeron/clean-machine/transcript.json` exits 0: it builds the derived image
+of assumption 4, copies only the archive, its sidecar and `hexctl.py` into a
+container started with `--network none` and an empty `GNUPGHOME`, runs
+`checkpoint inspect`, `checkpoint restore --archive` into an empty directory,
+`verify`, `status --json`, `next` and `checkpoint identity`, and writes
+`fiat-checkpoint-restore-transcript/v1` with `network` `none`, `keyring`
+`empty-at-start`, `destination_was_empty` true, `hexctl_verify_exit` 0,
+`next_matches_manifest` true, `snapshot_id_matches` true, the controller
+SHA-256, both image digests and the six measurements, with its text log beside
+it. Then `python3 plugins/hexaemeron/skills/fiat/scripts/checkpoint_measure.py
+--archive
+<origin>/.hexaemeron/checkpoints/<run-worktree-name>/step-4-<sha>/checkpoint.zip
+--sha256 <outer-hex> --out .hexaemeron/metron/run.json` exits 0: it reads the
+export wall time from `timing_ms` in `.hexaemeron/metron/step-4-export.json`
+and the maximum resident set size from
+`.hexaemeron/metron/step-4-export.time.txt`, times `checkpoint inspect` and
+`checkpoint restore --archive` into a scratch destination under `/usr/bin/time
+-l` (macOS) or `-v` (Linux), reads `bytes` and the expanded size from the
+archive manifest, and writes `measurements` with the six keys
+`checkpoint.archive.export_wall_ms`, `checkpoint.archive.inspect_wall_ms`,
+`checkpoint.archive.restore_wall_ms`, `checkpoint.archive.bytes`,
+`checkpoint.archive.expanded_bytes` and
+`checkpoint.archive.export_peak_rss_bytes` as non-negative integers. Then `cp
+.hexaemeron/metron/run.json
+plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-baseline.json` and
+`python3 plugins/hexaemeron/skills/metron/scripts/metron.py check --budgets
+plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-budgets.json
+--baseline
+plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-baseline.json --run
+.hexaemeron/metron/run.json` exits 0 (C11). Then `cmp
+.hexaemeron/clean-machine/transcript.json
+docs/fiat-checkpoint-archive/clean-machine-transcript.json` exits 0 and
+`docs/fiat-checkpoint-archive/clean-machine-transcript.log` is the text log.
+Then `python3 .hexaemeron/measure_design.py --conformance
+fixture-export-wall-milliseconds --candidate native-subcommands`, `python3
+.hexaemeron/measure_design.py --conformance fixture-archive-bytes --candidate
+native-subcommands` and `python3 .hexaemeron/measure_design.py --conformance
+clean-machine-restore-transcript --candidate native-subcommands` each exit 0,
+their reports carrying a wall time at most 15000, a size at most 201581002 and
+`"value": true`; Fiat checks this `integration` transition at the final `done
+merge-step`. Then the procedure:
+`plugins/hexaemeron/skills/fiat/references/push-discipline.md` `## Step
+checkpoint` names the three commands and the direct hand-off values (absolute
+archive path, outer SHA-256, manifest SHA-256, `snapshot_id`, step, loop when
+applicable, full head SHA, expected next directive) and `grep -c
+issuecomment-5435028801
+plugins/hexaemeron/skills/fiat/references/push-discipline.md` prints 0;
+`plugins/hexaemeron/skills/fiat/SKILL.md` step 3 and its post-push paragraph
+point at that section and the commands;
+`plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md` `## Outer
+recovery boundary` and the carrier sentence at
+`plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md` line 186
+point at `checkpoint-archive.md`; `SKILL.md` carries `###
+fiat-checkpoint-archive` after `### fiat-controller-checkpoint` with a matching
+row and bindings in `tests/promise_machine_coverage.json`. Then the generation:
+one row appended to `plugins/hexaemeron/skills/fiat/EVOLUTION.md` of kind
+`generation` on frontier `state-shape-validation` with digest
+`e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa`, evidence
+naming issue #861, the draft record, the study and the runbook, and text
+stating the three commands, the stored container, the single content manifest,
+the clean-machine transcript and the rejected options; `SKILL.md` metadata
+`version` and the ledger's `Current version` advanced to that same next
+generation; that version appended to
+`CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS`; `tests/test_evolution_contract.py`
+lines 354 and 362 updated to it; `python3 -m unittest
+tests.test_evolution_contract` exits 0. Then `python3 -m unittest
+plugins.hexaemeron.tests.test_hexctl_checkpoint_archive
+tests.test_fiat_checkpoint_archive_record -v` exits 0 with `Ran 68 tests`.
+Then, on the clean detached snapshot of the step head: `python3
+scripts/run_checks.py --base 0bc39f278e24d8cdd79abed5da16bd5ce81e4c5a`,
+`python3 plugins/hexaemeron/tests/run_tests.py` and `python3 -m unittest
+discover -s tests`, each exit 0. Then, in the run worktree: `python3
+plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests`, `python3
+plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests`, `python3
+plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md
+.agents/skills/promise-machine/SKILL.md
+.agents/skills/promise-machine/PORTABLE.md plugins docs`, `python3
+plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <path>` and `python3
+plugins/brevitas/skills/brevitas/scripts/brevitas.py <path>` for every changed
+Markdown file this run may edit, which excludes the append-only audit record
+and its synopsis and the two digest-bound copies of the study and runbook,
+`python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write`
+after `git add` followed by `python3
+plugins/horos/skills/horos/scripts/horos.py check .` and `git diff --check`,
+each exit 0.
+**Why.** The secret-block study amendment of 2026-09-09 changed the study
+digest, so the runbook amendments bound to the previous one no longer apply and
+this step's Exit reverted to a baseline whose `python3
+scripts/portable_promise_machine.py check` cannot pass. This restates the
+current text against the new digest and adds round 2's S2-R2-03 repair: the
+per-file prose clause reached four changed Markdown files the run may not edit,
+and all four exit 1 at the step head as well, so the clause now names only the
+files the run owns.
+**Steps touched.** Step 5 Exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
