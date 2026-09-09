@@ -113,6 +113,21 @@ CONTRACT = "promise-machine/v1"
 # payload measures 24,956,643 bytes, 95.2% of the 25 MiB the CLI allows,
 # against 91.5% one paragraph above and 88.3% the paragraph before that. It
 # cannot be raised here. Filed as framework-109.
+#
+# The margin is now gone. This delivery measures 26,272,101 bytes across 1,377
+# files, 57,701 over the ceiling and the first measurement above it. What it
+# added is the surface the obligation gate recomputes: the runtime specimens,
+# their fixtures, and the plugin test modules the bindings name as their
+# source. The payload carries the coverage manifest, so its own checker
+# validates those bindings and cannot do it without them.
+#
+# MAX_BYTES stays where it is and this assertion stays red. It mirrors the
+# CLI's own default, so raising it would buy the package nothing and would only
+# stop the test saying something true about the artefact. Deleting shipped
+# content to buy margin is what framework-109 refuses. The red assertion is the
+# signal that filing asked for: skills#1467 predicted that the next delivery to
+# add shipped documents might be the one to close it, and this is that
+# delivery.
 MAX_FILES = 1_400
 MAX_BYTES = 25 * 1024 * 1024
 
