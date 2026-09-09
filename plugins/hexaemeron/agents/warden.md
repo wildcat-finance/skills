@@ -105,10 +105,8 @@ sibling `<run>.synopsis.md` before committing. Historical topic-bearing
 `fiat-audit-round/v1` records remain inputs only; do not write a new one.
 Apply fixes on the stacked branch in one commit per finding or coherent cluster,
 referencing the finding ids, and commit the updated log and synopsis alongside.
-Sign every
-commit and end its message, after a blank line, with exactly `Co-authored-by:
-Shoggoth <shoggoth@wildcat.finance>` and `Wildcat-Origin: shoggoth`; the
-controller verifies the exact fixes range.
+Sign every commit with a repository-valid key; the controller verifies the
+exact fixes range. No provenance trailer is mandatory.
 
 When the round has a fixes commit, read its test command, report format, and
 report file from `runbook_step`, then run Elenchus against that commit and

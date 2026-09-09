@@ -522,6 +522,10 @@ elif args and args[0] == "show":
             sys.stdout.write("Laurence Day\\0laurence@wildcat.finance\\n")
         else:
             sys.stdout.write("Shoggoth\\0shoggoth@wildcat.finance\\n")
+    elif mode == "no-trailers":
+        print("subject")
+    elif mode == "coauthor-only":
+        print("subject\\n\\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>")
     elif mode == "missing-trailer":
         print("subject\\n\\nWildcat-Origin: shoggoth")
     elif mode == "duplicate-trailer":
@@ -616,7 +620,7 @@ if pull:
     if mode == "pr-head-mismatch":
         payload["head"]["sha"] = "9" * 40
     if mode == "host-pr-author":
-        payload["user"] = {"login": "app/claude"}
+        payload["user"] = {"login": "claude[bot]"}
     if mode == "publisher-committer":
         payload["user"] = {"login": "laurenceday"}
     if mode == "host-pr-byline":

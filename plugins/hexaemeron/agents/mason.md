@@ -65,9 +65,8 @@ in your brief. Read the ones the step actually names, when it names them. A
 step with no performance claim does not need Metron, and a step that has not
 failed does not need Elenchus.
 
-Commit in coherent units. Sign every commit and end its message, after a blank
-line, with exactly `Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and
-`Wildcat-Origin: shoggoth`; the controller will verify the whole owned range.
+Commit in coherent units. Sign every commit with a repository-valid key; the
+controller verifies the whole owned range. No provenance trailer is mandatory.
 Do not push, do not open a PR, do not merge
 anything, and do not touch the controller -- the orchestrator owns all of
 that. Report back: branch,

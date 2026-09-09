@@ -1,11 +1,4 @@
-"""Hold the contributor generator's host-identity set equal to Fiat's.
-
-ADR-016 names one mechanical set of runtime host identities and Fiat's
-controller owns it. scripts/contributors.py keeps a copy so it stays a
-standalone root script with no cross-plugin import. A copy that nothing checks
-stops agreeing, so these tests read the frozensets straight out of hexctl.py's
-syntax tree and compare them. Either side edited alone fails here.
-"""
+"""Verify the human contributor ranking's independent classification."""
 
 from __future__ import annotations
 
@@ -26,67 +19,31 @@ if str(REPOSITORY_ROOT) not in sys.path:
 from scripts import contributors  # noqa: E402
 
 HEXCTL = REPOSITORY_ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
-SET_NAMES = ("HOST_IDENTITY_NAMES", "HOST_IDENTITY_EMAILS", "HOST_PR_LOGINS")
+class ContributorClassification(unittest.TestCase):
+    """Human ranking stays local and never becomes a Fiat admission gate."""
 
-
-class HostSetParity(unittest.TestCase):
-    """The generator's copy of the host set matches Fiat's declaration."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.declared = contributors.frozensets_from_source(HEXCTL)
-
-    def test_hexctl_declares_exactly_the_sets_the_generator_accounts_for(self):
-        """A host set in hexctl.py that the generator does not know about fails here."""
-        self.assertEqual(
-            sorted(self.declared),
-            sorted(SET_NAMES),
-            "hexctl.py's HOST_* frozensets and scripts/contributors.py have diverged; "
-            "a set present there and absent here is a class of runtime identity the "
-            "contributor ranking would silently treat as a person",
-        )
-        for name in SET_NAMES:
-            self.assertTrue(self.declared[name], f"{name} is empty in hexctl.py")
-
-    def test_host_identity_names_match(self):
-        self.assertEqual(
-            contributors.HOST_IDENTITY_NAMES,
-            self.declared["HOST_IDENTITY_NAMES"],
-        )
-
-    def test_host_identity_emails_match(self):
-        self.assertEqual(
-            contributors.HOST_IDENTITY_EMAILS,
-            self.declared["HOST_IDENTITY_EMAILS"],
-        )
-
-    def test_host_pr_logins_match(self):
-        self.assertEqual(
-            contributors.HOST_PR_LOGINS,
-            self.declared["HOST_PR_LOGINS"],
-        )
-
-    def test_is_host_identity_agrees_on_every_declared_entry(self):
-        """Equal sets are not enough; the predicate over them must also agree."""
-        for name in sorted(self.declared["HOST_IDENTITY_NAMES"]):
+    def test_non_human_names_and_emails_are_classified_locally(self):
+        for name in sorted(contributors.NON_HUMAN_IDENTITY_NAMES):
             self.assertTrue(
-                contributors.is_host_identity(name, "person@example.com"),
-                f"{name!r} is a declared host name but was not recognised",
+                contributors.is_non_human_identity(name, "person@example.com"),
             )
             self.assertTrue(
-                contributors.is_host_identity(name.upper(), "person@example.com"),
-                f"{name!r} must be recognised case-insensitively",
+                contributors.is_non_human_identity(name.upper(), "person@example.com"),
             )
-        for email in sorted(self.declared["HOST_IDENTITY_EMAILS"]):
+        for email in sorted(contributors.NON_HUMAN_IDENTITY_EMAILS):
             self.assertTrue(
-                contributors.is_host_identity("A Person", email),
-                f"{email!r} is a declared host email but was not recognised",
+                contributors.is_non_human_identity("A Person", email),
             )
 
-    def test_a_human_author_is_not_a_host_identity(self):
-        self.assertFalse(contributors.is_host_identity("Dave Coleman", "dave@example.com"))
-        self.assertFalse(contributors.is_host_identity("Radu P", "radu@example.com"))
-        self.assertFalse(contributors.is_host_identity("", ""))
+    def test_a_human_author_is_not_non_human(self):
+        self.assertFalse(contributors.is_non_human_identity("Dave Coleman", "dave@example.com"))
+        self.assertFalse(contributors.is_non_human_identity("Radu P", "radu@example.com"))
+        self.assertFalse(contributors.is_non_human_identity("", ""))
+
+    def test_contributor_classification_does_not_reach_fiat_admission(self):
+        fiat = HEXCTL.read_text(encoding="utf-8")
+        self.assertNotIn("NON_HUMAN_IDENTITY_NAMES", fiat)
+        self.assertNotIn("NON_HUMAN_PR_LOGINS", fiat)
 
 
 class LoginGrammar(unittest.TestCase):
@@ -113,11 +70,11 @@ class LoginGrammar(unittest.TestCase):
         ):
             self.assertFalse(contributors.valid_login(login), login)
 
-    def test_host_logins_are_recognised(self):
-        for login in sorted(contributors.HOST_PR_LOGINS):
-            self.assertTrue(contributors.is_host_login(login), login)
-        self.assertTrue(contributors.is_host_login("CLAUDE[BOT]"))
-        self.assertFalse(contributors.is_host_login("kethcode"))
+    def test_non_human_logins_are_recognised(self):
+        for login in sorted(contributors.NON_HUMAN_PR_LOGINS):
+            self.assertTrue(contributors.is_non_human_login(login), login)
+        self.assertTrue(contributors.is_non_human_login("CLAUDE[BOT]"))
+        self.assertFalse(contributors.is_non_human_login("kethcode"))
 
 
 class GuardOrder(unittest.TestCase):
@@ -132,7 +89,7 @@ class GuardOrder(unittest.TestCase):
     def test_a_host_login_that_fails_grammar_is_still_recognised_as_a_host(self):
         offenders = [
             login
-            for login in sorted(contributors.HOST_PR_LOGINS)
+            for login in sorted(contributors.NON_HUMAN_PR_LOGINS)
             if not contributors.valid_login(login)
         ]
         self.assertTrue(
@@ -142,13 +99,13 @@ class GuardOrder(unittest.TestCase):
         )
         for login in offenders:
             self.assertTrue(
-                contributors.is_host_login(login),
+                contributors.is_non_human_login(login),
                 f"{login!r} fails the grammar check, so host exclusion must catch it first",
             )
 
     def test_claude_bot_is_the_concrete_case(self):
         self.assertFalse(contributors.valid_login("claude[bot]"))
-        self.assertTrue(contributors.is_host_login("claude[bot]"))
+        self.assertTrue(contributors.is_non_human_login("claude[bot]"))
 
 
 class EmitterContract(unittest.TestCase):
@@ -327,6 +284,17 @@ class RecordedDecisions(unittest.TestCase):
         for field in ("- Promise:", "- Evidence:", "- Boundary:", "- Refuses:", "- Recovery:"):
             self.assertIn(field, block.split("## ", 1)[0])
 
+    def test_the_contributor_promise_has_no_fiat_host_set_dependency(self):
+        text = (REPOSITORY_ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        block = text.split("promise-machine-contributor-ranking", 1)[1].split("## ", 1)[0]
+        self.assertNotIn("hexctl.py", block)
+        self.assertNotIn("declared host set", block)
+
+    def test_the_guide_does_not_make_account_matching_an_admission_rule(self):
+        text = self.GUIDE.read_text(encoding="utf-8")
+        self.assertNotIn("author address must be one GitHub can match", text)
+        self.assertNotRegex(text, r"under your human\s+identity")
+
     def test_the_guide_says_what_the_list_does_not_establish(self):
         text = self.GUIDE.read_text(encoding="utf-8")
         self.assertIn("CONTRIBUTORS.md", text)
@@ -407,8 +375,8 @@ class Ranking(unittest.TestCase):
         self.assertEqual(
             sorted(reasons), ["claude", "claude[bot]", "laurenceday", "shoggoth-wildcat"]
         )
-        self.assertIn("runtime host", reasons["claude"])
-        self.assertIn("runtime host", reasons["claude[bot]"])
+        self.assertIn("non-human", reasons["claude"])
+        self.assertIn("non-human", reasons["claude[bot]"])
         self.assertIn("owner", reasons["laurenceday"])
         self.assertIn("Shoggoth", reasons["shoggoth-wildcat"])
         for login, reason in reasons.items():
@@ -594,28 +562,6 @@ class FailClosed(unittest.TestCase):
             contributors.compute(fake_reader(fail="api read failed for /x: timed out"), repo="x/y")
         self.assertIn("api read failed", str(caught.exception))
 
-    def test_stops_on_host_set_drift(self):
-        with tempfile.TemporaryDirectory() as work:
-            drifted = Path(work) / "hexctl.py"
-            drifted.write_text(
-                HEXCTL.read_text(encoding="utf-8") + '\n\nHOST_FUTURE = frozenset({"nobody"})\n',
-                encoding="utf-8",
-            )
-            with self.assertRaises(contributors.Stop) as caught:
-                contributors.verify_host_set_parity(drifted)
-        self.assertIn("host set drift", str(caught.exception))
-        self.assertIn("HOST_FUTURE", str(caught.exception))
-
-    def test_stops_on_a_changed_member_of_a_known_set(self):
-        with tempfile.TemporaryDirectory() as work:
-            drifted = Path(work) / "hexctl.py"
-            text = HEXCTL.read_text(encoding="utf-8").replace('"devin",', '"devin",\n        "newhost",', 1)
-            drifted.write_text(text, encoding="utf-8")
-            with self.assertRaises(contributors.Stop) as caught:
-                contributors.verify_host_set_parity(drifted)
-        self.assertIn("HOST_IDENTITY_NAMES", str(caught.exception))
-        self.assertIn("newhost", str(caught.exception))
-
     def test_stops_on_owner_in_output(self):
         """An owner that slipped past classification must not reach the ranking."""
         rows = [{"login": "laurenceday", "type": "User", "contributions": 900}]
@@ -637,7 +583,7 @@ class FailClosed(unittest.TestCase):
                 fake_reader(contributors_rows=rows, merged={"suspicious": 0}, authors=authors),
                 repo="x/y",
             )
-        self.assertIn("runtime host identity", str(caught.exception))
+        self.assertIn("non-human attribution", str(caught.exception))
 
     def test_stops_on_an_unknown_wave_atlas_bot(self):
         pulls = {
