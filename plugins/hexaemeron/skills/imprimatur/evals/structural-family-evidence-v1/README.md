@@ -120,9 +120,11 @@ quoted 39; the catalogue keeps all 42.
 Five observations under "Ideas that do not yet form a family" are recorded
 here and are not rows, because the issue proposes no rule for any of them:
 
-1. Possessive versus "of" relationships are a style choice until a recurring grammatical move and reader cost are shown.
+1. Possessive versus "of" relationships are a style choice until a
+   recurring grammatical move and reader cost are shown.
 2. Rare object-fronting or inversion has no demonstrated recurrence.
-3. "For the sake of" has no bounded family or rewrite in the catalogue and remains an observation to test.
+3. "For the sake of" has no bounded family or rewrite in the catalogue and
+   remains an observation to test.
 4. "I.e." and other explicit technical restatements can be precise.
 5. A bare "due to" rule would turn grammar preference into policy.
 
@@ -140,19 +142,17 @@ python3 plugins/hexaemeron/skills/imprimatur/scripts/check_family_evidence.py \
   --report /tmp/family-evidence.json
 ```
 
-Its exit codes are three:
+It has three exit codes:
 
 - `0`: the fixture is clean.
 - `1`: the checker found something. It prints every finding of the first
   class it meets, in the order `schema-contract`, `family-tier`,
-  `family-schema`,
-  `family-duplicate`, `family-minimum`, `family-overlaps`,
-  `specimen-annotation-order`,
-  `specimen-schema`,
+  `family-schema`, `family-duplicate`, `family-minimum`,
+  `family-overlaps`, `specimen-annotation-order`, `specimen-schema`,
   `specimen-duplicate`, `specimen-unknown-family`,
-  `specimen-family-mismatch`, `specimen-span`,
-  `specimen-digest`, `specimen-group-id`, `specimen-independence`,
-  `tier-minimum`, `source-mismatch`.
+  `specimen-family-mismatch`, `specimen-span`, `specimen-digest`,
+  `specimen-group-id`, `specimen-independence`, `tier-minimum`,
+  `source-mismatch`.
 
   `schema-contract` is first because it reports a schema whose own
   declarations this checker cannot account for, and every other class is
@@ -175,11 +175,10 @@ Its exit codes are three:
   field.
 - `2`: the invocation or a read was refused, which covers a missing fixture
   directory, an unknown `--tier`, `--min-independent-positive` without
-  `--tier`, a symlink, an oversized file, an
-  unreadable JSONL row, a row carrying the same JSON key twice, a schema
-  document this checker's validator cannot read, and a
-  `--verify-sources` row, citation or reply that cannot name one pinned
-  object.
+  `--tier`, a symlink, an oversized file, an unreadable JSONL row, a row
+  carrying the same JSON key twice, a schema document this checker's
+  validator cannot read, and a `--verify-sources` row, citation or reply
+  that cannot name one pinned object.
 
   A schema in `schemas/` is fixture data below `--fixture`, like the two
   JSONL files, so it is gated when it is read rather than trusted where it
@@ -209,14 +208,14 @@ The flags are:
 
 - `--report <path>` writes one JSON report holding `families`, `specimens`,
   `below_minimum`, `unenforced_fields` and `rejections_path`.
-  `below_minimum` is the answer a
-  later run needs: the family id, its tier, the counted independent
-  positives and negatives, and the minimums its tier requires.
-  `unenforced_fields` is the second: the eight required fields this step
-  declares and does not enforce, each with the row file it belongs to and the
-  step that writes it. Those eight were found one at a time by four audit
-  rounds reading `grep` output, so they are a report key rather than a source
-  comment. `rejections_path` points at `selection-rejections.jsonl`.
+  `below_minimum` is the answer a later run needs: the family id, its tier,
+  the counted independent positives and negatives, and the minimums its
+  tier requires. `unenforced_fields` is the second: the eight required
+  fields this step declares and does not enforce, each with the row file it
+  belongs to and the step that writes it. Those eight were found one at a
+  time by four audit rounds reading `grep` output, so they are a report key
+  rather than a source comment. `rejections_path` points at
+  `selection-rejections.jsonl`.
 - `--allow-below-minimum` records a tier-minimum shortfall in the report
   rather than reporting it as a finding. **This flag exists for the build
   phase only**, while specimens are still being collected. A released
@@ -284,10 +283,10 @@ be told apart from here.
 
 Only two of the six kinds replay an object GitHub cannot change under the
 reference sent: a file read at `?ref=<sha>`, and a commit read by its sha. The
-`issue_body`, `pull_request_body`, `issue_comment` and
-`pull_request_comment` kinds have no such reference on their endpoints, so
-their replay compares the current body. A body edited after annotation changes that answer, which is
-why `annotated_before_lint` and the recorded span carry the annotation order
+`issue_body`, `pull_request_body`, `issue_comment` and `pull_request_comment`
+kinds have no such reference on their endpoints, so their replay compares the
+current body. A body edited after annotation changes that answer, which is why
+`annotated_before_lint` and the recorded span carry the annotation order
 rather than the replay. The reply is data from outside too, and is refused
 with exit 2 unless it carries the string field its kind expects.
 
@@ -319,9 +318,9 @@ suite green either way. The two are compared now.
 
 Two of those measurements read raw fields, before anything is validated:
 `--report`'s `below_minimum` counts have to exist on a broken fixture as well
-as a clean one. A field read there is skipped when it is not a string, and reported by
-the validation that follows, so an object or an array in `source_group_id` or
-`evidence_tier` is a finding rather than a traceback.
+as a clean one. A field read there is skipped when it is not a string, and
+reported by the validation that follows, so an object or an array in
+`source_group_id` or `evidence_tier` is a finding rather than a traceback.
 
 `plugins/hexaemeron/tests/test_imprimatur_family_evidence.py` guards each
 refusal, the clean-fixture exit, the copied issue wording and the frozen
