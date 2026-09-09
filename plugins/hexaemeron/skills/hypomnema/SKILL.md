@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.8.0"
+  version: "5.9.0"
 ---
 
 <p align="center">
@@ -128,12 +128,18 @@ format, and fixed ceilings.
 Every Git command disables replacement objects, inherited `GIT_*` repointing,
 prompts, lazy fetches, and user or system configuration. A shallow repository,
 wrong object type, moved base ref, unrelated product, inherited record drift,
-draft already present in the base, new numbered record in the product, hostile
+changed, removed or relocated inherited draft, new numbered record in the product, hostile
 path or slug, duplicate identity or number, oversized input, exhausted
 three-digit namespace, dirty or wrong worktree, report drift, or partial
 mutation refuses with one bounded code. Plan and replay change no repository
 tree. Apply validates every source and destination before its first rename and
 restores every source if an I/O operation fails.
+
+A draft already present in the base participates in the same sorted assignment
+only when its path, mode and blob remain exact in the unnumbered product.
+Changed or missing inherited drafts refuse with `inherited-draft-drift`.
+This permits repairing a base that shipped a draft without permitting an
+assignment to rewrite that inherited decision.
 
 The alternatives section is the part that pays. A record saying only what was
 chosen tells a reader nothing they cannot get from the code; the value is in

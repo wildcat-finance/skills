@@ -173,8 +173,20 @@ jobs:
           fi
           delta_bytes="$(wc -c <"$delta_file" | tr -d '[:space:]')"
           test "$delta_bytes" -le 262144 || refuse path-limit
+          # A record already numbered on the base is not an assignment. An
+          # in-place amendment to a merged decision moves no draft and takes no
+          # number, so counting its path would demand trailers describing a
+          # mapping that does not exist, and no author could satisfy them.
+          base_finals_file="$RUNNER_TEMP/adr-assignments-base-finals.z"
+          if ! safe_git --git-dir="$candidate_repository" ls-tree \
+            -r -z --name-only "$BASE_SHA" -- docs/decisions \
+            >"$base_finals_file"; then
+            refuse history-incomplete
+          fi
+          base_finals_bytes="$(wc -c <"$base_finals_file" | tr -d '[:space:]')"
+          test "$base_finals_bytes" -le 262144 || refuse path-limit
           finals_file="$RUNNER_TEMP/adr-assignments-finals.json"
-          if ! python3 - "$delta_file" "$finals_file" <<'PY'
+          if ! python3 - "$delta_file" "$finals_file" "$base_finals_file" <<'PY'
           import json
           from pathlib import Path
           import re
@@ -186,6 +198,10 @@ jobs:
               raise SystemExit(0)
           if raw[-1:] != b"\0":
               raise SystemExit(2)
+          base_raw = Path(sys.argv[3]).read_bytes()
+          if base_raw and base_raw[-1:] != b"\0":
+              raise SystemExit(2)
+          numbered_on_base = {path for path in base_raw.split(b"\0") if path}
           tokens = raw[:-1].split(b"\0")
           status_re = re.compile(br"[ACDMRTUXB][0-9]{0,3}")
           final_re = re.compile(
@@ -215,6 +231,8 @@ jobs:
               for path in final_candidates:
                   if final_re.fullmatch(path) is None:
                       raise SystemExit(2)
+                  if path in numbered_on_base:
+                      continue
                   finals.add(path.decode("ascii"))
           Path(sys.argv[2]).write_text(
               json.dumps(sorted(finals), separators=(",", ":")) + "\n",

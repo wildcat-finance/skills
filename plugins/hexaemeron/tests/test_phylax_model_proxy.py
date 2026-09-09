@@ -5676,7 +5676,7 @@ class ConformanceTests(unittest.TestCase):
             for entry in agents_marketplace["plugins"]
             if entry["name"] == "hexaemeron"
         )
-        self.assertEqual({"1.6.30"}, set(package_versions.values()))
+        self.assertEqual({"1.6.31"}, set(package_versions.values()))
         self.assertNotEqual("1.4.0", package_versions["claude_manifest"])
 
         coverage = json.loads(
@@ -5684,9 +5684,15 @@ class ConformanceTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        phylax_binding = coverage["runtime"]["phylax-boundary-review"]
+        phylax_source = Path("plugins/hexaemeron/tests/test_promise_cases.py")
+        self.assertEqual(phylax_binding["source"], phylax_source.as_posix())
         self.assertEqual(
-            hashlib.sha256((skill_root / "SKILL.md").read_bytes()).hexdigest(),
-            coverage["runtime"]["phylax-boundary-review"]["sha256"],
+            phylax_binding["selector"], "test_phylax_review_positive"
+        )
+        self.assertEqual(
+            phylax_binding["sha256"],
+            hashlib.sha256((repository / phylax_source).read_bytes()).hexdigest(),
         )
 
         copied = (
