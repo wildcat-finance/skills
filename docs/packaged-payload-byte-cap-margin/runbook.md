@@ -178,3 +178,15 @@ Complete replacement Exit: All four hold, each by command. One, `python3 -m unit
 **Steps touched.** Step 3
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.**
+
+Complete replacement Exit: All five hold, each by command. One, `python3 scripts/portable_promise_machine.py package --out <dir>` writes a manifest whose `omissions` array carries the new class with its reason. Two, exactly 32 paths leave the package against the base build, every one a character portrait: `python3 docs/packaged-payload-byte-cap-margin/resolve_design.py --candidate omission-class-with-reference-repair --criterion tracked-files-deleted` reports 0 and `git ls-files` reports the same 34 portrait paths tracked before and after, 33 `.png` and one `.webp`, of which the base build packaged 32; `assets/characters/promise-machine-binding.png` and `assets/characters/shoggoth.png` are tracked and were never packaged. Three, `python3 docs/packaged-payload-byte-cap-margin/resolve_design.py --candidate omission-class-with-reference-repair --criterion dangling-image-references` reports 0. Four, `python3 docs/packaged-payload-byte-cap-margin/measure_built_margin.py --candidate omission-class-with-reference-repair` reports at least 5,242,880 bytes of headroom, which is the `built-payload-margin` conformance criterion blocking step 3. Five, `python3 scripts/run_checks.py --full --format json --report tmp/checks/step-2.json` reports every check green except the pre-existing `hexaemeron-suite` failure of `test_kronos_scoreboard.ScoreboardTest.test_no_governed_ledger_declares_anything_today`, red at the run's base commit `12cbe2e6ed95decd6d9d355740f2dbd052956abe` and filed as https://github.com/wildcat-finance/skills/issues/1472.
+
+**Why.** Step 1's first audit round, finding S1-R1-01, showed the second exit unsatisfiable as written: `git ls-files` reports 34 paths under an `assets/characters/` directory at the run's base commit `12cbe2e6ed95decd6d9d355740f2dbd052956abe` and at the step 1 commit `61e6de7c7f3fc636c77208af50d2f5f892febd55` alike, not 32. 32 is the number the package carries, measured from `MANIFEST.json`; the two tracked portraits it never carried are `assets/characters/promise-machine-binding.png` and `assets/characters/shoggoth.png`, which `ROOT_FILES` does not name. The claim the clause protects, that the step deletes no tracked file, is unchanged; the exit now states the number the command reports.
+
+**Steps touched.** Step 2
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
