@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20216515,
+    "bytes_blob": 20319428,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,7 +63,14 @@
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
-      "bytes": 63847,
+      "bytes": 83073,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 81025",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.md"
+    },
+    {
+      "bytes": 83687,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
