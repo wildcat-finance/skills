@@ -554,6 +554,64 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
                 self.assertIn(needle, result.stderr)
                 self.assertNotIn("Traceback", result.stderr)
 
+    def test_refuses_a_schema_that_does_not_declare_what_this_checker_keys_on(self):
+        """A schema clause is what makes several of the checker's own reads safe.
+
+        Gating the schema document made it readable. It did not make these
+        clauses load-bearing where the rows are read. With `family_id`'s
+        `type` dropped, a row carrying an object cleared `validate_schema` and
+        reached `row["family_id"] in seen`, raising an uncaught TypeError,
+        printing a traceback and exiting 1 -- the code reserved for a content
+        finding, not the 2 reserved for an unsafe read. Five shapes raised
+        that way. Dropping `polarity`'s enum was quieter and worse: a positive
+        specimen counted as neither polarity, reached no independence count,
+        and the fixture exited 0.
+        """
+        def without(name, keyword):
+            def edit(declared):
+                properties = json.loads(json.dumps(declared["properties"]))
+                properties[name].pop(keyword)
+                return dict(declared, properties=properties)
+
+            return edit
+
+        cases = (
+            ("family.schema.json", "family_id", "type"),
+            ("specimen.schema.json", "specimen_id", "type"),
+            ("specimen.schema.json", "family_id", "type"),
+            ("specimen.schema.json", "source_group_id", "type"),
+            ("specimen.schema.json", "polarity", "enum"),
+            ("specimen.schema.json", "source_object", "enum"),
+        )
+        for schema_name, field, keyword in cases:
+            with self.subTest(schema=schema_name, field=field, keyword=keyword):
+                root = self.build_fixture(
+                    specimens=[SPECIMEN_ROW],
+                    schemas={schema_name: without(field, keyword)},
+                )
+                result = self.run_checker("--fixture", str(root), env=self.env_without_gh())
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn(f"{schema_name}: {field} declares {keyword} None", result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_a_row_an_untyped_schema_admits_reaches_no_unhashable_read(self):
+        """The reproduction: one clause dropped and one row that exploits it."""
+        def untyped(name):
+            def edit(declared):
+                properties = json.loads(json.dumps(declared["properties"]))
+                properties[name] = {}
+                return dict(declared, properties=properties)
+
+            return edit
+
+        root = self.build_fixture(
+            families=[dict(FAMILY_ROW, family_id={})],
+            schemas={"family.schema.json": untyped("family_id")},
+        )
+        result = self.run_checker("--fixture", str(root), env=self.env_without_gh())
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
     def test_refuses_an_overlaps_entry_that_names_no_family(self):
         """`overlaps` declared a link to another family and nothing resolved it."""
         root = self.build_fixture(families=[dict(FAMILY_ROW, overlaps=["no_such_family"])])

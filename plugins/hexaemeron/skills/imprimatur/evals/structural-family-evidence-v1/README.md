@@ -191,6 +191,20 @@ Its exit codes are three:
   rather than reaching a field access, where it printed a traceback and
   exited 1.
 
+  A readable schema is not yet a schema the checker can rely on, so a second
+  gate reads it before any row: the clause each keyed field's safety stands
+  on has to be declared. `family_id` on a family row, and `specimen_id`,
+  `family_id` and `source_group_id` on a specimen row, are declared as
+  strings, because this checker hashes, iterates and normalises them;
+  `polarity` and `source_object` declare their enums, because those decide
+  whether a row counts at all and which endpoint replays it. Dropping one of
+  those six clauses is a schema this checker cannot use, refused with exit 2.
+  Five of them left a row the weakened schema admitted raising an uncaught
+  `TypeError` or `AttributeError`, printing a traceback and exiting 1; the
+  `polarity` enum was quieter and worse, because a positive specimen then
+  counted as neither polarity, reached no independence count, and the fixture
+  exited 0.
+
 The flags are:
 
 - `--report <path>` writes one JSON report holding `families`, `specimens`,

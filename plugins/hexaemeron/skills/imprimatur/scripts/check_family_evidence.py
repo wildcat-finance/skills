@@ -182,11 +182,71 @@ FIELD_ENFORCEMENT = {
 }
 ROW_SCHEMA_NAMES = {FAMILIES_NAME: FAMILY_SCHEMA_NAME, SPECIMENS_NAME: SPECIMEN_SCHEMA_NAME}
 
-# The seven type names validate_schema can check, and the four keywords it
-# compares a value against as a number. A schema document naming anything else
-# is a document this checker cannot read.
-SCHEMA_TYPE_NAMES = ("object", "array", "string", "integer", "number", "boolean", "null")
+# The type names validate_schema can check, and the four keywords it compares
+# a value against as a number. A schema document naming anything else is a
+# document this checker cannot read.
+#
+# One type set, declared once. SCHEMA_TYPE_NAMES was a second literal naming
+# the same seven types as validate_schema's own predicate table:
+# require_schema_document admitted any name in this tuple and validate_schema
+# then indexed that table with it, so a name in one and not the other raised an
+# uncaught KeyError, printed a traceback and exited 1 -- the code the amended
+# Exit reserves for a content finding, not the 2 it reserves for an unsafe
+# read. That is S2-R7-03's mechanism, reintroduced by S2-R8-01's own gate.
+# Deriving the tuple from the table makes the divergence unwritable rather than
+# guarded, which is the repair round 7 applied to TIERS above.
+SCHEMA_TYPE_PREDICATES = {
+    "object": lambda item: isinstance(item, dict),
+    "array": lambda item: isinstance(item, list),
+    "string": lambda item: isinstance(item, str),
+    "integer": lambda item: isinstance(item, int) and not isinstance(item, bool),
+    "number": lambda item: isinstance(item, (int, float)) and not isinstance(item, bool),
+    "boolean": lambda item: isinstance(item, bool),
+    "null": lambda item: item is None,
+}
+SCHEMA_TYPE_NAMES = tuple(SCHEMA_TYPE_PREDICATES)
 SCHEMA_NUMERIC_KEYWORDS = ("minLength", "minItems", "minimum", "maximum")
+
+# A schema clause is the only thing that makes several of this file's own reads
+# safe, and a schema is fixture data below --fixture like the two JSONL files
+# are. require_schema_document made a schema document readable; it did not make
+# these clauses load-bearing where the rows are read. Dropping `family_id`'s
+# `type` left a row carrying an object clearing validate_schema and reaching
+# `row["family_id"] in seen`, which raised an uncaught TypeError, printed a
+# traceback and exited 1 -- the code the amended Exit reserves for a content
+# finding, not the 2 it reserves for an unsafe read. Five shapes raised that
+# way. Dropping `polarity`'s enum was quieter and worse: a positive specimen
+# counted as neither polarity, contributed to no independence count, and the
+# fixture exited 0. A schema that does not declare what this file keys on is a
+# schema this file cannot use, which is the judgement require_schema_document
+# already makes about a schema its validator cannot read.
+SCHEMA_DECLARATIONS = {
+    FAMILIES_NAME: {
+        # Hashed into the family id set, and joined to every specimen row.
+        "family_id": {"type": "string"},
+    },
+    SPECIMENS_NAME: {
+        # Hashed into the specimen id set.
+        "specimen_id": {"type": "string"},
+        # Hashed against the family ids the catalogue carries.
+        "family_id": {"type": "string"},
+        # Iterated character by character, NFC-normalised and hashed.
+        "source_group_id": {"type": "string"},
+        # Decides whether a row counts as a positive or a negative at all.
+        "polarity": {"enum": ["positive", "negative"]},
+        # Decides which endpoint --verify-sources replays.
+        "source_object": {
+            "enum": [
+                "markdown_paragraph",
+                "commit_message",
+                "issue_body",
+                "issue_comment",
+                "pull_request_body",
+                "pull_request_comment",
+            ]
+        },
+    },
+}
 
 FINDING_CLASSES = (
     "schema-contract",
@@ -338,6 +398,41 @@ def read_schema_below(fixture: Path, name: str) -> dict:
     return require_schema_document(read_json_below(fixture, f"schemas/{name}"), name)
 
 
+def require_declarations(schemas: dict[str, dict]) -> None:
+    """Refuse a schema that does not declare what this checker keys on.
+
+    ``require_schema_document`` refuses a schema whose own keywords the
+    validator cannot read. This refuses one the validator can read and this
+    file cannot rely on: ``SCHEMA_DECLARATIONS`` names, per row file, the
+    clause each keyed field's safety here stands on, and a schema is fixture
+    data whoever supplies ``--fixture`` writes.
+    """
+    for row_name in sorted(SCHEMA_DECLARATIONS):
+        schema_name = ROW_SCHEMA_NAMES[row_name]
+        properties = schemas[row_name].get("properties")
+        if not isinstance(properties, dict):
+            raise RefusalError(f"{schema_name} declares no properties object")
+        for field, clauses in sorted(SCHEMA_DECLARATIONS[row_name].items()):
+            declared = properties.get(field)
+            if not isinstance(declared, dict):
+                raise RefusalError(f"{schema_name} declares no {field} property")
+            for keyword, expected in sorted(clauses.items()):
+                value = declared.get(keyword)
+                if keyword == "enum":
+                    held = (
+                        isinstance(value, list)
+                        and len(value) == len(expected)
+                        and sorted(value) == sorted(expected)
+                    )
+                else:
+                    held = value == expected
+                if not held:
+                    raise RefusalError(
+                        f"{schema_name}: {field} declares {keyword} {value!r}, and "
+                        f"{expected!r} is what this checker keys on"
+                    )
+
+
 def jsonl_rows(text: str) -> list[str]:
     """Split a JSON Lines file on the newline, and on nothing else.
 
@@ -410,16 +505,7 @@ def validate_schema(value, schema: dict, context: str) -> None:
     if allowed_types is not None:
         if not isinstance(allowed_types, list):
             allowed_types = [allowed_types]
-        predicates = {
-            "object": lambda item: isinstance(item, dict),
-            "array": lambda item: isinstance(item, list),
-            "string": lambda item: isinstance(item, str),
-            "integer": lambda item: isinstance(item, int) and not isinstance(item, bool),
-            "number": lambda item: isinstance(item, (int, float)) and not isinstance(item, bool),
-            "boolean": lambda item: isinstance(item, bool),
-            "null": lambda item: item is None,
-        }
-        if not any(predicates[name](value) for name in allowed_types):
+        if not any(SCHEMA_TYPE_PREDICATES[name](value) for name in allowed_types):
             raise ValueError(f"schema type mismatch at {context}: expected {allowed_types}")
     if "const" in schema and value != schema["const"]:
         raise ValueError(f"schema const mismatch at {context}")
@@ -1019,6 +1105,9 @@ def run(args: argparse.Namespace) -> int:
 
     family_schema = read_schema_below(fixture, FAMILY_SCHEMA_NAME)
     specimen_schema = read_schema_below(fixture, SPECIMEN_SCHEMA_NAME)
+    # Before any row is read, because every unsafe read below stands on one of
+    # these clauses being there.
+    require_declarations({FAMILIES_NAME: family_schema, SPECIMENS_NAME: specimen_schema})
     families = read_jsonl_below(fixture, FAMILIES_NAME)
     specimens = read_jsonl_below(fixture, SPECIMENS_NAME)
 
