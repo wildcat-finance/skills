@@ -182,6 +182,12 @@ FIELD_ENFORCEMENT = {
 }
 ROW_SCHEMA_NAMES = {FAMILIES_NAME: FAMILY_SCHEMA_NAME, SPECIMENS_NAME: SPECIMEN_SCHEMA_NAME}
 
+# The seven type names validate_schema can check, and the four keywords it
+# compares a value against as a number. A schema document naming anything else
+# is a document this checker cannot read.
+SCHEMA_TYPE_NAMES = ("object", "array", "string", "integer", "number", "boolean", "null")
+SCHEMA_NUMERIC_KEYWORDS = ("minLength", "minItems", "minimum", "maximum")
+
 FINDING_CLASSES = (
     "schema-contract",
     "family-tier",
@@ -261,6 +267,75 @@ def read_json_below(fixture: Path, name: str):
         return json.loads(blob.decode("utf-8"), object_pairs_hook=object_without_duplicate_keys)
     except (UnicodeDecodeError, ValueError) as exc:
         raise RefusalError(f"cannot parse {name}: {exc}") from exc
+
+
+def require_schema_document(document, name: str, context: str = "") -> dict:
+    """Refuse a schema document validate_schema cannot read.
+
+    Three inputs arrive from outside this process. A row's fields pass a
+    schema clause and, where one reaches an endpoint, ``endpoint_segment``;
+    a ``gh`` reply's fields pass ``reply_value``. The schema documents were
+    the third, and every keyword dereferenced below was taken on trust: a
+    document that is not an object, a ``type`` naming no predicate, a
+    ``properties`` or ``items`` value that is not an object, a ``pattern``
+    that is not a compilable string, and a numeric bound that is not a number
+    each raised an uncaught ``AttributeError``, ``KeyError``, ``TypeError`` or
+    ``re.PatternError``, printed a traceback and exited 1 -- the code the
+    amended Exit reserves for a content finding, not the 2 it reserves for an
+    unsafe read. A schema is fixture data below ``--fixture`` like the two
+    JSONL files are, so this is that gate, walked once over the whole
+    document.
+
+    ``enum`` is held to a list of names rather than to any JSON value,
+    because every enum in these two schemas names a string and the family
+    schema's ``evidence_tier`` enum is compared with the enforced tier set,
+    which needs names that order.
+    """
+    where = f"{name}{context}"
+    if not isinstance(document, dict):
+        raise RefusalError(f"{where} is not a JSON object")
+    declared = document.get("type")
+    if declared is not None:
+        names = declared if isinstance(declared, list) else [declared]
+        for item in names:
+            if not isinstance(item, str) or item not in SCHEMA_TYPE_NAMES:
+                raise RefusalError(f"{where} declares a type this checker cannot check: {item!r}")
+    required = document.get("required")
+    if required is not None and (
+        not isinstance(required, list) or not all(isinstance(item, str) for item in required)
+    ):
+        raise RefusalError(f"{where} declares required, which is not a list of field names")
+    enum = document.get("enum")
+    if enum is not None and (
+        not isinstance(enum, list) or not all(isinstance(item, str) for item in enum)
+    ):
+        raise RefusalError(f"{where} declares enum, which is not a list of names")
+    pattern = document.get("pattern")
+    if pattern is not None:
+        if not isinstance(pattern, str):
+            raise RefusalError(f"{where} declares a pattern that is not a string: {pattern!r}")
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            raise RefusalError(f"{where} declares a pattern that does not compile: {exc}") from exc
+    for keyword in SCHEMA_NUMERIC_KEYWORDS:
+        bound = document.get(keyword)
+        if bound is not None and (not isinstance(bound, (int, float)) or isinstance(bound, bool)):
+            raise RefusalError(f"{where} declares {keyword}, which is not a number")
+    properties = document.get("properties")
+    if properties is not None:
+        if not isinstance(properties, dict):
+            raise RefusalError(f"{where} declares properties, which is not an object")
+        for key in sorted(properties):
+            require_schema_document(properties[key], name, f"{context}/properties/{key}")
+    if "items" in document:
+        require_schema_document(document["items"], name, f"{context}/items")
+    return document
+
+
+def read_schema_below(fixture: Path, name: str) -> dict:
+    """Read one schema document from the fixture, through the gate above."""
+    return require_schema_document(read_json_below(fixture, f"schemas/{name}"), name)
 
 
 def jsonl_rows(text: str) -> list[str]:
@@ -942,8 +1017,8 @@ def run(args: argparse.Namespace) -> int:
     if args.min_independent_positive is not None and args.tier is None:
         raise RefusalError("--min-independent-positive overrides one tier and needs --tier")
 
-    family_schema = read_json_below(fixture, f"schemas/{FAMILY_SCHEMA_NAME}")
-    specimen_schema = read_json_below(fixture, f"schemas/{SPECIMEN_SCHEMA_NAME}")
+    family_schema = read_schema_below(fixture, FAMILY_SCHEMA_NAME)
+    specimen_schema = read_schema_below(fixture, SPECIMEN_SCHEMA_NAME)
     families = read_jsonl_below(fixture, FAMILIES_NAME)
     specimens = read_jsonl_below(fixture, SPECIMENS_NAME)
 

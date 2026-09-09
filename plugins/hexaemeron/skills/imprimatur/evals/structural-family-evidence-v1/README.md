@@ -176,9 +176,20 @@ Its exit codes are three:
 - `2`: the invocation or a read was refused, which covers a missing fixture
   directory, an unknown `--tier`, `--min-independent-positive` without
   `--tier`, a symlink, an oversized file, an
-  unreadable JSONL row, a row carrying the same JSON key twice, and a
+  unreadable JSONL row, a row carrying the same JSON key twice, a schema
+  document this checker's validator cannot read, and a
   `--verify-sources` row, citation or reply that cannot name one pinned
   object.
+
+  A schema in `schemas/` is fixture data below `--fixture`, like the two
+  JSONL files, so it is gated when it is read rather than trusted where it
+  is used: the document is an object, a `type` names one of the seven
+  predicates the validator checks, `required` and `enum` are lists of names,
+  a `pattern` compiles, `minLength`, `minItems`, `minimum` and `maximum` are
+  numbers, and `properties` and `items` values are objects, all the way
+  down. A document that is valid JSON and unusable is refused with exit 2
+  rather than reaching a field access, where it printed a traceback and
+  exited 1.
 
 The flags are:
 

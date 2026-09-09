@@ -471,6 +471,89 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         root = self.build_fixture(schemas={"specimen.schema.json": other})
         self.assert_refused(root, "selection_seed declares 'some-other-seed'")
 
+    def test_refuses_a_schema_document_this_checker_cannot_read(self):
+        """A schema is fixture data, and it was the one input read raw.
+
+        A row's fields pass a schema clause and, where one reaches an
+        endpoint, `endpoint_segment`; a `gh` reply's fields pass
+        `reply_value`. Every keyword the validator dereferences was taken on
+        trust, so a document that is valid JSON and unusable raised an
+        uncaught AttributeError, KeyError, TypeError or re.PatternError,
+        printed a traceback and exited 1 -- the code reserved for a content
+        finding, not the 2 reserved for an unsafe read.
+        """
+        def property_of(name, key, value):
+            def edit(declared):
+                properties = json.loads(json.dumps(declared["properties"]))
+                properties[name][key] = value
+                return dict(declared, properties=properties)
+
+            return edit
+
+        def property_value(name, value):
+            def edit(declared):
+                properties = json.loads(json.dumps(declared["properties"]))
+                properties[name] = value
+                return dict(declared, properties=properties)
+
+            return edit
+
+        cases = (
+            ("the document is not an object", lambda declared: [], "is not a JSON object"),
+            (
+                "type names no predicate",
+                lambda declared: dict(declared, type="str"),
+                "declares a type this checker cannot check: 'str'",
+            ),
+            (
+                "required is not a list of names",
+                lambda declared: dict(declared, required=3),
+                "declares required, which is not a list of field names",
+            ),
+            (
+                "properties is not an object",
+                lambda declared: dict(declared, properties=[]),
+                "declares properties, which is not an object",
+            ),
+            (
+                "a property value is not an object",
+                property_value("family_id", "string"),
+                "family.schema.json/properties/family_id is not a JSON object",
+            ),
+            (
+                "items is not an object",
+                property_of("overlaps", "items", "string"),
+                "family.schema.json/properties/overlaps/items is not a JSON object",
+            ),
+            (
+                "an enum is not a list of names",
+                property_of("evidence_tier", "enum", [1, "signal"]),
+                "declares enum, which is not a list of names",
+            ),
+            (
+                "a pattern is not a string",
+                property_of("family_id", "pattern", 7),
+                "declares a pattern that is not a string",
+            ),
+            (
+                "a pattern does not compile",
+                property_of("family_id", "pattern", "([a-z"),
+                "declares a pattern that does not compile",
+            ),
+            (
+                "a numeric bound is not a number",
+                property_of("form", "minLength", "1"),
+                "declares minLength, which is not a number",
+            ),
+        )
+        for label, edit, needle in cases:
+            with self.subTest(schema=label):
+                root = self.build_fixture(schemas={"family.schema.json": edit})
+                result = self.run_checker("--fixture", str(root), env=self.env_without_gh())
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn(needle, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
     def test_refuses_an_overlaps_entry_that_names_no_family(self):
         """`overlaps` declared a link to another family and nothing resolved it."""
         root = self.build_fixture(families=[dict(FAMILY_ROW, overlaps=["no_such_family"])])
