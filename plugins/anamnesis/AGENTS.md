@@ -1,7 +1,7 @@
 # Anamnesis runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Anamnesis.** Anamnesis keeps custody of audit findings and the changes that answered them: it admits sources against an explicit rights basis, preserves the producer's bytes and identifiers unchanged, and releases read-only projections for Elenchus and Synkrisis. It does not produce audit rounds, judge whether a finding was real, or compare runs. **Current frontier:** What a corpus preserves is declared in the curation policy the release manifest records and the release id hashes. Two corpora ship under their own declared scopes, the pilot's 41 Warden findings and 17 findings the capture estate recorded about itself, and neither builds under the other's scope.
+> **Marketplace context: Anamnesis.** Anamnesis keeps custody of audit findings and the changes that answered them: it admits sources against an explicit rights basis, preserves the producer's bytes and identifiers unchanged, and releases read-only projections for Elenchus and Synkrisis. It does not produce audit rounds, judge whether a finding was real, or compare runs. **Current frontier:** The curation policy's declared mapper is resolved through a registry keyed by name and version: an unresolved name refuses before any record is written, every assertion records the entry that read the source, and three corpora ship, the third preserving the pilot's same 41 findings read from their synopsis rendering under a second registered implementation.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding

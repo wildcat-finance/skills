@@ -1,0 +1,108 @@
+{
+  "components": [
+    {
+      "bytes": 109534,
+      "path": "assertions.json",
+      "sha256": "328a791fa7f5b43903546378cca5d79f68ecb96506adb529df864df7037d6fed"
+    },
+    {
+      "bytes": 7259,
+      "path": "engagements.json",
+      "sha256": "a3c440c38b0fba0b1672c0743213bd7588b946799220ec08e191ef6dac8e48d3"
+    },
+    {
+      "bytes": 790,
+      "path": "policy.json",
+      "sha256": "6688fbe3197ccb58547d22a5a01ce3e18fcaa0a4a2dbcbe6ac47521fc10b7449"
+    },
+    {
+      "bytes": 3,
+      "path": "quarantine.json",
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "bytes": 49251,
+      "path": "relations.json",
+      "sha256": "43c8cb5b4a1d15fabdeed5e1cca9f92786522802c5efd25cfdfdb116e98b2ec0"
+    },
+    {
+      "bytes": 118,
+      "path": "unknowns.json",
+      "sha256": "d50dc3d2afee0b7cbf16ae342bf65c83051439b030135569967de5cf3c8bbe6c"
+    }
+  ],
+  "counts": {
+    "engagements": 3,
+    "findings": 41,
+    "occurrences": 41,
+    "relations": 142,
+    "remediations": 19,
+    "rounds": 31,
+    "rounds_with_no_findings": 12,
+    "submissions": 41,
+    "verifications": 31
+  },
+  "exclusions": [],
+  "policy": {
+    "disclosure": {
+      "derived_text": [
+        "public"
+      ]
+    },
+    "mapper": {
+      "name": "fiat-audit-synopsis",
+      "version": "1"
+    },
+    "scope": {
+      "id": "warden-synopsis-rendering",
+      "preserves": "The same three audit records the pilot preserves, for Hexaemeron, Pandects and Tabularium, rendered as fiat-audit-synopsis/v1: a second format over the pilot's findings, and not a second producer of them.",
+      "records": {
+        "maximum": 50,
+        "minimum": 25
+      },
+      "sources": [
+        "hexaemeron-audit-synopsis",
+        "pandects-audit-synopsis",
+        "tabularium-audit-synopsis"
+      ]
+    },
+    "taxonomy": {
+      "name": "warden-severity",
+      "severities": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "version": "1"
+    },
+    "version": "synopsis-2026-09-08"
+  },
+  "release_id": "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39",
+  "schema": "anamnesis-release/v1",
+  "sources": [
+    {
+      "bytes": 3592,
+      "disclosure": "public",
+      "id": "hexaemeron-audit-synopsis",
+      "sha256": "2e919d920cd952a837bee6069251b710a9543df37514d7248a996d61766138cd"
+    },
+    {
+      "bytes": 24967,
+      "disclosure": "public",
+      "id": "pandects-audit-synopsis",
+      "sha256": "ecde800e07ed8b1bc94b5a55714e3b01fbe0dfb1283bdafc88be170357dd32f1"
+    },
+    {
+      "bytes": 7896,
+      "disclosure": "public",
+      "id": "tabularium-audit-synopsis",
+      "sha256": "2432d6fd11be15a838d62ab067a190314a1a63011a67e106682f700cc3447e6c"
+    }
+  ],
+  "unknowns": {
+    "finding.adjudication": 41,
+    "round.native_schema": 31,
+    "round.verdict": 31,
+    "submission.adjudication": 41
+  }
+}

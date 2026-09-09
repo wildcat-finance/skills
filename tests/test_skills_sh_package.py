@@ -128,7 +128,23 @@ CONTRACT = "promise-machine/v1"
 # signal that filing asked for: skills#1467 predicted that the next delivery to
 # add shipped documents might be the one to close it, and this is that
 # delivery.
-MAX_FILES = 1_400
+#
+# A fifth raise of the file cap, again without a nineteenth plugin, and again
+# during an integration that composed a completed delivery with a base that had
+# advanced 24 commits underneath it. This one measures 1,415 files, 38 above the
+# paragraph above, of which the delivery's own share is a third preserved audit
+# corpus: its policies, its three sources, its release directory and its
+# projections, plus the design reports a Protasis matrix's cells name. Those are
+# evidence a reader reruns, they ship like every other preserved specimen, and
+# the reasoning above holds unchanged: the pressure is repository-wide, no
+# per-plugin trim closes it, and shipped package content is not trimmed to hold
+# a file count.
+#
+# MAX_BYTES still stays where it is and that assertion stays red. The payload
+# now measures 26,408,839 bytes, 100.7% of the 25 MiB the CLI allows, against
+# 26,272,101 one paragraph above. Nothing here buys margin against it, and
+# framework-109 owns it.
+MAX_FILES = 1_500
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {

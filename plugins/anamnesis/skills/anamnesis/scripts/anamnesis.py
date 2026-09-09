@@ -23,6 +23,7 @@ import stat
 import sys
 import tempfile
 import time
+import types
 
 POLICY_SCHEMA = "anamnesis-pilot-policy/v1"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -525,15 +526,34 @@ def cmd_admit(args):
 
 
 def _admitted_within_scope(events, result, curation_path):
-    """Load the curation policy and hold the admission result to its scope.
+    """Load the curation policy, resolve its mapper, and hold the result to scope.
 
-    Both refusal families are raised inside the recorded span, so a scope
-    refusal leaves the same durable event an admission refusal does.
+    All three refusal families are raised inside the recorded span, so a scope
+    or unresolved-mapper refusal leaves the same durable event an admission
+    refusal does.
+
+    Resolving here is a check rather than a hand-off: `curate` resolves again
+    for the implementation it runs, so calling it directly stays fail-closed.
+    The refusal an operator reads comes from this span, which knows the policy
+    version and digest a correlation id is keyed by.
     """
     with refusals_recorded(events, result["policy_version"], result["policy_sha256"]):
         policy = load_curation_policy(curation_path)
+        resolve_mapper(policy["mapper"])
         check_scope(policy, result["sources"], result["records"])
     return policy
+
+
+def _curated_within_span(events, result, policy, texts):
+    """Build the graph with the mapper's own refusals on the recorded stream.
+
+    A mapper that reads its own format refuses bytes that are not it, and that
+    refusal is the answer to the on-call question the empty round set used to
+    swallow. It leaves the same durable `anamnesis.source.refused` event an
+    admission refusal does, keyed by the same policy version and digest.
+    """
+    with refusals_recorded(events, result["policy_version"], result["policy_sha256"]):
+        return curate(result["sources"], policy, texts)
 
 
 def cmd_admit_seed(args):
@@ -564,18 +584,25 @@ def cmd_admit_seed(args):
 # format had no verdict to declare" are different facts and only one of them
 # is about the round.
 
-MAPPER = {"name": "warden-audit-round-markdown", "version": "1"}
-
 ROUND_HEADING = re.compile(
     r"^## (?P<label>.+?,\s*round\s*(?P<round>\d+))\s*--\s*(?P<date>.+?)\s*$"
 )
 OTHER_HEADING = re.compile(r"^## (?P<label>.+?)\s*$")
+# Every whitespace run below is possessive. A greedy `\s*` beside a lazy group
+# lets the engine try each way of splitting one span across both, and a row is
+# six such pairs: a cell of spaces took 5.9 s at 2 KB and 45 s at 4 KB, about
+# eightfold per doubling, whether or not it closed with a pipe. A source is
+# bounded only by `max_source_bytes`, a megabyte in every shipped policy, so
+# that cap is not a bound on this. Possessive runs cannot give whitespace back,
+# which removes the ambiguity and answers the same cells in microseconds. Every
+# row an admitted source holds parses as before: all three specimens rebuild to
+# the release ids they shipped with.
 FINDING_ROW = re.compile(
-    r"^\|\s*`?(?P<native>[A-Z]?\d*S?\d+-R\d+-\d+)`?\s*\|"
-    r"\s*(?P<severity>[a-z-]+)\s*\|"
-    r"\s*(?P<file>[^|]*?)\s*\|"
-    r"\s*(?P<finding>.*?)\s*\|"
-    r"\s*(?P<status>.*?)\s*\|$"
+    r"^\|\s*+`?(?P<native>[A-Z]?\d*S?\d+-R\d+-\d+)`?\s*+\|"
+    r"\s*+(?P<severity>[a-z-]+)\s*+\|"
+    r"\s*+(?P<file>[^|]*?)\s*+\|"
+    r"\s*+(?P<finding>.*?)\s*+\|"
+    r"\s*+(?P<status>.*?)\s*+\|$"
 )
 ROUND_FIELD = re.compile(
     r"^(?P<name>Audit schema|Covered|Not checked|Elenchus verdict):\s*(?P<value>.*)$"
@@ -607,15 +634,21 @@ def _strip_code(value):
     return stripped
 
 
-def parse_source(text, source_id):
-    """Read one Warden Markdown record into its native rounds and findings.
+def read_cells(cells, source_id):
+    """Read numbered producer cells into native rounds and findings.
+
+    A cell is one line as its producer wrote it. Warden's Markdown puts one on
+    each physical line; the synopsis format below packs a whole round onto one
+    line with the cells joined. The grammar is about what a round says rather
+    than how the producer packed it, so both formats read it here and only the
+    unpacking differs.
 
     Nothing here normalises: the round label, date and every finding field are
     the producer's own bytes. Curation reads this, and never the file again.
     """
     rounds = []
     current = None
-    for number, line in enumerate(text.splitlines(), start=1):
+    for number, line in cells:
         heading = ROUND_HEADING.match(line)
         if heading:
             current = {
@@ -650,6 +683,127 @@ def parse_source(text, source_id):
                 "line": number,
             })
     return rounds
+
+
+def parse_source(text, source_id):
+    """Read one Warden Markdown record: one producer cell per physical line."""
+    return read_cells(enumerate(text.splitlines(), start=1), source_id)
+
+
+# ---------------------------------------------------------------------------
+# The second format.
+#
+# `fiat-audit-synopsis/v1` is what the audit synopsis renderer writes from a
+# Warden audit file: a header line declaring the schema, the source it was
+# rendered from and that source's digest, then one line for each `##` heading
+# with the producer's own lines joined by a literal `<br>`. Splitting a round
+# line on that separator returns exactly the cells the grammar above reads.
+#
+# The header check is the control the first implementation never had. Handed
+# bytes in some other shape, the grammar above finds no round heading and
+# returns an empty list, and downstream an empty list is a corpus with nothing
+# in it rather than a refusal: "0 findings" and "not my format" arrive as the
+# same observation. This implementation reads the header first and refuses
+# A079 before a single cell is read, so it never returns a partial or empty
+# round set from bytes it did not accept.
+
+SYNOPSIS_SCHEMA = "fiat-audit-synopsis/v1"
+SYNOPSIS_SEPARATOR = "<br>"
+SYNOPSIS_HEADER = re.compile(r"^Synopsis schema=(?P<schema>[^\s|]+)(?:\s*\|.*)?$")
+
+
+def parse_synopsis(text, source_id):
+    """Read one fiat-audit-synopsis/v1 record into its native rounds.
+
+    The `<br>` split is bounded by the physical line the source byte cap
+    already bounds, and every cell is handed to the same grammar unchanged, so
+    a producer's cell reaches curation as the producer wrote it.
+    """
+    lines = text.splitlines()
+    declared = SYNOPSIS_HEADER.match(lines[0]) if lines else None
+    if declared is None:
+        raise Refusal(
+            "A079",
+            f"source {source_id} declares no {SYNOPSIS_SCHEMA} header on its "
+            f"first line: {quote(lines[0] if lines else '')}",
+            source_id,
+        )
+    if declared.group("schema") != SYNOPSIS_SCHEMA:
+        raise Refusal(
+            "A079",
+            f"source {source_id} header declares schema "
+            f"{quote(declared.group('schema'))}, not {SYNOPSIS_SCHEMA}",
+            source_id,
+        )
+    # The line number stays the physical one, which is where the producer put
+    # the whole round. Every finding in a round shares it, because the producer
+    # wrote them on one line and a locator should say where to look.
+    cells = (
+        (number, cell)
+        for number, line in enumerate(lines[1:], start=2)
+        for cell in line.split(SYNOPSIS_SEPARATOR)
+    )
+    return read_cells(cells, source_id)
+
+
+# ---------------------------------------------------------------------------
+# The registry.
+#
+# The curation policy declares a mapper by name and version. Before this
+# registry the declaration selected nothing: one parser ran whatever the policy
+# said, and every assertion recorded a string no code had checked. A release
+# built under a name that never existed still exited zero, and hashed that name
+# into its own identity.
+#
+# An entry pairs the name and version a policy may declare with the
+# implementation that reads a source under it. Resolution is exact on
+# (name, version): no fallback, no default, no partial match. A declaration
+# that resolves to nothing refuses A078 before any record is built, and nothing
+# in a policy or in a source can add an entry, because this map is a
+# module-level constant and the module exposes no way to write to it.
+
+Mapper = collections.namedtuple("Mapper", ("name", "version", "parse"))
+
+MAPPER_REGISTRY = types.MappingProxyType({
+    ("warden-audit-round-markdown", "1"): Mapper(
+        "warden-audit-round-markdown", "1", parse_source),
+    ("fiat-audit-synopsis", "1"): Mapper(
+        "fiat-audit-synopsis", "1", parse_synopsis),
+})
+
+
+def resolve_mapper(declared):
+    """Select the implementation a curation policy's mapper declaration names.
+
+    The declared object's shape is already closed by `load_curation_policy`.
+    This reads its meaning, which nothing did before: a name and version that
+    no entry provides is a refusal, not a default.
+    """
+    name = declared.get("name") if isinstance(declared, dict) else None
+    version = declared.get("version") if isinstance(declared, dict) else None
+    entry = None
+    if isinstance(name, str) and isinstance(version, str):
+        # A non-string declaration is unhashable as often as not, so the
+        # lookup is only reached once the key is known to be a pair of
+        # strings. Everything else refuses on the same rule.
+        entry = MAPPER_REGISTRY.get((name, version))
+    if entry is None:
+        raise Refusal(
+            "A078",
+            f"curation policy declares mapper {quote(name)} version "
+            f"{quote(version)}, which no registry entry provides",
+        )
+    return entry
+
+
+def mapper_identity(entry):
+    """The object a resolved entry is recorded as.
+
+    Byte-identical to a declaration that resolved, because a resolved entry
+    carries the same name and version the policy named. That is what keeps a
+    shipped release id where it is while the record starts meaning something.
+    """
+    return {"name": entry.name, "version": entry.version}
 
 
 def read_status(status):
@@ -700,14 +854,20 @@ def check_duplicates(duplicates):
     return duplicates
 
 
-def _assertion(kind, ident, source, line, native, state, basis, mapper):
+def _assertion(kind, ident, source, line, native, state, basis, resolved):
+    """One assertion, recording the registry entry that read its source.
+
+    `resolved` is a registry entry, never the policy's declared object. The
+    record then says which implementation produced it rather than repeating
+    what the policy claimed.
+    """
     return {
         "id": ident,
         "kind": kind,
         "source": source,
         "locator": {"line": line},
         "native": native,
-        "mapper": dict(mapper),
+        "mapper": mapper_identity(resolved),
         "state": {"value": state, "basis": basis},
     }
 
@@ -720,11 +880,13 @@ def curate(admitted, policy, texts):
     is one record with several edges, which is the whole point of keeping the
     edge many-to-many.
     """
+    # Resolved first, so a declaration that names no implementation refuses
+    # before a single assertion or quarantine entry is built.
+    mapper = resolve_mapper(policy["mapper"])
     severities = set(policy["taxonomy"]["severities"])
     duplicates = check_duplicates(policy.get("duplicates", {}))
     derived_text = set(policy["disclosure"]["derived_text"])
     version = policy["version"]
-    mapper = policy["mapper"]
 
     engagements, assertions, relations, quarantine, unknowns = [], [], [], [], {}
 
@@ -734,7 +896,7 @@ def curate(admitted, policy, texts):
     for source in admitted:
         source_id = source["id"]
         speaks = source["disclosure"] in derived_text
-        rounds = parse_source(texts[source_id], source_id)
+        rounds = mapper.parse(texts[source_id], source_id)
         engagement = {
             "id": f"eng:{source_id}",
             "source": source_id,
@@ -1429,6 +1591,11 @@ def observations(out, cohort_rule):
             "members": members,
         },
         "denominators": dict(sorted(denominators.items())),
+        # The scope travels with the counts. A release states what it set out
+        # to preserve, and that sentence is what tells a reader whether two
+        # cohorts of the same size hold the same findings or different ones.
+        # Left in the release alone it does not reach the consumer that counts.
+        "scope": dict(manifest["policy"]["scope"]),
         "policy": {
             "curation_version": manifest["policy"]["version"],
             "taxonomy": (
@@ -1493,7 +1660,7 @@ def _rebuild_once(specimen, destination):
     result = admit(policy_path, events)
     policy = _admitted_within_scope(events, result, curation_path)
     texts = _admitted_texts(policy_path, result["sources"])
-    graph = curate(result["sources"], policy, texts)
+    graph = _curated_within_span(events, result, policy, texts)
     return build_release(destination, policy, result["sources"], graph)
 
 
@@ -1533,10 +1700,18 @@ def verify_rebuild(specimen):
 def cmd_ingest(args):
     events = Events(args.events)
     result = admit(args.policy, events)
+    # Reading a source is choosing an implementation, so ingest resolves the
+    # declared mapper the same way curation does and refuses the same rule.
+    # It holds the policy to nothing else: the scope is curation's check.
+    with refusals_recorded(events, result["policy_version"], result["policy_sha256"]):
+        mapper = resolve_mapper(
+            load_curation_policy(args.curation_policy)["mapper"])
     texts = _admitted_texts(args.policy, result["sources"])
     total = 0
     for source in result["sources"]:
-        rounds = parse_source(texts[source["id"]], source["id"])
+        with refusals_recorded(
+                events, result["policy_version"], result["policy_sha256"]):
+            rounds = mapper.parse(texts[source["id"]], source["id"])
         found = sum(len(r["findings"]) for r in rounds)
         total += found
         print(f"{source['id']}: {len(rounds)} round(s), {found} finding(s)")
@@ -1549,7 +1724,7 @@ def cmd_curate(args):
     result = admit(args.policy, events)
     policy = _admitted_within_scope(events, result, args.curation_policy)
     texts = _admitted_texts(args.policy, result["sources"])
-    graph = curate(result["sources"], policy, texts)
+    graph = _curated_within_span(events, result, policy, texts)
     print(
         f"curated {len(graph['engagements'])} engagement(s), "
         f"{len(graph['assertions'])} assertion(s), {len(graph['relations'])} relation(s), "
@@ -1563,7 +1738,7 @@ def cmd_release(args):
     result = admit(args.policy, events)
     policy = _admitted_within_scope(events, result, args.curation_policy)
     texts = _admitted_texts(args.policy, result["sources"])
-    graph = curate(result["sources"], policy, texts)
+    graph = _curated_within_span(events, result, policy, texts)
     manifest = build_release(args.out, policy, result["sources"], graph)
     print(f"released {manifest['release_id']} to {args.out}")
     return 0
@@ -1764,6 +1939,7 @@ def build_parser():
     ingest = sub.add_parser(
         "ingest", help="read the admitted sources into their native rounds")
     ingest.add_argument("--policy", required=True)
+    ingest.add_argument("--curation-policy", required=True)
     ingest.add_argument("--events", default=None)
     ingest.set_defaults(handler=cmd_ingest)
 
