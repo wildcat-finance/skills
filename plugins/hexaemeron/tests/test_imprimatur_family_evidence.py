@@ -5,16 +5,19 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
 import unicodedata
 import unittest
+import unittest.mock
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = PLUGIN_ROOT / "skills" / "imprimatur"
 SCRIPT = SKILL_ROOT / "scripts" / "check_family_evidence.py"
+COLLECTOR = SKILL_ROOT / "scripts" / "collect_family_evidence.py"
 FIXTURE = SKILL_ROOT / "evals" / "structural-family-evidence-v1"
 SCHEMAS = FIXTURE / "schemas"
 ISSUE = FIXTURE / "issue-1298.md"
@@ -29,14 +32,14 @@ README = FIXTURE / "README.md"
 if str(SCRIPT.parent) not in sys.path:
     sys.path.insert(0, str(SCRIPT.parent))
 import check_family_evidence as checker  # noqa: E402
+import collect_family_evidence as collector  # noqa: E402
 
-# Two fixture files carry no frozen digest, and the reason is per file rather
-# than a rule: this README holds the table and cannot hold its own digest, and
-# `specimens.jsonl` is written by a later runbook step. Everything else in the
-# fixture has to be pinned, so a new file cannot arrive unpinned by omission.
+# One fixture file carries no frozen digest: this README holds the table and
+# cannot hold its own digest. Everything else in the fixture has to be pinned,
+# so a new file cannot arrive unpinned by omission. `specimens.jsonl` and
+# `selection-rejections.jsonl` joined the table when step 3 wrote them.
 UNPINNED_FIXTURE_FILES = {
     "README.md": "carries the digest table and cannot hold its own digest",
-    "specimens.jsonl": "a later runbook step writes it",
 }
 
 SOURCE_ISSUE = "https://github.com/wildcat-finance/skills/issues/1298"
@@ -1130,7 +1133,28 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             payload = json.loads(report.read_text(encoding="utf-8"))
         self.assertEqual(payload["families"], 42)
-        self.assertEqual(len(payload["below_minimum"]), 13)
+        # Step 3 collected specimens for the 13 target families and met the
+        # tier minimum for nine. The four below it are the families whose form
+        # the pinned universe does not carry twice in two source groups, and
+        # the README's collection record states, per family, the bounded
+        # pattern that established that and what it found; this pins that
+        # record. `redundant_connective_pair` and `stacked_epistemic_modal`
+        # were in this list until the second reconnaissance pass: the first
+        # closed on a per-instance reading of the additive shape the issue's
+        # Form names, the second on two attested pairs of the issue's closed
+        # class added to `discovery_phrases`.
+        self.assertEqual(
+            sorted(row["family_id"] for row in payload["below_minimum"]),
+            [
+                "causal_fact_clause_wrapper",
+                "empty_expletive_case",
+                "existential_relative_shell",
+                "reason_is_because",
+            ],
+        )
+        for row in payload["below_minimum"]:
+            self.assertLess(row["independent_positives"], 2, row)
+            self.assertGreaterEqual(row["negatives"], row["minimum_negative"], row)
 
 
 class FamilyCatalogueWordingTest(unittest.TestCase):
@@ -1260,6 +1284,372 @@ class FamilyCatalogueWordingTest(unittest.TestCase):
         )
         stated = {tier: (int(positive), int(negative)) for tier, positive, negative in rows}
         self.assertEqual(stated, dict(checker.TIER_MINIMUMS))
+
+
+class FamilyEvidenceCollectorTest(unittest.TestCase):
+    """The collector is the executable form of the study's selection rule.
+
+    Every case here is offline: no test opens a socket, and the collector's
+    network functions are never called. ``--verify-sources`` on the shipped
+    fixture is the online proof, and it runs in the runbook's Exit, not here.
+    """
+
+    maxDiff = None
+
+    @staticmethod
+    def document(text: str, path: str = "docs/a.md", repository: str = "wildcat-finance/skills",
+                 commit: str = "1" * 40) -> dict:
+        return {
+            "kind": "markdown_paragraph", "repository": repository, "commit": commit,
+            "path": path, "number": None, "comment": None, "fragment": None,
+            "date": None, "text": text,
+        }
+
+    @staticmethod
+    def family(family_id: str = "purpose_periphrasis", tier: str = "signal",
+               phrases=("in order to",)) -> dict:
+        return {"family_id": family_id, "evidence_tier": tier, "discovery_phrases": list(phrases)}
+
+    @staticmethod
+    def sentence(words: int, marker: str = "in order to") -> str:
+        # Distinct filler words, so the five-gram set is as large as the text
+        # and one changed word moves the Jaccard similarity by a known amount.
+        filler = [f"w{n}" for n in range(words - 3)]
+        return " ".join([marker, *filler]) + "."
+
+    def test_candidates_are_ordered_by_the_seed_digest(self):
+        texts = [self.sentence(30) + f" variant {n}" for n in range(6)]
+        documents = [self.document(text, path=f"docs/{n}.md") for n, text in enumerate(texts)]
+        candidates, rejections = collector.build_candidates(
+            [self.family()], documents, "", {1298}, set(), set())
+        self.assertEqual(rejections, [])
+        self.assertEqual(len(candidates), 6)
+        digests = [row["candidate_id"] for row in candidates]
+        self.assertEqual(digests, sorted(digests))
+        for row in candidates:
+            expected = hashlib.sha256(
+                (collector.FIXTURE_SEED + row["source_url"] + row["text"]).encode("utf-8")
+            ).hexdigest()
+            self.assertEqual(row["candidate_id"], expected)
+        # The order is the digest's and not the documents', so a candidate
+        # cannot be moved up by renaming or reordering its source.
+        self.assertNotEqual([row["source_path"] for row in candidates],
+                            [f"docs/{n}.md" for n in range(6)])
+
+    def test_a_v1_source_group_is_excluded_whole(self):
+        v1_document = ("wildcat-finance/skills", "docs/compound-v3-phase0-study.md")
+        v1_commit = ("wildcat-finance/skills", "2" * 40)
+        document = self.document(self.sentence(40), path=v1_document[1])
+        self.assertEqual(
+            collector.document_rejection(document, {1298}, {v1_document}, {v1_commit}),
+            "v1-source-group",
+        )
+        commit = {**self.document(self.sentence(40)), "kind": "commit_message",
+                  "path": None, "commit": v1_commit[1]}
+        self.assertEqual(
+            collector.document_rejection(commit, {1298}, {v1_document}, {v1_commit}),
+            "v1-source-group",
+        )
+        other = self.document(self.sentence(40), path="docs/other.md")
+        self.assertIsNone(collector.document_rejection(other, {1298}, {v1_document}, {v1_commit}))
+        # The v1 label, adjudication and split files are refused by name: only
+        # the sample file may be opened while specimens are chosen.
+        with tempfile.TemporaryDirectory() as directory:
+            labels = Path(directory) / "labels.jsonl"
+            labels.write_text("", encoding="utf-8")
+            with self.assertRaises(collector.RefusalError):
+                collector.v1_exclusions(labels)
+
+    def test_a_paragraph_outside_the_word_band_is_rejected(self):
+        self.assertEqual(collector.paragraph_rejection(self.sentence(17), ""), "outside-word-band")
+        self.assertEqual(collector.paragraph_rejection(self.sentence(181), ""), "outside-word-band")
+        self.assertIsNone(collector.paragraph_rejection(self.sentence(18), ""))
+        self.assertIsNone(collector.paragraph_rejection(self.sentence(180), ""))
+
+    def annotate(self, candidate: dict, specimen_id: str) -> dict:
+        return {
+            "candidate_id": candidate["candidate_id"], "family_id": candidate["family_id"],
+            "specimen_id": specimen_id, "polarity": "negative", "decision": "negative",
+            "reason": "a negative", "rewrite": None, "start_byte": 0, "end_byte": 11,
+        }
+
+    def test_a_fivegram_jaccard_duplicate_at_the_limit_is_rejected(self):
+        base = self.sentence(40)
+        near = base.replace(" w36.", " other.")
+        far = self.sentence(40).replace("w", "t")
+        family = self.family(tier="high-value")
+        grams_base = collector.fivegrams(collector.normalise(base))
+        self.assertGreaterEqual(
+            collector.jaccard(grams_base, collector.fivegrams(collector.normalise(near))),
+            collector.JACCARD_LIMIT,
+        )
+        self.assertLess(
+            collector.jaccard(grams_base, collector.fivegrams(collector.normalise(far))),
+            collector.JACCARD_LIMIT,
+        )
+        for other, expected_kept, expected_reasons in (
+            (near, 1, ["duplicate-fivegram-jaccard"]),
+            (far, 2, []),
+        ):
+            documents = [self.document(base, path="docs/a.md"), self.document(other, path="docs/b.md")]
+            candidates, _ = collector.build_candidates([family], documents, "", {1298}, set(), set())
+            annotations = {
+                (row["family_id"], row["candidate_id"]): self.annotate(row, f"purpose_periphrasis-neg-0{n}")
+                for n, row in enumerate(candidates, 1)
+            }
+            specimens, rejections, _ = collector.select([family], candidates, annotations, False)
+            self.assertEqual(len(specimens), expected_kept, other)
+            self.assertEqual([row["reason"] for row in rejections], expected_reasons, other)
+            if expected_reasons:
+                self.assertIn("five-gram Jaccard", rejections[0]["detail"])
+
+    def test_a_surplus_negative_is_kept_in_the_rejections_not_the_fixture(self):
+        family = self.family(tier="signal")
+        texts = [self.sentence(40).replace("w", f"t{n}") for n in range(3)]
+        documents = [self.document(text, path=f"docs/{n}.md") for n, text in enumerate(texts)]
+        candidates, _ = collector.build_candidates([family], documents, "", {1298}, set(), set())
+        annotations = {
+            (row["family_id"], row["candidate_id"]): self.annotate(row, f"purpose_periphrasis-neg-0{n}")
+            for n, row in enumerate(candidates, 1)
+        }
+        specimens, rejections, shortfalls = collector.select([family], candidates, annotations, False)
+        self.assertEqual(len(specimens), 1)
+        self.assertEqual([row["reason"] for row in rejections], ["minimum-already-met"] * 2)
+        self.assertEqual(len(shortfalls), 1)
+        self.assertEqual(shortfalls[0]["negatives"], 1)
+        self.assertEqual(shortfalls[0]["independent_positives"], 0)
+
+    def test_the_fixture_is_written_through_a_temporary_file_and_rename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "specimens.jsonl"
+            target.write_text('{"previous": true}\n', encoding="utf-8")
+            calls = []
+            real_replace = os.replace
+
+            def recording_replace(source, destination):
+                calls.append((Path(source).name, Path(destination).name))
+                return real_replace(source, destination)
+
+            collector.os.replace = recording_replace
+            try:
+                collector.write_jsonl_atomic(target, [{"a": 1}, {"b": 2}])
+            finally:
+                collector.os.replace = real_replace
+            self.assertEqual(calls, [("specimens.jsonl.partial", "specimens.jsonl")])
+            self.assertEqual(target.read_text(encoding="utf-8"), '{"a": 1}\n{"b": 2}\n')
+            self.assertEqual(sorted(path.name for path in Path(directory).iterdir()), ["specimens.jsonl"])
+
+            def failing_replace(source, destination):
+                raise OSError("interrupted before the rename")
+
+            collector.os.replace = failing_replace
+            try:
+                with self.assertRaises(OSError):
+                    collector.write_jsonl_atomic(target, [{"c": 3}])
+            finally:
+                collector.os.replace = real_replace
+            # The previous fixture survives an interrupted write intact.
+            self.assertEqual(target.read_text(encoding="utf-8"), '{"a": 1}\n{"b": 2}\n')
+
+    def test_refuses_to_run_without_a_pinned_head(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory)
+            (fixture / "families.jsonl").write_text(jsonl([FAMILY_ROW]), encoding="utf-8")
+            (fixture / "issue-1298.md").write_text("", encoding="utf-8")
+            samples = fixture / "samples.jsonl"
+            samples.write_text("", encoding="utf-8")
+            completed = subprocess.run(
+                [sys.executable, str(COLLECTOR), "--fixture", str(fixture),
+                 "--v1-samples", str(samples), "--corpus-in", str(samples)],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 2, completed.stderr)
+            self.assertIn("--head is required", completed.stderr)
+            self.assertFalse((fixture / "specimens.jsonl").exists())
+            self.assertFalse((fixture / "selection-rejections.jsonl").exists())
+            # A head that is not one repository=commit pair is refused the same way.
+            completed = subprocess.run(
+                [sys.executable, str(COLLECTOR), "--fixture", str(fixture),
+                 "--v1-samples", str(samples), "--corpus-in", str(samples),
+                 "--head", "wildcat-finance/skills=main"],
+                capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(completed.returncode, 2, completed.stderr)
+            self.assertIn("unusable pinned commit", completed.stderr)
+
+    def test_the_commit_half_of_the_universe_can_actually_be_fetched(self):
+        """`commit_detail` was called three times and defined nowhere.
+
+        `fetch_commits`, `fetch_origin` and `replay` each read a commit
+        through it, so the collector raised `NameError: name 'commit_detail'
+        is not defined` the moment it reached a commit -- which is every run,
+        because the commit messages of all twenty pinned heads are half the
+        universe. Nothing failed until the network pass ran, and the pass
+        discarded every document already fetched when it did. This drives
+        `fetch_commits` against a stub `gh`, which is the call that raised.
+        """
+        page = json.dumps([
+            {"sha": "a" * 40,
+             "commit": {"message": "One commit message.\n\nWildcat-Origin: shoggoth",
+                        "committer": {"date": "2026-01-02T03:04:05Z"}}},
+        ])
+        env = self.counting_gh(
+            'printf "x\\n" >> "$FAMILY_EVIDENCE_COUNT"\n'
+            'if [ -f "$FAMILY_EVIDENCE_COUNT.page1" ]; then\n'
+            '  printf "%s\\n" "[]"\n'
+            "else\n"
+            '  : > "$FAMILY_EVIDENCE_COUNT.page1"\n'
+            '  printf "%s\\n" "$FAMILY_EVIDENCE_PAGE"\n'
+            "fi\n"
+        )
+        env["FAMILY_EVIDENCE_PAGE"] = page
+        with unittest.mock.patch.dict(os.environ, env, clear=True):
+            commits = collector.fetch_commits("wildcat-finance/skills", "b" * 40)
+        self.assertEqual(len(commits), 1)
+        self.assertEqual(commits[0]["sha"], "a" * 40)
+        self.assertEqual(commits[0]["date"], "2026-01-02T03:04:05Z")
+        self.assertEqual(collector.origin_from(commits[0]["message"], commits[0]["date"]),
+                         "model_assisted")
+
+    def test_commit_detail_reads_a_reply_it_cannot_trust(self):
+        """The reply is outside data, so a wrong type reads as absent."""
+        self.assertEqual(
+            collector.commit_detail(
+                {"commit": {"message": "m", "committer": {"date": "2020-01-01T00:00:00Z"}}}),
+            ("m", "2020-01-01T00:00:00Z"),
+        )
+        for reply in (
+            None, [], "commit", {}, {"commit": None}, {"commit": []},
+            {"commit": {"message": 7, "committer": {"date": 7}}},
+            {"commit": {"committer": "2020"}},
+        ):
+            self.assertEqual(collector.commit_detail(reply), (None, None), reply)
+        # A reply carrying no date still yields its message, because the
+        # origin rule falls back to unknown rather than refusing the commit.
+        self.assertEqual(collector.commit_detail({"commit": {"message": "m"}}), ("m", None))
+
+    def test_an_invented_corpus_is_not_shipped_prose(self):
+        """`plugins/lemma/baseline/` says of itself that its prose is invented.
+
+        Its README reads "A small invented corpus", "Everything here is
+        fabricated for the purpose" and "None of it corresponds to a deployed
+        system, and the prose is written to be chunked rather than to be
+        read." A specimen taken there would be evidence of writing nobody
+        published, and two of its paragraphs did reach the candidate pool.
+        """
+        text = self.sentence(30)
+        rejected = self.document(text, path="plugins/lemma/baseline/docs/reference/errors.md")
+        kept = self.document(text + " kept", path="plugins/lemma/docs/design.md")
+        candidates, rejections = collector.build_candidates(
+            [self.family()], [rejected, kept], "", {1298}, set(), set())
+        self.assertEqual([row["reason"] for row in rejections], ["invented-corpus"])
+        self.assertEqual([row["source_path"] for row in candidates],
+                         ["plugins/lemma/docs/design.md"])
+        self.assertIn("invented-corpus", collector.REJECTION_REASONS)
+        # The exclusion is named by repository and prefix, so an unrelated
+        # directory called `baseline` in another repository still counts.
+        elsewhere = self.document(text, path="baseline/notes.md",
+                                  repository="wildcat-finance/wildcat-docs")
+        candidates, rejections = collector.build_candidates(
+            [self.family()], [elsewhere], "", {1298}, set(), set())
+        self.assertEqual(rejections, [])
+        self.assertEqual(len(candidates), 1)
+
+    def counting_gh(self, script: str) -> dict:
+        """A `gh` on PATH that counts its own invocations and opens no socket.
+
+        The counter file and the reply come from the environment, so no test
+        value reaches the generated shell script's quoting.
+        """
+        directory = Path(tempfile.mkdtemp(prefix="family-evidence-retry-"))
+        self.addCleanup(shutil.rmtree, directory, True)
+        stub = directory / "gh"
+        stub.write_text("#!/bin/sh\n" + script, encoding="utf-8")
+        stub.chmod(0o755)
+        return dict(
+            os.environ,
+            PATH=str(directory),
+            FAMILY_EVIDENCE_COUNT=str(directory / "count"),
+        )
+
+    @staticmethod
+    def gh_attempts(env: dict) -> int:
+        path = Path(env["FAMILY_EVIDENCE_COUNT"])
+        return len(path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
+
+    def test_a_transient_gh_answer_is_retried_rather_than_ending_the_pass(self):
+        """One HTTP 504 at document 900 of 1370 discarded the whole pass.
+
+        The universe is fetched in a single pass of a few thousand calls and
+        the corpus is written only when it completes, so one transient answer
+        cost every document already fetched. The reproduction is the stub
+        below: it answers `HTTP 504` twice and then succeeds, which refused
+        before this guard and now returns the body on the third attempt.
+        """
+        env = self.counting_gh(
+            # Only shell built-ins and redirects: PATH holds this stub alone,
+            # so `wc` and `tr` are not reachable from here.
+            'printf "x\\n" >> "$FAMILY_EVIDENCE_COUNT"\n'
+            'for attempt in 1 2; do\n'
+            '  if [ ! -f "$FAMILY_EVIDENCE_COUNT.$attempt" ]; then\n'
+            '    : > "$FAMILY_EVIDENCE_COUNT.$attempt"\n'
+            '    echo "gh: We couldn\'t respond to your request in time. (HTTP 504)" >&2\n'
+            "    exit 1\n"
+            "  fi\n"
+            "done\n"
+            'printf "%s\\n" "{}"\n'
+        )
+        with unittest.mock.patch.object(collector, "GH_RETRY_SECONDS", 0), \
+                unittest.mock.patch.dict(os.environ, env, clear=True):
+            self.assertEqual(collector.gh_fetch(["api", "repos/a/b"]), b"{}\n")
+        self.assertEqual(self.gh_attempts(env), 3)
+
+    def test_a_transient_answer_on_every_attempt_is_still_a_refusal(self):
+        env = self.counting_gh(
+            'printf "x\\n" >> "$FAMILY_EVIDENCE_COUNT"\n'
+            'echo "gh: rate limited (HTTP 429)" >&2\n'
+            "exit 1\n"
+        )
+        with unittest.mock.patch.object(collector, "GH_RETRY_SECONDS", 0), \
+                unittest.mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(collector.RefusalError) as caught:
+                collector.gh_fetch(["api", "repos/a/b"])
+        self.assertIn(f"on {collector.GH_ATTEMPTS} attempts", str(caught.exception))
+        self.assertEqual(self.gh_attempts(env), collector.GH_ATTEMPTS)
+
+    def test_a_failure_that_is_not_transient_is_not_retried(self):
+        """A retry that widened to every failure would hide a real refusal.
+
+        An unauthorised or malformed call is answered the same way every time,
+        so retrying it buys nothing and delays the refusal by three waits. The
+        decision reads GitHub's own status line and nothing else.
+        """
+        env = self.counting_gh(
+            'printf "x\\n" >> "$FAMILY_EVIDENCE_COUNT"\n'
+            'echo "gh: Bad credentials (HTTP 401)" >&2\n'
+            "exit 1\n"
+        )
+        with unittest.mock.patch.object(collector, "GH_RETRY_SECONDS", 0), \
+                unittest.mock.patch.dict(os.environ, env, clear=True):
+            with self.assertRaises(collector.RefusalError) as caught:
+                collector.gh_fetch(["api", "repos/a/b"])
+        self.assertIn("HTTP 401", str(caught.exception))
+        self.assertNotIn("attempts", str(caught.exception))
+        self.assertEqual(self.gh_attempts(env), 1)
+
+    def test_a_missing_thread_is_not_retried_either(self):
+        """The thread enumeration counts a 404 as a hole, on one call."""
+        env = self.counting_gh(
+            'printf "x\\n" >> "$FAMILY_EVIDENCE_COUNT"\n'
+            'echo "gh: Not Found (HTTP 404)" >&2\n'
+            "exit 1\n"
+        )
+        with unittest.mock.patch.object(collector, "GH_RETRY_SECONDS", 0), \
+                unittest.mock.patch.dict(os.environ, env, clear=True):
+            self.assertIsNone(collector.gh_fetch_optional(["api", "repos/a/b/issues/1"]))
+            with self.assertRaises(collector.RefusalError):
+                collector.gh_fetch(["api", "repos/a/b/issues/1"])
+        self.assertEqual(self.gh_attempts(env), 2)
 
 
 if __name__ == "__main__":

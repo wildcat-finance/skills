@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20362179,
+    "bytes_blob": 20428089,
     "bytes_generated": 98
   },
   "entries": [
@@ -567,11 +567,18 @@
       "path": "plugins/hexaemeron/skills/imprimatur/evals/labelled-prose-v1/samples.jsonl"
     },
     {
-      "bytes": 37114,
+      "bytes": 39553,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/families.jsonl"
+    },
+    {
+      "bytes": 63471,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/specimens.jsonl"
     },
     {
       "bytes": 11,

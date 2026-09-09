@@ -48,9 +48,55 @@ committed study records the probe that ruled each of those out.
 
 Candidate paragraphs come from the v1 universe: public `wildcat-finance`
 repositories at a pinned default-branch head, plus merged pull requests and
-issues in `wildcat-finance/skills`. Prose from the 16 v1 source groups,
-Imprimatur's own files and issue #1298 itself is excluded, so no specimen
-shares a source group with the spent v1 holdout.
+issues in `wildcat-finance/skills`. The six source kinds the specimen schema
+names are all read: Markdown paragraphs and commit messages reachable from
+each pinned head, and the bodies, conversation comments and review comments
+of the named repository's issues and merged pull requests. Prose from the 16
+v1 source groups, Imprimatur's own files, vendored or generated trees
+(`lib`, `build`, `vendor`, `node_modules`, `third_party`, `third-party`,
+`.github`) and issue #1298 itself is excluded, so no specimen shares a source
+group with the spent v1 holdout.
+
+One further tree is excluded, and it is excluded on its own testimony.
+`plugins/lemma/baseline/` in `skills` describes itself as "A small invented
+corpus", says "Everything here is fabricated for the purpose" and that "None
+of it corresponds to a deployed system, and the prose is written to be chunked
+rather than to be read." A specimen taken there would be evidence of writing
+nobody published, and two of its paragraphs had reached the candidate pool. It
+is named by repository and path prefix rather than by a path segment, so an
+unrelated directory called `baseline` is unaffected, and it is the only tree
+in the universe that declares itself invented. Its eleven documents are
+counted as `invented-corpus` in the rejection table below.
+
+`scripts/collect_family_evidence.py` is the executable form of this rule.
+It fetches only through `gh api` at the pinned commits, with a fixed argument
+list and no shell, treats every fetched byte as data, writes every rejected
+candidate with its reason to `selection-rejections.jsonl`, and writes
+`specimens.jsonl` through a temporary file and a rename. Its `--head`
+arguments are the pinned heads below; `--threads wildcat-finance/skills`
+admits that repository's threads and comments; `--v1-samples` names the one
+v1 file it may open, `samples.jsonl`, and it refuses any other v1 file by
+name so the spent holdout labels are never read while specimens are chosen.
+
+One pass over this universe is 11,702 documents and a little over four
+thousand `gh` calls, which is most of an hour and most of a 5,000-call hourly
+quota, so two things about the pass are recorded rather than left to be
+rediscovered. A transient answer is retried a bounded number of times with a
+fixed wait -- only HTTP 429, 500, 502, 503 and 504, read from GitHub's own
+status line, and every other non-zero exit stays the refusal it was -- because
+one HTTP 504 at document 900 of 1,370 used to end the pass and discard
+everything already fetched. And `--corpus-out` records the fetched universe so
+a rerun can read it back with `--corpus-in` against each row's stored digest;
+this collection was ordered and annotated from such a record, and every
+shipped row was still re-fetched from its own endpoint before it was written.
+
+The universe is pinned on one side and not the other, which the fixture states
+rather than implies. The Markdown and commit halves are reachable from the
+pinned heads and cannot move. The thread half is enumerated from 1 to the
+highest number GitHub answers for, so a later pass sees the issues and pull
+requests opened since, and a body edited since is fetched as it now reads.
+That is why `annotated_before_lint` and the recorded span carry the annotation
+order rather than the replay.
 
 Candidates are discovered by the literal `discovery_phrases` recorded on each
 family row, ordered by:
@@ -60,18 +106,238 @@ sha256("imprimatur-structural-family-evidence-v1" || source_url || text)
 ```
 
 and taken in that order until the family's tier minimum is met. Discovery by
-phrase is a stated bias: it finds the forms the issue describes and cannot
-find the forms the issue missed. Every rejected candidate is written to
+phrase is a stated bias: it finds the forms the phrases name and cannot find
+the forms they miss. Every rejected candidate is written to
 `selection-rejections.jsonl` with its reason.
 
-The annotator records the span, decision and rewrite before running any lint,
-and `annotated_before_lint` records that protocol on every row. The current
-lint has none of these families, so it could not fire on them; the field
-exists so v2 can trust the order.
+How the phrases were chosen is part of that bias. Before collection, a
+reconnaissance pass over the same universe counted each family's form with a
+bounded pattern held in the run's scratch directory; no pattern was added to
+the lint, the lexicon or this fixture. For the ten families whose form is a
+closed phrase, `discovery_phrases` carries the issue's own forms plus one or
+two near-neighbour literals that supply negatives (`the fact that`, `the case
+that`, `potentially`, `Note that`, `There are`, `and also`). For the three
+families whose form has an open slot between the connector and the verb
+(`causal_subject_has_no`, `causal_negative_passive`,
+`litotic_double_negative`) a literal cannot name the form, so the recorded
+phrases are the exact strings the reconnaissance matched, and the collector
+finds what the reconnaissance found and nothing else. The nearest generic
+literal for those three (`because the`, `not un`) names 870 to 980 paragraphs
+each, which nobody could annotate in digest order.
+
+A second reconnaissance pass ran when six families ended the first collection
+below their minimum, over the same pinned universe, by the same method, and
+it changed one phrase set. `stacked_epistemic_modal` gained `could plausibly`
+and `might plausibly`, two attested pairs of the closed class the issue names
+four members of; nothing else was widened, because for the other five the
+phrase set was already the widest literal their form admits. `the fact that`
+and `the case that` name every occurrence of their families' forms; `is
+because` and `There are` name the predicate and the opener of theirs. A
+literal cannot find what the corpus does not contain, and the Collection
+record below says what that search found for each of the four families still
+short.
+
+Widening the universe was considered in the same pass and refused. The seven
+public `wildcat-finance` repositories outside `--head` stay outside for the
+reasons recorded below, and the 18 to 180 word band stays as
+labelled-prose-v1 set it.
+
+The annotator is the agent running the step. It records, for each candidate
+in digest order until the tier minimum is met, the polarity, the decision,
+the actionable span as UTF-8 byte offsets, the reason and, for a positive, a
+content-preserving rewrite; a family whose universe holds too few positives
+is annotated to its last candidate. The record is keyed by family and
+candidate, because one paragraph can carry two families' phrases and be a
+positive for one move and a negative for the other. A candidate annotated on
+a side of the minimum that is already met is not shipped; it stays in
+`selection-rejections.jsonl` as `minimum-already-met` with its annotation
+named in the detail. All of this happened before any lint ran, and
+`annotated_before_lint` records that protocol on every row. The current lint
+has none of these families, so it could not fire on them; the field exists so
+v2 can trust the order.
 
 A source group is a repository plus a document, the unit v1 splits on. Two
 positive specimens for one family are independent only when their
 `source_group_id` values differ.
+
+## Collection record
+
+Specimens were collected on 2026-09-09 from these pinned heads, with
+`wildcat-finance/skills` also supplying its issues, merged pull requests and
+their comments:
+
+| Repository | Pinned head |
+| --- | --- |
+| `wildcat-finance/collateral-contract` | `6f8c1213b4ee339eaab4b34b5d73e7b12e2ee7fe` |
+| `wildcat-finance/credit-default-swaps` | `f46a26129d5e985ae6618c01146fb46163182955` |
+| `wildcat-finance/erc` | `1fd1fd36bd6126d6fd2464abe49b569b9b123c52` |
+| `wildcat-finance/project-aleph` | `06cd4ea1f31b54bcd5bab48910002c1aedb9921c` |
+| `wildcat-finance/project-null` | `fdba24d3ab4b79c71480d36023a3b170472799c2` |
+| `wildcat-finance/ripcord` | `b3a2f403ff474b99864a3e3bb3a78d1a911836b8` |
+| `wildcat-finance/shoggoth-wave-atlas` | `3f50cc5fa54147f56479b5a53a1cbe29fc5f631e` |
+| `wildcat-finance/skills` | `592390722f10df53658906623b15428dbfb88d8f` |
+| `wildcat-finance/subgraph` | `63f399e6ceff76a85c14ed26017a792e15513efd` |
+| `wildcat-finance/v2-protocol` | `f5a26146987926f4811b72a795d662813dedfe85` |
+| `wildcat-finance/wildcat-app` | `1368b013832407d6bc90fe2b9d57de16bd662623` |
+| `wildcat-finance/wildcat-app-v2` | `564a189bb9cdc9394b3fd4f444531a261ada99b3` |
+| `wildcat-finance/wildcat-docs` | `636b1dcba90c816e699c0d876c22d39be2c58b06` |
+| `wildcat-finance/wildcat-fee-collector` | `ccb14d6d4f958b854505a23657c7a468b43902f7` |
+| `wildcat-finance/wildcat-juris` | `8c20413ddc96fccebc71503b9b32ce8a001dae14` |
+| `wildcat-finance/wildcat-landing` | `c7cb914c2fa462e80d910afb37599b991d218d53` |
+| `wildcat-finance/wildcat-protocol` | `488b30d08c73a93be3e4bf99128c774997411d3a` |
+| `wildcat-finance/wildcat-tranching` | `863bd053034572e7d95521d946b10438e9401fff` |
+| `wildcat-finance/wildcat-whitepaper` | `51f2df6b7231dfbdedce391ee9896b24adfe3dfd` |
+| `wildcat-finance/wildcat.ts` | `b12f36b1677c8c9989527c002d3ccceabd8997ab` |
+
+Seven public `wildcat-finance` repositories were left out of `--head`, and
+the reason is recorded per repository: `skills-runtime` and `lemma` mirror
+skills prose byte for byte (390 of 391 and 12 of 13 Markdown files hash to
+blobs already in `skills`), so either would supply a second "independent"
+source group for one document; `chainalysis-subgraph`, `ethena_sats_adapters`
+and `ethereum-access-token` are forks of other organisations' work, whose
+prose this fixture would be attributing to Wildcat; `fiat-checkpoints` and
+`wildcat-juris-debug` are empty, and `repos/<name>/commits` answers HTTP 409
+`Git Repository is empty` for both, so neither has a commit to pin. Those
+reasons were re-read when six families ended the first pass short, and none
+of the seven was admitted: a mirror manufactures a second source group for
+one document, a fork's prose is somebody else's writing, and an empty
+repository has no head. The organisation's public listing holds 27
+repositories, which is these seven and the twenty above.
+
+The collector rejected 170 documents whole before any
+phrase was tried, rejected 116 phrase-bearing paragraphs on the word band, the
+table, code, digest and issue-quotation rules, ordered the 352 that remained as
+candidate rows across the 13 target families, and shipped 38 specimens. A
+paragraph carrying two families' phrases is one candidate row per family.
+Per target family, where `Judged` counts the candidates whose annotation the
+selection read: the walk stops where a family's minimum is met, and reaches
+the last candidate where it is not, so `Judged` equals `Candidates` on each of
+the four that fall short.
+
+| Family | Tier | Candidates | Judged | Independent positives | Negatives | Minimum met |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| `causal_subject_has_no` | `high-value` | 17 | 9 | 2 | 2 | yes |
+| `causal_negative_passive` | `signal` | 30 | 3 | 2 | 1 | yes |
+| `reason_is_because` | `high-value` | 18 | 18 | 1 | 2 | no |
+| `causal_fact_clause_wrapper` | `high-value` | 14 | 14 | 0 | 2 | no |
+| `backward_demonstrative_cause` | `signal` | 16 | 3 | 2 | 1 | yes |
+| `agentless_choice_passive` | `signal` | 93 | 3 | 2 | 1 | yes |
+| `purpose_periphrasis` | `signal` | 35 | 3 | 2 | 1 | yes |
+| `stacked_epistemic_modal` | `signal` | 20 | 8 | 2 | 1 | yes |
+| `redundant_connective_pair` | `high-value` | 13 | 4 | 2 | 2 | yes |
+| `litotic_double_negative` | `signal` | 25 | 9 | 2 | 1 | yes |
+| `attention_adverb_opener` | `signal` | 33 | 3 | 2 | 1 | yes |
+| `empty_expletive_case` | `high-value` | 15 | 15 | 0 | 2 | no |
+| `existential_relative_shell` | `signal` | 23 | 23 | 1 | 1 | no |
+
+Shipped specimens by source kind: commit_message 8, issue_body 5, markdown_paragraph 22, pull_request_body 3. By
+origin class: model_assisted 21, unknown 17. Every rejection reason and its count:
+
+| Reason | Rejections |
+| --- | ---: |
+| `code-heavy` | 3 |
+| `excluded-issue` | 2 |
+| `generated-data` | 11 |
+| `group-already-used` | 1 |
+| `imprimatur-own-prose` | 10 |
+| `invented-corpus` | 11 |
+| `minimum-already-met` | 313 |
+| `outside-word-band` | 102 |
+| `path-carries-whitespace` | 6 |
+| `unknown-thread` | 19 |
+| `v1-source-group` | 32 |
+| `vendored-or-mirrored-path` | 90 |
+
+Four target families end the collection below their tier minimum, and the
+shortfall is the evidence rather than a gap in the collection. Each was
+searched over the whole pinned universe with a bounded pattern for its own
+form, not only for its `discovery_phrases`, and this is what that search
+found.
+
+`reason_is_because` holds one independent positive. A reason noun followed by
+a copula and `because` -- `reason`, `reasons`, `reasoning`, `rationale`,
+`cause`, `explanation`, `motivation`, `purpose` or `point`, then `is`, `was`,
+`are`, `were`, `being` or `be`, then `because`, with up to 120 characters
+between -- occurs exactly once in the universe, and it is the specimen
+shipped here. The second independent example does not exist to be found.
+
+`causal_fact_clause_wrapper` holds none. `the fact that` occurs in 14 prose
+paragraphs across 13 source groups, and in not one of them is it preceded by
+a causal connector. The two nearest are `in reliance on the fact that` in the
+master loan agreement, which the family's own boundary keeps outside as a
+defined legal formulation, and `guarded by the fact that` in a Horos study,
+where `by` makes the fact clause the agent of a passive verb. The other
+twelve are fact clauses in object or subject position, which the issue's
+`broad_fact_clause` row exists to keep out. Both nearest neighbours are
+shipped as this family's negatives.
+
+`empty_expletive_case` holds none. `the case that` and `be the case` occur in
+15 prose paragraphs across 14 source groups, and none is the `it is/was the
+case that` shell the boundary restricts the family to. Fourteen use `the
+case` as a noun with a relative clause, almost always naming a test case. The
+nearest is `it may be the case that` in the borrower documentation, which
+carries modality the boundary keeps outside the shell, and it is shipped as a
+negative.
+
+`existential_relative_shell` holds one independent positive. A
+sentence-opening existential with a quantified noun and a relative clause
+occurs in exactly one prose paragraph source group,
+`wildcat-docs:using-wildcat/day-to-day-usage/borrowers.md`, which carries two
+of them: the shipped positive and a second at line 23 that is rejected as
+`group-already-used` because independence is decided by source group. It
+occurs twice more in the universe and neither is a prose paragraph: once
+inside a table row of an audit round record, which the table rule excludes,
+and once in that record's generated synopsis, where the whole 28,799-word
+file is one paragraph.
+
+The word band was tested rather than assumed. Every phrase-bearing paragraph
+these four families lost to `outside-word-band` was re-read, and each is
+either a generated audit synopsis of thousands of words with no blank line in
+it or a line under eighteen words; none carries a form the band is hiding. The
+band stays labelled-prose-v1's 18 to 180 words.
+
+Under the issue's own packet a family that advances needs two independent
+shipped examples, so these four do not advance from public Wildcat prose. The
+checker exits 1 on this fixture without `--allow-below-minimum`, and the four
+rows in `below_minimum` are what it reports.
+
+Four annotation judgements are recorded so v2 can dispute them rather than
+inherit them. `attention_adverb_opener` meets its minimum on two sentences
+opening with the imperative `Note that`, read as the "similar attention
+instruction" the issue's form admits; without that reading the family has no
+positive. `reason_is_because` counts its one positive on "If your reasoning is
+because you would like a slightly different phrasing", read as the scaffold
+with `reasoning` in place of `the reason`; without that reading it has none.
+
+`redundant_connective_pair` is the third and the largest. The issue's Form
+names two shapes, the adversative `but, however` and the additive `the checker
+validates and also records the digest`, and rates the first a strong candidate
+and the second signal only. The adversative shape does not occur anywhere in
+the universe: a pattern for `but`, `yet`, `however`, `nevertheless`,
+`nonetheless` and `even so` in any pairing returns nothing but `but ... still`,
+where `still` carries its own meaning. So the family's evidence is the additive
+shape or nothing. An earlier pass rejected every additive candidate on the
+categorical ground that the high-value form is the adversative one; this pass
+judges them one at a time on the issue's own test, which is whether removing
+`also` leaves the same emphasis and scope. Two pass that test and are shipped,
+and two do not and are shipped as the negatives beside them. The consequence a
+v2 reader has to see is that `decision` reads `actionable` on both positives,
+because the collector derives the decision from the family's tier, while the
+issue rates this shape signal only. The tier is this fixture's minimum
+contract, not the issue's verdict.
+
+`stacked_epistemic_modal` is the fourth. Its minimum is met on `might
+plausibly` and `could plausibly`, two pairs of the same closed class as the
+issue's `might possibly` but not named by it, added to `discovery_phrases`
+after reconnaissance attested them. The issue's four named pairs, and every
+pair built from `potentially`, `possibly` or `conceivably`, occur nowhere in
+the universe; without the two attested pairs this family has no positive
+either.
+
+The annotator's record is kept outside the fixture, in the run's own
+directory, and is not shipped. Every shipped row carries its annotation
+fields, and every candidate the annotator read and did not ship is in
+`selection-rejections.jsonl` with the reason.
 
 ## Tier minimums
 
@@ -99,7 +365,10 @@ other three are checked against it.
 
 The `high-value` families are `causal_subject_has_no`,
 `causal_fact_clause_wrapper`, `reason_is_because`, `empty_expletive_case`
-and the narrow adversative form of `redundant_connective_pair`. The `signal`
+and `redundant_connective_pair`, whose tier follows the strong candidate the
+issue names for its adversative shape while its Form names the additive shape
+as well; the Collection record says which shape the shipped specimens carry
+and what that costs the `decision` field. The `signal`
 families are `stacked_epistemic_modal`, `causal_negative_passive`,
 `purpose_periphrasis`, `agentless_choice_passive`,
 `litotic_double_negative`, `attention_adverb_opener`,
@@ -362,20 +631,20 @@ left every test green, because nothing held the oracle's bytes.
 
 | Fixture path | SHA-256 |
 | --- | --- |
-| `families.jsonl` | `97ec47f13248b60a269123e116e2689a1285b693b14520abb127ec9b7258d8e8` |
+| `families.jsonl` | `3e5585ba0ee86754d37085f181817471b5abfb34aa2b9bed05cffab215937a4c` |
 | `issue-1298.md` | `ccff01a9db78693b183a3193b5cd76edbd908f75f3d48b4e25c46fda907f1e46` |
 | `schemas/family.schema.json` | `46244a6a6a9386b903aa16731f4b4f30df07945b2e3221320544b243aafa8185` |
 | `schemas/specimen.schema.json` | `ed8de25920f263308ed22928b603dcbd351230595b521af471d1f144dd1700c9` |
-
+| `selection-rejections.jsonl` | `85a8c1ecccbfbcd97717da94aaa88d586434e550bdd2caca25d8aa6ee6d47df9` |
+| `specimens.jsonl` | `406ed81594b9691a20b0c7c5c25e6839d6ba873c4bb616d427ecd2e07d5dcc0a` |
 Paths are relative to this directory.
 `test_the_fixture_digest_table_covers_every_fixture_file` walks the fixture
 and requires every file to appear above or to be named in the test's own
-exclusion set, so a file cannot arrive unpinned by being left out. Two are
+exclusion set, so a file cannot arrive unpinned by being left out. One is
 excluded: this `README.md`, which carries the table and cannot hold its own
-digest, and `specimens.jsonl`, which a later runbook step writes. That step
-also adds `selection-rejections.jsonl` and refills `families.jsonl`, so it
-updates this table and that exclusion set; the test going red is how it finds
-out.
+digest. Step 3 wrote `specimens.jsonl` and `selection-rejections.jsonl` and
+refilled `discovery_phrases` in `families.jsonl`, so all three carry the
+digests of that step's bytes.
 
 Pinning the oracle does not settle whether it is the issue's current body.
 It raises a consistent edit from two files to three, and closing it needs a
@@ -390,10 +659,12 @@ network read.
 - `issue-1298.md`: the exact body of issue #1298, checked in unedited so the
   wording test has something to compare the catalogue against.
 - `families.jsonl`: the 42 family rows.
-- `specimens.jsonl`: the specimen rows, filled by a later step of the
-  committed runbook.
+- `specimens.jsonl`: the specimen rows, written by step 3 of the committed
+  runbook.
 - `selection-rejections.jsonl`: every rejected candidate with its reason,
-  written by the same later step.
+  written by the same step.
+- `../../scripts/collect_family_evidence.py`: the collector that wrote both,
+  outside this directory beside the checker.
 
 The accepted study and runbook are committed at
 `plugins/hexaemeron/docs/imprimatur-structural-family-evidence/`.
