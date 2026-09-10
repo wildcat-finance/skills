@@ -1053,3 +1053,32 @@ calls.
 **Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** The delimiter set gains JSON's numeric escapes for the same
+two characters, in either letter case: `\u000a` for the line feed and `\u000d`
+before it for the carriage return. The delimiter set is therefore the line feed
+as a byte, as the two-character escape, or as the six-character numeric escape,
+each optionally preceded by a carriage return in the matching form. The residue
+narrows with it, and section 5's `secret-shaped-member` line states the
+narrower one: what stays open is a body carrying no line delimiter in any form
+the witness can see, such as a key whose line breaks were stripped rather than
+encoded, whose footer also falls past the lookahead. No refusal class, ceiling,
+schema field, entry path, budget or fixture id changes.
+**Why.** Step 2's audit round 6 opened S2-R6-01 against the residue the
+2026-09-10 amendment stated, and Fiat measured it through the shipped
+`_checkpoint_archive_secret_shaped` before deciding what to do with it. A key
+whose line feeds are written `\u000a` publishes at every size tried, 1,875
+bytes at 26 body lines and 3,669 at 52, where the same key written `\n` refuses
+at both; `\u000A` behaves identically, and `json.loads` returns the identical
+key from all three. That is a JSON-legal spelling of a delimiter the rule
+already admits in two other spellings, so it belongs in the set rather than in
+the residue: a scan whose whole purpose is to keep private keys out of a
+published archive should not let one through on the choice of escape. The
+genuine residue is narrower and stays stated: with the line breaks removed
+altogether, the 52-line key still publishes, because no delimiter exists to see
+and the footer is past the lookahead.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

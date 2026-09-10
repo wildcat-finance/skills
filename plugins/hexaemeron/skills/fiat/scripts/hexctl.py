@@ -668,9 +668,10 @@ all a match of the length recorded here also exists at the same offset, because
 the tail repeats one character class, so this length is still what the scan has
 to carry to see it across a chunk boundary.
 """
-CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK = rb"(?:\x0d|\\r)?(?:\x0a|\\n)"
-"""What ends a line for the body witness: a line feed, raw or escaped, and the
-carriage return that may precede it in either form.
+CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK = rb"(?:\x0d|\\r|\\u000[dD])?(?:\x0a|\\n|\\u000[aA])"
+"""What ends a line for the body witness: a line feed as a byte, as the
+two-character escape or as JSON's six-character numeric escape in either
+letter case, and the carriage return that may precede it in the matching form.
 
 The study's third 2026-09-09 amendment settles the escape. A PEM key held as a
 JSON string value carries no newline byte at all: `json.dumps` writes each one
@@ -685,13 +686,20 @@ one's claim that reading the escape closed the whole hole. `json.dumps` writes
 a CRLF line ending as the four characters `\\`, `r`, `\\`, `n`, and a witness
 that reads only the carriage-return byte stops one escape short of the line
 feed behind it, so a CRLF key in a JSON string value published while an
-otherwise identical line-feed key refused. That was S2-R4-02. What the set
-still does not see is a body carrying no delimiter of any of these forms; such
-a key refuses only on a footer inside the lookahead, and the study states that
-residue rather than implying the class is shut.
+otherwise identical line-feed key refused. That was S2-R4-02.
+
+The second 2026-09-10 amendment adds the numeric escapes. `\\u000a` is as
+legal a JSON spelling of a line feed as `\\n`, `json.loads` returns the same
+key from either, and the hex digits may be written in either case, so a
+witness that read only the two-character form let a key through on the choice
+of escape. That was S2-R6-01. What the set still does not see is a body
+carrying no line delimiter in any of these forms, such as a key whose line
+breaks were stripped rather than encoded; such a key refuses only on a footer
+inside the lookahead, and the study states that residue rather than implying
+the class is shut.
 """
 CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
-    rb"(?:\A|(?<=\x0a)|(?<=\\n))"
+    rb"(?:\A|(?<=\x0a)|(?<=\\n)|(?<=\\u000[aA]))"
     rb"[A-Za-z0-9+/=]{16,}[ \t]*"
     rb"(?=\Z|" + CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK + rb")"
 )
@@ -708,8 +716,11 @@ byte and the lookahead comparison against the header below is unchanged. The
 alternative, consuming the delimiter, would make `finditer` skip every second
 body line in a run of them, because one match's trailing delimiter is the
 next one's leading delimiter. The carriage return moved into that lookahead
-with the 2026-09-10 amendment: the tail used to consume a `\\r` byte and so
-could only ever see the raw half of the pair.
+with the first 2026-09-10 amendment: the tail used to consume a `\\r` byte and
+so could only ever see the raw half of the pair. The numeric escape joined
+both lookarounds with the second: a line that ends in `\\u000a` is followed by
+a line that begins after it, and a lookbehind naming only the byte and the
+two-character escape would find the first body line and none after it.
 """
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
 """The longest line the scan will read between a header and the key material.
@@ -16986,14 +16997,16 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
     generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not completed by an
     unrelated `-----END CERTIFICATE-----` further down the file.
 
-    A body line ends at a line feed, raw or escaped, and at the carriage
-    return that may precede it in either form. The study's third 2026-09-09
-    amendment requires the escape and its 2026-09-10 amendment the carriage
-    return: a key carried as a JSON string value supplies no newline byte, and
-    past the lookahead it supplies no footer either, so before those two the
-    block rule published it. A body with no delimiter of any of these forms is
-    the residue the 2026-09-10 amendment states; it refuses on its footer
-    alone.
+    A body line ends at a line feed as a byte, as the two-character escape or
+    as the six-character numeric escape in either letter case, and at the
+    carriage return that may precede it in the matching form. The study's
+    third 2026-09-09 amendment requires the escape, its first 2026-09-10
+    amendment the carriage return and its second the numeric escapes: a key
+    carried as a JSON string value supplies no newline byte, and past the
+    lookahead it supplies no footer either, so before those three the block
+    rule published it. A body with no line delimiter in any of these forms is
+    the residue the second 2026-09-10 amendment states; it refuses on its
+    footer alone.
 
     The body positions are found once for the whole buffer and then walked with
     one forward index per pattern, because `finditer` yields matches in

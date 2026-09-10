@@ -263,13 +263,17 @@ EXPECTED_BLOCK_PARAGRAPH = (
     "escape `\\n` that carries one inside a JSON string value, so a key "
     "held as a JSON string value in `state.json` or on one "
     "`ledger.jsonl` line carries body lines like any other. The "
-    "delimiter set is the newline byte, the two-character escape for "
-    "it, and either of those preceded by a carriage return in the "
-    "matching form, so a CRLF key refuses raw and escaped alike. What "
-    "the set does not reach is a key whose body carries no delimiter "
-    "the witness can see and whose footer falls past the lookahead: "
-    "that one does not refuse, and the study states it as residue rather "
-    "than implying the class is shut. A file "
+    "delimiter set is the line feed as a byte, as the two-character "
+    "escape, or as the six-character numeric escape, each optionally "
+    "preceded by a carriage return in the matching form. The numeric "
+    "escapes are `\\u000a` for the line feed and `\\u000d` before it for "
+    "the carriage return, in either letter case, so a CRLF key refuses "
+    "raw, escaped and numerically escaped alike. What the set does not "
+    "reach is a body carrying no line delimiter in any form the witness "
+    "can see, such as a key whose line breaks were stripped rather than "
+    "encoded, whose footer also falls past the lookahead: that one does "
+    "not refuse, and the study states it as residue rather than implying "
+    "the class is shut. A file "
     "naming a header in prose or quoting one in a code span supplies "
     "neither, so a run can archive its own specification text. A key "
     "whose footer was truncated still carries body lines and still "
@@ -294,18 +298,26 @@ BLOCK_RULE_PARITY = (
         "`\\n` that carries one inside a JSON string value",
     ),
     (
-        "the delimiter set is the newline byte, the two-character escape "
-        "for it, and either of those preceded by a carriage return in the "
-        "matching form",
-        "The delimiter set is the newline byte, the two-character escape "
-        "for it, and either of those preceded by a carriage return in the "
-        "matching form",
+        "the line feed as a byte, as the two-character escape, or as the "
+        "six-character numeric escape, each optionally preceded by a "
+        "carriage return in the matching form",
+        "The delimiter set is the line feed as a byte, as the two-character "
+        "escape, or as the six-character numeric escape, each optionally "
+        "preceded by a carriage return in the matching form",
     ),
     (
-        "a key whose body carries no delimiter the witness can see and "
-        "whose footer falls past the lookahead",
-        "a key whose body carries no delimiter the witness can see and "
-        "whose footer falls past the lookahead",
+        "in either letter case: `\\u000a` for the line feed and `\\u000d` "
+        "before it for the carriage return",
+        "`\\u000a` for the line feed and `\\u000d` before it for the "
+        "carriage return, in either letter case",
+    ),
+    (
+        "a body carrying no line delimiter in any form the witness can see, "
+        "such as a key whose line breaks were stripped rather than encoded, "
+        "whose footer also falls past the lookahead",
+        "a body carrying no line delimiter in any form the witness can see, "
+        "such as a key whose line breaks were stripped rather than encoded, "
+        "whose footer also falls past the lookahead",
     ),
     (
         "A document that names a header in prose or inside a code span is "
@@ -2035,8 +2047,8 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         line feed behind it and found no body line at all. Past the lookahead
         there is no footer either, and the member left in the archive.
 
-        The 2026-09-10 study amendment puts the carriage return in the
-        delimiter set in both forms. The key is real and the geometry is
+        The first 2026-09-10 study amendment puts the carriage return in
+        the delimiter set in both forms. The key is real and the geometry is
         asserted rather than assumed, so a key size or a lookahead that moves
         fails here instead of leaving a guard that tests nothing.
         """
@@ -2075,15 +2087,89 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     "secret-shaped-member\n", self.scan(text.encode("utf-8"))
                 )
 
-        # The residue the same amendment states, held as a positive so that
-        # closing it has to be a dated amendment rather than a quiet edit: a
-        # body whose line endings are neither delimiter form is visible only
-        # through its footer, and this one's footer is past the lookahead.
-        # `\\u000a` is valid JSON for the same character, so the value parses
-        # back to the identical key.
-        escaped = '{"deploy_key": "' + pem.replace("\n", "\\u000a") + '"}'
-        self.assertEqual(pem, json.loads(escaped)["deploy_key"])
-        self.assertIsNone(self.scan(escaped.encode("utf-8")))
+    def test_secret_shaped_member_refuses_before_publish_on_a_numeric_escaped_key_in_json(
+        self,
+    ):
+        """S2-R6-01: a key whose line feeds are written `\\u000a` used to publish.
+
+        JSON spells a line feed inside a string value three ways: the
+        two-character escape, and the six-character numeric escape with its
+        hex digits in either case. `json.loads` returns the identical key from
+        each, and the body witness read only the first, so past the lookahead
+        a key written with the numeric escape had neither a body line nor a
+        footer in view and left in the archive. The second 2026-09-10 study
+        amendment puts the numeric escapes in the delimiter set, `\\u000a` for
+        the line feed and `\\u000d` before it for the carriage return, in
+        either letter case.
+
+        The key is real and the geometry is asserted: every member here parses
+        back to the key it encodes, carries no newline byte and no
+        two-character escape inside its body, and has its footer past the
+        lookahead, so the refusal can only come from the numeric escape being
+        read as a delimiter.
+        """
+        module = hexctl_module()
+        lookahead = module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+        pem, modulus, public, private = rsa_private_key_pem()
+        probe = 0xC0FFEE
+        self.assertEqual(3072, modulus.bit_length())
+        self.assertEqual(probe, pow(pow(probe, public, modulus), private, modulus))
+
+        header = b"-----BEGIN RSA PRIVATE KEY-----"
+        footer = b"-----END RSA PRIVATE KEY-----"
+        for name, escape, ending in (
+            ("line feed, lower case", "\\u000a", "\n"),
+            ("line feed, upper case", "\\u000A", "\n"),
+            ("CRLF, lower case", "\\u000d\\u000a", "\r\n"),
+            ("CRLF, upper case", "\\u000D\\u000A", "\r\n"),
+        ):
+            member = '{"deploy_key": "' + pem.replace("\n", escape) + '"}'
+            payload = member.encode("utf-8")
+            with self.subTest(member=name):
+                self.assertEqual(
+                    pem.replace("\n", ending), json.loads(member)["deploy_key"]
+                )
+                opened = payload.index(header) + len(header)
+                body = payload[opened : payload.index(footer)]
+                self.assertGreater(len(body), lookahead)
+                self.assertNotIn(b"\n", body)
+                self.assertNotIn(b"\\n", body)
+                self.assertEqual("secret-shaped-member\n", self.scan(payload))
+
+        # The residue guard below holds a body with no line delimiter at all
+        # as the expected failure it is, and its decorator swallows a failed
+        # precondition. So the geometry that makes that member a genuine
+        # escape, a footer past the lookahead with nothing in the body for the
+        # witness to read, is proved here on the same seeded key.
+        stripped = ('{"deploy_key": "' + pem.replace("\n", "") + '"}').encode("utf-8")
+        opened = stripped.index(header) + len(header)
+        body = stripped[opened : stripped.index(footer)]
+        self.assertGreater(len(body), lookahead)
+        self.assertIsNone(re.search(rb"[^A-Za-z0-9+/=]", body))
+
+    @unittest.expectedFailure
+    def test_secret_shaped_member_refuses_before_publish_on_a_stripped_key_past_the_lookahead(
+        self,
+    ):
+        """The residue the second 2026-09-10 study amendment states, as the
+        refusal the scan does not make.
+
+        A key whose line breaks were removed rather than encoded carries no
+        line delimiter in any form the body witness can see, and once its
+        footer is past the lookahead nothing else is in view, so the member
+        publishes. This test asserts the refusal and is marked as the expected
+        failure it is: `unittest` reports it apart from the tests that ran, the
+        Exit's floor excludes an expected failure by name, and the day the
+        residue closes it becomes an unexpected success, which `run_tests.py`
+        counts as a failed run, so closing the residue is a dated amendment
+        that edits this test rather than a quiet edit. The decorator also
+        swallows a failed precondition, so the key's geometry and keypair are
+        proved by the numeric-escape guard above on the same seeded key and
+        not re-asserted here.
+        """
+        pem, _modulus, _public, _private = rsa_private_key_pem()
+        stripped = '{"deploy_key": "' + pem.replace("\n", "") + '"}'
+        self.assertEqual("secret-shaped-member\n", self.scan(stripped.encode("utf-8")))
 
     def test_secret_scan_passes_a_member_that_carries_no_header(self):
         module = hexctl_module()
