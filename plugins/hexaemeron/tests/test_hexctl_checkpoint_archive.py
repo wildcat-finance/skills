@@ -1223,18 +1223,18 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         # So are the two reaches and the declared key size it names, since
         # S2-R7-01 split them: a constant moved without the paragraph, or the
         # paragraph without the constant, contradicts the other here.
+        footer_reach = getattr(
+            module, "CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", None
+        )
+        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
+        self.assertIsNotNone(footer_reach, "the scan declares no footer reach")
+        self.assertIsNotNone(largest_key, "the scan declares no largest key")
         self.assertIn(
             f"block lookahead of {module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD:,} bytes",
             EXPECTED_BLOCK_PARAGRAPH,
         )
-        self.assertIn(
-            f"footer reach of {module.CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD:,} bytes",
-            EXPECTED_BLOCK_PARAGRAPH,
-        )
-        self.assertIn(
-            f"declared at {module.CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY:,} bits",
-            EXPECTED_BLOCK_PARAGRAPH,
-        )
+        self.assertIn(f"footer reach of {footer_reach:,} bytes", EXPECTED_BLOCK_PARAGRAPH)
+        self.assertIn(f"declared at {largest_key:,} bits", EXPECTED_BLOCK_PARAGRAPH)
 
     def test_archive_budgets_declare_the_six_measured_limits(self):
         budgets = load_metron().load_budgets(str(BUDGETS))
@@ -2311,6 +2311,20 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         refuses anyway.
         """
         module = hexctl_module()
+        # Read through `getattr`, as the chunk-boundary guard does: on a tree
+        # that still has one reach the attribute is absent, and an
+        # AttributeError is an error row where only a failure row says the
+        # guard did its job. Elenchus reads a mixed report as inconclusive.
+        footer_reach = getattr(
+            module, "CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", None
+        )
+        self.assertIsNotNone(
+            footer_reach, "the scan declares no footer reach apart from the lookahead"
+        )
+        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
+        self.assertIsNotNone(
+            largest_key, "the scan declares no largest key for the footer reach"
+        )
         header = b"-----BEGIN RSA PRIVATE KEY-----"
         footer = b"-----END RSA PRIVATE KEY-----"
         pem, modulus, public, private = rsa_private_key_pem()
@@ -2340,9 +2354,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     "the delimiter-free case this guard is for",
                 )
                 # And within the footer reach, which is what now refuses it.
-                self.assertLess(
-                    len(body), module.CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
-                )
+                self.assertLess(len(body), footer_reach)
                 self.assertEqual("secret-shaped-member\n", self.scan(payload))
 
         # The geometry twin the residue guard below stands on, held against
@@ -2357,28 +2369,25 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         # value can give its line breaks, including none, so the constant
         # covers what its name says. Twelve bytes of numeric escape per line
         # is the longest spelling and the last member here.
-        largest = rsa_shaped_pem(module.CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY)
+        largest = rsa_shaped_pem(largest_key)
         for name, ending in LINE_BREAK_SPELLINGS:
             payload = ('{"deploy_key": "' + largest.replace("\n", ending) + '"}').encode(
                 "utf-8"
             )
             with self.subTest(member=f"declared largest key, {name}"):
                 opened = payload.index(header) + len(header)
-                self.assertLess(
-                    payload.index(footer) - opened,
-                    module.CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD,
-                )
+                self.assertLess(payload.index(footer) - opened, footer_reach)
                 self.assertEqual("secret-shaped-member\n", self.scan(payload))
 
         # And the residue's geometry, proved here for the guard below: at
         # twice the declared size a stripped body puts the footer past the
         # reach by far more than the twin's four-byte tolerance, with nothing
         # in it for the body witness to read.
-        beyond = rsa_shaped_pem(2 * module.CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY)
+        beyond = rsa_shaped_pem(2 * largest_key)
         stripped = ('{"deploy_key": "' + beyond.replace("\n", "") + '"}').encode("utf-8")
         opened = stripped.index(header) + len(header)
         body = stripped[opened : stripped.index(footer)]
-        self.assertGreater(len(body), module.CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD + 2048)
+        self.assertGreater(len(body), footer_reach + 2048)
         self.assertIsNone(module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(stripped))
 
     @unittest.expectedFailure
@@ -2405,7 +2414,9 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         proved by the S2-R7-01 guard above and not re-asserted here.
         """
         module = hexctl_module()
-        beyond = rsa_shaped_pem(2 * module.CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY)
+        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
+        self.assertIsNotNone(largest_key, "the scan declares no largest key")
+        beyond = rsa_shaped_pem(2 * largest_key)
         stripped = '{"deploy_key": "' + beyond.replace("\n", "") + '"}'
         self.assertEqual("secret-shaped-member\n", self.scan(stripped.encode("utf-8")))
 
