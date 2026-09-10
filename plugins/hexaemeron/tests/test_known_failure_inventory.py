@@ -939,9 +939,9 @@ class KnownFailureInventoryTests(unittest.TestCase):
             self.checker._amendment_exit_scopes(lines, fenced)
         )
         self.assertIsNone(amendment_error)
-        self.assertEqual(12, final_generation)
+        self.assertEqual(13, final_generation)
         self.assertEqual(
-            [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
+            [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7],
             [
                 sum(
                     self.checker.KNOWN_FAILURE_ASSIGNMENT.fullmatch(lines[index])
@@ -949,7 +949,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
                     for index, scoped_generation in generations.items()
                     if scoped_generation == generation
                 )
-                for generation in range(1, 13)
+                for generation in range(1, 14)
             ],
         )
         steps, assigned, error = self.checker._runbook_contract(runbook)
