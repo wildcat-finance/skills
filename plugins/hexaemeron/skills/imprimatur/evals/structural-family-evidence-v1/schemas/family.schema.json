@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "boundary": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "direct_rewrite": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "discovery_phrases": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "disposition": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "evidence_tier": {
+      "enum": [
+        "high-value",
+        "signal",
+        "boundary",
+        "existing-family",
+        "future"
+      ]
+    },
+    "family_id": {
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+      "type": "string"
+    },
+    "form": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "group": {
+      "enum": [
+        "Missing conditions and causal wrappers",
+        "Hidden actors, authority, and intent",
+        "Verb, capability, and purpose shells",
+        "Stacked hedges, emphasis, and redundant markers",
+        "Existential, reference, and scope constructions needing more evidence"
+      ]
+    },
+    "minimum_negative": {
+      "maximum": 2,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "minimum_positive": {
+      "maximum": 2,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "overlaps": {
+      "items": {
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "reader_cost": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_issue": {
+      "const": "https://github.com/wildcat-finance/skills/issues/1298"
+    }
+  },
+  "required": [
+    "family_id",
+    "group",
+    "evidence_tier",
+    "form",
+    "reader_cost",
+    "direct_rewrite",
+    "boundary",
+    "disposition",
+    "overlaps",
+    "discovery_phrases",
+    "minimum_positive",
+    "minimum_negative",
+    "source_issue"
+  ],
+  "title": "Imprimatur structural family evidence row",
+  "type": "object"
+}
