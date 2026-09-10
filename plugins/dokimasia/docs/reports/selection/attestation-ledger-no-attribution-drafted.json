@@ -1,0 +1,9 @@
+{
+  "candidate": "attestation-ledger",
+  "command": "python3 plugins/dokimasia/docs/design/build_attribution_design_evidence.py",
+  "criterion": "no-attribution-drafted",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

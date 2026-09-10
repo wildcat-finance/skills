@@ -705,6 +705,32 @@ class WorkflowExecutionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("mapping_count=0", output)
 
+    def test_amending_a_numbered_record_has_no_assignment(self):
+        """An in-place amendment assigns no number, so it demands no trailers.
+
+        The gate reads the diff to decide whether a candidate assigns a number.
+        A record already numbered on the base moves no draft and takes no
+        number, so a modification to one has no mapping to validate; counting it
+        would refuse `assignment-evidence` against trailers no author could
+        write. Issue #1477 records the amendment this refused.
+        """
+        existing = self.repo.source / "docs/decisions/ADR-060-existing.md"
+        write(
+            existing,
+            existing.read_text(encoding="utf-8")
+            + "\n## Amendment: correct one clause (2026-09-08)\n\n"
+            + "The decision stands; one clause was wrong.\n",
+        )
+        git(self.repo.source, "add", "docs/decisions/ADR-060-existing.md")
+        git(self.repo.source, "commit", "--quiet", "-m", "amend ADR-060")
+        candidate = git(self.repo.source, "rev-parse", "HEAD")
+        remote = self.repo.remote(candidate)
+        result, output, _summary = evaluate_workflow(
+            remote, base=self.repo.base, head=candidate
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("mapping_count=0", output)
+
     def test_preexisting_repository_symlink_is_a_fixed_refusal(self):
         write(self.repo.source / "README.md", "A repository change.\n")
         git(self.repo.source, "add", "README.md")

@@ -1,5 +1,14 @@
 {
   "agrees_with": "primary.json",
-  "note": "The second provider's view of the same synthetic interval. It agrees with the first everywhere, so the demonstration's release records an agreement; the tests cover what a disagreement does.",
-  "provider_class": "second synthetic archive provider, class only"
+  "blocks": {
+    "15331586": "0xfc4769cf7851ef55373a76a5e9e8f8da357ba4d1880966eb468c02b7a6b1269c"
+  },
+  "code": {
+    "0x42f9505a376761b180e27a01ba0554244ed1de7d": "0x60806040abababababababababababababababababababababababababababababababab"
+  },
+  "note": "The second provider's view of the same synthetic interval. It answers the shard reads exactly as the first provider does and carries its own copies of the opening-read answers, which agree with the first, so the demonstration's release records an agreement; the tests cover what a disagreement does.",
+  "provider_class": "second synthetic archive provider, class only",
+  "slots": {
+    "15331586": "0x00000000000000000000000042f9505a376761b180e27a01ba0554244ed1de7d"
+  }
 }

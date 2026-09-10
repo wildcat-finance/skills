@@ -2088,6 +2088,18 @@ class MutationTests(RefusalAssertions, unittest.TestCase):
         self.assertRefusal("WAI-E-MUTATION.EXPECTED", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 1)
 
 
+# The fake adapter's `sleep` mode blocks for this long, and only
+# `test_fake_timeout_refuses` runs it. Its own budget below is shorter, so the
+# deadline expires whether the machine is idle or loaded; load can only delay
+# the answer further, never bring it forward.
+FAKE_ADAPTER_SLEEP_SECONDS = 2
+# The budget every other adapter case runs under. It has to clear the time a
+# child process needs to start and answer on a machine running other suites,
+# not the time that takes when nothing else is happening. See issue 1175.
+FAKE_ADAPTER_ANSWER_BUDGET_SECONDS = "120"
+# What `test_fake_timeout_refuses` narrows to, kept below the sleep above.
+FAKE_ADAPTER_TIMEOUT_BUDGET_SECONDS = "1"
+
 FAKE_ADAPTER_SOURCE = r'''import json
 import os
 import sys
@@ -2106,7 +2118,7 @@ if command == "environment":
 
 mode = sys.argv[2]
 if mode == "sleep":
-    time.sleep(2)
+    time.sleep(__SLEEP_SECONDS__)
 if mode == "stdout-cap":
     sys.stdout.write("x" * 128)
     raise SystemExit(0)
@@ -2170,7 +2182,10 @@ class AdapterFixtureTests(RefusalAssertions):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.fake = self.root / "fake-runtime.py"
-        self.fake.write_text(f"#!{sys.executable}\n" + FAKE_ADAPTER_SOURCE, encoding="utf-8")
+        source = FAKE_ADAPTER_SOURCE.replace(
+            "__SLEEP_SECONDS__", str(FAKE_ADAPTER_SLEEP_SECONDS)
+        )
+        self.fake.write_text(f"#!{sys.executable}\n" + source, encoding="utf-8")
         self.fake.chmod(0o700)
 
     def tearDown(self):
@@ -2251,7 +2266,15 @@ class AdapterFixtureTests(RefusalAssertions):
                 "repository_instruction_paths": [],
                 "tool_definition_ids": [],
             },
-            "timeout_seconds": "2",
+            # Generous on purpose. Every test but `test_fake_timeout_refuses`
+            # wants the fake adapter to answer, and this budget is a wall-clock
+            # deadline on a child process inside a parallel suite. At the two
+            # seconds this held until issue 1175, a loaded machine spent the
+            # whole budget before the child could answer, so cases asserting
+            # some other refusal saw WAI-E-ADAPTER.TIMEOUT instead and the root
+            # suite's verdict depended on what else was running. Only the
+            # timeout case narrows it, and it does so locally.
+            "timeout_seconds": FAKE_ADAPTER_ANSWER_BUDGET_SECONDS,
             "max_stdout_bytes": "4096",
             "max_stderr_bytes": "4096",
             "context_window": "1024",
@@ -2555,9 +2578,35 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
             path="$.fake",
         )
 
+    def test_answering_cases_are_not_racing_the_timeout_budget(self):
+        """Issue 1175: the shared budget is a deadline, not an expectation.
+
+        Every case but the one below wants an answer, so its budget has to
+        clear what a child process needs on a loaded machine. Two seconds did
+        not, and the cases that lost the race reported WAI-E-ADAPTER.TIMEOUT in
+        place of the refusal they asserted. Nothing here measures how long the
+        adapter takes; it fixes the margins that made the suite's verdict
+        depend on the machine.
+        """
+        answer = int(self.profile()["timeout_seconds"])
+        timeout = int(FAKE_ADAPTER_TIMEOUT_BUDGET_SECONDS)
+        self.assertGreaterEqual(
+            answer,
+            60,
+            "the answering budget is back within racing distance of a loaded "
+            "child process; see issue 1175",
+        )
+        self.assertLess(
+            timeout,
+            FAKE_ADAPTER_SLEEP_SECONDS,
+            "the timeout case can no longer expire, so it would stop proving "
+            "that the deadline fires",
+        )
+        self.assertLessEqual(answer, 600, "the adapter refuses a budget above 600")
+
     def test_fake_timeout_refuses(self):
         profile = self.profile(mode="sleep")
-        profile["timeout_seconds"] = "1"
+        profile["timeout_seconds"] = FAKE_ADAPTER_TIMEOUT_BUDGET_SECONDS
         self.assertRefusal(
             "WAI-E-ADAPTER.TIMEOUT",
             AI._ollama_generate,

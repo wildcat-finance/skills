@@ -272,7 +272,7 @@ class AuditSynopsisRecoveryTests(unittest.TestCase):
                 destinations.append(str(Path(source).with_suffix(".synopsis.md")))
         self.assertEqual(len(destinations), len(set(destinations)))
 
-    def test_integrated_controller_digest_reaches_every_promise_binding(self):
+    def test_integrated_controller_and_promise_source_digests_are_current(self):
         coverage = json.loads(
             (ROOT / "tests" / "promise_machine_coverage.json").read_text(
                 encoding="utf-8"
@@ -309,6 +309,40 @@ class AuditSynopsisRecoveryTests(unittest.TestCase):
             f"{controller_path} is {actual}; update every matching sha256 in "
             f"tests/promise_machine_coverage.json: {stale}",
         )
+        expected_sources = {
+            "fiat-final-integration": (
+                "plugins/hexaemeron/tests/test_hexctl.py",
+                "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
+            ),
+            "fiat-local-retirement": (
+                "plugins/hexaemeron/tests/test_fiat_local_retirement.py",
+                "test_terminal_archive_is_local_and_ignored_by_git",
+            ),
+            "fiat-receipted-delivery": (
+                "plugins/hexaemeron/tests/test_hexctl.py",
+                "test_push_advances_steps_then_the_stack_integrates",
+            ),
+            "fiat-study-amendment": (
+                "plugins/hexaemeron/tests/test_hexctl.py",
+                "test_valid_append_records_digest_history_and_reconstructs_the_packet",
+            ),
+            "fiat-runbook-amendment": (
+                "plugins/hexaemeron/tests/test_fiat_skill.py",
+                "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+            ),
+            "fiat-run-observation-binding": (
+                "plugins/hexaemeron/tests/test_run_observation_binding.py",
+                "test_normal_prefix_binds_to_the_selected_receipt",
+            ),
+        }
+        for promise, (source, selector) in expected_sources.items():
+            with self.subTest(promise=promise):
+                binding = coverage["runtime"][promise]
+                self.assertEqual(
+                    (binding["source"], binding["selector"]),
+                    (source, selector),
+                )
+                self.assertEqual(binding["sha256"], sha256(ROOT / source))
 
 
 if PROOF_MODE:

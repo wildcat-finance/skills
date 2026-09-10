@@ -1,0 +1,9 @@
+{
+  "schema": "promise-machine-transition-declaration/v1",
+  "promise_id": "fixture-promise",
+  "gate": "fixture.gate",
+  "consequence": 1,
+  "subject": "fixture-subject",
+  "scope": "fixture-scope",
+  "transition": "complete the level one fixture transition"
+}

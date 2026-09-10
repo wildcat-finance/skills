@@ -399,27 +399,9 @@ def _derive_receipt_witness(
     )
     if terminal_context is not None:
         terminal_context["counts"]["returned_receipts"] = len(raw_receipts)
-    target_result = _recorded_result(
-        named_records,
-        relation["target_receipt_lookup_request"],
-        label="target receipt",
-    )
-    _check_raw_receipt_shape(target_result, limits, label="target receipt")
-    filtered_result = _recorded_result(
-        named_records,
-        relation["filtered_logs_request"],
-        label="filtered logs",
-    )
-    if not isinstance(filtered_result, list):
-        raise IntegrityError("recorded filtered logs result is not an array")
-    limits.check_allocation(
-        len(filtered_result), maximum=MAX_LOGS, label="filtered log count"
-    )
-    if terminal_context is not None:
-        terminal_context["counts"]["selected_logs"] = len(filtered_result)
-    for raw_log in filtered_result:
-        _check_raw_log_shape(raw_log, limits, label="filtered log")
-
+    empty_mode = set(relation) == {"block_receipts_request"}
+    if empty_mode and raw_receipts:
+        raise IntegrityError("recorded block receipts disagree with empty plan")
     transaction_hashes = header["rpc_result"].get("transactions")
     if not isinstance(transaction_hashes, list):
         raise IntegrityError("recorded header transaction list is not an array")
@@ -434,6 +416,28 @@ def _derive_receipt_witness(
         )
     if len(raw_receipts) != len(transaction_hashes):
         raise IntegrityError("recorded block receipts do not cover every header slot")
+    filtered_result: list[Any] = []
+    if not empty_mode:
+        target_result = _recorded_result(
+            named_records,
+            relation["target_receipt_lookup_request"],
+            label="target receipt",
+        )
+        _check_raw_receipt_shape(target_result, limits, label="target receipt")
+        filtered_result = _recorded_result(
+            named_records,
+            relation["filtered_logs_request"],
+            label="filtered logs",
+        )
+        if not isinstance(filtered_result, list):
+            raise IntegrityError("recorded filtered logs result is not an array")
+        limits.check_allocation(
+            len(filtered_result), maximum=MAX_LOGS, label="filtered log count"
+        )
+        if terminal_context is not None:
+            terminal_context["counts"]["selected_logs"] = len(filtered_result)
+        for raw_log in filtered_result:
+            _check_raw_log_shape(raw_log, limits, label="filtered log")
     receipts: list[dict[str, Any]] = []
     total_logs = 0
     block_number = header["number"]
@@ -468,30 +472,33 @@ def _derive_receipt_witness(
             }
         )
 
-    target_index = quantity(
-        relation["target_transaction_index"], label="target transaction index"
-    )
-    if target_index >= len(receipts):
-        raise IntegrityError("target receipt is absent from the recorded receipt set")
-    filtered_request = next(
-        item
-        for item in plan["requests"]
-        if item["name"] == relation["filtered_logs_request"]
-    )
-    witness = validate_document(
-        "receipt-witness",
-        {
-            "schema_version": 1,
-            "header": {
-                "number": block_number,
-                "hash": block_hash,
-                "receipts_root": header["rpc_result"].get("receiptsRoot"),
-            },
-            "receipts": receipts,
-            "target_receipt": {"transaction_index": hex(target_index)},
-            "filtered_logs": {"filter": filtered_request["params"][0]},
+    witness = {
+        "schema_version": 1,
+        "header": {
+            "number": block_number,
+            "hash": block_hash,
+            "receipts_root": header["rpc_result"].get("receiptsRoot"),
         },
-    )
+        "receipts": receipts,
+    }
+    if not empty_mode:
+        target_index = quantity(
+            relation["target_transaction_index"], label="target transaction index"
+        )
+        if target_index >= len(receipts):
+            raise IntegrityError("target receipt is absent from the recorded receipt set")
+        filtered_request = next(
+            item
+            for item in plan["requests"]
+            if item["name"] == relation["filtered_logs_request"]
+        )
+        witness.update(
+            {
+                "target_receipt": {"transaction_index": hex(target_index)},
+                "filtered_logs": {"filter": filtered_request["params"][0]},
+            }
+        )
+    witness = validate_document("receipt-witness", witness)
     _set_terminal_stage(terminal_context, "receipt-relation")
     try:
         relation_report = verify_receipt_relation(
@@ -562,6 +569,11 @@ def _receipt_terminal_context(plan: dict[str, Any]) -> dict[str, Any] | None:
         return None
     return {
         "correlation_id": None,
+        "mode": (
+            "empty"
+            if set(plan["receipt_witness"]) == {"block_receipts_request"}
+            else "scoped"
+        ),
         "stage": "plan-validation",
         "block": {
             "number": None,
@@ -601,23 +613,24 @@ def _set_terminal_safe_identities(
     terminal_context["correlation_id"] = _safe_terminal_text(
         _receipt_correlation_id(plan), secrets
     )
-    target_request = next(
-        item
-        for item in plan["requests"]
-        if item["name"] == relation["target_receipt_lookup_request"]
-    )
     terminal_context["block"] = {
         "number": _safe_terminal_text(plan["block"]["number"], secrets),
         "hash": _safe_terminal_text(plan["block"]["hash"], secrets),
     }
-    terminal_context["recorded_target_selector"].update(
-        {
-            "value": _safe_terminal_text(target_request["params"][0], secrets),
-            "transaction_index": _safe_terminal_text(
-                relation["target_transaction_index"], secrets
-            ),
-        }
-    )
+    if set(relation) != {"block_receipts_request"}:
+        target_request = next(
+            item
+            for item in plan["requests"]
+            if item["name"] == relation["target_receipt_lookup_request"]
+        )
+        terminal_context["recorded_target_selector"].update(
+            {
+                "value": _safe_terminal_text(target_request["params"][0], secrets),
+                "transaction_index": _safe_terminal_text(
+                    relation["target_transaction_index"], secrets
+                ),
+            }
+        )
 
 
 def _safe_terminal_text(value: str, secrets: set[str]) -> str | None:
@@ -680,6 +693,7 @@ def capture_failure_terminal_result(
         "schema": "lazarus-capture-terminal/v1",
         "event": "lazarus.capture.failed",
         "correlation_id": terminal_context["correlation_id"],
+        "mode": terminal_context["mode"],
         "stage": terminal_context["stage"],
         "block": terminal_context["block"],
         "recorded_target_selector": terminal_context[
@@ -705,11 +719,17 @@ def _receipt_terminal_result(
 ) -> dict[str, Any]:
     relation = report["receipt_trie_proved"]
     relation_plan = plan["receipt_witness"]
-    target_request = next(
-        item
-        for item in plan["requests"]
-        if item["name"] == relation_plan["target_receipt_lookup_request"]
-    )
+    empty_mode = relation["mode"] == "empty"
+    target_value = None
+    target_index = None
+    if not empty_mode:
+        target_request = next(
+            item
+            for item in plan["requests"]
+            if item["name"] == relation_plan["target_receipt_lookup_request"]
+        )
+        target_value = target_request["params"][0]
+        target_index = relation["target_transaction_index"]
     correlation_id = (
         terminal_context.get("correlation_id")
         if terminal_context is not None
@@ -721,15 +741,16 @@ def _receipt_terminal_result(
         "schema": "lazarus-capture-terminal/v1",
         "event": "lazarus.capture.completed",
         "correlation_id": correlation_id,
+        "mode": relation["mode"],
         "stage": "fixture-finalised",
         "block": {
             "number": report["block_number"],
             "hash": report["block_hash"],
         },
         "recorded_target_selector": {
-            "value": target_request["params"][0],
+            "value": target_value,
             "evidence": "recorded_rpc",
-            "transaction_index": relation["target_transaction_index"],
+            "transaction_index": target_index,
         },
         "counts": {
             "rpc_requests": limits.requests,
@@ -741,7 +762,7 @@ def _receipt_terminal_result(
             "encoded_receipts": relation["receipt_count"],
             "receipts": relation["receipt_count"],
             "logs": relation["log_count"],
-            "selected_logs": relation["filtered_log_count"],
+            "selected_logs": relation.get("filtered_log_count", 0),
             "receipt_trie_proved": relation["relations"],
         },
         "versions": {
@@ -755,10 +776,14 @@ def _receipt_terminal_result(
             "computed_receipts_root": relation["computed_root"],
         },
         "relation_scope": {
-            "receipt_trie_proved": [
-                "consensus_receipt_payload_at_trie_index",
-                "consensus_log_projection",
-            ],
+            "receipt_trie_proved": (
+                []
+                if empty_mode
+                else [
+                    "consensus_receipt_payload_at_trie_index",
+                    "consensus_log_projection",
+                ]
+            ),
             "transaction_hash_attribution": "recorded_rpc",
         },
         "fixture_digest": report["fixture_digest"],

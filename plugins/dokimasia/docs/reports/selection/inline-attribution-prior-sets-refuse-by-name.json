@@ -1,0 +1,9 @@
+{
+  "candidate": "inline-attribution",
+  "command": "python3 plugins/dokimasia/docs/design/build_attribution_design_evidence.py",
+  "criterion": "prior-sets-refuse-by-name",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

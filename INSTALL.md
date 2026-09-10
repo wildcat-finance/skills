@@ -211,8 +211,8 @@ exits zero and the machine keeps the old files.
 
 This gap was measured on 2026-08-22 over the 122 commits between an install at
 `793b112` and a head at `cd48583`. `plugin update` moved Hexaemeron from 1.5.1
-to 1.5.4 and left the other
-<!-- front-door:historical captured="2026-08-22" figure="thirteen" -->thirteen
+to 1.5.4 and left the
+other <!-- front-door:historical captured="2026-08-22" figure="thirteen" -->thirteen
 plugins pinned at `793b112`, and all thirteen had real changes under
 `skills/*/SKILL.md`. Hermes was the worst of them: its plugin version stayed
 at 0.1.1 while the skill's own frontmatter went from 0.1.0 to 0.1.1, so the
@@ -241,8 +241,8 @@ claude plugin install <plugin>@wildcat-labs --yes
 ```
 
 `--keep-data` preserves `~/.claude/plugins/data/{id}/`, and enabled status
-survived the round trip for all
-<!-- front-door:historical captured="2026-08-22" figure="fourteen" -->fourteen
+survived the round trip for
+all <!-- front-door:historical captured="2026-08-22" figure="fourteen" -->fourteen
 plugins present in that dated measurement. Apply the same check to every plugin
 now behind the head, not only the one being worked on.
 

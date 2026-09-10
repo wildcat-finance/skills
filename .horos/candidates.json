@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20756258,
+    "bytes_blob": 21587724,
     "bytes_generated": 98
   },
   "entries": [
@@ -77,6 +77,41 @@
       "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.synopsis.md"
     },
     {
+      "bytes": 126085,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 63042 of 126085 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1350-alexandria-1-interval-collector-run-against.md"
+    },
+    {
+      "bytes": 126909,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1350-alexandria-1-interval-collector-run-against.synopsis.md"
+    },
+    {
+      "bytes": 21699,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1351-anamnesis-2-declared-corpus-scope.synopsis.md"
+    },
+    {
+      "bytes": 29635,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 28639,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
+    },
+    {
       "bytes": 173841,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 171793",
@@ -89,6 +124,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.synopsis.md"
+    },
+    {
+      "bytes": 56306,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-371-metron-recorder-a-time-verb-that-writes-the.synopsis.md"
     },
     {
       "bytes": 55818,
@@ -525,6 +567,41 @@
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/source/registry.json"
     },
     {
+      "bytes": 28233,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 28233 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/registry.json"
+    },
+    {
+      "bytes": 89228,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 89228 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/boundary-blocks.jsonl"
+    },
+    {
+      "bytes": 168101,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 168101 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/epoch-evidence.jsonl"
+    },
+    {
+      "bytes": 64477,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 64477 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/logs.jsonl"
+    },
+    {
+      "bytes": 24967,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/anamnesis/specimens/synopsis/sources/pandects-audit-synopsis.md"
+    },
+    {
       "bytes": 23932,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -532,9 +609,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 77854,
+      "bytes": 66420,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 75806",
+      "evidence": "mean line length above 400 in a window at offset 33210",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
+    },
+    {
+      "bytes": 78621,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 76573",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

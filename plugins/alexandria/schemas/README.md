@@ -1,7 +1,7 @@
 # Alexandria schemas
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 <!-- marketplace-context:end -->
 
 Step 2 defines three raw-release contracts:
@@ -57,20 +57,44 @@ checks bind these contracts to the exact upstream commit and raw RPC objects.
 
 The resumable interval collector adds three more.
 `interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
-interval, shard width, evidence classes and the named finality policy that
-fixed the interval's end. `interval-checkpoint-v1.schema.json` covers the
+interval, shard width, the evidence classes the plan collects and the named
+finality policy that fixed the interval's end. The evidence classes are a
+non-empty subset of `boundary-blocks`, `logs` and `traces` in the plan's own
+order: the collector requests only those, opens one journal per declared
+class, and refuses an empty list, a duplicate or an unknown name by name. The
+finality boundary is a block number and the hash it carried: the collector
+reads that block by number and refuses a different hash, then under
+`finalized` or `safe` requires the tag's number to be at or above it, so the
+plan survives the tag advancing and fails only when its boundary block leaves
+the chain. `interval-checkpoint-v1.schema.json` covers the
 working state a killed collection resumes from: the next shard, the last
-accepted block and hash, and each journal's committed byte offset. It is not
+accepted block and hash, and each journal's committed byte offset. The
+offsets cover the declared classes and a fourth journal, `epoch-evidence`,
+which holds the opening reads the collector makes after the last shard: the
+first block's header, the EIP-1967 slot at the first block and at each
+upgrade block, the header at each upgrade block and the block before it, and
+each implementation's runtime code. Those reads are staged under the virtual
+shard index one past the plan's last, so a checkpoint whose next shard is one
+past the plan says the shards are done and its `epoch-evidence` offset says
+how many opening reads are committed. It is not
 release truth and no release names it. `interval-receipt-v1.schema.json`
 covers what a collected interval turns out to hold: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
-what a second provider said about it. Runtime checks bind a checkpoint to its
-own plan's digest and refuse a shard outside it.
+what a second provider said about it. A dispute names one of six kinds: the
+three shard kinds, `boundary-hash`, `log-identity` and `transaction-order`,
+and the three opening-read kinds, `first-block-hash`, `slot-word` and
+`code-digest`, filed under the virtual shard index. Runtime checks bind a
+checkpoint to its own plan's digest and refuse a shard outside it.
 
 The interval release itself enters through the ordinary capture plan. Its
-components are one JSON journal per evidence class, format
+components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one
-record per preserved exchange under `/records`, plus the interval receipt, the
-reconciliation record, the error receipts, the plan and the pinned registry.
-Every coverage count is a JSON pointer into the component it describes, so
-`ingest` refuses a count the payload does not carry.
+record per preserved exchange under `/records`; the `epoch-evidence` journal of
+opening reads, in the same format; and six more -- the interval receipt, the
+`implementation-code` component carrying each implementation's runtime bytecode
+under `/records`, the reconciliation record, the error receipts, the plan and
+the pinned registry. Every coverage count is a JSON pointer into the component
+it describes, so `ingest` refuses a count the payload does not carry. An
+evidence capture whose plan names `finalized` or `safe` carries that finality
+class with both boundary hashes bound; a `confirmations` plan and every derived
+component stay `provider-reported`.

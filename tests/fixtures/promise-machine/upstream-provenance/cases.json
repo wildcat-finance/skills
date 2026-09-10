@@ -1,0 +1,17 @@
+{
+  "schema": "promise-machine-upstream-provenance-cases/v1",
+  "cases": [
+    {"name": "container-hidden-declaration", "expected_finding": "PM052"},
+    {"name": "missing-or-duplicate-field", "expected_finding": "PM054"},
+    {"name": "field-borrowed-from-later-section", "expected_finding": "PM054"},
+    {"name": "malformed-digest", "expected_finding": "PM056"},
+    {"name": "local-digest-drift", "expected_finding": "PM057"},
+    {"name": "host-switched-repository", "expected_finding": "PM060"},
+    {"name": "mutable-commit", "expected_finding": "PM061"},
+    {"name": "unsafe-upstream-path", "expected_finding": "PM062"},
+    {"name": "contradictory-or-strengthened-status", "expected_finding": "PM063"},
+    {"name": "redirect-or-oversized-response", "expected_finding": "PV003"},
+    {"name": "elapsed-total-deadline", "expected_finding": "PV003"},
+    {"name": "upstream-digest-mismatch", "expected_finding": "PV004"}
+  ]
+}

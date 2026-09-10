@@ -1,0 +1,9 @@
+{
+  "candidate": "opening-reads-in-collect",
+  "command": "python3 -m unittest tests.test_usdc_interval.FinalityRebindTests",
+  "criterion": "finality-rebinds-after-tag-advance",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

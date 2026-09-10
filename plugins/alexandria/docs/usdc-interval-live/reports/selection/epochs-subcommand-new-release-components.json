@@ -1,0 +1,9 @@
+{
+  "candidate": "epochs-subcommand",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "new-release-components",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 2
+}

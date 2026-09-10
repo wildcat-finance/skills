@@ -1,6 +1,6 @@
 WAI1
 D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
-  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:e45f169564271c86783c4dd5213ff7aafe6fd0489adca692b654519ed167d765
+  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:babe74b138953a5d1dfcee0b67afb94d9bb7d99c1798df241f0eb073be09fdef
   H i9:fiat-loop t8:The\sloop
     R i11:study-phase t115:Research\sthe\stopic\sand\swrite\sthe\sstudy\sand\schecked\sdesign\srecord\sunder\sProtasis,\sthen\sreceipt\sthem\swith\sdone\sstudy.
     R i24:marketplace-reassessment t306:After\sa\ssuccessful\sstudy\sreceipt,\sperform\sthe\spost-spec\smarketplace\sreassessment\sbefore\sasking\sfor\sthe\srunbook\sdirective.\sThis\sis\sthe\sfirst\spoint\sat\swhich\sa\smissing\smarketplace\splugin\smay\sbe\sinstalled.\sRefresh\sskills\sonly\safter\sselected\sinstalls\sfinish,\sand\sresume\sin\sa\snew\schat\swhen\sthe\shost\srequires\sone.
@@ -13,10 +13,10 @@ D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
   < i13:runbook-phase i15:implement-phase
   < i11:study-phase i24:marketplace-reassessment
   < i11:study-phase i13:runbook-phase
-  B i4:fiat i9:fiat-loop 18445 18456 i8:shoggoth
-  B i4:fiat i24:fiat-study-runbook-phase 18445 18456 i8:shoggoth
-  B i4:fiat i11:study-phase 18699 18857 i8:shoggoth
-  B i4:fiat i13:runbook-phase 18858 19000 i8:shoggoth
-  B i4:fiat i15:implement-phase 19001 19176 i8:shoggoth
-  B i4:fiat i16:receipt-boundary 22174 22315 i8:shoggoth
-  B i4:fiat i24:marketplace-reassessment 22317 22771 i8:shoggoth
+  B i4:fiat i9:fiat-loop 18710 18721 i8:shoggoth
+  B i4:fiat i24:fiat-study-runbook-phase 18710 18721 i8:shoggoth
+  B i4:fiat i11:study-phase 18964 19122 i8:shoggoth
+  B i4:fiat i13:runbook-phase 19123 19265 i8:shoggoth
+  B i4:fiat i15:implement-phase 19266 19441 i8:shoggoth
+  B i4:fiat i16:receipt-boundary 22439 22580 i8:shoggoth
+  B i4:fiat i24:marketplace-reassessment 22582 23036 i8:shoggoth

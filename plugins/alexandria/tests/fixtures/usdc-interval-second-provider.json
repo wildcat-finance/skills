@@ -2,6 +2,9 @@
   "boundary_hash_overrides": {
     "2": "0x9999999999999999999999999999999999999999999999999999999999999999"
   },
+  "code_overrides": {
+    "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b": "0x60806040efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+  },
   "extra_logs": {
     "1": [
       {
@@ -19,7 +22,11 @@
       }
     ]
   },
-  "note": "The second provider's view of the same synthetic interval. Three deliberate disagreements are recorded here so the reconciler has something to find: shard 1 holds one extra log, shard 2's boundary hash differs, and shard 3's boundary reports its transactions in another order.",
+  "first_block_hash_override": "0x8888888888888888888888888888888888888888888888888888888888888888",
+  "note": "The second provider's view of the same synthetic interval. Six deliberate disagreements are recorded here so the reconciler has something to find: shard 1 holds one extra log, shard 2's boundary hash differs, shard 3's boundary reports its transactions in another order, the first block's hash differs, the slot word at the upgrade block names another implementation, and the second implementation's code differs. A test applies each on its own.",
+  "slot_word_overrides": {
+    "15331626": "0x0000000000000000000000001c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d"
+  },
   "transaction_orders": {
     "3": [
       "0x628b49d96dcde97a430dd4f597705899e09a968f793491e4b704cae33a40dc02",

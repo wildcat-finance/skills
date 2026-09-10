@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "anamnesis_deterministic_rebuild": {
+          "authorised_transition": {
+            "action": "structurally bind anamnesis-deterministic-rebuild without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+                "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+                "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "anamnesis-deterministic-rebuild",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for anamnesis-deterministic-rebuild",
+            "subject": "runtime source plugins/anamnesis/tests/test_s3_consumers.py#test_two_fresh_builds_agree_byte_for_byte"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+            "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+            "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "anamnesis-deterministic-rebuild",
+        "scope": "structural binding for anamnesis-deterministic-rebuild",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/anamnesis/tests/test_s3_consumers.py#test_two_fresh_builds_agree_byte_for_byte",
+        "transition": {
+          "action": "structurally bind anamnesis-deterministic-rebuild without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "anamnesis_deterministic_rebuild": {
+          "authorised_transition": {
+            "action": "structurally bind anamnesis-deterministic-rebuild without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+                "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+                "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "anamnesis-deterministic-rebuild",
+          "source": {
+            "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+          },
+          "target": {
+            "scope": "structural binding for anamnesis-deterministic-rebuild",
+            "subject": "runtime source plugins/anamnesis/tests/test_s3_consumers.py#test_two_fresh_builds_agree_byte_for_byte"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+            "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/anamnesis/tests/test_s3_consumers.py",
+            "sha256": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "anamnesis-deterministic-rebuild",
+        "scope": "structural binding for anamnesis-deterministic-rebuild",
+        "source_digest": "ea20b8b13f55589cb718c88a3d2e5946ca7f5f1284049e6230066952d7dac3d7",
+        "subject": "runtime source plugins/anamnesis/tests/test_s3_consumers.py#test_two_fresh_builds_agree_byte_for_byte",
+        "transition": {
+          "action": "structurally bind anamnesis-deterministic-rebuild without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

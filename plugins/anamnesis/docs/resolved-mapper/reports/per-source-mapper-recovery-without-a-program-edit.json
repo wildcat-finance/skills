@@ -1,0 +1,9 @@
+{
+  "candidate": "per-source-mapper",
+  "command": "python3 .hexaemeron/reports/resolve.py per-source-mapper recovery-without-a-program-edit",
+  "criterion": "recovery-without-a-program-edit",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

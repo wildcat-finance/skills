@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "dokimasia_source_inventory": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-source-inventory without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_inventory.py",
+                "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_inventory.py",
+                "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-source-inventory",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-source-inventory",
+            "subject": "runtime source plugins/dokimasia/tests/test_inventory.py#test_the_record_carries_exactly_the_declared_keys"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_inventory.py",
+            "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_inventory.py",
+            "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-source-inventory",
+        "scope": "structural binding for dokimasia-source-inventory",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/dokimasia/tests/test_inventory.py#test_the_record_carries_exactly_the_declared_keys",
+        "transition": {
+          "action": "structurally bind dokimasia-source-inventory without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "dokimasia_source_inventory": {
+          "authorised_transition": {
+            "action": "structurally bind dokimasia-source-inventory without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/dokimasia/tests/test_inventory.py",
+                "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/dokimasia/tests/test_inventory.py",
+                "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "dokimasia-source-inventory",
+          "source": {
+            "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+          },
+          "target": {
+            "scope": "structural binding for dokimasia-source-inventory",
+            "subject": "runtime source plugins/dokimasia/tests/test_inventory.py#test_the_record_carries_exactly_the_declared_keys"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/dokimasia/tests/test_inventory.py",
+            "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/dokimasia/tests/test_inventory.py",
+            "sha256": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "dokimasia-source-inventory",
+        "scope": "structural binding for dokimasia-source-inventory",
+        "source_digest": "15ef7abdbd8d553c9526ae1e69d78738120db394f7c8b8ed9ab8b93e15d9bca4",
+        "subject": "runtime source plugins/dokimasia/tests/test_inventory.py#test_the_record_carries_exactly_the_declared_keys",
+        "transition": {
+          "action": "structurally bind dokimasia-source-inventory without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}
