@@ -1021,3 +1021,35 @@ closes part of it and moves a cost step 5 measures.
 **Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** The body witness treats an escaped carriage return before an
+escaped line feed as part of the same delimiter, so the delimiter set is the
+newline byte, the two-character escape for it, and either of those preceded by
+a carriage return in the matching form. The third 2026-09-09 amendment's
+closing sentence is withdrawn: reading the escape as a delimiter closed the
+line-feed case, not the whole class, and no wording in this study should claim
+a hole is shut while a measured member walks through it. What the amended rule
+closes is stated as a list rather than as a whole: a key whose lines end in a
+line feed, raw or JSON-escaped, at any size the ceilings admit; and a key whose
+lines end CRLF, raw or JSON-escaped, at the same sizes. What stays open is a
+key whose body carries no delimiter the witness can see and whose footer falls
+past the lookahead, and section 5's `secret-shaped-member` line keeps that as
+its stated residue rather than implying completeness. No refusal class,
+ceiling, schema field, entry path, budget or fixture id changes.
+**Why.** Step 2's audit round 4 raised S2-R4-02 and Fiat reproduced it through
+the shipped `_checkpoint_archive_secret_shaped`. A PEM whose lines end CRLF,
+held as `json.dumps({"deploy_key": <pem>})`, publishes once the footer passes
+the 1,792-byte lookahead: at 26, 40 and 52 body lines the members are 1,828,
+2,766 and 3,570 bytes and the last two exit 0, while every line-feed member of
+the same shape refuses. `json.dumps` writes CRLF as backslash, `r`, backslash,
+`n`, and the witness's `\r?` matches the carriage-return byte rather than that
+two-character escape, so the lookahead never reaches the escaped line feed
+behind it. Fiat's own first check of this class was run against the bare header
+pattern rather than the block predicate, which reported every input as caught
+and established nothing; the measurement above uses the predicate the exporter
+calls.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

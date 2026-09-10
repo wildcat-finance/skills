@@ -197,14 +197,19 @@ material follows it within the scanned window: one whole line of base64 body,
 or the `-----END` marker matching that header. A line ends at a newline
 character or at the two-character escape `\n` that carries one inside a JSON
 string value, so a key held as a JSON string value in `state.json` or on one
-`ledger.jsonl` line carries body lines like any other. A file naming a header
-in prose or quoting one in a code span supplies neither, so a run can archive
-its own specification text. A key whose footer was truncated still carries body
-lines and still refuses. The four token patterns are self-delimiting and refuse
-on the match alone. The scan reads in bounded chunks and carries between them
-the longest header the six can match plus that lookahead, so a block lying
-across a chunk boundary still refuses; the carry is derived from the patterns
-rather than fixed.
+`ledger.jsonl` line carries body lines like any other. The delimiter set is the
+newline byte, the two-character escape for it, and either of those preceded by
+a carriage return in the matching form, so a CRLF key refuses raw and escaped
+alike. What the set does not reach is a key whose body carries no delimiter the
+witness can see and whose footer falls past the lookahead: that one does not
+refuse, and the study states it as residue rather than implying the class is
+shut. A file naming a header in prose or quoting one in a code span supplies
+neither, so a run can archive its own specification text. A key whose footer
+was truncated still carries body lines and still refuses. The four token
+patterns are self-delimiting and refuse on the match alone. The scan reads in
+bounded chunks and carries between them the longest header the six can match
+plus that lookahead, so a block lying across a chunk boundary still refuses;
+the carry is derived from the patterns rather than fixed.
 
 - A PEM private-key block, whose armour label also matches the OpenSSH header.
 - The OpenPGP private-key block, opened by `-----BEGIN PGP PRIVATE KEY BLOCK-----`.

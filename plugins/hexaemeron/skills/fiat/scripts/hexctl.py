@@ -668,20 +668,31 @@ all a match of the length recorded here also exists at the same offset, because
 the tail repeats one character class, so this length is still what the scan has
 to carry to see it across a chunk boundary.
 """
-CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK = rb"(?:\x0a|\\n)"
-"""What ends a line for the body witness: a newline byte, or the escape for one.
+CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK = rb"(?:\x0d|\\r)?(?:\x0a|\\n)"
+"""What ends a line for the body witness: a line feed, raw or escaped, and the
+carriage return that may precede it in either form.
 
-The study's third 2026-09-09 amendment settles this. A PEM key held as a JSON
-string value carries no newline byte at all: `json.dumps` writes each one as
-the two characters `\\` and `n`, so a key inside `state.json` or on one
+The study's third 2026-09-09 amendment settles the escape. A PEM key held as a
+JSON string value carries no newline byte at all: `json.dumps` writes each one
+as the two characters `\\` and `n`, so a key inside `state.json` or on one
 `ledger.jsonl` line is one physical line however many body lines it had, and a
 witness that only reads the byte never arrives. Both of those files are scan
 targets the study names, so reading the escape as a delimiter is what makes the
 block rule cover the shape a controller file actually carries a credential in.
+
+The 2026-09-10 amendment adds the carriage return, and withdraws the earlier
+one's claim that reading the escape closed the whole hole. `json.dumps` writes
+a CRLF line ending as the four characters `\\`, `r`, `\\`, `n`, and a witness
+that reads only the carriage-return byte stops one escape short of the line
+feed behind it, so a CRLF key in a JSON string value published while an
+otherwise identical line-feed key refused. That was S2-R4-02. What the set
+still does not see is a body carrying no delimiter of any of these forms; such
+a key refuses only on a footer inside the lookahead, and the study states that
+residue rather than implying the class is shut.
 """
 CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
     rb"(?:\A|(?<=\x0a)|(?<=\\n))"
-    rb"[A-Za-z0-9+/=]{16,}[ \t]*\r?"
+    rb"[A-Za-z0-9+/=]{16,}[ \t]*"
     rb"(?=\Z|" + CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK + rb")"
 )
 """One whole line of base64, which is what a key's body looks like.
@@ -696,7 +707,9 @@ Both delimiters are zero-width, so a match still starts at the body's first
 byte and the lookahead comparison against the header below is unchanged. The
 alternative, consuming the delimiter, would make `finditer` skip every second
 body line in a run of them, because one match's trailing delimiter is the
-next one's leading delimiter.
+next one's leading delimiter. The carriage return moved into that lookahead
+with the 2026-09-10 amendment: the tail used to consume a `\\r` byte and so
+could only ever see the raw half of the pair.
 """
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
 """The longest line the scan will read between a header and the key material.
@@ -16973,10 +16986,14 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
     generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not completed by an
     unrelated `-----END CERTIFICATE-----` further down the file.
 
-    A body line ends at a newline byte or at the two-character escape for one,
-    which the study's third 2026-09-09 amendment requires: a key carried as a
-    JSON string value supplies no newline byte, and past the lookahead it
-    supplies no footer either, so before that the block rule published it.
+    A body line ends at a line feed, raw or escaped, and at the carriage
+    return that may precede it in either form. The study's third 2026-09-09
+    amendment requires the escape and its 2026-09-10 amendment the carriage
+    return: a key carried as a JSON string value supplies no newline byte, and
+    past the lookahead it supplies no footer either, so before those two the
+    block rule published it. A body with no delimiter of any of these forms is
+    the residue the 2026-09-10 amendment states; it refuses on its footer
+    alone.
 
     The body positions are found once for the whole buffer and then walked with
     one forward index per pattern, because `finditer` yields matches in

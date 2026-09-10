@@ -67,8 +67,10 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import base64
 import json
 import os
+import random
 import re
 import shutil
 import socket
@@ -254,20 +256,28 @@ ARMOURED_BLOCK_JSON_CARRIED = json.dumps(
 REFERENCE_BLOCK_ANCHOR = "The two armour forms refuse as blocks."
 REFERENCE_BLOCK_END = "\n\n- A PEM private-key block"
 EXPECTED_BLOCK_PARAGRAPH = (
-    "The two armour forms refuse as blocks. A header is secret-shaped only "
-    "when key material follows it within the scanned window: one whole line "
-    "of base64 body, or the `-----END` marker matching that header. A line "
-    "ends at a newline character or at the two-character escape `\\n` that "
-    "carries one inside a JSON string value, so a key held as a JSON string "
-    "value in `state.json` or on one `ledger.jsonl` line carries body lines "
-    "like any other. A file naming a header in prose or quoting one in a code "
-    "span supplies neither, so a run can archive its own specification text. "
-    "A key whose footer was truncated still carries body lines and still "
-    "refuses. The four token patterns are self-delimiting and refuse on the "
-    "match alone. The scan reads in bounded chunks and carries between them "
-    "the longest header the six can match plus that lookahead, so a block "
-    "lying across a chunk boundary still refuses; the carry is derived from "
-    "the patterns rather than fixed."
+    "The two armour forms refuse as blocks. A header is secret-shaped "
+    "only when key material follows it within the scanned window: one "
+    "whole line of base64 body, or the `-----END` marker matching that "
+    "header. A line ends at a newline character or at the two-character "
+    "escape `\\n` that carries one inside a JSON string value, so a key "
+    "held as a JSON string value in `state.json` or on one "
+    "`ledger.jsonl` line carries body lines like any other. The "
+    "delimiter set is the newline byte, the two-character escape for "
+    "it, and either of those preceded by a carriage return in the "
+    "matching form, so a CRLF key refuses raw and escaped alike. What "
+    "the set does not reach is a key whose body carries no delimiter "
+    "the witness can see and whose footer falls past the lookahead: "
+    "that one does not refuse, and the study states it as residue rather "
+    "than implying the class is shut. A file "
+    "naming a header in prose or quoting one in a code span supplies "
+    "neither, so a run can archive its own specification text. A key "
+    "whose footer was truncated still carries body lines and still "
+    "refuses. The four token patterns are self-delimiting and refuse on "
+    "the match alone. The scan reads in bounded chunks and carries "
+    "between them the longest header the six can match plus that "
+    "lookahead, so a block lying across a chunk boundary still refuses; "
+    "the carry is derived from the patterns rather than fixed."
 )
 # Each row is one rule: what study section 4 states, and the words the
 # reference paragraph has to restate it in. Neither side may be absent.
@@ -282,6 +292,20 @@ BLOCK_RULE_PARITY = (
         "`\\n` that carries one inside a JSON string value",
         "A line ends at a newline character or at the two-character escape "
         "`\\n` that carries one inside a JSON string value",
+    ),
+    (
+        "the delimiter set is the newline byte, the two-character escape "
+        "for it, and either of those preceded by a carriage return in the "
+        "matching form",
+        "The delimiter set is the newline byte, the two-character escape "
+        "for it, and either of those preceded by a carriage return in the "
+        "matching form",
+    ),
+    (
+        "a key whose body carries no delimiter the witness can see and "
+        "whose footer falls past the lookahead",
+        "a key whose body carries no delimiter the witness can see and "
+        "whose footer falls past the lookahead",
     ),
     (
         "A document that names a header in prose or inside a code span is "
@@ -472,6 +496,107 @@ def normalise_closed(cell: str) -> str:
     words are the evidence and the span punctuation is not.
     """
     return flat(cell.replace("`", ""))
+
+
+SMALL_PRIMES = [
+    candidate
+    for candidate in range(2, 4096)
+    if all(candidate % factor for factor in range(2, int(candidate**0.5) + 1))
+]
+
+
+def _probable_prime(candidate: int, rng: random.Random, rounds: int = 6) -> bool:
+    """Miller-Rabin, which is what makes the key below a key and not a shape."""
+    odd, power = candidate - 1, 0
+    while odd % 2 == 0:
+        odd //= 2
+        power += 1
+    for _ in range(rounds):
+        witness = pow(rng.randrange(2, candidate - 1), odd, candidate)
+        if witness in (1, candidate - 1):
+            continue
+        for _ in range(power - 1):
+            witness = witness * witness % candidate
+            if witness == candidate - 1:
+                break
+        else:
+            return False
+    return True
+
+
+def _prime(bits: int, rng: random.Random) -> int:
+    """One prime of exactly `bits` bits, with the top two bits set.
+
+    Both top bits, so the product of two of these is exactly twice the width
+    and the key's byte length is the length a key of that size really has.
+    """
+    while True:
+        candidate = rng.getrandbits(bits) | (3 << (bits - 2)) | 1
+        for _ in range(4096):
+            if all(candidate % factor for factor in SMALL_PRIMES):
+                if _probable_prime(candidate, rng):
+                    return candidate
+            candidate += 2
+
+
+def _der_length(size: int) -> bytes:
+    if size < 0x80:
+        return bytes([size])
+    raw = size.to_bytes((size.bit_length() + 7) // 8, "big")
+    return bytes([0x80 | len(raw)]) + raw
+
+
+def _der_integer(value: int) -> bytes:
+    """One DER INTEGER, always with a leading zero byte so it stays positive."""
+    body = value.to_bytes(value.bit_length() // 8 + 1, "big")
+    return b"\x02" + _der_length(len(body)) + body
+
+
+def rsa_private_key_pem(bits: int = 3072, seed: int = 861) -> tuple[str, int, int, int]:
+    """A real RSA private key, generated here rather than checked in.
+
+    The CRLF guard below needs a key and not a base64-shaped line. What made
+    S2-R4-02 publish was a real key's geometry: a body of 64-character lines
+    whose `-----END` marker lands further past the header than the block
+    lookahead reaches. A repeated synthetic line proves nothing about that
+    distance, and checking a key into this repository is the one thing the
+    scan under test exists to refuse. So the key is built here, as PKCS#1 DER
+    inside PEM armour, and returned with the three numbers that let the caller
+    prove it is a working keypair rather than a string shaped like one.
+
+    `random` seeded to a constant, not `secrets`: this key secures nothing,
+    never leaves a temporary directory and is regenerated every run, and a
+    fixed seed keeps the search cost of the two primes fixed at about a
+    second rather than varying with the machine's entropy.
+    """
+    rng = random.Random(seed)
+    public = 65537
+    while True:
+        first = _prime(bits // 2, rng)
+        second = _prime(bits // 2, rng)
+        if first != second and (first - 1) % public and (second - 1) % public:
+            break
+    modulus = first * second
+    private = pow(public, -1, (first - 1) * (second - 1))
+    fields = b"".join(
+        _der_integer(value)
+        for value in (
+            0,
+            modulus,
+            public,
+            private,
+            first,
+            second,
+            private % (first - 1),
+            private % (second - 1),
+            pow(second, -1, first),
+        )
+    )
+    der = b"\x30" + _der_length(len(fields)) + fields
+    text = base64.b64encode(der).decode("ascii")
+    body = "".join(text[at : at + 64] + "\n" for at in range(0, len(text), 64))
+    pem = "-----BEGIN RSA PRIVATE KEY-----\n" + body + "-----END RSA PRIVATE KEY-----\n"
+    return pem, modulus, public, private
 
 
 def anchored(text: str, start: str, end: str, what: str) -> str:
@@ -1899,6 +2024,66 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
             payload[start : start + len(specimen)] = specimen
             with self.subTest(header=header, placement="material past the boundary"):
                 self.assertEqual("secret-shaped-member\n", self.scan(bytes(payload)))
+
+    def test_secret_shaped_member_refuses_before_publish_on_a_crlf_key_in_json(self):
+        """S2-R4-02: a CRLF key held as a JSON string value used to publish.
+
+        The escaped-newline delimiter closed the line-feed half of S2-R3-01
+        and not the other half. `json.dumps` writes a CRLF line ending as the
+        four characters `\\`, `r`, `\\`, `n`; the body witness ended a line
+        with a carriage-return byte, so it stopped one escape short of the
+        line feed behind it and found no body line at all. Past the lookahead
+        there is no footer either, and the member left in the archive.
+
+        The 2026-09-10 study amendment puts the carriage return in the
+        delimiter set in both forms. The key is real and the geometry is
+        asserted rather than assumed, so a key size or a lookahead that moves
+        fails here instead of leaving a guard that tests nothing.
+        """
+        module = hexctl_module()
+        lookahead = module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+        pem, modulus, public, private = rsa_private_key_pem()
+        probe = 0xC0FFEE
+        self.assertEqual(3072, modulus.bit_length())
+        self.assertEqual(probe, pow(pow(probe, public, modulus), private, modulus))
+
+        header = b"-----BEGIN RSA PRIVATE KEY-----"
+        footer = b"-----END RSA PRIVATE KEY-----"
+        crlf = pem.replace("\n", "\r\n")
+        carried = (
+            ("state.json value", json.dumps({"deploy_key": crlf})),
+            ("ledger.jsonl line", json.dumps({"seq": 1, "deploy_key": crlf}) + "\n"),
+        )
+        for name, member in carried:
+            payload = member.encode("utf-8")
+            with self.subTest(member=name):
+                opened = payload.index(header) + len(header)
+                self.assertIn(b"\\r\\n", payload)
+                self.assertGreater(payload.index(footer) - opened, lookahead)
+                self.assertNotIn(b"\n", payload[opened : payload.index(footer)])
+                self.assertEqual("secret-shaped-member\n", self.scan(payload))
+
+        # The three forms that refused before the amendment, so what landed is
+        # a widening and not a swap.
+        for name, text in (
+            ("raw line feed", pem),
+            ("raw CRLF", crlf),
+            ("escaped line feed", json.dumps({"deploy_key": pem})),
+        ):
+            with self.subTest(member=name):
+                self.assertEqual(
+                    "secret-shaped-member\n", self.scan(text.encode("utf-8"))
+                )
+
+        # The residue the same amendment states, held as a positive so that
+        # closing it has to be a dated amendment rather than a quiet edit: a
+        # body whose line endings are neither delimiter form is visible only
+        # through its footer, and this one's footer is past the lookahead.
+        # `\\u000a` is valid JSON for the same character, so the value parses
+        # back to the identical key.
+        escaped = '{"deploy_key": "' + pem.replace("\n", "\\u000a") + '"}'
+        self.assertEqual(pem, json.loads(escaped)["deploy_key"])
+        self.assertIsNone(self.scan(escaped.encode("utf-8")))
 
     def test_secret_scan_passes_a_member_that_carries_no_header(self):
         module = hexctl_module()
