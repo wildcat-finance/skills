@@ -1360,6 +1360,59 @@ class FamilyEvidenceCollectorTest(unittest.TestCase):
             with self.assertRaises(collector.RefusalError):
                 collector.v1_exclusions(labels)
 
+    def test_a_commit_a_v1_paragraph_was_read_at_is_not_a_v1_group(self):
+        """S3-R3-01. The commit exclusion was keyed on every v1 row's commit.
+
+        A v1 Markdown row carries the commit its document was read at, and
+        `v1_exclusions` added that commit to the excluded set beside the
+        commit-message rows' own shas. The commit's message is a different
+        document and is in no v1 source group, so the first pass excluded the
+        ten commits v1's twelve Markdown documents were sampled at and wrote
+        them as `v1-source-group`. The set is built from the commit-message
+        rows alone, and the shipped record carries one such row per v1
+        commit-message sha and one per v1 document.
+        """
+        skills = "wildcat-finance/skills"
+        sampled_at, own = "3" * 40, "4" * 40
+        with tempfile.TemporaryDirectory() as directory:
+            samples = Path(directory) / "samples.jsonl"
+            samples.write_text(jsonl([
+                {"repository": skills, "source_object": "markdown_paragraph",
+                 "source_path": "docs/x.md", "source_commit": sampled_at,
+                 "source_group_id": "M-TD-09"},
+                {"repository": skills, "source_object": "commit_message",
+                 "source_path": None, "source_commit": own,
+                 "source_group_id": "M-GH-09"},
+            ]), encoding="utf-8")
+            groups, documents, commits = collector.v1_exclusions(samples)
+        self.assertEqual(groups, {"M-TD-09", "M-GH-09"})
+        self.assertEqual(documents, {(skills, "docs/x.md")})
+        self.assertEqual(commits, {(skills, own)})
+        message = {**self.document(self.sentence(40)), "kind": "commit_message", "path": None}
+        self.assertIsNone(collector.document_rejection(
+            {**message, "commit": sampled_at}, {1298}, documents, commits))
+        self.assertEqual(collector.document_rejection(
+            {**message, "commit": own}, {1298}, documents, commits), "v1-source-group")
+        # The document itself stays excluded whatever commit it is read at.
+        self.assertEqual(collector.document_rejection(
+            self.document("", path="docs/x.md", commit="5" * 40), {1298}, documents, commits),
+            "v1-source-group")
+        groups, documents, commits = collector.v1_exclusions(
+            SKILL_ROOT / "evals" / "labelled-prose-v1" / "samples.jsonl")
+        recorded = [
+            json.loads(line)
+            for line in (FIXTURE / "selection-rejections.jsonl").read_text(
+                encoding="utf-8").splitlines()
+            if line.strip() and '"v1-source-group"' in line
+        ]
+        self.assertEqual(len(commits), 10)
+        self.assertEqual(len(documents), 12)
+        self.assertEqual(
+            sum(1 for row in recorded if row["source_object"] == "commit_message"), len(commits))
+        self.assertEqual(
+            sum(1 for row in recorded if row["source_object"] == "markdown_paragraph"),
+            len(documents))
+
     def test_a_paragraph_outside_the_word_band_is_rejected(self):
         self.assertEqual(collector.paragraph_rejection(self.sentence(17), ""), "outside-word-band")
         self.assertEqual(collector.paragraph_rejection(self.sentence(181), ""), "outside-word-band")

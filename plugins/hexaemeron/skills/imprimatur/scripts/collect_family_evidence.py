@@ -404,6 +404,14 @@ def v1_exclusions(samples: Path) -> tuple[set[str], set[tuple[str, str]], set[tu
     collector: reading them while choosing specimens is the ``holdout-leak``
     item in the study's register, so the path is refused by name rather than
     left to whoever passes the argument.
+
+    A source group is a repository plus a document. A v1 Markdown row names
+    the document by ``source_path`` and the commit it was read at by
+    ``source_commit``; that commit's own message is a different document and
+    is in no v1 group. The commit set below is therefore built from the
+    commit-message rows alone. Built from every row, it excluded the ten
+    commits v1's twelve Markdown documents were sampled at and recorded them
+    as ``v1-source-group``, which is a reason those ten do not have.
     """
     if samples.name != "samples.jsonl":
         raise RefusalError(
@@ -434,7 +442,7 @@ def v1_exclusions(samples: Path) -> tuple[set[str], set[tuple[str, str]], set[tu
         if isinstance(path, str):
             documents.add((repository, path))
         commit = row.get("source_commit")
-        if isinstance(commit, str):
+        if isinstance(commit, str) and row.get("source_object") == "commit_message":
             commits.add((repository, commit))
     return groups, documents, commits
 

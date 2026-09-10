@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20473568,
+    "bytes_blob": 20704609,
     "bytes_generated": 98
   },
   "entries": [
@@ -572,6 +572,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/families.jsonl"
+    },
+    {
+      "bytes": 231041,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 115520",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/selection-rejections.jsonl"
     },
     {
       "bytes": 63471,

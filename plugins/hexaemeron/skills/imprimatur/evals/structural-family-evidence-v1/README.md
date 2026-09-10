@@ -204,7 +204,7 @@ one document, a fork's prose is somebody else's writing, and an empty
 repository has no head. The organisation's public listing holds 27
 repositories, which is these seven and the twenty above.
 
-The collector rejected 170 documents whole before any
+The collector rejected 160 documents whole before any
 phrase was tried, rejected 116 phrase-bearing paragraphs on the word band, the
 table, code, digest and issue-quotation rules, ordered the 352 that remained as
 candidate rows across the 13 target families, and shipped 38 specimens. A
@@ -246,7 +246,7 @@ origin class: model_assisted 21, unknown 17. Every rejection reason and its coun
 | `path-carries-whitespace` | 2 |
 | `unknown-thread` | 19 |
 | `unusable-source-path` | 4 |
-| `v1-source-group` | 32 |
+| `v1-source-group` | 22 |
 | `vendored-or-mirrored-path` | 90 |
 
 Two of those reasons are about the same field and are not the same fault, and
@@ -261,6 +261,17 @@ refused for a different reason: `.agents/skills/promise-machine/PORTABLE.md`,
 all begin a segment with a dot, which the endpoint pattern does not admit, and
 none of them carries whitespace. They are `unusable-source-path`, and a
 document under that reason is not fetched at all.
+
+Ten further rows the first pass wrote as `v1-source-group` were commit
+messages at the ten commits v1's twelve Markdown documents were sampled at,
+the `source_commit` values of the Markdown rows in
+`labelled-prose-v1/samples.jsonl`. A commit's message is a different document
+from a file read at that commit and is in no v1 source group; the collector
+had keyed the commit exclusion on every v1 row's `source_commit` rather than
+on the ten commit-message rows alone. It now keys on those ten, the ten rows
+are removed, and none of the ten messages carries a discovery phrase, so no
+candidate row changes. The 22 rows that remain are the twelve v1 documents
+and the ten v1 commit messages.
 
 Four target families end the collection below their tier minimum, and the
 shortfall is the evidence rather than a gap in the collection. Each was
@@ -649,7 +660,7 @@ left every test green, because nothing held the oracle's bytes.
 | `issue-1298.md` | `ccff01a9db78693b183a3193b5cd76edbd908f75f3d48b4e25c46fda907f1e46` |
 | `schemas/family.schema.json` | `46244a6a6a9386b903aa16731f4b4f30df07945b2e3221320544b243aafa8185` |
 | `schemas/specimen.schema.json` | `ed8de25920f263308ed22928b603dcbd351230595b521af471d1f144dd1700c9` |
-| `selection-rejections.jsonl` | `5d63342e63f7c83688652db0153bd73fcaf47e10f2a296b122c951a7ad87f533` |
+| `selection-rejections.jsonl` | `d23f94f7b927fef41a0980f9fa5b67ac5c75dff464b5909fde4cc539743ddb26` |
 | `specimens.jsonl` | `406ed81594b9691a20b0c7c5c25e6839d6ba873c4bb616d427ecd2e07d5dcc0a` |
 Paths are relative to this directory.
 `test_the_fixture_digest_table_covers_every_fixture_file` walks the fixture
