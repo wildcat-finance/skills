@@ -1082,3 +1082,36 @@ and the footer is past the lookahead.
 **Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** The block rule's one reach becomes two. The block lookahead
+keeps its 1,792 bytes and bounds only where the body may start, which is what
+the armour allowance measures. A separate footer reach bounds where that
+header's own footer may sit, and is the armour allowance plus the largest key
+the scan undertakes to reach, declared at 8,192 bits, giving 9,984 bytes; the
+carried window between chunks is derived from the footer reach rather than the
+block lookahead. The residue narrows to a key whose modulus exceeds that
+declared size, and the earlier residue closes: a body carrying no delimiter in
+any spelling is now refused at every size below it, because its footer is in
+reach. No refusal class, ceiling, schema field, entry path, budget or fixture
+id changes.
+**Why.** Step 2's audit round 7 raised S2-R7-01 and found the cause under the
+three findings before it. With one constant at 1,792 bytes serving both jobs,
+the footer witness could not fire for any RSA key of 3,072 bits or more, whose
+footer sits 2,356 to 2,812 bytes past its header at 3,072 bits and 3,132 to
+3,732 at 4,096, so for exactly the sizes in use the rule had its body witness
+and no second one. That is why each spelling of a line break the body witness
+could not read, S2-R4-02 and then S2-R6-01, was a complete bypass rather than a
+degradation, and why repairing them one at a time never reduced the exposure.
+Round 7 measured the footer distances on keys generated in process and proved
+as working keypairs, and measured the cost of the reach over the 164 paths and
+7,717,110 bytes this run's own export scans: best of five, 42.07 ms at 1,792
+and 39.07 ms at 8,192, with none of the 164 refused at either, so the reach
+costs no measurable time and adds no false refusal. Fiat confirmed the effect
+through the shipped `_checkpoint_archive_secret_shaped`: at 26, 52 and 104 body
+lines, the line-feed escape, the numeric escape and the delimiter-free spelling
+now all refuse, where the last two published before.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

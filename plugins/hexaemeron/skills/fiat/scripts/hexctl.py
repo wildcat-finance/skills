@@ -734,10 +734,46 @@ CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES = 7
 CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD = (
     CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE * CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES
 )
-"""Bytes after a header in which the body or the footer has to appear."""
+"""Bytes after a header in which the body has to start.
+
+This bounds where the key material begins, which is what the armour lines
+above measure. It is not how far the footer may sit, because the footer sits
+past the whole body and the body is the larger distance by an order of
+magnitude; `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD` below carries that.
+"""
+CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY = 8192
+"""The largest RSA modulus, in bits, whose footer the scan undertakes to reach.
+
+Measured on keys generated in process, as the distance from the end of the
+header to the start of the footer, in the worst spelling a JSON string value
+can give a line break, the twelve bytes of two numeric escapes: 1,900 bytes at
+2,048 bits, 2,812 at 3,072, 3,732 at 4,096 and 7,380 at 8,192. The reach below
+covers the largest of those with room, and a key beyond this size is stated
+residue rather than a silent gap.
+"""
+CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD = (
+    CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD + CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY
+)
+"""Bytes after a header in which that header's own footer has to appear.
+
+The armour allowance plus the largest body, because the two distances compose:
+the body may start anywhere inside the armour lines, and then runs its own
+length before the footer.
+
+Separating this from the block lookahead is S2-R7-01. While the two were one
+constant at 1,792 bytes, the footer of any key of 3,072 bits or more lay out of
+reach -- 2,356 to 2,812 bytes past the header at 3,072 bits and 3,132 to 3,732
+at 4,096 -- so for exactly the sizes in use the block rule had only its body
+witness and no second one. Each spelling of a line break the body witness could
+not read was therefore a complete bypass rather than a degradation, which is
+what produced S2-R4-02 and S2-R6-01 in successive rounds. Over the 164 paths
+and 7,717,110 bytes this run's own export scans, best of five, the scan takes
+42.07 ms at the old 1,792 and 39.07 ms at 8,192 and refuses none of them at
+either, so the reach costs no measurable time and adds no false refusal.
+"""
 CHECKPOINT_ARCHIVE_SECRET_WINDOW = (
     max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
-    + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+    + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
 )
 """Bytes carried between scan chunks: the longest header plus its lookahead.
 
@@ -748,7 +784,9 @@ before it, so the header term brings the whole header into one search. Block
 semantics then need the bytes after it as well, and a header sitting more than
 the lookahead before the end of a chunk would otherwise be dropped from the
 carry while its body lies in the next chunk, so the carry has to cover the
-header and everything the block decision reads after it.
+header and everything the block decision reads after it. That is the footer
+reach rather than the block lookahead, because the footer is the further of
+the two the decision consults.
 """
 CHECKPOINT_ARCHIVE_README = """Fiat checkpoint archive
 
@@ -16992,10 +17030,17 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
     A token match is the whole answer. An armour header is only half of one:
     the study's second 2026-09-09 amendment requires the block, so the header
     refuses only when its own `-----END` marker or a whole line of base64 body
-    follows it within `CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD` bytes. The
-    footer is derived from the header that matched rather than looked for
-    generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not completed by an
-    unrelated `-----END CERTIFICATE-----` further down the file.
+    follows it. The two have their own reaches and the difference is the point.
+    A body has to *start* within `CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD`,
+    which the armour lines bound. A footer sits past the whole body, so it has
+    until `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD`, which adds the largest
+    body the scan undertakes to reach. Holding both to the armour figure was
+    S2-R7-01: it put the footer of every key of 3,072 bits or more out of
+    range, leaving the body witness as the only witness for exactly the sizes
+    in use. The footer is derived from the header that matched rather than
+    looked for generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not
+    completed by an unrelated `-----END CERTIFICATE-----` further down the
+    file.
 
     A body line ends at a line feed as a byte, as the two-character escape or
     as the six-character numeric escape in either letter case, and at the
@@ -17004,9 +17049,10 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
     amendment the carriage return and its second the numeric escapes: a key
     carried as a JSON string value supplies no newline byte, and past the
     lookahead it supplies no footer either, so before those three the block
-    rule published it. A body with no line delimiter in any of these forms is
-    the residue the second 2026-09-10 amendment states; it refuses on its
-    footer alone.
+    rule published it. A body with no line delimiter in any of these forms
+    refuses on its footer alone, which since S2-R7-01 the footer reach
+    actually covers up to `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY` bits. The
+    residue that remains is a key larger than that.
 
     The body positions are found once for the whole buffer and then walked with
     one forward index per pattern, because `finditer` yields matches in
@@ -17025,13 +17071,14 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
         index = 0
         for match in pattern.finditer(data):
             start = match.end()
-            limit = start + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+            body_limit = start + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+            footer_limit = start + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
             footer = b"-----END " + match.group(0)[len(b"-----BEGIN ") :]
-            if data.find(footer, start, limit) != -1:
+            if data.find(footer, start, footer_limit) != -1:
                 return True
             while index < len(bodies) and bodies[index] < start:
                 index += 1
-            if index < len(bodies) and bodies[index] < limit:
+            if index < len(bodies) and bodies[index] < body_limit:
                 return True
     return False
 

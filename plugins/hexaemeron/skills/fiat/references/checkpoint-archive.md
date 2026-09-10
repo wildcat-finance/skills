@@ -193,27 +193,31 @@ Export scans every outer member and, inside the capsule, `state.json`,
 with `secret-shaped-member`; nothing is redacted in place.
 
 The two armour forms refuse as blocks. A header is secret-shaped only when key
-material follows it within the scanned window: one whole line of base64 body,
-or the `-----END` marker matching that header. A line ends at a newline
-character or at the two-character escape `\n` that carries one inside a JSON
-string value, so a key held as a JSON string value in `state.json` or on one
-`ledger.jsonl` line carries body lines like any other. The delimiter set is the
-line feed as a byte, as the two-character escape, or as the six-character
-numeric escape, each optionally preceded by a carriage return in the matching
-form. The numeric escapes are `\u000a` for the line feed and `\u000d` before it
-for the carriage return, in either letter case, so a CRLF key refuses raw,
-escaped and numerically escaped alike. What the set does not reach is a body
-carrying no line delimiter in any form the witness can see, such as a key whose
-line breaks were stripped rather than encoded, whose footer also falls past the
-lookahead: that one does not refuse, and the study states it as residue rather
-than implying the class is shut. A file naming a header in prose or quoting one
-in a code span supplies neither, so a run can archive its own specification
-text. A key whose footer was truncated still carries body lines and still
-refuses. The four token patterns are self-delimiting and refuse on the match
-alone. The scan reads in bounded chunks and carries between them the longest
-header the six can match plus that lookahead, so a block lying across a chunk
-boundary still refuses; the carry is derived from the patterns rather than
-fixed.
+material follows it within the scanned window: one whole line of base64 body, or
+the `-----END` marker matching that header. The two witnesses have their own
+reaches: the body has to start within the block lookahead of 1,792 bytes, which
+the armour allowance bounds, and the footer has until the footer reach of 9,984
+bytes, the block lookahead plus the largest key the scan undertakes to reach,
+declared at 8,192 bits. A line ends at a newline character or at the
+two-character escape `\n` that carries one inside a JSON string value, so a key
+held as a JSON string value in `state.json` or on one `ledger.jsonl` line
+carries body lines like any other. The delimiter set is the line feed as a byte,
+as the two-character escape, or as the six-character numeric escape, each
+optionally preceded by a carriage return in the matching form. The numeric
+escapes are `\u000a` for the line feed and `\u000d` before it for the carriage
+return, in either letter case, so a CRLF key refuses raw, escaped and
+numerically escaped alike. A body carrying no line delimiter in any form the
+witness can see, such as a key whose line breaks were stripped rather than
+encoded, refuses on its footer at every size below the declared one. What the
+scan does not reach is a key whose modulus exceeds that declared size, and the
+study states it as residue rather than implying the class is shut. A file naming
+a header in prose or quoting one in a code span supplies neither, so a run can
+archive its own specification text. A key whose footer was truncated still
+carries body lines and still refuses. The four token patterns are
+self-delimiting and refuse on the match alone. The scan reads in bounded chunks
+and carries between them the longest header the six can match plus the footer
+reach, so a block lying across a chunk boundary still refuses; the carry is
+derived from the patterns rather than fixed.
 
 - A PEM private-key block, whose armour label also matches the OpenSSH header.
 - The OpenPGP private-key block, opened by `-----BEGIN PGP PRIVATE KEY BLOCK-----`.
