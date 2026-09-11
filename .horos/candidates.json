@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 18400363,
+    "bytes_blob": 18420871,
     "bytes_generated": 98
   },
   "entries": [
@@ -147,7 +147,7 @@
       "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
     },
     {
-      "bytes": 28670,
+      "bytes": 48783,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -462,9 +462,9 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 66230,
+      "bytes": 66625,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 33115",
+      "evidence": "mean line length above 400 in a window at offset 33312",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

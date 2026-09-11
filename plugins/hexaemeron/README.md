@@ -18,8 +18,13 @@ Let there be light.
 
 Use Hexaemeron when you want one repository issue carried through the complete
 controlled delivery, not merely edited. Its Fiat controller orders study,
-runbook, implementation, audit, prose, push, and integration, and records each
-accepted transition in durable state.
+runbook, inoculation, implementation, audit, prose, push, and integration, and
+records each accepted transition in durable state.
+
+Inoculation is the boundary before any product edit. A step that a source-bound
+known failure is assigned to must retain that failure's guard evidence on the
+exact unfixed parent first, and a step with no assigned failure must record an
+explicit claim saying so. An empty list closes neither.
 
 Fiat is explicit-only. It does not start because a task sounds like delivery.
 Its checkpoints survive local context loss at completed boundaries; they are
@@ -45,10 +50,10 @@ report, and verify the path from the original inputs. It cannot select work,
 steer a worker, file an issue, or dispatch Fiat.
 
 One explicit Fiat request takes a topic through a study and runbook, then
-implements, audits, documents, pushes, and integrates each runbook step. The
-steps stack and the complete stack lands on the base in one merge. Every phase
-leaves a receipt in a hash-chained ledger inside a dedicated worktree, so the
-same local run can be verified and resumed after context loss.
+inoculates, implements, audits, documents, pushes, and integrates each runbook
+step. The steps stack and the complete stack lands on the base in one merge.
+Every phase leaves a receipt in a hash-chained ledger inside a dedicated
+worktree, so the same local run can be verified and resumed after context loss.
 
 Named for the six days of ordered creation from a void to finished work,
 then rest. The entry skill is `fiat`, so the invocation is
@@ -79,6 +84,7 @@ exactly one merge per run.
 - the [`imprimatur`](./skills/imprimatur) three-tier prose lint and the [`vulgate`](./skills/vulgate) voice mask, invokable on their own;
 - [`kronos`](./skills/kronos), which ranks eligible held frontier jobs and loops complete Fiat runs until none remain;
 - six phase disciplines; all six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer and whether the evidence due for their chosen design is present, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
+- the inoculation contract that puts a source-bound guard before any product edit, with a disposable end-to-end demonstration of it ([`proof.py`](./docs/known-failure-inoculation/proof.py) and its checked [`proof.md`](./docs/known-failure-inoculation/proof.md)); that demonstration is the only evidence that the checked-in controller enforces the contract, because the delivery which built it ran on an older controller through a manual bootstrap procedure;
 - the Pashov Audit Group suite vendored verbatim (MIT; `LICENSE` and `NOTICE.md` in each skill directory);
 - Codex metadata for explicit or automatic invocation; and
 - the controller, contract, practice-check and lint test suite, plus a fuzz-audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) covering the controller's own surfaces.
