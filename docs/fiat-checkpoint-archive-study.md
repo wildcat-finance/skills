@@ -1115,3 +1115,36 @@ now all refuse, where the last two published before.
 **Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-12
+
+**What changed.** The design record this study names in its opening is the
+rebuilt record whose SHA-256 is
+`7950d6067cf3080ff897ce8f7992dfd2ac825a2e3a577285748be21a9ac3aa30`, not the
+`101172ad264e56b0910cc64e8f11662da8b7f874ca030c3da76ba7cfacf6db91` written
+there before. The selected candidate is still `native-subcommands` and the
+runbook's `design-lock` fence names the rebuilt record. No candidate,
+criterion, concern, owner, unit, comparator, threshold, stop point or measured
+reading changes, and no refusal class, ceiling, schema field, entry path,
+budget or fixture id changes.
+**Why.** The session worktree holding this run was recycled and took the
+controller state with it. The study and the runbook returned byte for byte
+from the step branches, because an amendment writes its text into the file
+that the steps then track. `.hexaemeron/design-evidence.json` is not tracked,
+so it went with the worktree along with the 24 reports under
+`.hexaemeron/reports/` that it digests. Section 4 records the record in full:
+four candidates, six selection criteria with all 24 measured cells, and six
+conformance criteria with their stop points. The record was rebuilt from that
+receipted table and its reports are restored transcriptions of those recorded
+measurements rather than fresh runs, because candidates B, C and D were never
+implemented and cannot be measured again. The rebuild passes
+`design_evidence.py` as a draft and at the `design-lock` transition, and
+selects `native-subcommands` under `unique-frontier` on the same dominance the
+table states. Round 1 of the reconstructed ledger raised the stale sentence as
+S1-R1b-01, which this amendment answers.
+**Steps touched.** Steps 3, 4 and 5 read their pending conformance cells from
+the rebuilt record, and step 1 ships it by digest in the tracked runbook. No
+step's Entry, Exit, Files, Tests or Disciplines field changes.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
