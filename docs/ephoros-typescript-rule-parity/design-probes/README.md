@@ -1,6 +1,6 @@
 # Design probes: an archived record of method, not runnable tooling
 
-These eight modules are the ones that produced the fifteen reports under
+These eight modules are the ones that produced the sixteen reports under
 `../reports/`. They are kept byte-for-byte as they ran, so each report's
 `command` field remains a true statement about the code that produced its
 value. They are a record, not a tool, and they do not run from this directory.
@@ -33,9 +33,13 @@ reproduce, because of the inputs below.
 
 So the reports are reproducible from the study's description of the method, not
 by running these files. The three `clone-verdict-e001` cells in
-`../design-evidence.json` stay `pending` for the same reason, and name
-`python3 .hexaemeron/design-probes/clone_verdict.py` as the resolver that will
-settle them once the recognisers exist.
+`../design-evidence.json` read `pending` and name
+`python3 .hexaemeron/design-probes/clone_verdict.py` as their resolver. The
+selected candidate's cell is settled by the sixteenth report,
+`../reports/span-index-clone-verdict-e001.json`, which that resolver wrote once
+the recognisers existed and which records a count of 14; the record passes
+its `integration` transition against it. The two rejected candidates' cells
+stay pending, because only the selected candidate's cell is due.
 
 ## What is checked mechanically
 

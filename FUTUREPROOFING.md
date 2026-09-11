@@ -403,8 +403,9 @@ specimen that proves its value.
 questions first, then checks bounded patterns for logs, metrics, durations,
 runbook annotations, and address-key exposure across the surfaces it supports.
 
-**Missing.** Rules E001 to E003 do not inspect TypeScript. E004 is deliberately
-limited to block-style YAML.
+**Missing.** E004 is deliberately limited to block-style YAML, and the
+TypeScript rules are lexical: a comment before a string key hides it from E002
+and E005, and E001's concatenation half reads proximity rather than operands.
 
 **With enough contribution.** Ephoros could specify and test end-to-end
 observability contracts across Python, TypeScript, Solidity events, workers,
@@ -621,7 +622,6 @@ what a user can establish. Examples from the current gaps include:
 - a second real host adapter for Janus;
 - a complete first Homologia operation with a deliberately divergent specimen;
 - structured Echidna or Medusa search records for Pandects;
-- TypeScript parity for Ephoros rules E001 to E003;
 - ABI return-type and mutability validation in Lemma;
 - a canonical Compound v3 capture-to-release path across Alexandria and
   Tabularium;
