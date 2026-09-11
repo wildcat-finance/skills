@@ -259,8 +259,11 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_allows_a_storage_key_built_from_an_address(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "storage-key.ts"))
 
-    def test_it_allows_a_logger_message_interpolating_an_address(self):
-        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts"))
+    def test_a_message_interpolating_an_address_is_e001_and_not_an_e005_key(self):
+        # The address rides in the message rather than in a key, so E005 still
+        # stays quiet; E001 claims the message itself.
+        findings = ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts")
+        self.assertEqual(["E001"], [finding.code for finding in findings])
 
     def test_it_ignores_console_output_which_is_not_telemetry(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "console-output.ts"))
@@ -309,6 +312,99 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
         self.assertEqual(["E005"], ts_codes(
             "/* // ephoros: allow smuggled reason */\n"
             "eventLog[walletAddress] = event\n"))
+
+
+class TypeScriptInterpolatedMessageTests(unittest.TestCase):
+    """E001 on the TypeScript surface: a message built by formatting.
+
+    A template literal carrying no `${}` is a constant string here, which is
+    where this surface diverges from Python's placeholder-free f-string.
+    """
+
+    def test_it_flags_an_interpolated_message_at_the_call_line(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "interpolated-message.ts")
+        self.assertEqual(["E001"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
+
+    def test_a_constant_template_message_beside_fields_stays_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "constant-message.ts"))
+
+    def test_an_interpolated_message_in_a_comment_or_a_string_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            "/* logger.debug(`Got lenders ${lenders}`) */\n"))
+        self.assertEqual([], ts_codes(
+            'const note = "logger.debug(`Got lenders ${lenders}`)"\n'))
+
+    def test_console_output_with_an_interpolated_message_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            "console.log(`Got lenders ${lenders}`)\n"))
+
+    def test_a_reasoned_slash_pragma_on_the_line_suppresses_e001(self):
+        self.assertEqual([], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)"
+            "  // ephoros: allow one operator-only trace line\n"))
+
+    def test_a_reasoned_slash_pragma_on_the_line_above_suppresses_e001(self):
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one operator-only trace line\n"
+            "logger.debug(`Got lenders ${lenders}`)\n"))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e001(self):
+        self.assertEqual(["E001"], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)  // ephoros: allow\n"))
+
+    def test_a_concatenation_with_a_string_literal_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes(
+            'logger.info("got lender " + lender)\n'))
+
+    def test_an_addition_with_no_string_literal_stays_clean(self):
+        self.assertEqual([], ts_codes("logger.info(a + b)\n"))
+
+    def test_a_single_quoted_literal_concatenation_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes(
+            "logger.info('got lender ' + lender)\n"))
+
+    def test_a_plus_inside_a_string_is_not_a_concatenation(self):
+        # The `+` is read from the mask, so a constant message naming one
+        # stays a constant message.
+        self.assertEqual([], ts_codes('logger.info("a + b")\n'))
+
+    def test_only_the_first_argument_decides(self):
+        self.assertEqual([], ts_codes(
+            'logger.info("cycle done", `took ${ms}ms`)\n'))
+
+    def test_a_non_log_method_on_a_logger_does_not_fire(self):
+        # `logger.debug(...)` is a log write; `logger.child(...)` is not.
+        self.assertEqual([], ts_codes("logger.child(`ctx ${id}`)\n"))
+
+    def test_whitespace_before_the_template_literal_does_not_hide_it(self):
+        self.assertEqual(["E001"], ts_codes("logger.debug( `Got ${x}` )\n"))
+
+    def test_a_string_literal_on_the_right_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes('logger.info(lender + " got")\n'))
+
+    def test_a_constant_template_plus_a_variable_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes("logger.info(`got ` + lender)\n"))
+
+    def test_a_concatenation_after_the_call_does_not_reach_it(self):
+        # Both offset tables are file-wide and bisected, so the argument's
+        # end has to bound them or a later `"a" + b` fires here.
+        self.assertEqual([], ts_codes('logger.info(x)\nconst y = "a" + b\n'))
+
+    def test_a_multi_line_call_reports_the_opening_line(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.ts"
+            path.write_text("logger.debug(\n  `Got ${x}`,\n  { y }\n)\n",
+                            encoding="utf-8")
+            findings = ephoros.check(path)
+        self.assertEqual([("E001", 1)],
+                         [(finding.code, finding.line) for finding in findings])
+
+    def test_an_unterminatable_file_reports_e000_alone_and_no_e001(self):
+        self.assertEqual(["E000"], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)\n"
+            "const s = `never terminated\n"))
 
 
 class TypeScriptBoundaries(unittest.TestCase):

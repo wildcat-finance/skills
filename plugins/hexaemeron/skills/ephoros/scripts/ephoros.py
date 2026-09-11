@@ -649,6 +649,8 @@ class _TsSpanIndex:
         self._index_rows: list[Finding] = []
         self._word_starts: list[int] | None = None
         self._interp_starts: list[int] | None = None
+        self._plus_offsets: list[int] | None = None
+        self._quote_offsets: list[int] | None = None
 
     def _build(self) -> None:
         """One pass over the punctuation, then one pass over the sinks."""
@@ -846,6 +848,43 @@ class _TsSpanIndex:
             return self.text[bounds[0]:bounds[1]]
         return ""
 
+    def formatted_message(self, start: int, end: int) -> bool:
+        """Is this argument a message built by formatting?
+
+        An interpolated template literal, or a concatenation involving a
+        string literal. Both answers come from tables built once per file
+        and read by bisection, so an argument span costs its own bounds
+        rather than its own width: the enclosing spans of a nested log
+        call each pay a lookup, not a rescan.
+        """
+        self._build()
+        text = self.text
+        first, last = start, end
+        while first < last and text[first].isspace():
+            first += 1
+        while last > first and text[last - 1].isspace():
+            last -= 1
+        if first >= last:
+            return False
+        if text[first] == "`" and self._interpolated(first, last):
+            return True
+        return self._has("_plus_offsets", self.mask, "+", first, last) \
+            and self._has("_quote_offsets", text, "'\"`", first, last)
+
+    def _has(self, cache_name: str, subject: str, wanted: str,
+             start: int, end: int) -> bool:
+        """Does `subject` carry one of `wanted` inside [start, end)?
+
+        The offsets are found once for the whole file and then bisected.
+        """
+        offsets = getattr(self, cache_name)
+        if offsets is None:
+            offsets = [index for index, character in enumerate(subject)
+                       if character in wanted]
+            setattr(self, cache_name, offsets)
+        found = bisect_left(offsets, start)
+        return found < len(offsets) and offsets[found] < end
+
     def _string_bounds(self, start: int, end: int) -> tuple[int, int] | None:
         """Value bounds of a constant string literal, without slicing.
 
@@ -972,6 +1011,15 @@ def check_typescript(path: Path, text: str) -> list[Finding]:
             findings.extend(span_index.labels_call(opening, closing))
         if log_call:
             findings.extend(span_index.index_findings(opening + 1, closing))
+            # E001 wants the method too: `logger.debug(...)` is a log write,
+            # `logger.child(...)` is not. The first argument comes from the
+            # span index's comma table rather than a forward scan of the span.
+            if segments[-1] in LOG_METHODS and span_index.formatted_message(
+                    *span_index.ranges(opening, closing)[0]):
+                findings.append(Finding(
+                    path, _line_of(newlines, opening), "E001",
+                    "log message built by formatting; "
+                    "use a stable name and fields"))
     return [finding for finding in findings
             if finding.line not in allowed and finding.line - 1 not in allowed]
 
