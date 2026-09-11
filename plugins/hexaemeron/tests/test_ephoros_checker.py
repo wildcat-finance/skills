@@ -171,6 +171,13 @@ def ts_codes(source, name="sample.ts"):
         return sorted(f.code for f in ephoros.check(path))
 
 
+def ts_lines(source, name="sample.ts"):
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / name
+        path.write_text(source, encoding="utf-8")
+        return sorted((f.code, f.line) for f in ephoros.check(path))
+
+
 class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_flags_an_address_key_on_a_metric_label_set(self):
         findings = ephoros.check(TELEMETRY_FIXTURES / "metric-label-set.ts")
@@ -405,6 +412,112 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
         self.assertEqual(["E000"], ts_codes(
             "logger.debug(`Got lenders ${lenders}`)\n"
             "const s = `never terminated\n"))
+
+
+class TypeScriptUnboundedLabelTests(unittest.TestCase):
+    """E002 on the TypeScript surface: an unbounded key in a label container.
+
+    The address-shaped subset stays E005's, so the split the Python surface
+    already draws is inherited here rather than reopened.
+    """
+
+    def test_it_flags_a_request_id_key_in_a_labels_object(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "unbounded-label.ts")
+        self.assertEqual(["E002"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
+        self.assertIn("metric label `requestId` is unbounded",
+                      findings[0].message)
+
+    def test_bounded_keys_in_the_same_container_stay_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "bounded-label.ts"))
+
+    def test_an_address_key_in_that_container_is_e005_and_not_e002(self):
+        self.assertEqual(["E005"], ts_codes(
+            'metrics.increment("m", { labels: { walletAddress: depositor } })\n'))
+        # The word set names each plural as a whole word, so the Python `s?`
+        # gap does not exist here: `addresses` is E005's and `hashes` is
+        # E002's, where the Python rule passes both silently.
+        self.assertEqual(["E005"], ts_codes(
+            'metrics.increment("m", { tags: ["addresses"] })\n'))
+        self.assertEqual(["E002"], ts_codes(
+            'metrics.increment("m", { tags: ["hashes"] })\n'))
+
+    def test_the_same_key_outside_lexed_code_reports_no_e002(self):
+        # The key is read from the mask, so a comment and a string carry
+        # nothing; and a file the lexer refuses, or one over the 1 MiB cap,
+        # reports E000 alone with no E002 beside it.
+        self.assertEqual([], ts_codes(
+            '/* metrics.increment("m", { labels: { requestId: rid } }) */\n'))
+        self.assertEqual([], ts_codes(
+            "const note = 'metrics.increment(\"m\", "
+            "{ labels: { requestId: rid } })'\n"))
+        self.assertEqual(["E000"], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })\n'
+            "const s = `never terminated\n"))
+        self.assertEqual(["E000"], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })\n'
+            + "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES))
+
+    def test_the_labels_call_form_is_found_as_well_as_the_property_form(self):
+        self.assertEqual(["E002"], ts_codes(
+            "deposits.labels({ requestId: rid }).inc()\n"))
+        self.assertEqual(["E002"], ts_codes(
+            'const c = new client.Counter({ name: "c", '
+            'labelNames: ["tx_hash", "chain"] })\n'))
+        self.assertEqual(["E002"], ts_codes(
+            'analytics.track("deposit", { attributes: { "run_id": runId } })\n'))
+
+    def test_a_reasoned_slash_pragma_on_the_line_or_above_suppresses_e002(self):
+        self.assertEqual([], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })'
+            "  // ephoros: allow one operator-only counter\n"))
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one operator-only counter\n"
+            'metrics.increment("m", { labels: { requestId: rid } })\n'))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e002(self):
+        self.assertEqual(["E002"], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })'
+            "  // ephoros: allow\n"))
+
+    def test_a_key_carrying_both_vocabularies_is_e005_alone(self):
+        # `userAddress`, `walletId`, `wallet_id` and `address_hash` each hold
+        # one address word and one unbounded word. The address words are
+        # consulted first on the identifier path and the string path alike,
+        # so one key carries one code; a key from one vocabulary only, such
+        # as `walletAddress`, cannot tell the two orders apart.
+        self.assertEqual(["E005"], ts_codes(
+            'metrics.increment("m", { labels: { userAddress: a } })\n'))
+        self.assertEqual(["E005"], ts_codes(
+            "deposits.labels({ walletId: w }).inc()\n"))
+        self.assertEqual(["E005", "E005"], ts_codes(
+            'metrics.increment("m", { tags: ["wallet_id", "address_hash"] })\n'))
+
+    def test_a_key_on_its_own_line_reports_that_line_and_takes_its_pragma(self):
+        # A key in a multi-line container is reported where it is written,
+        # not at the comma or brace before it, so the documented pragma
+        # placement beside the key holds; E005 shares the path and moves too.
+        source = ('metrics.increment("m", { labels: {\n'
+                  "  route: r,\n"
+                  "  walletAddress: w,\n"
+                  "  requestId: rid } })\n")
+        self.assertEqual([("E002", 4), ("E005", 3)], ts_lines(source))
+        self.assertEqual([("E005", 3)], ts_lines(source.replace(
+            "requestId: rid }",
+            "requestId: rid,  // ephoros: allow one operator-only counter\n}")))
+        self.assertEqual([("E002", 3)], ts_lines(
+            'const c = new client.Counter({ name: "c", labelNames: [\n'
+            '  "chain",\n'
+            '  "requestId"\n'
+            "] })\n"))
+        # A comment on its own line between the separator and the key is
+        # blank in the mask, so it does not take the finding from the key.
+        self.assertEqual([("E002", 4)], ts_lines(
+            'metrics.increment("m", { labels: {\n'
+            "  route: r,\n"
+            "  // one label per request\n"
+            "  requestId: rid } })\n"))
 
 
 class TypeScriptBoundaries(unittest.TestCase):

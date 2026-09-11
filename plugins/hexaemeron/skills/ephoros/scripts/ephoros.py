@@ -86,6 +86,19 @@ TS_LABEL_PROPERTY = re.compile(
 TS_INDEX_PROPERTY = re.compile(r"(?<![\w$])index\s*:")
 TS_ADDRESS_WORDS = frozenset({"address", "addresses", "addr", "addrs",
                               "wallet", "wallets"})
+# The E002 vocabulary on this surface: the Python UNBOUNDED fragments, read
+# as whole words after the same camel-case and underscore split E005 uses, so
+# `requestId` and `request_id` name the same key. Each plural is listed as a
+# word of its own rather than reached through an `s?` suffix, which is why
+# `hashes` fires here where the Python rule passes it. The address-shaped
+# words stay out: E005 claims those first, so one key reports one code.
+TS_UNBOUNDED_WORDS = frozenset({
+    "hash", "hashes", "tx", "txs", "txid", "txids", "txhash", "txhashes",
+    "nonce", "nonces", "url", "urls", "uri", "uris", "path", "paths",
+    "email", "emails", "user", "users", "userid", "userids",
+    "account", "accounts", "requestid", "requestids", "runid", "runids",
+    "traceid", "traceids", "session", "sessions", "error", "errors",
+    "message", "messages", "id", "ids"})
 TS_METRIC_WORDS = frozenset({"metric", "metrics", "counter", "counters",
                              "gauge", "gauges", "histogram", "histograms",
                              "analytics", "telemetry", "statsd"})
@@ -616,6 +629,21 @@ def _ts_keyed_by_address(path: Path, newlines: list[int], offset: int,
                    "put it in an event")
 
 
+def _ts_unbounded_label(path: Path, newlines: list[int], offset: int,
+                        key: str) -> Finding:
+    return Finding(path, _line_of(newlines, offset), "E002",
+                   f"metric label `{key}` is unbounded; put it in an event")
+
+
+def _ts_label_code(words: set[str]) -> str:
+    """One concern, one code: the address subset is E005's before E002's."""
+    if words & TS_ADDRESS_WORDS:
+        return "E005"
+    if words & TS_UNBOUNDED_WORDS:
+        return "E002"
+    return ""
+
+
 class _TsSpanIndex:
     """Per-file tables that keep sink-named overlapping spans near-linear.
 
@@ -648,6 +676,7 @@ class _TsSpanIndex:
         self._index_starts: list[int] = []
         self._index_rows: list[Finding] = []
         self._word_starts: list[int] | None = None
+        self._unbounded_starts: list[int] | None = None
         self._interp_starts: list[int] | None = None
         self._plus_offsets: list[int] | None = None
         self._quote_offsets: list[int] | None = None
@@ -748,30 +777,42 @@ class _TsSpanIndex:
         return end
 
     def _object_keys(self, opening: int,
-                     closing: int) -> list[tuple[int, str]]:
-        """(offset, key) for each address-shaped key of one object literal."""
+                     closing: int) -> list[tuple[int, str, str]]:
+        """(offset, code, key) for each reportable key of one object literal."""
         keys = []
         for start, end in self.ranges(opening, closing):
             key_end = self._first_colon(opening, start, end)
-            key = self.address_expression(start, key_end)
-            if key:
-                keys.append((start, key))
+            offset, code, key = self.label_key(start, key_end)
+            if code:
+                keys.append((offset, code, key))
         return keys
 
+    def _label_finding(self, offset: int, code: str, key: str) -> Finding:
+        if code == "E005":
+            return _ts_keyed_by_address(
+                self.path, self.newlines, offset, "metric label", key)
+        return _ts_unbounded_label(self.path, self.newlines, offset, key)
+
     def _label_container(self, opening: int, closing: int) -> list[Finding]:
-        """E005 findings for address keys inside one label set container."""
+        """E005 and E002 findings for the keys of one label set container.
+
+        An object literal's keys and an array literal's string elements are
+        the label names; an address-shaped one is E005's, any other
+        unbounded one is E002's, exactly as the Python visitor splits them.
+        """
         findings = []
         if self.mask[opening] == "{":
-            for offset, key in self._object_keys(opening, closing):
-                findings.append(_ts_keyed_by_address(
-                    self.path, self.newlines, offset, "metric label", key))
+            for offset, code, key in self._object_keys(opening, closing):
+                findings.append(self._label_finding(offset, code, key))
         else:
             for start, end in self.ranges(opening, closing):
                 bounds = self._string_bounds(start, end)
-                if bounds is not None and self._address_value(*bounds):
-                    findings.append(_ts_keyed_by_address(
-                        self.path, self.newlines, start, "metric label",
-                        self.text[bounds[0]:bounds[1]]))
+                if bounds is None:
+                    continue
+                code = self._string_label_code(*bounds)
+                if code:
+                    findings.append(self._label_finding(
+                        bounds[0] - 1, code, self.text[bounds[0]:bounds[1]]))
         return findings
 
     def label_findings(self, start: int, end: int) -> list[Finding]:
@@ -807,27 +848,29 @@ class _TsSpanIndex:
             if first < arg_end and mask[first] == "{":
                 inner = self.matches.get(first)
                 if inner is not None:
-                    for offset, key in self._object_keys(first, inner):
-                        findings.append(_ts_keyed_by_address(
-                            self.path, self.newlines, offset,
-                            "metric label", key))
+                    for offset, code, key in self._object_keys(first, inner):
+                        findings.append(self._label_finding(offset, code, key))
             else:
                 bounds = self._string_bounds(arg_start, arg_end)
                 if bounds is not None and bounds[1] - bounds[0] == 42 \
                         and HEX_ADDRESS.fullmatch(
                             self.text, bounds[0], bounds[1]):
                     findings.append(_ts_keyed_by_address(
-                        self.path, self.newlines, arg_start, "metric label",
-                        self.text[bounds[0]:bounds[1]]))
+                        self.path, self.newlines, bounds[0] - 1,
+                        "metric label", self.text[bounds[0]:bounds[1]]))
         return findings
 
-    def address_expression(self, start: int, end: int) -> str:
-        """The address-shaped name or literal in a key position, or "".
+    def _key_chain(self, start: int, end: int) -> tuple[int, str] | None:
+        """The dotted chain in a key position as (offset, last identifier).
 
         Reads a bounded window instead of slicing the span: the dotted
         chain is parsed forward from the key's own start and stops at the
         first character outside the chain grammar, so fully overlapping
-        spans no longer pay their whole width for every key.
+        spans no longer pay their whole width for every key. The offset is
+        the chain's first character in the mask, past the separator's
+        whitespace and past any comment, which the mask blanks; a finding
+        reported there lands on the key's own line, so a pragma beside the
+        key excuses it and a multi-line container reads as written.
         """
         mask = self.mask
         first, last = start, end
@@ -840,13 +883,44 @@ class _TsSpanIndex:
             separator = TS_SEP.match(mask, ident.end(), last)
             ident = TS_IDENT.match(mask, separator.end(), last) \
                 if separator is not None else None
-        if ident is not None:
-            name = ident.group()
+        return (first, ident.group()) if ident is not None else None
+
+    def _key_name(self, start: int, end: int) -> str | None:
+        """The last identifier of the dotted chain in a key position, or None."""
+        chain = self._key_chain(start, end)
+        return chain[1] if chain is not None else None
+
+    def address_expression(self, start: int, end: int) -> str:
+        """The address-shaped name or literal in a key position, or ""."""
+        name = self._key_name(start, end)
+        if name is not None:
             return name if _ts_address_name(name) else ""
         bounds = self._string_bounds(start, end)
         if bounds is not None and self._address_value(*bounds):
             return self.text[bounds[0]:bounds[1]]
         return ""
+
+    def label_key(self, start: int, end: int) -> tuple[int, str, str]:
+        """(offset, code, key) for a label name in a key position.
+
+        The same bounded read as `address_expression`, with the E002
+        vocabulary consulted only once the address words have not claimed
+        the key, so the split E005 already draws is inherited rather than
+        reopened. The offset is the key's own first character, the chain
+        start or the opening quote, rather than the item's separator, so
+        the finding is reported on the key's line. An unrecognised key is
+        (start, "", "").
+        """
+        chain = self._key_chain(start, end)
+        if chain is not None:
+            offset, name = chain
+            return offset, _ts_label_code(_ts_words(name)), name
+        bounds = self._string_bounds(start, end)
+        if bounds is None:
+            return start, "", ""
+        code = self._string_label_code(*bounds)
+        return (bounds[0] - 1, code,
+                self.text[bounds[0]:bounds[1]] if code else "")
 
     def formatted_message(self, start: int, end: int) -> bool:
         """Is this argument a message built by formatting?
@@ -926,11 +1000,29 @@ class _TsSpanIndex:
         """
         if end - start == 42 and HEX_ADDRESS.fullmatch(self.text, start, end):
             return True
-        if self._word_starts is None:
-            self._word_starts = [
-                match.start() for match in TS_WORD.finditer(self.text)
-                if match.group().lower() in TS_ADDRESS_WORDS]
-        starts = self._word_starts
+        return self._word_between("_word_starts", TS_ADDRESS_WORDS, start, end)
+
+    def _string_label_code(self, start: int, end: int) -> str:
+        """E005, E002 or "" for one string-literal label name, address first."""
+        if self._address_value(start, end):
+            return "E005"
+        if self._word_between("_unbounded_starts", TS_UNBOUNDED_WORDS,
+                              start, end):
+            return "E002"
+        return ""
+
+    def _word_between(self, cache_name: str, words: frozenset[str],
+                      start: int, end: int) -> bool:
+        """Does one of `words` start inside [start, end)?
+
+        Each vocabulary's word starts are found once for the whole file and
+        then bisected, the same table shape `_has` uses for E001.
+        """
+        starts = getattr(self, cache_name)
+        if starts is None:
+            starts = [match.start() for match in TS_WORD.finditer(self.text)
+                      if match.group().lower() in words]
+            setattr(self, cache_name, starts)
         found = bisect_left(starts, start)
         return found < len(starts) and starts[found] < end
 

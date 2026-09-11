@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20871715,
+    "bytes_blob": 20909919,
     "bytes_generated": 98
   },
   "entries": [
@@ -82,6 +82,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 38204,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1420-ephoros-next-extend-e001-to-e003-to-the-typ.synopsis.md"
     },
     {
       "bytes": 173841,
