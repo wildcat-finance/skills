@@ -46,6 +46,16 @@ CASES = {
         "InoculationLifecycleTests."
         "test_kf_453_05_undeclared_product_path_refuses"
     ),
+    "kf-453-06": (
+        "plugins.hexaemeron.tests.test_recovery_and_final_green."
+        "RecoveryTests."
+        "test_kf_453_06_resume_preserves_remaining_and_no_findings"
+    ),
+    "kf-453-07": (
+        "plugins.hexaemeron.tests.test_recovery_and_final_green."
+        "FinalGreenTests."
+        "test_kf_453_07_red_guard_cannot_finish_without_fixed_tree_green"
+    ),
     "s3-r2-01": (
         "plugins.hexaemeron.tests.test_hexctl_frontier_receipt."
         "FixtureEnvironmentSourceContractTests."
@@ -67,6 +77,9 @@ REQUIRED_SURFACE = (
     Path("plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json"),
     Path("plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json"),
+    Path("plugins/hexaemeron/tests/test_recovery_and_final_green.py"),
+    Path("plugins/hexaemeron/tests/fixtures/issue-453/recovery.json"),
+    Path("plugins/hexaemeron/tests/fixtures/issue-453/final-green.json"),
 )
 
 

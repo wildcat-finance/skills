@@ -3828,3 +3828,185 @@ publication suite.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** Complete replacement Files: Change `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md`,
+`plugins/hexaemeron/skills/fiat/references/audit-loop.md`,
+`plugins/hexaemeron/skills/fiat/EVOLUTION.md`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_hexctl_checkpoint.py`,
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_identity.py`, and
+`tests/promise_machine_coverage.json`. Create
+`plugins/hexaemeron/tests/test_recovery_and_final_green.py`,
+`plugins/hexaemeron/tests/fixtures/issue-453/recovery.json`, and
+`plugins/hexaemeron/tests/fixtures/issue-453/final-green.json`. The guard-only
+commit created that module at
+`plugins/hexaemeron/tests/test_issue_453_recovery.py`; rename it to
+`plugins/hexaemeron/tests/test_recovery_and_final_green.py` after preserving the
+signed guard proof at its historical path, because
+`tests/test_repository_naming.py` refuses a tracked test module named for the
+issue that introduced it. Change
+`plugins/hexaemeron/tests/emit_issue_453_guard_report.py` so its case map and
+required surface name the maintained module. The receipted study's fenced
+inventory keeps the historical guard path for `kf-453-06` and `kf-453-07`, as it
+already does for every earlier renamed module, so
+`plugins/hexaemeron/tests/fixtures/issue-453/inventory.json` does not change.
+Also change `plugins/hexaemeron/tests/test_known_failure_inventory.py` so its
+pinned Exit generation count and per-generation distribution match this
+amendment. Refresh the ignored local portable verification payload without
+staging it and regenerate the `.horos/` records only when their checker
+requires it. Warden alone changes the configured audit record and synopsis.
+
+Complete replacement Exit: State, ledger, checkpoints, `status`, `next`, `verify`, restore, and
+post-compaction delegation preserve the inventory/study digest, step parent,
+assigned, completed, and remaining ids, report/manifest digests, and explicit
+no-findings claim. Reconstruction rejects missing, reordered, stale, or
+foreign evidence. `done implement` requires one final-green manifest for every
+assigned id, produced by the same command identity on the final commit, with a
+positive complete run, no skip, infrastructure error, or assertion failure;
+it also binds successful root and Hexaemeron suite evidence. A red guard commit
+cannot reach audit, prose, push, checkpoint completion, or handoff. Legacy
+states remain readable without invented evidence. The audit-loop reference
+states that the first Warden audit begins only after a complete inoculation
+receipt and final-green implementation evidence. Fiat receives one provisional
+candidate generation row, retaining its prior frontier fields; exact label
+resolution belongs to the post-stack gate. The accepted seven-entry inventory
+is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact final Step 4 commit, for the reason the earlier Step 1 generation
+records: two inherited corpus tests in `tests/test_agent_instruction_corpus.py`
+read a root `.hexaemeron/design-evidence.json`, so the live controller worktree
+is not a clean root-suite input. The Hypomnema gate runs before the ignored
+portable payload at `.agents/skills/promise-machine/runtime/` is generated,
+because that generated copy carries relative links Hypomnema resolves against
+the repository and it is not repository prose. Prove the green exit with:
+
+```bash
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 -m unittest plugins.hexaemeron.tests.test_recovery_and_final_green plugins.hexaemeron.tests.test_fiat_skill -v
+python3 -m unittest plugins.hexaemeron.tests.test_hexctl_checkpoint plugins.hexaemeron.tests.test_hexctl_checkpoint_identity -v
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/fiat/EVOLUTION.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/fiat/EVOLUTION.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+**Why.** The guard-only commit had to create the module at the path the baseline
+Files field named, and that path is one `tests/test_repository_naming.py`
+refuses. Steps 1 and 2 met the same rule the same way: rename the module to its
+maintained behaviour, leave the receipted study's historical guard path alone,
+and carry the corrected command in a replacement Exit. This amendment records
+that rename and the command that proves it. It also records the two exit
+conditions the earlier generations already established: the root suite is proved
+from a clean detached worktree, and the Hypomnema gate precedes the ignored
+portable payload. The locked seven-pair assignment map, the inventory bytes,
+the Entry, Tests and Disciplines fields, and every other Step 4 claim remain
+unchanged.
+
+**Steps touched.** Step 4's Files and Exit fields.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds;
+exit holds.
+
+### Amendment -- 2026-09-11
+
+**What changed.** Complete replacement Exit: State, ledger, checkpoints, `status`, `next`, `verify`, restore, and
+post-compaction delegation preserve the inventory/study digest, step parent,
+assigned, completed, and remaining ids, report/manifest digests, and explicit
+no-findings claim. Reconstruction rejects missing, reordered, stale, or
+foreign evidence. `done implement` requires one final-green manifest for every
+assigned id, produced by the same command identity on the final commit, with a
+positive complete run, no skip, infrastructure error, or assertion failure;
+it also binds successful root and Hexaemeron suite evidence. A red guard commit
+cannot reach audit, prose, push, checkpoint completion, or handoff. Legacy
+states remain readable without invented evidence. The audit-loop reference
+states that the first Warden audit begins only after a complete inoculation
+receipt and final-green implementation evidence. Fiat receives one provisional
+candidate generation row, retaining its prior frontier fields; exact label
+resolution belongs to the post-stack gate. The accepted seven-entry inventory
+is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+Run `python3 -m unittest discover -s tests` from a clean detached worktree at
+the exact final Step 4 commit, for the reason the earlier Step 1 generation
+records: two inherited corpus tests in `tests/test_agent_instruction_corpus.py`
+read a root `.hexaemeron/design-evidence.json`, so the live controller worktree
+is not a clean root-suite input. The Hypomnema gate runs before the ignored
+portable payload at `.agents/skills/promise-machine/runtime/` is generated,
+because that generated copy carries relative links Hypomnema resolves against
+the repository and it is not repository prose. The Brevitas `report` loop covers
+the four product drafts only. The audit record is checked by Imprimatur at
+`--max-defects 0`, by `audit_synopsis.py --check .`, and by Brevitas under the
+explicit `fiat-audit-record` mode Step 1 shipped for it, in that order, because
+its append-only history and its `fiat-audit-round/v2` five-column grammar
+cannot satisfy the `B010` and `B011` minimums that `report` mode applies. Prove
+the green exit with:
+
+```bash
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 -m unittest plugins.hexaemeron.tests.test_recovery_and_final_green plugins.hexaemeron.tests.test_fiat_skill -v
+python3 -m unittest plugins.hexaemeron.tests.test_hexctl_checkpoint plugins.hexaemeron.tests.test_hexctl_checkpoint_identity -v
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/fiat/EVOLUTION.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/fiat/EVOLUTION.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --mode fiat-audit-record
+git diff --check
+```
+
+**Why.** Step 4 round 1 recorded two findings, both in this Exit field and neither in
+the product. `S4-R1-01` is medium: the preceding generation put the audit record
+inside the Brevitas `report` loop, where its seven append-only tables fail
+`B011` because a `fiat-audit-round/v2` record has five columns and one or two
+data rows against a three-by-three minimum. Appending a compliant record raised
+that count from seven to eight, so no record Warden can write clears it. Step 1
+shipped the explicit `fiat-audit-record` mode for exactly this file, and Steps 2
+and 3 ran a four-draft `report` loop with that mode separately. `S4-R1-02` is
+low: neither the baseline nor the preceding generation named
+`audit_synopsis.py --check .`, which Steps 2 and 3 both ran. This generation
+restores both commands and returns the `report` loop to the four product
+drafts. The locked seven-pair assignment map, the inventory bytes, the Files,
+Entry, Tests and Disciplines fields, and every other Step 4 claim remain
+unchanged.
+
+**Steps touched.** Step 4's Exit field only.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds;
+exit holds.
