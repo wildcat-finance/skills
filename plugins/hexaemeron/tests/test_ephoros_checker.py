@@ -567,9 +567,11 @@ class TypeScriptMeanDurationTests(unittest.TestCase):
         self.assertEqual(["E000"], ts_codes(
             "const meanLatencyMs = mean(latenciesMs)\n"
             "const s = `never terminated\n"))
+        # The pragma sits on the line above the E000 line, where it
+        # would suppress any other code; it must leave E000 standing.
         self.assertEqual(["E000"], ts_codes(
-            "// ephoros: allow crafted reason\n"
             "const meanLatencyMs = mean(latenciesMs)\n"
+            "// ephoros: allow crafted reason\n"
             "const s = `never terminated\n"))
         self.assertEqual(["E000"], ts_codes(
             "const meanLatencyMs = mean(latenciesMs)\n"
@@ -586,6 +588,59 @@ class TypeScriptMeanDurationTests(unittest.TestCase):
     def test_a_bare_slash_pragma_does_not_suppress_e003(self):
         self.assertEqual(["E003"], ts_codes(
             "const meanLatencyMs = mean(latenciesMs)  // ephoros: allow\n"))
+
+
+class TypeScriptMeanDurationBoundaries(unittest.TestCase):
+    """The E003 recogniser's own gates, each pinned by a shape that turns
+    red when the gate is removed: the target-name path, the whole-right-hand-
+    side terminator, the plain `=` before the expression, the `.length` tail
+    after `reduce`, the annotation step, the comment-free word table and the
+    plural vocabulary. Every shape here is one SKILL.md names.
+    """
+
+    def test_the_target_name_alone_carries_the_duration_word(self):
+        self.assertEqual(["E003"], ts_codes("const avgLatency = mean(samples)\n"))
+        self.assertEqual(["E003"], ts_codes("this.avgLatency = mean(samples)\n"))
+        self.assertEqual(["E003"], ts_codes(
+            "const avgWait = xs.reduce((a, b) => a + b, 0) / xs.length\n"))
+
+    def test_a_mean_used_as_an_operand_stays_outside(self):
+        self.assertEqual([], ts_codes("const x = mean(latencies) * 1000\n"))
+        self.assertEqual([], ts_codes("const x = Math.round(mean(latencies))\n"))
+        self.assertEqual([], ts_codes(
+            "const x = xs.reduce((a, b) => a + b, 0) / latencies.length + 1\n"))
+
+    def test_a_comparison_or_compound_assignment_is_not_an_assignment(self):
+        self.assertEqual([], ts_codes("if (x == mean(latencies)) {}\n"))
+        self.assertEqual([], ts_codes("if (x >= mean(latencies)) {}\n"))
+        self.assertEqual([], ts_codes("total += mean(latencies)\n"))
+
+    def test_an_object_property_value_stays_outside(self):
+        self.assertEqual([], ts_codes(
+            "const o = { meanLatency: mean(latencies) }\n"))
+
+    def test_reduce_fires_only_over_a_dotted_length_tail(self):
+        self.assertEqual([], ts_codes(
+            "const avgWait = waits.reduce((a, b) => a + b, 0) / n\n"))
+        self.assertEqual([], ts_codes(
+            "const avgWait = waits.reduce((a, b) => a + b, 0) / length\n"))
+        self.assertEqual([], ts_codes(
+            "const avgLatency = sum(latencies) / latencies.length\n"))
+
+    def test_a_word_in_a_comment_carries_nothing_where_a_literal_does(self):
+        self.assertEqual([], ts_codes("const x = mean(xs /* latency */)\n"))
+        self.assertEqual(["E003"], ts_codes('const x = mean(xs, "latency")\n'))
+        self.assertEqual(["E003"], ts_codes("const x = mean(xs, `ms`)\n"))
+
+    def test_the_plural_latencies_fires_where_timeout_does_not(self):
+        self.assertEqual(["E003"], ts_codes("const x = mean(latencies)\n"))
+        self.assertEqual([], ts_codes("const avgTimeout = mean(timeouts)\n"))
+
+    def test_a_simple_or_dotted_annotation_is_stepped_over(self):
+        self.assertEqual(["E003"], ts_codes(
+            "let avgLatency: number = mean(samples)\n"))
+        self.assertEqual(["E003"], ts_codes(
+            "let avgLatency: stats.Value = mean(samples)\n"))
 
 
 class TypeScriptBoundaries(unittest.TestCase):
