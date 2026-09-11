@@ -40,7 +40,7 @@ suggestion cannot decide what telemetry a step keeps.
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** Five rules are executable: E001 reads Python and the TypeScript surface, E002 and E003 read Python only, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer. E005 runs clean over this marketplace and the pinned application clone; E001 reports 14 interpolated logger messages over that clone. TypeScript parity for E002 and E003 remains open.
+**Current state.** Five rules are executable: E001 and E002 read Python and the TypeScript surface, E003 reads Python only, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer. E002 and E005 run clean over this marketplace and the pinned application clone, which holds no metric label container; E001 reports 14 interpolated logger messages over that clone. TypeScript parity for E003 remains open.
 
 ## Write the questions before the code
 
@@ -188,7 +188,7 @@ block-YAML list entry starting with `alert:` that lacks its own nested
 `annotations.runbook` Markdown path. Comments, block scalars, top-level keys
 and neighbouring alert entries do not satisfy E004. The YAML pass establishes
 presence only: Hypomnema H003 resolves the path and H007 checks the target's
-answers. E002 and E003 read Python only.
+answers. E003 reads Python only.
 
 E001 also reads `.ts`/`.tsx` through the shared masked lexer, under the same
 1 MiB boundary as E005: a log call whose first argument is an interpolated
@@ -211,6 +211,23 @@ log-call first arguments carries a `+`, and no `.ts` or `.tsx` file the walk
 reads carries `\${`; the three generated `storybook-static` bundles that do
 are `.js` files the checker never reads.
 
+E002 also reads `.ts`/`.tsx`, from the same label containers E005 reads: the
+array or object literal after a `labels`, `labelNames`, `label_names`, `tags`
+or `attributes` property inside a metric-named call, and the object argument
+of a `.labels(...)` call. Each key is split into words at a case change and
+at each `_`, the way E005 reads `walletAddress` and `wallet_address` alike,
+and matched against the Python rule's fragments as whole words: `hash`,
+`tx`, `nonce`, `url`, `path`, `email`, `user`, `account`, `session`, `error`,
+`message`, `id` and their compounds and plurals. An address-shaped key
+reports E005 alone, so one key carries one code. Two consequences of that
+vocabulary differ from Python, deliberately. Every plural is a word of its
+own, so `hashes` reports E002 and `addresses` reports E005 here, where the
+Python `s?` suffix passes both; that gap stays open on the Python surface.
+And the split reaches camel case, so `requestId` and `chainId` report E002
+here through `id`, where Python's `_`-anchored rule reports only `request_id`
+and `chain_id`. The pinned clone holds no label container, so its E002 count
+is zero and the fixtures are the whole guard.
+
 E005 reports telemetry keyed by wallet address: an address-shaped name or a
 40-hex literal used as a metric label, a dashboard key or a log index. It
 reads Python, address-named keys directly under a supported block-YAML
@@ -227,8 +244,9 @@ Three limits are part of the rule rather than defects in it. The finding
 message says wallet address for any address-fragment key, so `ip_address`
 draws the same words. Recognition under a YAML `labels:` mapping is
 direct-children-only, so a key nested one mapping deeper passes silently. And
-the `s?` suffix family E005 shares with E002 misses `-es` plurals, so
-`addresses` passes where `address` fires.
+on the Python surface the `s?` suffix family E005 shares with E002 misses
+`-es` plurals, so `addresses` passes where `address` fires; the TypeScript
+word set lists `addresses` and fires on it.
 
 Two things it deliberately leaves alone. A `print` in Python and `console.*`
 in TypeScript are command-line output rather than telemetry, and this
