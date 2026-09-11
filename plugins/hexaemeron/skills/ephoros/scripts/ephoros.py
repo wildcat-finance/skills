@@ -782,9 +782,9 @@ class _TsSpanIndex:
         keys = []
         for start, end in self.ranges(opening, closing):
             key_end = self._first_colon(opening, start, end)
-            code, key = self.label_key(start, key_end)
+            offset, code, key = self.label_key(start, key_end)
             if code:
-                keys.append((start, code, key))
+                keys.append((offset, code, key))
         return keys
 
     def _label_finding(self, offset: int, code: str, key: str) -> Finding:
@@ -812,7 +812,7 @@ class _TsSpanIndex:
                 code = self._string_label_code(*bounds)
                 if code:
                     findings.append(self._label_finding(
-                        start, code, self.text[bounds[0]:bounds[1]]))
+                        bounds[0] - 1, code, self.text[bounds[0]:bounds[1]]))
         return findings
 
     def label_findings(self, start: int, end: int) -> list[Finding]:
@@ -856,17 +856,21 @@ class _TsSpanIndex:
                         and HEX_ADDRESS.fullmatch(
                             self.text, bounds[0], bounds[1]):
                     findings.append(_ts_keyed_by_address(
-                        self.path, self.newlines, arg_start, "metric label",
-                        self.text[bounds[0]:bounds[1]]))
+                        self.path, self.newlines, bounds[0] - 1,
+                        "metric label", self.text[bounds[0]:bounds[1]]))
         return findings
 
-    def _key_name(self, start: int, end: int) -> str | None:
-        """The last identifier of the dotted chain in a key position, or None.
+    def _key_chain(self, start: int, end: int) -> tuple[int, str] | None:
+        """The dotted chain in a key position as (offset, last identifier).
 
         Reads a bounded window instead of slicing the span: the dotted
         chain is parsed forward from the key's own start and stops at the
         first character outside the chain grammar, so fully overlapping
-        spans no longer pay their whole width for every key.
+        spans no longer pay their whole width for every key. The offset is
+        the chain's first character in the mask, past the separator's
+        whitespace and past any comment, which the mask blanks; a finding
+        reported there lands on the key's own line, so a pragma beside the
+        key excuses it and a multi-line container reads as written.
         """
         mask = self.mask
         first, last = start, end
@@ -879,7 +883,12 @@ class _TsSpanIndex:
             separator = TS_SEP.match(mask, ident.end(), last)
             ident = TS_IDENT.match(mask, separator.end(), last) \
                 if separator is not None else None
-        return ident.group() if ident is not None else None
+        return (first, ident.group()) if ident is not None else None
+
+    def _key_name(self, start: int, end: int) -> str | None:
+        """The last identifier of the dotted chain in a key position, or None."""
+        chain = self._key_chain(start, end)
+        return chain[1] if chain is not None else None
 
     def address_expression(self, start: int, end: int) -> str:
         """The address-shaped name or literal in a key position, or ""."""
@@ -891,22 +900,27 @@ class _TsSpanIndex:
             return self.text[bounds[0]:bounds[1]]
         return ""
 
-    def label_key(self, start: int, end: int) -> tuple[str, str]:
-        """(code, key) for a label name in a key position, or ("", "").
+    def label_key(self, start: int, end: int) -> tuple[int, str, str]:
+        """(offset, code, key) for a label name in a key position.
 
         The same bounded read as `address_expression`, with the E002
         vocabulary consulted only once the address words have not claimed
         the key, so the split E005 already draws is inherited rather than
-        reopened.
+        reopened. The offset is the key's own first character, the chain
+        start or the opening quote, rather than the item's separator, so
+        the finding is reported on the key's line. An unrecognised key is
+        (start, "", "").
         """
-        name = self._key_name(start, end)
-        if name is not None:
-            return _ts_label_code(_ts_words(name)), name
+        chain = self._key_chain(start, end)
+        if chain is not None:
+            offset, name = chain
+            return offset, _ts_label_code(_ts_words(name)), name
         bounds = self._string_bounds(start, end)
         if bounds is None:
-            return "", ""
+            return start, "", ""
         code = self._string_label_code(*bounds)
-        return code, self.text[bounds[0]:bounds[1]] if code else ""
+        return (bounds[0] - 1, code,
+                self.text[bounds[0]:bounds[1]] if code else "")
 
     def formatted_message(self, start: int, end: int) -> bool:
         """Is this argument a message built by formatting?

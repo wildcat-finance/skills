@@ -223,10 +223,15 @@ reports E005 alone, so one key carries one code. Two consequences of that
 vocabulary differ from Python, deliberately. Every plural is a word of its
 own, so `hashes` reports E002 and `addresses` reports E005 here, where the
 Python `s?` suffix passes both; that gap stays open on the Python surface.
-And the split reaches camel case, so `requestId` and `chainId` report E002
-here through `id`, where Python's `_`-anchored rule reports only `request_id`
-and `chain_id`. The pinned clone holds no label container, so its E002 count
-is zero and the fixtures are the whole guard.
+And the split reaches camel case, so every key carrying `id` as a word
+reports E002 here, `chainId`, `marketId` and `tokenId` as much as
+`requestId`; Python's `_` anchor reaches `chain_id` and `market_id` but not
+`chainId`, while its `request_?id`, `run_?id` and `trace_?id` fragments
+already read `requestId`, `runId` and `traceId`. A chain id is a bounded
+label by the rule above, and the `id` word claims it on both surfaces; that
+reach is the vocabulary's, not this surface's. The pinned clone holds no
+label container, so its E002 count is zero and the fixtures are the whole
+guard.
 
 E005 reports telemetry keyed by wallet address: an address-shaped name or a
 40-hex literal used as a metric label, a dashboard key or a log index. It
@@ -244,9 +249,9 @@ Three limits are part of the rule rather than defects in it. The finding
 message says wallet address for any address-fragment key, so `ip_address`
 draws the same words. Recognition under a YAML `labels:` mapping is
 direct-children-only, so a key nested one mapping deeper passes silently. And
-on the Python surface the `s?` suffix family E005 shares with E002 misses
-`-es` plurals, so `addresses` passes where `address` fires; the TypeScript
-word set lists `addresses` and fires on it.
+on the Python and block-YAML surfaces the `s?` suffix family E005 shares
+with E002 misses `-es` plurals, so `addresses` passes where `address` fires;
+the TypeScript word set lists `addresses` and fires on it.
 
 Two things it deliberately leaves alone. A `print` in Python and `console.*`
 in TypeScript are command-line output rather than telemetry, and this
