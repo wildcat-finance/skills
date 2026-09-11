@@ -40,7 +40,7 @@ suggestion cannot decide what telemetry a step keeps.
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** Five rules are executable: E001 and E002 read Python and the TypeScript surface, E003 reads Python only, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer. E002 and E005 run clean over this marketplace and the pinned application clone, which holds no metric label container; E001 reports 14 interpolated logger messages over that clone. TypeScript parity for E003 remains open.
+**Current state.** Five rules are executable: E001, E002 and E003 read Python and the TypeScript surface, E004 reads the supported block-YAML subset, and E005 reads Python, supported block-YAML label keys and the TypeScript surface through the shared masked lexer. E002, E003 and E005 run clean over this marketplace and the pinned application clone, which holds no metric label container and no mean over a duration; E001 reports 14 interpolated logger messages over that clone.
 
 ## Write the questions before the code
 
@@ -188,7 +188,7 @@ block-YAML list entry starting with `alert:` that lacks its own nested
 `annotations.runbook` Markdown path. Comments, block scalars, top-level keys
 and neighbouring alert entries do not satisfy E004. The YAML pass establishes
 presence only: Hypomnema H003 resolves the path and H007 checks the target's
-answers. E003 reads Python only.
+answers.
 
 E001 also reads `.ts`/`.tsx` through the shared masked lexer, under the same
 1 MiB boundary as E005: a log call whose first argument is an interpolated
@@ -233,6 +233,33 @@ reach is the vocabulary's, not this surface's. The pinned clone holds no
 label container, so its E002 count is zero and the fixtures are the whole
 guard.
 
+E003 also reads `.ts`/`.tsx`, from the bracket table the other TypeScript
+rules already walk rather than from a scan of its own: a `mean`, `average`,
+`avg` or `fmean` call, or a `reduce(...)` call followed by `/` and a `.length`
+chain, standing as the whole right-hand side of a declaration or assignment,
+a bare or dotted name with a plain `=` before it and at most a simple or
+dotted type annotation between. The duration vocabulary is the Python rule's
+fragments as whole words after the same case and `_` split: `duration`,
+`latency`, `elapsed`, `seconds`, `secs`, `millis`, `ms`, `runtime`,
+`responsetime`, `took`, `wait`, `time` and their plurals, read from the
+target name and from every identifier and string literal inside the
+expression, so `avgWait`, `stats.mean(requestDurationsMs)` and
+`waits.length` each carry one. `latencies` fires here where the Python `s?`
+suffix passes it; `timeout` and `timestamp` carry no duration word on either
+surface. The rule is lexical and follows no dataflow, on either surface: a
+duration that reaches a mean through an innocently named variable passes,
+`const summary = mean(samples)` reports nothing however the samples were
+measured, and the rule does not widen to close that gap, because the
+variable's name is the only evidence the parser has. Four shapes stay
+outside it, as they do in Python: a mean used as an operand, `mean(latencies)
+* 1000` or `Math.round(mean(latencies))`; an object property, `{ meanLatency:
+mean(latencies) }`; a `reduce` reached through another call, `ds.map(toMs)
+.reduce(...) / ds.length`; and a `sum` helper divided by a length. A comment
+inside the expression carries no word, because the word table is built from
+the code and string spans alone, so `mean(xs /* latency */)` stays clean. The
+pinned clone holds no mean call and no `reduce` divided by a length, so its
+E003 count is zero and the fixtures are the whole guard.
+
 E005 reports telemetry keyed by wallet address: an address-shaped name or a
 40-hex literal used as a metric label, a dashboard key or a log index. It
 reads Python, address-named keys directly under a supported block-YAML
@@ -256,8 +283,8 @@ the TypeScript word set lists `addresses` and fires on it.
 Two things it deliberately leaves alone. A `print` in Python and `console.*`
 in TypeScript are command-line output rather than telemetry, and this
 marketplace writes a great deal of the first. A mean of something that is not
-a duration is arithmetic, so sentence lengths and layout positions pass
-untouched.
+a duration is arithmetic, so sentence lengths, layout positions and prices
+pass untouched.
 
 Deliberate exceptions state a reason: `# ephoros: allow <why>` in Python and
 YAML, `// ephoros: allow <why>` as a genuine line comment in TypeScript, on

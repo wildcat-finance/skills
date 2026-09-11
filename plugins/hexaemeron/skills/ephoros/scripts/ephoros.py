@@ -99,6 +99,17 @@ TS_UNBOUNDED_WORDS = frozenset({
     "account", "accounts", "requestid", "requestids", "runid", "runids",
     "traceid", "traceids", "session", "sessions", "error", "errors",
     "message", "messages", "id", "ids"})
+# The E003 vocabulary on this surface: the Python DURATION fragments as whole
+# words after the same split, so `avgWait`, `avg_wait` and `waits.length` all
+# carry `wait`. Each plural is a word of its own, so `latencies` fires here
+# where the Python `s?` suffix passes it.
+TS_DURATION_WORDS = frozenset({
+    "duration", "durations", "latency", "latencies", "elapsed", "seconds",
+    "secs", "millis", "ms", "runtime", "runtimes", "responsetime",
+    "responsetimes", "took", "wait", "waits", "time", "times"})
+# What may follow a whole right-hand side: the statement ends, or the
+# enclosing bracket or item does. Anything else means the mean was an operand.
+TS_RHS_TERMINATORS = frozenset(";,)}]\n\r")
 TS_METRIC_WORDS = frozenset({"metric", "metrics", "counter", "counters",
                              "gauge", "gauges", "histogram", "histograms",
                              "analytics", "telemetry", "statsd"})
@@ -577,19 +588,13 @@ def _skip_ws(mask: str, index: int) -> int:
     return index
 
 
-def _ts_chain_before(mask: str, opening: int) -> list[str] | None:
-    """Parse the dotted chain that ends at the bracket at `opening`, or None.
+def _ts_chain_ending(mask: str, index: int) -> tuple[int, list[str]] | None:
+    """Parse the dotted chain whose last identifier ends at `index`.
 
-    Scanning is anchored to the brackets: a chain is only ever read once,
-    backwards from its own bracket, so a dotted expression that never reaches
-    a bracket costs nothing.  A forward chain regex paid quadratically there —
-    every admitted start position rescanned the whole remaining chain before
-    failing at the bracket class.  `?.` separates segments the way `.` does,
-    including the bracket form `?.[` and `?.(`.
+    Returns (start offset, segments in source order), or None where no
+    identifier ends there or the chain is a trailing property of something
+    that is not a name. `?.` separates segments the way `.` does.
     """
-    index = _skip_ws(mask, opening)
-    if mask[index - 2:index] == "?.":
-        index = _skip_ws(mask, index - 2)
     segments: list[str] = []
     while True:
         end = index
@@ -615,7 +620,29 @@ def _ts_chain_before(mask: str, opening: int) -> list[str] | None:
     if index and mask[index - 1] == ".":
         return None  # a trailing property of something that is not a name
     segments.reverse()
-    return segments
+    return index, segments
+
+
+def _ts_chain_span(mask: str, opening: int) -> tuple[int, list[str]] | None:
+    """The dotted chain ending at the bracket at `opening`, with its start.
+
+    Scanning is anchored to the brackets: a chain is only ever read once,
+    backwards from its own bracket, so a dotted expression that never reaches
+    a bracket costs nothing.  A forward chain regex paid quadratically there --
+    every admitted start position rescanned the whole remaining chain before
+    failing at the bracket class.  `?.` separates segments the way `.` does,
+    including the bracket form `?.[` and `?.(`.
+    """
+    index = _skip_ws(mask, opening)
+    if mask[index - 2:index] == "?.":
+        index = _skip_ws(mask, index - 2)
+    return _ts_chain_ending(mask, index)
+
+
+def _ts_chain_before(mask: str, opening: int) -> list[str] | None:
+    """The segments of the chain ending at the bracket at `opening`, or None."""
+    chain = _ts_chain_span(mask, opening)
+    return chain[1] if chain is not None else None
 
 
 def _ts_address_name(name: str) -> bool:
@@ -633,6 +660,11 @@ def _ts_unbounded_label(path: Path, newlines: list[int], offset: int,
                         key: str) -> Finding:
     return Finding(path, _line_of(newlines, offset), "E002",
                    f"metric label `{key}` is unbounded; put it in an event")
+
+
+def _ts_mean_duration(path: Path, newlines: list[int], offset: int) -> Finding:
+    return Finding(path, _line_of(newlines, offset), "E003",
+                   "duration summarised as a mean; record a histogram and read p95")
 
 
 def _ts_label_code(words: set[str]) -> str:
@@ -662,12 +694,15 @@ class _TsSpanIndex:
     """
 
     def __init__(self, path: Path, text: str, mask: str,
-                 newlines: list[int], matches: dict[int, int]) -> None:
+                 newlines: list[int], matches: dict[int, int],
+                 spans=None) -> None:
         self.path = path
         self.text = text
         self.mask = mask
         self.newlines = newlines
         self.matches = matches
+        self.spans = spans if spans is not None else [("code", 0, len(text))]
+        self._duration_starts: list[int] | None = None
         self._commas: dict[int, list[int]] | None = None
         self._colons: dict[int, list[int]] = {}
         self._inerts: dict[int, list[int]] = {}
@@ -1026,6 +1061,111 @@ class _TsSpanIndex:
         found = bisect_left(starts, start)
         return found < len(starts) and starts[found] < end
 
+    def mean_duration(self, opening: int, closing: int, chain_start: int,
+                      segments: list[str]) -> list[Finding]:
+        """E003 for one mean-shaped call: the whole right-hand side of an
+        assignment, under a duration word in the target or the expression.
+
+        The call is one bracket the walk already visited, so the pass is
+        keyed to the bracket table rather than scanning forward for `=`.
+        Each admitted bracket then pays a bounded read on either side: the
+        assignment target backwards from the chain start, the `/ xs.length`
+        tail and the terminator forwards from the closer, and one bisection
+        into the duration word table. A nested `mean(mean(...))` rejects
+        every inner bracket at its first character, because `(` is not `=`.
+        """
+        mask = self.mask
+        end = closing + 1
+        if segments[-1] == "reduce":
+            end = self._reduce_over_length_end(end)
+            if end is None:
+                return []
+        if not self._terminated(end):
+            return []
+        target = self._assignment_target(chain_start)
+        if target is None:
+            return []
+        target_start, target_segments = target
+        words = set().union(*(_ts_words(name) for name in target_segments))
+        if not (words & TS_DURATION_WORDS
+                or self._duration_between(chain_start, end)):
+            return []
+        return [_ts_mean_duration(self.path, self.newlines, target_start)]
+
+    def _reduce_over_length_end(self, index: int) -> int | None:
+        """The end of `/ xs.length` after a `reduce(...)` closer, or None."""
+        mask = self.mask
+        while index < len(mask) and mask[index].isspace():
+            index += 1
+        if index >= len(mask) or mask[index] != "/":
+            return None
+        index += 1
+        while index < len(mask) and mask[index].isspace():
+            index += 1
+        ident = TS_IDENT.match(mask, index)
+        segments = []
+        while ident is not None:
+            segments.append(ident.group())
+            separator = TS_SEP.match(mask, ident.end())
+            if separator is None:
+                break
+            ident = TS_IDENT.match(mask, separator.end())
+        if ident is None or len(segments) < 2 or segments[-1] != "length":
+            return None
+        return ident.end()
+
+    def _terminated(self, index: int) -> bool:
+        """Does the right-hand side end at `index`, give or take blanks?"""
+        mask = self.mask
+        while index < len(mask) and mask[index] in " \t":
+            index += 1
+        return index >= len(mask) or mask[index] in TS_RHS_TERMINATORS
+
+    def _assignment_target(self, chain_start: int) -> tuple[int, list[str]] | None:
+        """(start, segments) of the name assigned at `chain_start`, or None.
+
+        A plain `=` must sit before the expression: `==`, `!=`, `<=`, `>=`
+        and the compound assignments are comparisons or accumulations, not
+        the assignment the rule names, and Python's `Assign` excludes them
+        too. A simple or dotted type annotation between the name and the
+        `=` is stepped over; any other annotation shape is left alone.
+        """
+        mask = self.mask
+        index = _skip_ws(mask, chain_start)
+        if not index or mask[index - 1] != "=":
+            return None
+        equals = index - 1
+        if equals and mask[equals - 1] in "=!<>+-*/%&|^":
+            return None
+        chain = _ts_chain_ending(mask, _skip_ws(mask, equals))
+        if chain is None:
+            return None
+        before = _skip_ws(mask, chain[0])
+        if before and mask[before - 1] == ":":
+            chain = _ts_chain_ending(mask, _skip_ws(mask, before - 1))
+        return chain
+
+    def _duration_between(self, start: int, end: int) -> bool:
+        """Does a duration word start inside [start, end), outside comments?
+
+        The table is built once per file from the code, string and template
+        spans, so a word inside a comment never counts and a word inside a
+        string literal does, as the Python rule reads `ast` names and string
+        constants alike.
+        """
+        starts = self._duration_starts
+        if starts is None:
+            starts = []
+            for kind, span_start, span_end in self.spans:
+                if kind in ("code", "string", "template"):
+                    starts.extend(
+                        match.start() for match in TS_WORD.finditer(
+                            self.text, span_start, span_end)
+                        if match.group().lower() in TS_DURATION_WORDS)
+            self._duration_starts = starts
+        found = bisect_left(starts, start)
+        return found < len(starts) and starts[found] < end
+
 
 def _ts_allow_lines(text: str, spans, newlines: list[int]) -> set[int]:
     """Return reasoned pragma lines that are genuine `//` line comments.
@@ -1061,13 +1201,14 @@ def check_typescript(path: Path, text: str) -> list[Finding]:
     allowed = _ts_allow_lines(text, spans, newlines)
     mask = _masked(text, spans)
     matches = _bracket_matches(mask)
-    span_index = _TsSpanIndex(path, text, mask, newlines, matches)
+    span_index = _TsSpanIndex(path, text, mask, newlines, matches, spans)
     findings: list[Finding] = []
     for bracket in TS_OPEN.finditer(mask):
         opening = bracket.start()
-        segments = _ts_chain_before(mask, opening)
-        if not segments:
+        chain = _ts_chain_span(mask, opening)
+        if chain is None or not chain[1]:
             continue
+        chain_start, segments = chain
         if segments[0] == "console":
             continue  # command-line output is not telemetry
         # The cheap sink-name gates come before any per-bracket span work:
@@ -1092,11 +1233,15 @@ def check_typescript(path: Path, text: str) -> list[Finding]:
         labels_call = len(segments) >= 2 and segments[-1] == "labels"
         log_call = len(segments) >= 2 and bool(
             _ts_words(segments[-2]) & TS_LOG_WORDS)
-        if not (metric_sink or labels_call or log_call):
+        mean_call = segments[-1] in MEAN_FUNCS or segments[-1] == "reduce"
+        if not (metric_sink or labels_call or log_call or mean_call):
             continue
         closing = matches.get(opening)
         if closing is None:
             continue
+        if mean_call:
+            findings.extend(span_index.mean_duration(
+                opening, closing, chain_start, segments))
         if metric_sink:
             findings.extend(span_index.label_findings(opening + 1, closing))
         if labels_call:

@@ -520,6 +520,74 @@ class TypeScriptUnboundedLabelTests(unittest.TestCase):
             "  requestId: rid } })\n"))
 
 
+class TypeScriptMeanDurationTests(unittest.TestCase):
+    """E003 on the TypeScript surface: a duration reduced to a mean.
+
+    The shape is an assignment whose whole right-hand side is a named mean
+    call or the reduce-over-length idiom, with a duration word in the target
+    or the expression. The mean of anything else is arithmetic and passes.
+    """
+
+    def test_it_flags_a_named_mean_and_the_reduce_idiom_over_a_duration(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "mean-duration.ts")
+        self.assertEqual(["E003", "E003"], [f.code for f in findings])
+        self.assertEqual([2, 3], [f.line for f in findings])
+        self.assertEqual(
+            "duration summarised as a mean; record a histogram and read p95",
+            findings[0].message)
+
+    def test_the_same_durations_recorded_as_a_histogram_stay_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "histogram-duration.ts"))
+
+    def test_a_mean_over_sentence_lengths_stays_clean(self):
+        self.assertEqual([], ts_codes(
+            "const meanLength = mean(sentenceLengths)\n"
+            "const average = lengths.reduce((a, b) => a + b, 0) / lengths.length\n"))
+
+    def test_a_mean_over_a_layout_position_stays_clean(self):
+        self.assertEqual([], ts_codes(
+            "const order = positions.reduce((a, b) => a + b, 0) / positions.length\n"
+            "const centre = stats.mean(offsets)\n"))
+
+    def test_a_mean_over_a_price_stays_clean(self):
+        self.assertEqual([], ts_codes(
+            "const avgPrice = average(prices)\n"
+            "const midMarket = quotes.reduce((a, q) => a + q.price, 0) / quotes.length\n"))
+
+    def test_the_same_shape_outside_lexed_code_reports_no_e003(self):
+        # The shape is read from the mask, so a comment and a template
+        # literal carry nothing; and a file the lexer refuses, or one over
+        # the 1 MiB cap, reports E000 alone, which no pragma suppresses.
+        self.assertEqual([], ts_codes(
+            "// const meanLatencyMs = mean(latenciesMs)\n"
+            "/* const avgWait = waits.reduce((a, b) => a + b, 0) / waits.length */\n"))
+        self.assertEqual([], ts_codes(
+            "const note = `${mean(latenciesMs)} ms mean latency`\n"))
+        self.assertEqual(["E000"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)\n"
+            "const s = `never terminated\n"))
+        self.assertEqual(["E000"], ts_codes(
+            "// ephoros: allow crafted reason\n"
+            "const meanLatencyMs = mean(latenciesMs)\n"
+            "const s = `never terminated\n"))
+        self.assertEqual(["E000"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)\n"
+            + "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES))
+
+    def test_a_reasoned_slash_pragma_on_the_line_or_above_suppresses_e003(self):
+        self.assertEqual([], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)"
+            "  // ephoros: allow one offline report, histogram beside it\n"))
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one offline report, histogram beside it\n"
+            "const avgWait = waits.reduce((a, b) => a + b, 0) / waits.length\n"))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e003(self):
+        self.assertEqual(["E003"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)  // ephoros: allow\n"))
+
+
 class TypeScriptBoundaries(unittest.TestCase):
     def test_an_oversized_typescript_file_fails_visibly(self):
         source = "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES
@@ -655,6 +723,23 @@ class TypeScriptBoundaries(unittest.TestCase):
         self.assertEqual(["E005"], [finding.code for finding in findings])
         self.assertEqual([2], [finding.line for finding in findings])
         self.assertIn("log index `walletAddress`", findings[0].message)
+
+    def test_a_mean_named_nest_keeps_its_single_exact_finding(self):
+        # E003 is the one recogniser this surface gained as a pass of its
+        # own, so the overlap shape that made three earlier passes
+        # quadratic is pinned against it: every nested `mean(` bracket
+        # passes the sink gate, and each inner one is rejected at its first
+        # character, because `(` is not `=`. Only the outermost is assigned.
+        depth = 8192
+        source = ("// nested mean specimen\n"
+                  + "const meanLatency = " + "mean(" * depth
+                  + "latencies" + ")" * depth + "\n")
+        with tempfile.TemporaryDirectory() as base:
+            specimen = Path(base) / "mean.ts"
+            specimen.write_text(source, encoding="utf-8")
+            findings = ephoros.check(specimen)
+        self.assertEqual(["E003"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
 
     def test_a_findings_saturated_file_keeps_every_line_number(self):
         # Counting newlines from the top of the file for every finding cost

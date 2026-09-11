@@ -4264,7 +4264,7 @@
         "transition": "review acceptance joined to the canonical Authorises field",
         "unknowns": "unexercised failure modes and missing operational evidence"
       },
-      "sha256": "37b8462ecd8d7183ac52acdc832ecac0cd2e44fc126df540e5c03ec2bfe3dfb5",
+      "sha256": "5e104e4331cae43a0d7301810b432621f614826a483146847592126b3198ff9c",
       "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
     },
     "fiat-controller-checkpoint": {
