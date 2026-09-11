@@ -934,3 +934,184 @@ step's entry, exit, files, tests or disciplines change.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Two statements this run's step 2 found false against the
+tools they name. First, section 9's subprocess line lists `--no-tags` among the
+controls without saying which command takes it: `git bundle create` has no such
+argument and git 2.50.1 answers `error: unrecognized argument: --no-tags`,
+while `git fetch` at restore does take it. The flag belongs to the restore
+fetch alone; the bundle excludes tags because it is built from the explicit
+`_checkpoint_refs` list, not because a flag suppresses them. Second, section
+4's secret scan lists six patterns of which one is dead and one class is
+missing: `-----BEGIN OPENSSH PRIVATE KEY-----` is already matched by the PEM
+private-key pattern before it, and no pattern matches `-----BEGIN PGP PRIVATE
+KEY BLOCK-----`, whose header ends `PRIVATE KEY BLOCK-----` rather than
+`PRIVATE KEY-----`. The subsumed pattern is dropped and the PGP block takes its
+place, so the set stays six. The scan's chunk overlap is now required to be
+derived from the longest header the patterns can match rather than fixed, and
+the PEM pattern's label is bounded so that length exists. No refusal class,
+ceiling, schema field, entry path, budget or fixture id changes, and the design
+record is untouched.
+**Why.** Step 2's audit round 1 raised S2-R1-03 and S2-R1-04. Both were checked
+against the tools rather than read: `git bundle create /tmp/probe.bundle
+--no-tags HEAD` in a scratch repository prints the unrecognized-argument error
+on git 2.50.1, and the PEM pattern `-----BEGIN (?:[A-Z0-9]+(?: [A-Z0-9]+)*
+)?PRIVATE KEY-----` matches the OpenSSH header while matching no PGP block. The
+controller at `hexctl.py:17056` already omits the flag, so the product was
+right and these two sentences were wrong. Round 1's S2-R1-05 is answered in
+part here: its stated 77-byte specimen does not exist, since the longest header
+among the amended patterns is 37 bytes and the current 64-byte window covers
+it, but the window is still not derived from the patterns and an unbounded
+label leaves no length to derive it from.
+**Steps touched.** Step 2's Exit, and the reference text steps 2 and 3 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Section 4's private-key patterns match a complete block
+rather than a bare header: the `-----BEGIN ... PRIVATE KEY-----` and
+`-----BEGIN PGP PRIVATE KEY BLOCK-----` forms count as secret-shaped only when
+the header is followed by key material, meaning at least one line of base64
+body or a matching `-----END` marker within the scanned window. A document that
+names a header in prose or inside a code span is not a secret. The four token
+patterns are unchanged, because each is self-delimiting. The set stays six and
+every refusal class, ceiling, schema field, entry path, budget and fixture id
+is untouched.
+**Why.** Step 2's audit round 2 raised S2-R2-02: `checkpoint archive` refuses
+`secret-shaped-member` on this run. The capsule snapshots all of
+`.hexaemeron/`, this study quotes `-----BEGIN OPENSSH PRIVATE KEY-----` at
+lines 591 and 948 while specifying the scan, and the shipped matcher hits it.
+That was confirmed by calling the pattern set at `hexctl.py:613` against
+`.hexaemeron/study.md`, which matches. Steps 4 and 5 run `checkpoint archive`
+against this run, so the export cannot complete until the matcher stops reading
+its own specification as a key. Block semantics were the study's own word:
+section 4 says `PEM private-key blocks`, and a block is a header, a body and a
+footer. Matching the header alone was the deviation, and requiring material
+after it still catches a key whose footer was truncated.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-09
+
+**What changed.** Section 4's body witness reads an escaped newline as a line
+delimiter. A header counts as secret-shaped when at least one line of base64
+body or a matching `-----END` marker follows it within the scanned window, and
+a line ends at a newline character or at the two-character escape `\n` that
+carries one inside a JSON string value. The base64 body requirement itself is
+unchanged, so a document that names a header in prose or inside a code span is
+still not a secret. The set stays six, the scanned window keeps its current
+size, and every refusal class, ceiling, schema field, entry path, budget and
+fixture id is untouched.
+**Why.** Step 2's audit round 3 raised S2-R3-01 against the block rule this
+study adopted earlier today: the rule fails open. A PEM key carried as a JSON
+string value supplies no physical body line, and past the 1,792-byte lookahead
+it shows no footer either, so the witness never arrives. Measured with
+ephemeral keys, deleted after: as raw members the 2,048, 3,072 and 4,096-bit
+keys all refuse, while as `json.dumps({"deploy_key": <pem>})` the 2,048-bit
+refuses with its footer at 1,678 bytes and the 3,072-bit at 2,470 bytes and the
+4,096-bit at 3,266 bytes both exit 0. The matcher before the block rule refused
+all three, so the repair for S2-R2-02 released something. `state.json` and
+`ledger.jsonl` are exactly that shape, and the capsule snapshots both. Reading
+the escape as a delimiter closes the whole hole, where widening the lookahead
+closes part of it and moves a cost step 5 measures.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** The body witness treats an escaped carriage return before an
+escaped line feed as part of the same delimiter, so the delimiter set is the
+newline byte, the two-character escape for it, and either of those preceded by
+a carriage return in the matching form. The third 2026-09-09 amendment's
+closing sentence is withdrawn: reading the escape as a delimiter closed the
+line-feed case, not the whole class, and no wording in this study should claim
+a hole is shut while a measured member walks through it. What the amended rule
+closes is stated as a list rather than as a whole: a key whose lines end in a
+line feed, raw or JSON-escaped, at any size the ceilings admit; and a key whose
+lines end CRLF, raw or JSON-escaped, at the same sizes. What stays open is a
+key whose body carries no delimiter the witness can see and whose footer falls
+past the lookahead, and section 5's `secret-shaped-member` line keeps that as
+its stated residue rather than implying completeness. No refusal class,
+ceiling, schema field, entry path, budget or fixture id changes.
+**Why.** Step 2's audit round 4 raised S2-R4-02 and Fiat reproduced it through
+the shipped `_checkpoint_archive_secret_shaped`. A PEM whose lines end CRLF,
+held as `json.dumps({"deploy_key": <pem>})`, publishes once the footer passes
+the 1,792-byte lookahead: at 26, 40 and 52 body lines the members are 1,828,
+2,766 and 3,570 bytes and the last two exit 0, while every line-feed member of
+the same shape refuses. `json.dumps` writes CRLF as backslash, `r`, backslash,
+`n`, and the witness's `\r?` matches the carriage-return byte rather than that
+two-character escape, so the lookahead never reaches the escaped line feed
+behind it. Fiat's own first check of this class was run against the bare header
+pattern rather than the block predicate, which reported every input as caught
+and established nothing; the measurement above uses the predicate the exporter
+calls.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** The delimiter set gains JSON's numeric escapes for the same
+two characters, in either letter case: `\u000a` for the line feed and `\u000d`
+before it for the carriage return. The delimiter set is therefore the line feed
+as a byte, as the two-character escape, or as the six-character numeric escape,
+each optionally preceded by a carriage return in the matching form. The residue
+narrows with it, and section 5's `secret-shaped-member` line states the
+narrower one: what stays open is a body carrying no line delimiter in any form
+the witness can see, such as a key whose line breaks were stripped rather than
+encoded, whose footer also falls past the lookahead. No refusal class, ceiling,
+schema field, entry path, budget or fixture id changes.
+**Why.** Step 2's audit round 6 opened S2-R6-01 against the residue the
+2026-09-10 amendment stated, and Fiat measured it through the shipped
+`_checkpoint_archive_secret_shaped` before deciding what to do with it. A key
+whose line feeds are written `\u000a` publishes at every size tried, 1,875
+bytes at 26 body lines and 3,669 at 52, where the same key written `\n` refuses
+at both; `\u000A` behaves identically, and `json.loads` returns the identical
+key from all three. That is a JSON-legal spelling of a delimiter the rule
+already admits in two other spellings, so it belongs in the set rather than in
+the residue: a scan whose whole purpose is to keep private keys out of a
+published archive should not let one through on the choice of escape. The
+genuine residue is narrower and stays stated: with the line breaks removed
+altogether, the 52-line key still publishes, because no delimiter exists to see
+and the footer is past the lookahead.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-10
+
+**What changed.** The block rule's one reach becomes two. The block lookahead
+keeps its 1,792 bytes and bounds only where the body may start, which is what
+the armour allowance measures. A separate footer reach bounds where that
+header's own footer may sit, and is the armour allowance plus the largest key
+the scan undertakes to reach, declared at 8,192 bits, giving 9,984 bytes; the
+carried window between chunks is derived from the footer reach rather than the
+block lookahead. The residue narrows to a key whose modulus exceeds that
+declared size, and the earlier residue closes: a body carrying no delimiter in
+any spelling is now refused at every size below it, because its footer is in
+reach. No refusal class, ceiling, schema field, entry path, budget or fixture
+id changes.
+**Why.** Step 2's audit round 7 raised S2-R7-01 and found the cause under the
+three findings before it. With one constant at 1,792 bytes serving both jobs,
+the footer witness could not fire for any RSA key of 3,072 bits or more, whose
+footer sits 2,356 to 2,812 bytes past its header at 3,072 bits and 3,132 to
+3,732 at 4,096, so for exactly the sizes in use the rule had its body witness
+and no second one. That is why each spelling of a line break the body witness
+could not read, S2-R4-02 and then S2-R6-01, was a complete bypass rather than a
+degradation, and why repairing them one at a time never reduced the exposure.
+Round 7 measured the footer distances on keys generated in process and proved
+as working keypairs, and measured the cost of the reach over the 164 paths and
+7,717,110 bytes this run's own export scans: best of five, 42.07 ms at 1,792
+and 39.07 ms at 8,192, with none of the 164 refused at either, so the reach
+costs no measurable time and adds no false refusal. Fiat confirmed the effect
+through the shipped `_checkpoint_archive_secret_shaped`: at 26, 52 and 104 body
+lines, the line-feed escape, the numeric escape and the delimiter-free spelling
+now all refuse, where the last two published before.
+**Steps touched.** Step 2's Exit, and the secret scan steps 2 to 5 hold to it.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
