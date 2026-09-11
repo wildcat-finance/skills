@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Drive the checked-in Fiat controller through the inoculation contract.
 
-The proof builds one disposable signed Git repository, runs two complete
+The proof builds one disposable signed Git repository, runs three
 controller lanes inside it, records what the controller did, writes the
 bounded sibling `proof.md` transcript, and then checks that transcript
 against the run it just completed. It ends by mutating the transcript once
@@ -62,6 +62,11 @@ FULL_OID = re.compile(r"\b[0-9a-f]{40}\b")
 DIGEST = re.compile(r"\b[0-9a-f]{64}\b")
 
 MUTATION_CLASSES = ("command", "exit", "count", "commit", "path", "digest")
+
+LANE_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+STATED_LANES = re.compile(
+    r"through (" + "|".join(LANE_WORDS) + r") lanes inside it"
+)
 
 
 class ProofError(Exception):
@@ -529,7 +534,7 @@ VARIANTS = (
 
 
 class Proof:
-    """One disposable repository, two controller lanes, one transcript."""
+    """One disposable repository, three controller lanes, one transcript."""
 
     def __init__(self, root: Path) -> None:
         self.root = root
@@ -1372,10 +1377,12 @@ class Proof:
 PROSE = """# Proof: the inoculation contract, driven end to end
 
 `proof.py` beside this file builds one disposable signed Git repository,
-runs the checked-in Fiat controller through two complete lanes inside it,
-writes these bytes, and then checks them against the run it just finished.
-Every number, command, exit status, path and digest below came out of that
-run. Nothing below was typed by hand.
+runs the checked-in Fiat controller through three lanes inside it, writes
+these bytes, and then checks them against the run it just finished. Every
+number, command, exit status, path and digest below came out of that run.
+The question, case, class and result labels are `proof.py`'s own, and so is
+every `verdict=` value; the refusal matrix below says what that column
+rests on.
 
 ## What this run of the contract used
 
@@ -1635,6 +1642,17 @@ def check(record: Record, text: str) -> list[str]:
                 refusals.append(
                     f"token {name} cannot descend from itself"
                 )
+
+    stated = STATED_LANES.search(text)
+    if stated is None:
+        refusals.append(
+            "the transcript states no lane count the run can answer"
+        )
+    elif LANE_WORDS[stated.group(1)] != len(record.lanes):
+        refusals.append(
+            f"the transcript says {stated.group(1)} lanes and the run "
+            f"drove {len(record.lanes)}"
+        )
 
     for fields in parsed["refuse"]:
         if len(fields) != 9:

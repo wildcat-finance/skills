@@ -1,10 +1,12 @@
 # Proof: the inoculation contract, driven end to end
 
 `proof.py` beside this file builds one disposable signed Git repository,
-runs the checked-in Fiat controller through two complete lanes inside it,
-writes these bytes, and then checks them against the run it just finished.
-Every number, command, exit status, path and digest below came out of that
-run. Nothing below was typed by hand.
+runs the checked-in Fiat controller through three lanes inside it, writes
+these bytes, and then checks them against the run it just finished. Every
+number, command, exit status, path and digest below came out of that run.
+The question, case, class and result labels are `proof.py`'s own, and so is
+every `verdict=` value; the refusal matrix below says what that column
+rests on.
 
 ## What this run of the contract used
 
