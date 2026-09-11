@@ -10,7 +10,7 @@ description: >-
   which belongs to elenchus, and do not use it to measure something slow, which
   belongs to metron.
 metadata:
-  version: "1.2.0"
+  version: "2.2.0"
 ---
 
 <p align="center">
@@ -194,9 +194,9 @@ E001 also reads `.ts`/`.tsx` through the shared masked lexer, under the same
 1 MiB boundary as E005: a log call whose first argument is an interpolated
 template literal or a concatenation involving a string literal reports a
 message built by formatting. A template literal carrying no `${}` is a
-constant string on this surface and stays clean, which is a deliberate
-divergence from Python, where `ast` gives a placeholder-free f-string the
-same `JoinedStr` node as an interpolated one and E001 fires on both.
+constant string on this surface and stays clean, where Python's E001 fires
+on a placeholder-free f-string; that divergence is decided once, in
+`adr/keep-a-constant-template-literal-outside-e001`.
 
 Both halves read the argument's text rather than its grammar, and both fail
 toward reporting. Interpolation is any `${` in the first argument once it
@@ -351,10 +351,10 @@ signal behind it, or the sampled output someone should read.
 
 ### ephoros-mechanical-gate
 
-- Promise: A zero-exit Ephoros lint establishes that the bounded parser found none of its specified formatted-log, unbounded-metric-label or mean-duration patterns in the selected Python paths, no supported block-YAML alert entry without its own nested runbook annotation, and no wallet-address key on a metric label, dashboard key or log index in the selected Python, TypeScript and supported block-YAML label surfaces.
+- Promise: A zero-exit Ephoros lint establishes that the bounded parser found none of its specified formatted-log, unbounded-metric-label or mean-duration patterns in the selected Python and TypeScript paths, no supported block-YAML alert entry without its own nested runbook annotation, and no wallet-address key on a metric label, dashboard key or log index in the selected Python, TypeScript and supported block-YAML label surfaces.
 - Evidence: The exact lint version, arguments, selected paths, structured findings and zero exit status.
 - Evidence classes: checked
-- Boundary: A clean lint covers only the four implemented Python rules, E004 annotation presence and E005 address-key recognition in the supported block-YAML subset, and E005 alone on the TypeScript surface; it does not prove useful observability, safe output, correct alerting, a resolving or useful runbook, general YAML semantics or any other rule in another language.
+- Boundary: A clean lint covers only the four implemented Python rules, E004 annotation presence and E005 address-key recognition in the supported block-YAML subset, and E001, E002, E003 and E005 on the TypeScript surface in the lexical shapes stated above; it does not prove useful observability, safe output, correct alerting, a resolving or useful runbook, general YAML semantics or any other rule in another language.
 - Authorises: Passing the mechanical Ephoros gate for the exact paths and checker version recorded.
 - Consequence: 1
 - Refuses: Unreadable or oversized input, an unexplained suppression, a non-zero result or any broader observability claim.
