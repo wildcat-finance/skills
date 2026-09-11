@@ -90,9 +90,9 @@ final-green evidence, because the boundary it accepts is a completed step and a
 red guard commit is not one.
 
 The field is absent for a run with no capture, which is what every capsule
-written before this contract looks like, and a capsule that carries the field
-without a captured capture refuses. Restore has no Git evidence yet, so it
-checks the join it can: the projection is revalidated against the captured
+written before this contract looks like. A capsule that carries the field when
+its captured Step has no capture refuses. Restore has no Git evidence yet, so
+it checks the join it can: the projection is revalidated against the captured
 state's stored capture digests, its step, phase and step parent must equal the
 captured Step's, and every manifest digest it names must be the digest of a
 `controller/` file the capsule actually carries.
