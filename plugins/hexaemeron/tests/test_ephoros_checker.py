@@ -361,6 +361,46 @@ class TypeScriptInterpolatedMessageTests(unittest.TestCase):
     def test_an_addition_with_no_string_literal_stays_clean(self):
         self.assertEqual([], ts_codes("logger.info(a + b)\n"))
 
+    def test_a_single_quoted_literal_concatenation_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes(
+            "logger.info('got lender ' + lender)\n"))
+
+    def test_a_plus_inside_a_string_is_not_a_concatenation(self):
+        # The `+` is read from the mask, so a constant message naming one
+        # stays a constant message.
+        self.assertEqual([], ts_codes('logger.info("a + b")\n'))
+
+    def test_only_the_first_argument_decides(self):
+        self.assertEqual([], ts_codes(
+            'logger.info("cycle done", `took ${ms}ms`)\n'))
+
+    def test_a_non_log_method_on_a_logger_does_not_fire(self):
+        # `logger.debug(...)` is a log write; `logger.child(...)` is not.
+        self.assertEqual([], ts_codes("logger.child(`ctx ${id}`)\n"))
+
+    def test_whitespace_before_the_template_literal_does_not_hide_it(self):
+        self.assertEqual(["E001"], ts_codes("logger.debug( `Got ${x}` )\n"))
+
+    def test_a_string_literal_on_the_right_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes('logger.info(lender + " got")\n'))
+
+    def test_a_constant_template_plus_a_variable_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes("logger.info(`got ` + lender)\n"))
+
+    def test_a_concatenation_after_the_call_does_not_reach_it(self):
+        # Both offset tables are file-wide and bisected, so the argument's
+        # end has to bound them or a later `"a" + b` fires here.
+        self.assertEqual([], ts_codes('logger.info(x)\nconst y = "a" + b\n'))
+
+    def test_a_multi_line_call_reports_the_opening_line(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.ts"
+            path.write_text("logger.debug(\n  `Got ${x}`,\n  { y }\n)\n",
+                            encoding="utf-8")
+            findings = ephoros.check(path)
+        self.assertEqual([("E001", 1)],
+                         [(finding.code, finding.line) for finding in findings])
+
     def test_an_unterminatable_file_reports_e000_alone_and_no_e001(self):
         self.assertEqual(["E000"], ts_codes(
             "logger.debug(`Got lenders ${lenders}`)\n"

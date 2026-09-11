@@ -198,6 +198,19 @@ constant string on this surface and stays clean, which is a deliberate
 divergence from Python, where `ast` gives a placeholder-free f-string the
 same `JoinedStr` node as an interpolated one and E001 fires on both.
 
+Both halves read the argument's text rather than its grammar, and both fail
+toward reporting. Interpolation is any `${` in the first argument once it
+opens with a backtick, escaped or not and inside the literal or after it, so
+``logger.debug(`cost is \${x}`)`` and ``logger.info(`done` /* ${x} */)``
+each fire. Concatenation is proximity rather than operands: a `+` outside
+any string or comment and a quote character anywhere in the same first
+argument, so `logger.info(labels['k'] + n)`, `logger.info(fmt(a + "b"))` and
+`logger.info(a + b /* it's fine */)` each fire with no string literal as an
+operand. Neither limit is reached in the pinned clone: none of its 21
+log-call first arguments carries a `+`, and no `.ts` or `.tsx` file the walk
+reads carries `\${`; the three generated `storybook-static` bundles that do
+are `.js` files the checker never reads.
+
 E005 reports telemetry keyed by wallet address: an address-shaped name or a
 40-hex literal used as a metric label, a dashboard key or a log index. It
 reads Python, address-named keys directly under a supported block-YAML
