@@ -1,0 +1,1956 @@
+{
+  "schema": "wildcat.kickoff-targets.v1",
+  "record": "docs/kickoff/1359/targets.md",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1482",
+  "parent_issue": "https://github.com/wildcat-finance/skills/issues/1359",
+  "produced_on": "2026-09-12",
+  "producer": "Shoggoth, acting as Surveyor under Protasis, in a session run by the publisher",
+  "publisher": "Dave Coleman (kethcode), Wildcat Labs: committer and signer of the commit carrying this record",
+  "reviewer": "the reviewer of the pull request that carries this record",
+  "check_command": "python3 scripts/kickoff_targets.py check",
+  "specimen_command": "python3 scripts/kickoff_targets.py specimen --specimen docs/kickoff/1359/specimens/<file>",
+  "consumers": [
+    {
+      "issue": 1354,
+      "url": "https://github.com/wildcat-finance/skills/issues/1354",
+      "title": "kickoff/fizz-4: emitter-fidelity differential suite, shared with Hermes",
+      "needs": [
+        "assembly-emitter repository and exact source SHA",
+        "Foundry root",
+        "qualified emitter and interface paths",
+        "compiler settings",
+        "evidence destination"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet",
+        "wildcat-v2-plasma-mainnet"
+      ],
+      "decision": "kickoff-consumer-target"
+    },
+    {
+      "issue": 1355,
+      "url": "https://github.com/wildcat-finance/skills/issues/1355",
+      "title": "kickoff/hermes-5: frozen layout and selector set for a proxy-deployed estate",
+      "needs": [
+        "repository URL and exact commit",
+        "Foundry root",
+        "chain ID, reference block number and hash",
+        "factory, template and instance addresses",
+        "deployed instance types mapped to source contracts",
+        "hooks and role providers"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet",
+        "wildcat-v2-plasma-mainnet"
+      ],
+      "decision": "kickoff-consumer-target"
+    },
+    {
+      "issue": 1359,
+      "url": "https://github.com/wildcat-finance/skills/issues/1359",
+      "title": "kickoff/lemma-9: pinned Solidity corpus over deployed code",
+      "needs": [
+        "venue and generation inventory in the requested order",
+        "repository URL and source SHA per generation",
+        "chain, address and block scope",
+        "source-to-deployment evidence",
+        "pinned solc standard JSON and compiler identity"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "wildcat-v2-plasma-mainnet",
+        "wildcat-v2.5-release-line",
+        "aave-v3",
+        "aave-v4",
+        "compound-v2",
+        "compound-v3",
+        "euler-v1",
+        "euler-v2",
+        "maple-v1",
+        "maple-v2",
+        "centrifuge-tinlake",
+        "centrifuge-v2",
+        "centrifuge-v3",
+        "clearpool-permissionless"
+      ],
+      "decision": "lemma-9-venue-order"
+    },
+    {
+      "issue": 1361,
+      "url": "https://github.com/wildcat-finance/skills/issues/1361",
+      "title": "kickoff/solidity-auditor-11: emitter-versus-declaration check at a pinned commit",
+      "needs": [
+        "the same inventory as 1354",
+        "deployed-source SHA per epoch",
+        "emitter and interface paths"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet",
+        "wildcat-v2-plasma-mainnet"
+      ],
+      "decision": "kickoff-consumer-target"
+    },
+    {
+      "issue": 1363,
+      "url": "https://github.com/wildcat-finance/skills/issues/1363",
+      "title": "kickoff/x-ray-13: entry-point maps at two commits, diffed",
+      "needs": [
+        "the deployed commit whose logs a capture decodes; the proposed commit is owned by issue 1485"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet",
+        "wildcat-v2-plasma-mainnet"
+      ],
+      "decision": "kickoff-consumer-target"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "kickoff-consumer-target",
+      "question": "Which deployed estate do kickoff issues 1354, 1355, 1361 and 1363 target: the estate whose events are emitted through hand-written log1, log2 and log3 and whose markets are deployed by a factory with hooks and role providers?",
+      "decision_maker_role": "target maintainer for the Wildcat protocol",
+      "evidence_summary": "wildcat-v2-ethereum-mainnet is the only estate in the wildcat-finance organisation that carries both features: src/libraries/MarketEvents.sol emits every market event through assembly log1, log2 and log3, and HooksFactory 0xdd7dd3b5076cf89440d05585ff56d246386207be deploys markets from stored init code with hooks templates and role providers. The Plasma estate is the same source line on chain 9745. V1 emits through assembly too but has no hooks factory.",
+      "options": [
+        {
+          "id": "ethereum-only",
+          "targets": [
+            "wildcat-v2-ethereum-mainnet"
+          ]
+        },
+        {
+          "id": "ethereum-and-plasma",
+          "targets": [
+            "wildcat-v2-ethereum-mainnet",
+            "wildcat-v2-plasma-mainnet"
+          ]
+        },
+        {
+          "id": "other",
+          "targets": [],
+          "note": "the maintainer names an estate this registry does not carry; a new row is then required"
+        }
+      ],
+      "sub_questions": [
+        "Does the third hooks template 0x731c775385d0efb2cac61074ba2d885d343a09cd (FixedTermHooks, 730-day maximum term, 16 markets, absent from every published manifest) belong to the protected set for issue 1355?",
+        "Which MarketLens is canonical: 0xc672760757da93b5f3275dc97203d145806dae33 (deployments.json) or 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7 (docs page)?"
+      ],
+      "status": "pending",
+      "decision_maker": null,
+      "selection": null,
+      "how_to_record": "set status to recorded, fill decision_maker with name, role, date and an https reference (the approving review on the pull request that carries this record, or an issue comment), set selection to one option id, then set every selected row's status to resolved with decision kickoff-consumer-target and run scripts/kickoff_targets.py check"
+    },
+    {
+      "id": "lemma-9-venue-order",
+      "question": "Which venues and generations fill the five ordered slots kickoff issue 1359 inherited from its filing: the first venue's two generations, the second venue, the venue with three generations, then the two remaining venues?",
+      "decision_maker_role": "target maintainer for the Skills repository kickoff programme",
+      "evidence_summary": "The filing names no venue. The reuse issues 1139 to 1144 and 1148 name seven venues. Two of them carry three generations in this inventory (Wildcat: V1, V2, V2.5; Centrifuge: Tinlake, v2, v3) and four carry two (Aave, Compound, Euler, Maple), so the ordinal description does not resolve on its own. Surveyor records the inventory and does not assign venues to slots.",
+      "options": [
+        {
+          "id": "wildcat-first",
+          "note": "example shape only: Wildcat as the venue with three generations and four of the other six venues in the remaining slots; the maintainer writes the exact ordered list"
+        },
+        {
+          "id": "maintainer-restates",
+          "note": "the maintainer replaces the ordinal description with an explicit ordered list of target ids from this registry"
+        },
+        {
+          "id": "defer",
+          "note": "leave issue 1359 blocked on this decision and close 1482 on the inventory alone"
+        }
+      ],
+      "candidate_inventory": {
+        "Wildcat": [
+          "wildcat-v1-ethereum-mainnet",
+          "wildcat-v2-ethereum-mainnet",
+          "wildcat-v2-plasma-mainnet",
+          "wildcat-v2.5-release-line"
+        ],
+        "Aave": [
+          "aave-v3",
+          "aave-v4"
+        ],
+        "Compound": [
+          "compound-v2",
+          "compound-v3"
+        ],
+        "Euler": [
+          "euler-v1",
+          "euler-v2"
+        ],
+        "Maple": [
+          "maple-v1",
+          "maple-v2"
+        ],
+        "Centrifuge": [
+          "centrifuge-tinlake",
+          "centrifuge-v2",
+          "centrifuge-v3"
+        ],
+        "Clearpool": [
+          "clearpool-permissionless"
+        ]
+      },
+      "status": "pending",
+      "decision_maker": null,
+      "selection": null,
+      "how_to_record": "set status to recorded, fill decision_maker, set selection to the ordered list of target ids, mark the Wildcat rows the list names resolved with decision lemma-9-venue-order, and mark any non-Wildcat row the list names blocked with recovery pointing at its owner_issue until that issue delivers its deployment pin"
+    }
+  ],
+  "targets": [
+    {
+      "id": "wildcat-v1-ethereum-mainnet",
+      "venue": "Wildcat",
+      "generation": "V1",
+      "label": "Wildcat V1 controller-factory estate on Ethereum mainnet (deprecated on the docs page)",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+        "relation": "deployed",
+        "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+        "commit_ref": "main history, 2023-11-30T16:38:32Z, 'Add blacklisting changes from #68'",
+        "equivalent_commits": [
+          "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9",
+          "e9552f0e8a093e214dd69947dc689023df09ff20",
+          "e962bf37866483a3573016a3087331c5de9f0929",
+          "016d0658d6d442b8f42e3bb68f01fae43c150307"
+        ],
+        "equivalence_note": "the controller factory's 37 and the arch controller's 8 in-tree Sourcify sources have identical blobs at these five commits; the licence-header commit 6164ddd4 changes every file's comment bytes and the sentinel's Sourcify sources match from there to the head 488b30d0 (bytecode is unaffected because bytecodeHash is none)",
+        "default_branch_head": {
+          "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+          "date": "2024-02-15T01:35:23Z"
+        },
+        "foundry_root": ".",
+        "foundry_config": "foundry.toml at 488b30d0 declares src, lib, evm_version shanghai and no solc pin",
+        "compiler": {
+          "solc": "0.8.22+commit.4fc1097e",
+          "evm_version": "shanghai",
+          "optimizer_runs": 200,
+          "via_ir": true,
+          "bytecode_hash": "none",
+          "source": "Sourcify compilation settings for the factory, arch controller and sentinel"
+        },
+        "build_inputs": [
+          {
+            "path": "https://sourcify.dev/server/v2/contract/1/0xfd31007613c9f671df6a8d4234901324986bfd13?fields=stdJsonInput",
+            "blob_sha1": "30a0f53c1c76fdb775eaf6ea2f8ac4dda0fdf8c3",
+            "sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706",
+            "bytes": 253234,
+            "canonical_form": "json.dumps(stdJsonInput, sort_keys=True, separators=(',', ':'))",
+            "compilation_target": "WildcatMarketControllerFactory"
+          },
+          {
+            "path": "https://sourcify.dev/server/v2/contract/1/0xfeb516d9d946dd487a9346f6fee11f40c6945ee4?fields=stdJsonInput",
+            "blob_sha1": "611f6a76e4670b7704a283beecee034482ff9925",
+            "sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db",
+            "bytes": 61171,
+            "canonical_form": "json.dumps(stdJsonInput, sort_keys=True, separators=(',', ':'))",
+            "compilation_target": "WildcatArchController"
+          },
+          {
+            "path": "https://sourcify.dev/server/v2/contract/1/0x437e0551892c2c9b06d3ffd248fe60572e08cd1a?fields=stdJsonInput",
+            "blob_sha1": "9e7eaf45b9a07dcf8c68c206571f5ae279401eed",
+            "sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6",
+            "bytes": 32620,
+            "canonical_form": "json.dumps(stdJsonInput, sort_keys=True, separators=(',', ':'))",
+            "compilation_target": "WildcatSanctionsSentinel"
+          }
+        ],
+        "build_inputs_note": "V1 keeps no standard-JSON inputs in its repository; the inputs above are Sourcify's stdJsonInput documents in canonical JSON form",
+        "emitter_paths": [
+          {
+            "path": "src/libraries/MarketEvents.sol",
+            "assembly_log_sites_at_488b30d0": 21
+          },
+          {
+            "path": "src/spherex/SphereXProtectedEvents.sol",
+            "assembly_log_sites_at_488b30d0": 5
+          }
+        ],
+        "interface_paths": [
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+          "src/interfaces/IWildcatArchController.sol"
+        ]
+      },
+      "deployment": {
+        "chain_id": 1,
+        "chain": "Ethereum mainnet",
+        "observed_block": {
+          "number": 25960042,
+          "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
+          "timestamp": 1789200599
+        },
+        "start_block": {
+          "number": 18686645,
+          "hash": "0xf875ac25e366bd6e03a94bd552c5a7be9469062e1ca9af4ca46bf4eda97f151a",
+          "timestamp": 1701374255,
+          "what": "WildcatArchController deployment, transaction 0x185630a823edeb2261ae6fa92b62c1b3200facf2a54ad9356cccbf4630a75d2d"
+        },
+        "contracts": [
+          {
+            "role": "registry",
+            "name": "WildcatArchController",
+            "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+            "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+            "code_length": 8724,
+            "observed_block_number": 25960042,
+            "shared_with": [
+              "wildcat-v2-ethereum-mainnet"
+            ],
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "sourcify full match (creation and runtime); every in-tree Sourcify source blob equals the wildcat-protocol tree at da74452a through 016d0658; solc 0.8.22+commit.4fc1097e reproduction of the Sourcify stdJsonInput reproduces the runtime code modulo immutables",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "sourcify": "match",
+              "deployment_block": 18686645
+            }
+          },
+          {
+            "role": "sanctions-sentinel",
+            "name": "WildcatSanctionsSentinel",
+            "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+            "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+            "code_length": 3364,
+            "observed_block_number": 25960042,
+            "shared_with": [
+              "wildcat-v2-ethereum-mainnet"
+            ],
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "sourcify full match; in-tree Sourcify source blobs equal the wildcat-protocol tree from 6164ddd4 to 488b30d0; solc 0.8.22 reproduction modulo immutables",
+              "source_commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+              "sourcify": "match",
+              "deployment_block": 18686645
+            }
+          },
+          {
+            "role": "factory",
+            "name": "WildcatMarketControllerFactory",
+            "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+            "code_keccak256": "0x820f5453768df9f33465663ad5ade3416a82b821d3f39383ec2d358fd13ad945",
+            "code_length": 6354,
+            "observed_block_number": 25960042,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "sourcify full match (creation and runtime); every in-tree Sourcify source blob equals the wildcat-protocol tree at da74452a through 016d0658; solc 0.8.22+commit.4fc1097e reproduction of the Sourcify stdJsonInput reproduces the runtime code modulo immutables",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "sourcify": "match",
+              "deployment_block": 18687391,
+              "deployment_transaction": "0xbf0b59d6c3c9790f57b1876cd3ab4a1738f22751b1f80bdd72edff05972e8733"
+            }
+          },
+          {
+            "role": "market-init-code-storage",
+            "name": "WildcatMarket init code (V1)",
+            "address": "0xd0c690707b5642475f68a0487cea08e30a5719bd",
+            "code_keccak256": "0x79fa042e1a64cf7f2b02b7074c16f324ee3ac1fab1da99be6066aee6bf0138b6",
+            "code_length": 23651,
+            "observed_block_number": 25960074,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 23650,
+              "init_code_keccak256": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93"
+            },
+            "code_match": {
+              "method": "stored init code keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; not reproduced from source in this pass",
+              "source_commit": null
+            }
+          },
+          {
+            "role": "controller-init-code-storage",
+            "name": "WildcatMarketController init code (V1)",
+            "address": "0x93caaddc316f699f9249e93a689566cefc446c3c",
+            "code_keccak256": "0x8e1eb2f3e38e1effddfd26b92802c0cb9aba828051fc0996696017a3cc414066",
+            "code_length": 16251,
+            "observed_block_number": 25960074,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 16250,
+              "init_code_keccak256": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371"
+            },
+            "code_match": {
+              "method": "stored init code keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; not reproduced from source in this pass",
+              "source_commit": null
+            }
+          },
+          {
+            "role": "lens",
+            "name": "MarketLens (V1)",
+            "address": "0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+            "code_keccak256": "0x60a6478c59b7c6b95d7549d05b5801203ba70e79aa63e0e5fe1a91eccd4a431f",
+            "code_length": 17417,
+            "observed_block_number": 25960042,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "sourcify full match; 40 of 46 in-tree Sourcify sources equal the wildcat-protocol head 488b30d0 and six library files differ, so no commit is pinned",
+              "source_commit": null,
+              "sourcify": "match",
+              "deployment_block": 18687391
+            }
+          }
+        ],
+        "instances": {
+          "controllers": [
+            "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+            "0xc2321ed31a274595e087b5010d200b748eb600e4",
+            "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6"
+          ],
+          "controller_count": 3,
+          "markets": [
+            "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+            "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+            "0x5850afc80561932b0abb63dd13cdc129395323a3",
+            "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+            "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+            "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+            "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a"
+          ],
+          "market_count": 7,
+          "markets_sha256": "b96da6374d45b26ac157a81b6811dc48931714d8baac80adb027f89fa8027c42",
+          "derivation": "registered markets minus every market listed under a HooksFactory template at the estate block"
+        }
+      },
+      "documentation": [
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat-docs",
+          "commit": "636b1dcba90c816e699c0d876c22d39be2c58b06",
+          "commit_date": "2026-08-13T19:29:07Z",
+          "path": "technical-overview/contract-deployments.md",
+          "blob_sha1": "8384e46a150d91327833559f46aabd5f1c426aed",
+          "sha256": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541",
+          "published": "https://docs.wildcat.finance/technical-overview/contract-deployments",
+          "copy": "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/subgraph",
+          "commit": "63f399e6ceff76a85c14ed26017a792e15513efd",
+          "commit_date": "2026-03-16T20:56:06Z",
+          "path": "networks.json",
+          "blob_sha1": "bf864d9e2a02ac9b48cc013342a7519d1f59ba2a",
+          "sha256": "e4033d3f1bb5e04697454ba0a14761fb438fd0abb06a770a26f8fd2d802e7888",
+          "copy": "docs/kickoff/1359/evidence/upstream/subgraph-networks.json"
+        }
+      ],
+      "exclusions": [
+        "Sepolia (11155111) V1 deployments",
+        "code of the three controllers and seven markets was not read",
+        "market and controller init code were not recompiled from source"
+      ],
+      "unresolved": [
+        "V1 market and controller init code hashes are recorded but not reproduced from the pinned source",
+        "the V1 MarketLens source commit is not pinned",
+        "one of the 37-source and 8-source blob sets pins five equivalent commits, not one; the deployer's exact checkout is unknown"
+      ],
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/endpoints.py (arch controller and start block 18686645)",
+        "plugins/probitas/skills/probitas/references/venues.md"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/ethereum-mainnet.json",
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/sourcify-summary.json",
+        "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md",
+        "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
+        "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
+      ]
+    },
+    {
+      "id": "wildcat-v2-ethereum-mainnet",
+      "venue": "Wildcat",
+      "generation": "V2",
+      "label": "Wildcat V2 HooksFactory estate on Ethereum mainnet",
+      "status": "candidate",
+      "pending_on": [
+        "kickoff-consumer-target",
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1354,
+        1355,
+        1359,
+        1361,
+        1363
+      ],
+      "source": {
+        "repository": "https://github.com/wildcat-finance/v2-protocol",
+        "relation": "deployed",
+        "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+        "commit_ref": "tag v2.0.0 (release 'v2.0 Protocol Release', 2026-03-17)",
+        "equivalent_commits": [
+          "8dc8e449a0029927c70ad39efcf196315071f324",
+          "d1691193dc09d4186b4cc47a131280c62e5c5b76",
+          "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+          "2624204522e5e13817ecad3655411bb9fc35ab11",
+          "f5a26146987926f4811b72a795d662813dedfe85"
+        ],
+        "equivalence_note": "every in-tree source of the five verification inputs has the same blob at each listed commit; other files differ between them, so a consumer that needs one tree should take the tag",
+        "additional_deployed_commits": [
+          {
+            "commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+            "date": "2025-09-26T16:27:44Z",
+            "reachable_from": "branch plasma",
+            "what": "src/access/FixedTermHooks.sol with MaximumLoanTerm = 730 days, the source of the third hooks template 0x731c775385d0efb2cac61074ba2d885d343a09cd"
+          },
+          {
+            "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+            "what": "tag v2.1.0, the source of Wildcat4626WrapperFactory 0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a"
+          },
+          {
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "what": "plasma line, the source of MarketLens 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7"
+          }
+        ],
+        "foundry_root": ".",
+        "foundry_config": "foundry.toml at a70f297f: solc 0.8.25, evm_version cancun, bytecode_hash none; profile ir sets via_ir and optimizer_runs 50000",
+        "compiler": {
+          "solc": "0.8.25+commit.b61c2a91",
+          "evm_version": "cancun",
+          "optimizer_runs": 50000,
+          "via_ir": true,
+          "bytecode_hash": "none",
+          "append_cbor": true,
+          "source": "settings of the five verification inputs; Sourcify agrees for the HooksFactory"
+        },
+        "build_inputs": [
+          {
+            "path": "deployments/mainnet/HooksFactory-0xdd7dd3b5076cf89440d05585ff56d246386207be/standard-input.json",
+            "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+            "blob_sha1": "34d238ea60b2f3205195f9d8cf942f3a46c08272",
+            "sha256": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309",
+            "bytes": 161751,
+            "compilation_target": "src/HooksFactory.sol:HooksFactory"
+          },
+          {
+            "path": "deployments/mainnet/WildcatMarket-0xac3216fa28f81b8fae150fb5626ca79c7a570daf/standard-input.json",
+            "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+            "blob_sha1": "0f86f94ad1165975a2812b3acfd0a333c5d0724f",
+            "sha256": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346",
+            "bytes": 224443,
+            "compilation_target": "src/market/WildcatMarket.sol:WildcatMarket"
+          },
+          {
+            "path": "deployments/mainnet/FixedTermHooks-0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36/standard-input.json",
+            "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+            "blob_sha1": "813f522c2c4c8f311775b21abeda69f7fb8da7cd",
+            "sha256": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33",
+            "bytes": 141522,
+            "compilation_target": "src/access/FixedTermHooks.sol:FixedTermHooks"
+          },
+          {
+            "path": "deployments/mainnet/OpenTermHooks-0x4c62b4844c8371f321541e8d564a4b3896cecec7/standard-input.json",
+            "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+            "blob_sha1": "7ec48fb58293cb9cbb47767b0a0c06a90e3537ca",
+            "sha256": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80",
+            "bytes": 138286,
+            "compilation_target": "src/access/OpenTermHooks.sol:OpenTermHooks"
+          },
+          {
+            "path": "deployments/mainnet/MarketLens-0xc672760757da93b5f3275dc97203d145806dae33/standard-input.json",
+            "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+            "blob_sha1": "9e77f86ba4860e6d0d370daa31126088d767f383",
+            "sha256": "82f2b4bfd732136094d7f60a9d6d7f1240d324e44251e60065dfc907d50986c3",
+            "bytes": 434585,
+            "compilation_target": "src/lens/MarketLens.sol:MarketLens"
+          }
+        ],
+        "build_command": "solc-0.8.25 --standard-json < deployments/mainnet/<Contract>-<address>/standard-input.json, with settings.outputSelection widened to evm.bytecode.object and evm.deployedBytecode.object; run on 2026-09-12 for the HooksFactory, WildcatMarket, FixedTermHooks and OpenTermHooks inputs, all byte-identical to output.json",
+        "submodules": {
+          "lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+          "lib/ethereum-access-token": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+          "lib/forge-std": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+          "lib/openzeppelin-contracts": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+          "lib/sol-utils": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+          "lib/solady": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "lib/solmate": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+          "lib/vulcan": "95d6be4c447a23400d876caff078abcf6a881a12"
+        },
+        "remappings": [
+          "src/=src/",
+          "forge-std/=lib/forge-std/src/",
+          "ds-test/=lib/ds-test/src/",
+          "solmate/=lib/solmate/src/",
+          "solady/=lib/solady/src/",
+          "openzeppelin/=lib/openzeppelin-contracts/",
+          "sol-utils/=lib/sol-utils/src/",
+          "ethereum-access-token/=lib/ethereum-access-token/contracts/"
+        ],
+        "emitter_paths": [
+          {
+            "path": "src/libraries/MarketEvents.sol",
+            "blob_sha1": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+            "assembly_log_sites": {
+              "log1": 9,
+              "log2": 9,
+              "log3": 4
+            },
+            "consumed_by": [
+              "src/market/WildcatMarketBase.sol",
+              "src/market/WildcatMarketConfig.sol",
+              "src/market/WildcatMarketToken.sol",
+              "src/market/WildcatMarketWithdrawals.sol",
+              "src/market/WildcatMarket.sol"
+            ]
+          },
+          {
+            "path": "src/spherex/SphereXProtectedEvents.sol",
+            "blob_sha1": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+            "assembly_log_sites": {
+              "log1": 5
+            }
+          }
+        ],
+        "interface_paths": [
+          {
+            "path": "src/interfaces/IMarketEventsAndErrors.sol",
+            "blob_sha1": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+            "event_declarations": 23
+          },
+          {
+            "path": "src/interfaces/IERC20.sol",
+            "blob_sha1": "9ee5c3aecc25e36414b022353b3126524d3049bc",
+            "event_declarations": 2
+          },
+          {
+            "path": "src/interfaces/ISphereXProtectedRegisteredBase.sol",
+            "blob_sha1": "8e9078e846875d8de0df1979f726a6a9af9c1b64",
+            "event_declarations": 2
+          },
+          {
+            "path": "src/IHooksFactory.sol",
+            "blob_sha1": "6e883a21b21a39b6989d9f0331bd7e91c12b04e7",
+            "event_declarations": 5
+          },
+          {
+            "path": "src/interfaces/IWildcatArchController.sol",
+            "blob_sha1": "2ee945fb20874de2da96c79b0dc5fe0056132268",
+            "event_declarations": 15
+          },
+          {
+            "path": "src/access/IHooks.sol",
+            "blob_sha1": "14e80db27ffcd53597d1aefef4e9d3082c253659"
+          },
+          {
+            "path": "src/access/IRoleProvider.sol",
+            "blob_sha1": "904b886f6d22798451b9f83ee347eeafd5422866"
+          }
+        ]
+      },
+      "deployment": {
+        "chain_id": 1,
+        "chain": "Ethereum mainnet",
+        "observed_block": {
+          "number": 25960042,
+          "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
+          "timestamp": 1789200599
+        },
+        "start_block": {
+          "number": 21788182,
+          "hash": "0xa8c8592292a62b31242bdc1e973a8092288c0f6fbf22ddb536f1aa6f4e35a4d5",
+          "timestamp": 1738853567,
+          "what": "HooksFactory deployment, transaction 0xe1c92956c9ec365859a40f6ef8bb1ad4b59b469dca64fcadfef1f9a935ee82df"
+        },
+        "contracts": [
+          {
+            "role": "registry",
+            "name": "WildcatArchController",
+            "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+            "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+            "code_length": 8724,
+            "observed_block_number": 25960042,
+            "shared_with": [
+              "wildcat-v1-ethereum-mainnet"
+            ],
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "sourcify full match (creation and runtime); every in-tree Sourcify source blob equals the wildcat-protocol tree at da74452a through 016d0658; solc 0.8.22+commit.4fc1097e reproduction of the Sourcify stdJsonInput reproduces the runtime code modulo immutables",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "sourcify": "match",
+              "deployment_block": 18686645
+            }
+          },
+          {
+            "role": "sanctions-sentinel",
+            "name": "WildcatSanctionsSentinel",
+            "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+            "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+            "code_length": 3364,
+            "observed_block_number": 25960042,
+            "shared_with": [
+              "wildcat-v1-ethereum-mainnet"
+            ],
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "sourcify full match; in-tree Sourcify source blobs equal the wildcat-protocol tree from 6164ddd4 to 488b30d0; solc 0.8.22 reproduction modulo immutables",
+              "source_commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+              "sourcify": "match",
+              "deployment_block": 18686645
+            }
+          },
+          {
+            "role": "factory",
+            "name": "HooksFactory",
+            "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+            "code_keccak256": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0",
+            "code_length": 16798,
+            "observed_block_number": 25960042,
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; Sourcify full match; on-chain runtime equals deployedBytecode modulo 22 immutable slots",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": "match",
+              "deployment_block": 21788182,
+              "deployment_transaction": "0xe1c92956c9ec365859a40f6ef8bb1ad4b59b469dca64fcadfef1f9a935ee82df"
+            },
+            "views_at_observed_block": {
+              "marketInitCodeHash": "0xc152ead6073d54f964e3c2fd317ec6c774e67465cf3e6fb9551badb88a09e43f",
+              "marketInitCodeStorage": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+              "archController": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+              "sanctionsSentinel": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+              "getHooksTemplatesCount": 3
+            }
+          },
+          {
+            "role": "market-init-code-storage",
+            "name": "WildcatMarket init code",
+            "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+            "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+            "code_length": 23115,
+            "observed_block_number": 25960042,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 23114,
+              "init_code_keccak256": "0xc152ead6073d54f964e3c2fd317ec6c774e67465cf3e6fb9551badb88a09e43f"
+            },
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode; keccak256 of the rest equals HooksFactory.marketInitCodeHash()",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-template",
+            "name": "OpenTermHooks init code",
+            "address": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "code_keccak256": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+            "code_length": 20255,
+            "observed_block_number": 25960042,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 20254,
+              "init_code_keccak256": "0x45a5a3cf0a4aeee877f71602848425bac849ee5bf59a2761014c7d6ee00be94f"
+            },
+            "template": {
+              "name": "OpenTermHooks",
+              "index": 0,
+              "enabled": true,
+              "exists": true,
+              "protocol_fee_bips": 500,
+              "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+              "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+              "origination_fee_amount": 0,
+              "market_count": 60,
+              "markets": null
+            },
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-template",
+            "name": "FixedTermHooks init code (MaximumLoanTerm 365 days)",
+            "address": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+            "code_length": 22165,
+            "observed_block_number": 25960042,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 22164,
+              "init_code_keccak256": "0xe283098ee6563da880b545b812e4eb94e24ee30498f2f109bbb6295c95dc3c4f"
+            },
+            "template": {
+              "name": "FixedTermHooks",
+              "index": 1,
+              "enabled": true,
+              "exists": true,
+              "protocol_fee_bips": 500,
+              "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+              "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+              "origination_fee_amount": 0,
+              "market_count": 4,
+              "markets": null
+            },
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-template",
+            "name": "FixedTermHooks init code (MaximumLoanTerm 730 days)",
+            "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+            "code_length": 22165,
+            "observed_block_number": 25960042,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 22164,
+              "init_code_keccak256": "0x1e2fdf1700fe20e2e903b5c459c8b9db04798942ab7fe1ad49a88421dbd47a77"
+            },
+            "template": {
+              "name": "FixedTermHooks",
+              "index": 2,
+              "enabled": true,
+              "exists": true,
+              "protocol_fee_bips": 500,
+              "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+              "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+              "origination_fee_amount": 0,
+              "market_count": 16,
+              "markets": null
+            },
+            "code_match": {
+              "method": "not in any deployment manifest, docs page or Sourcify; recompiling the FixedTermHooks verification input with src/access/FixedTermHooks.sol taken from commit 5838b2f3 (MaximumLoanTerm = 730 days) under the same settings reproduces the stored init code byte for byte",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "lens",
+            "name": "MarketLens (deployments.json)",
+            "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+            "code_keccak256": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a",
+            "code_length": 24385,
+            "observed_block_number": 25960042,
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte for its 60 in-tree sources; on-chain runtime equals deployedBytecode modulo 11 immutable slots; not on Sourcify",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "lens",
+            "name": "MarketLens (docs page)",
+            "address": "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7",
+            "code_keccak256": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5",
+            "code_length": 20104,
+            "observed_block_number": 25960042,
+            "code_match": {
+              "method": "Sourcify full match (0.8.25, runs 200, viaIR); all 60 in-tree Sourcify sources equal the plasma branch at e1f77540 and 1bc514b1; 57 of 60 equal v2.0.0",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": "match",
+              "deployment_block": 23121577
+            }
+          },
+          {
+            "role": "wrapper-factory",
+            "name": "Wildcat4626WrapperFactory",
+            "address": "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a",
+            "code_keccak256": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e",
+            "code_length": 19188,
+            "observed_block_number": 25960042,
+            "code_match": {
+              "method": "Sourcify full match (0.8.25, runs 200, viaIR off); all 9 in-tree Sourcify sources equal tag v2.1.0, the mainnet branch and main",
+              "source_commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+              "sourcify": "match",
+              "deployment_block": 24750455,
+              "deployment_transaction": "0x2dad1799cd230517ffb1c0e8709d8b92ca458209429b0211643570c446a41ba6"
+            }
+          },
+          {
+            "role": "fee-recipient",
+            "name": "WildcatFeeRecipient",
+            "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+            "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+            "code_length": 1649,
+            "observed_block_number": 25960042,
+            "code_match": {
+              "method": "Sourcify full match (0.8.25, runs 200); src/WildcatFeeRecipient.sol is in no v2-protocol tree read, so the source repository is not located",
+              "source_commit": null,
+              "sourcify": "match",
+              "deployment_block": 21854968
+            }
+          },
+          {
+            "role": "collateral-factory",
+            "name": "CollateralFactory (subgraph)",
+            "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+            "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+            "code_length": 7615,
+            "observed_block_number": 25960042,
+            "code_match": {
+              "method": "code hash recorded only; not on Sourcify; the collateral-contract repository was not inspected",
+              "source_commit": null,
+              "sourcify": null
+            }
+          }
+        ],
+        "instances": {
+          "hooks_templates": [
+            "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "0x731c775385d0efb2cac61074ba2d885d343a09cd"
+          ],
+          "markets_by_template": {
+            "0x4c62b4844c8371f321541e8d564a4b3896cecec7": {
+              "name": "OpenTermHooks",
+              "count": 60
+            },
+            "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36": {
+              "name": "FixedTermHooks",
+              "count": 4
+            },
+            "0x731c775385d0efb2cac61074ba2d885d343a09cd": {
+              "name": "FixedTermHooks",
+              "count": 16
+            }
+          },
+          "v2_market_count": 80,
+          "v2_markets_sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+          "registered_markets_count": 87,
+          "registered_markets_sha256": "5a073d47686a971966098cf4d09189cc3048543ea6099751f52a70209cb171cc",
+          "registered_borrowers_count": 54,
+          "registered_controller_factories": [
+            "0xfd31007613c9f671df6a8d4234901324986bfd13",
+            "0xdd7dd3b5076cf89440d05585ff56d246386207be"
+          ],
+          "registered_controllers": [
+            "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+            "0xc2321ed31a274595e087b5010d200b748eb600e4",
+            "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6",
+            "0xdd7dd3b5076cf89440d05585ff56d246386207be"
+          ],
+          "arch_controller_owner": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+          "market_lists": "docs/kickoff/1359/evidence/ethereum-mainnet.json hooks_factory.templates[].markets"
+        }
+      },
+      "documentation": [
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat-docs",
+          "commit": "636b1dcba90c816e699c0d876c22d39be2c58b06",
+          "commit_date": "2026-08-13T19:29:07Z",
+          "path": "technical-overview/contract-deployments.md",
+          "blob_sha1": "8384e46a150d91327833559f46aabd5f1c426aed",
+          "sha256": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541",
+          "published": "https://docs.wildcat.finance/technical-overview/contract-deployments",
+          "copy": "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/subgraph",
+          "commit": "63f399e6ceff76a85c14ed26017a792e15513efd",
+          "commit_date": "2026-03-16T20:56:06Z",
+          "path": "networks.json",
+          "blob_sha1": "bf864d9e2a02ac9b48cc013342a7519d1f59ba2a",
+          "sha256": "e4033d3f1bb5e04697454ba0a14761fb438fd0abb06a770a26f8fd2d802e7888",
+          "copy": "docs/kickoff/1359/evidence/upstream/subgraph-networks.json"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/v2-protocol",
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "path": "deployments/mainnet/factory-inventory.json",
+          "blob_sha1": "ccb3c39b3cf611b0853d2ff0f49999a53f76c853",
+          "sha256": "87d15ea62f69714cedd0b603aa2ff1d6f506b83c14477179b9aff82e01dbb312",
+          "copy": "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
+        }
+      ],
+      "exclusions": [
+        "Sepolia (11155111) deployments",
+        "the 80 market instances' and every hooks instance's own code hashes were not read; each market is deployed from the recorded init code and carries its own immutables",
+        "role-provider instances beyond the templates were not enumerated",
+        "Etherscan was not queried",
+        "template registration blocks were not established (the log query did not answer)"
+      ],
+      "unresolved": [
+        "the third hooks template 0x731c775385d0efb2cac61074ba2d885d343a09cd (FixedTermHooks, 730-day maximum term, 16 markets) appears in no manifest the organisation publishes; its source is pinned here by reproduction and the maintainer should confirm it belongs to the protected set",
+        "deployments.json names MarketLens 0xc672760757da93b5f3275dc97203d145806dae33 while the docs page names 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7; both are recorded",
+        "WildcatFeeRecipient and CollateralFactory sources are not located in this pass"
+      ],
+      "existing_skills_records": [
+        "plugins/janus/harness/manifests/wildcat-open-term.json (host wildcat-v2.5, hook OpenTermHooks-shaped)",
+        "plugins/pandects/integrations/wildcat/APPLICABILITY.md (reduced model, no commit binding)",
+        "plugins/probitas/scripts/probitas_lib/endpoints.py (Goldsky subgraph, arch controller, start block)",
+        "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/ethereum-mainnet.json",
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/sourcify-summary.json",
+        "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md",
+        "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
+        "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
+      ]
+    },
+    {
+      "id": "wildcat-v2-plasma-mainnet",
+      "venue": "Wildcat",
+      "generation": "V2",
+      "label": "Wildcat V2 HooksFactory estate on Plasma mainnet (chain 9745)",
+      "status": "candidate",
+      "pending_on": [
+        "kickoff-consumer-target",
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1354,
+        1355,
+        1359,
+        1361,
+        1363
+      ],
+      "source": {
+        "repository": "https://github.com/wildcat-finance/v2-protocol",
+        "relation": "deployed",
+        "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+        "commit_ref": "branch plasma, 2025-12-01T00:00:01Z, 'add plasma-mainnet deployments'",
+        "equivalent_commits": [
+          "1bc514b1b0b903b1e94ca8046741fa8c9d367294"
+        ],
+        "equivalence_note": "the plasma branch head 1bc514b1 (2025-12-01T00:00:51Z, 'add WildcatCopyOfChainalysisList') has the same blobs for every in-tree source of the twelve plasma-mainnet verification inputs; the branch is not merged into main",
+        "foundry_root": ".",
+        "compiler": {
+          "solc": "0.8.25+commit.b61c2a91",
+          "evm_version": "cancun",
+          "optimizer_runs": 200,
+          "via_ir": true,
+          "bytecode_hash": "none",
+          "source": "settings of the plasma-mainnet verification inputs"
+        },
+        "build_inputs": [
+          {
+            "path": "deployments/plasma-mainnet/ChainalysisProxy-0x38056f7fe6396417b191bf7dc6a3aa04235f3f46/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "1ea3793938303d33aa4a3072930fd0b601b24cfc",
+            "sha256": "349d40f8585204b14afa0fd4f88e8b182cc34089c29906c6ad527acb521992dd",
+            "bytes": 12757,
+            "compilation_target": "src/ChainalysisProxy.sol:ChainalysisProxy"
+          },
+          {
+            "path": "deployments/plasma-mainnet/FixedTermHooks-0x59010b706959c15977304c2553f3f4c697a73018/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "50d2d60c141ccf16b7bcee46287b3f7ec48d7d62",
+            "sha256": "89410de34563e0e092747c8ea5b293c4127dfa47e4f0e1782f15ad61cfc7bc8a",
+            "bytes": 141520,
+            "compilation_target": "src/access/FixedTermHooks.sol:FixedTermHooks"
+          },
+          {
+            "path": "deployments/plasma-mainnet/HooksFactory-0xb46bae25ac6d23148531ed1853a8881fd842e517/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "1bc7e7a9844107dc9e7db48cc8fb9db1e4fecf24",
+            "sha256": "c47a6a2f3796dc3c0a06b97087e1e56d33d6aac5ba3b6d9d9b91ca157fec63e8",
+            "bytes": 161749,
+            "compilation_target": "src/HooksFactory.sol:HooksFactory"
+          },
+          {
+            "path": "deployments/plasma-mainnet/MarketLens-0x7e5d6d9f9a2091dd781118514f5397a8107c81c5/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "dbf410287434bc7a94c3644545fd0dc21b4d68a5",
+            "sha256": "2f901efebfad90931e848b3be3fe60eca0f5985d4e5b9a8f0a3942d4929d9daf",
+            "bytes": 434693,
+            "compilation_target": "src/lens/MarketLens.sol:MarketLens"
+          },
+          {
+            "path": "deployments/plasma-mainnet/OpenAccessRoleProvider-0x792f1368f8b8f450c14875eb6ff0028dfc2629b4/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "fcb450da40a0e692f379657b30f013e2594ee1a7",
+            "sha256": "2164105a0c7bed9be96570bcc40ecc390066cb796bfa7868684722803a1afd9c",
+            "bytes": 1818,
+            "compilation_target": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider"
+          },
+          {
+            "path": "deployments/plasma-mainnet/OpenTermHooks-0x40217f6e5891c8f1524744c0747e07d316a0c798/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "8bf2b625b02a0bf91bc7fd513f6a360a72155aea",
+            "sha256": "4520947b015a6bafdb19dc761d8059e1a0672c40a47b0c66df1f656dee9220c6",
+            "bytes": 138284,
+            "compilation_target": "src/access/OpenTermHooks.sol:OpenTermHooks"
+          },
+          {
+            "path": "deployments/plasma-mainnet/SphereXEngine-0x931fe4a88e1c1f1a7402df6a40988f38503f1061/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "84c201bc653969239318dd47a2732eafadc80c10",
+            "sha256": "2b329b5eb7964c135d1b4bad1dc9ea4fadcc62bc5b60ac0ec7e25197037445a0",
+            "bytes": 107182,
+            "compilation_target": "src/spherex-engine/SphereXEngine.sol:SphereXEngine"
+          },
+          {
+            "path": "deployments/plasma-mainnet/WildcatArchController-0xdb2e0de97d6d96aa56754635704a4273e0f348ae/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "fd0ebdacb17f55f7c26f223ab53923da54b01f41",
+            "sha256": "c2433e38f86e8e8d39b3e9aeba5b87de8dc5083b3d689f50c5e122a372483a5e",
+            "bytes": 60449,
+            "compilation_target": "src/WildcatArchController.sol:WildcatArchController"
+          },
+          {
+            "path": "deployments/plasma-mainnet/WildcatCopyOfChainalysisList-0xfeb516d9d946dd487a9346f6fee11f40c6945ee4/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "4b7dd69b0e6ac774b922e72ef499b367e42087ea",
+            "sha256": "fd2985e37810a8e4cb1e7ce36f42ae03dea888139a4a1f6554fdadee9f76a759",
+            "bytes": 38164,
+            "compilation_target": "src/WildcatCopyOfChainalysisList.sol:WildcatCopyOfChainalysisList"
+          },
+          {
+            "path": "deployments/plasma-mainnet/WildcatMarket-0x74b253041be30b7698b5f69239c271ea8db57261/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "5debb8be94d780f307a63a9913547c5a215afcf9",
+            "sha256": "53d73b9458c6c7eb15a90cecbfc402904897af70fdbc0f7bca3cea09f095908f",
+            "bytes": 224441,
+            "compilation_target": "src/market/WildcatMarket.sol:WildcatMarket"
+          },
+          {
+            "path": "deployments/plasma-mainnet/WildcatSanctionsSentinel-0x37064895ba2c1e269eaf7ff32564818d08903f5b/standard-input.json",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "blob_sha1": "950632ba28496be6f3678bf8314d9251fe39fff8",
+            "sha256": "23a9bfb7a6214020ad56c0b71ae926eba48c8a72cf918c8dd71d90f7c0c35d2c",
+            "bytes": 33107,
+            "compilation_target": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel"
+          }
+        ],
+        "build_command": "solc-0.8.25 --standard-json < deployments/plasma-mainnet/<Contract>-<address>/standard-input.json with outputSelection widened; run on 2026-09-12 for the HooksFactory, WildcatMarket, WildcatArchController and OpenAccessRoleProvider inputs, all byte-identical to output.json",
+        "submodules": {
+          "lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+          "lib/ethereum-access-token": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+          "lib/forge-std": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+          "lib/openzeppelin-contracts": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+          "lib/sol-utils": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+          "lib/solady": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+          "lib/solmate": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+          "lib/vulcan": "95d6be4c447a23400d876caff078abcf6a881a12"
+        },
+        "emitter_paths": [
+          {
+            "path": "src/libraries/MarketEvents.sol",
+            "blob_sha1": "80d93961d74cfa36feee0fe34a423c989d9ca034",
+            "same_blob_as_v2_0_0": true
+          },
+          {
+            "path": "src/spherex/SphereXProtectedEvents.sol",
+            "blob_sha1": "d5415f1c37cc0df2fea1febe6ab1a861b49d02a4",
+            "same_blob_as_v2_0_0": true
+          }
+        ],
+        "interface_paths": [
+          {
+            "path": "src/interfaces/IMarketEventsAndErrors.sol",
+            "blob_sha1": "dd6d3838b2990610b7914bc3f49103c082fd2784",
+            "same_blob_as_v2_0_0": true
+          }
+        ],
+        "differences_from_v2_0_0": [
+          "src/access/FixedTermHooks.sol (MaximumLoanTerm 730 days)",
+          "src/lens/MarketData.sol",
+          "src/lens/HooksConfigData.sol",
+          "src/OpenAccessRoleProvider.sol and src/WildcatCopyOfChainalysisList.sol added"
+        ]
+      },
+      "deployment": {
+        "chain_id": 9745,
+        "chain": "Plasma mainnet",
+        "rpc_used": "https://rpc.plasma.to",
+        "observed_block": {
+          "number": 32261184,
+          "hash": "0xb983d701256d863e14c8f634ea0848456788d398910ebf39046dee684af4add4",
+          "timestamp": 1789201754
+        },
+        "start_block": {
+          "number": 1989721,
+          "hash": "0x4ba78b31be560d14ada419eb40f22419898a7fe361b94b26d1ab591185f561f1",
+          "timestamp": 1758918798,
+          "what": "WildcatArchController start block per the subgraph manifest; the HooksFactory starts at 1989742 (hash 0x6f58b983f039d5594ccaaf7204855fc7671b63b1700527b32a4ee0d0d3bbf7d3)"
+        },
+        "contracts": [
+          {
+            "role": "registry",
+            "name": "WildcatArchController",
+            "address": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+            "code_keccak256": "0x06947561474996c8be6474a214c0857be0fa5b0e4eb5aab624bb7c1ed88c19c4",
+            "code_length": 8724,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/plasma-mainnet; all in-tree source blobs equal the plasma branch; solc 0.8.25 reproduces creation and deployed bytecode; on-chain runtime identical (no immutables); not on Sourcify",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "sanctions-sentinel",
+            "name": "WildcatSanctionsSentinel",
+            "address": "0x37064895ba2c1e269eaf7ff32564818d08903f5b",
+            "code_keccak256": "0xf26374e1752f30d49309c1c709f827e6ebe548fc8d5ebf020ceccf3c787839ab",
+            "code_length": 3364,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in v2-protocol deployments/plasma-mainnet (blob recorded); bytecode not recompiled in this pass; not on Sourcify",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "factory",
+            "name": "HooksFactory",
+            "address": "0xb46bae25ac6d23148531ed1853a8881fd842e517",
+            "code_keccak256": "0xf655292fe7ef1f2c76eac7dfa4d2513f665942b45596f217059de486be6f94c0",
+            "code_length": 13390,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet; all in-tree source blobs equal the plasma branch; solc 0.8.25 reproduces creation and deployed bytecode; on-chain runtime equals deployedBytecode modulo 22 immutable slots; not on Sourcify",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            },
+            "views_at_observed_block": {
+              "marketInitCodeHash": "0xbaa6a8ea7519c36d1d1a9417fc6b59ef0d565b223b173c4691d76b5b4b8dbd0c",
+              "marketInitCodeStorage": "0x74b253041be30b7698b5f69239c271ea8db57261",
+              "archController": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+              "sanctionsSentinel": "0x37064895ba2c1e269eaf7ff32564818d08903f5b",
+              "getHooksTemplatesCount": 2
+            }
+          },
+          {
+            "role": "market-init-code-storage",
+            "name": "WildcatMarket init code",
+            "address": "0x74b253041be30b7698b5f69239c271ea8db57261",
+            "code_keccak256": "0xe583179fb2bb61ffd06d1e8949d657ee6157894812a370d08a1fa472bf4df2a8",
+            "code_length": 20658,
+            "observed_block_number": 32261184,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 20657,
+              "init_code_keccak256": "0xbaa6a8ea7519c36d1d1a9417fc6b59ef0d565b223b173c4691d76b5b4b8dbd0c"
+            },
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet; solc 0.8.25 reproduces the recorded creation bytecode; stored init code equals 0x00 followed by it; keccak256 of the rest equals HooksFactory.marketInitCodeHash()",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-template",
+            "name": "OpenTermHooks init code",
+            "address": "0x40217f6e5891c8f1524744c0747e07d316a0c798",
+            "code_keccak256": "0xb98eda9d084e6962017cedc87db6c596107d0fed39599727f17ee89eb66125a2",
+            "code_length": 16808,
+            "observed_block_number": 32261184,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 16807,
+              "init_code_keccak256": "0x464519dae5573af83bacec80d7072c01285161bb495d8437c66d348007ab68ee"
+            },
+            "template": {
+              "name": "OpenTermHooks",
+              "index": 0,
+              "enabled": true,
+              "exists": true,
+              "protocol_fee_bips": 500,
+              "fee_recipient": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+              "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+              "origination_fee_amount": 0,
+              "market_count": 4,
+              "markets": null
+            },
+            "code_match": {
+              "method": "stored init code equals 0x00 followed by the recorded creation bytecode in deployments/plasma-mainnet output.json; not recompiled in this pass",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-template",
+            "name": "FixedTermHooks init code (MaximumLoanTerm 730 days)",
+            "address": "0x59010b706959c15977304c2553f3f4c697a73018",
+            "code_keccak256": "0x4f57d03b05ebf51479b193f2a6eda33e7202e6d70a88ce92f9b7b73087fab227",
+            "code_length": 18232,
+            "observed_block_number": 32261184,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 18231,
+              "init_code_keccak256": "0xbbf77dc0804fe3f2b75bbdf2779642c5c8fa0f56b2fa52e6edd1af8b73798695"
+            },
+            "template": {
+              "name": "FixedTermHooks",
+              "index": 1,
+              "enabled": true,
+              "exists": true,
+              "protocol_fee_bips": 500,
+              "fee_recipient": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+              "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+              "origination_fee_amount": 0,
+              "market_count": 0,
+              "markets": null
+            },
+            "code_match": {
+              "method": "stored init code equals 0x00 followed by the recorded creation bytecode in deployments/plasma-mainnet output.json; not recompiled in this pass",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "lens",
+            "name": "MarketLens",
+            "address": "0x7e5d6d9f9a2091dd781118514f5397a8107c81c5",
+            "code_keccak256": "0xa9e619f7afdc5b23cb73a6739adea5dde81fdcc3f55506ac1e9183c8722a0a6f",
+            "code_length": 20104,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet (blob recorded); not recompiled in this pass; not on Sourcify",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "role-provider",
+            "name": "OpenAccessRoleProvider",
+            "address": "0x792f1368f8b8f450c14875eb6ff0028dfc2629b4",
+            "code_keccak256": "0x4008623e2fce20f82fcb0f8bdf0201f134d289f673e554533f85db478439e0f3",
+            "code_length": 564,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet; solc 0.8.25 reproduces creation and deployed bytecode; on-chain runtime equals deployedBytecode modulo 2 immutable slots",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "spherex-engine",
+            "name": "SphereXEngine",
+            "address": "0x931fe4a88e1c1f1a7402df6a40988f38503f1061",
+            "code_keccak256": "0xfa19d6740e1281178fb69200cd5dd9438c7cccedc87a19069e2a091f4fa3e340",
+            "code_length": 8469,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet (blob recorded); not recompiled",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "chainalysis-proxy",
+            "name": "ChainalysisProxy",
+            "address": "0x38056f7fe6396417b191bf7dc6a3aa04235f3f46",
+            "code_keccak256": "0x0bea4108a880a6b0e882f26f74933c28aa205a7ec9eb18769464e5d83fa7d791",
+            "code_length": 1083,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet (blob recorded); not recompiled",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "sanctions-list-copy",
+            "name": "WildcatCopyOfChainalysisList",
+            "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+            "code_keccak256": "0x472b55e3bde3f78282cfd318f6de3638479fca77ba461e31e20c01ea297676cf",
+            "code_length": 2783,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "verification input in deployments/plasma-mainnet at 1bc514b1 (blob recorded); not recompiled; the same address on Ethereum is the WildcatArchController",
+              "source_commit": "1bc514b1b0b903b1e94ca8046741fa8c9d367294",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "fee-recipient",
+            "name": "WildcatFeeRecipient",
+            "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+            "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+            "code_length": 1649,
+            "observed_block_number": 32261184,
+            "code_match": {
+              "method": "runtime code keccak256 equals the Ethereum WildcatFeeRecipient 0x35a5d1bd68f3139971027b92c1ee9384a0708554; the same address on Ethereum is the WildcatSanctionsSentinel; source repository not located",
+              "source_commit": null,
+              "sourcify": null
+            }
+          }
+        ],
+        "instances": {
+          "hooks_templates": [
+            "0x40217f6e5891c8f1524744c0747e07d316a0c798",
+            "0x59010b706959c15977304c2553f3f4c697a73018"
+          ],
+          "markets_by_template": {
+            "0x40217f6e5891c8f1524744c0747e07d316a0c798": {
+              "name": "OpenTermHooks",
+              "count": 4
+            },
+            "0x59010b706959c15977304c2553f3f4c697a73018": {
+              "name": "FixedTermHooks",
+              "count": 0
+            }
+          },
+          "v2_market_count": 4,
+          "v2_markets_sha256": "1f7284a1e54acf1c0dde67a218033136071b20129194c4d2c868b1cf1150f4af",
+          "registered_markets_count": 4,
+          "registered_borrowers_count": 4,
+          "registered_controller_factories": [
+            "0xb46bae25ac6d23148531ed1853a8881fd842e517"
+          ]
+        }
+      },
+      "documentation": [
+        {
+          "repository": "https://github.com/wildcat-finance/wildcat-docs",
+          "commit": "636b1dcba90c816e699c0d876c22d39be2c58b06",
+          "commit_date": "2026-08-13T19:29:07Z",
+          "path": "technical-overview/contract-deployments.md",
+          "blob_sha1": "8384e46a150d91327833559f46aabd5f1c426aed",
+          "sha256": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541",
+          "published": "https://docs.wildcat.finance/technical-overview/contract-deployments",
+          "copy": "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md"
+        },
+        {
+          "repository": "https://github.com/wildcat-finance/subgraph",
+          "commit": "63f399e6ceff76a85c14ed26017a792e15513efd",
+          "commit_date": "2026-03-16T20:56:06Z",
+          "path": "networks.json",
+          "blob_sha1": "bf864d9e2a02ac9b48cc013342a7519d1f59ba2a",
+          "sha256": "e4033d3f1bb5e04697454ba0a14761fb438fd0abb06a770a26f8fd2d802e7888",
+          "copy": "docs/kickoff/1359/evidence/upstream/subgraph-networks.json"
+        }
+      ],
+      "exclusions": [
+        "Plasma testnet (9746) deployments",
+        "the four market instances' code hashes were not read",
+        "eight of the twelve verification inputs were not recompiled"
+      ],
+      "unresolved": [
+        "none of the Plasma contracts is verified on Sourcify; the repository's verification inputs are the only published source binding",
+        "the plasma branch is unmerged, so its history could be rewritten; the commit SHAs above are the pins"
+      ],
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/endpoints.py (plasma arch controller 0xdb2e0de9..., start block 1989721)"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/plasma-mainnet.json",
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/sourcify-summary.json",
+        "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md",
+        "docs/kickoff/1359/evidence/upstream/subgraph-networks.json"
+      ]
+    },
+    {
+      "id": "wildcat-v2.5-release-line",
+      "venue": "Wildcat",
+      "generation": "V2.5",
+      "label": "Wildcat V2.5 release line (release/v2.5 at tag v2.5.4): proposed source, deployed on Sepolia only",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/wildcat-finance/v2-protocol",
+        "relation": "proposed",
+        "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+        "commit_ref": "tag v2.5.4 and branch release/v2.5 head, 2026-09-05T08:19:14Z",
+        "equivalent_commits": [],
+        "foundry_root": ".",
+        "foundry_config": "foundry.toml at bea503c2: solc 0.8.25, evm_version cancun, via_ir true, optimizer_runs 44",
+        "compiler": {
+          "solc": "0.8.25",
+          "evm_version": "cancun",
+          "optimizer_runs": 44,
+          "via_ir": true,
+          "source": "foundry.toml default profile at bea503c2; no mainnet verification input exists for this line"
+        },
+        "build_inputs": [],
+        "build_inputs_note": "deployments/mainnet at bea503c2 holds only the V2 legacy inputs and factory-inventory.json, which says revolving factories are to be added when deployed; deployments/sepolia holds the v2.5.3 Sepolia inputs",
+        "release_notes": "v2.5.4 release body lists PRs 159 to 166 by kethcode, including the daybreak blue remediation",
+        "source_divergence": "none of the 153 in-tree sources of the five mainnet verification inputs has the same blob at bea503c2; this line is a different source state from the deployed V2 estate"
+      },
+      "deployment": null,
+      "deployment_note": "no Ethereum or Plasma mainnet deployment of this line is recorded in the repository as of bea503c2; Sepolia (11155111) carries v2.5.3 deployments including HooksFactory 0x89797b782ca5b4bbfc975146b98ba3941fe26c56 and HooksFactoryRevolving 0xb3fbd4fbeb1ee4bee7afdbc4a75c7c4e97cf105c, which this registry excludes as testnet",
+      "documentation": [
+        {
+          "repository": "https://github.com/wildcat-finance/v2-protocol",
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "path": "deployments/mainnet/factory-inventory.json",
+          "blob_sha1": "ccb3c39b3cf611b0853d2ff0f49999a53f76c853",
+          "sha256": "87d15ea62f69714cedd0b603aa2ff1d6f506b83c14477179b9aff82e01dbb312",
+          "copy": "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
+        }
+      ],
+      "exclusions": [
+        "Sepolia deployments",
+        "the deploy/sepolia-v2.5.4 branch"
+      ],
+      "unresolved": [
+        "whether a mainnet deployment of this line has happened outside the repository records"
+      ],
+      "existing_skills_records": [
+        "plugins/janus/harness/manifests/wildcat-open-term.json names host wildcat-v2.5 without a commit binding"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
+      ]
+    },
+    {
+      "id": "aave-v3",
+      "venue": "Aave",
+      "generation": "v3",
+      "label": "Aave v3: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/aave-dao/aave-v3-origin",
+        "relation": "located",
+        "commit": "8305565ae342f1773c42cd2e4593f175fe5968a0",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-09-09T11:04:12Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v3.7.0",
+          "commit": "cff15de6d1271b0c800fc001f4aea4c263e8a597"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": {
+        "repository": "https://github.com/aave/aave-v3-origin",
+        "head": "5c2eb37f39959dd491ba97fdc2af94bb4ee88f41",
+        "head_date": "2025-09-19T10:39:19Z"
+      },
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1139",
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/registry.py (aave-v3, implemented False)"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "aave-v4",
+      "venue": "Aave",
+      "generation": "v4",
+      "label": "Aave v4: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/aave/aave-v4",
+        "relation": "located",
+        "commit": "4d86c2d391b039bf2d3909fb2299b69998d0b720",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-08-28T10:36:14Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v0.5.11",
+          "commit": "cdacec509e4f848bff1a5556f503afa83eee3b79"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1139",
+      "existing_skills_records": [
+        "plugins/alexandria/scripts/alexandria_lib/mappings/aave_v4.py (eip155:1 archive-log mapping, Borrow and Repay topics)",
+        "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py",
+        "plugins/lazarus/examples/aave-v4-spoke-v1-release",
+        "plugins/berean/examples/aave-v4-demo-v0"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "compound-v2",
+      "venue": "Compound",
+      "generation": "v2",
+      "label": "Compound v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/compound-finance/compound-protocol",
+        "relation": "located",
+        "commit": "a3214f67b73310d547e00fc578e8355911c9d376",
+        "commit_ref": "default branch master head observed 2026-09-12, committed 2022-06-07T01:47:37Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v2.31-rc1",
+          "commit": "9ea64ddd166a78b264ba8006f688880085eeed13"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1140",
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/registry.py lists no Compound v2 venue"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "compound-v3",
+      "venue": "Compound",
+      "generation": "v3",
+      "label": "Compound v3: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/compound-finance/comet",
+        "relation": "located",
+        "commit": "f766f51583c23acc33b2a7824654ef2029a96804",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-06-23T21:24:14Z",
+        "equivalent_commits": [],
+        "latest_tag": null,
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": "head equals the Alexandria pin COMET_COMMIT",
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1140",
+      "existing_skills_records": [
+        "plugins/alexandria/scripts/alexandria_lib/compound_registry.py (COMET_COMMIT f766f515..., tree 1101bf19..., deployments tree cf2dc238...)",
+        "plugins/alexandria/examples/compound-v3-phase0-v0",
+        "plugins/tabularium/scripts/tabularium_lib/compound_witness.py (USDC Comet proxy 0xc3d688b66703497daa19211eedff47f25384cdc3)",
+        "docs/compound-v3-phase0-study.md"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "euler-v1",
+      "venue": "Euler",
+      "generation": "v1",
+      "label": "Euler v1: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+        "relation": "located",
+        "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+        "commit_ref": "default branch master head observed 2026-09-12, committed 2024-05-24T14:49:54Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "solidified-audit",
+          "commit": "86f81180d4257376f4d4f66fbcbb7c9df64e18c2"
+        },
+        "archived": true,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1142",
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/endpoints.py (EULER_V1_PROXY 0x27182842e098f60e3d576794a5bffb0777e025d3)",
+        "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "euler-v2",
+      "venue": "Euler",
+      "generation": "v2",
+      "label": "Euler v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/euler-xyz/euler-vault-kit",
+        "relation": "located",
+        "commit": "bfb325a6e6ca09613d940b46f72ccfe017353933",
+        "commit_ref": "default branch master head observed 2026-09-12, committed 2026-09-01T11:48:48Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "yAudit-audit",
+          "commit": "7d2408dc1013b6f3149a5f08a69ded4dc99db7c8"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": {
+        "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+        "head": "838e5f72eaea25fab7d242760245244226096054",
+        "head_date": "2026-09-01T11:19:48Z",
+        "latest_tag": {
+          "name": "v1.0.1",
+          "commit": "a7d3c29ef7e4964736e47675e0588630d6afbfd7"
+        }
+      },
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1142",
+      "existing_skills_records": [
+        "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py",
+        "plugins/probitas/scripts/probitas_lib/adapters/euler.py"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "maple-v1",
+      "venue": "Maple",
+      "generation": "v1",
+      "label": "Maple v1: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/maple-labs/maple-core",
+        "relation": "located",
+        "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2021-05-18T15:02:13Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v1.0.0",
+          "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "maple-v2",
+      "venue": "Maple",
+      "generation": "v2",
+      "label": "Maple v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/maple-labs/maple-core-v2",
+        "relation": "located",
+        "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2025-11-27T14:19:22Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "2025-11",
+          "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "centrifuge-tinlake",
+      "venue": "Centrifuge",
+      "generation": "Tinlake (legacy)",
+      "label": "Centrifuge Tinlake (legacy): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/centrifuge/tinlake",
+        "relation": "located",
+        "commit": "4584b0d0cc6f4c8e7600a45f72ae8dc7d6c906c7",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2022-12-29T19:27:42Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v0.3.0",
+          "commit": "fc1f8e275a9d05d877e64f46810c107cde0808ce"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1148",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "centrifuge-v2",
+      "venue": "Centrifuge",
+      "generation": "v2 (liquidity pools)",
+      "label": "Centrifuge v2 (liquidity pools): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/centrifuge/liquidity-pools",
+        "relation": "located",
+        "commit": "e556c1a7a0ec7f6d700b47841eb586f5f4801406",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2025-01-13T14:52:48Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "release-v2.0",
+          "commit": "109ba1560a0aa80e906e462147ac295d31e75b73"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1148",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "centrifuge-v3",
+      "venue": "Centrifuge",
+      "generation": "v3 (protocol)",
+      "label": "Centrifuge v3 (protocol): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": {
+        "repository": "https://github.com/centrifuge/protocol",
+        "relation": "located",
+        "commit": "48f7dff6ec83b2f7c044d35139084fb501da5f9a",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-09-12T05:40:00Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v3.2.0",
+          "commit": "87c358fa52bea91017fc3a848bc07db815eed91c"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
+      },
+      "source_note": "v3.3.0-rc1 and -rc2 exist as pre-release tags",
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1148",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    },
+    {
+      "id": "clearpool-permissionless",
+      "venue": "Clearpool",
+      "generation": "permissionless pools",
+      "label": "Clearpool permissionless pools: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "candidate",
+      "pending_on": [
+        "lemma-9-venue-order"
+      ],
+      "consumers": [
+        1359
+      ],
+      "source": null,
+      "source_note": "no public contracts repository located under github.com/clearpool-finance; the organisation lists clearpool-payfi-vaults only (head a4ac27df697bc0bb399196df63bb1ed8d6d2297b, 2026-06-10T12:19:56Z)",
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1141",
+      "existing_skills_records": [
+        "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py (eip155:1 factory 0x969d7ddbe3b6f8b51e26d8473aaac1a9f4a6b47b)"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json"
+      ]
+    }
+  ],
+  "evidence_digests": {
+    "docs/kickoff/1359/evidence/ethereum-mainnet.json": "a34771df5764fbdedd29dfcbb78ec33970e66580baccde908e4e4dfdc0090f1c",
+    "docs/kickoff/1359/evidence/plasma-mainnet.json": "2f168532639412be824525bcb258b824206a34718512bb76895b5d1440f0bcfb",
+    "docs/kickoff/1359/evidence/source-match.json": "5403ed54ff832b26b21e4d81f8f0b7b762929293c912698dc06a647a2c7ea08a",
+    "docs/kickoff/1359/evidence/sourcify-summary.json": "5bf7a0cb3e5164b8d3a828fde8e447ab5aab3f57c88b030970c35bdf3a126eb6",
+    "docs/kickoff/1359/evidence/upstream/factory-inventory.json": "87d15ea62f69714cedd0b603aa2ff1d6f506b83c14477179b9aff82e01dbb312",
+    "docs/kickoff/1359/evidence/upstream/subgraph-networks.json": "e4033d3f1bb5e04697454ba0a14761fb438fd0abb06a770a26f8fd2d802e7888",
+    "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541"
+  }
+}

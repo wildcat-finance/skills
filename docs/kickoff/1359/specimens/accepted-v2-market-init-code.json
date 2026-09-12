@@ -1,0 +1,8 @@
+{
+  "target": "wildcat-v2-ethereum-mainnet",
+  "generation": "V2",
+  "chain_id": 1,
+  "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+  "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+  "note": "the recorded market init-code storage; expected accepted"
+}

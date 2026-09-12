@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.1.0",
+  "network": "mainnet",
+  "chainId": 1,
+  "marketTypes": ["legacy", "revolving"],
+  "recordCount": 2,
+  "hooksFactories": [
+    {
+      "label": "legacy-v2",
+      "marketType": "legacy",
+      "address": "0xdd7dd3b5076Cf89440d05585FF56d246386207BE",
+      "startBlock": 21788182,
+      "canonical": true,
+      "lifecycle": "canonical",
+      "indexed": true,
+      "registered": true,
+      "deploymentKey": "HooksFactory",
+      "deployTxHash": "0xe1c92956c9ec365859a40f6ef8bb1ad4b59b469dca64fcadfef1f9a935ee82df",
+      "notes": "Current canonical mainnet V2 legacy factory. Mainnet RCF factories should be added as separate revolving entries when deployed."
+    }
+  ],
+  "wrapperFactories": [
+    {
+      "label": "wrapper-v1",
+      "address": "0xEA6DE11f8F3F83c79bD9d8Db5517fCFDf2Bb148a",
+      "startBlock": 24750455,
+      "lifecycle": "canonical",
+      "indexed": true,
+      "deployTxHash": "0x2dad1799cd230517ffb1c0e8709d8b92ca458209429b0211643570c446a41ba6",
+      "v1Factory": null,
+      "notes": "Legacy 4626 wrapper factory for pre-v2.5 markets; configuration-backed and not enumerable from the ArchController."
+    }
+  ]
+}

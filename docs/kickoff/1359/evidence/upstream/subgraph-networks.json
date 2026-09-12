@@ -1,0 +1,78 @@
+{
+  "mainnet": {
+    "name": "mainnet",
+    "contracts": {
+      "WildcatArchController": {
+        "address": "0xfEB516d9D946dD487A9346F6fee11f40C6945eE4",
+        "startBlock": 18686645
+      },
+      "WildcatSanctionsSentinel": {
+        "address": "0x437e0551892C2C9b06d3fFd248fe60572e08CD1A",
+        "startBlock": 18686645
+      },
+      "HooksFactory": {
+        "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+        "startBlock": 21788182
+      },
+      "CollateralFactory": {
+        "address": "0xBdf64bd7Ea91A534445d06736a0f0E2a33FfA47c",
+        "startBlock": 23167811
+      }
+    }
+  },
+  "sepolia": {
+    "name": "sepolia",
+    "contracts": {
+      "WildcatArchController": {
+        "address": "0xC003f20F2642c76B81e5e1620c6D8cdEE826408f",
+        "startBlock": 4796511
+      },
+      "WildcatSanctionsSentinel": {
+        "address": "0xFBCE262eC835be5e6A458cE1722EeCe0E453316B",
+        "startBlock": 4796511
+      },
+      "HooksFactory": {
+        "address": "0x10A64ABa0159720F8a23E1A552800CA4eb21576C",
+        "startBlock": 7124440
+      },
+      "CollateralFactory": {
+        "address": "0x58Ab4755221869cfcAe2A4F3EE31d591bA6AE1D0",
+        "startBlock": 9751444
+      }
+    }
+  },
+  "plasma-testnet": {
+    "name": "plasma-testnet",
+    "contracts": {
+      "WildcatArchController": {
+        "address": "0x1EeBC079aE1e7dCDe31C74A7EF48fA8737673A6a",
+        "startBlock": 2994796
+      },
+      "WildcatSanctionsSentinel": {
+        "address": "0x7cc91e3c64A0b5844650d586B87B291AC3A3aaD4",
+        "startBlock": 2994800
+      },
+      "HooksFactory": {
+        "address": "0x5Ad00b665eA71E27628D75102B1497CC75E531FB",
+        "startBlock": 2994816
+      }
+    }
+  },
+  "plasma-mainnet": {
+    "name": "plasma-mainnet",
+    "contracts": {
+      "WildcatArchController": {
+        "address": "0xdb2e0DE97d6d96aa56754635704a4273E0F348ae",
+        "startBlock": 1989721
+      },
+      "WildcatSanctionsSentinel": {
+        "address": "0x37064895ba2C1e269EAF7FF32564818d08903f5B",
+        "startBlock": 1989725
+      },
+      "HooksFactory": {
+        "address": "0xB46bae25AC6D23148531ed1853a8881FD842E517",
+        "startBlock": 1989742
+      }
+    }
+  }
+}
