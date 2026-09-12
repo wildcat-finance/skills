@@ -598,11 +598,21 @@ class Reconciliation:
             self._write_rederived_offsets(record["spans"], offsets)
             return self.checker.canonical_record_bytes(record)
         if artifact == "model":
+            # Nothing to re-derive. Since skills#1192 the model records every
+            # binding relative to the reviewed span's start, so an edit outside
+            # that span leaves each one where it was. Its own canonical bytes
+            # are still required, so a malformed model refuses here rather than
+            # further down, and the bytes are returned unchanged.
+            #
+            # This is the pass that made a before-span edit cost a `measure`
+            # run: the model and the compact form rendered from it are the
+            # measured streams, an offset is not a digest, and the
+            # digest-neutral projection could not hold them still. Relative
+            # offsets hold them still without a projection.
             model = self.checker.load_canonical_json(raw)
             if self.checker.canonical_json_bytes(model) != raw:
                 raise ProverError("model.json is not its own canonical bytes")
-            self._write_rederived_offsets(model["bindings"], offsets)
-            return self.checker.canonical_json_bytes(model)
+            return raw
         raise ProverError(f"no offsets are recorded in {artifact}")
 
     # --- the throwaway copy ----------------------------------------------

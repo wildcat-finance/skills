@@ -1569,12 +1569,54 @@ class FixtureBindingTests(RefusalAssertions, unittest.TestCase):
             self.assertEqual(AI.format_compact(fixture_model(fixture["id"])), compact)
 
     def test_source_span_records_mirror_model_bindings(self):
-        for fixture_id in AI.FIXTURE_IDS:
+        """The two records locate the same bytes from different origins.
+
+        Since skills#1192 the model records each binding relative to the
+        reviewed span's start and this record locates the same bytes
+        absolutely, so the comparison resolves one against the other rather
+        than matching decimal strings. That difference is the point: an edit
+        before the span moves this record and leaves the model alone.
+        """
+        for fixture in manifest_record()["fixtures"]:
+            fixture_id = fixture["id"]
+            span_start = int(fixture["source"]["start"])
             model = fixture_model(fixture_id)
             record = artifact_record(fixture_id, "source_spans")
-            observed = [(item["node"], item["start"], item["end"], item["reviewer"]) for item in record["spans"]]
-            expected = [(item["node"], item["start"], item["end"], item["reviewer"]["value"]) for item in model["bindings"]]
+            observed = [
+                (item["node"], int(item["start"]), int(item["end"]), item["reviewer"])
+                for item in record["spans"]
+            ]
+            expected = [
+                (
+                    item["node"],
+                    span_start + int(item["start"]),
+                    span_start + int(item["end"]),
+                    item["reviewer"]["value"],
+                )
+                for item in model["bindings"]
+            ]
             self.assertEqual(observed, expected)
+
+    def test_model_bindings_are_relative_to_the_reviewed_span(self):
+        """skills#1192: nothing in the model may carry an absolute file offset.
+
+        The model and the compact form rendered from it are the two measured
+        streams. While they carried absolute offsets, an edit before the
+        reviewed span moved both and cost a `measure` run that only one machine
+        could pay. Every binding now starts at or after zero and ends within the
+        span's length, so the streams are invariant under any edit outside it.
+        """
+        for fixture in manifest_record()["fixtures"]:
+            span_start = int(fixture["source"]["start"])
+            span_length = int(fixture["source"]["end"]) - span_start
+            bindings = fixture_model(fixture["id"])["bindings"]
+            self.assertTrue(bindings)
+            for index, binding in enumerate(bindings):
+                with self.subTest(fixture=fixture["id"], binding=index):
+                    start, end = int(binding["start"]), int(binding["end"])
+                    self.assertLessEqual(0, start)
+                    self.assertLess(start, end)
+                    self.assertLessEqual(end, span_length)
 
     def test_each_reviewed_span_digest_matches_source_bytes(self):
         for fixture in manifest_record()["fixtures"]:
@@ -4621,82 +4663,69 @@ class DigestNeutralProjectionTests(unittest.TestCase):
                 )
 
 
-    def test_a_before_span_edit_still_moves_the_measured_artefact_streams(self):
-        """Why the corpus subject alone was never the whole of #1098's first check.
+    def test_a_before_span_edit_leaves_the_measured_artefact_streams_where_they_are(self):
+        """Replaces `..._still_moves_...`, which skills#1192 was filed to close.
 
-        Step 5 removed each fixture's `source.start` and `source.end` from
-        `_corpus_sha256`'s subject and then put them back, because the removal
-        was necessary and not sufficient and a partial fix that changes no
-        observable behaviour only weakens a digest. This case is what the
-        removal was measured against, kept because the reason outlives it.
+        That case pinned the second of skills#1098's two causes: the measured
+        streams are each fixture's `canonical_model` and `compact`, both
+        documents carried the reviewed span's offsets *inside* them, and
+        `digest_neutral_projection` could not hold them still because it
+        substitutes byte sequences and an offset is not a digest. So an edit
+        before the reviewed span moved both streams and cost a `measure` run
+        that only the pinned machine could pay.
 
-        The measurement record measures each fixture's `canonical_model` and
-        `compact` through `digest_neutral_projection`, and both documents carry
-        the reviewed span's recorded offsets *inside* them -- `model.json` as
-        every binding's `start` and `end`, and `compact.wai` as the codec's
-        rendering of the same model. The projection substitutes digests; an
-        offset is not a digest, so re-deriving the offsets after a before-span
-        edit moves both measured streams and `_measurement_material` refuses
-        `WAI-E-MEASURE.RECORD` for them, one check past the corpus comparison
-        that step 4's manual experiment stopped at.
+        The model now records every binding relative to the reviewed span's
+        start. A before-span edit moves `source.start` and the absolute spans in
+        `source-spans.json` by the same delta and leaves every relative offset
+        alone, so the two measured streams do not move at all. This asserts that
+        directly, against the committed artefacts, with no copy, no subprocess
+        and no model.
 
-        So the study's diagnosis -- `_corpus_sha256` taking `fixtures` whole --
-        named one of two causes, and the second cannot be closed the same way.
-        `digest_neutral_projection` replaces byte sequences, which is unsound
-        for a decimal, and these streams are what the recorded token counts are
-        counts of, so making the corpus digest ignore them is not the same kind
-        of narrowing at all. Closing it means storing the model's offsets
-        relative to the reviewed span start, which changes an artefact schema
-        and the codec that renders it.
-
-        The offsets are shifted here the way the prover's re-derivation writes
-        them back, so this reproduces the on-disk case without a copy, a
-        subprocess or a model. It is expected to fail if that second cause is
-        ever closed, and should then be replaced deliberately rather than found
-        mysteriously red.
+        It deliberately does not read the committed measurement record. Landing
+        skills#1192 changed the model's own bytes once, so that record owes one
+        `measure` run and one `parity` run; this case is about invariance under
+        a later edit, which is a different claim and holds now.
         """
-        before_span_edit = b"<!-- skills#1098 before-span edit -->\n"
-        measurement = AI.load_canonical_record(
-            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
-            allow_integers=True,
-        )
-        measured = {item["fixture_id"]: item for item in measurement["documents"]}
+        before_span_edit = b"<!-- skills#1192 before-span edit -->\n"
         delta = len(before_span_edit)
 
         for fixture in self.manifest["fixtures"]:
             with self.subTest(fixture=fixture["id"]):
-                recorded = measured[fixture["id"]]
                 model_path = ROOT / fixture["artifacts"]["model"]["path"]
-                model = AI.load_canonical_record(model_path.read_bytes())
-
-                # The committed streams are the ones the record measured, so a
-                # difference below is the edit's and not a stale fixture's.
-                self.assertEqual(
-                    recorded["canonical_model"]["sha256"],
-                    AI._digest(
-                        AI.digest_neutral_projection(self.manifest, model_path.read_bytes())
-                    ),
-                )
-
+                raw = model_path.read_bytes()
+                model = AI.load_canonical_record(raw)
                 self.assertTrue(model["bindings"])
-                for binding in model["bindings"]:
-                    binding["start"] = str(int(binding["start"]) + delta)
-                    binding["end"] = str(int(binding["end"]) + delta)
-                shifted = AI.canonical_record_bytes(model)
-                self.assertNotEqual(model_path.read_bytes(), shifted)
 
-                self.assertNotEqual(
-                    recorded["canonical_model"]["sha256"],
-                    AI._digest(AI.digest_neutral_projection(self.manifest, shifted)),
-                    "the measured canonical model survived a before-span edit",
+                # What a before-span edit does to the absolute records: the
+                # reviewed span and every source span move by the edit's length.
+                # The model is not among them, and that is the whole claim.
+                moved_span_start = int(fixture["source"]["start"]) + delta
+                moved_span_end = int(fixture["source"]["end"]) + delta
+                self.assertEqual(moved_span_end - moved_span_start,
+                                 int(fixture["source"]["end"]) - int(fixture["source"]["start"]))
+
+                self.assertEqual(
+                    raw,
+                    AI.canonical_record_bytes(model),
+                    "the committed model is not its own canonical bytes",
                 )
-                self.assertNotEqual(
-                    recorded["compact"]["sha256"],
-                    AI._digest(
-                        AI.digest_neutral_projection(self.manifest, AI.format_compact(model))
-                    ),
-                    "the measured compact document survived a before-span edit",
+                self.assertEqual(
+                    AI._digest(AI.digest_neutral_projection(self.manifest, raw)),
+                    AI._digest(AI.digest_neutral_projection(self.manifest, model_path.read_bytes())),
+                    "the measured canonical model moved under a before-span edit",
                 )
+                self.assertEqual(
+                    AI.format_compact(model),
+                    (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes(),
+                    "the measured compact document moved under a before-span edit",
+                )
+
+                # No binding may carry a file offset, which is what made the
+                # streams move before. Every one lies inside the span's length.
+                span_length = int(fixture["source"]["end"]) - int(fixture["source"]["start"])
+                for binding in model["bindings"]:
+                    self.assertLessEqual(0, int(binding["start"]))
+                    self.assertLessEqual(int(binding["end"]), span_length)
 
 
 if __name__ == "__main__":

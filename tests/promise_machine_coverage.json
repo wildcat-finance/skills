@@ -2,7 +2,7 @@
   "agent_instruction": {
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "50db4948ab96bce60a73a97d061e1401dd60c0103e428068ce9dc2068c888249"
+      "sha256": "02035011e0d744260455ad1f48d194fa84bc4b7169c548c8fea1af4fb68cdfe1"
     },
     "contract": "wildcat-agent-instruction/v1",
     "documentation": [
@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "1dde761049ce27ae2ca3781893bdb40e1a5c7a939e6586ee9add09cb00e64404"
+        "sha256": "66543997651a8318283f91f5ed5d1683992398868f266de732dbc6c733992d2b"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "6916f852263fe2379618d0d937da8a5e4efad105687c91ebf1ec0cdb841d147f"
+        "sha256": "62e019d16d50755743b61d9b69ec5790f50e7feee7b0e6d7dcf01df4c4699037"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -68,11 +68,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
-        "sha256": "a70d1f815e04b76d39ee0868fad79e9609fab52424ee9580dd91846a7d774ead"
+        "sha256": "500113bdbf2b100e0a9cf7af3c460a58dc9d895209b372f9920e04ea2b80f0f0"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json",
-        "sha256": "555fb748fbfb8b9035d6807e7c71455a6ec65ed90afc948fb29e08703b707256"
+        "sha256": "cc2e27769f18f1c3ed2e64abfa8e2e344d52f71645a3c81bd56c8542d97c44a5"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/mutations.json",
@@ -88,11 +88,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "db0c1aef012d709e488fbcc41db33ebe9c74d1977d31f25524bbbdaf0a129a99"
+        "sha256": "1293e0fc26225b251de3995036b2f7e24b4b1884cb8bdfdd3a0699b471844758"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "be94156288952db527fe28903806f8576108b4b33b9c5e9981122da1117ab7a1"
+        "sha256": "194ae6188c9fed27073aca0f1db769dc186de911781c02c26cc9330e053a76c3"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -104,21 +104,21 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "db707fe6b63c87e4b6508b9e1c73a109b45df487457c74aeeca3e8998533678c"
+        "sha256": "039fabe6b13b1c2f0ca012ae861be67de925a05e7fa9b88804d4e7d729479a45"
       }
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "5200a31c2c3680bf9554165b0d1e58dc94ceb1b5d3bd083710ec33f488bd80a1"
+      "sha256": "1fba1717aab5a3d3197233c72af192f897c92ea75432f0e4c0945fc3c362aa28"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "cecb3aa6b3b67b6534f716f6a42f38cc7356a13babf456baceb266be25a85135"
+      "sha256": "09bfc56b36475b5aeb320bc3e46ce72b3eb7390d2d2a81288422655ec3d34eb8"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "c206cc92c06025c6352471380d74faed5e1298a0f3cf116f8d40771dab2cb25b"
+      "sha256": "d7a3342735e5221f49f7b182d59355d69bcbf12609850389cbf22cf071ad482e"
     },
     "tests": {
       "path": "tests/test_agent_instruction.py",
@@ -142,7 +142,7 @@
         "test_an_edited_token_count_refuses_on_its_own",
         "test_a_consistent_token_count_edit_is_not_detected"
       ],
-      "sha256": "fa266a0fb9b2bd366984c81262918ec2e84347eca090c70e49872c459a68d139"
+      "sha256": "9727d53d4ff6bc64d2ec8d9ddcce1f797c3291ee74c9626cdc84430c15097fd3"
     },
     "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
   },

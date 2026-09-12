@@ -20,13 +20,13 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 13613492,
+      "bytes": 13613426,
       "files": 1050,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 13323467,
+      "bytes": 13327562,
       "files": 600,
       "suffix": ".py"
     },
@@ -92,7 +92,7 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 6694,
+      "bytes": 6628,
       "files": 6,
       "suffix": ".wai"
     },
@@ -189,6 +189,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 105197513,
+  "total_bytes": 105201476,
   "total_files": 3177
 }

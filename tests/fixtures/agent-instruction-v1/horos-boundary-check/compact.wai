@@ -14,7 +14,7 @@ D i20:horos-boundary-check t20:Horos\sboundary\scheck
         J t107:Refuse\sa\sstale,\sforged,\smissing,\sor\sout-of-scope\sboundary\sand\srefuse\severy\sboundary\sduring\ssecurity\sreview.
         Z c66:python3\splugins/horos/skills/horos/scripts/horos.py\sscan\s.\s--write
         Z t96:Read\sdrifted\spaths\snormally,\smake\sonly\san\sauthorised\supdate,\sthen\scheck\sthe\sintended\sroot\sagain.
-  B i5:horos i22:boundary-check-promise 12450 13468 i8:shoggoth
-  B i5:horos i20:horos-boundary-check 12450 13468 i8:shoggoth
-  B i5:horos i14:boundary-check 12476 13466 i8:shoggoth
-  B i5:horos i23:horos-boundary-check.v1 12476 13466 i8:shoggoth
+  B i5:horos i22:boundary-check-promise 0 1018 i8:shoggoth
+  B i5:horos i20:horos-boundary-check 0 1018 i8:shoggoth
+  B i5:horos i14:boundary-check 26 1016 i8:shoggoth
+  B i5:horos i23:horos-boundary-check.v1 26 1016 i8:shoggoth
