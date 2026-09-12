@@ -48,10 +48,12 @@ import re
 import selectors
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 import urllib.parse
 import zipfile
 from pathlib import Path
@@ -602,12 +604,27 @@ CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
         "identity-unavailable",
         "secret-shaped-member",
         "manifest-mismatch",
+        "entry-name-policy",
+        "entry-limit",
+        "entry-mode",
+        "entry-compressed",
+        "entry-encrypted",
+        "zip64-present",
+        "trailing-data",
+        "outer-digest-mismatch",
+        "sidecar-mismatch",
+        "schema-unsupported",
+        "identity-mismatch",
+        "acceptance-self-reference",
     }
 )
-"""The classes `checkpoint archive` may print. One name, exit 1, nothing else.
+"""The classes `checkpoint archive` and `checkpoint inspect` may print. One
+name, exit 1, nothing else.
 
 Closed here so a new refusal site cannot invent a class the reference does not
-name, and so the inspector of the next step reads the same vocabulary.
+name, and so the inspector reads the same vocabulary the exporter already
+does. The eleven added for Step 3 are the ones only `inspect`'s central
+directory, manifest, bundle and identity checks can raise.
 """
 CHECKPOINT_ARCHIVE_SECRET_LABEL = rb"[A-Z0-9]{1,16}(?: [A-Z0-9]{1,16}){0,3}"
 """The PEM armour label the pattern below admits: up to four words of up to 16.
@@ -807,6 +824,46 @@ Restore rule. Verify before extracting anything:
 The outer SHA-256 travels beside this archive in checkpoint.zip.sha256 and is
 handed over separately. The restored run executes nothing: it waits for the
 operator's explicit `hexctl next`.
+"""
+
+
+CHECKPOINT_ARCHIVE_INSPECT_SCHEMA = "fiat-checkpoint-inspect/v1"
+CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY = (
+    CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/" + CHECKPOINT_MANIFEST_FILE
+)
+CHECKPOINT_INSPECT_EOCD_SIG = b"PK\x05\x06"
+CHECKPOINT_INSPECT_EOCD64_SIG = b"PK\x06\x06"
+CHECKPOINT_INSPECT_EOCD64_LOCATOR_SIG = b"PK\x06\x07"
+CHECKPOINT_INSPECT_CD_SIG = b"PK\x01\x02"
+CHECKPOINT_INSPECT_LFH_SIG = b"PK\x03\x04"
+CHECKPOINT_INSPECT_EOCD_STRUCT = struct.Struct("<4sHHHHIIH")
+CHECKPOINT_INSPECT_CD_STRUCT = struct.Struct("<4sHHHHHHIIIHHHHHII")
+CHECKPOINT_INSPECT_LFH_STRUCT = struct.Struct("<4sHHHHHIIIHH")
+CHECKPOINT_INSPECT_EOCD_SIZE = CHECKPOINT_INSPECT_EOCD_STRUCT.size
+CHECKPOINT_INSPECT_CD_SIZE = CHECKPOINT_INSPECT_CD_STRUCT.size
+CHECKPOINT_INSPECT_LFH_SIZE = CHECKPOINT_INSPECT_LFH_STRUCT.size
+CHECKPOINT_INSPECT_FLAG_ENCRYPTED = 0x1
+CHECKPOINT_INSPECT_EOCD64_LOOKBACK = 20
+"""The ZIP64 end-of-central-directory locator is exactly 20 bytes and, when
+present, sits immediately before the plain EOCD it points away from. Reading
+this many bytes ahead of the EOCD is enough to see it (or the EOCD64 record
+itself, for a specimen that omits the locator) without trusting anything the
+central directory offsets claim.
+"""
+CHECKPOINT_INSPECT_CAPTURE_ENTRIES = frozenset(
+    {
+        CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY,
+        CHECKPOINT_ARCHIVE_IDENTITY_ENTRY,
+        CHECKPOINT_ARCHIVE_PROOF_ENTRY,
+        CHECKPOINT_ARCHIVE_PUBKEY_ENTRY,
+        CHECKPOINT_ARCHIVE_SIGNERS_ENTRY,
+    }
+)
+"""The few small members a check other than the digest join needs to read.
+
+Every other member is streamed for its digest and secret shape alone and
+never held past that; the Git bundle is the one member large enough that even
+this set writes it to a scratch file rather than holding it in memory.
 """
 
 
@@ -17706,68 +17763,973 @@ def _checkpoint_archive_pack(
         die("checkpoint archive could not be packed")
 
 
-def _checkpoint_archive_self_check(
-    archive_path: str, manifest: dict, manifest_bytes: bytes
-) -> tuple[int, str]:
-    """Re-read the packed container and rejoin it to `checkpoint.json`.
+def _checkpoint_inspect_scratch(supplied: str | None) -> tuple[str, bool]:
+    """One private scratch root, mode 0700: the caller's, or a fresh one here.
 
-    The manifest is written from what the stage held; this reads what the file
-    now holds. Step 3 replaces this with the inspector, which does the same
-    join from outside the producing process.
+    A caller-named root is created if missing and never removed; a fresh one
+    is always removed by the command that made it. Either way nothing under
+    it is group- or world-readable.
     """
-    expected = {
-        entry["path"]: entry for entry in manifest["archive"]["entries"]
-    }
-    order = sorted(
-        [*expected, CHECKPOINT_ARCHIVE_MANIFEST_ENTRY],
-        key=lambda name: name.encode("utf-8"),
-    )
+    if supplied is not None:
+        try:
+            os.makedirs(supplied, 0o700, exist_ok=True)
+            os.chmod(supplied, 0o700)
+        except OSError:
+            die("checkpoint inspect scratch directory could not be prepared")
+        return os.path.abspath(supplied), True
     try:
-        with zipfile.ZipFile(archive_path, "r") as container:
-            if container.comment:
-                _checkpoint_archive_refuse("manifest-mismatch")
-            infos = container.infolist()
-            if [info.filename for info in infos] != order:
-                _checkpoint_archive_refuse("manifest-mismatch")
-            for info in infos:
+        path = tempfile.mkdtemp(prefix=".fiat-checkpoint-inspect-")
+        os.chmod(path, 0o700)
+    except OSError:
+        die("checkpoint inspect scratch directory could not be created")
+    return path, False
+
+
+def _checkpoint_inspect_outer(
+    archive_path: str, expected_sha256: str
+) -> tuple[int, str]:
+    """The outer digest, recomputed over the exact bytes, and the sidecar beside it.
+
+    A digest found inside the archive is never used for this: `--sha256`
+    travels out of band, exactly as the reference requires, and a sidecar
+    is only ever compared, never trusted on its own.
+    """
+    if not isinstance(expected_sha256, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", expected_sha256
+    ):
+        die("checkpoint inspect requires a lowercase SHA-256 --sha256")
+    size, digest = _checkpoint_archive_digest(archive_path)
+    if digest != expected_sha256:
+        _checkpoint_archive_refuse("outer-digest-mismatch")
+    sidecar_path = archive_path + ".sha256"
+    if os.path.lexists(sidecar_path):
+        try:
+            with open(sidecar_path, "rb") as handle:
+                sidecar = handle.read(4096)
+        except OSError:
+            _checkpoint_archive_refuse("sidecar-mismatch")
+        expected_line = f"{digest}  {os.path.basename(archive_path)}\n".encode(
+            "utf-8"
+        )
+        if sidecar != expected_line:
+            _checkpoint_archive_refuse("sidecar-mismatch")
+    return size, digest
+
+
+def _checkpoint_inspect_eocd(path: str, size: int) -> tuple[int, int, int]:
+    """One End Of Central Directory record with no comment and no ZIP64 marker.
+
+    Our own writer sets no comment and no ZIP64 record, so a legitimate
+    archive's EOCD sits at exactly the last `CHECKPOINT_INSPECT_EOCD_SIZE`
+    bytes with a zero comment length, and nothing that looks like a ZIP64
+    locator or record sits in the bytes immediately before it. Anything else
+    -- a comment, padding, or a ZIP64 structure -- is bytes this archive's own
+    format does not carry.
+    """
+    if size < CHECKPOINT_INSPECT_EOCD_SIZE:
+        _checkpoint_archive_refuse("trailing-data")
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(size - CHECKPOINT_INSPECT_EOCD_SIZE)
+            tail = handle.read(CHECKPOINT_INSPECT_EOCD_SIZE)
+            if (
+                len(tail) != CHECKPOINT_INSPECT_EOCD_SIZE
+                or tail[:4] != CHECKPOINT_INSPECT_EOCD_SIG
+            ):
+                _checkpoint_archive_refuse("trailing-data")
+            (
+                _signature,
+                disk_no,
+                cd_start_disk,
+                records_here,
+                records_total,
+                cd_size,
+                cd_offset,
+                comment_len,
+            ) = CHECKPOINT_INSPECT_EOCD_STRUCT.unpack(tail)
+            if comment_len != 0:
+                _checkpoint_archive_refuse("trailing-data")
+            lookback = min(
+                size - CHECKPOINT_INSPECT_EOCD_SIZE,
+                CHECKPOINT_INSPECT_EOCD64_LOOKBACK,
+            )
+            handle.seek(size - CHECKPOINT_INSPECT_EOCD_SIZE - lookback)
+            preceding = handle.read(lookback)
+    except OSError:
+        _checkpoint_archive_refuse("trailing-data")
+    if (
+        CHECKPOINT_INSPECT_EOCD64_LOCATOR_SIG in preceding
+        or CHECKPOINT_INSPECT_EOCD64_SIG in preceding
+        or disk_no != 0
+        or cd_start_disk != 0
+        or records_here != records_total
+        or cd_size >= 0xFFFFFFFF
+        or cd_offset >= 0xFFFFFFFF
+        or records_total >= 0xFFFF
+    ):
+        _checkpoint_archive_refuse("zip64-present")
+    if cd_offset + cd_size != size - CHECKPOINT_INSPECT_EOCD_SIZE:
+        _checkpoint_archive_refuse("trailing-data")
+    return cd_offset, cd_size, records_total
+
+
+def _checkpoint_inspect_extra_carries_zip64(extra: bytes) -> bool:
+    """Whether one entry's extra field carries the ZIP64 extension tag `0x0001`."""
+    position = 0
+    while position + 4 <= len(extra):
+        tag = extra[position] | (extra[position + 1] << 8)
+        size = extra[position + 2] | (extra[position + 3] << 8)
+        if tag == 0x0001:
+            return True
+        position += 4 + size
+    return False
+
+
+def _checkpoint_inspect_central_directory(
+    path: str, cd_offset: int, cd_size: int, entry_count: int
+) -> list[dict]:
+    """Every central directory record, read once, under the entry-count ceiling.
+
+    Every check the reference bounds "under the ceilings" and "before any
+    extraction" happens here, over these fixed-size records and their name
+    bytes alone: no local header, and no member's data, is read yet.
+    """
+    if entry_count > CHECKPOINT_ARCHIVE_ENTRIES_MAX:
+        _checkpoint_archive_refuse("entry-limit")
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(cd_offset)
+            block = handle.read(cd_size)
+    except OSError:
+        _checkpoint_archive_refuse("trailing-data")
+    if len(block) != cd_size:
+        _checkpoint_archive_refuse("trailing-data")
+    position = 0
+    entries: list[dict] = []
+    expanded_total = 0
+    for _ in range(entry_count):
+        if position + CHECKPOINT_INSPECT_CD_SIZE > len(block):
+            _checkpoint_archive_refuse("trailing-data")
+        header = block[position : position + CHECKPOINT_INSPECT_CD_SIZE]
+        (
+            signature,
+            _version_made_by,
+            _version_needed,
+            flags,
+            method,
+            _mod_time,
+            _mod_date,
+            _crc32,
+            compressed_size,
+            uncompressed_size,
+            filename_len,
+            extra_len,
+            comment_len,
+            disk_num_start,
+            _internal_attr,
+            external_attr,
+            local_header_offset,
+        ) = CHECKPOINT_INSPECT_CD_STRUCT.unpack(header)
+        if signature != CHECKPOINT_INSPECT_CD_SIG:
+            _checkpoint_archive_refuse("trailing-data")
+        position += CHECKPOINT_INSPECT_CD_SIZE
+        name_bytes = block[position : position + filename_len]
+        if len(name_bytes) != filename_len:
+            _checkpoint_archive_refuse("trailing-data")
+        position += filename_len
+        extra = block[position : position + extra_len]
+        if len(extra) != extra_len:
+            _checkpoint_archive_refuse("trailing-data")
+        position += extra_len
+        comment = block[position : position + comment_len]
+        if len(comment) != comment_len:
+            _checkpoint_archive_refuse("trailing-data")
+        position += comment_len
+
+        if (
+            disk_num_start != 0
+            or compressed_size >= 0xFFFFFFFF
+            or uncompressed_size >= 0xFFFFFFFF
+            or local_header_offset >= 0xFFFFFFFF
+            or _checkpoint_inspect_extra_carries_zip64(extra)
+        ):
+            _checkpoint_archive_refuse("zip64-present")
+        if comment:
+            _checkpoint_archive_refuse("trailing-data")
+        if method != 0 or compressed_size != uncompressed_size:
+            _checkpoint_archive_refuse("entry-compressed")
+        if flags & CHECKPOINT_INSPECT_FLAG_ENCRYPTED:
+            _checkpoint_archive_refuse("entry-encrypted")
+        try:
+            name = name_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            _checkpoint_archive_refuse("entry-name-policy")
+        if (external_attr >> 16) != CHECKPOINT_ARCHIVE_ENTRY_MODE:
+            _checkpoint_archive_refuse("entry-mode")
+        ceiling = (
+            CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX
+            if name == CHECKPOINT_ARCHIVE_BUNDLE_ENTRY
+            else CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX
+        )
+        if uncompressed_size > ceiling:
+            _checkpoint_archive_refuse("entry-limit")
+        expanded_total += uncompressed_size
+        if expanded_total > CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX:
+            _checkpoint_archive_refuse("entry-limit")
+        entries.append(
+            {
+                "name": name,
+                "size": uncompressed_size,
+                "local_header_offset": local_header_offset,
+            }
+        )
+    if position != len(block):
+        _checkpoint_archive_refuse("trailing-data")
+    return entries
+
+
+def _checkpoint_inspect_layout(path: str, entries: list[dict]) -> int:
+    """Walk the local headers in sorted order and refuse any prefix or gap.
+
+    The reference fixes the entry order as sorted UTF-8 bytes and forbids a
+    prefix, gap or trailing byte outside the local headers and their data.
+    Both are checked together: the physical layout must already be that
+    order, the first header must sit at offset 0, and each header's data
+    must end exactly where the next one begins.
+    """
+    ordered = sorted(entries, key=lambda item: item["name"].encode("utf-8"))
+    if [item["name"] for item in entries] != [item["name"] for item in ordered]:
+        _checkpoint_archive_refuse("trailing-data")
+    cursor = 0
+    try:
+        with open(path, "rb") as handle:
+            for item in ordered:
+                if item["local_header_offset"] != cursor:
+                    _checkpoint_archive_refuse("trailing-data")
+                header = handle.read(CHECKPOINT_INSPECT_LFH_SIZE)
+                if len(header) != CHECKPOINT_INSPECT_LFH_SIZE:
+                    _checkpoint_archive_refuse("trailing-data")
+                (
+                    signature,
+                    _version_needed,
+                    flags,
+                    method,
+                    _mod_time,
+                    _mod_date,
+                    _crc32,
+                    compressed_size,
+                    uncompressed_size,
+                    filename_len,
+                    extra_len,
+                ) = CHECKPOINT_INSPECT_LFH_STRUCT.unpack(header)
+                if signature != CHECKPOINT_INSPECT_LFH_SIG:
+                    _checkpoint_archive_refuse("trailing-data")
+                if flags & CHECKPOINT_INSPECT_FLAG_ENCRYPTED:
+                    _checkpoint_archive_refuse("entry-encrypted")
                 if (
-                    info.compress_type != zipfile.ZIP_STORED
-                    or info.create_system != CHECKPOINT_ARCHIVE_CREATE_SYSTEM
-                    or info.external_attr >> 16 != CHECKPOINT_ARCHIVE_ENTRY_MODE
-                    or info.date_time != CHECKPOINT_ARCHIVE_ENTRY_TIME
-                    or info.extra
-                    or info.comment
-                    or info.flag_bits & 0x1
-                    or info.compress_size != info.file_size
+                    method != 0
+                    or compressed_size != item["size"]
+                    or uncompressed_size != item["size"]
                 ):
-                    _checkpoint_archive_refuse("manifest-mismatch")
-                digest = hashlib.sha256()
-                total = 0
-                with container.open(info, "r") as stream:
-                    for chunk in iter(lambda: stream.read(CHECKPOINT_IO_CHUNK), b""):
-                        total += len(chunk)
-                        digest.update(chunk)
-                if info.filename == CHECKPOINT_ARCHIVE_MANIFEST_ENTRY:
-                    if total != len(manifest_bytes) or digest.digest() != hashlib.sha256(
-                        manifest_bytes
-                    ).digest():
-                        _checkpoint_archive_refuse("manifest-mismatch")
-                    continue
-                record = expected[info.filename]
+                    _checkpoint_archive_refuse("entry-compressed")
+                name_field = handle.read(filename_len)
                 if (
-                    total != record["bytes"]
-                    or info.file_size != record["bytes"]
-                    or digest.hexdigest() != record["sha256"]
+                    len(name_field) != filename_len
+                    or name_field != item["name"].encode("utf-8")
                 ):
-                    _checkpoint_archive_refuse("manifest-mismatch")
-    except (OSError, zipfile.BadZipFile):
+                    _checkpoint_archive_refuse("trailing-data")
+                extra_field = handle.read(extra_len)
+                if len(extra_field) != extra_len:
+                    _checkpoint_archive_refuse("trailing-data")
+                data_offset = (
+                    cursor + CHECKPOINT_INSPECT_LFH_SIZE + filename_len + extra_len
+                )
+                item["data_offset"] = data_offset
+                handle.seek(data_offset + item["size"])
+                cursor = data_offset + item["size"]
+    except OSError:
+        _checkpoint_archive_refuse("trailing-data")
+    return cursor
+
+
+def _checkpoint_inspect_name_policy(names: list[str]) -> None:
+    """The name ceilings, the portable character rules and both uniqueness rules.
+
+    Every rule the reference's Ceilings section fixes for an entry name, over
+    the whole set at once so a duplicate or a casefold collision is caught
+    against every other name, not only its neighbour.
+    """
+    seen: set[str] = set()
+    folded: set[str] = set()
+    for name in names:
+        if len(name.encode("utf-8")) > CHECKPOINT_ARCHIVE_NAME_BYTES_MAX:
+            _checkpoint_archive_refuse("entry-name-policy")
+        if unicodedata.normalize("NFC", name) != name:
+            _checkpoint_archive_refuse("entry-name-policy")
+        if any(
+            ord(character) < 0x20 or 0x7F <= ord(character) <= 0x9F
+            for character in name
+        ):
+            _checkpoint_archive_refuse("entry-name-policy")
+        if "\\" in name or ":" in name or name.startswith("/"):
+            _checkpoint_archive_refuse("entry-name-policy")
+        parts = name.split("/")
+        if any(
+            not part
+            or part in (".", "..")
+            or len(part.encode("utf-8")) > CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX
+            for part in parts
+        ):
+            _checkpoint_archive_refuse("entry-name-policy")
+        if name in seen:
+            _checkpoint_archive_refuse("entry-name-policy")
+        seen.add(name)
+        key = unicodedata.normalize("NFC", name).casefold()
+        if key in folded:
+            _checkpoint_archive_refuse("entry-name-policy")
+        folded.add(key)
+
+
+def _checkpoint_inspect_read_slice(path: str, offset: int, length: int) -> bytes:
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(offset)
+            data = handle.read(length)
+    except OSError:
+        _checkpoint_archive_refuse("trailing-data")
+    if len(data) != length:
+        _checkpoint_archive_refuse("trailing-data")
+    return data
+
+
+def _checkpoint_inspect_closed(value, fields: set[str], label: str) -> dict:
+    """`checkpoint.json`'s own version of one closed-object shape check.
+
+    A mismatch here is always a manifest a reader cannot trust, which is
+    `schema-unsupported`'s territory rather than the byte-join `manifest-
+    mismatch` owns; every call site here runs under that guard.
+    """
+    if not isinstance(value, dict) or set(value) != fields:
+        die(f"checkpoint inspect manifest {label} has an unsupported shape")
+    return value
+
+
+def _checkpoint_inspect_manifest_entry_path(path) -> str:
+    if not isinstance(path, str) or not path:
+        die("checkpoint inspect manifest entry path is unsafe")
+    parts = tuple(path.split("/"))
+    if _checkpoint_safe_relative(parts) != path:
+        die("checkpoint inspect manifest entry path is unsafe")
+    _checkpoint_inspect_name_policy_die(path)
+    return path
+
+
+def _checkpoint_inspect_name_policy_die(name: str) -> None:
+    """`_checkpoint_inspect_name_policy`'s rules, raised through `die` instead.
+
+    The manifest's own recorded entry paths are validated during the
+    `schema-unsupported` phase, before the physical name-policy scan even
+    runs, so a violation there has to reach the caller as a `die` the
+    `schema-unsupported` guard can translate, not as a direct refusal.
+    """
+    if unicodedata.normalize("NFC", name) != name or any(
+        ord(character) < 0x20 or 0x7F <= ord(character) <= 0x9F
+        for character in name
+    ):
+        die("checkpoint inspect manifest entry path is unsafe")
+    if "\\" in name or ":" in name or name.startswith("/"):
+        die("checkpoint inspect manifest entry path is unsafe")
+    if len(name.encode("utf-8")) > CHECKPOINT_ARCHIVE_NAME_BYTES_MAX or any(
+        len(part.encode("utf-8")) > CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX
+        for part in name.split("/")
+    ):
+        die("checkpoint inspect manifest entry path is unsafe")
+
+
+def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
+    """Parse and close `checkpoint.json` to exactly the fields the study fixes.
+
+    Bounded at `CHECKPOINT_JSON_DEPTH_MAX` by the same reader every other
+    controller JSON goes through. Every field this checks is closed to the
+    exact set `_checkpoint_archive_manifest` writes; nothing here re-derives
+    or re-verifies the values themselves; that is the byte-join and the ref,
+    bundle, signature, identity and acceptance checks that follow.
+    """
+    manifest = _checkpoint_json(manifest_bytes, "manifest")
+    manifest = _checkpoint_inspect_closed(
+        manifest,
+        {
+            "schema",
+            "archive",
+            "boundary",
+            "run",
+            "refs",
+            "bundle",
+            "controller_capsule",
+            "identity",
+            "signer",
+            "proof",
+            "acceptance",
+            "controller",
+            "limits",
+        },
+        "manifest",
+    )
+    if (
+        manifest.get("schema") != CHECKPOINT_ARCHIVE_SCHEMA
+        or canonical(manifest).encode("utf-8") + b"\n" != manifest_bytes
+    ):
+        die("checkpoint inspect manifest is not canonical or has the wrong schema")
+
+    archive_block = _checkpoint_inspect_closed(
+        manifest["archive"], {"format", "compression", "entries"}, "archive"
+    )
+    if archive_block["format"] != "zip" or archive_block["compression"] != "stored":
+        die("checkpoint inspect manifest archive block is unsupported")
+    entries = archive_block["entries"]
+    if not isinstance(entries, list) or len(entries) > CHECKPOINT_ARCHIVE_ENTRIES_MAX:
+        die("checkpoint inspect manifest entry list is invalid")
+    seen_paths: set[str] = set()
+    for item in entries:
+        _checkpoint_inspect_closed(item, {"path", "bytes", "sha256"}, "archive entry")
+        path = _checkpoint_inspect_manifest_entry_path(item["path"])
+        if path in seen_paths or path == CHECKPOINT_ARCHIVE_MANIFEST_ENTRY:
+            die("checkpoint inspect manifest entry list is invalid")
+        seen_paths.add(path)
+        if (
+            not isinstance(item["bytes"], int)
+            or isinstance(item["bytes"], bool)
+            or item["bytes"] < 0
+            or not isinstance(item["sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
+        ):
+            die("checkpoint inspect manifest entry list is invalid")
+    if entries != sorted(entries, key=lambda item: item["path"].encode("utf-8")):
+        die("checkpoint inspect manifest entry list is not sorted")
+
+    boundary = manifest["boundary"]
+    if not isinstance(boundary, dict) or set(boundary) - {"loop"} != {
+        "kind",
+        "step",
+        "working_commit_sha",
+        "next",
+    }:
+        die("checkpoint inspect manifest boundary block has an unsupported shape")
+    if "loop" in boundary and (
+        isinstance(boundary["loop"], bool) or not isinstance(boundary["loop"], int)
+    ):
+        die("checkpoint inspect manifest boundary block has an unsupported shape")
+
+    _checkpoint_inspect_closed(
+        manifest["run"],
+        {
+            "repository",
+            "run_branch",
+            "worktree_name",
+            "task_issue",
+            "initial_base_sha",
+            "run_anchor_sha256",
+        },
+        "run",
+    )
+    refs = manifest["refs"]
+    if not isinstance(refs, dict) or any(
+        not isinstance(name, str) or not isinstance(value, str) or COMMIT_RE.fullmatch(value) is None
+        for name, value in refs.items()
+    ):
+        die("checkpoint inspect manifest refs block is invalid")
+    _checkpoint_inspect_closed(
+        manifest["bundle"],
+        {"bytes", "sha256", "hash_algorithm", "complete_history"},
+        "bundle",
+    )
+    _checkpoint_inspect_closed(
+        manifest["controller_capsule"],
+        {
+            "manifest_sha256",
+            "state_sha256",
+            "ledger_sha256",
+            "ledger_entries",
+            "ledger_tail",
+            "files",
+            "bytes",
+        },
+        "controller_capsule",
+    )
+    identity_block = manifest["identity"]
+    if not isinstance(identity_block, dict):
+        die("checkpoint inspect manifest identity block is invalid")
+    if identity_block.get("status") == "bound":
+        _checkpoint_inspect_closed(identity_block, {"status", "snapshot_id"}, "identity")
+    elif identity_block.get("status") == "unavailable":
+        _checkpoint_inspect_closed(identity_block, {"status", "reason"}, "identity")
+        if identity_block.get("reason") != CHECKPOINT_ARCHIVE_IDENTITY_UNAVAILABLE:
+            die("checkpoint inspect manifest identity reason is unsupported")
+    else:
+        die("checkpoint inspect manifest identity status is unsupported")
+    _checkpoint_inspect_closed(
+        manifest["signer"], {"format", "fingerprints", "key_path"}, "signer"
+    )
+    if manifest["signer"]["format"] not in CHECKPOINT_ARCHIVE_SIGNATURE_FORMATS:
+        die("checkpoint inspect manifest signer format is unsupported")
+    _checkpoint_inspect_closed(manifest["proof"], {"commits", "sha256"}, "proof")
+    acceptance_block = _checkpoint_inspect_closed(
+        manifest["acceptance"], {"current", "prior"}, "acceptance"
+    )
+    if not isinstance(acceptance_block["prior"], list) or len(
+        acceptance_block["prior"]
+    ) > CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX:
+        die("checkpoint inspect manifest acceptance block is invalid")
+    controller_block = _checkpoint_inspect_closed(
+        manifest["controller"], {"name", "version"}, "controller"
+    )
+    if (
+        controller_block["name"] != "hexctl"
+        or controller_block["version"] not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+    ):
+        die("checkpoint inspect manifest controller version is unsupported")
+    if canonical(manifest["limits"]) != canonical(
+        {
+            "entries": CHECKPOINT_ARCHIVE_ENTRIES_MAX,
+            "expanded_bytes": CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX,
+            "bundle_bytes": CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX,
+            "entry_bytes": CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX,
+            "name_bytes": CHECKPOINT_ARCHIVE_NAME_BYTES_MAX,
+            "component_bytes": CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX,
+            "prior_acceptances": CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX,
+            "capsule": {
+                "files": CHECKPOINT_FILES_MAX,
+                "directories": CHECKPOINT_DIRECTORIES_MAX,
+                "total_bytes": CHECKPOINT_TOTAL_BYTES_MAX,
+                "file_bytes": CHECKPOINT_FILE_BYTES_MAX,
+                "manifest_bytes": CHECKPOINT_MANIFEST_BYTES_MAX,
+                "path_bytes": CHECKPOINT_PATH_BYTES_MAX,
+            },
+        }
+    ):
+        die("checkpoint inspect manifest limits do not match this controller")
+    return manifest
+
+
+def _checkpoint_inspect_members(
+    path: str, physical: list[dict], manifest_entries: list[dict], scratch: str
+) -> tuple[dict[str, bytes], str | None, bool]:
+    """Stream every physical member exactly once: digest, ceilings, secret shape.
+
+    The digest join against `checkpoint.json`'s entries happens here, the
+    handful of small members later checks need are captured in memory, the
+    Git bundle is written to a scratch file since it is the one member large
+    enough that holding it would matter, and the six secret patterns are
+    checked over every member's bytes -- but not refused here. The reference
+    orders the secret scan after the ref, bundle, signature, identity and
+    acceptance checks, so a hit is only reported once those have all passed.
+    """
+    expected = {item["path"]: item for item in manifest_entries}
+    by_name = {item["name"]: item for item in physical}
+    if len(by_name) != len(physical):
+        _checkpoint_archive_refuse("entry-name-policy")
+    if CHECKPOINT_ARCHIVE_MANIFEST_ENTRY not in by_name:
         _checkpoint_archive_refuse("manifest-mismatch")
-    size, outer = _checkpoint_archive_digest(archive_path)
-    with open(archive_path, "rb") as handle:
-        handle.seek(max(0, size - 64 * 1024))
-        if b"PK\x06\x06" in handle.read():
-            _checkpoint_archive_refuse("manifest-mismatch")
-    return size, outer
+    if set(by_name) - {CHECKPOINT_ARCHIVE_MANIFEST_ENTRY} != set(expected):
+        _checkpoint_archive_refuse("manifest-mismatch")
+
+    captured: dict[str, bytes] = {}
+    secret_found = False
+    bundle_path = os.path.join(scratch, "repository.bundle")
+    total = 0
+    try:
+        with open(path, "rb") as handle:
+            for name, item in by_name.items():
+                # The central directory already enforced these ceilings from
+                # its own declared sizes (`entry-limit`); this is the streamed
+                # re-enforcement the reference asks for, over what the file
+                # actually holds, and a mismatch here is the digest join's own
+                # class rather than a second `entry-limit`.
+                ceiling = (
+                    CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX
+                    if name == CHECKPOINT_ARCHIVE_BUNDLE_ENTRY
+                    else CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX
+                )
+                if item["size"] > ceiling:
+                    _checkpoint_archive_refuse("manifest-mismatch")
+                total += item["size"]
+                if total > CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX:
+                    _checkpoint_archive_refuse("manifest-mismatch")
+                handle.seek(item["data_offset"])
+                remaining = item["size"]
+                digest = hashlib.sha256()
+                window = b""
+                keep = name in CHECKPOINT_INSPECT_CAPTURE_ENTRIES
+                buffer = bytearray() if keep else None
+                sink = None
+                if name == CHECKPOINT_ARCHIVE_BUNDLE_ENTRY:
+                    try:
+                        sink = open(bundle_path, "wb")
+                    except OSError:
+                        die("checkpoint inspect scratch bundle could not be written")
+                try:
+                    while remaining > 0:
+                        chunk = handle.read(min(CHECKPOINT_IO_CHUNK, remaining))
+                        if not chunk:
+                            _checkpoint_archive_refuse("trailing-data")
+                        remaining -= len(chunk)
+                        digest.update(chunk)
+                        if buffer is not None:
+                            buffer.extend(chunk)
+                        if sink is not None:
+                            sink.write(chunk)
+                        if not secret_found and _checkpoint_archive_secret_shaped(
+                            window + chunk
+                        ):
+                            secret_found = True
+                        window = chunk[-CHECKPOINT_ARCHIVE_SECRET_WINDOW:]
+                finally:
+                    if sink is not None:
+                        sink.close()
+                if name == CHECKPOINT_ARCHIVE_MANIFEST_ENTRY:
+                    continue
+                record = expected[name]
+                if item["size"] != record["bytes"] or digest.hexdigest() != record["sha256"]:
+                    _checkpoint_archive_refuse("manifest-mismatch")
+                if buffer is not None:
+                    captured[name] = bytes(buffer)
+    except OSError:
+        _checkpoint_archive_refuse("trailing-data")
+    if os.path.exists(bundle_path):
+        os.chmod(bundle_path, 0o600)
+        return captured, bundle_path, secret_found
+    return captured, None, secret_found
+
+
+def _checkpoint_inspect_capsule(manifest: dict, capsule_bytes: bytes | None) -> dict:
+    """The capsule `MANIFEST.json` digest join, and just enough of its own shape."""
+    if capsule_bytes is None:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    if hashlib.sha256(capsule_bytes).hexdigest() != manifest["controller_capsule"][
+        "manifest_sha256"
+    ]:
+        _checkpoint_archive_refuse("manifest-mismatch")
+
+    def parse():
+        payload = _checkpoint_json(capsule_bytes, "capsule manifest")
+        payload = _checkpoint_closed_object(
+            payload,
+            {"schema", "controller", "boundary", "source", "resources", "files"},
+            "capsule manifest",
+        )
+        if (
+            payload.get("schema") != CHECKPOINT_SCHEMA
+            or canonical(payload).encode("utf-8") + b"\n" != capsule_bytes
+        ):
+            die("checkpoint capsule manifest is not canonical or has the wrong schema")
+        _checkpoint_closed_object(
+            payload["boundary"], {"kind", "next", "refs"}, "capsule boundary"
+        )
+        return payload
+
+    return _checkpoint_archive_guarded("manifest-mismatch", parse)
+
+
+def _checkpoint_inspect_refs(manifest: dict, capsule_manifest: dict, heads: dict) -> None:
+    """The three-way join: bundle heads, the capsule's own refs, the manifest's."""
+    manifest_refs = manifest["refs"]
+    capsule_refs = capsule_manifest["boundary"]["refs"]
+    if not isinstance(capsule_refs, dict) or canonical(manifest_refs) != canonical(
+        capsule_refs
+    ):
+        _checkpoint_archive_refuse("ref-disagreement")
+    named = {
+        name: value
+        for name, value in manifest_refs.items()
+        if COMMIT_RE.fullmatch(name) is None
+    }
+    expected_heads = {f"refs/heads/{name}": value for name, value in named.items()}
+    if heads != expected_heads:
+        _checkpoint_archive_refuse("ref-disagreement")
+
+
+def _checkpoint_inspect_clone(scratch: str, bundle_path: str) -> str:
+    """One disposable `git init` root, fetched to complete history from the bundle."""
+    repo_dir = os.path.join(scratch, "repo")
+    try:
+        os.mkdir(repo_dir, 0o700)
+    except OSError:
+        die("checkpoint inspect disposable repository could not be created")
+    if bounded_run(repo_dir, "git", ["init", "--quiet"])[0] != 0:
+        _checkpoint_archive_refuse("bundle-incomplete")
+    if (
+        bounded_run(
+            repo_dir,
+            "git",
+            ["fetch", "--quiet", bundle_path, "+refs/heads/*:refs/heads/*", "--no-tags"],
+        )[0]
+        != 0
+    ):
+        _checkpoint_archive_refuse("bundle-incomplete")
+    return repo_dir
+
+
+def _checkpoint_inspect_bundle(
+    manifest: dict, bundle_path: str, repo_dir: str
+) -> None:
+    """The bundle's own header, its independent `verify`, and the size ceiling."""
+    heads, prerequisites, algorithm = _checkpoint_archive_bundle_header(bundle_path)
+    if prerequisites or algorithm != manifest["bundle"]["hash_algorithm"]:
+        _checkpoint_archive_refuse("bundle-incomplete")
+    if os.path.getsize(bundle_path) > CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX:
+        _checkpoint_archive_refuse("bundle-oversized")
+    if bounded_run(repo_dir, "git", ["bundle", "verify", bundle_path])[0] != 0:
+        _checkpoint_archive_refuse("bundle-incomplete")
+    return heads
+
+
+def _checkpoint_inspect_signatures(
+    repo_dir: str, manifest: dict, captured: dict[str, bytes], scratch: str
+) -> list[dict]:
+    """Re-verify every claimed commit in a disposable keyring, from scratch.
+
+    Nothing here trusts `proof/signatures.json`'s own claimed status: the
+    keyring is seeded only from the manifest's pinned fingerprints and the
+    archive's own key material, and every record returned is what this
+    command's own `git verify-commit` and `git log` actually found.
+    """
+    signer = manifest["signer"]
+    proof_bytes = captured.get(CHECKPOINT_ARCHIVE_PROOF_ENTRY)
+    if proof_bytes is None:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    if hashlib.sha256(proof_bytes).hexdigest() != manifest["proof"]["sha256"]:
+        _checkpoint_archive_refuse("manifest-mismatch")
+
+    def parse_proof():
+        payload = _checkpoint_json(proof_bytes, "signature proof")
+        payload = _checkpoint_closed_object(
+            payload, {"schema", "commits", "signer"}, "signature proof"
+        )
+        if payload.get("schema") != CHECKPOINT_ARCHIVE_PROOF_SCHEMA:
+            die("checkpoint signature proof has an unsupported schema")
+        if canonical(payload["signer"]) != canonical(signer):
+            die("checkpoint signature proof signer does not match the manifest")
+        commits = payload["commits"]
+        if not isinstance(commits, list) or len(commits) != manifest["proof"]["commits"]:
+            die("checkpoint signature proof commit count does not match the manifest")
+        for record in commits:
+            _checkpoint_closed_object(
+                record,
+                {"sha", "format", "status", "fingerprint", "trailers", "github_verified"},
+                "signature proof commit",
+            )
+            if not isinstance(record["sha"], str) or COMMIT_RE.fullmatch(record["sha"]) is None:
+                die("checkpoint signature proof commit sha is invalid")
+        return commits
+
+    commits = _checkpoint_archive_guarded("manifest-mismatch", parse_proof)
+
+    fmt = signer["format"]
+    if not commits:
+        return []
+    fingerprints = signer["fingerprints"]
+    key_path = signer["key_path"]
+    key_bytes = captured.get(key_path)
+    if not isinstance(fingerprints, list) or key_bytes is None:
+        _checkpoint_archive_refuse("signature-unverified")
+    keys_dir = os.path.join(scratch, "keys")
+    disk_key_path = os.path.join(keys_dir, os.path.basename(key_path))
+    try:
+        os.makedirs(keys_dir, 0o700, exist_ok=True)
+        with open(disk_key_path, "wb") as handle:
+            handle.write(key_bytes)
+        os.chmod(disk_key_path, 0o600)
+    except OSError:
+        die("checkpoint inspect key material could not be staged")
+
+    home = _checkpoint_archive_disposable_keyring()
+    records = []
+    try:
+        environment = _checkpoint_archive_keyring_environment(home)
+        if fmt == "openpgp":
+            _checkpoint_archive_seed_keyring(repo_dir, home, disk_key_path, fingerprints)
+            verifier: list[str] = []
+        else:
+            verifier = ["-c", f"gpg.ssh.allowedSignersFile={disk_key_path}"]
+        for claim in commits:
+            sha = claim["sha"]
+            if (
+                bounded_run(
+                    repo_dir,
+                    "git",
+                    _checkpoint_archive_verifier_argv(
+                        [*verifier, "--no-replace-objects", "verify-commit", sha]
+                    ),
+                    environment=environment,
+                )[0]
+                != 0
+            ):
+                _checkpoint_archive_refuse("signature-unverified")
+            status, fingerprint, body = _checkpoint_archive_commit_read(
+                repo_dir, sha, environment, verifier
+            )
+            trailers = _checkpoint_archive_trailers(body)
+            if (
+                status != "G"
+                or fingerprint not in fingerprints
+                or trailers["coauthored_by_shoggoth"] != 1
+                or trailers["wildcat_origin"] != 1
+            ):
+                _checkpoint_archive_refuse("signature-unverified")
+            records.append(
+                {
+                    "sha": sha,
+                    "status": status,
+                    "fingerprint": fingerprint,
+                    "trailers": trailers,
+                }
+            )
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+    return records
+
+
+def _checkpoint_inspect_identity(
+    declared: dict, identity_bytes: bytes | None
+) -> None:
+    """The identity member's own recompute, and its join to the manifest's summary.
+
+    Purely local: the snapshot id is rehashed from the identity object the
+    member itself carries and compared both to that same member's own
+    recorded value and to `checkpoint.json`'s summary. Neither copy is ever
+    taken on faith.
+    """
+    if declared.get("status") == "unavailable":
+        if identity_bytes is not None:
+            _checkpoint_archive_refuse("identity-mismatch")
+        return
+    if identity_bytes is None:
+        _checkpoint_archive_refuse("identity-mismatch")
+
+    def parse():
+        payload = _checkpoint_json(identity_bytes, "identity")
+        return _checkpoint_closed_object(
+            payload, {"schema", "identity", "snapshot_id"}, "identity"
+        )
+
+    payload = _checkpoint_archive_guarded("identity-mismatch", parse)
+    if payload.get("schema") != CHECKPOINT_IDENTITY_RESULT_SCHEMA:
+        _checkpoint_archive_refuse("identity-mismatch")
+    recomputed = hashlib.sha256(
+        CHECKPOINT_IDENTITY_DOMAIN + canonical(payload["identity"]).encode("utf-8")
+    ).hexdigest()
+    if (
+        recomputed != payload.get("snapshot_id")
+        or recomputed != declared.get("snapshot_id")
+    ):
+        _checkpoint_archive_refuse("identity-mismatch")
+
+
+def _checkpoint_inspect_acceptance(manifest: dict, names: list[str]) -> None:
+    """`acceptance/current` refused, and `acceptance/prior` counted, never read."""
+    acceptance = manifest["acceptance"]
+    if (
+        acceptance.get("current") != CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT
+        or "acceptance/current" in names
+    ):
+        _checkpoint_archive_refuse("acceptance-self-reference")
+    prior_members = [
+        name for name in names if name.startswith(CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR + "/")
+    ]
+    if (
+        len(prior_members) > CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX
+        or len(acceptance["prior"]) > CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX
+    ):
+        _checkpoint_archive_refuse("acceptance-self-reference")
+
+
+def _checkpoint_inspect_archive(
+    archive_path: str,
+    expected_sha256: str,
+    scratch: str,
+    *,
+    existing_repo: str | None = None,
+) -> dict:
+    """Read one outer checkpoint archive from outside the process that built it.
+
+    Every check the reference names, in its exact order, stopping at the
+    first refusal: the outer digest and sidecar; the central directory under
+    the ceilings, the name policy and both uniqueness rules, entry mode,
+    compression, encryption, ZIP64 and trailing bytes; `checkpoint.json`'s
+    closed schema; every member's digest and size against it; the capsule
+    manifest's own digest; the three-way ref join; the bundle's header,
+    ceiling and independent verify; every claimed signature, re-verified in a
+    disposable keyring; the identity member's own recompute; the acceptance
+    rules; and, last, the six secret patterns over every member already
+    streamed. Nothing is extracted before the central directory is read, and
+    no member's content is ever printed.
+    """
+    try:
+        size = os.path.getsize(archive_path)
+    except OSError:
+        die("checkpoint inspect archive could not be read")
+
+    _outer_size, outer_digest = _checkpoint_inspect_outer(archive_path, expected_sha256)
+
+    cd_offset, cd_size, entry_count = _checkpoint_inspect_eocd(archive_path, size)
+    physical = _checkpoint_inspect_central_directory(
+        archive_path, cd_offset, cd_size, entry_count
+    )
+    layout_end = _checkpoint_inspect_layout(archive_path, physical)
+    if layout_end != cd_offset:
+        _checkpoint_archive_refuse("trailing-data")
+    _checkpoint_inspect_name_policy([item["name"] for item in physical])
+
+    manifest_item = next(
+        (item for item in physical if item["name"] == CHECKPOINT_ARCHIVE_MANIFEST_ENTRY),
+        None,
+    )
+    if manifest_item is None:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    manifest_bytes = _checkpoint_inspect_read_slice(
+        archive_path, manifest_item["data_offset"], manifest_item["size"]
+    )
+    if len(manifest_bytes) > CHECKPOINT_MANIFEST_BYTES_MAX:
+        _checkpoint_archive_refuse("schema-unsupported")
+    manifest = _checkpoint_archive_guarded(
+        "schema-unsupported", lambda: _checkpoint_inspect_manifest_shape(manifest_bytes)
+    )
+
+    captured, bundle_path, secret_found = _checkpoint_inspect_members(
+        archive_path, physical, manifest["archive"]["entries"], scratch
+    )
+
+    capsule_manifest = _checkpoint_inspect_capsule(
+        manifest, captured.get(CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY)
+    )
+
+    if bundle_path is None:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    repo_dir = existing_repo or _checkpoint_inspect_clone(scratch, bundle_path)
+    heads = _checkpoint_inspect_bundle(manifest, bundle_path, repo_dir)
+    _checkpoint_inspect_refs(manifest, capsule_manifest, heads)
+
+    signatures = _checkpoint_inspect_signatures(repo_dir, manifest, captured, scratch)
+    _checkpoint_inspect_identity(
+        manifest["identity"], captured.get(CHECKPOINT_ARCHIVE_IDENTITY_ENTRY)
+    )
+    _checkpoint_inspect_acceptance(manifest, [item["name"] for item in physical])
+
+    if secret_found:
+        _checkpoint_archive_refuse("secret-shaped-member")
+
+    return {
+        "schema": CHECKPOINT_ARCHIVE_INSPECT_SCHEMA,
+        "outer_sha256": outer_digest,
+        "entries": len(physical),
+        "bytes": size,
+        "findings": [],
+        "bundle": manifest["bundle"],
+        "signatures": signatures,
+        "identity": manifest["identity"],
+        "refs": manifest["refs"],
+    }
+
 
 
 def _checkpoint_archive_manifest(
@@ -18073,9 +19035,15 @@ def cmd_checkpoint_archive(args) -> None:
             timing["pack"] = _checkpoint_archive_elapsed_ms(marker)
 
             marker = time.monotonic()
-            archive_bytes, outer = _checkpoint_archive_self_check(
-                archive_path, manifest, manifest_bytes
-            )
+            archive_bytes, outer = _checkpoint_archive_digest(archive_path)
+            inspect_scratch = tempfile.mkdtemp(prefix=".fiat-checkpoint-inspect-")
+            os.chmod(inspect_scratch, 0o700)
+            try:
+                _checkpoint_inspect_archive(
+                    archive_path, outer, inspect_scratch, existing_repo=base_dir
+                )
+            finally:
+                shutil.rmtree(inspect_scratch, ignore_errors=True)
             timing["inspect"] = _checkpoint_archive_elapsed_ms(marker)
 
             marker = time.monotonic()
@@ -18125,6 +19093,25 @@ def cmd_checkpoint_archive(args) -> None:
         with contextlib.suppress(OSError):
             os.close(parent_descriptor)
 
+    print(canonical(result))
+
+
+def cmd_checkpoint_inspect(args) -> None:
+    """Read one outer checkpoint archive and print its `fiat-checkpoint-inspect/v1`.
+
+    Takes no run lock and touches no controller state: the archive named by
+    `--archive` is the only input, `--sha256` is the out-of-band digest that
+    decides whether it is even read further, and `--scratch` is the one
+    optional way to keep the disposable root this command would otherwise
+    create and remove around itself.
+    """
+    archive_path = os.path.abspath(args.archive)
+    scratch, owned = _checkpoint_inspect_scratch(args.scratch)
+    try:
+        result = _checkpoint_inspect_archive(archive_path, args.sha256, scratch)
+    finally:
+        if not owned:
+            shutil.rmtree(scratch, ignore_errors=True)
     print(canonical(result))
 
 
@@ -19044,6 +20031,13 @@ def build_parser() -> argparse.ArgumentParser:
         "archive", help="publish one outer checkpoint archive at this boundary"
     )
     archive.set_defaults(fn=cmd_checkpoint_archive)
+    inspect = checkpoint.add_parser(
+        "inspect", help="verify one outer checkpoint archive without extracting it"
+    )
+    inspect.add_argument("--archive", required=True, metavar="ZIP")
+    inspect.add_argument("--sha256", required=True, metavar="SHA256")
+    inspect.add_argument("--scratch", default=None, metavar="DIRECTORY")
+    inspect.set_defaults(fn=cmd_checkpoint_inspect)
     export = checkpoint.add_parser(
         "export", help="write one deterministic controller capsule"
     )

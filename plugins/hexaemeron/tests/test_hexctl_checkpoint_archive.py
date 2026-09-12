@@ -57,10 +57,14 @@ really made, signs them with a key generated into a temporary `GNUPGHOME`, and
 lets the archive's bundle, digests and proof run against real bytes. The
 operator's keyring is never opened.
 
-No test or class name here contains `hostile` or `restore_from_archive`: the
-design record's conformance resolvers select later steps' tests with
-`-k hostile` and `-k restore_from_archive`, and a match here would change
-their counts.
+Step 3 adds the 35 `test_hostile_<id>` methods themselves, in
+`CheckpointArchiveInspectTests`, plus three more covering the clean path and
+the write and print boundaries. Before that step, no test or class name here
+contained `hostile` or `restore_from_archive`; the design record's
+conformance resolvers select the intended tests with `-k hostile` and
+`-k restore_from_archive`, so the classes above this one still keep those
+words out of every name they hold, and `restore_from_archive` stays absent
+from the whole file until the step that owns it.
 """
 
 from __future__ import annotations
@@ -74,11 +78,15 @@ import random
 import re
 import shutil
 import socket
+import stat
+import struct
 import subprocess
 import sys
 import tempfile
+import unicodedata
 import unittest
 import zipfile
+import zlib
 from contextlib import ExitStack, redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
@@ -1271,8 +1279,8 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertEqual(entry["limit"], int(fields.group("limit")))
 
 
-class CheckpointArchiveExportTests(HexctlCase):
-    """`checkpoint archive` over one real, really signed run.
+class SignedRunFixture(HexctlCase):
+    """One real, really signed run, shared by every test that needs its archive.
 
     The controller fixture fakes the delivery tools a run talks to, which is
     right for receipts and wrong for an archive: a bundle built from invented
@@ -1281,6 +1289,13 @@ class CheckpointArchiveExportTests(HexctlCase):
     reader, points the fake ref map at the commits it really made, and signs
     those commits with an OpenPGP key generated into a temporary `GNUPGHOME`
     for the class. Nothing here reads or writes the operator's keyring.
+
+    This class carries no test of its own: it is a plain `unittest.TestCase`
+    subclass only because its fixture methods need one, and `unittest`
+    collects tests by walking a class's methods, inherited ones included, so
+    a shared base that held its own `test_*` method would run it again under
+    every subclass. `CheckpointArchiveExportTests` and
+    `CheckpointArchiveInspectTests` hold the cases; both inherit from here.
     """
 
     key_home = None
@@ -1514,6 +1529,10 @@ class CheckpointArchiveExportTests(HexctlCase):
             except SystemExit as stopped:
                 return stopped.code, output.getvalue(), error.getvalue()
         return 0, output.getvalue(), error.getvalue()
+
+
+class CheckpointArchiveExportTests(SignedRunFixture):
+    """`checkpoint archive` over one real, really signed run: the cases."""
 
     # -- cases -----------------------------------------------------------
 
@@ -2505,6 +2524,569 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     f"{path.name} names no armour header, so it guards nothing",
                 )
                 self.assertIsNone(self.scan(path.read_bytes()))
+
+
+def _zip_local_header(name: bytes, data: bytes, *, method=0, flags=0, extra=b""):
+    crc = zlib.crc32(data) & 0xFFFFFFFF
+    header = struct.pack(
+        "<4sHHHHHIIIHH",
+        b"PK\x03\x04",
+        20,
+        flags,
+        method,
+        0,
+        33,
+        crc,
+        len(data),
+        len(data),
+        len(name),
+        len(extra),
+    )
+    return header + name + extra + data
+
+
+def _zip_central_entry(
+    name: bytes,
+    data: bytes,
+    offset: int,
+    *,
+    method=0,
+    flags=0,
+    extra=b"",
+    comment=b"",
+    mode=0o100644,
+    declared_size=None,
+):
+    size = len(data) if declared_size is None else declared_size
+    crc = zlib.crc32(data) & 0xFFFFFFFF
+    header = struct.pack(
+        "<4sHHHHHHIIIHHHHHII",
+        b"PK\x01\x02",
+        (3 << 8) | 20,
+        20,
+        flags,
+        method,
+        0,
+        33,
+        crc,
+        size,
+        size,
+        len(name),
+        len(extra),
+        len(comment),
+        0,
+        0,
+        mode << 16,
+        offset,
+    )
+    return header + name + extra + comment
+
+
+def write_raw_zip(path, entries):
+    """Pack `entries` (each a dict with at least `name` bytes and `data` bytes)
+    into one ZIP with no compression, no comment, and no ZIP64 record, in
+    exactly the order given -- an independent writer from `hexctl.py`'s own,
+    so a hostile test never merely re-exercises the code under test to build
+    its own fixture.
+    """
+    body = bytearray()
+    offsets = []
+    for entry in entries:
+        offsets.append(len(body))
+        body += _zip_local_header(
+            entry["name"],
+            entry["data"],
+            method=entry.get("method", 0),
+            flags=entry.get("flags", 0),
+            extra=entry.get("extra", b""),
+        )
+    cd_start = len(body)
+    for entry, offset in zip(entries, offsets):
+        body += _zip_central_entry(
+            entry["name"],
+            entry["data"],
+            offset,
+            method=entry.get("method", 0),
+            flags=entry.get("flags", 0),
+            extra=entry.get("extra", b""),
+            comment=entry.get("comment", b""),
+            mode=entry.get("mode", 0o100644),
+            declared_size=entry.get("declared_size"),
+        )
+    cd_size = len(body) - cd_start
+    eocd = struct.pack(
+        "<4sHHHHIIH",
+        b"PK\x05\x06",
+        0,
+        0,
+        len(entries),
+        len(entries),
+        cd_size,
+        cd_start,
+        0,
+    )
+    body += eocd
+    with open(path, "wb") as handle:
+        handle.write(bytes(body))
+
+
+class CheckpointArchiveInspectTests(SignedRunFixture):
+    """`checkpoint inspect` over one real archive and its 35 hostile specimens.
+
+    Every hostile test takes the archive `CheckpointArchiveExportTests`
+    already builds from one really signed, receipted run, mutates exactly
+    the bytes its id names, and asserts the one refusal class the reference's
+    Ceilings, Content manifest or Refusal classes table binds to it. `inspect`
+    is exercised the way an operator runs it, over a subprocess, never in
+    process, and the ZIP writer above is independent of `hexctl.py`'s own so
+    a fixture is never built with the code it is testing.
+    """
+
+    # -- fixture plumbing -------------------------------------------------
+
+    def good_archive(self):
+        """One real, published archive from one really signed, receipted run."""
+        self.to_post_push()
+        self.archive()
+        return self.published()
+
+    def good_members(self):
+        path = self.good_archive()
+        with zipfile.ZipFile(path) as container:
+            return {
+                info.filename: container.read(info.filename)
+                for info in container.infolist()
+            }
+
+    def manifest(self, members):
+        return json.loads(members["checkpoint.json"])
+
+    def set_manifest(self, members, manifest_obj):
+        module = hexctl_module()
+        members["checkpoint.json"] = (
+            module.canonical(manifest_obj).encode("utf-8") + b"\n"
+        )
+
+    def retarget(self, members, manifest_obj, path, new_bytes):
+        """Change one member's bytes and its own manifest record together,
+        so only the check under test is left disagreeing with the rest.
+        """
+        members[path] = new_bytes
+        for entry in manifest_obj["archive"]["entries"]:
+            if entry["path"] == path:
+                entry["bytes"] = len(new_bytes)
+                entry["sha256"] = hashlib.sha256(new_bytes).hexdigest()
+                return
+        raise AssertionError(f"{path} is not a manifest entry")
+
+    def specimen_path(self, name="specimen.zip"):
+        return os.path.join(self.dir, name)
+
+    def write_specimen(self, members, overrides=None, *, path=None):
+        """Pack `members` (name -> bytes), sorted by UTF-8 bytes, with any
+        named entry's mode, method, flags, extra field or declared central-
+        directory size overridden by `overrides`.
+        """
+        overrides = overrides or {}
+        names = sorted(members, key=lambda item: item.encode("utf-8"))
+        entries = []
+        for name in names:
+            entry = {"name": name.encode("utf-8"), "data": members[name]}
+            entry.update(overrides.get(name, {}))
+            entries.append(entry)
+        target = path or self.specimen_path()
+        write_raw_zip(target, entries)
+        return target
+
+    def outer_sha256(self, path):
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+    def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1):
+        args = [
+            sys.executable,
+            HEXCTL,
+            "checkpoint",
+            "inspect",
+            "--archive",
+            str(archive_path),
+            "--sha256",
+            sha256,
+        ]
+        if scratch is not None:
+            args += ["--scratch", str(scratch)]
+        proc = subprocess.run(args, capture_output=True, text=True)
+        if proc.returncode != expect:
+            raise AssertionError(
+                f"checkpoint inspect -> rc {proc.returncode} (expected {expect})\n"
+                f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc
+
+    def assert_refuses(self, archive_path, refusal, *, sha256=None, scratch=None):
+        digest = sha256 if sha256 is not None else self.outer_sha256(archive_path)
+        proc = self.run_inspect(archive_path, digest, scratch=scratch, expect=1)
+        self.assertEqual(f"{refusal}\n", proc.stderr)
+        self.assertEqual("", proc.stdout)
+
+    # -- name policy and uniqueness ---------------------------------------
+
+    def test_hostile_traversal_dotdot(self):
+        members = self.good_members()
+        members["controller-capsule/../evil.txt"] = members.pop("README.txt")
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_absolute_path(self):
+        members = self.good_members()
+        members["/evil.txt"] = members.pop("README.txt")
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_backslash_separator(self):
+        members = self.good_members()
+        members["controller-capsule\\evil.txt"] = members.pop("README.txt")
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_drive_letter(self):
+        members = self.good_members()
+        members["C:/evil.txt"] = members.pop("README.txt")
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_duplicate_name(self):
+        members = self.good_members()
+        names = sorted(members, key=lambda item: item.encode("utf-8"))
+        entries = []
+        for name in names:
+            entries.append({"name": name.encode("utf-8"), "data": members[name]})
+            if name == "README.txt":
+                # Inserted immediately after its own sorted position, so the
+                # physical order is already the sorted order the layout check
+                # requires; only the name-policy scan is meant to catch this.
+                entries.append({"name": name.encode("utf-8"), "data": members[name]})
+        path = self.specimen_path()
+        write_raw_zip(path, entries)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_case_fold_collision(self):
+        members = self.good_members()
+        members["readme.TXT"] = members["README.txt"]
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_non_utf8_name(self):
+        members = self.good_members()
+        names = sorted(members, key=lambda item: item.encode("utf-8"))
+        entries = [{"name": name.encode("utf-8"), "data": members[name]} for name in names]
+        entries.append({"name": b"\xff\xfe-evil.txt", "data": b"hostile"})
+        entries.sort(key=lambda entry: entry["name"])
+        path = self.specimen_path()
+        write_raw_zip(path, entries)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_control_character_name(self):
+        members = self.good_members()
+        members["evil\x01name.txt"] = members.pop("README.txt")
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    def test_hostile_nfc_mismatch_name(self):
+        members = self.good_members()
+        decomposed = "e\u0301vil.txt"  # NFD: "e" + combining acute accent
+        self.assertNotEqual(decomposed, unicodedata.normalize("NFC", decomposed))
+        members[decomposed] = members.pop("README.txt")
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "entry-name-policy")
+
+    # -- entry mode, compression, encryption and ZIP64 ---------------------
+
+    def test_hostile_directory_entry(self):
+        members = self.good_members()
+        path = self.write_specimen(members, overrides={"README.txt": {"mode": 0o040755}})
+        self.assert_refuses(path, "entry-mode")
+
+    def test_hostile_symlink_entry(self):
+        members = self.good_members()
+        path = self.write_specimen(members, overrides={"README.txt": {"mode": 0o120777}})
+        self.assert_refuses(path, "entry-mode")
+
+    def test_hostile_special_mode_entry(self):
+        members = self.good_members()
+        path = self.write_specimen(members, overrides={"README.txt": {"mode": 0o020666}})
+        self.assert_refuses(path, "entry-mode")
+
+    def test_hostile_setuid_or_executable_mode(self):
+        members = self.good_members()
+        path = self.write_specimen(members, overrides={"README.txt": {"mode": 0o104755}})
+        self.assert_refuses(path, "entry-mode")
+
+    def test_hostile_compressed_entry(self):
+        members = self.good_members()
+        path = self.write_specimen(members, overrides={"README.txt": {"method": 8}})
+        self.assert_refuses(path, "entry-compressed")
+
+    def test_hostile_encrypted_entry(self):
+        members = self.good_members()
+        path = self.write_specimen(members, overrides={"README.txt": {"flags": 0x1}})
+        self.assert_refuses(path, "entry-encrypted")
+
+    def test_hostile_zip64_record(self):
+        members = self.good_members()
+        zip64_extra = struct.pack("<HH", 0x0001, 0)
+        path = self.write_specimen(members, overrides={"README.txt": {"extra": zip64_extra}})
+        self.assert_refuses(path, "zip64-present")
+
+    # -- ceilings, declared straight from the central directory ------------
+
+    def test_hostile_entry_count_over_limit(self):
+        members = self.good_members()
+        path = self.write_specimen(members)
+        data = bytearray(Path(path).read_bytes())
+        eocd_offset = len(data) - 22
+        self.assertEqual(b"PK\x05\x06", bytes(data[eocd_offset : eocd_offset + 4]))
+        struct.pack_into("<H", data, eocd_offset + 8, 4201)
+        struct.pack_into("<H", data, eocd_offset + 10, 4201)
+        Path(path).write_bytes(bytes(data))
+        self.assert_refuses(path, "entry-limit")
+
+    def test_hostile_expanded_size_over_limit(self):
+        members = self.good_members()
+        path = self.write_specimen(
+            members, overrides={"README.txt": {"declared_size": 65 * 1024 * 1024}}
+        )
+        self.assert_refuses(path, "entry-limit")
+
+    def test_hostile_bundle_over_limit(self):
+        members = self.good_members()
+        path = self.write_specimen(
+            members,
+            overrides={"git/repository.bundle": {"declared_size": 1025 * 1024 * 1024}},
+        )
+        self.assert_refuses(path, "entry-limit")
+
+    # -- structural bytes ---------------------------------------------------
+
+    def test_hostile_trailing_data(self):
+        members = self.good_members()
+        path = self.write_specimen(members)
+        with open(path, "ab") as handle:
+            handle.write(b"\x00" * 8)
+        self.assert_refuses(path, "trailing-data")
+
+    # -- the digest join between checkpoint.json and the physical members --
+
+    def test_hostile_size_mismatch(self):
+        members = self.good_members()
+        members["README.txt"] = members["README.txt"] + b"hostile appended bytes\n"
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "manifest-mismatch")
+
+    def test_hostile_tampered_manifest(self):
+        members = self.good_members()
+        target = "controller-capsule/MANIFEST.json"
+        tampered = bytearray(members[target])
+        tampered[-2] ^= 0xFF
+        members[target] = bytes(tampered)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "manifest-mismatch")
+
+    def test_hostile_unmanifested_member(self):
+        members = self.good_members()
+        members["controller-capsule/controller/hostile-extra.txt"] = b"extra\n"
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "manifest-mismatch")
+
+    def test_hostile_missing_member(self):
+        members = self.good_members()
+        del members["README.txt"]
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "manifest-mismatch")
+
+    def test_hostile_wrong_receipt(self):
+        members = self.good_members()
+        target = "controller-capsule/controller/ledger.jsonl"
+        tampered = bytearray(members[target])
+        tampered[-2] ^= 0xFF
+        members[target] = bytes(tampered)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "manifest-mismatch")
+
+    # -- the outer digest and sidecar ---------------------------------------
+
+    def test_hostile_wrong_outer_digest(self):
+        path = self.good_archive()
+        real = self.outer_sha256(path)
+        wrong = ("0" if real[0] != "0" else "1") + real[1:]
+        self.assert_refuses(path, "outer-digest-mismatch", sha256=wrong)
+
+    def test_hostile_tampered_sidecar(self):
+        good = self.good_archive()
+        path = self.specimen_path()
+        shutil.copyfile(good, path)
+        real = self.outer_sha256(path)
+        wrong = ("0" if real[0] != "0" else "1") + real[1:]
+        with open(path + ".sha256", "w", encoding="utf-8") as handle:
+            handle.write(f"{wrong}  {os.path.basename(path)}\n")
+        self.assert_refuses(path, "sidecar-mismatch", sha256=real)
+
+    # -- the bundle and the three-way ref join ------------------------------
+
+    def test_hostile_missing_object(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        parent = self.git("rev-parse", "HEAD~1").stdout.strip()
+        incomplete = os.path.join(self.dir, "incomplete.bundle")
+        subprocess.run(
+            [
+                "git", "-c", "pack.threads=1", "bundle", "create", incomplete,
+                "HEAD", f"^{parent}",
+            ],
+            cwd=self.target,
+            check=True,
+            capture_output=True,
+        )
+        new_bytes = Path(incomplete).read_bytes()
+        self.retarget(members, manifest, "git/repository.bundle", new_bytes)
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "bundle-incomplete")
+
+    def test_hostile_ref_map_mismatch(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        refs = dict(manifest["refs"])
+        target_name = sorted(refs)[0]
+        original = refs[target_name]
+        refs[target_name] = ("0" if original[0] != "0" else "1") + original[1:]
+        manifest["refs"] = refs
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "ref-disagreement")
+
+    # -- signatures, identity, schema and acceptance ------------------------
+
+    def test_hostile_signature_proof_mismatch(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        proof = json.loads(members["proof/signatures.json"])
+        original = proof["signer"]["fingerprints"][0]
+        bogus = ("0" if original[0] != "0" else "1") + original[1:]
+        proof["signer"]["fingerprints"] = [bogus]
+        module = hexctl_module()
+        proof_bytes = module.canonical(proof).encode("utf-8") + b"\n"
+        self.retarget(members, manifest, "proof/signatures.json", proof_bytes)
+        # `manifest["proof"]` is checkpoint.json's own second copy of the
+        # proof member's digest, separate from its `archive.entries` record;
+        # both have to move together or the join refuses before the
+        # signature re-verify this fixture is actually aimed at ever runs.
+        manifest["proof"]["sha256"] = hashlib.sha256(proof_bytes).hexdigest()
+        manifest["signer"]["fingerprints"] = [bogus]
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "signature-unverified")
+
+    def test_hostile_identity_mismatch(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        target = "identity/checkpoint-identity.json"
+        payload = json.loads(members[target])
+        original = payload["snapshot_id"]
+        payload["snapshot_id"] = ("0" if original[0] != "0" else "1") + original[1:]
+        module = hexctl_module()
+        new_bytes = module.canonical(payload).encode("utf-8") + b"\n"
+        self.retarget(members, manifest, target, new_bytes)
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "identity-mismatch")
+
+    def test_hostile_unknown_schema_version(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        manifest["schema"] = "fiat-checkpoint-archive/v0"
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "schema-unsupported")
+
+    def test_hostile_absolute_source_path_in_manifest(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        entries = manifest["archive"]["entries"]
+        entries[0]["path"] = "/etc/passwd"
+        entries.sort(key=lambda item: item["path"].encode("utf-8"))
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "schema-unsupported")
+
+    def test_hostile_self_referential_acceptance(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        payload = b"{}\n"
+        members["acceptance/current"] = payload
+        manifest["archive"]["entries"].append(
+            {
+                "path": "acceptance/current",
+                "bytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }
+        )
+        manifest["archive"]["entries"].sort(key=lambda item: item["path"].encode("utf-8"))
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "acceptance-self-reference")
+
+    def test_hostile_secret_shaped_member(self):
+        members = self.good_members()
+        manifest = self.manifest(members)
+        tampered = members["README.txt"] + b"\nghp_" + b"A" * 36 + b"\n"
+        self.retarget(members, manifest, "README.txt", tampered)
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "secret-shaped-member")
+
+    # -- the clean path, and the two write and print boundaries -------------
+
+    def test_inspect_reports_clean_findings_on_a_good_archive(self):
+        path = self.good_archive()
+        digest = self.outer_sha256(path)
+        proc = self.run_inspect(path, digest, expect=0)
+        result = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-inspect/v1", result["schema"])
+        self.assertEqual([], result["findings"])
+        self.assertEqual(digest, result["outer_sha256"])
+        with zipfile.ZipFile(path) as container:
+            self.assertEqual(len(container.infolist()), result["entries"])
+        self.assertEqual(os.path.getsize(path), result["bytes"])
+        self.assertEqual("", proc.stderr)
+
+    def test_inspect_writes_nothing_outside_scratch(self):
+        path = self.good_archive()
+        digest = self.outer_sha256(path)
+        before = set(os.listdir(tempfile.gettempdir()))
+        self.run_inspect(path, digest, expect=0)
+        after = set(os.listdir(tempfile.gettempdir()))
+        leaked = {
+            name
+            for name in after - before
+            if name.startswith(".fiat-checkpoint-inspect-") or name.startswith(".fiat-gpg-")
+        }
+        self.assertEqual(set(), leaked)
+        named_scratch = os.path.join(self.dir, "named-scratch")
+        self.run_inspect(path, digest, scratch=named_scratch, expect=0)
+        self.assertTrue(os.path.isdir(named_scratch))
+        self.assertEqual(0o700, stat.S_IMODE(os.stat(named_scratch).st_mode))
+        self.assertTrue(os.listdir(named_scratch))
+
+    def test_inspect_prints_no_entry_content(self):
+        path = self.good_archive()
+        digest = self.outer_sha256(path)
+        proc = self.run_inspect(path, digest, expect=0)
+        with zipfile.ZipFile(path) as container:
+            state_bytes = container.read("controller-capsule/controller/state.json")
+        marker = state_bytes[:64].decode("utf-8", "ignore")
+        self.assertNotIn(marker, proc.stdout)
+        self.assertNotIn("controller-capsule/controller/state.json", proc.stdout)
+        self.assertNotIn(str(path), proc.stdout)
 
 
 if __name__ == "__main__":
