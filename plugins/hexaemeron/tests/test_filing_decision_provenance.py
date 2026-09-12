@@ -15,6 +15,8 @@ pushed it over, the same reason the harness moved out before it.
 """
 
 import argparse
+import contextlib
+import io
 import json
 import os
 import subprocess
@@ -654,6 +656,121 @@ class VerifyFlagCompositionTests(unittest.TestCase):
             for name, value in originals.items():
                 setattr(module, name, value)
         self.assertEqual(len(calls), 1, "the filing decision was never compared")
+
+
+
+class FilingContractReaderParityTests(unittest.TestCase):
+    """The filing-decision readers step 3 did not bring under its own rules.
+
+    Rounds 1 to 4 enumerated the ten reader sites and the one comparison site
+    step 3 adds or touches, and every one of them applies "unread takes
+    `FILING_PROVENANCE_UNKNOWN`, read-and-absent takes `None`, never coerce".
+    The enumeration is complete for what it scopes and narrower than the
+    class: two readers of the same filing contract sit outside it, and neither
+    applied the rule the step established (S3-R5-01, S3-R5-02).
+
+    Driven by direct call rather than through the fixture, because the fake
+    `gh` cannot deliver a body that is not text to `issue-check` and cannot
+    put a control character on a `Fiat-Required` line.
+    """
+
+    ISSUE = "https://github.com/some/other/issues/9"
+
+    def payload(self, body):
+        return {
+            "number": 9,
+            "body": body,
+            "title": "a candidate",
+            "labels": [],
+            "created_at": "2026-09-06T09:17:50Z",
+            "updated_at": "2026-09-06T10:08:38Z",
+        }
+
+    @contextlib.contextmanager
+    def reading(self, module, body):
+        originals = {
+            name: getattr(module, name)
+            for name in ("github_rest", "bounded_probe")
+        }
+        module.github_rest = lambda base_dir, path, label: self.payload(body)
+        module.bounded_probe = lambda *a, **k: (0, b'{"data":{}}', None)
+        try:
+            yield
+        finally:
+            for name, value in originals.items():
+                setattr(module, name, value)
+
+    def test_issue_check_reads_a_body_under_the_rule_init_reads_it_under(self):
+        """The third reader of one response, and it agreed with neither.
+
+        `read_task_issue_contract` and `filing_decision_divergence` both go
+        through `admitted_issue_body`; `cmd_issue_check --issue` for a
+        repository outside the publication contract kept its own rule. `or ""`
+        made the type check below it unreachable for a falsy non-string, so a
+        body of `[]` was read as an empty string and reported as "declares no
+        `Fiat-Required` line" -- a claim about a body it never read -- and no
+        `ISSUE_BODY_BYTES_MAX` cap applied, where the `--body` sibling above it
+        and `admitted_issue_body` both refuse (S3-R5-01).
+        """
+        module = hexctl_module()
+        args = argparse.Namespace(
+            dir=".", body=None, issue=self.ISSUE, title=None, label=[]
+        )
+        for body in ([], 0, False, {}):
+            with self.subTest(body=repr(body)):
+                err = io.StringIO()
+                with self.reading(module, body):
+                    with contextlib.redirect_stdout(io.StringIO()), \
+                            contextlib.redirect_stderr(err):
+                        with self.assertRaises(SystemExit):
+                            module.cmd_issue_check(args)
+                self.assertIn("body that is not text", err.getvalue())
+                self.assertNotIn("declares no `Fiat-Required` line",
+                                 err.getvalue())
+
+        over = "Fiat-Required: 1\n" + "x" * module.ISSUE_BODY_BYTES_MAX
+        err = io.StringIO()
+        with self.reading(module, over):
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    contextlib.redirect_stderr(err):
+                with self.assertRaises(SystemExit):
+                    module.cmd_issue_check(args)
+        self.assertIn(f"above the {module.ISSUE_BODY_BYTES_MAX}-byte cap",
+                      err.getvalue())
+
+    def test_the_filing_refusal_carries_no_control_characters_from_the_body(self):
+        """One fault sentence, two destinations, one of them sanitised.
+
+        The fault copies the declared value out of the issue body, which is
+        somebody else's text. `filing_decision_divergence` cleans it and
+        bounds it at `UNREADABLE_DECISION_DETAIL_MAX` before it reaches
+        stdout; `init`'s refusal, which is where that sentence has always
+        gone, did neither, so an escape sequence on a `Fiat-Required` line
+        rendered raw in the operator's terminal and a 250000-character value
+        printed in full (S3-R5-02).
+        """
+        module = hexctl_module()
+        hostile = "Fiat-Required: \x1b[2J\x1b[31mHACKED\x07\n"
+        err = io.StringIO()
+        with self.reading(module, hostile):
+            with contextlib.redirect_stderr(err):
+                with self.assertRaises(SystemExit):
+                    module.read_task_issue_contract(".", self.ISSUE)
+        printed = err.getvalue()
+        self.assertNotIn("\x1b", printed)
+        self.assertNotIn("\x07", printed)
+        self.assertIn("neither 1 (a Fiat run) nor 0", printed)
+
+        long_value = "Fiat-Required: " + "Z" * 250000 + "\n"
+        err = io.StringIO()
+        with self.reading(module, long_value):
+            with contextlib.redirect_stderr(err):
+                with self.assertRaises(SystemExit):
+                    module.read_task_issue_contract(".", self.ISSUE)
+        printed = err.getvalue()
+        self.assertLess(len(printed), 4096)
+        # The instruction that says what to do about it survives the bound.
+        self.assertIn("start the run again", printed)
 
 
 if __name__ == "__main__":

@@ -5113,9 +5113,19 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     body = admitted_issue_body(payload, repository, number, label)
     record, faults = issue_contract_faults(body, label)
     if faults:
+        # The faults quote values copied out of the issue body, which is
+        # somebody else's text on its way to an operator's terminal.
+        # `filing_decision_divergence` cleans and bounds the identical
+        # sentence before it reaches stdout; this refusal, which is where the
+        # sentence has always gone, did neither, so an escape sequence on a
+        # `Fiat-Required` line rendered raw and a 250000-character value
+        # printed in full (S3-R5-02).
+        detail = clean("; ".join(faults))
+        if len(detail) > ISSUE_FAULT_DETAIL_MAX:
+            detail = detail[:ISSUE_FAULT_DETAIL_MAX] + "..."
         die(
             "the filing contract is not satisfied: "
-            + "; ".join(faults)
+            + detail
             + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
             f"line and one `{CARRYOVER_INFO}` block, then start the run again"
         )
@@ -5167,6 +5177,15 @@ UNREADABLE_DECISION_DETAIL_MAX = 200
 The fault copies a value out of the issue body, and a body line runs to
 `ISSUE_BODY_BYTES_MAX`. Bounded here so a diagnostic cannot be made to print
 a quarter of a megabyte of somebody else's text."""
+
+ISSUE_FAULT_DETAIL_MAX = 2000
+"""How much of the filing contract's refusal reaches stderr.
+
+The same bound for the same reason, at the destination the fault sentence has
+always had. Larger than `UNREADABLE_DECISION_DETAIL_MAX` because a refusal
+joins every fault the body carries rather than the filing one alone: the
+longest reader-authored set `issue_contract_faults` produces is 399 characters,
+so nothing a filer needs to read is cut (S3-R5-02)."""
 
 FILING_PROVENANCE_UNKNOWN = "unknown"
 """What the reader records for a field it could not read at all.
@@ -6342,9 +6361,16 @@ def cmd_issue_check(args) -> None:
                 payload, label, path
             )
         else:
-            text = payload.get("body") or ""
-            if not isinstance(text, str):
-                github_unreachable(label, path, "returned a body that is not text")
+            # The third reader of one response. `read_task_issue_contract`
+            # and `filing_decision_divergence` both go through
+            # `admitted_issue_body`; this one kept its own rule and agreed
+            # with neither. `or ""` made the type check below it unreachable
+            # for a falsy non-string, so a body of `[]` was read as an empty
+            # string and reported as "declares no `Fiat-Required` line",
+            # which is a claim about a body this reader never read, and no
+            # `ISSUE_BODY_BYTES_MAX` cap applied, where the `--body` sibling
+            # above and `admitted_issue_body` both refuse (S3-R5-01).
+            text = admitted_issue_body(payload, repository, number, label)
             record, faults = issue_contract_faults(text, label)
 
     if args.body:
