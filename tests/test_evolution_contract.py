@@ -41,6 +41,11 @@ PROTASIS_FRONTIER = (
     "relations through one bounded scanner."
 )
 PROTASIS_NEXT_JOB = "None -- mature"
+ELENCHUS_FRONTIER = (
+    "A check overlays a fix's changed tests onto the parent and classifies "
+    "unittest, Forge and Node guards from fresh runner-owned reports, while "
+    "diagnostics remain inert evidence."
+)
 
 
 def field(text, name):
@@ -165,6 +170,8 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("fiat-final-green-manifest/v1", latest["change"])
         self.assertIn("red guard commit stays", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
+        self.assertIn("known-failure-inoculation/proof.md", latest["evidence"])
+        self.assertIn("manual bootstrap procedure", latest["change"])
         # Generations displaced from newest keep their own coverage: each is
         # still a transition the held frontier had to survive.
         step_headings = by_version["fiat-v5.52.1"]
@@ -340,6 +347,8 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("known-failure-inoculation-study.md", latest["evidence"])
         self.assertIn("known-failure-inoculation/runbook.md", latest["evidence"])
         self.assertIn("protasis-known-failure-inventory/v1", latest["change"])
+        self.assertIn("known-failure-inoculation/proof.md", latest["evidence"])
+        self.assertIn("manual bootstrap procedure", latest["change"])
         prior_generation = history_rows(ledger)[-2]
         self.assertEqual(prior_generation["version"], "protasis-v5.10.0")
         self.assertEqual(prior_generation["axis"], "generation")
@@ -351,6 +360,40 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertEqual(prior["axis"], "evolution")
         self.assertIn("skills#497", prior["evidence"])
         self.assertIn("S008", prior["change"])
+
+    def test_elenchus_parent_guard_generation_stays_inside_its_mature_frontier(self):
+        """The third ledger this run declares, and the only one Fiat calls into.
+
+        Elenchus runs the guard; Fiat owns the Git binding, the numeric
+        admission and the receipt. A row that let those drift into Elenchus
+        would move the boundary the guard contract rests on, so the mature
+        frontier fields are asserted beside the candidate row rather than
+        left to the ledger's own header.
+        """
+        ledger = (
+            PLUGINS / "hexaemeron" / "skills" / "elenchus" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.4.0")
+        self.assertEqual(field(ledger, "Frontier status"), "mature")
+        self.assertEqual(
+            field(ledger, "Frontier revision"), "observed-failure-root-cause"
+        )
+        self.assertEqual(field(ledger, "Current frontier"), ELENCHUS_FRONTIER)
+        self.assertEqual(field(ledger, "Next Fiat job"), "None -- mature")
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "elenchus-v1.4.0")
+        self.assertEqual(latest["axis"], "generation")
+        self.assertEqual(latest["revision"], "observed-failure-root-cause")
+        self.assertEqual(
+            latest["digest"],
+            "08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b",
+        )
+        self.assertIn("known-failure-inoculation-study.md", latest["evidence"])
+        self.assertIn("test_guard_evidence.py", latest["evidence"])
+        self.assertIn("known-failure-inoculation/proof.md", latest["evidence"])
+        self.assertIn("elenchus-parent-guard-evidence", latest["change"])
+        self.assertIn("Fiat retains ownership", latest["change"])
+        self.assertIn("manual bootstrap procedure", latest["change"])
 
     def test_history_rows_accept_compact_list(self):
         digest = "a" * 64

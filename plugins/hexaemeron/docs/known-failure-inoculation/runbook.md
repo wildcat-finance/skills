@@ -4010,3 +4010,175 @@ unchanged.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds;
 exit holds.
+
+### Amendment -- 2026-09-11
+
+**What changed.** Complete replacement Exit: `python3 plugins/hexaemeron/docs/known-failure-inoculation/proof.py`
+creates a temporary signed repository, uses the tracked controller from the
+final tree, atomically writes the bounded sibling `proof.md` transcript, and
+checks that transcript against the run it just completed. It proves
+runbook-to-inoculate order, one early-product refusal,
+every non-guard verdict and runner-fault refusal, exact report-byte and Git
+binding, one explicit no-known-findings step, resume, fixed-tree guard success,
+audit entry, and final verification with unchanged state/ledger digests around
+refusals. It records controller and source digests, commands, exits, counts,
+and evidence digests without credentials or raw signatures. The proof states
+that this run used only the manual bootstrap procedure.
+
+The three declared skill ledgers carry one provisional candidate generation
+each. The two plugin manifests and two marketplace records carry one matching
+candidate Hexaemeron package increment. The three hard-pinned version
+consumers agree with those candidate bytes. These values become exact only
+after any base-sync correction and the post-stack `done resolve-versions`
+receipt. The ADR allocator assigns the numberless draft only during final
+composition. The portable runtime is an ignored local verification payload,
+not a committed release surface; Horos records remain generator-produced. The
+study, runbook, proof, skill contracts, worker roles, ADR, audit, ledgers,
+manifests, marketplaces, and version consumers make the same bounded claim.
+Issue #363 and all unrelated audit sources remain unchanged. The accepted seven-entry inventory is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+Prove the final
+green candidate tree with:
+
+```bash
+python3 plugins/hexaemeron/docs/known-failure-inoculation/proof.py
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory plugins.hexaemeron.tests.test_inoculation_lifecycle plugins.hexaemeron.tests.test_guard_evidence plugins.hexaemeron.tests.test_recovery_and_final_green -v
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 -m unittest tests.test_version_propagation tests.test_evolution_contract plugins.hexaemeron.tests.test_phylax_model_proxy -v
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/proof.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/EVOLUTION.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/elenchus/SKILL.md plugins/hexaemeron/skills/elenchus/EVOLUTION.md plugins/hexaemeron/agents/mason.md plugins/hexaemeron/agents/warden.md docs/agent-instruction-language-v1.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/proof.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/elenchus/SKILL.md plugins/hexaemeron/agents/mason.md plugins/hexaemeron/agents/warden.md docs/agent-instruction-language-v1.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+git diff --check
+```
+
+**Why.** Step 5 has not started, and its Exit named four test modules and one
+study path that do not exist in the tree it will be proved against. Steps 1, 2
+and 4 renamed
+`plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py`,
+`plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py`,
+`plugins/hexaemeron/tests/test_issue_453_guard_evidence.py` and
+`plugins/hexaemeron/tests/test_issue_453_recovery.py` to their maintained
+behaviour names, because `tests/test_repository_naming.py` refuses a tracked
+test module named for the issue that introduced it. Step 1 committed the study
+to `docs/known-failure-inoculation-study.md`, not to a sibling of the committed
+runbook. This generation names the four maintained modules and the committed
+study path, and both Protasis calls exit zero against them. Correcting the Exit
+before the step opens is what this issue asks of every step: a known failure is
+guarded before the production change, not discovered by the audit after it. The
+locked seven-pair assignment map, the Entry, Files, Tests and Disciplines
+fields, and every other Step 5 claim remain unchanged.
+
+**Steps touched.** Step 5's Exit field only.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-11
+
+**What changed.** Complete replacement Exit: `python3 plugins/hexaemeron/docs/known-failure-inoculation/proof.py`
+creates a temporary signed repository, uses the tracked controller from the
+final tree, atomically writes the bounded sibling `proof.md` transcript, and
+checks that transcript against the run it just completed. It proves
+runbook-to-inoculate order, one early-product refusal,
+every non-guard verdict and runner-fault refusal, exact report-byte and Git
+binding, one explicit no-known-findings step, resume, fixed-tree guard success,
+audit entry, and final verification with unchanged state/ledger digests around
+refusals. It records controller and source digests, commands, exits, counts,
+and evidence digests without credentials or raw signatures. The proof states
+that this run used only the manual bootstrap procedure.
+
+The three declared skill ledgers carry one provisional candidate generation
+each. The two plugin manifests and two marketplace records carry one matching
+candidate Hexaemeron package increment. The three hard-pinned version
+consumers agree with those candidate bytes. These values become exact only
+after any base-sync correction and the post-stack `done resolve-versions`
+receipt. The ADR allocator assigns the numberless draft only during final
+composition. The portable runtime is an ignored local verification payload,
+not a committed release surface; Horos records remain generator-produced. The
+study, runbook, proof, skill contracts, worker roles, ADR, audit, ledgers,
+manifests, marketplaces, and version consumers make the same bounded claim.
+Issue #363 and all unrelated audit sources remain unchanged. The accepted seven-entry inventory is bound by these exact visible records:
+
+Known-failure assignment: `kf-453-01` -> Step 1
+Known-failure assignment: `kf-453-02` -> Step 2
+Known-failure assignment: `kf-453-03` -> Step 3
+Known-failure assignment: `kf-453-04` -> Step 3
+Known-failure assignment: `kf-453-05` -> Step 3
+Known-failure assignment: `kf-453-06` -> Step 4
+Known-failure assignment: `kf-453-07` -> Step 4
+
+The Brevitas `report` loop covers the nine drafts this step may change and that
+mode can accept. Four named drafts are checked elsewhere instead. The committed
+study and runbook are byte-identical to receipted artefacts, so their bytes are
+not this step's to change; `docs/agent-instruction-language-v1.md` is outside
+this step's Files field; and the audit record's append-only
+`fiat-audit-round/v2` grammar has five columns and one or two data rows, which
+`B011` cannot accept and no record Warden writes can satisfy. All four remain
+checked by Imprimatur at `--max-defects 0`, the audit record additionally by
+`audit_synopsis.py --check .` and by Brevitas under the explicit
+`fiat-audit-record` mode Step 1 shipped for it. Prove the final
+green candidate tree with:
+
+```bash
+python3 plugins/hexaemeron/docs/known-failure-inoculation/proof.py
+python3 -m unittest plugins.hexaemeron.tests.test_known_failure_inventory plugins.hexaemeron.tests.test_inoculation_lifecycle plugins.hexaemeron.tests.test_guard_evidence plugins.hexaemeron.tests.test_recovery_and_final_green -v
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 scripts/promise_machine.py check
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 -m unittest tests.test_version_propagation tests.test_evolution_contract plugins.hexaemeron.tests.test_phylax_model_proxy -v
+python3 scripts/run_checks.py --base 5bc2494c4f5802efcd8a92e58554809ac4b9f147
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/known-failure-inoculation-study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/hexaemeron/docs/known-failure-inoculation/runbook.md
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/known-failure-inoculation-study.md plugins/hexaemeron/docs/known-failure-inoculation/runbook.md plugins/hexaemeron/docs/known-failure-inoculation/proof.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/protasis/EVOLUTION.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/EVOLUTION.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/elenchus/SKILL.md plugins/hexaemeron/skills/elenchus/EVOLUTION.md plugins/hexaemeron/agents/mason.md plugins/hexaemeron/agents/warden.md docs/agent-instruction-language-v1.md docs/decisions/drafts/require-inoculation-before-implementation.md audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --max-defects 0
+for draft in plugins/hexaemeron/docs/known-failure-inoculation/proof.md plugins/hexaemeron/skills/protasis/SKILL.md plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md plugins/hexaemeron/skills/fiat/references/audit-loop.md plugins/hexaemeron/skills/elenchus/SKILL.md plugins/hexaemeron/agents/mason.md plugins/hexaemeron/agents/warden.md docs/decisions/drafts/require-inoculation-before-implementation.md; do
+  python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$draft" --mode report || exit 1
+done
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md --mode fiat-audit-record
+git diff --check
+```
+
+**Why.** The preceding generation carried the baseline's Brevitas block
+unchanged, and that block repeats the defect Step 4 recorded as `S4-R1-01` and
+fixed in its own Exit at generation 14. It routes four drafts through `report`
+mode that cannot pass it, and three of those cannot be changed at all: the
+committed study and runbook are byte-identical to receipted artefacts, and
+`docs/agent-instruction-language-v1.md` is outside this step's Files field. The
+audit record is the fourth and is the same file Step 4's finding named. The
+baseline also omitted `audit_synopsis.py --check .`, which was `S4-R1-02`'s
+remedy. This generation applies Step 4's fix to Step 5: nine drafts in the
+loop, each exiting zero on the current candidate, with both dropped commands
+restored and also exiting zero. The locked seven-pair assignment map, the
+Entry, Files, Tests and Disciplines fields, and every other Step 5 claim remain
+unchanged.
+
+**Steps touched.** Step 5's Exit field only.
+
+**Still holding.** Step 5: entry holds; exit holds.
