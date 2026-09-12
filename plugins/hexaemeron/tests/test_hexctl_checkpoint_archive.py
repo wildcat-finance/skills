@@ -1713,7 +1713,8 @@ class CheckpointArchiveExportTests(HexctlCase):
         The footer witness asks only that a matching footer sit within the
         footer reach of the header. A document that names both markers on
         consecutive lines satisfies that with nothing between them, so a member
-        holding sixty-nine bytes and no key material refuses. The test above
+        holding the two markers, their line endings and no key material
+        refuses. The test above
         pins the two witnesses in isolation but always puts a line between the
         markers, so this shape went undemonstrated until an export of real
         controller state met it.
