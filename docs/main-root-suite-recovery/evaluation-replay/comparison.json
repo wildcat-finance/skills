@@ -1,0 +1,160 @@
+{
+  "all_prompts_identical": true,
+  "base": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+  "base_tree_sha256": "e9c750d7246a3a96b39f1cb4bfae1d1f359f9a699215db719c953cb81ef45a04",
+  "current_tree_sha256": "b6c0765a1e5a322ce35752bd94df6ed1cb645b1ee9c25fa3f0f8c8a422601185",
+  "inputs": [
+    {
+      "base_sha256": "c76e9225847ed3c6400badcece8bd3faf826c784be682143796fca586e165182",
+      "current_sha256": "c76e9225847ed3c6400badcece8bd3faf826c784be682143796fca586e165182",
+      "identical": true,
+      "path": "plugins/hexaemeron/PROMISES.md"
+    },
+    {
+      "base_sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
+      "current_sha256": "62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/fizz/SKILL.md"
+    },
+    {
+      "base_sha256": "59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7",
+      "current_sha256": "59cd4b4ef5dc56315782a7d25222afb286a24e63e438530cbd0044293ea54af7",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md"
+    },
+    {
+      "base_sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
+      "current_sha256": "e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md"
+    },
+    {
+      "base_sha256": "59cf1fea6bffe21b44477a7d1368d33d3b5fc42b05a7e0a4da0403ed911de4bf",
+      "current_sha256": "59cf1fea6bffe21b44477a7d1368d33d3b5fc42b05a7e0a4da0403ed911de4bf",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+    },
+    {
+      "base_sha256": "7ab6a253ea37ab06cf0ae9b082ad58b739e96b260fbda6e5272157ea5e48ab68",
+      "current_sha256": "7ab6a253ea37ab06cf0ae9b082ad58b739e96b260fbda6e5272157ea5e48ab68",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+    },
+    {
+      "base_sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
+      "current_sha256": "1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md"
+    },
+    {
+      "base_sha256": "007908e9e5fc65eefeeb40a99b665602cceb5fb05265f9d05daa6b408b51e5f9",
+      "current_sha256": "007908e9e5fc65eefeeb40a99b665602cceb5fb05265f9d05daa6b408b51e5f9",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
+    },
+    {
+      "base_sha256": "b23bb94517805c1b8ce717d0e1e0282b0b5c14c7b16f4c32e73940292d3d4a41",
+      "current_sha256": "b23bb94517805c1b8ce717d0e1e0282b0b5c14c7b16f4c32e73940292d3d4a41",
+      "identical": true,
+      "path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
+    },
+    {
+      "base_sha256": "530d51b9ff1bcc4ec75286d9b3d58935218a8ed0ec91ceef573a44711bf46de9",
+      "current_sha256": "530d51b9ff1bcc4ec75286d9b3d58935218a8ed0ec91ceef573a44711bf46de9",
+      "identical": true,
+      "path": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json"
+    },
+    {
+      "base_sha256": "5857502c9d4ea5eed04db58974ade934b1f239aec29cb3c7271f321e63a4e019",
+      "current_sha256": "5857502c9d4ea5eed04db58974ade934b1f239aec29cb3c7271f321e63a4e019",
+      "identical": true,
+      "path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+    },
+    {
+      "base_sha256": "1c3fef406755af591f2cd81792375a4c1afbc61ef98136619d7be52f270ea1e3",
+      "current_sha256": "1c3fef406755af591f2cd81792375a4c1afbc61ef98136619d7be52f270ea1e3",
+      "identical": true,
+      "path": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json"
+    },
+    {
+      "base_sha256": "bb58f1dc5b6da0c37ae4303415f210d5158344516b51cc24f20bc623909eb5c2",
+      "current_sha256": "bb58f1dc5b6da0c37ae4303415f210d5158344516b51cc24f20bc623909eb5c2",
+      "identical": true,
+      "path": "tests/fixtures/promise-machine/evaluation/prompt-template.txt"
+    },
+    {
+      "base_sha256": "f7add2a0249850d1f19becd859d6153bce44267338815c2f657ec3ff82f7fe50",
+      "current_sha256": "6844fb82f705a826003c7d6ddcdb91155745670ee0650a2aabb6ac3662057451",
+      "identical": false,
+      "path": "tests/promise_machine_coverage.json"
+    }
+  ],
+  "prompts": [
+    {
+      "base_sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2",
+      "current_sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2",
+      "id": "hexaemeron-fizz-convert-properties",
+      "identical": true
+    },
+    {
+      "base_sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10",
+      "current_sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10",
+      "id": "hexaemeron-fizz-harness-campaign",
+      "identical": true
+    },
+    {
+      "base_sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb",
+      "current_sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb",
+      "id": "hexaemeron-fizz-sync-drift",
+      "identical": true
+    },
+    {
+      "base_sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2",
+      "current_sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2",
+      "id": "hexaemeron-solidity-audit-report",
+      "identical": true
+    },
+    {
+      "base_sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48",
+      "current_sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48",
+      "id": "hexaemeron-x-ray-preaudit",
+      "identical": true
+    },
+    {
+      "base_sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821",
+      "current_sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821",
+      "id": "hypomnema-record-placement",
+      "identical": true
+    },
+    {
+      "base_sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa",
+      "current_sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa",
+      "id": "kronos-fiat-dispatch",
+      "identical": true
+    },
+    {
+      "base_sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0",
+      "current_sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0",
+      "id": "sapheneia-deactivation",
+      "identical": true
+    },
+    {
+      "base_sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385",
+      "current_sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385",
+      "id": "sapheneia-durable-record-shape",
+      "identical": true
+    },
+    {
+      "base_sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53",
+      "current_sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53",
+      "id": "sapheneia-session-shape",
+      "identical": true
+    },
+    {
+      "base_sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463",
+      "current_sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463",
+      "id": "vulgate-register-rewrite",
+      "identical": true
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is hexaemeron-fizz-sync-drift. Its source path is plugins/hexaemeron/PROMISES.md.
+The exact declaration is:
+
+### hexaemeron-fizz-sync-drift
+
+- Path: `plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md`
+- Repository: `https://github.com/pashov/skills.git`
+- Commit: `aadee2ca49cae20246af378ef791d2d4f941e237`
+- Upstream path: `fizz/skills/fizz-sync/SKILL.md`
+- Upstream SHA-256: `e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16`
+- Local SHA-256: `e969cd8a447941989715840e24aa6a915c0fd795effabd912b3c627598a95e16`
+- Verification status: upstream-bytes-verified, local-bytes-identical, publisher-authentication-unknown
+- Promise: A completed Fizz Sync run establishes that bounded source-interface drift was reconciled into the existing harness, stale properties were quarantined, generated stubs were refreshed and the updated harness builds.
+- Evidence: The digest-matched instruction, prior and current source snapshots, ABI drift report, quarantined-property record, regenerated stubs, refreshed snapshot, bounded diff and build result.
+- Evidence classes: checked, recorded
+- Boundary: The result covers syntactic and declared interface reconciliation within the inspected source boundary; it does not prove semantic equivalence, preserve unstated assumptions or validate property adequacy.
+- Authorises: Running the reconciled harness against the current named source while treating quarantined properties as unresolved.
+- Consequence: 2
+- Refuses: A stale overlay digest, unbounded or unidentified source drift, silently deleted properties, a failed build, an unrefreshed snapshot or any claim that ABI agreement proves semantic agreement.
+- Recovery: Reconcile the upstream instruction digest, restore the before and after snapshots, classify every drift item, quarantine rather than erase stale properties, regenerate the affected stubs and rebuild.
+- Exceptions: none
+
+The evaluation request is:
+
+Classify a Fizz Sync result under its digest-bound overlay.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. ABI agreement is presented as semantic equivalence, preservation of unstated assumptions or property adequacy.
+E02. Before and after snapshots bound the drift, every item is classified, stale properties are quarantined, stubs and snapshot are refreshed and the harness builds.
+E03. Restore both snapshots, classify every drift item, quarantine stale properties, regenerate affected stubs and rebuild.
+E04. A snapshot is missing, drift is unclassified, stale properties disappear or the refreshed harness does not build.
+E05. The overlay digest or either source snapshot belongs to another harness revision.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.
