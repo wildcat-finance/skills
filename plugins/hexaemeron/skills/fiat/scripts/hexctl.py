@@ -4853,6 +4853,23 @@ def stale_body_report(bodies: list[dict]) -> dict:
     }
 
 
+def fiat_required_declarations(text: str) -> list[str]:
+    """Every `Fiat-Required` value one body declares, in the order declared.
+
+    Extracted so a reader that needs the *shape* of a declaration -- none, one,
+    or several -- asks the parser that reads the value rather than counting the
+    lines a second way. `admitted_issue_body` and `rest_filing_stamps` were
+    extracted for the same reason: two readers of one response that do not
+    share a rule end up disagreeing about it (S3-R4-04).
+    """
+    declarations = []
+    for physical in _unfenced_markdown_lines(text):
+        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
+        if match is not None:
+            declarations.append(match.group("value"))
+    return declarations
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -4860,11 +4877,7 @@ def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     decide anything. More than one declaration is a fault rather than a
     precedence rule: an issue carrying both answers has made no decision.
     """
-    declarations = []
-    for physical in _unfenced_markdown_lines(text):
-        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
-        if match is not None:
-            declarations.append(match.group("value"))
+    declarations = fiat_required_declarations(text)
     if not declarations:
         return None, [
             f"{label} declares no `{FIAT_REQUIRED_KEY}` line. Add exactly one "
@@ -5361,11 +5374,38 @@ def github_issue_edit_provenance(
             # The only thing taken from a prior body, before it goes out of
             # scope. `fiat_required_value` reads outside fenced code, so a
             # prior body quoting the line decides nothing here either.
+            #
+            # Three readings, not one. That function returns `None` for a body
+            # declaring no line, for one declaring the line more than once,
+            # and for one declaring a value that is neither 0 nor 1, and all
+            # three recorded `None` under "the prior revision declared no
+            # `Fiat-Required` line". The first was read and has no prior
+            # value, which is what `None` says here; the other two are bodies
+            # this reader could not read a decision out of, and naming them as
+            # an absence is the reading S3-R4-01 removed from `last_edited_at`
+            # and S3-R4-02 from the REST stamps, reached through the prior
+            # revision (S3-R4-04). The shape comes from the same parser rather
+            # than from a second count, and the reason names it without
+            # quoting the body: `init`'s own fault copies the declared value
+            # out, and a prior body reaches no recorded surface.
             value, _faults = fiat_required_value(body, "a prior revision")
-            prior = None if value is None else int(value)
-            if value is None:
+            declarations = fiat_required_declarations(body)
+            if value is not None:
+                prior = int(value)
+            elif not declarations:
+                prior = None
                 reasons.append(
                     "the prior revision declared no `Fiat-Required` line"
+                )
+            elif len(declarations) > 1:
+                reasons.append(
+                    f"the prior revision declared `Fiat-Required` "
+                    f"{len(declarations)} times, so it made no decision"
+                )
+            else:
+                reasons.append(
+                    "the prior revision declared a `Fiat-Required` value that "
+                    "is neither 0 nor 1"
                 )
     return {
         "edit_count": total,

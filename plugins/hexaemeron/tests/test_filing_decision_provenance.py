@@ -572,6 +572,55 @@ class FilingDecisionProvenanceTests(HexctlCase):
             module.bounded_probe = original
         self.assertEqual(outcome, "refused with exit 2")
 
+    def test_an_unreadable_prior_decision_is_not_recorded_as_no_decision(self):
+        """A prior body carrying no readable decision is `unknown`, not `None`.
+
+        `fiat_required_value` returns `None` for three different bodies: one
+        declaring no `Fiat-Required` line, one declaring it more than once, and
+        one declaring a value that is neither 0 nor 1. All three recorded
+        `prior_fiat_required: None` beside the single sentence "the prior
+        revision declared no `Fiat-Required` line". `None` is this reader's
+        word for "read, and there is no prior value", so the last two named a
+        body it could not read a decision out of as an absence, and the
+        sentence beside them was false (S3-R4-04). It is the reading S3-R4-01
+        removed from `last_edited_at` and S3-R4-02 from the REST stamps,
+        reached through the prior revision.
+        """
+        self.edits([
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
+            {"editedAt": "2026-09-06T09:37:54Z",
+             "diff": self.body(1, extra="\n\nFiat-Required: 0")},
+        ], total=2)
+        provenance = self.start(value=1)
+        self.assertEqual(provenance["prior_fiat_required"], "unknown")
+        self.assertIn("declared `Fiat-Required` 2 times", provenance["reason"])
+
+        self.tearDown()
+        self.setUp()
+        self.edits([
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
+            {"editedAt": "2026-09-06T09:37:54Z", "diff": self.body(7)},
+        ], total=2)
+        provenance = self.start(value=1)
+        self.assertEqual(provenance["prior_fiat_required"], "unknown")
+        self.assertIn("neither 0 nor 1", provenance["reason"])
+        # The fault `init` prints for this body copies the declared value out
+        # of it, and a prior body reaches no recorded surface, so the reason
+        # names the shape and quotes nothing.
+        self.assertNotIn("7", provenance["reason"])
+
+        self.tearDown()
+        self.setUp()
+        self.edits([
+            {"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)},
+            {"editedAt": "2026-09-06T09:37:54Z",
+             "diff": "A prior revision declaring nothing.\n"},
+        ], total=2)
+        provenance = self.start(value=1)
+        # Read, and there is no prior value. That half is `None` and stays so.
+        self.assertIsNone(provenance["prior_fiat_required"])
+        self.assertIn("declared no `Fiat-Required` line", provenance["reason"])
+
 
 class VerifyFlagCompositionTests(unittest.TestCase):
     """`--observations` used to end the command before the filing check ran."""
