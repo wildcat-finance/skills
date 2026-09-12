@@ -1,0 +1,156 @@
+{
+  "commands": {
+    "corpus": {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/agent_instruction.py",
+        "check",
+        "--root",
+        ".",
+        "--manifest",
+        "tests/fixtures/agent-instruction-v1/manifest.json"
+      ],
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m",
+      "exit": 0,
+      "stderr": "corpus.stderr",
+      "stdout": "corpus.stdout"
+    },
+    "installed_evaluation": {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/step-2-demonstration/package/.agents/skills/promise-machine/runtime/scripts/promise_machine.py",
+        "check",
+        "--root",
+        "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/step-2-demonstration/package/.agents/skills/promise-machine/runtime",
+        "--only",
+        "evaluation",
+        "--json"
+      ],
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/step-2-demonstration/package",
+      "exit": 0,
+      "stderr": "installed-evaluation.stderr",
+      "stdout": "installed-evaluation.stdout"
+    },
+    "installed_verify": {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/step-2-demonstration/package/.agents/skills/promise-machine/scripts/verify_runtime.py"
+      ],
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/step-2-demonstration/package",
+      "exit": 0,
+      "stderr": "installed-verify.stderr",
+      "stdout": "installed-verify.stdout"
+    },
+    "package": {
+      "argv": [
+        "/opt/homebrew/opt/python@3.14/bin/python3.14",
+        "scripts/portable_promise_machine.py",
+        "package",
+        "--out",
+        "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m/.hexaemeron/step-2-demonstration/package"
+      ],
+      "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1538/tmp/fiat/fiat-1538-restore-main-root-suite-green-and-enforce-m",
+      "exit": 0,
+      "stderr": "package.stderr",
+      "stdout": "package.stdout"
+    }
+  },
+  "corpus_summary": {
+    "binding_count": 15,
+    "code": "WAI-OK",
+    "event": "run.summary",
+    "failed": 0,
+    "fixture_count": 3,
+    "manifest_sha256": "ff4b6e69ea58d120172aa5b864bb5c4acf4a103bc8dab7df74be337018ad5956",
+    "mutation_count": 14,
+    "outcome": "accepted",
+    "passed": 20,
+    "question_count": 9,
+    "refused": 0,
+    "roundtrip_count": 3,
+    "schema": "wildcat-agent-instruction-check-record/v1",
+    "unknown": 0
+  },
+  "input_sha256": {
+    "PROMISE_MACHINE.md": "ae019700f378a250fe08a3d6cb68c0553ee60a410cbb6035d3c9c3cd2866b34f",
+    "scripts/portable_promise_machine.py": "14f02058b30fe40e9aa41a746e8fb7bead64aa7458fd40d8c4b54f374176c9bc",
+    "tests/fixtures/agent-instruction-v1/README.md": "fd9c47e0658fc377d4b50497cbe48d66741a67b3037254012aabfecfac01a1ff",
+    "tests/fixtures/agent-instruction-v1/codec/invalid-duplicate-key.json": "aa42b4b2df5dd73a497cfdc9dc50143aeaed34270c1ba9ac2af9677ed8d287ef",
+    "tests/fixtures/agent-instruction-v1/codec/invalid-truncated-literal.wai": "1c0494974a5342af53fe24fd35cce6a41f1e79062968edb15e62c646c5e2b2a9",
+    "tests/fixtures/agent-instruction-v1/codec/invalid-unknown-opcode.wai": "43cba70a0c668019877a8db8cb8630cc4048d182b2fc51a676d40c7dceff7faf",
+    "tests/fixtures/agent-instruction-v1/codec/valid-minimal.json": "de66b9faa3d48a7258b6a08053ffa5bfaec33ffed26c51692e7b2271ec1c8155",
+    "tests/fixtures/agent-instruction-v1/codec/valid-minimal.wai": "f4e86b732ff7de73fa33050f96bae80419252bdd8024ba6e2e4695a77c9ee6a4",
+    "tests/fixtures/agent-instruction-v1/evidence/decoder-bootstrap.txt": "9a9a51494ab444727ec6982ab7f8cb846d073bb8d8023e40bffd211a7ba0fab0",
+    "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json": "b65f40927b69cf65df068c1f088982b849518d40bf92b13880e3d0cb1e7cf748",
+    "tests/fixtures/agent-instruction-v1/evidence/measurement.json": "865ed1300655ade17a8e88cd48ab43d2019936a67815fff57008eb2594b1c5c6",
+    "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt": "11bfeb4cc690fc845999d24ea689d70dff086b809452d90d3ed54e7e77551e87",
+    "tests/fixtures/agent-instruction-v1/evidence/parity.json": "f69c93edd160738a11a600f75a77fe697958cc97af664967eb9536b612686dea",
+    "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json": "56e10c5394e3a1a52b99190fa764c8e2892bf5ac3d47bb104f7a1c14dfaf7837",
+    "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai": "1dde761049ce27ae2ca3781893bdb40e1a5c7a939e6586ee9add09cb00e64404",
+    "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json": "6916f852263fe2379618d0d937da8a5e4efad105687c91ebf1ec0cdb841d147f",
+    "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json": "007c57e4d6e6250dc1b491350a1c035545172ea1cb65171862b61f20cfa8fac9",
+    "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json": "d25e2d0201416d51ca7e36102f88c30b8cffca6701d4789351b99c75f9148948",
+    "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json": "41a62a9524578c58b81ca1bbd23c9d0b3ea008c69f013149c4b18c3d043bfcbe",
+    "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai": "a70d1f815e04b76d39ee0868fad79e9609fab52424ee9580dd91846a7d774ead",
+    "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json": "555fb748fbfb8b9035d6807e7c71455a6ec65ed90afc948fb29e08703b707256",
+    "tests/fixtures/agent-instruction-v1/horos-boundary-check/mutations.json": "8a954c2251d4f3ab535e647ec0489c186bd040142690d0d9d3c493e3acd2c3d6",
+    "tests/fixtures/agent-instruction-v1/horos-boundary-check/questions.json": "bf94f18f22b196c42a36248bfdb5c7946e9dc17183a216034dc326139569a3f3",
+    "tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json": "6b801306019e2b49f6ff18af082113c09ad21fd342eea24116b5683d302cbb28",
+    "tests/fixtures/agent-instruction-v1/manifest.json": "ff4b6e69ea58d120172aa5b864bb5c4acf4a103bc8dab7df74be337018ad5956",
+    "tests/fixtures/agent-instruction-v1/manifest.schema.json": "b09b2d38f0c491977e121b2a38f0bc39185d09aa98f110419fdbf37e4e0419e1",
+    "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai": "5a7b4f780cec2dcdae29ef41a090dc7553f15fdb438cea708bbc3b6f967dab74",
+    "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json": "5b31373f0c5d25c2ffb212961cb2d8309a37b041d17e3b688a74d49b946d30a8",
+    "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json": "6cfc7dc7b619359723c4b62da50fe2bb5e7c23c43f91d8ba5cdae299a9a13d9c",
+    "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/questions.json": "777f26c1d25ce76de2fc5548ec499dda24742f5865c1a433d1a77c10cde9c8b6",
+    "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json": "039fabe6b13b1c2f0ca012ae861be67de925a05e7fa9b88804d4e7d729479a45",
+    "tests/promise_evaluation_driver.py": "385add206ab8ace2ed04857213670f7e427079498d8f6e2c404ddd3db3201fd6",
+    "tests/promise_machine_coverage.json": "6844fb82f705a826003c7d6ddcdb91155745670ee0650a2aabb6ac3662057451"
+  },
+  "installed_evaluation": {
+    "command": "check",
+    "contract": "promise-machine/v1",
+    "counts": {
+      "active_history_ids": 0,
+      "canonical_skills": 0,
+      "claude_plugins": 0,
+      "codex_plugins": 0,
+      "composition_relations": 0,
+      "copies": 0,
+      "evaluation_cases": 11,
+      "evaluation_outcomes": 55,
+      "findings": 0,
+      "governed_skills": 0,
+      "history_entries": 0,
+      "licensed_plugins": 0,
+      "obligations": 0,
+      "overlays": 0,
+      "package_versions": 0,
+      "plugins": 0,
+      "promises": 0,
+      "routers": 0,
+      "runtime_bindings": 0,
+      "skill_versions": 0,
+      "vendored_skills": 0,
+      "written": 0
+    },
+    "findings": [],
+    "ok": true
+  },
+  "interpreter": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+  "new_model_observation": false,
+  "observed_at": "2026-09-12T20:56:27.477909+00:00",
+  "package": {
+    "cap_bytes": 26214400,
+    "complete_package_bytes": 18668573,
+    "complete_package_file_count": 1402,
+    "complete_package_headroom_bytes": 7545827,
+    "manifest_sha256": "28d09f7d5e0820e4c405398ef78973f0ffc5bee8f093300056ac8d9db6d2c77d",
+    "minimum_reserve_bytes": 5242880,
+    "runtime_payload_bytes": 18239372,
+    "runtime_payload_headroom_bytes": 7975028
+  },
+  "package_output_removed_after_evidence_preservation": true,
+  "source_and_profile_inputs_unchanged_from_step_1": true,
+  "source_head": "c7db7d734fad5ab40511ae04cbb8a6c43aefb824",
+  "source_tree": "d83c77fa35b332592f9a44187a883619b415de0d"
+}

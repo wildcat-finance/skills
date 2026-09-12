@@ -1,0 +1,9 @@
+{
+  "candidate": "relative-schema",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate relative-schema --criterion profile-identity-commands",
+  "criterion": "profile-identity-commands",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 6
+}

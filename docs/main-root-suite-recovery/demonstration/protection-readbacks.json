@@ -1,0 +1,266 @@
+{
+  "projection": "Only protection, rule, check, and pull-request identity/status fields are retained; public user/repository metadata and pull-request prose are omitted. Raw wrappers stay at the named controller evidence paths.",
+  "readbacks": {
+    "classic-after": {
+      "observed_at": "2026-09-12T20:52:24.933202+00:00",
+      "query": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/skills/branches/main/protection"
+      ],
+      "query_exit": 0,
+      "result": {
+        "allow_deletions": {
+          "enabled": false
+        },
+        "allow_force_pushes": {
+          "enabled": false
+        },
+        "allow_fork_syncing": {
+          "enabled": false
+        },
+        "block_creations": {
+          "enabled": false
+        },
+        "enforce_admins": {
+          "enabled": true,
+          "url": "https://api.github.com/repos/wildcat-finance/skills/branches/main/protection/enforce_admins"
+        },
+        "lock_branch": {
+          "enabled": false
+        },
+        "required_conversation_resolution": {
+          "enabled": false
+        },
+        "required_linear_history": {
+          "enabled": false
+        },
+        "required_signatures": {
+          "enabled": false,
+          "url": "https://api.github.com/repos/wildcat-finance/skills/branches/main/protection/required_signatures"
+        },
+        "required_status_checks": {
+          "checks": [
+            {
+              "app_id": 15368,
+              "context": "invariants"
+            }
+          ],
+          "contexts": [
+            "invariants"
+          ],
+          "contexts_url": "https://api.github.com/repos/wildcat-finance/skills/branches/main/protection/required_status_checks/contexts",
+          "strict": true,
+          "url": "https://api.github.com/repos/wildcat-finance/skills/branches/main/protection/required_status_checks"
+        },
+        "url": "https://api.github.com/repos/wildcat-finance/skills/branches/main/protection"
+      },
+      "source": ".hexaemeron/step-2-protection/classic-after.json",
+      "source_sha256": "33c87bf48b56f81eeebfcd70e1fe156312860ebdcbe05c0fd2db04759880792d",
+      "stderr": ""
+    },
+    "classic-before": {
+      "observed_at": "2026-09-12T20:50:51.744393+00:00",
+      "query": "repos/wildcat-finance/skills/branches/main/protection",
+      "query_exit": 1,
+      "result": {
+        "documentation_url": "https://docs.github.com/rest/branches/branch-protection#get-branch-protection",
+        "message": "Branch not protected",
+        "status": "404"
+      },
+      "source": ".hexaemeron/step-2-protection/classic-before.json",
+      "source_sha256": "7363fef7b0c4399c0228474a66ac7a5350df1281e8ba30a275b4d093f006f91f",
+      "stderr": "gh: Branch not protected (HTTP 404)\n"
+    },
+    "main-before": {
+      "observed_at": "2026-09-12T20:50:51.710090+00:00",
+      "query": "repos/wildcat-finance/skills/branches/main",
+      "query_exit": 0,
+      "result": {
+        "head_sha": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+        "name": "main",
+        "protected": false
+      },
+      "source": ".hexaemeron/step-2-protection/main-before.json",
+      "source_sha256": "ffb2b2ff581bfc40f58f90b9f40c7838eb0a0ba02c50fe36be64977935e02576",
+      "stderr": ""
+    },
+    "red-pr-after": {
+      "observed_at": "2026-09-12T20:53:01.584269+00:00",
+      "query": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/skills/pulls/1547"
+      ],
+      "query_exit": 0,
+      "result": {
+        "base_ref": "main",
+        "base_sha": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+        "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+        "html_url": "https://github.com/wildcat-finance/skills/pull/1547",
+        "mergeable": true,
+        "mergeable_state": "blocked",
+        "merged": false,
+        "number": 1547,
+        "state": "open"
+      },
+      "source": ".hexaemeron/step-2-protection/red-pr-after.json",
+      "source_sha256": "e36beb91355acd951c1c558e463fe9325b456ea6e3beeea5e141d41cc0bfbfb0",
+      "stderr": ""
+    },
+    "red-pr-before": {
+      "observed_at": "2026-09-12T20:50:52.084055+00:00",
+      "query": "repos/wildcat-finance/skills/pulls/1547",
+      "query_exit": 0,
+      "result": {
+        "base_ref": "main",
+        "base_sha": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+        "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+        "html_url": "https://github.com/wildcat-finance/skills/pull/1547",
+        "mergeable": true,
+        "mergeable_state": "unstable",
+        "merged": false,
+        "number": 1547,
+        "state": "open"
+      },
+      "source": ".hexaemeron/step-2-protection/red-pr-before.json",
+      "source_sha256": "acad3393185dcce19e443e21aa0849571cda5c4487af1937429c9bb28e38409f",
+      "stderr": ""
+    },
+    "red-pr-check-runs": {
+      "observed_at": "2026-09-12T20:53:47.405815+00:00",
+      "query": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/skills/commits/388aaf829f1f44138b91a5a13f3b99b84b238c5b/check-runs?per_page=100"
+      ],
+      "query_exit": 0,
+      "result": {
+        "check_runs": [
+          {
+            "app_id": 57789,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/runs/103592654896",
+            "name": "CodeQL",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708398286/job/103592553354",
+            "name": "adr-assignments",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708398299/job/103592553254",
+            "name": "identity",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "failure",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708398254/job/103592553163",
+            "name": "invariants",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708398256/job/103592553150",
+            "name": "report",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708396979/job/103592551164",
+            "name": "Analyze (javascript-typescript)",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708396979/job/103592551092",
+            "name": "Analyze (python)",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708396979/job/103592551089",
+            "name": "Analyze (go)",
+            "status": "completed"
+          },
+          {
+            "app_id": 15368,
+            "conclusion": "success",
+            "head_sha": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+            "html_url": "https://github.com/wildcat-finance/skills/actions/runs/34708396979/job/103592551048",
+            "name": "Analyze (actions)",
+            "status": "completed"
+          }
+        ],
+        "total_count": 9
+      },
+      "source": ".hexaemeron/step-2-protection/red-pr-check-runs.json",
+      "source_sha256": "f364fd3f22fd6beea2f3b208a7a76af53ab0b6bbe362785781d45de81da42fd8",
+      "stderr": ""
+    },
+    "red-pr-required-checks": {
+      "observed_at": "2026-09-12T20:53:02.447953+00:00",
+      "query": [
+        "gh",
+        "pr",
+        "checks",
+        "https://github.com/wildcat-finance/skills/pull/1547",
+        "--required",
+        "--json",
+        "name,state,link,bucket"
+      ],
+      "query_exit": 0,
+      "result": [
+        {
+          "bucket": "fail",
+          "link": "https://github.com/wildcat-finance/skills/actions/runs/34708398254/job/103592553163",
+          "name": "invariants",
+          "state": "FAILURE"
+        }
+      ],
+      "source": ".hexaemeron/step-2-protection/red-pr-required-checks.json",
+      "source_sha256": "8d2c566af9d961d8668c594d8784f842606beb9233167f170a28aab2f302b02f",
+      "stderr": ""
+    },
+    "rules-after": {
+      "observed_at": "2026-09-12T20:52:25.217489+00:00",
+      "query": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/skills/rules/branches/main"
+      ],
+      "query_exit": 0,
+      "result": [],
+      "source": ".hexaemeron/step-2-protection/rules-after.json",
+      "source_sha256": "13fe0cbdd84264c0f54e18d9fa13282cad6a362d1a680960843d944faa1bcac9",
+      "stderr": ""
+    },
+    "rules-before": {
+      "observed_at": "2026-09-12T20:50:51.648448+00:00",
+      "query": "repos/wildcat-finance/skills/rules/branches/main",
+      "query_exit": 0,
+      "result": [],
+      "source": ".hexaemeron/step-2-protection/rules-before.json",
+      "source_sha256": "b4c24409673d527f48f22cb23d738060b0d11c317109d16b55b8b1592fe45fbc",
+      "stderr": ""
+    }
+  }
+}

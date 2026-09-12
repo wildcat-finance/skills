@@ -1,0 +1,43 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is hexaemeron-solidity-audit-report. Its source path is plugins/hexaemeron/PROMISES.md.
+The exact declaration is:
+
+### hexaemeron-solidity-audit-report
+
+- Path: `plugins/hexaemeron/skills/solidity-auditor/SKILL.md`
+- Repository: `https://github.com/pashov/skills.git`
+- Commit: `aadee2ca49cae20246af378ef791d2d4f941e237`
+- Upstream path: `solidity-auditor/SKILL.md`
+- Upstream SHA-256: `1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f`
+- Local SHA-256: `1c1cf4e99d042e7aadc56b622d97a07d3286f4786838a05510697c814d1e983f`
+- Verification status: upstream-bytes-verified, local-bytes-identical, publisher-authentication-unknown
+- Promise: A completed Solidity Auditor run establishes that all twelve prescribed audit roles inspected the named Solidity scope, their raw results crossed the required wait barrier and the final report deduplicated, completeness-checked and judged the submitted findings.
+- Evidence: The digest-matched instruction, repository commit and Solidity scope, twelve role prompts and raw outputs, completion barrier, deduplication record, completeness pass, judgement record and final report.
+- Evidence classes: checked, recorded, inferred
+- Boundary: The report establishes performance of the prescribed review process over the named scope; findings remain judgements and a clean report does not prove the absence of vulnerabilities or replace independent review.
+- Authorises: Using the scoped report as one security-review input and advancing only according to its explicit findings, uncertainties and unresolved coverage.
+- Consequence: 3
+- Refuses: A stale overlay digest, fewer than twelve isolated role results, synthesis before the wait barrier, missing raw outputs, hidden scope exclusions, undeduplicated findings or a claim of defect absence.
+- Recovery: Reconcile the upstream instruction digest, restore the exact scope, rerun every missing or compromised role independently, wait for all raw results and repeat deduplication, completeness checking and judgement.
+- Exceptions: none
+
+The evaluation request is:
+
+Classify a Solidity Auditor result under its digest-bound overlay.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A clean report is presented as proof that no vulnerability exists or as a replacement for independent review.
+E02. All twelve roles inspect the exact scope, every raw result crosses the wait barrier and the final report records deduplication, completeness and judgement.
+E03. Restore the scope, rerun every missing or compromised role, wait for all results and repeat deduplication, completeness and judgement.
+E04. Fewer than twelve role results exist, raw output is missing or synthesis begins before the wait barrier.
+E05. The overlay digest, repository revision or Solidity scope differs from the role outputs and final report.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

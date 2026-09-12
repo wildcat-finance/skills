@@ -1,0 +1,16 @@
+{
+  "main_sha": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+  "ci_url": "https://github.com/wildcat-finance/skills/actions/runs/34675629790",
+  "focused_command": "uv run --no-project --python 3.14.6 python -m unittest tests.test_agent_instruction tests.test_agent_instruction_corpus tests.test_skills_sh_package",
+  "focused_exit": 1,
+  "focused_tests": 343,
+  "failures": 19,
+  "errors": 11,
+  "counterfactual_command": "uv run --no-project --python 3.14.6 python -m unittest tests.test_agent_instruction tests.test_agent_instruction_corpus",
+  "counterfactual_tests": 352,
+  "counterfactual_failures": 2,
+  "counterfactual_errors": 0,
+  "counterfactual_original_failure_count": 0,
+  "counterfactual_source": "49fc2caf^:PROMISE_MACHINE.md",
+  "counterfactual_reverted": true
+}

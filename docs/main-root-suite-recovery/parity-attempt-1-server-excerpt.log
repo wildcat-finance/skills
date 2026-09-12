@@ -1,0 +1,17 @@
+time=2026-09-12T19:42:22.933+01:00 level=INFO source=server.go:109 msg="using llama-server for model" model=/Users/c0rtexzer0/.ollama/models/blobs/sha256-6be6d66a3f546d8c19b130dc41dc24b2fc159f84ffbc76a0ee0676205083cf5a
+time=2026-09-12T19:42:22.934+01:00 level=INFO source=llama_server.go:433 msg="starting llama-server" cmd="/Applications/Ollama.app/Contents/Resources/llama-server --model /Users/c0rtexzer0/.ollama/models/blobs/sha256-6be6d66a3f546d8c19b130dc41dc24b2fc159f84ffbc76a0ee0676205083cf5a --port 54840 --host 127.0.0.1 --no-webui --offline -c 8192 -np 1 --log-verbosity 4 --no-log-prefix --no-log-timestamps --no-jinja --chat-template chatml --cache-type-k q8_0 --cache-type-v q8_0 --flash-attn on -b 512 -ub 512 --context-shift --keep 4"
+time=2026-09-12T19:42:22.935+01:00 level=INFO source=sched.go:613 msg="system memory" total="128.0 GiB" free="62.6 GiB" free_swap="0 B"
+time=2026-09-12T19:42:22.935+01:00 level=INFO source=sched.go:620 msg="gpu memory" id=0 library=Metal available="107.0 GiB" free="107.5 GiB" minimum="512.0 MiB" overhead="0 B"
+time=2026-09-12T19:42:22.935+01:00 level=INFO source=llama_server.go:1048 msg="loading model via llama-server" model=/Users/c0rtexzer0/.ollama/models/blobs/sha256-6be6d66a3f546d8c19b130dc41dc24b2fc159f84ffbc76a0ee0676205083cf5a
+time=2026-09-12T19:42:22.935+01:00 level=INFO source=llama_server.go:1295 msg="waiting for llama-server to start responding"
+time=2026-09-12T19:42:22.935+01:00 level=INFO source=llama_server.go:1350 msg="waiting for llama-server to become available" status="llm server not responding"
+time=2026-09-12T19:42:23.187+01:00 level=INFO source=llama_server.go:1350 msg="waiting for llama-server to become available" status="llm server loading model"
+time=2026-09-12T19:45:12.732+01:00 level=WARN source=llama_server.go:1301 msg="client connection closed before llama-server finished loading, aborting load"
+time=2026-09-12T19:45:12.742+01:00 level=INFO source=sched.go:641 msg="Load failed" model=/Users/c0rtexzer0/.ollama/models/blobs/sha256-6be6d66a3f546d8c19b130dc41dc24b2fc159f84ffbc76a0ee0676205083cf5a error="timed out waiting for llama-server to start: context canceled"
+[GIN] 2026/09/12 - 19:45:19 | 499 |         2m57s |       127.0.0.1 | POST     "/api/chat"
+time=2026-09-12T19:46:26.558+01:00 level=INFO source=llama_server.go:1362 msg="llama-server started in 66.62 seconds"
+time=2026-09-12T19:46:26.995+01:00 level=INFO source=images.go:381 msg="template selection" model=registry.ollama.ai/library/gpt-oss:120b selected=harmony renderer="" parser="" go_template="[completion tools thinking]" chat_template=null harmony="[completion tools thinking]" renderer_parser=null
+time=2026-09-12T19:46:26.995+01:00 level=INFO source=sched.go:728 msg="loaded runners" count=1
+time=2026-09-12T19:46:26.998+01:00 level=INFO source=llama_server.go:1295 msg="waiting for llama-server to start responding"
+time=2026-09-12T19:46:26.999+01:00 level=INFO source=llama_server.go:1362 msg="llama-server started in 67.09 seconds"
+[GIN] 2026/09/12 - 19:46:31 | 200 |         1m18s |       127.0.0.1 | POST     "/api/chat"
