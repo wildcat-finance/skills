@@ -23,6 +23,45 @@ the execution is nobody's checkout, and `scripts/run_checks.py` sets the
 second for the snapshot it runs the suite from, so neither the checked runner
 nor a hosted runner tells you whether your clone is activated.
 
+## When a worktree runs another tree's hooks
+
+A linked worktree can carry a `core.hooksPath` of its own, and git reads that
+ahead of the shared value whenever `extensions.worktreeConfig` is true. Tooling
+outside this repository writes one, an absolute path to the main checkout:
+
+```
+[core]
+	hooksPath = /Users/<user>/Projects/wildcat-skills/.githooks
+```
+
+The tracked relative value never applies there, so git runs another directory's
+`pre-commit` against this worktree's staged tree and `ActivationTests` fails.
+Running the activation command above from inside such a worktree does not
+repair it: that writes the shared config, which was already correct, and leaves
+the override where it is.
+
+Clear it in the worktree that carries it:
+
+```
+git config --worktree --unset core.hooksPath
+```
+
+The repair does not hold by itself. On 6 September 2026 four worktrees of one
+clone were unset together; the one whose session was active had the absolute
+value written back twenty-three seconds later, and the other three stayed
+repaired. A second unset on that worktree was still intact ninety seconds on,
+with its `config.worktree` untouched. So the override arrives at a discrete
+moment rather than continuously, and what evidence there is points at worktree
+creation or session start. Read it again when work resumes in a worktree rather
+than once:
+
+```
+git config core.hooksPath
+```
+
+That prints `.githooks` in a worktree that will run its own copy. Which tool
+writes the override is not established here.
+
 ## Skip it for one commit
 
 ```
