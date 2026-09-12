@@ -692,11 +692,13 @@ The second 2026-09-10 amendment adds the numeric escapes. `\\u000a` is as
 legal a JSON spelling of a line feed as `\\n`, `json.loads` returns the same
 key from either, and the hex digits may be written in either case, so a
 witness that read only the two-character form let a key through on the choice
-of escape. That was S2-R6-01. What the set still does not see is a body
-carrying no line delimiter in any of these forms, such as a key whose line
-breaks were stripped rather than encoded; such a key refuses only on a footer
-inside the lookahead, and the study states that residue rather than implying
-the class is shut.
+of escape. That was S2-R6-01. The third 2026-09-10 amendment closed the residue this
+set alone leaves. A body carrying no line delimiter in any of these forms,
+such as a key whose line breaks were stripped rather than encoded, is refused
+on its footer, which the separate footer reach of 9,984 bytes puts in view for
+every key up to the declared largest of 8,192 bits. What the set still does not
+see is a key whose modulus exceeds that declared size, and the study states
+that residue rather than implying the class is shut.
 """
 CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
     rb"(?:\A|(?<=\x0a)|(?<=\\n)|(?<=\\u000[aA]))"

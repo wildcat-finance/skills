@@ -327,14 +327,16 @@ The baseline file lands with the measurements.
 
 ## Open items
 
+The study amendment of 2026-09-12 settles the `README.txt` text, by the
+SHA-256 of the controller's constant, and closes the `identity.status`
+`unavailable` reason vocabulary at one member, `symbolic-base`.
+
 The study fixes none of these; each is settled by a dated study amendment
 before the code that needs it, not by an edit to this reference.
 
 - The key spellings of the restore result's members other than
   `outer_sha256` and `snapshot_id`, and of the trailer counts and GitHub
   verification inside the signature proof.
-- The fixed text of `README.txt`.
-- The closed reason vocabulary behind `identity.status` `unavailable`.
 - The schema of `acceptance/prior/<n>.json` and who signs it, deferred by name
   to issues #862 and #863.
 - The refusal class each hostile fixture maps to, beyond the classes the
