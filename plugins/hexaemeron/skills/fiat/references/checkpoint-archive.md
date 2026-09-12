@@ -147,6 +147,19 @@ verification recorded by the push receipt. No raw `gpg` output. Only the run's
 receipted commits (`push.verified_commits`) are covered; merges on the
 integration branch are never claimed.
 
+What the re-verification does and does not establish. `inspect` ignores the
+proof's own claimed status and re-runs `git verify-commit` in a disposable
+keyring, so a proof that asserts a status its commits do not have is caught.
+The keyring is seeded from the archive's own key member and the fingerprints
+its own manifest names, so a `G` here establishes that the archive is
+internally consistent -- these commits were signed by the key this archive
+carries -- and not that the key belongs to anyone in particular. Nothing
+inside the archive can establish that. The out-of-band `--sha256` is what ties
+the whole container, its manifest and its key material to a run the operator
+already trusts, which is why a digest found inside the archive is never used
+for it. Read a clean signature section as a statement about the archive, and
+`--sha256` as the statement about its provenance.
+
 `fiat-checkpoint-restore-transcript/v1`, written by the clean-machine demo:
 `network`, `keyring`, `destination_was_empty`, `hexctl_verify_exit`,
 `next_matches_manifest`, `snapshot_id_matches`, the controller SHA-256 and the

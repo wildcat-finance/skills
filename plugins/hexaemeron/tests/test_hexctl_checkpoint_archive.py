@@ -75,6 +75,7 @@ import inspect
 import base64
 import json
 import os
+import pathlib
 import random
 import re
 import shutil
@@ -3121,6 +3122,68 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             "the supplied path is read outside the capture, so the digest no "
             "longer covers everything the inspector parses",
         )
+
+    def test_inspect_refuses_a_current_acceptance_anywhere_under_its_root(self):
+        """S3-R2-02: the self-reference rule is a location, not one string.
+
+        A checkpoint's own acceptance is not inside its own archive; the next
+        checkpoint carries it as a prior receipt. The check matched the single
+        name `acceptance/current`, while the manifest names its own members and
+        nothing else holds them to a fixed layout, so the same receipt one
+        directory down or with a suffix passed. Every member under the
+        acceptance root has to be a prior one.
+        """
+        module = hexctl_module()
+        root = module.CHECKPOINT_ARCHIVE_ACCEPTANCE_ROOT
+        prior = module.CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR
+        self.assertEqual(root, prior.split("/")[0])
+        manifest = {
+            "acceptance": {
+                "current": module.CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT,
+                "prior": [],
+            }
+        }
+
+        for names in (
+            [f"{root}/current"],
+            [f"{root}/current/receipt.json"],
+            [f"{root}/current.json"],
+            [f"{root}/anything-else"],
+        ):
+            with self.subTest(refused=names):
+                with self.assertRaises(SystemExit):
+                    module._checkpoint_inspect_acceptance(manifest, names)
+
+        # A prior receipt is the one shape that belongs there.
+        for names in (
+            ["checkpoint.json"],
+            [f"{prior}/001.json"],
+            [f"{prior}/001.json", f"{prior}/002.json", "checkpoint.json"],
+        ):
+            with self.subTest(allowed=names):
+                module._checkpoint_inspect_acceptance(manifest, names)
+
+    def test_inspect_states_that_signature_reverification_is_internal(self):
+        """S3-R2-01: a clean signature section is a claim about the archive.
+
+        `inspect` re-runs `git verify-commit` rather than trusting the proof's
+        own status, but it seeds the keyring from the archive's own key member
+        and the fingerprints the archive's own manifest names. A `G` therefore
+        establishes internal consistency, not that the key belongs to anyone,
+        and `--sha256` is what carries provenance. That boundary was real and
+        written down nowhere, which is what this pins: both the operator-facing
+        reference and the function itself have to say it.
+        """
+        module = hexctl_module()
+        body = inspect.getsource(module._checkpoint_inspect_signatures)
+        self.assertIn("internal consistency", body)
+        self.assertIn("--sha256", body)
+
+        reference = pathlib.Path(module.__file__).resolve().parent.parent
+        reference = reference / "references" / "checkpoint-archive.md"
+        text = reference.read_text(encoding="utf-8")
+        self.assertIn("does and does not establish", text)
+        self.assertIn("not that the key belongs to anyone in particular", text)
 
     def test_inspect_writes_nothing_outside_scratch(self):
         path = self.good_archive()

@@ -850,6 +850,13 @@ this many bytes ahead of the EOCD is enough to see it (or the EOCD64 record
 itself, for a specimen that omits the locator) without trusting anything the
 central directory offsets claim.
 """
+CHECKPOINT_ARCHIVE_ACCEPTANCE_ROOT = CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR.split("/")[0]
+"""The directory every acceptance member has to sit under.
+
+Derived from the prior directory so the two cannot drift apart: the location
+rule `_checkpoint_inspect_acceptance` enforces is that everything under this
+root is a prior receipt.
+"""
 CHECKPOINT_INSPECT_CAPTURE_ENTRIES = frozenset(
     {
         CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY,
@@ -18530,6 +18537,16 @@ def _checkpoint_inspect_signatures(
     keyring is seeded only from the manifest's pinned fingerprints and the
     archive's own key material, and every record returned is what this
     command's own `git verify-commit` and `git log` actually found.
+
+    Both halves of that seeding come out of the archive, so what a `G` here
+    establishes is internal consistency: these commits were signed by the key
+    this archive carries, under a fingerprint its own manifest names. It is
+    not evidence that the key belongs to anyone in particular, and no check
+    reachable from inside the container could be. The out-of-band `--sha256`
+    carries that, by tying the container, its manifest and its key material to
+    a run the operator already trusts. S3-R2-01 recorded that the boundary was
+    real but written down nowhere an operator reading a clean signature
+    section would find it.
     """
     signer = manifest["signer"]
     proof_bytes = captured.get(CHECKPOINT_ARCHIVE_PROOF_ENTRY)
@@ -18664,16 +18681,28 @@ def _checkpoint_inspect_identity(
 
 
 def _checkpoint_inspect_acceptance(manifest: dict, names: list[str]) -> None:
-    """`acceptance/current` refused, and `acceptance/prior` counted, never read."""
+    """The current acceptance kept outside, and `acceptance/prior` counted, never read.
+
+    The rule is about a location rather than a name: a checkpoint's own
+    acceptance is not inside its own archive, and the next checkpoint carries
+    it as a prior receipt. So every member under `acceptance/` has to be a
+    prior one. Matching the single string `acceptance/current` was S3-R2-02:
+    the manifest names its own members and nothing else restricts them to a
+    fixed layout, so `acceptance/current/receipt.json` and
+    `acceptance/current.json` both carried the current acceptance inside the
+    archive and passed.
+    """
     acceptance = manifest["acceptance"]
-    if (
-        acceptance.get("current") != CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT
-        or "acceptance/current" in names
-    ):
+    if acceptance.get("current") != CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT:
         _checkpoint_archive_refuse("acceptance-self-reference")
-    prior_members = [
-        name for name in names if name.startswith(CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR + "/")
-    ]
+    prior_prefix = CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR + "/"
+    prior_members = []
+    for name in names:
+        if not name.startswith(CHECKPOINT_ARCHIVE_ACCEPTANCE_ROOT + "/"):
+            continue
+        if not name.startswith(prior_prefix):
+            _checkpoint_archive_refuse("acceptance-self-reference")
+        prior_members.append(name)
     if (
         len(prior_members) > CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX
         or len(acceptance["prior"]) > CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX
