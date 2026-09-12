@@ -513,14 +513,31 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                     for entry in spans["spans"]
                 )
             ]
-            for label, entries in (
-                ("source-spans", written_spans["spans"]),
-                ("model", written_model["bindings"]),
-            ):
-                with self.subTest(record=label):
-                    self.assertEqual(
-                        expected, [[item["start"], item["end"]] for item in entries]
-                    )
+            with self.subTest(record="source-spans"):
+                self.assertEqual(
+                    expected,
+                    [[item["start"], item["end"]] for item in written_spans["spans"]],
+                )
+
+            # The model is the record that does *not* move. Since skills#1192 it
+            # holds each binding relative to the reviewed span's start, so the
+            # same edit that re-derives every absolute span leaves it identical
+            # byte for byte. That is what stops a before-span edit costing a
+            # `measure` run: the model and the compact form rendered from it are
+            # the measured streams.
+            with self.subTest(record="model"):
+                live = self.checker.load_canonical_json(
+                    self.work._live_bytes(self.work.fixture["artifacts"]["model"]["path"])
+                )
+                self.assertEqual(
+                    live["bindings"],
+                    written_model["bindings"],
+                    "the before-span edit moved the model's relative offsets",
+                )
+                span_length = self.work.end - self.work.start
+                for binding in written_model["bindings"]:
+                    self.assertLessEqual(0, int(binding["start"]))
+                    self.assertLessEqual(int(binding["end"]), span_length)
 
         # And the pass is load-bearing: omitted, the same edit leaves the
         # recorded offsets pointing at bytes the edit displaced.

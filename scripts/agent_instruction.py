@@ -2380,9 +2380,29 @@ def _validate_source_spans(
     governed_start = _small_decimal(source_record["start"], "$.source.start", MAX_FILE_BYTES)
     governed_end = _small_decimal(source_record["end"], "$.source.end", MAX_FILE_BYTES)
     spans = _array(item["spans"], "$.source_spans.spans", MAX_BINDINGS, minimum=1)
+    # The model records each binding relative to the reviewed span's start, and
+    # this record locates the same bytes absolutely. The two are compared after
+    # the model's offsets are resolved against `governed_start`, so an edit
+    # before the span moves this record and leaves the model untouched. That is
+    # the whole point: the measured streams are the model and the compact form
+    # rendered from it, and they must not move when no reviewed byte does.
+    # skills#1192, and the decision record it lands with.
+    governed_length = governed_end - governed_start
     expected = []
-    for binding in model["bindings"]:
-        expected.append((binding["node"], binding["start"], binding["end"], binding["reviewer"]["value"]))
+    for index, binding in enumerate(model["bindings"]):
+        binding_path = f"$.bindings[{index}]"
+        relative_start = _small_decimal(binding["start"], f"{binding_path}.start", governed_length)
+        relative_end = _small_decimal(binding["end"], f"{binding_path}.end", governed_length)
+        if not 0 <= relative_start < relative_end <= governed_length:
+            refuse("WAI-E-REFERENCE.SPAN", binding_path)
+        expected.append(
+            (
+                binding["node"],
+                governed_start + relative_start,
+                governed_start + relative_end,
+                binding["reviewer"]["value"],
+            )
+        )
     observed = []
     for index, raw_span in enumerate(spans):
         path = f"$.source_spans.spans[{index}]"
@@ -2398,7 +2418,7 @@ def _validate_source_spans(
             refuse("WAI-E-REFERENCE.SPAN", path)
         if _digest(source_bytes[start:end]) != digest:
             refuse("WAI-E-DIGEST.SPAN", path)
-        observed.append((node, span["start"], span["end"], reviewer))
+        observed.append((node, start, end, reviewer))
     if observed != expected:
         refuse("WAI-E-MANIFEST.BINDINGS", "$.source_spans.spans")
     return len(spans)

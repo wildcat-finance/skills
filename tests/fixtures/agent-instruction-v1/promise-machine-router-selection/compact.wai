@@ -1,6 +1,6 @@
 WAI1
 D i32:promise-machine-router-selection t32:Promise\sMachine\srouter\sselection
-  S i15:promise-machine p18:PROMISE_MACHINE.md h64:f996fb645c81a8f398a2384ed4d8da0e058a9c017ea37fbbee36e499c9ef2e15
+  S i15:promise-machine p18:PROMISE_MACHINE.md h64:ae019700f378a250fe08a3d6cb68c0553ee60a410cbb6035d3c9c3cd2866b34f
   H i24:router-selection-promise t24:Router\sselection\spromise
     R i22:router-selection-check t174:Accept\srouter-selection\sevidence\sonly\safter\sthe\sclosed\scorpus,\ssource\squotations,\scanonical\sskill\snames,\scoverage,\spairs,\sand\sany\srecorded\srun\sall\spass\stheir\sdeclared\schecks.
       N t112:the\sevidence\sis\sabsent,\sstale,\smalformed,\smismatched,\sempty,\sunresolved,\sor\soutside\sthe\sclosed\sanswer\svocabulary
@@ -18,7 +18,7 @@ D i32:promise-machine-router-selection t32:Promise\sMachine\srouter\sselection
         Q 0
         J t123:Refuse\smalformed,\sincomplete,\sstale,\sunresolved,\suncovered,\sunquoted,\sdigest-mismatched,\sor\sunlisted\scorpus\sand\srun\svalues.
         Z t178:Read\sthe\snamed\sfailure,\srequote\sor\sretire\sthe\scase\srather\sthan\srewording\sthe\sgraded\ssource,\srepair\sunresolved\snames,\sand\sregrade\sstale\sruns\swithout\sediting\stheir\sdigest\sto\sagree.
-  B i15:promise-machine i32:promise-machine-router-selection 18285 24109 i8:shoggoth
-  B i15:promise-machine i24:router-selection-promise 18285 24109 i8:shoggoth
-  B i15:promise-machine i35:promise-machine-router-selection.v1 18352 24107 i8:shoggoth
-  B i15:promise-machine i22:router-selection-check 18352 24107 i8:shoggoth
+  B i15:promise-machine i32:promise-machine-router-selection 0 5824 i8:shoggoth
+  B i15:promise-machine i24:router-selection-promise 0 5824 i8:shoggoth
+  B i15:promise-machine i35:promise-machine-router-selection.v1 67 5822 i8:shoggoth
+  B i15:promise-machine i22:router-selection-check 67 5822 i8:shoggoth

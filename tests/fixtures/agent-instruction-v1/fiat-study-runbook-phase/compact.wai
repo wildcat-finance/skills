@@ -13,10 +13,10 @@ D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
   < i13:runbook-phase i15:implement-phase
   < i11:study-phase i24:marketplace-reassessment
   < i11:study-phase i13:runbook-phase
-  B i4:fiat i9:fiat-loop 18710 18721 i8:shoggoth
-  B i4:fiat i24:fiat-study-runbook-phase 18710 18721 i8:shoggoth
-  B i4:fiat i11:study-phase 18964 19122 i8:shoggoth
-  B i4:fiat i13:runbook-phase 19123 19265 i8:shoggoth
-  B i4:fiat i15:implement-phase 19266 19441 i8:shoggoth
-  B i4:fiat i16:receipt-boundary 22439 22580 i8:shoggoth
-  B i4:fiat i24:marketplace-reassessment 22582 23036 i8:shoggoth
+  B i4:fiat i9:fiat-loop 0 11 i8:shoggoth
+  B i4:fiat i24:fiat-study-runbook-phase 0 11 i8:shoggoth
+  B i4:fiat i11:study-phase 254 412 i8:shoggoth
+  B i4:fiat i13:runbook-phase 413 555 i8:shoggoth
+  B i4:fiat i15:implement-phase 556 731 i8:shoggoth
+  B i4:fiat i16:receipt-boundary 3729 3870 i8:shoggoth
+  B i4:fiat i24:marketplace-reassessment 3872 4326 i8:shoggoth
