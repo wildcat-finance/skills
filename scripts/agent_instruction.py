@@ -44,8 +44,8 @@ EVIDENCE_ARTIFACTS = {
     "tokenizer_profile": "tokenizer-profile.json",
 }
 TRUSTED_PROFILE_SHA256 = {
-    "family_profiles": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363",
-    "tokenizer_profile": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd",
+    "family_profiles": "b65f40927b69cf65df068c1f088982b849518d40bf92b13880e3d0cb1e7cf748",
+    "tokenizer_profile": "56e10c5394e3a1a52b99190fa764c8e2892bf5ac3d47bb104f7a1c14dfaf7837",
 }
 TOKENIZER_PROFILE_SCHEMA = "wildcat-agent-instruction-tokenizer-profile/v1"
 FAMILY_PROFILES_SCHEMA = "wildcat-agent-instruction-family-profiles/v1"
@@ -170,7 +170,7 @@ SECRET_ASSIGNMENT_RE = re.compile(
 # read. And it is the largest value the space holds, never observed as a
 # SHA-256 output: a bound document that collided with it would be a preimage
 # for one specific 2**-256 target, so no real source can be mistaken for the
-# marker. All zeros was the other well-formed candidate and is rejected because
+# marker. All zeros was the other candidate matching `SHA256_RE`, rejected because
 # a zero digest already reads as "not set" in too many registers, which is a
 # different claim from "deliberately not measured here".
 #

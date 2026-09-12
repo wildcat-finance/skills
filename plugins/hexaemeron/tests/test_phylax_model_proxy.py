@@ -5741,16 +5741,50 @@ class ConformanceTests(unittest.TestCase):
                 (runtime / "MANIFEST.json").read_text(encoding="utf-8")
             )
             manifested = {row["path"]: row for row in portable_manifest["files"]}
+            portrait_images = {
+                "README.md": (
+                    b"![Hexaemeron](./assets/characters/hexaemeron.png)",
+                    "plugins/hexaemeron/assets/characters/hexaemeron.png",
+                ),
+                "skills/phylax/SKILL.md": (
+                    b'<img src="../../assets/characters/phylax.png" width="1200">',
+                    "plugins/hexaemeron/assets/characters/phylax.png",
+                ),
+            }
             for relative in copied:
                 with self.subTest(portable=relative):
                     canonical = (PLUGIN_ROOT / relative).read_bytes()
-                    self.assertEqual(
-                        canonical, (portable_root / relative).read_bytes()
-                    )
                     path = f"plugins/hexaemeron/{relative}"
+                    entry = manifested[path]
+                    expected = canonical
+                    if relative in portrait_images:
+                        image, target = portrait_images[relative]
+                        self.assertEqual(canonical.count(image), 1)
+                        start = canonical.index(image)
+                        expected = canonical[:start] + canonical[start + len(image):]
+                        self.assertEqual(
+                            entry["transform"], "remove-decorative-portrait-images/v1"
+                        )
+                        self.assertEqual(entry["source_bytes"], len(canonical))
+                        self.assertEqual(
+                            entry["source_sha256"], hashlib.sha256(canonical).hexdigest()
+                        )
+                        self.assertEqual(entry["removed_images"], [{
+                            "start": start, "end": start + len(image), "target": target,
+                        }])
+                        self.assertIn(target, {
+                            row["path"] for row in portable_manifest["omitted_files"]
+                        })
+                        self.assertFalse((runtime / target).exists())
+                        self.assertTrue((repository / target).is_file())
+                    else:
+                        self.assertNotIn("transform", entry)
+                    self.assertEqual(
+                        expected, (portable_root / relative).read_bytes()
+                    )
                     self.assertEqual(path, manifested[path]["source"])
                     self.assertEqual(
-                        hashlib.sha256(canonical).hexdigest(),
+                        hashlib.sha256(expected).hexdigest(),
                         manifested[path]["sha256"],
                     )
 

@@ -2,7 +2,7 @@
   "agent_instruction": {
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "50db4948ab96bce60a73a97d061e1401dd60c0103e428068ce9dc2068c888249"
+      "sha256": "3c5fabf3510e449b0476de4a7ecb6c2bd4909c5b65c7a10ecdaef5e86ec923f2"
     },
     "contract": "wildcat-agent-instruction/v1",
     "documentation": [
@@ -26,11 +26,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
-        "sha256": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363"
+        "sha256": "b65f40927b69cf65df068c1f088982b849518d40bf92b13880e3d0cb1e7cf748"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "dd3e76a85b5257f0f8693e8aab9a0b716879b31aa0e48be2ba1a34eaaa48aabc"
+        "sha256": "865ed1300655ade17a8e88cd48ab43d2019936a67815fff57008eb2594b1c5c6"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -38,11 +38,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "16f99cacf08e2f9a2652797d671ab9cfe135509267e2f335278eee54ac6f47e5"
+        "sha256": "f69c93edd160738a11a600f75a77fe697958cc97af664967eb9536b612686dea"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
-        "sha256": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd"
+        "sha256": "56e10c5394e3a1a52b99190fa764c8e2892bf5ac3d47bb104f7a1c14dfaf7837"
       }
     ],
     "fixtures": [
@@ -88,11 +88,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "db0c1aef012d709e488fbcc41db33ebe9c74d1977d31f25524bbbdaf0a129a99"
+        "sha256": "5a7b4f780cec2dcdae29ef41a090dc7553f15fdb438cea708bbc3b6f967dab74"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "be94156288952db527fe28903806f8576108b4b33b9c5e9981122da1117ab7a1"
+        "sha256": "5b31373f0c5d25c2ffb212961cb2d8309a37b041d17e3b688a74d49b946d30a8"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -104,12 +104,12 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "db707fe6b63c87e4b6508b9e1c73a109b45df487457c74aeeca3e8998533678c"
+        "sha256": "039fabe6b13b1c2f0ca012ae861be67de925a05e7fa9b88804d4e7d729479a45"
       }
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "5200a31c2c3680bf9554165b0d1e58dc94ceb1b5d3bd083710ec33f488bd80a1"
+      "sha256": "ff4b6e69ea58d120172aa5b864bb5c4acf4a103bc8dab7df74be337018ad5956"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -118,7 +118,7 @@
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "c206cc92c06025c6352471380d74faed5e1298a0f3cf116f8d40771dab2cb25b"
+      "sha256": "98de5696079ad66ea74bef77472c31f58251e11082ff5d214e18bf0b9f9df097"
     },
     "tests": {
       "path": "tests/test_agent_instruction.py",
