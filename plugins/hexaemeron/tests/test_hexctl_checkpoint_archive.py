@@ -1707,6 +1707,43 @@ class CheckpointArchiveExportTests(HexctlCase):
         )
         self.archive()
 
+    def test_secret_shaped_member_refuses_an_adjacent_header_and_footer(self):
+        """A header touching its own footer refuses, carrying no key at all.
+
+        The footer witness asks only that a matching footer sit within the
+        footer reach of the header. A document that names both markers on
+        consecutive lines satisfies that with nothing between them, so a member
+        holding sixty-nine bytes and no key material refuses. The test above
+        pins the two witnesses in isolation but always puts a line between the
+        markers, so this shape went undemonstrated until an export of real
+        controller state met it.
+
+        This is the cost of failing closed, not a defect: the rule would have
+        to admit key-shaped content between the markers to tell the two apart,
+        and narrowing it that way is a design change a dated study amendment
+        has to make. What the step owes is that the cost is stated and pinned
+        rather than found by the first person to archive a run whose notes
+        quote a key header.
+        """
+        self.to_post_push()
+        planted = Path(self.target) / ".hexaemeron" / "notes.txt"
+        footer = "-----END OPENSSH PRIVATE KEY-----"
+        adjacent = SUBSUMED_PATTERN_SPAN + "\n" + footer + "\n"
+        # Nothing but the two markers and their line endings: no base64 line,
+        # no body witness, and so no key.
+        self.assertEqual(
+            len(SUBSUMED_PATTERN_SPAN) + len(footer) + 2,
+            len(adjacent.encode("utf-8")),
+        )
+        planted.write_text(adjacent, encoding="utf-8")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("secret-shaped-member\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        # The header alone is not enough: dropping the footer witness would
+        # leave this refusing too, and the difference is the whole rule.
+        planted.write_text(SUBSUMED_PATTERN_SPAN + "\n", encoding="utf-8")
+        self.archive()
+
     def test_archive_export_refuses_oversized_bundle(self):
         self.to_post_push()
         code, _, error = self.in_process(
