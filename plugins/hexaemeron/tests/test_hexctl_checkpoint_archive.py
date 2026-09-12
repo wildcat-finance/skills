@@ -48,6 +48,15 @@ Every slice below is taken through `anchored` or `fenced_block`, which name the
 missing anchor in an assertion rather than raising `IndexError` on a reworded
 study.
 
+The remaining class exports one archive from one really signed run. The
+controller fixture the rest of the suite uses fakes every delivery tool, which
+is correct for receipts and useless here: a bundle built from invented SHAs
+carries no objects, and a signature proof read from a canned trailer block
+proves nothing. So that class points the fake ref reader at the commits it
+really made, signs them with a key generated into a temporary `GNUPGHOME`, and
+lets the archive's bundle, digests and proof run against real bytes. The
+operator's keyring is never opened.
+
 No test or class name here contains `hostile` or `restore_from_archive`: the
 design record's conformance resolvers select later steps' tests with
 `-k hostile` and `-k restore_from_archive`, and a match here would change
@@ -56,10 +65,39 @@ their counts.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import base64
+import json
+import os
+import random
 import re
+import shutil
+import socket
+import subprocess
+import sys
+import tempfile
 import unittest
+import zipfile
+from contextlib import ExitStack, redirect_stderr, redirect_stdout
+from io import StringIO
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
+
+# The capsule refuses a symlinked output parent by design, and macOS resolves
+# TMPDIR under /var, a symlink to /private/var. Canonicalising the temporary
+# root hands the controller a real path and leaves the refusal untouched.
+tempfile.tempdir = os.path.realpath(tempfile.gettempdir())
+os.environ["TMPDIR"] = tempfile.tempdir
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from test_hexctl import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module  # noqa: E402
+
+ORIGIN_URL = "https://github.com/wildcat-finance/example.git"
+COAUTHOR = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
+ORIGIN_TRAILER = "Wildcat-Origin: shoggoth"
 
 HERE = Path(__file__).resolve().parent
 PLUGIN = HERE.parent
@@ -157,14 +195,185 @@ EXPECTED_CONTAINER_CLAUSES = (
     "no extra fields",
     "sorted by UTF-8 bytes",
 )
+# Study section 4's own bullet still lists the set the study was receipted
+# with. The dated amendment of 2026-09-09 replaces one member of it: the
+# OpenSSH header is dropped, because the PEM pattern before it already matches
+# that header, and the OpenPGP block takes the free place. The reference and
+# the code carry the amended set, so the two expectations below are held
+# against different parts of the same study rather than against each other.
+SUBSUMED_PATTERN_SPAN = "-----BEGIN OPENSSH PRIVATE KEY-----"
+ADDED_PATTERN_SPAN = "-----BEGIN PGP PRIVATE KEY BLOCK-----"
 EXPECTED_SECRET_SPANS = (
-    "-----BEGIN OPENSSH PRIVATE KEY-----",
+    SUBSUMED_PATTERN_SPAN,
     "ghp_[A-Za-z0-9]{36}",
     "github_pat_[A-Za-z0-9_]{22,}",
     "AKIA[0-9A-Z]{16}",
     "xox[baprs]-",
 )
+EXPECTED_AMENDED_SECRET_SPANS = tuple(
+    ADDED_PATTERN_SPAN if span == SUBSUMED_PATTERN_SPAN else span
+    for span in EXPECTED_SECRET_SPANS
+)
+PATTERN_AMENDMENT_HEADING = "### Amendment -- 2026-09-09"
 EXPECTED_PEM_PROSE = "PEM private-key block"
+
+# The second amendment of 2026-09-09 refuses an armour header only when key
+# material follows it, so every specimen that must still refuse is a block. The
+# body line below is base64 of ASCII letters and carries nothing private; its
+# job is to be shaped like material. A bare header is the opposite specimen:
+# it is what this study, this reference and this test file all carry, and it
+# must now publish.
+ARMOURED_BODY_LINE = "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVphYmNkZWZnaGlqa2xtbg=="
+ARMOURED_BLOCK_TRUNCATED = SUBSUMED_PATTERN_SPAN + "\n" + ARMOURED_BODY_LINE + "\n"
+# The same block held as a JSON string value, which is how `state.json` and a
+# `ledger.jsonl` line carry one: `json.dumps` writes every newline as the two
+# characters `\` and `n`, so the member has no newline byte anywhere. Forty
+# body lines put the footer further past the header than the lookahead
+# reaches, so neither witness arrived and the member published. That was
+# S2-R3-01, and it is the shape a real deploy key in controller state has.
+ARMOURED_BLOCK_JSON_CARRIED = json.dumps(
+    {
+        "deploy_key": (
+            SUBSUMED_PATTERN_SPAN
+            + "\n"
+            + (ARMOURED_BODY_LINE + "\n") * 40
+            + "-----END OPENSSH PRIVATE KEY-----\n"
+        )
+    }
+)
+
+# The reference's block paragraph is the contract home steps 3 to 5 read for
+# the block rule, and until this pin nothing held it: four anchored edits to
+# it, including deleting it outright and inverting the truncated-key rule,
+# left every test that reads the file green. That was S2-R3-03.
+#
+# The pin is an equality, so mutating any value in the paragraph fails, and
+# the anchors below fail by name when the paragraph is deleted. The equality
+# alone would only say the reference still reads as somebody once typed it,
+# so each rule in it is also required to be a rule study section 4 states:
+# a dated amendment that moves one moves this test, and the reference has to
+# follow rather than drift quietly behind it.
+REFERENCE_BLOCK_ANCHOR = "The two armour forms refuse as blocks."
+REFERENCE_BLOCK_END = "\n\n- A PEM private-key block"
+EXPECTED_BLOCK_PARAGRAPH = (
+    "The two armour forms refuse as blocks. A header is secret-shaped "
+    "only when key material follows it within the scanned window: one "
+    "whole line of base64 body, or the `-----END` marker matching that "
+    "header. The two witnesses have their own reaches: the body has to "
+    "start within the block lookahead of 1,792 bytes, which the armour "
+    "allowance bounds, and the footer has until the footer reach of "
+    "9,984 bytes, the block lookahead plus the largest key the scan "
+    "undertakes to reach, declared at 8,192 bits. A line ends at a "
+    "newline character or at the two-character escape `\\n` that carries "
+    "one inside a JSON string value, so a key held as a JSON string "
+    "value in `state.json` or on one `ledger.jsonl` line carries body "
+    "lines like any other. The delimiter set is the line feed as a "
+    "byte, as the two-character escape, or as the six-character numeric "
+    "escape, each optionally preceded by a carriage return in the "
+    "matching form. The numeric escapes are `\\u000a` for the line feed "
+    "and `\\u000d` before it for the carriage return, in either letter "
+    "case, so a CRLF key refuses raw, escaped and numerically escaped "
+    "alike. A body carrying no line delimiter in any form the witness "
+    "can see, such as a key whose line breaks were stripped rather than "
+    "encoded, refuses on its footer at every size below the declared "
+    "one. What the scan does not reach is a key whose modulus exceeds "
+    "that declared size, and the study states it as residue rather than "
+    "implying the class is shut. A file naming a header in prose or "
+    "quoting one in a code span supplies neither, so a run can archive "
+    "its own specification text. A key whose footer was truncated still "
+    "carries body lines and still refuses. The four token patterns are "
+    "self-delimiting and refuse on the match alone. The scan reads in "
+    "bounded chunks and carries between them the longest header the six "
+    "can match plus the footer reach, so a block lying across a chunk "
+    "boundary still refuses; the carry is derived from the patterns "
+    "rather than fixed."
+)
+# Each row is one rule: what study section 4 states, and the words the
+# reference paragraph has to restate it in. Neither side may be absent.
+BLOCK_RULE_PARITY = (
+    (
+        "at least one line of base64 body or a matching `-----END` marker",
+        "one whole line of base64 body, or the `-----END` marker matching "
+        "that header",
+    ),
+    (
+        "a line ends at a newline character or at the two-character escape "
+        "`\\n` that carries one inside a JSON string value",
+        "A line ends at a newline character or at the two-character escape "
+        "`\\n` that carries one inside a JSON string value",
+    ),
+    (
+        "the line feed as a byte, as the two-character escape, or as the "
+        "six-character numeric escape, each optionally preceded by a "
+        "carriage return in the matching form",
+        "The delimiter set is the line feed as a byte, as the two-character "
+        "escape, or as the six-character numeric escape, each optionally "
+        "preceded by a carriage return in the matching form",
+    ),
+    (
+        "in either letter case: `\\u000a` for the line feed and `\\u000d` "
+        "before it for the carriage return",
+        "`\\u000a` for the line feed and `\\u000d` before it for the "
+        "carriage return, in either letter case",
+    ),
+    (
+        "The block lookahead keeps its 1,792 bytes and bounds only where the "
+        "body may start, which is what the armour allowance measures",
+        "the body has to start within the block lookahead of 1,792 bytes, "
+        "which the armour allowance bounds",
+    ),
+    (
+        "A separate footer reach bounds where that header's own footer may "
+        "sit, and is the armour allowance plus the largest key the scan "
+        "undertakes to reach, declared at 8,192 bits, giving 9,984 bytes",
+        "the footer has until the footer reach of 9,984 bytes, the block "
+        "lookahead plus the largest key the scan undertakes to reach, "
+        "declared at 8,192 bits",
+    ),
+    (
+        "a body carrying no delimiter in any spelling is now refused at every "
+        "size below it, because its footer is in reach",
+        "such as a key whose line breaks were stripped rather than encoded, "
+        "refuses on its footer at every size below the declared one",
+    ),
+    (
+        "The residue narrows to a key whose modulus exceeds that declared "
+        "size",
+        "What the scan does not reach is a key whose modulus exceeds that "
+        "declared size, and the study states it as residue",
+    ),
+    (
+        "A document that names a header in prose or inside a code span is "
+        "not a secret",
+        "A file naming a header in prose or quoting one in a code span "
+        "supplies neither",
+    ),
+    (
+        "still catches a key whose footer was truncated",
+        "A key whose footer was truncated still carries body lines and still "
+        "refuses",
+    ),
+    (
+        "The four token patterns are unchanged, because each is "
+        "self-delimiting",
+        "The four token patterns are self-delimiting and refuse on the match "
+        "alone",
+    ),
+    (
+        "The set stays six",
+        "the longest header the six can match plus the footer reach",
+    ),
+    (
+        "the carried window between chunks is derived from the footer reach "
+        "rather than the block lookahead",
+        "carries between them the longest header the six can match plus the "
+        "footer reach",
+    ),
+)
+
+# A well-formed fingerprint that is not the fixture's, for the proof's
+# comparison against the set the manifest pins. It is never imported anywhere.
+UNPINNED_FINGERPRINT = "0123456789ABCDEF0123456789ABCDEF01234567"
 
 # The sidecar's two spaces are what `shasum -a 256 -c` reads, so the one-space
 # form is rejected by name in both documents.
@@ -328,6 +537,165 @@ def normalise_closed(cell: str) -> str:
     words are the evidence and the span punctuation is not.
     """
     return flat(cell.replace("`", ""))
+
+
+SMALL_PRIMES = [
+    candidate
+    for candidate in range(2, 4096)
+    if all(candidate % factor for factor in range(2, int(candidate**0.5) + 1))
+]
+
+
+def _probable_prime(candidate: int, rng: random.Random, rounds: int = 6) -> bool:
+    """Miller-Rabin, which is what makes the key below a key and not a shape."""
+    odd, power = candidate - 1, 0
+    while odd % 2 == 0:
+        odd //= 2
+        power += 1
+    for _ in range(rounds):
+        witness = pow(rng.randrange(2, candidate - 1), odd, candidate)
+        if witness in (1, candidate - 1):
+            continue
+        for _ in range(power - 1):
+            witness = witness * witness % candidate
+            if witness == candidate - 1:
+                break
+        else:
+            return False
+    return True
+
+
+def _prime(bits: int, rng: random.Random) -> int:
+    """One prime of exactly `bits` bits, with the top two bits set.
+
+    Both top bits, so the product of two of these is exactly twice the width
+    and the key's byte length is the length a key of that size really has.
+    """
+    while True:
+        candidate = rng.getrandbits(bits) | (3 << (bits - 2)) | 1
+        for _ in range(4096):
+            if all(candidate % factor for factor in SMALL_PRIMES):
+                if _probable_prime(candidate, rng):
+                    return candidate
+            candidate += 2
+
+
+def _der_length(size: int) -> bytes:
+    if size < 0x80:
+        return bytes([size])
+    raw = size.to_bytes((size.bit_length() + 7) // 8, "big")
+    return bytes([0x80 | len(raw)]) + raw
+
+
+def _der_integer(value: int) -> bytes:
+    """One DER INTEGER, always with a leading zero byte so it stays positive."""
+    body = value.to_bytes(value.bit_length() // 8 + 1, "big")
+    return b"\x02" + _der_length(len(body)) + body
+
+
+def rsa_private_key_pem(bits: int = 3072, seed: int = 861) -> tuple[str, int, int, int]:
+    """A real RSA private key, generated here rather than checked in.
+
+    The CRLF guard below needs a key and not a base64-shaped line. What made
+    S2-R4-02 publish was a real key's geometry: a body of 64-character lines
+    whose `-----END` marker lands further past the header than the block
+    lookahead reaches. A repeated synthetic line proves nothing about that
+    distance, and checking a key into this repository is the one thing the
+    scan under test exists to refuse. So the key is built here, as PKCS#1 DER
+    inside PEM armour, and returned with the three numbers that let the caller
+    prove it is a working keypair rather than a string shaped like one.
+
+    `random` seeded to a constant, not `secrets`: this key secures nothing,
+    never leaves a temporary directory and is regenerated every run, and a
+    fixed seed keeps the search cost of the two primes fixed at about a
+    second rather than varying with the machine's entropy.
+    """
+    rng = random.Random(seed)
+    public = 65537
+    while True:
+        first = _prime(bits // 2, rng)
+        second = _prime(bits // 2, rng)
+        if first != second and (first - 1) % public and (second - 1) % public:
+            break
+    modulus = first * second
+    private = pow(public, -1, (first - 1) * (second - 1))
+    fields = b"".join(
+        _der_integer(value)
+        for value in (
+            0,
+            modulus,
+            public,
+            private,
+            first,
+            second,
+            private % (first - 1),
+            private % (second - 1),
+            pow(second, -1, first),
+        )
+    )
+    der = b"\x30" + _der_length(len(fields)) + fields
+    text = base64.b64encode(der).decode("ascii")
+    body = "".join(text[at : at + 64] + "\n" for at in range(0, len(text), 64))
+    pem = "-----BEGIN RSA PRIVATE KEY-----\n" + body + "-----END RSA PRIVATE KEY-----\n"
+    return pem, modulus, public, private
+
+
+# The ten spellings a JSON string value can give a PEM's line breaks: none,
+# then the carriage return alone and the line feed alone and the pair, each as
+# the raw byte, the two-character escape and the six-character numeric escape.
+# The first four carry no delimiter the body witness reads; the last six do.
+LINE_BREAK_SPELLINGS = (
+    ("stripped", ""),
+    ("carriage return, raw", "\r"),
+    ("carriage return, two-character escape", "\\r"),
+    ("carriage return, numeric escape", "\\u000d"),
+    ("line feed, raw", "\n"),
+    ("line feed, two-character escape", "\\n"),
+    ("line feed, numeric escape", "\\u000a"),
+    ("CRLF, raw", "\r\n"),
+    ("CRLF, two-character escape", "\\r\\n"),
+    ("CRLF, numeric escape", "\\u000d\\u000a"),
+)
+
+
+def rsa_shaped_pem(bits: int, seed: int = 861) -> str:
+    """The armour an RSA key of `bits` bits has, around nine numbers that are not one.
+
+    The residue guard needs a modulus past `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY`,
+    and `rsa_private_key_pem` at twice that size would search for two 8,192-bit
+    primes, which takes minutes in this interpreter where 8,192 bits takes
+    eight seconds. What the scan reads is distance, not primality: the DER
+    length is a function of the nine integers' widths alone, so drawing each
+    at the width a real key's field has, top bits set, gives the same armour
+    to within the four bytes a real key's `d`, `dp`, `dq` and `qinv` fall
+    short of that width by. The S2-R7-01 guard measures that delta against
+    the seeded real key, so this twin cannot drift from the geometry it stands
+    in for without a test saying so.
+    """
+    rng = random.Random(seed)
+
+    def width(size: int) -> int:
+        return rng.getrandbits(size) | (3 << (size - 2)) | 1
+
+    half = bits // 2
+    fields = b"".join(
+        _der_integer(value)
+        for value in (
+            0,
+            width(bits),
+            65537,
+            width(bits),
+            width(half),
+            width(half),
+            width(half),
+            width(half),
+            width(half),
+        )
+    )
+    der = b"\x30" + _der_length(len(fields)) + fields
+    text = base64.b64encode(der).decode("ascii")
+    body = "".join(text[at : at + 64] + "\n" for at in range(0, len(text), 64))
+    return "-----BEGIN RSA PRIVATE KEY-----\n" + body + "-----END RSA PRIVATE KEY-----\n"
 
 
 def anchored(text: str, start: str, end: str, what: str) -> str:
@@ -683,11 +1051,52 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
             "study section 4 secret pattern list",
         )
         self.assertEqual(
-            list(EXPECTED_SECRET_SPANS), secret_spans("\n".join(reference_secret_items))
+            list(EXPECTED_AMENDED_SECRET_SPANS),
+            secret_spans("\n".join(reference_secret_items)),
         )
         self.assertEqual(list(EXPECTED_SECRET_SPANS), secret_spans(study_secrets))
         self.assertIn(EXPECTED_PEM_PROSE, flat("\n".join(reference_secret_items)))
         self.assertIn(EXPECTED_PEM_PROSE, flat(study_secrets))
+
+        # The reference is allowed to differ from section 4's bullet only where
+        # a dated study amendment says so, so the amendment is read here too:
+        # it must name both the span it drops and the span it puts in its
+        # place. Without this the two expectations above would be a constant
+        # holding the reference to itself, and an amended value could drift.
+        amendment = flat(
+            anchored(
+                study,
+                PATTERN_AMENDMENT_HEADING,
+                "\n**Steps touched.**",
+                "study amendment 2026-09-09",
+            )
+        )
+        self.assertIn(f"`{SUBSUMED_PATTERN_SPAN}`", amendment)
+        self.assertIn(f"`{ADDED_PATTERN_SPAN}`", amendment)
+
+        # The exporter compiles what the reference states. Five bullets are the
+        # pattern source verbatim; the sixth is the PEM prose, held instead to
+        # what it must and must not match, including the OpenSSH header the
+        # amendment dropped as subsumed and the OpenPGP block it added.
+        module = hexctl_module()
+        compiled = [
+            pattern.pattern.decode("utf-8")
+            for pattern in module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS
+        ]
+        self.assertEqual(6, len(compiled), compiled)
+        self.assertEqual(list(EXPECTED_AMENDED_SECRET_SPANS), compiled[1:])
+        pem = module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS[0]
+        for header in (
+            b"-----BEGIN PRIVATE KEY-----",
+            b"-----BEGIN RSA PRIVATE KEY-----",
+            b"-----BEGIN EC PRIVATE KEY-----",
+            b"-----BEGIN ENCRYPTED PRIVATE KEY-----",
+            SUBSUMED_PATTERN_SPAN.encode("utf-8"),
+        ):
+            with self.subTest(pem_header=header):
+                self.assertTrue(pem.search(header), header)
+        self.assertIsNone(pem.search(ADDED_PATTERN_SPAN.encode("utf-8")))
+        self.assertIsNone(pem.search(b"-----BEGIN PGP PUBLIC KEY BLOCK-----"))
 
         # The closed fields of the result objects (study sections 1 and 4).
         # The reference states each as a paragraph and the study as a bullet or
@@ -755,6 +1164,9 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertIn(SIDECAR_SPAN, document)
                 self.assertNotIn(SIDECAR_ONE_SPACE, document)
 
+        # The block paragraph, on the same terms as every other value above.
+        self.pin_the_reference_block_paragraph()
+
         # The `acceptance/current` rule, stated three ways in the reference and
         # two in the study, so an inverted sentence fails rather than passing on
         # a substring of itself.
@@ -769,6 +1181,60 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertIn(ACCEPTANCE_OUTSIDE, section(reference, "Content manifest"))
         self.assertIn(ACCEPTANCE_OUTSIDE, study_manifest)
         self.assertIn(STUDY_ACCEPTANCE_REFUSES, study)
+
+    def pin_the_reference_block_paragraph(self):
+        """The reference's block paragraph, held to what study section 4 says.
+
+        Two assertions, and each one catches what the other cannot. The
+        equality catches a mutated or deleted value in the reference, which
+        was S2-R3-03: four anchored edits to this paragraph, one of them
+        deleting it and one inverting the truncated-key rule, left every test
+        that read the file green. The parity rows catch the drift the equality
+        would freeze in place: a dated study amendment that moves one of these
+        rules fails here, so the reference cannot quietly stay behind it.
+
+        It is called from the test above rather than from the export test that
+        first carried it, and rather than standing as a test of its own, which
+        step 5's exact count over this module forbids. That was S2-R4-01: the
+        export class skips itself whenever `gpg` is absent, and with the pin
+        inside it all eight anchored edits below passed again, deletion of the
+        paragraph included. Nothing this pin reads needs `gpg`, and this class
+        is where every other value shared by the two documents is held.
+        """
+        reference = read(REFERENCE)
+        study = flat(read(STUDY))
+        paragraph = REFERENCE_BLOCK_ANCHOR + anchored(
+            reference,
+            REFERENCE_BLOCK_ANCHOR,
+            REFERENCE_BLOCK_END,
+            "the reference's private-key block paragraph",
+        )
+        self.assertEqual(EXPECTED_BLOCK_PARAGRAPH, flat(paragraph))
+        for stated, restated in BLOCK_RULE_PARITY:
+            with self.subTest(rule=stated):
+                self.assertIn(stated, study)
+                self.assertIn(restated, EXPECTED_BLOCK_PARAGRAPH)
+        # The three counts the paragraph names are the shipped tuples, so a
+        # pattern added or dropped in the code contradicts the prose here.
+        module = hexctl_module()
+        self.assertEqual(2, len(module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS))
+        self.assertEqual(4, len(module.CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS))
+        self.assertEqual(6, len(module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS))
+        # So are the two reaches and the declared key size it names, since
+        # S2-R7-01 split them: a constant moved without the paragraph, or the
+        # paragraph without the constant, contradicts the other here.
+        footer_reach = getattr(
+            module, "CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", None
+        )
+        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
+        self.assertIsNotNone(footer_reach, "the scan declares no footer reach")
+        self.assertIsNotNone(largest_key, "the scan declares no largest key")
+        self.assertIn(
+            f"block lookahead of {module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD:,} bytes",
+            EXPECTED_BLOCK_PARAGRAPH,
+        )
+        self.assertIn(f"footer reach of {footer_reach:,} bytes", EXPECTED_BLOCK_PARAGRAPH)
+        self.assertIn(f"declared at {largest_key:,} bits", EXPECTED_BLOCK_PARAGRAPH)
 
     def test_archive_budgets_declare_the_six_measured_limits(self):
         budgets = load_metron().load_budgets(str(BUDGETS))
@@ -803,6 +1269,1204 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 entry = declared[fields.group("name")]
                 self.assertEqual(entry["unit"], fields.group("unit"))
                 self.assertEqual(entry["limit"], int(fields.group("limit")))
+
+
+class CheckpointArchiveExportTests(HexctlCase):
+    """`checkpoint archive` over one real, really signed run.
+
+    The controller fixture fakes the delivery tools a run talks to, which is
+    right for receipts and wrong for an archive: a bundle built from invented
+    SHAs carries no objects, and a signature proof read from a canned trailer
+    block proves nothing. So this fixture keeps the fake `gh` and the fake ref
+    reader, points the fake ref map at the commits it really made, and signs
+    those commits with an OpenPGP key generated into a temporary `GNUPGHOME`
+    for the class. Nothing here reads or writes the operator's keyring.
+    """
+
+    key_home = None
+    fingerprint = None
+
+    @classmethod
+    def setUpClass(cls):
+        if shutil.which("gpg") is None:
+            return
+        # A gpg-agent's socket lives in its home and AF_UNIX paths are capped
+        # near 104 bytes, so the names below stay short. The system temporary
+        # root, canonicalised above, leaves room; a name under the tree would
+        # not, and `tests/test_scratch_quiescence.py` forbids anchoring there
+        # anyway.
+        cls.key_root = tempfile.mkdtemp(prefix="fiat861-")
+        cls.key_home = os.path.join(cls.key_root, "h")
+        os.mkdir(cls.key_home, 0o700)
+        generated = subprocess.run(
+            [
+                "gpg",
+                "--batch",
+                "--quiet",
+                "--pinentry-mode",
+                "loopback",
+                "--passphrase",
+                "",
+                "--quick-generate-key",
+                "Fiat Fixture <fixture@example.invalid>",
+                "ed25519",
+                "sign",
+                "never",
+            ],
+            env={**os.environ, "GNUPGHOME": cls.key_home},
+            capture_output=True,
+            text=True,
+        )
+        if generated.returncode != 0:
+            cls.key_home = None
+            return
+        listed = subprocess.run(
+            ["gpg", "--batch", "--with-colons", "--list-secret-keys"],
+            env={**os.environ, "GNUPGHOME": cls.key_home},
+            capture_output=True,
+            text=True,
+        )
+        for line in listed.stdout.splitlines():
+            if line.startswith("fpr:"):
+                cls.fingerprint = line.split(":")[9]
+                break
+        if cls.fingerprint is None:
+            cls.key_home = None
+
+    @classmethod
+    def tearDownClass(cls):
+        if getattr(cls, "key_home", None) is None:
+            return
+        subprocess.run(
+            ["gpgconf", "--homedir", cls.key_home, "--kill", "all"],
+            capture_output=True,
+        )
+        shutil.rmtree(cls.key_root, ignore_errors=True)
+
+    def setUp(self):
+        if self.key_home is None:
+            self.skipTest("gpg is unavailable, so no fixture key can be generated")
+        super().setUp()
+        self.env["GNUPGHOME"] = self.key_home
+        self.git("remote", "add", "origin", ORIGIN_URL)
+        self.git("config", "user.signingkey", self.fingerprint)
+        self.git("config", "gpg.program", "gpg")
+        self.fake_refs["main"] = self.head_sha()
+
+    # -- fixture ---------------------------------------------------------
+
+    def head_sha(self, ref="HEAD"):
+        return self.git("rev-parse", ref).stdout.strip()
+
+    def commit_signed(self, message, *, amend=False):
+        """One real commit, really signed by the fixture key and nothing else."""
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "commit.gpgsign=true",
+                "-c",
+                f"user.signingkey={self.fingerprint}",
+                "-c",
+                "gpg.program=gpg",
+                "commit",
+                "-q",
+                *(("--amend",) if amend else ()),
+                "-m",
+                message,
+            ],
+            cwd=self.target,
+            env={**os.environ, "GNUPGHOME": self.key_home},
+            check=True,
+            capture_output=True,
+        )
+        return self.head_sha()
+
+    def signed_commit(self, message, path="work.txt"):
+        full = os.path.join(self.target, path)
+        with open(full, "a", encoding="utf-8") as handle:
+            handle.write(message + "\n")
+        self.git("add", path)
+        return self.commit_signed(message)
+
+    @staticmethod
+    def trailers(subject="fixture work"):
+        return f"{subject}\n\n{COAUTHOR}\n{ORIGIN_TRAILER}\n"
+
+    def to_receipted_steps(self, titles=("First", "Second")):
+        self.init()
+        study = self.write(
+            "study.md",
+            "# Study\n\n```risk-register\npacket | boundary | check\n```\n",
+        )
+        self.run_ctl(
+            "done", "study", "--artifact", study, "--skills", "hexaemeron:imprimatur"
+        )
+        runbook = self.write(
+            "runbook.md",
+            "# Runbook\n\n"
+            + "\n".join(
+                f"## Step {number}: {title}\n\n**Goal.** Ship {title}.\n"
+                for number, title in enumerate(titles, 1)
+            ),
+        )
+        steps = self.write("steps.json", json.dumps(list(titles)))
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-q", "-m", "fixture sources")
+        state = self.state()
+        self.fake_refs[state["run_branch"]] = self.head_sha()
+        for step in state["steps"]:
+            self.git("branch", self.step_branch(step["n"], state))
+            self.fake_refs[self.step_branch(step["n"], state)] = self.head_sha()
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        return state
+
+    def implement_step(self, number):
+        """Put one really signed commit on the step branch and receipt it."""
+        branch = self.step_branch(number)
+        self.git("checkout", "-q", branch)
+        head = self.signed_commit(self.trailers(f"step {number}"))
+        self.fake_refs[branch] = head
+        self.run_ctl("done", "implement", "--branch", branch, "--commit", head)
+        return head
+
+    def to_post_push(self, titles=("First", "Second"), message=None):
+        """One run standing at its post-push boundary with a really signed head.
+
+        The harness commits the fixture audit record itself, unsigned, so the
+        branch tip after a round is not the commit the step signed. Amending
+        that commit into a signed one keeps the receipted head and the real
+        head the same object, which is the state a genuine run is in.
+        """
+        self.to_receipted_steps(titles=titles)
+        branch = self.step_branch(1)
+        self.implement_step(1)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        head = self.commit_signed(message or self.trailers("step 1"), amend=True)
+        self.fake_refs[branch] = head
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "3",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", head,
+            "--pr-base", self.step_base(1),
+        )
+        return head
+
+    def archive(self, *, expect=0):
+        result = self.run_ctl("checkpoint", "archive", expect=expect)
+        payload = json.loads(result.stdout) if expect == 0 else None
+        return result, payload
+
+    def store_root(self):
+        state = self.state()
+        return Path(state["config"]["git"]["origin"]) / ".hexaemeron" / "checkpoints"
+
+    def published(self):
+        found = sorted(self.store_root().glob("*/*/checkpoint.zip"))
+        self.assertEqual(1, len(found), found)
+        return found[0]
+
+    def controller_bytes(self):
+        root = Path(self.target) / ".hexaemeron"
+        return (
+            root.joinpath("state.json").read_bytes(),
+            root.joinpath("ledger.jsonl").read_bytes(),
+        )
+
+    def manifest_of(self, archive):
+        with zipfile.ZipFile(archive) as container:
+            return json.loads(container.read("checkpoint.json"))
+
+    def direct_environment(self):
+        environment = dict(self.env)
+        environment["FAKE_GIT_REFS"] = json.dumps(self.fake_refs)
+        environment["FAKE_GIT_PARENTS"] = json.dumps(self.fake_parents)
+        environment["FAKE_GH_PRS"] = json.dumps(self.fake_prs)
+        return environment
+
+    def in_process(self, patches=()):
+        """Run one export in this process, so a ceiling or reader can be replaced.
+
+        The subprocess surface is what an operator uses and is what every other
+        case here drives. Three refusals -- an oversized bundle, a disagreeing
+        ref map and a manifest that stopped matching its members -- cannot be
+        produced from outside the process without corrupting the fixture into
+        something no run could reach, so they are provoked at the seam instead.
+        """
+        module = hexctl_module()
+        error = StringIO()
+        output = StringIO()
+        stack = ExitStack()
+        with stack:
+            stack.enter_context(mock.patch.dict(os.environ, self.direct_environment(), clear=True))
+            for name, value in patches:
+                stack.enter_context(mock.patch.object(module, name, value))
+            stack.enter_context(redirect_stderr(error))
+            stack.enter_context(redirect_stdout(output))
+            try:
+                module.cmd_checkpoint_archive(SimpleNamespace(dir=self.target))
+            except SystemExit as stopped:
+                return stopped.code, output.getvalue(), error.getvalue()
+        return 0, output.getvalue(), error.getvalue()
+
+    # -- cases -----------------------------------------------------------
+
+    def test_archive_export_is_byte_identical_across_two_exports_and_two_absolute_paths(self):
+        self.to_post_push()
+        _, first = self.archive()
+        original = self.published().read_bytes()
+        sidecar = self.published().with_name("checkpoint.zip.sha256").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(f"{first['outer_sha256']}  checkpoint.zip\n", sidecar)
+
+        shutil.rmtree(self.store_root())
+        _, second = self.archive()
+        self.assertEqual(original, self.published().read_bytes())
+        self.assertEqual(first["outer_sha256"], second["outer_sha256"])
+        self.assertEqual(first["manifest_sha256"], second["manifest_sha256"])
+        self.assertEqual(first["bundle_sha256"], second["bundle_sha256"])
+
+        shutil.rmtree(self.store_root())
+        elsewhere = self.relocated_copy()
+        moved = subprocess.run(
+            [sys.executable, HEXCTL, "checkpoint", "archive"],
+            cwd=elsewhere,
+            capture_output=True,
+            text=True,
+            env=self.direct_environment(),
+        )
+        self.assertEqual(0, moved.returncode, moved.stderr)
+        self.assertEqual(original, self.published().read_bytes())
+        self.assertEqual(first["outer_sha256"], json.loads(moved.stdout)["outer_sha256"])
+
+    def relocated_copy(self):
+        """The same run at another absolute path, with its recorded paths untouched.
+
+        Copying rather than editing is the point: the controller state, and so
+        the capsule, stays byte for byte what it was, and only the producer's
+        location changes. The linked worktree's two pointers are the only
+        things that have to follow it.
+        """
+        other = tempfile.mkdtemp(prefix="fiat861-elsewhere-")
+        self.addCleanup(shutil.rmtree, other, True)
+        destination = os.path.join(other, "origin")
+        shutil.copytree(self.dir, destination, symlinks=True)
+        name = os.path.basename(self.target)
+        worktree = os.path.join(destination, "tmp", "fiat", name)
+        with open(os.path.join(worktree, ".git"), "w", encoding="utf-8") as handle:
+            handle.write(f"gitdir: {destination}/.git/worktrees/{name}\n")
+        with open(
+            os.path.join(destination, ".git", "worktrees", name, "gitdir"),
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            handle.write(f"{worktree}/.git\n")
+        return worktree
+
+    def test_archive_reserves_prior_acceptance_entries(self):
+        self.to_post_push()
+        _, result = self.archive()
+        manifest = self.manifest_of(self.published())
+        self.assertEqual("outside", manifest["acceptance"]["current"])
+        self.assertEqual([], manifest["acceptance"]["prior"])
+        self.assertEqual({"current", "prior"}, set(manifest["acceptance"]))
+        with zipfile.ZipFile(self.published()) as container:
+            names = container.namelist()
+        self.assertNotIn("acceptance/current", names)
+        self.assertFalse([name for name in names if name.startswith("acceptance/")])
+        self.assertEqual(64, manifest["limits"]["prior_acceptances"])
+        self.assertEqual(result["entries"], len(names))
+
+    def test_archive_export_refuses_every_unaccepted_boundary(self):
+        def refused(label):
+            before = self.controller_bytes()
+            result, _ = self.archive(expect=1)
+            self.assertEqual("boundary-unaccepted\n", result.stderr, label)
+            self.assertFalse(self.store_root().exists(), label)
+            self.assertEqual(before, self.controller_bytes(), label)
+
+        self.init()
+        refused("study")
+        study = self.write(
+            "study.md",
+            "# Study\n\n```risk-register\npacket | boundary | check\n```\n",
+        )
+        self.run_ctl(
+            "done", "study", "--artifact", study, "--skills", "hexaemeron:imprimatur"
+        )
+        refused("runbook")
+        runbook = self.write(
+            "runbook.md", "# Runbook\n\n## Step 1: One\n\n**Goal.** One.\n"
+        )
+        steps = self.write("steps.json", '["One"]\n')
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-q", "-m", "fixture sources")
+        state = self.state()
+        self.fake_refs[state["run_branch"]] = self.head_sha()
+        self.git("branch", self.step_branch(1, state))
+        self.fake_refs[self.step_branch(1, state)] = self.head_sha()
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        refused("implement")
+        self.implement_step(1)
+        refused("audit-before-round")
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        refused("close-audit")
+        self.run_ctl("done", "audit")
+        refused("prose")
+
+    def test_archive_export_refuses_dirty_worktree(self):
+        self.to_post_push()
+        # A tracked file the receipts do not pin: a receipted source would
+        # refuse at the controller's own verification, one check earlier, and
+        # the dirty-tree rule would never be reached.
+        with open(os.path.join(self.target, "work.txt"), "a", encoding="utf-8") as handle:
+            handle.write("uncommitted\n")
+        before = self.controller_bytes()
+        result, _ = self.archive(expect=1)
+        self.assertEqual("worktree-dirty\n", result.stderr)
+        self.assertFalse(self.store_root().exists())
+        self.assertEqual(before, self.controller_bytes())
+
+    def test_archive_export_refuses_secret_shaped_member(self):
+        """The refusal itself, over a really signed run.
+
+        The reference paragraph that states this rule is pinned in
+        `CheckpointArchiveScaffoldTests`, not here: this class skips whenever
+        `gpg` is absent, and a document pin that needs no `gpg` must not skip
+        with it.
+        """
+        self.to_post_push()
+        planted = Path(self.target) / ".hexaemeron" / "notes.txt"
+        planted.write_text("carry over: AKIA" + "A1B2C3D4E5F6G7H8"[:16] + "\n", encoding="utf-8")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("secret-shaped-member\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        # The OpenSSH header, which the PEM pattern matches on its own, and the
+        # OpenPGP block, which the 2026-09-09 study amendment added because no
+        # pattern reached it: its header ends `PRIVATE KEY BLOCK-----`. Each is
+        # planted as a block, because the second amendment of that date refuses
+        # an armour header only when key material follows it.
+        for header in (SUBSUMED_PATTERN_SPAN, ADDED_PATTERN_SPAN):
+            with self.subTest(header=header):
+                planted.write_text(
+                    header + "\n" + ARMOURED_BODY_LINE + "\n", encoding="utf-8"
+                )
+                result, _ = self.archive(expect=1)
+                self.assertEqual("secret-shaped-member\n", result.stderr)
+        planted.unlink()
+        # The same block carried as a JSON string value, which is the shape
+        # `state.json` and a `ledger.jsonl` line give a credential and the
+        # shape the block rule published until the escape became a delimiter.
+        # It is planted alone: with another refusing member still in the
+        # capsule this assertion passes against a scan that never read it,
+        # which is what the first draft of this test did.
+        self.assertNotIn("\n", ARMOURED_BLOCK_JSON_CARRIED)
+        carried = Path(self.target) / ".hexaemeron" / "notes.json"
+        carried.write_text(ARMOURED_BLOCK_JSON_CARRIED, encoding="utf-8")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("secret-shaped-member\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        carried.unlink()
+        self.archive()
+
+    def test_secret_shaped_member_refuses_before_publish_on_a_truncated_key_block(self):
+        """A block whose `-----END` is gone is still key material.
+
+        The block rule admits two witnesses, the footer and a body line, and a
+        key truncated in transit carries only the second. Reading the footer
+        alone would publish it. The same header with prose after it instead of
+        material publishes, which is the refusal S2-R2-02 recorded: the capsule
+        carries every controller file, and this run's study quotes that header
+        while specifying the scan.
+        """
+        self.to_post_push()
+        planted = Path(self.target) / ".hexaemeron" / "notes.txt"
+        # The body witness alone, then the footer witness alone. Each has to
+        # refuse by itself, or dropping the other one goes unnoticed.
+        footer_only = (
+            SUBSUMED_PATTERN_SPAN
+            + "\nthis line is not base64\n-----END OPENSSH PRIVATE KEY-----\n"
+        )
+        for specimen in (ARMOURED_BLOCK_TRUNCATED, footer_only):
+            with self.subTest(witness=specimen.splitlines()[1]):
+                planted.write_text(specimen, encoding="utf-8")
+                result, _ = self.archive(expect=1)
+                self.assertEqual("secret-shaped-member\n", result.stderr)
+                self.assertFalse(sorted(self.store_root().glob("*/*")))
+        planted.write_text(
+            f"the scan names {SUBSUMED_PATTERN_SPAN} here, and nothing follows it\n",
+            encoding="utf-8",
+        )
+        self.archive()
+
+    def test_archive_export_refuses_oversized_bundle(self):
+        self.to_post_push()
+        code, _, error = self.in_process(
+            (("CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX", 1),)
+        )
+        self.assertEqual(1, code)
+        self.assertEqual("bundle-oversized\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_archive_export_refuses_ref_disagreement(self):
+        self.to_post_push()
+        module = hexctl_module()
+        honest = module._checkpoint_refs
+
+        def drifted(base_dir, state):
+            refs = honest(base_dir, state)
+            return {**refs, state["run_branch"]: "0" * 40}
+
+        code, _, error = self.in_process((("_checkpoint_refs", drifted),))
+        self.assertEqual(1, code)
+        self.assertEqual("ref-disagreement\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_archive_export_refuses_occupied_boundary_directory(self):
+        self.to_post_push()
+        _, first = self.archive()
+        published = self.published()
+        before = published.read_bytes()
+        result, _ = self.archive(expect=1)
+        self.assertEqual("boundary-occupied\n", result.stderr)
+        self.assertEqual(before, published.read_bytes())
+        self.assertEqual(
+            [], [entry for entry in published.parent.parent.iterdir() if entry.name.startswith(".")]
+        )
+
+    def test_archive_export_refuses_unsupported_signature(self):
+        self.to_post_push()
+        self.git("config", "gpg.format", "x509")
+        result, _ = self.archive(expect=1)
+        self.assertEqual("signature-format-unsupported\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+        self.git("config", "gpg.format", "openpgp")
+        self.archive()
+
+    def test_archive_layout_and_entry_metadata_are_fixed(self):
+        self.to_post_push()
+        _, result = self.archive()
+        archive = self.published()
+        with zipfile.ZipFile(archive) as container:
+            infos = container.infolist()
+            names = [info.filename for info in infos]
+            for info in infos:
+                self.assertEqual(zipfile.ZIP_STORED, info.compress_type, info.filename)
+                self.assertEqual(3, info.create_system, info.filename)
+                self.assertEqual(0o100644, info.external_attr >> 16, info.filename)
+                self.assertEqual((1980, 1, 1, 0, 0, 0), info.date_time, info.filename)
+                self.assertEqual(b"", info.extra, info.filename)
+                self.assertEqual(b"", info.comment, info.filename)
+                self.assertFalse(info.filename.endswith("/"), info.filename)
+                self.assertEqual(info.file_size, info.compress_size, info.filename)
+            self.assertEqual(b"", container.comment)
+        self.assertEqual(
+            sorted(names, key=lambda name: name.encode("utf-8")), names
+        )
+        self.assertNotIn(b"PK\x06\x06", archive.read_bytes()[-65536:])
+        for expected in (
+            "README.txt",
+            "checkpoint.json",
+            "controller-capsule/MANIFEST.json",
+            "controller-capsule/controller/state.json",
+            "git/repository.bundle",
+            "identity/checkpoint-identity.json",
+            "proof/pubkey.asc",
+            "proof/signatures.json",
+        ):
+            self.assertIn(expected, names)
+        manifest = self.manifest_of(archive)
+        self.assertEqual("fiat-checkpoint-archive/v1", manifest["schema"])
+        self.assertEqual("zip", manifest["archive"]["format"])
+        self.assertEqual("stored", manifest["archive"]["compression"])
+        listed = [entry["path"] for entry in manifest["archive"]["entries"]]
+        self.assertEqual(sorted(set(names) - {"checkpoint.json"}, key=lambda n: n.encode()), listed)
+        self.assertEqual(archive.stat().st_size, result["bytes"])
+        self.assertEqual(
+            hashlib.sha256(archive.read_bytes()).hexdigest(), result["outer_sha256"]
+        )
+
+    def test_archive_manifest_carries_no_path_hostname_or_environment_value(self):
+        self.to_post_push()
+        self.archive()
+        manifest = self.manifest_of(self.published())
+        forbidden = {
+            self.dir,
+            self.target,
+            os.path.realpath(self.dir),
+            socket.gethostname(),
+            self.key_home,
+        }
+        forbidden |= {
+            value
+            for name, value in os.environ.items()
+            if name in ("HOME", "USER", "LOGNAME", "TMPDIR", "PWD") and value
+        }
+        strings = []
+
+        def walk(value):
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    strings.append(key)
+                    walk(item)
+            elif isinstance(value, list):
+                for item in value:
+                    walk(item)
+            elif isinstance(value, str):
+                strings.append(value)
+
+        walk(manifest)
+        for text in strings:
+            self.assertFalse(text.startswith("/"), text)
+            for secret in forbidden:
+                if secret:
+                    self.assertNotIn(secret, text)
+        self.assertEqual(
+            os.path.basename(self.target), manifest["run"]["worktree_name"]
+        )
+        self.assertEqual("wildcat-finance/example", manifest["run"]["repository"])
+
+    def test_archive_export_appends_no_ledger_entry_and_reports_timing_stages(self):
+        self.to_post_push()
+        before = self.controller_bytes()
+        raw, result = self.archive()
+        self.assertEqual(before, self.controller_bytes())
+        # The reference has every one of these commands print one canonical
+        # JSON object, which is the form the next steps read back.
+        self.assertEqual(
+            json.dumps(result, sort_keys=True, separators=(",", ":")) + "\n",
+            raw.stdout,
+        )
+        self.assertEqual("", raw.stderr)
+        self.assertEqual(
+            {"export", "identity", "bundle", "proof", "pack", "inspect", "publish"},
+            set(result["timing_ms"]),
+        )
+        for stage, value in result["timing_ms"].items():
+            self.assertIsInstance(value, int, stage)
+            self.assertGreaterEqual(value, 0, stage)
+        self.assertEqual("fiat-checkpoint-archive-export/v1", result["schema"])
+        self.assertEqual(
+            {
+                "schema", "archive", "sidecar", "outer_sha256", "manifest_sha256",
+                "snapshot_id", "bundle_sha256", "entries", "bytes", "boundary",
+                "next", "timing_ms",
+            },
+            set(result),
+        )
+        self.assertEqual("post-push", result["boundary"])
+        self.assertEqual("implement", result["next"]["do"])
+        self.assertRegex(result["snapshot_id"], r"^[0-9a-f]{64}$")
+        manifest = self.manifest_of(self.published())
+        self.assertEqual(
+            {"status": "bound", "snapshot_id": result["snapshot_id"]},
+            manifest["identity"],
+        )
+
+    def test_archive_export_self_check_refuses_manifest_mismatch(self):
+        self.to_post_push()
+        module = hexctl_module()
+        honest = module._checkpoint_archive_manifest
+
+        def drifted(**kwargs):
+            entries = [dict(entry) for entry in kwargs.pop("entries")]
+            entries[0]["sha256"] = "0" * 64
+            return honest(entries=entries, **kwargs)
+
+        code, _, error = self.in_process((("_checkpoint_archive_manifest", drifted),))
+        self.assertEqual(1, code)
+        self.assertEqual("manifest-mismatch\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_archive_bundle_is_built_single_threaded_from_exactly_the_checkpoint_refs(self):
+        self.to_post_push()
+        self.git("tag", "fixture-tag")
+        module = hexctl_module()
+        honest = module.bounded_run
+        seen = []
+
+        def recorded(base_dir, program, argv, **kwargs):
+            if program == "git" and "bundle" in argv:
+                seen.append(list(argv))
+            return honest(base_dir, program, argv, **kwargs)
+
+        code, output, error = self.in_process((("bounded_run", recorded),))
+        self.assertEqual(0, code, error)
+        creation = next(argv for argv in seen if argv[:4] == ["-c", "pack.threads=1", "bundle", "create"])
+        state = self.state()
+        # The bounded ref set is the base, the run branch and every step branch
+        # that has an implement receipt. Step 2 has none, so it is not a head:
+        # "exactly `_checkpoint_refs`" is what this pins, not "every branch".
+        expected = sorted(
+            f"refs/heads/{name}"
+            for name in (state["run_branch"], self.step_branch(1, state))
+        )
+        self.assertEqual(expected, creation[5 : 5 + len(expected)])
+        self.assertEqual([state["base"]], creation[5 + len(expected) :])
+
+        archive = self.published()
+        with zipfile.ZipFile(archive) as container:
+            header = container.read("git/repository.bundle").split(b"\n\n", 1)[0]
+        heads = {}
+        for line in header.decode("utf-8").splitlines()[1:]:
+            value, _, name = line.partition(" ")
+            heads[name] = value
+        self.assertEqual(set(expected), set(heads))
+        self.assertFalse([name for name in heads if name.startswith("refs/tags/")])
+        manifest = self.manifest_of(archive)
+        self.assertEqual(
+            {name.removeprefix("refs/heads/"): value for name, value in heads.items()},
+            {
+                name: value
+                for name, value in manifest["refs"].items()
+                if not re.fullmatch(r"[0-9a-f]{40}", name)
+            },
+        )
+        self.assertIn(state["base"], manifest["refs"])
+        self.assertEqual("sha1", manifest["bundle"]["hash_algorithm"])
+        self.assertTrue(manifest["bundle"]["complete_history"])
+        self.assertEqual(
+            json.loads(output)["bundle_sha256"], manifest["bundle"]["sha256"]
+        )
+
+    def test_archive_signature_proof_requires_good_status_and_exactly_one_trailer_each(self):
+        head = self.to_post_push()
+        self.archive()
+        with zipfile.ZipFile(self.published()) as container:
+            proof = json.loads(container.read("proof/signatures.json"))
+            key = container.read("proof/pubkey.asc")
+        self.assertEqual("fiat-checkpoint-signature-proof/v1", proof["schema"])
+        self.assertEqual([head], [record["sha"] for record in proof["commits"]])
+        record = proof["commits"][0]
+        self.assertEqual("G", record["status"])
+        self.assertEqual("openpgp", record["format"])
+        self.assertEqual(self.fingerprint, record["fingerprint"])
+        self.assertEqual(
+            {"coauthored_by_shoggoth": 1, "wildcat_origin": 1}, record["trailers"]
+        )
+        self.assertTrue(record["github_verified"])
+        self.assertIn(b"BEGIN PGP PUBLIC KEY BLOCK", key)
+        self.assertNotIn(b"PRIVATE", key)
+        manifest = self.manifest_of(self.published())
+        self.assertEqual([self.fingerprint], manifest["signer"]["fingerprints"])
+        self.assertEqual("proof/pubkey.asc", manifest["signer"]["key_path"])
+        self.assertEqual(1, manifest["proof"]["commits"])
+
+        # A second run of the same fixture, this time with the trailer counted
+        # twice. `done push` reads the message through the fake delivery tool
+        # and accepts it; the proof reads the commit itself and does not.
+        self.tearDown()
+        self.setUp()
+        self.to_post_push(
+            message=f"step 1\n\n{COAUTHOR}\n{ORIGIN_TRAILER}\n{ORIGIN_TRAILER}\n"
+        )
+        result, _ = self.archive(expect=1)
+        self.assertEqual("signature-unverified\n", result.stderr)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_signature_unverified_refuses_before_publish_on_a_status_other_than_good(self):
+        """A good signature by a key the keyring does not trust is not a proof.
+
+        Ownertrust is the only thing between Git's `G` and its `U`, and the
+        disposable keyring writes it for exactly the fingerprints the export
+        pinned, so the happy path can never reach this guard: every commit the
+        fixture signs is `G` because the export made it so. Seeding the same
+        keyring without that trust is what an operator meets when the key
+        material travels and the trust does not. Measured on this fixture's
+        key: `git verify-commit` still exits 0 and `%G?` answers `U`, so the
+        status comparison is the only check that can refuse, and it must, with
+        nothing published.
+        """
+        self.to_post_push()
+        module = hexctl_module()
+
+        def untrusted(base_dir, home, key_path, fingerprints):
+            environment = module._checkpoint_archive_keyring_environment(home)
+            if module.bounded_run(
+                base_dir,
+                "gpg",
+                ["--batch", "--quiet", "--no-autostart", "--import", key_path],
+                environment=environment,
+            )[0] != 0:
+                module._checkpoint_archive_refuse("signature-unverified")
+
+        code, _, error = self.in_process(
+            (("_checkpoint_archive_seed_keyring", untrusted),)
+        )
+        self.assertEqual(1, code)
+        self.assertEqual("signature-unverified\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+    def test_signature_unverified_refuses_before_publish_on_an_unpinned_fingerprint(self):
+        """The key that verified must be the key the manifest pins.
+
+        The export reads each commit twice: once against the operator's own
+        keyring, which is where the pinned fingerprint set and the exported
+        public key come from, and once inside the disposable keyring, which is
+        what the proof records. Nothing makes those two answers the same
+        object, so the second is compared against the pinned set. The seam is
+        patched here for the same reason the ref-disagreement and
+        manifest-mismatch cases above are: two keys that both verify one commit
+        cannot be built from outside the process. Status stays `G` and both
+        trailers stay correct, so the fingerprint comparison is the only check
+        that can refuse.
+        """
+        self.to_post_push()
+        module = hexctl_module()
+        honest = module._checkpoint_archive_commit_read
+        self.assertNotEqual(self.fingerprint, UNPINNED_FINGERPRINT)
+
+        def read_as_another_key(base_dir, commit_sha, environment, verifier=None):
+            status, fingerprint, body = honest(base_dir, commit_sha, environment, verifier)
+            if environment is None:
+                # The first pass, which is what pins the fingerprint set.
+                return status, fingerprint, body
+            return status, UNPINNED_FINGERPRINT, body
+
+        code, _, error = self.in_process(
+            (("_checkpoint_archive_commit_read", read_as_another_key),)
+        )
+        self.assertEqual(1, code)
+        self.assertEqual("signature-unverified\n", error)
+        self.assertFalse(sorted(self.store_root().glob("*/*")))
+
+
+class CheckpointArchiveSecretScanTests(unittest.TestCase):
+    """The carried window against the headers the patterns can match.
+
+    `_checkpoint_archive_scan` reads a member in `CHECKPOINT_IO_CHUNK` pieces
+    and carries `CHECKPOINT_ARCHIVE_SECRET_WINDOW` bytes of each into the next
+    search, so a header lying across a chunk boundary is still one string when
+    the patterns run. The window is derived from the headers rather than
+    declared, and this is where that derivation is held: a header longer than
+    the carry is a secret that leaves in an archive, silently, only when it
+    happens to land on a boundary.
+    """
+
+    def scan(self, payload: bytes):
+        """One scan of `payload` as a file, returning the refusal or None."""
+        module = hexctl_module()
+        error = StringIO()
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "member")
+            with open(path, "wb") as handle:
+                handle.write(payload)
+            with redirect_stderr(error):
+                try:
+                    module._checkpoint_archive_scan(path)
+                except SystemExit as stopped:
+                    self.assertEqual(1, stopped.code)
+                    return error.getvalue()
+        return None
+
+    def test_secret_shaped_member_refuses_across_a_chunk_boundary(self):
+        module = hexctl_module()
+        chunk = module.CHECKPOINT_IO_CHUNK
+        patterns = module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS
+        # Read through `getattr` so a tree whose window is still a bare literal
+        # fails here as a stated assertion rather than as an AttributeError.
+        # An error and a failure are different report rows, and only the second
+        # says the guard did its job.
+        headers = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_HEADERS", None)
+        self.assertIsNotNone(
+            headers, "the scan declares no headers, so its window is not derived"
+        )
+        lookahead = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD", None)
+        self.assertIsNotNone(
+            lookahead, "the scan declares no lookahead, so its window is not derived"
+        )
+        footer_reach = getattr(
+            module, "CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", None
+        )
+        self.assertIsNotNone(
+            footer_reach,
+            "the scan declares no footer reach, so its window is not derived",
+        )
+        blocks = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS", ())
+        self.assertEqual(len(patterns), len(headers))
+        # Both terms are load-bearing. The header term brings a header that
+        # straddles the boundary into one search; the reach term keeps it in
+        # the carry while the material the block rule reads lies in the next
+        # chunk. A header further back than the sum has its whole decision
+        # region inside the chunk it starts in, so nothing beyond the sum is
+        # needed and nothing below it is enough.
+        #
+        # The reach term is the footer's and not the body's. The block rule
+        # consults both and the footer is the further, so carrying only the
+        # body's lookahead would drop a header whose footer lies in the next
+        # chunk. Holding the two to one figure was S2-R7-01, and asserting the
+        # sum against the smaller of them would let that return unseen.
+        self.assertGreater(
+            footer_reach,
+            lookahead,
+            "the footer reach has to exceed the body lookahead: a footer sits "
+            "past the whole body, which is the larger distance",
+        )
+        self.assertEqual(
+            max(len(header) for header in headers) + footer_reach,
+            module.CHECKPOINT_ARCHIVE_SECRET_WINDOW,
+        )
+
+        # Each header is the longest run its own pattern can need, and no other
+        # pattern's: a header that two patterns match would hide the loss of
+        # one of them here.
+        for index, header in enumerate(headers):
+            with self.subTest(header=header):
+                matched = [i for i, p in enumerate(patterns) if p.search(header)]
+                self.assertEqual([index], matched, header)
+
+        # `#` is outside the base64 alphabet and the lines are short, so the
+        # filler supplies no body line of its own. Filling with base64 would
+        # hand every planted header the material the block rule looks for, and
+        # the test would pass against a scan that never read a block at all.
+        body = ARMOURED_BODY_LINE.encode("utf-8")
+        filler = (b"#" * 63 + b"\n") * (chunk // 64)
+        self.assertEqual(chunk, len(filler))
+        for pattern, header in zip(patterns, headers):
+            specimen = header if pattern not in blocks else header + b"\n" + body + b"\n"
+            for split in (1, len(specimen) // 2, len(specimen) - 1):
+                # `split` bytes of the specimen sit in the first chunk and the
+                # rest in the second, so the whole spread is walked, ending at
+                # the worst case the window has to cover.
+                start = chunk - split
+                payload = bytearray(filler + filler)
+                payload[start : start + len(specimen)] = specimen
+                with self.subTest(header=header, bytes_before_the_boundary=split):
+                    self.assertEqual(
+                        "secret-shaped-member\n", self.scan(bytes(payload))
+                    )
+
+        # The placement the window's lookahead term exists for: the header sits
+        # as far back as it can while its material still lands past the
+        # boundary, which puts its first byte exactly one inside the carry.
+        pad = b"#" * (lookahead - 2) + b"\n"
+        for pattern, header in zip(patterns, headers):
+            if pattern not in blocks:
+                continue
+            specimen = header + pad + body + b"\n"
+            start = chunk - lookahead + 1 - len(header)
+            payload = bytearray(filler + filler)
+            payload[start : start + len(specimen)] = specimen
+            with self.subTest(header=header, placement="material past the boundary"):
+                self.assertEqual("secret-shaped-member\n", self.scan(bytes(payload)))
+
+    def test_secret_shaped_member_refuses_before_publish_on_a_crlf_key_in_json(self):
+        """S2-R4-02: a CRLF key held as a JSON string value used to publish.
+
+        The escaped-newline delimiter closed the line-feed half of S2-R3-01
+        and not the other half. `json.dumps` writes a CRLF line ending as the
+        four characters `\\`, `r`, `\\`, `n`; the body witness ended a line
+        with a carriage-return byte, so it stopped one escape short of the
+        line feed behind it and found no body line at all. Past the lookahead
+        there is no footer either, and the member left in the archive.
+
+        The first 2026-09-10 study amendment puts the carriage return in
+        the delimiter set in both forms. The key is real and the geometry is
+        asserted rather than assumed, so a key size or a lookahead that moves
+        fails here instead of leaving a guard that tests nothing.
+        """
+        module = hexctl_module()
+        lookahead = module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+        pem, modulus, public, private = rsa_private_key_pem()
+        probe = 0xC0FFEE
+        self.assertEqual(3072, modulus.bit_length())
+        self.assertEqual(probe, pow(pow(probe, public, modulus), private, modulus))
+
+        header = b"-----BEGIN RSA PRIVATE KEY-----"
+        footer = b"-----END RSA PRIVATE KEY-----"
+        crlf = pem.replace("\n", "\r\n")
+        carried = (
+            ("state.json value", json.dumps({"deploy_key": crlf})),
+            ("ledger.jsonl line", json.dumps({"seq": 1, "deploy_key": crlf}) + "\n"),
+        )
+        for name, member in carried:
+            payload = member.encode("utf-8")
+            with self.subTest(member=name):
+                opened = payload.index(header) + len(header)
+                self.assertIn(b"\\r\\n", payload)
+                self.assertGreater(payload.index(footer) - opened, lookahead)
+                self.assertNotIn(b"\n", payload[opened : payload.index(footer)])
+                # Since S2-R7-01 the footer reach covers this key, so the
+                # refusal alone no longer shows the carriage return was read.
+                # Assert the body witness fired, which is the half this guard
+                # is for.
+                self.assertTrue(
+                    module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(payload),
+                    "the body witness found no line, so a refusal here would "
+                    "be the footer's and this guard would test nothing",
+                )
+                self.assertEqual("secret-shaped-member\n", self.scan(payload))
+
+        # The three forms that refused before the amendment, so what landed is
+        # a widening and not a swap.
+        for name, text in (
+            ("raw line feed", pem),
+            ("raw CRLF", crlf),
+            ("escaped line feed", json.dumps({"deploy_key": pem})),
+        ):
+            with self.subTest(member=name):
+                self.assertEqual(
+                    "secret-shaped-member\n", self.scan(text.encode("utf-8"))
+                )
+
+    def test_secret_shaped_member_refuses_before_publish_on_a_numeric_escaped_key_in_json(
+        self,
+    ):
+        """S2-R6-01: a key whose line feeds are written `\\u000a` used to publish.
+
+        JSON spells a line feed inside a string value three ways: the
+        two-character escape, and the six-character numeric escape with its
+        hex digits in either case. `json.loads` returns the identical key from
+        each, and the body witness read only the first, so past the lookahead
+        a key written with the numeric escape had neither a body line nor a
+        footer in view and left in the archive. The second 2026-09-10 study
+        amendment puts the numeric escapes in the delimiter set, `\\u000a` for
+        the line feed and `\\u000d` before it for the carriage return, in
+        either letter case.
+
+        The key is real and the geometry is asserted: every member here parses
+        back to the key it encodes, carries no newline byte and no
+        two-character escape inside its body, and has its footer past the
+        lookahead, so the refusal can only come from the numeric escape being
+        read as a delimiter.
+        """
+        module = hexctl_module()
+        lookahead = module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+        pem, modulus, public, private = rsa_private_key_pem()
+        probe = 0xC0FFEE
+        self.assertEqual(3072, modulus.bit_length())
+        self.assertEqual(probe, pow(pow(probe, public, modulus), private, modulus))
+
+        header = b"-----BEGIN RSA PRIVATE KEY-----"
+        footer = b"-----END RSA PRIVATE KEY-----"
+        for name, escape, ending in (
+            ("line feed, lower case", "\\u000a", "\n"),
+            ("line feed, upper case", "\\u000A", "\n"),
+            ("CRLF, lower case", "\\u000d\\u000a", "\r\n"),
+            ("CRLF, upper case", "\\u000D\\u000A", "\r\n"),
+        ):
+            member = '{"deploy_key": "' + pem.replace("\n", escape) + '"}'
+            payload = member.encode("utf-8")
+            with self.subTest(member=name):
+                self.assertEqual(
+                    pem.replace("\n", ending), json.loads(member)["deploy_key"]
+                )
+                opened = payload.index(header) + len(header)
+                body = payload[opened : payload.index(footer)]
+                self.assertGreater(len(body), lookahead)
+                self.assertNotIn(b"\n", body)
+                self.assertNotIn(b"\\n", body)
+                # The refusal has to come from the numeric escape being read
+                # as a delimiter, and since S2-R7-01 the footer reach covers
+                # this key too, so the scan alone no longer says which witness
+                # fired. Assert the body witness directly.
+                self.assertTrue(
+                    module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(payload),
+                    "the body witness found no line, so a refusal here would "
+                    "be the footer's and this guard would test nothing",
+                )
+                self.assertEqual("secret-shaped-member\n", self.scan(payload))
+
+        # The guard below takes a body with no line delimiter at all. Before
+        # S2-R7-01 that member published and the guard was an expected
+        # failure; the footer reach now covers it and it refuses. The geometry
+        # that made it an escape, a body past the block lookahead with nothing
+        # in it for the witness to read, is still proved here on the same
+        # seeded key, because that is what makes the refusal the footer's.
+        stripped = ('{"deploy_key": "' + pem.replace("\n", "") + '"}').encode("utf-8")
+        opened = stripped.index(header) + len(header)
+        body = stripped[opened : stripped.index(footer)]
+        self.assertGreater(len(body), lookahead)
+        self.assertIsNone(re.search(rb"[^A-Za-z0-9+/=]", body))
+
+    def test_secret_shaped_member_refuses_before_publish_on_a_body_the_witness_cannot_read(
+        self,
+    ):
+        """S2-R7-01: a body with no delimiter the witness can see still refuses.
+
+        Two members carry no line delimiter in any form the body witness
+        reads: a key whose line breaks were stripped rather than encoded, and
+        one whose lines end in a carriage return alone, raw or in either
+        escape, because the carriage return is only ever a prefix to a line
+        feed. Both used to publish once the footer was past the lookahead, and
+        the second 2026-09-10 study amendment stated them as residue.
+
+        They are residue no longer, and not because the witness was widened
+        again. The block rule always had a second witness, the footer, and it
+        was simply out of range: one constant served both reaches at 1,792
+        bytes while these footers sit 2,356 to 2,812 past the header at 3,072
+        bits. With the footer reach separated and sized to the largest key the
+        scan undertakes to catch, every one of them refuses on the footer.
+
+        So this asserts the refusal and the reason for it: the body witness
+        finds nothing, which is what made these members escape, and the member
+        refuses anyway.
+        """
+        module = hexctl_module()
+        # Read through `getattr`, as the chunk-boundary guard does: on a tree
+        # that still has one reach the attribute is absent, and an
+        # AttributeError is an error row where only a failure row says the
+        # guard did its job. Elenchus reads a mixed report as inconclusive.
+        footer_reach = getattr(
+            module, "CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", None
+        )
+        self.assertIsNotNone(
+            footer_reach, "the scan declares no footer reach apart from the lookahead"
+        )
+        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
+        self.assertIsNotNone(
+            largest_key, "the scan declares no largest key for the footer reach"
+        )
+        header = b"-----BEGIN RSA PRIVATE KEY-----"
+        footer = b"-----END RSA PRIVATE KEY-----"
+        pem, modulus, public, private = rsa_private_key_pem()
+        probe = 0xC0FFEE
+        self.assertEqual(3072, modulus.bit_length())
+        self.assertEqual(probe, pow(pow(probe, public, modulus), private, modulus))
+
+        for name, ending in (
+            ("stripped", ""),
+            ("carriage return, raw", "\r"),
+            ("carriage return, two-character escape", "\\r"),
+            ("carriage return, numeric escape", "\\u000d"),
+        ):
+            member = '{"deploy_key": "' + pem.replace("\n", ending) + '"}'
+            payload = member.encode("utf-8")
+            with self.subTest(member=name):
+                opened = payload.index(header) + len(header)
+                body = payload[opened : payload.index(footer)]
+                # Past the block lookahead, so the body witness is the only
+                # one the old single-reach constant left in play.
+                self.assertGreater(
+                    len(body), module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+                )
+                self.assertIsNone(
+                    module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(payload),
+                    "the body witness read a line here, so this member is not "
+                    "the delimiter-free case this guard is for",
+                )
+                # And within the footer reach, which is what now refuses it.
+                self.assertLess(len(body), footer_reach)
+                self.assertEqual("secret-shaped-member\n", self.scan(payload))
+
+        # The geometry twin the residue guard below stands on, held against
+        # the real key here, where a failed precondition is a failure and not
+        # something the expected-failure decorator swallows: the same line
+        # count, and at most four bytes longer.
+        twin = rsa_shaped_pem(3072)
+        self.assertEqual(pem.count("\n"), twin.count("\n"))
+        self.assertIn(len(twin) - len(pem), range(0, 5))
+
+        # The declared largest key is in reach in every spelling a JSON string
+        # value can give its line breaks, including none, so the constant
+        # covers what its name says. Twelve bytes of numeric escape per line
+        # is the longest spelling and the last member here.
+        largest = rsa_shaped_pem(largest_key)
+        for name, ending in LINE_BREAK_SPELLINGS:
+            payload = ('{"deploy_key": "' + largest.replace("\n", ending) + '"}').encode(
+                "utf-8"
+            )
+            with self.subTest(member=f"declared largest key, {name}"):
+                opened = payload.index(header) + len(header)
+                self.assertLess(payload.index(footer) - opened, footer_reach)
+                self.assertEqual("secret-shaped-member\n", self.scan(payload))
+
+        # And the residue's geometry, proved here for the guard below: at
+        # twice the declared size a stripped body puts the footer past the
+        # reach by far more than the twin's four-byte tolerance, with nothing
+        # in it for the body witness to read.
+        beyond = rsa_shaped_pem(2 * largest_key)
+        stripped = ('{"deploy_key": "' + beyond.replace("\n", "") + '"}').encode("utf-8")
+        opened = stripped.index(header) + len(header)
+        body = stripped[opened : stripped.index(footer)]
+        self.assertGreater(len(body), footer_reach + 2048)
+        self.assertIsNone(module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(stripped))
+
+    @unittest.expectedFailure
+    def test_secret_shaped_member_refuses_before_publish_on_a_key_past_the_declared_largest(
+        self,
+    ):
+        """The residue the third 2026-09-10 study amendment states, as the
+        refusal the scan does not make.
+
+        A key whose modulus exceeds `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY`,
+        with its line breaks stripped, carries no delimiter the body witness
+        can see and has its footer past the footer reach, so nothing is in
+        view and the member publishes. This test asserts the refusal and is
+        marked as the expected failure it is: `unittest` reports it apart from
+        the tests that ran, the Exit's floor excludes an expected failure by
+        name, and the day the residue closes it becomes an unexpected success,
+        which `run_tests.py` counts as a failed run, so closing the residue is
+        a dated amendment that edits this test rather than a quiet edit.
+
+        The key is the geometry twin from `rsa_shaped_pem` at twice the
+        declared size, because a real key of 16,384 bits takes minutes to
+        search for here. The decorator swallows a failed precondition, so the
+        twin's fidelity to the seeded real key and this member's geometry are
+        proved by the S2-R7-01 guard above and not re-asserted here.
+        """
+        module = hexctl_module()
+        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
+        self.assertIsNotNone(largest_key, "the scan declares no largest key")
+        beyond = rsa_shaped_pem(2 * largest_key)
+        stripped = '{"deploy_key": "' + beyond.replace("\n", "") + '"}'
+        self.assertEqual("secret-shaped-member\n", self.scan(stripped.encode("utf-8")))
+
+    def test_secret_scan_passes_a_member_that_carries_no_header(self):
+        module = hexctl_module()
+        chunk = module.CHECKPOINT_IO_CHUNK
+        clean = (
+            b"a" * chunk
+            + b"-----BEGIN PGP PUBLIC KEY BLOCK-----\n-----BEGIN CERTIFICATE-----\n"
+            + b"a" * chunk
+        )
+        self.assertIsNone(self.scan(clean))
+        # A header with prose after it rather than material. Both armour forms
+        # are named, because the block rule has to reach each of them.
+        for header in (SUBSUMED_PATTERN_SPAN, ADDED_PATTERN_SPAN):
+            with self.subTest(header=header):
+                named = f"the scan names `{header}` and nothing follows it.\n"
+                self.assertIsNone(self.scan(named.encode("utf-8")))
+        # The footer witness is the marker matching the header that opened the
+        # block, not any `-----END`. A document quoting a header near an
+        # unrelated end marker is still prose.
+        mismatched = (
+            SUBSUMED_PATTERN_SPAN
+            + "\nquoted in prose\n-----END PGP PUBLIC KEY BLOCK-----\n"
+        )
+        self.assertIsNone(self.scan(mismatched.encode("utf-8")))
+
+    def test_secret_scan_passes_the_run_s_own_specification_documents(self):
+        """The scan does not read a document's own pattern list as a key.
+
+        `checkpoint archive` snapshots every controller file into the capsule
+        and scans each one, so a run whose study quotes an armour header could
+        not archive itself. That was S2-R2-02, and steps 4 and 5 export this run
+        for real. Each document is read as it stands rather than as a fixture
+        copy, so the guard keeps holding as it grows.
+        """
+        checked = [STUDY, REFERENCE]
+        run_study = ROOT / ".hexaemeron" / "study.md"
+        if run_study.exists():
+            # Untracked run state: present in a Fiat run worktree, absent in a
+            # clean checkout, and byte-equal to `STUDY` by this step's binding.
+            checked.append(run_study)
+        for path in checked:
+            with self.subTest(document=path.name):
+                text = read(path)
+                self.assertTrue(
+                    SUBSUMED_PATTERN_SPAN in text or ADDED_PATTERN_SPAN in text,
+                    f"{path.name} names no armour header, so it guards nothing",
+                )
+                self.assertIsNone(self.scan(path.read_bytes()))
 
 
 if __name__ == "__main__":

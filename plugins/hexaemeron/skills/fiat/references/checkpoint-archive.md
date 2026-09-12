@@ -75,9 +75,11 @@ acceptance/prior/<n>.json            prior acceptance receipts when any exist
 
 No `acceptance/current` entry is ever written. The bundle is built by
 `git -c pack.threads=1 bundle create` from exactly the controller's bounded ref
-set with `--no-tags`; default threading produced two different bundles from one
-state, single threading produced one digest four times. `checkpoint.json` is
-written last, after every other member's digest is known.
+set. No `--no-tags` argument is passed: bundle creation has no such option, and
+the explicit ref list already excludes tags. Default threading produced two
+different bundles from one state, single threading produced one digest four
+times. `checkpoint.json` is written last, after every other member's digest is
+known.
 
 ## Content manifest
 
@@ -187,11 +189,38 @@ also inherits every inspector class because it runs the inspector first.
 ## Secret patterns
 
 Export scans every outer member and, inside the capsule, `state.json`,
-`ledger.jsonl` and every opaque controller file for six patterns. A hit
-refuses with `secret-shaped-member`; nothing is redacted in place.
+`ledger.jsonl` and every opaque controller file for six patterns. A hit refuses
+with `secret-shaped-member`; nothing is redacted in place.
 
-- A PEM private-key block.
-- The OpenSSH private-key header, `-----BEGIN OPENSSH PRIVATE KEY-----`.
+The two armour forms refuse as blocks. A header is secret-shaped only when key
+material follows it within the scanned window: one whole line of base64 body, or
+the `-----END` marker matching that header. The two witnesses have their own
+reaches: the body has to start within the block lookahead of 1,792 bytes, which
+the armour allowance bounds, and the footer has until the footer reach of 9,984
+bytes, the block lookahead plus the largest key the scan undertakes to reach,
+declared at 8,192 bits. A line ends at a newline character or at the
+two-character escape `\n` that carries one inside a JSON string value, so a key
+held as a JSON string value in `state.json` or on one `ledger.jsonl` line
+carries body lines like any other. The delimiter set is the line feed as a byte,
+as the two-character escape, or as the six-character numeric escape, each
+optionally preceded by a carriage return in the matching form. The numeric
+escapes are `\u000a` for the line feed and `\u000d` before it for the carriage
+return, in either letter case, so a CRLF key refuses raw, escaped and
+numerically escaped alike. A body carrying no line delimiter in any form the
+witness can see, such as a key whose line breaks were stripped rather than
+encoded, refuses on its footer at every size below the declared one. What the
+scan does not reach is a key whose modulus exceeds that declared size, and the
+study states it as residue rather than implying the class is shut. A file naming
+a header in prose or quoting one in a code span supplies neither, so a run can
+archive its own specification text. A key whose footer was truncated still
+carries body lines and still refuses. The four token patterns are
+self-delimiting and refuse on the match alone. The scan reads in bounded chunks
+and carries between them the longest header the six can match plus the footer
+reach, so a block lying across a chunk boundary still refuses; the carry is
+derived from the patterns rather than fixed.
+
+- A PEM private-key block, whose armour label also matches the OpenSSH header.
+- The OpenPGP private-key block, opened by `-----BEGIN PGP PRIVATE KEY BLOCK-----`.
 - `ghp_[A-Za-z0-9]{36}`.
 - `github_pat_[A-Za-z0-9_]{22,}`.
 - `AKIA[0-9A-Z]{16}`.
