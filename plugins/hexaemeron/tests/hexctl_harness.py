@@ -578,6 +578,26 @@ if mode == "invalid-json":
     print("not json")
     raise SystemExit(0)
 path = args[-1]
+search = re.match(r"search/issues\\?q=(?P<query>[^&]*)", path)
+if search:
+    # The framework-N uniqueness read. Empty by default, so a case that is not
+    # about uniqueness keeps its fixture title without inheriting a collision.
+    holders = json.loads(os.environ.get("FAKE_GH_FRAMEWORK_HOLDERS", "[]"))
+    if mode == "search-incomplete":
+        print(json.dumps({"incomplete_results": True, "items": holders}))
+        raise SystemExit(0)
+    if mode == "search-items-not-array":
+        print(json.dumps({"incomplete_results": False, "items": {}}))
+        raise SystemExit(0)
+    if mode == "search-row-not-object":
+        print(json.dumps({"incomplete_results": False, "items": ["not an object"]}))
+        raise SystemExit(0)
+    if mode == "search-row-untyped":
+        print(json.dumps({"incomplete_results": False,
+                          "items": [{"title": 17, "number": "x"}]}))
+        raise SystemExit(0)
+    print(json.dumps({"incomplete_results": False, "items": holders}))
+    raise SystemExit(0)
 if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
     print(json.dumps({"full_name": repository}))

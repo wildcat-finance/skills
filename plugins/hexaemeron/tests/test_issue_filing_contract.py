@@ -818,5 +818,166 @@ class IntegrationTriageGateTests(HexctlCase):
         self.run_ctl("verify")
 
 
+class FrameworkNumberUniquenessTests(HexctlCase):
+    """`framework-N` has to resolve to one issue.
+
+    ADR-009 left who assigns `N` to #370, which closed without answering it.
+    The number is how this repository cites these issues in prose and it is far
+    from the issue number, so two issues holding one number make the citation
+    ambiguous rather than merely untidy.
+    """
+
+    OPENING = (
+        "Protasis decides which skill or skills this observation upgrades. "
+        "The filer is the wrong party to guess."
+    )
+
+    def setUp(self):
+        super().setUp()
+        subprocess.run(
+            ["git", "remote", "add", "origin",
+             "https://github.com/wildcat-finance/skills.git"],
+            cwd=self.dir, check=True, capture_output=True,
+        )
+
+    def framework_body(self):
+        return (
+            f"{self.OPENING}\n\nAn observation.\n\nFiat-Required: 0\n\n"
+            "```carryover\nnone | none | nothing is carried\n```\n"
+        )
+
+    def holders(self, *rows):
+        self.env["FAKE_GH_FRAMEWORK_HOLDERS"] = json.dumps(list(rows))
+
+    def candidate_check(self, title, expect=0):
+        self.write("candidate.md", self.framework_body())
+        return self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", title, "--label", "observation", expect=expect,
+        )
+
+    def test_a_free_number_is_clean(self):
+        self.holders()
+        proc = self.candidate_check("framework-161: a number nobody holds")
+        self.assertIn("candidate.md: clean", proc.stdout)
+        self.assertIn("queue: framework-N", proc.stdout)
+
+    def test_a_held_number_refuses_and_names_the_holder(self):
+        self.holders({"number": 1437, "state": "open",
+                      "title": "framework-108: the first claim"})
+        proc = self.candidate_check(
+            "framework-108: a second claim on one number", expect=1,
+        )
+        self.assertIn("claims framework-108", proc.stderr)
+        self.assertIn("#1437 (open) already holds", proc.stderr)
+        self.assertIn("1 finding(s)", proc.stderr)
+
+    def test_two_holders_are_both_named_and_agree_in_number(self):
+        self.holders(
+            {"number": 1437, "state": "open", "title": "framework-108: one"},
+            {"number": 1531, "state": "open", "title": "framework-108: two"},
+        )
+        proc = self.candidate_check("framework-108: a third claim", expect=1)
+        self.assertIn("#1437 (open), #1531 (open) already hold", proc.stderr)
+
+    def test_a_closed_holder_still_holds_the_number(self):
+        """Closing an issue does not free the shorthand the tree cites."""
+        self.holders({"number": 962, "state": "closed",
+                      "title": "framework-65: closed but cited"})
+        proc = self.candidate_check("framework-65: reusing a closed number",
+                                    expect=1)
+        self.assertIn("#962 (closed) already holds", proc.stderr)
+
+    def test_a_longer_number_sharing_a_prefix_is_not_a_duplicate(self):
+        """`in:title` tokenises, so the search returns neighbours; the exact
+        parsed number decides, not the substring."""
+        self.holders(
+            {"number": 900, "state": "open", "title": "framework-11: eleven"},
+            {"number": 901, "state": "open", "title": "framework-1100: many"},
+        )
+        proc = self.candidate_check("framework-110: one hundred and ten")
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_a_filed_issue_is_not_its_own_duplicate(self):
+        url = "https://github.com/wildcat-finance/skills/issues/1476"
+        self.env["FAKE_GH_ISSUES"] = json.dumps({url: {
+            "title": "framework-151: nothing allocates the number",
+            "labels": [{"name": "observation"}],
+            "body": self.framework_body(),
+        }})
+        self.holders({"number": 1476, "state": "open",
+                      "title": "framework-151: nothing allocates the number"})
+        proc = self.run_ctl("issue-check", "--issue", url)
+        self.assertIn("#1476: clean", proc.stdout)
+
+    def test_a_filed_issue_colliding_with_another_refuses(self):
+        url = "https://github.com/wildcat-finance/skills/issues/1531"
+        self.env["FAKE_GH_ISSUES"] = json.dumps({url: {
+            "title": "framework-108: the second claim",
+            "labels": [{"name": "observation"}],
+            "body": self.framework_body(),
+        }})
+        self.holders(
+            {"number": 1437, "state": "open", "title": "framework-108: first"},
+            {"number": 1531, "state": "open", "title": "framework-108: second"},
+        )
+        proc = self.run_ctl("issue-check", "--issue", url, expect=1)
+        # The issue under check names itself as the subject of the refusal; the
+        # holder list after `which` is where its own number must not appear.
+        held = proc.stderr.split("which ", 1)[1].split(" already hold", 1)[0]
+        self.assertEqual("#1437 (open)", held)
+
+    def test_a_skill_queue_title_asks_no_uniqueness_question(self):
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        self.write("candidate.md", body("Fiat-Required: 0"))
+        proc = self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", CANDIDATE_TITLE,
+        )
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_another_repository_asks_no_uniqueness_question(self):
+        subprocess.run(
+            ["git", "remote", "set-url", "origin",
+             "https://github.com/wildcat-finance/example.git"],
+            cwd=self.dir, check=True, capture_output=True,
+        )
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        self.write("candidate.md", self.framework_body())
+        proc = self.run_ctl("issue-check", "--body", "candidate.md")
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_a_shape_fault_is_reported_before_any_uniqueness_read(self):
+        """An ill-formed title carries no number to be unique about."""
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        self.write("candidate.md", "Neither answer.\n")
+        proc = self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", "framework-0: a number the shape rule rejects",
+            "--label", "observation", expect=1,
+        )
+        self.assertIn("title is not one of", proc.stderr)
+        self.assertNotIn("already holds", proc.stderr)
+
+    def test_an_incomplete_search_refuses_rather_than_reading_clean(self):
+        self.env["FAKE_GH_MODE"] = "search-incomplete"
+        proc = self.candidate_check("framework-161: a number nobody holds",
+                                    expect=2)
+        self.assertIn("incomplete search result", proc.stderr)
+
+    def test_a_malformed_search_payload_refuses(self):
+        for mode, detail in (
+            ("search-items-not-array", "items that are not an array"),
+            ("search-row-not-object", "not one object"),
+            ("search-row-untyped", "without a title and number"),
+        ):
+            with self.subTest(mode=mode):
+                self.env["FAKE_GH_MODE"] = mode
+                proc = self.candidate_check(
+                    "framework-161: a number nobody holds", expect=2,
+                )
+                self.assertIn(detail, proc.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
