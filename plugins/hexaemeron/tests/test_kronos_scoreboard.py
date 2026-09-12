@@ -740,11 +740,15 @@ class ScoreboardTest(unittest.TestCase):
                 if refused is not None:
                     self.assertEqual(refused.code, "K022")
 
-    def test_no_governed_ledger_declares_anything_today(self):
+    def test_governed_ledgers_parse_their_optional_declarations(self):
         for path in governed_ledgers():
             with self.subTest(ledger=str(path.relative_to(REPO))):
                 text = path.read_text(encoding="utf-8")
-                self.assertIsNone(kronos.declaration(text, path.name))
+                declaration = kronos.declaration(text, path.name)
+                if "```declared-inputs\n" in text:
+                    self.assertIsNotNone(declaration)
+                else:
+                    self.assertIsNone(declaration)
 
     def test_show_marks_a_declaration_that_moved_under_an_unchanged_held_job(self):
         text = self.declare("ledger-with-declaration.md")

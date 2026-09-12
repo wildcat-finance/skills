@@ -18,7 +18,7 @@ from .hexvalue import (
 )
 from .rlp import encode, encode_uint
 from .schemas import validate_document
-from .trieproof import trie_root
+from .trieproof import EMPTY_TRIE_ROOT, trie_root
 
 
 # Every typed receipt since EIP-2718 shares one payload,
@@ -94,8 +94,6 @@ def receipt_trie_root(receipts: list[dict[str, Any]]) -> bytes:
 
     if not isinstance(receipts, list):
         raise FormatError("receipt set must be an array")
-    if not receipts:
-        raise FormatError("receipt set must not be empty")
     if len(receipts) > MAX_RECEIPTS:
         raise ResourceLimitError(f"receipt count exceeds {MAX_RECEIPTS}")
     items: list[tuple[bytes, bytes]] = []
@@ -123,11 +121,12 @@ def verify_receipt_relation(
     plan: dict[str, Any],
     rpc_records: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Verify the two receipt-root relations and recorded RPC consistency.
+    """Verify empty or scoped receipt-root evidence and RPC consistency.
 
     ``receiptsRoot`` commits consensus receipt bytes at trie indices. Transaction
     hashes and every other JSON-RPC decoration are checked only for agreement
-    among recorded sources and never enter the returned proved relation.
+    among recorded sources and never enter a returned proved relation. The
+    empty shape returns no proved relation.
     """
 
     witness = validate_document("receipt-witness", witness)
@@ -157,6 +156,37 @@ def verify_receipt_relation(
         raise IntegrityError("reconstructed receipt trie root mismatch")
 
     relation = plan["receipt_witness"]
+    # adr/empty-receipt-witness-shapes keeps the discriminator in the two
+    # closed document shapes, so semantic verification must join them here.
+    empty_plan = set(relation) == {"block_receipts_request"}
+    empty_witness = not receipts
+    if empty_plan != empty_witness:
+        raise IntegrityError("receipt plan and witness shapes disagree")
+
+    records = _records_by_name(rpc_records)
+    block_record = _named_result(records, relation["block_receipts_request"])
+    if not isinstance(block_record, list):
+        raise IntegrityError("recorded block receipts result is not an array")
+    block_request = _planned_request(plan, relation["block_receipts_request"])
+    if block_request["params"] != [header_report["hash"]]:
+        raise IntegrityError("recorded block receipts request names another block")
+
+    if empty_witness:
+        if computed_root != EMPTY_TRIE_ROOT:
+            raise IntegrityError("empty receipt witness has a non-empty trie root")
+        if block_record:
+            raise IntegrityError("recorded block receipts disagree with empty witness")
+        return {
+            "block_hash": header_report["hash"],
+            "block_number": header_report["number"],
+            "mode": "empty",
+            "expected_root": encode_hex(expected_root),
+            "computed_root": encode_hex(computed_root),
+            "receipt_count": 0,
+            "log_count": 0,
+            "relations": 0,
+        }
+
     target_index = quantity(
         relation["target_transaction_index"], label="plan target transaction index"
     )
@@ -169,20 +199,13 @@ def verify_receipt_relation(
     if target_index >= len(receipts):
         raise IntegrityError("target receipt is absent from the proved receipt set")
 
-    records = _records_by_name(rpc_records)
-    block_record = _named_result(records, relation["block_receipts_request"])
     target_record = _named_result(records, relation["target_receipt_lookup_request"])
     filtered_record = _named_result(records, relation["filtered_logs_request"])
-    if not isinstance(block_record, list):
-        raise IntegrityError("recorded block receipts result is not an array")
     if not isinstance(target_record, dict):
         raise IntegrityError("recorded target receipt result is not an object")
     if not isinstance(filtered_record, list):
         raise IntegrityError("recorded filtered logs result is not an array")
 
-    block_request = _planned_request(plan, relation["block_receipts_request"])
-    if block_request["params"] != [header_report["hash"]]:
-        raise IntegrityError("recorded block receipts request names another block")
     target_request = _planned_request(plan, relation["target_receipt_lookup_request"])
     filtered_request = _planned_request(plan, relation["filtered_logs_request"])
     if filtered_request["params"] != [witness["filtered_logs"]["filter"]]:
@@ -244,6 +267,7 @@ def verify_receipt_relation(
     return {
         "block_hash": header_report["hash"],
         "block_number": header_report["number"],
+        "mode": "scoped",
         "expected_root": encode_hex(expected_root),
         "computed_root": encode_hex(computed_root),
         "receipt_count": len(receipts),

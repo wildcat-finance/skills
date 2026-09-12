@@ -26,7 +26,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
       "id": "input",
       "class": "fixture",
       "path": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
-      "sha256": "7f8faad5306ae5c167c5a6f354a021a12b110b73706dcd9106a2fafbd7a1675a"
+      "sha256": "e314124f4539ce9720caff6b3dc7787e15a1b720a1133a043a43b042647b9119"
     }
   ],
   "commands": [

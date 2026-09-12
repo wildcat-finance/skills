@@ -1,0 +1,90 @@
+{
+  "cohort": {
+    "id": "cohort:74c591e1f010868b",
+    "included": 41,
+    "members": [
+      "find:pandects-audit-synopsis:S1-R1-01",
+      "find:pandects-audit-synopsis:S1-R1-02",
+      "find:pandects-audit-synopsis:S1-R1-03",
+      "find:pandects-audit-synopsis:S1-R1-04",
+      "find:pandects-audit-synopsis:S1-R2-01",
+      "find:pandects-audit-synopsis:S1-R2-02",
+      "find:pandects-audit-synopsis:S1-R3-01",
+      "find:pandects-audit-synopsis:S2-R1-01",
+      "find:pandects-audit-synopsis:S2-R1-02",
+      "find:pandects-audit-synopsis:S2-R1-03",
+      "find:pandects-audit-synopsis:S2-R2-01",
+      "find:pandects-audit-synopsis:S2-R2-02",
+      "find:pandects-audit-synopsis:S2-R2-03",
+      "find:pandects-audit-synopsis:S2-R2-04",
+      "find:pandects-audit-synopsis:S3-R1-01",
+      "find:pandects-audit-synopsis:S3-R1-02",
+      "find:pandects-audit-synopsis:S3-R1-03",
+      "find:pandects-audit-synopsis:S3-R1-04",
+      "find:pandects-audit-synopsis:S3-R2-01",
+      "find:pandects-audit-synopsis:S3-R2-02",
+      "find:pandects-audit-synopsis:S4-R1-01",
+      "find:pandects-audit-synopsis:S4-R1-02",
+      "find:pandects-audit-synopsis:S4-R1-03",
+      "find:pandects-audit-synopsis:S4-R2-01",
+      "find:pandects-audit-synopsis:S4-R2-02",
+      "find:pandects-audit-synopsis:S5-R1-01",
+      "find:pandects-audit-synopsis:S5-R1-02",
+      "find:pandects-audit-synopsis:S5-R2-01",
+      "find:pandects-audit-synopsis:S5-R2-02",
+      "find:tabularium-audit-synopsis:E1-R1-01",
+      "find:tabularium-audit-synopsis:E1-R1-02",
+      "find:tabularium-audit-synopsis:E1-R1-03",
+      "find:tabularium-audit-synopsis:E1-R2-01",
+      "find:tabularium-audit-synopsis:E1-R3-01",
+      "find:tabularium-audit-synopsis:E1-R3-02",
+      "find:tabularium-audit-synopsis:E1-R4-01",
+      "find:tabularium-audit-synopsis:S2-R1-01",
+      "find:tabularium-audit-synopsis:S3-R1-01",
+      "find:tabularium-audit-synopsis:S3-R2-01",
+      "find:tabularium-audit-synopsis:S3-R2-02",
+      "find:tabularium-audit-synopsis:S4-R1-01"
+    ]
+  },
+  "denominators": {
+    "engagements": 3,
+    "findings": 41,
+    "findings_withheld_by_disclosure": 0,
+    "occurrences": 41,
+    "relations": 142,
+    "remediations": 19,
+    "rounds": 31,
+    "rounds_with_no_findings": 12,
+    "submissions": 41,
+    "verifications": 31
+  },
+  "exclusions": [],
+  "not_established": "Every count here is a count of the records this release holds. It does not establish how common anything is outside them, that the corpus is complete, or that an excluded record was rightly excluded.",
+  "policy": {
+    "cohort_rule": "every public finding in the release",
+    "curation_version": "synopsis-2026-09-08",
+    "taxonomy": "warden-severity 1"
+  },
+  "producer": "anamnesis-synkrisis-observation/v1",
+  "release_id": "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39",
+  "schema": "anamnesis-synkrisis-observation/v1",
+  "scope": {
+    "id": "warden-synopsis-rendering",
+    "preserves": "The same three audit records the pilot preserves, for Hexaemeron, Pandects and Tabularium, rendered as fiat-audit-synopsis/v1: a second format over the pilot's findings, and not a second producer of them.",
+    "records": {
+      "maximum": 50,
+      "minimum": 25
+    },
+    "sources": [
+      "hexaemeron-audit-synopsis",
+      "pandects-audit-synopsis",
+      "tabularium-audit-synopsis"
+    ]
+  },
+  "unknowns": {
+    "finding.adjudication": 41,
+    "round.native_schema": 31,
+    "round.verdict": 31,
+    "submission.adjudication": 41
+  }
+}

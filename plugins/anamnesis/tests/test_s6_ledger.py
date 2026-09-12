@@ -46,11 +46,19 @@ class LedgerRecordsTheCompletedJob(unittest.TestCase):
         self.text = LEDGER.read_text(encoding="utf-8")
         self.rows = rows(self.text)
 
-    def test_the_header_version_matches_the_newest_row(self) -> None:
-        header = header_field(self.text, "Current version").strip("`")
-        self.assertEqual(header, "anamnesis-v3.1.0")
-        self.assertEqual(self.rows[-1][0].strip("`"), header)
-        self.assertEqual(self.rows[-1][1], "evolution")
+    def test_this_run_s_row_is_the_evolution_it_recorded(self) -> None:
+        """By version, not by position.
+
+        This suite recorded the row it wrote as the newest one. A later
+        frontier job appends its own, and the header then names that one, so
+        the assertion moved to the version this step is about. The current
+        header and its digest belong to whichever step wrote them; step 10
+        holds those.
+        """
+        row = [r for r in self.rows if r[0].strip("`") == "anamnesis-v3.1.0"]
+        self.assertEqual(len(row), 1)
+        self.assertEqual(row[0][1], "evolution")
+        self.assertEqual(row[0][2].strip("`"), "corpus-scope")
 
     def test_the_frontier_digest_recomputes_over_its_exact_line(self) -> None:
         line = "{}|{}|{}|{}\n".format(

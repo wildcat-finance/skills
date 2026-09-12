@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20932177,
+    "bytes_blob": 21648186,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,6 +63,20 @@
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
+      "bytes": 152877,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 76438 of 152877 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.md"
+    },
+    {
+      "bytes": 153762,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.synopsis.md"
+    },
+    {
       "bytes": 126085,
       "category": "blob",
       "evidence": "no newline in a 2048-byte window at offset 63042 of 126085 bytes",
@@ -77,6 +91,13 @@
       "path": "audit/rounds/fiat-1350-alexandria-1-interval-collector-run-against.synopsis.md"
     },
     {
+      "bytes": 21699,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1351-anamnesis-2-declared-corpus-scope.synopsis.md"
+    },
+    {
       "bytes": 29635,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -89,6 +110,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1420-ephoros-next-extend-e001-to-e003-to-the-typ.synopsis.md"
+    },
+    {
+      "bytes": 28639,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -574,6 +602,13 @@
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/logs.jsonl"
     },
     {
+      "bytes": 24967,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/anamnesis/specimens/synopsis/sources/pandects-audit-synopsis.md"
+    },
+    {
       "bytes": 23932,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -621,6 +656,27 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/imprimatur/evals/labelled-prose-v1/samples.jsonl"
+    },
+    {
+      "bytes": 39553,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/families.jsonl"
+    },
+    {
+      "bytes": 231041,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 115520",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/selection-rejections.jsonl"
+    },
+    {
+      "bytes": 63471,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/specimens.jsonl"
     },
     {
       "bytes": 11,

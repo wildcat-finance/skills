@@ -118,6 +118,55 @@ class CheckMapContractTests(unittest.TestCase):
             if created:
                 report.unlink()
 
+    def test_the_recorded_report_path_survives_the_parse_time_precondition(self) -> None:
+        """The runbook's own ``--report`` target must be a path the runner accepts.
+
+        ``run_checks.py`` resolves ``--report`` through
+        ``require_ignored_report_path`` while parsing arguments, before any plan
+        exists, and refuses an un-ignored target with ``unsafe-report-path``.
+        This is the precondition that actually gates the Step 7 exit clause's
+        command: without ``/.reports/`` in ``.gitignore`` the invocation is
+        refused outright and no report is ever written.  The case below holds
+        the downstream rule; this one holds the gate that runs first.
+        """
+        target = ".reports/issue-884-full.json"
+        try:
+            resolved = run_checks.require_ignored_report_path(REPO_ROOT, target)
+        except run_checks.PlanError as exc:
+            # A failure, not an error: a mixed report classifies inconclusive
+            # instead of naming the missing ignore rule.
+            self.fail(f"the exit clause's own report path is refused: {exc}")
+        self.assertEqual(resolved, target)
+
+    def test_a_written_run_report_does_not_refuse_the_next_plan(self) -> None:
+        """A written run report must not read as a source change.
+
+        ``run_checks.py --report .reports/<name>.json`` writes its run report
+        after the plan is built.  Once one exists, an unignored
+        ``.reports/<name>.json`` is a relevant untracked path with no declared
+        owner, so the planner refuses with ``unknown-ownership`` before
+        starting a single check and the tree it was asked to prove clean is no
+        longer clean.  This is the same class the ``.elenchus`` case above
+        records, reached through the runner's own reporting flag rather than
+        through Elenchus.
+        """
+        report = REPO_ROOT / ".reports" / "probe.json"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        created = not report.exists()
+        if created:
+            report.write_text("{}\n", encoding="utf-8")
+        try:
+            observed = run_checks.changed_paths(REPO_ROOT, None)
+            self.assertNotIn(
+                ".reports/probe.json", observed,
+                "a run report must not look like a source change",
+            )
+        finally:
+            if created:
+                report.unlink()
+                if not any(report.parent.iterdir()):
+                    report.parent.rmdir()
+
     def test_relevant_untracked_paths_also_resolve_to_an_owner(self) -> None:
         """Totality over ``git ls-files`` alone does not cover what the planner reads.
 

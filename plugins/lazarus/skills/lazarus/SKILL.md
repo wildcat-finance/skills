@@ -8,7 +8,7 @@ description: >
   to describe transaction hashes, calls, traces or unrelated RPC fields as
   proof-backed evidence.
 metadata:
-  version: "2.2.0"
+  version: "3.2.0"
 ---
 
 <p align="center">
@@ -29,7 +29,7 @@ another frontier pass after that ledger becomes mature.
 
 Lazarus captures the finite historical Ethereum state and exact RPC evidence one application test needs, proves the state-backed part, and replays only recorded requests.
 
-**Current frontier.** Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
+**Current frontier.** Receipt witnesses reconstruct receiptsRoot offline for full ordered receipt sets: scoped witnesses prove one consensus receipt payload and its log projection, while empty witnesses are accepted only at Ethereum's empty trie root and prove zero relations; transaction hashes and unrelated RPC results remain recorded evidence.
 <!-- marketplace-context:end -->
 
 Lazarus turns a finite historical Ethereum capture plan into a deterministic
@@ -63,9 +63,11 @@ coverage and evidence classes together.
 
 **Security.** An incident test needs stable historical inputs. Account and
 storage values are checked against the captured state root. A declared full
-receipt witness may prove the target consensus receipt payload and its scoped
-log projection against `receiptsRoot`; transaction hashes, calls, traces and
-unrelated fields remain recorded evidence.
+receipt witness reconstructs `receiptsRoot`: the scoped shape may prove one
+consensus receipt payload and its log projection, while the empty shape is
+accepted only at Ethereum's empty trie root and proves zero relations.
+Transaction hashes, calls, traces and unrelated fields remain recorded
+evidence.
 
 **Archiving.** A fixture has to outlive the people who made it. A preservation
 release ships the fixture, a statement about it and the document binding them,
@@ -99,8 +101,9 @@ declared component length and SHA-256 digest. It then recomputes the
 fork-appropriate header hash; verifies EIP-1186 account and storage inclusion
 or absence against the header state root; checks response fields against the
 decoded leaves; and hashes captured code against the proved `codeHash`. It
-also reconstructs a declared ordered receipt witness and checks its scoped
-target receipt and filtered-log relations. It reports separate proof-backed,
+also reconstructs a declared ordered receipt witness. The scoped shape checks
+its target receipt and filtered-log relations; the empty shape checks the
+empty trie root and reports zero relations. It reports separate proof-backed,
 receipt-trie-proved, header-bound and recorded-RPC evidence counts.
 
 `release` writes a preservation release: the verified fixture, a statement
@@ -150,9 +153,11 @@ of another:
    against the captured header's `stateRoot`; code verifies against the proved
    `codeHash`.
 2. **Receipt-trie-proved relations.** A plan-v3 witness supplies every ordered
-   consensus receipt. Verification reconstructs the header's `receiptsRoot`,
-   then checks one target consensus receipt payload and its declared
-   consensus-log projection. Transaction hashes are excluded.
+   consensus receipt. Verification reconstructs the header's `receiptsRoot`.
+   The scoped shape checks one target consensus receipt payload and its
+   declared consensus-log projection. The empty shape is accepted only at
+   Ethereum's empty trie root and yields zero relations. Transaction hashes
+   are excluded.
 3. **Header-bound data.** The header hash and fields are checked internally.
    An external chain anchor is still required to call that header canonical.
 4. **Recorded RPC evidence.** Exact method, parameters and result or sanitised
@@ -175,8 +180,9 @@ array order, omitted fields, quantities and block selectors remain exact.
 - Exact JSON-RPC method and parameter pairs, required or optional status and
   expected evidence class.
 - A finite list of account addresses and sorted, unique 32-byte storage slots.
-- For plan v3, one full ordered receipt request, one target receipt lookup,
-  its exact transaction index and one fixed-block filtered-log request.
+- For plan v3, one full ordered receipt request and either no target fields for
+  an empty witness or all three scoped target fields: one receipt lookup, its
+  exact transaction index and one fixed-block filtered-log request.
 - Limits for requests, components, time and bytes.
 - A second matching header read when number-based provider fallback is used.
 
@@ -191,7 +197,8 @@ or digest material.
 - Account and storage inclusion or absence proofs against the header state
   root, response values against decoded leaves and code against `codeHash`.
 - For plan v3, the full ordered consensus receipt sequence against the header
-  receipts root, the target consensus payload and exact filtered-log relation.
+  receipts root, then either the scoped target payload and filtered-log
+  relation or the empty-root result with zero relations.
 - Separate counts for proof-backed, receipt-trie-proved, header-bound and
   recorded evidence.
 - Exact plan-v2 or plan-v3 anchor coverage and agreement, reported separately
@@ -213,7 +220,8 @@ invents a zero value or leaves loopback to answer a miss.
 - Replace an archive node or capture unbounded state.
 - Execute arbitrary `eth_call` from partial state in the first format.
 - Prove a transaction hash or a receipt or log field outside the scoped
-  consensus payload and projection checked against `receiptsRoot`.
+  consensus payload and projection checked against `receiptsRoot`, or claim
+  that an empty witness proves a positive relation.
 - Treat client trace output as portable proof.
 - Capture pending state, subscriptions or write methods.
 - Hold a private key, sign a transaction or make an Ariadne publisher claim.
@@ -226,8 +234,8 @@ invents a zero value or leaves loopback to answer a miss.
 
 - Promise: A successful `capture` atomically writes a finite fixed-block fixture only after resolving the expected block, collecting the declared requests and proofs, closing the block bracket and passing complete local verification.
 - Evidence: The explicit plan, exact runtime anchor mapping, opening and closing headers, exact sanitised RPC records, source-sorted anchor records, EIP-1186 proofs, optional ordered receipt witness, manifest, shared limits, union provider-secret scan and the in-process successful verification result.
-- Evidence classes: recorded, checked, recomputed, proved: EIP-1186 account and storage relation; proved: receipt-trie consensus receipt and scoped log-projection relation
-- Boundary: Only account and storage values and code with the named state proof relation, plus a consensus receipt payload and scoped consensus-log projection accepted through a reconstructed `receiptsRoot`, are proof-backed. Transaction hashes, calls, traces and unrelated RPC fields remain recorded evidence. Matching anchor records remain recorded observations and establish neither canonical-chain membership nor provider independence.
+- Evidence classes: recorded, checked, recomputed, proved: EIP-1186 account and storage relation; proved: receipt-trie consensus receipt and scoped log-projection relation; proved: Ethereum empty receipt-trie root with zero relations
+- Boundary: Only account and storage values and code with the named state proof relation, plus a consensus receipt payload and scoped consensus-log projection accepted through a reconstructed `receiptsRoot`, are positive proof-backed relations. An empty witness proves only Ethereum's empty trie root and zero relations. Transaction hashes, calls, traces and unrelated RPC fields remain recorded evidence. Matching anchor records remain recorded observations and establish neither canonical-chain membership nor provider independence.
 - Authorises: Installation of the verified fixture as a durable finite historical test input.
 - Consequence: 2
 - Refuses: Finalising after an incomplete or duplicate anchor mapping, absent or empty named environment value, provider transport or identity disagreement, required request, proof, block bracket, shared limit, credential-sanitisation, secret scan or verification failure, or retaining a provider URL or raw provider error as evidence.
@@ -238,7 +246,7 @@ invents a zero value or leaves loopback to answer a miss.
 
 - Promise: A successful `verify` recomputes the fixture's schemas, canonical manifest, component digests, header hash, state proofs, optional receipt-trie relations, response values and evidence-class counts from local bytes.
 - Evidence: The fixture tree, registered schema bytes, manifest, header, proof, RPC, optional receipt-witness and anchor records, recomputed hashes, exact plan-to-anchor coverage and the complete verification report.
-- Evidence classes: checked, recomputed, proved: EIP-1186 account and storage relation; proved: receipt-trie consensus receipt and scoped log-projection relation
+- Evidence classes: checked, recomputed, proved: EIP-1186 account and storage relation; proved: receipt-trie consensus receipt and scoped log-projection relation; proved: Ethereum empty receipt-trie root with zero relations
 - Boundary: Verification does not prove canonical-chain membership, provider independence, transaction-hash attribution, receipt or log fields outside the declared consensus relation, trace portability or facts outside the finite manifest.
 - Authorises: Use of the verified fixture and its separately counted evidence classes in the named offline test or preservation workflow.
 - Consequence: 1

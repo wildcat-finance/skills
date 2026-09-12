@@ -1,5 +1,5 @@
 {
-  "version": "curation-2026-08-31",
+  "version": "curation-2026-09-06",
   "mapper": {
     "name": "warden-audit-round-markdown",
     "version": "1"
@@ -11,5 +11,11 @@
   },
   "disclosure": {
     "derived_text": ["public"]
+  },
+  "scope": {
+    "id": "warden-seed-pilot",
+    "preserves": "Warden audit rounds from three first-party skills as preserved at commit 1c1137898bce.",
+    "sources": ["hexaemeron-audit-rounds", "pandects-audit-rounds", "tabularium-audit-rounds"],
+    "records": {"minimum": 25, "maximum": 50}
   }
 }

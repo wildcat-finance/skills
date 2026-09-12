@@ -1,0 +1,9 @@
+{
+  "candidate": "registry-only",
+  "command": "python3 .hexaemeron/reports/resolve.py registry-only assertion-records-the-mapper-that-ran",
+  "criterion": "assertion-records-the-mapper-that-ran",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

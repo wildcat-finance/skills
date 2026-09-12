@@ -327,7 +327,12 @@ def _validate_observed(observed: dict[str, Any], manifest: dict[str, Any]) -> No
     if receipt_report is not None:
         if manifest["receipts_root"].lower() != receipt_report["computed_root"]:
             raise IntegrityError("manifest receipts root disagrees with verified witness")
-        if counts["receipt_trie_proved"] <= 0 or manifest["receipts_root"] == "0x" + "00" * 32:
+        if manifest["receipts_root"] == "0x" + "00" * 32:
+            raise IntegrityError("receipt witness requires a nonzero receipts root")
+        if receipt_report["mode"] == "empty":
+            if counts["receipt_trie_proved"] != 0:
+                raise IntegrityError("empty receipt witness requires zero proved relations")
+        elif counts["receipt_trie_proved"] <= 0:
             raise IntegrityError("positive receipt proof count requires a nonzero receipts root")
     if failures != manifest["optional_failures"]:
         raise IntegrityError("manifest optional failures disagree with RPC records")
