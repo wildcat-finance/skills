@@ -17785,20 +17785,58 @@ def _checkpoint_inspect_scratch(supplied: str | None) -> tuple[str, bool]:
     return path, False
 
 
+def _checkpoint_inspect_capture(archive_path: str, scratch: str) -> tuple[str, int, str]:
+    """Copy the archive into the private scratch root while digesting it.
+
+    The copy is the point. `--sha256` binds the operator to an exact run of
+    bytes, and that binding is only worth anything if the bytes every later
+    check reads are the same ones the digest covered. Reading the supplied
+    path again for the central directory, the local headers and each member
+    does not give that: the file sits wherever the sender put it, and whoever
+    can write there can let one set of bytes be digested and another parsed.
+    That was S3-R1-01.
+
+    So the archive is captured once, into a root created 0700 under a name the
+    sender does not know, and the digest is computed over that same pass. The
+    returned path is what the rest of `checkpoint inspect` reads, and the
+    returned length is the count of bytes actually digested rather than a
+    separate `stat`, so one number drives both the digest and the layout.
+    """
+    local = os.path.join(scratch, "archive.zip")
+    digest = hashlib.sha256()
+    total = 0
+    try:
+        with open(archive_path, "rb") as source, open(local, "wb") as sink:
+            while True:
+                chunk = source.read(CHECKPOINT_IO_CHUNK)
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX:
+                    _checkpoint_archive_refuse("entry-limit")
+                digest.update(chunk)
+                sink.write(chunk)
+    except OSError:
+        die("checkpoint inspect archive could not be read")
+    return local, total, digest.hexdigest()
+
+
 def _checkpoint_inspect_outer(
-    archive_path: str, expected_sha256: str
-) -> tuple[int, str]:
+    archive_path: str, expected_sha256: str, scratch: str
+) -> tuple[str, int, str]:
     """The outer digest, recomputed over the exact bytes, and the sidecar beside it.
 
     A digest found inside the archive is never used for this: `--sha256`
     travels out of band, exactly as the reference requires, and a sidecar
-    is only ever compared, never trusted on its own.
+    is only ever compared, never trusted on its own. The bytes digested are
+    captured as they are read, and the captured copy is what every later check
+    reads, so the digest covers exactly what is parsed.
     """
     if not isinstance(expected_sha256, str) or not re.fullmatch(
         r"[0-9a-f]{64}", expected_sha256
     ):
         die("checkpoint inspect requires a lowercase SHA-256 --sha256")
-    size, digest = _checkpoint_archive_digest(archive_path)
+    local, size, digest = _checkpoint_inspect_capture(archive_path, scratch)
     if digest != expected_sha256:
         _checkpoint_archive_refuse("outer-digest-mismatch")
     sidecar_path = archive_path + ".sha256"
@@ -17813,7 +17851,7 @@ def _checkpoint_inspect_outer(
         )
         if sidecar != expected_line:
             _checkpoint_archive_refuse("sidecar-mismatch")
-    return size, digest
+    return local, size, digest
 
 
 def _checkpoint_inspect_eocd(path: str, size: int) -> tuple[int, int, int]:
@@ -18664,18 +18702,20 @@ def _checkpoint_inspect_archive(
     streamed. Nothing is extracted before the central directory is read, and
     no member's content is ever printed.
     """
-    try:
-        size = os.path.getsize(archive_path)
-    except OSError:
-        die("checkpoint inspect archive could not be read")
-
-    _outer_size, outer_digest = _checkpoint_inspect_outer(archive_path, expected_sha256)
-
-    cd_offset, cd_size, entry_count = _checkpoint_inspect_eocd(archive_path, size)
-    physical = _checkpoint_inspect_central_directory(
-        archive_path, cd_offset, cd_size, entry_count
+    # The supplied path is read exactly once, by the capture below. `size` is
+    # the count of bytes that capture digested, not a separate `stat` of a file
+    # that can change between the two: one number drives the digest and every
+    # layout invariant. `local` is the captured copy, and it is what the rest
+    # of this function reads.
+    local, size, outer_digest = _checkpoint_inspect_outer(
+        archive_path, expected_sha256, scratch
     )
-    layout_end = _checkpoint_inspect_layout(archive_path, physical)
+
+    cd_offset, cd_size, entry_count = _checkpoint_inspect_eocd(local, size)
+    physical = _checkpoint_inspect_central_directory(
+        local, cd_offset, cd_size, entry_count
+    )
+    layout_end = _checkpoint_inspect_layout(local, physical)
     if layout_end != cd_offset:
         _checkpoint_archive_refuse("trailing-data")
     _checkpoint_inspect_name_policy([item["name"] for item in physical])
@@ -18687,7 +18727,7 @@ def _checkpoint_inspect_archive(
     if manifest_item is None:
         _checkpoint_archive_refuse("manifest-mismatch")
     manifest_bytes = _checkpoint_inspect_read_slice(
-        archive_path, manifest_item["data_offset"], manifest_item["size"]
+        local, manifest_item["data_offset"], manifest_item["size"]
     )
     if len(manifest_bytes) > CHECKPOINT_MANIFEST_BYTES_MAX:
         _checkpoint_archive_refuse("schema-unsupported")
@@ -18696,7 +18736,7 @@ def _checkpoint_inspect_archive(
     )
 
     captured, bundle_path, secret_found = _checkpoint_inspect_members(
-        archive_path, physical, manifest["archive"]["entries"], scratch
+        local, physical, manifest["archive"]["entries"], scratch
     )
 
     capsule_manifest = _checkpoint_inspect_capsule(

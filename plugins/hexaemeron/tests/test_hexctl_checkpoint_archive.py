@@ -71,6 +71,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import inspect
 import base64
 import json
 import os
@@ -3058,6 +3059,68 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             self.assertEqual(len(container.infolist()), result["entries"])
         self.assertEqual(os.path.getsize(path), result["bytes"])
         self.assertEqual("", proc.stderr)
+
+    def test_inspect_digests_exactly_the_bytes_it_then_parses(self):
+        """S3-R1-01: the outer digest has to cover what the parse reads.
+
+        `--sha256` travels out of band so the operator can bind an exact run
+        of bytes. That binding was worth nothing while the digest was one
+        pass over the supplied path and the central directory, the local
+        headers and every member were separate reopens of that same path:
+        whoever can write where the sender left the archive could let one set
+        of bytes be digested and another parsed. The length was forked the
+        same way, `os.path.getsize` driving every layout invariant while the
+        count the digest actually covered was discarded.
+
+        The capture closes both. It reads the supplied path once, digesting
+        and copying in the same pass into the 0700 scratch root, and returns
+        the copy plus the digested length. This asserts the three properties
+        that makes true, and that the supplied path is not read again.
+        """
+        module = hexctl_module()
+        scratch = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, scratch, True)
+        source = os.path.join(scratch, "supplied.zip")
+        original = bytes(random.Random(861).getrandbits(8) for _ in range(4096))
+        with open(source, "wb") as handle:
+            handle.write(original)
+
+        root = os.path.join(scratch, "root")
+        os.makedirs(root, 0o700)
+        local, size, digest = module._checkpoint_inspect_capture(source, root)
+
+        # The copy is inside the private root, not the path the sender named.
+        self.assertTrue(os.path.abspath(local).startswith(os.path.abspath(root)))
+        self.assertNotEqual(os.path.abspath(local), os.path.abspath(source))
+        # One length, and it is the digested count rather than a separate stat.
+        self.assertEqual(len(original), size)
+        self.assertEqual(hashlib.sha256(original).hexdigest(), digest)
+        with open(local, "rb") as handle:
+            self.assertEqual(original, handle.read())
+
+        # Changing the supplied file afterwards cannot reach the parse.
+        with open(source, "wb") as handle:
+            handle.write(b"Z" * 9000)
+        with open(local, "rb") as handle:
+            self.assertEqual(original, handle.read())
+        self.assertEqual(len(original), size)
+
+        # And nothing downstream reads the supplied path again: inside
+        # `_checkpoint_inspect_archive` the parameter appears only in its own
+        # signature and in the capture call. A later reopen would put the
+        # fork back without failing anything else here.
+        body = inspect.getsource(module._checkpoint_inspect_archive)
+        mentions = [
+            line.strip()
+            for line in body.splitlines()
+            if "archive_path" in line and not line.strip().startswith("#")
+        ]
+        self.assertEqual(
+            ["archive_path: str,", "archive_path, expected_sha256, scratch"],
+            mentions,
+            "the supplied path is read outside the capture, so the digest no "
+            "longer covers everything the inspector parses",
+        )
 
     def test_inspect_writes_nothing_outside_scratch(self):
         path = self.good_archive()
