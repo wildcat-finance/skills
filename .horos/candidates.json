@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21648186,
+    "bytes_blob": 21672862,
     "bytes_generated": 98
   },
   "entries": [
@@ -490,6 +490,13 @@
       "path": "docs/commit-gate/runbook.md"
     },
     {
+      "bytes": 24683,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 24683 bytes",
+      "grade": "candidate",
+      "path": "docs/main-root-suite-recovery/parity-attempt-1.json"
+    },
+    {
       "bytes": 59394,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 59394 bytes",
@@ -827,9 +834,9 @@
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
     },
     {
-      "bytes": 24566,
+      "bytes": 24559,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 24566 bytes",
+      "evidence": "no newline in the first 4096 bytes of 24559 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }
