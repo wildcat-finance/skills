@@ -667,7 +667,7 @@ class FilingContractReaderParityTests(unittest.TestCase):
     `FILING_PROVENANCE_UNKNOWN`, read-and-absent takes `None`, never coerce".
     The enumeration is complete for what it scopes and narrower than the
     class: two readers of the same filing contract sit outside it, and neither
-    applied the rule the step established (S3-R5-01, S3-R5-02).
+    applied the rule the step established (S3-R6-01, S3-R6-02).
 
     Driven by direct call rather than through the fixture, because the fake
     `gh` cannot deliver a body that is not text to `issue-check` and cannot
@@ -710,7 +710,7 @@ class FilingContractReaderParityTests(unittest.TestCase):
         body of `[]` was read as an empty string and reported as "declares no
         `Fiat-Required` line" -- a claim about a body it never read -- and no
         `ISSUE_BODY_BYTES_MAX` cap applied, where the `--body` sibling above it
-        and `admitted_issue_body` both refuse (S3-R5-01).
+        and `admitted_issue_body` both refuse (S3-R6-01).
         """
         module = hexctl_module()
         args = argparse.Namespace(
@@ -747,7 +747,7 @@ class FilingContractReaderParityTests(unittest.TestCase):
         stdout; `init`'s refusal, which is where that sentence has always
         gone, did neither, so an escape sequence on a `Fiat-Required` line
         rendered raw in the operator's terminal and a 250000-character value
-        printed in full (S3-R5-02).
+        printed in full (S3-R6-02).
         """
         module = hexctl_module()
         hostile = "Fiat-Required: \x1b[2J\x1b[31mHACKED\x07\n"
@@ -771,6 +771,194 @@ class FilingContractReaderParityTests(unittest.TestCase):
         self.assertLess(len(printed), 4096)
         # The instruction that says what to do about it survives the bound.
         self.assertIn("start the run again", printed)
+
+
+class PayloadReaderScopeTests(unittest.TestCase):
+    """Every reader of a GitHub payload, not the ones one diff happened to show.
+
+    Round 4 enumerated the sites step 3 adds or touches and called the class
+    closed. Round 5 restated that as complete for every site where the rule
+    can fail. Round 6 falsified round 5 from two sites outside the step's
+    diff, then scoped its own two claims the same way: it read the filing
+    fault sentence as having two destinations, and it ruled the pull request
+    body reader out of the class because no filing decision is read there.
+
+    These cases hold the enumeration the third way round: from the two
+    transports forward. `github_rest` and the one GraphQL `bounded_probe` are
+    the only ways a GitHub payload enters this controller, and every field
+    taken out of one either refuses what it could not read or records the
+    sentinel for it, at every destination the derived text reaches
+    (S3-R7-01, S3-R7-02, S3-R7-03).
+
+    Driven by direct call, because the fake `gh` delivers neither a pull
+    request body that is not text nor a control character on a
+    `Fiat-Required` line.
+    """
+
+    PR = "https://github.com/wildcat-finance/skills/pull/7"
+    ISSUE = "https://github.com/some/other/issues/9"
+
+    def pull_payload(self, body):
+        return {
+            "user": {"login": "laurenceday"},
+            "body": body,
+            "html_url": self.PR,
+            "head": {"ref": "feature", "sha": "a" * 40},
+            "base": {"ref": "main"},
+            "merged": False,
+            "state": "open",
+        }
+
+    @contextlib.contextmanager
+    def reading_pull(self, module, body):
+        originals = {
+            name: getattr(module, name)
+            for name in ("github_rest", "target_repository")
+        }
+
+        def rest(base_dir, path, label):
+            if path == "repos/wildcat-finance/skills":
+                return {"full_name": "wildcat-finance/skills"}
+            return self.pull_payload(body)
+
+        module.github_rest = rest
+        module.target_repository = lambda base_dir: "wildcat-finance/skills"
+        try:
+            yield
+        finally:
+            for name, value in originals.items():
+                setattr(module, name, value)
+
+    def inspect(self, module, body):
+        with self.reading_pull(module, body):
+            return module.inspect_pull_request(
+                ".",
+                self.PR,
+                expected_head="feature",
+                expected_base="main",
+                expected_head_sha=None,
+                expected_merge_sha=None,
+            )
+
+    def test_the_pull_request_body_reader_refuses_a_body_it_did_not_read(self):
+        """`or ""` made the type check under it unreachable for a falsy value.
+
+        A body of `[]`, `0`, `False` or `{}` became the empty string, so the
+        runtime-host byline gate searched the substitution and passed, and the
+        closing-reference check would have told the operator to add a line to
+        a body this reader never read. A truthy non-string already refused,
+        which is what made the gap invisible. It is S3-R6-01's reading reached
+        through the pull request body (S3-R7-02).
+        """
+        module = hexctl_module()
+        for body in ([], 0, False, {}):
+            with self.subTest(body=repr(body)):
+                err = io.StringIO()
+                with contextlib.redirect_stderr(err):
+                    with self.assertRaises(SystemExit):
+                        self.inspect(module, body)
+                self.assertIn("body that is not text", err.getvalue())
+        # Read-and-empty is not the same answer, and both spellings of it
+        # still admit: REST sends null for an issue whose body is empty.
+        for body in (None, ""):
+            with self.subTest(body=repr(body)):
+                record = self.inspect(module, body)
+                self.assertEqual(record["state"], "OPEN")
+        # The truthy half is the regression guard for what already worked.
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            with self.assertRaises(SystemExit):
+                self.inspect(module, 17)
+        self.assertIn("body", err.getvalue())
+
+    def test_every_destination_of_the_filing_fault_cleans_and_bounds_it(self):
+        """Four destinations, not the two round 6 enumerated.
+
+        The fault sentence quotes the value copied out of the issue body.
+        `read_task_issue_contract`'s refusal and the divergence report both
+        clean and bound it; `cmd_issue_check`'s fault printer and the filed
+        carryover refusal in `done integrate` did neither, and reached stderr
+        with two escape sequences and a BEL byte for byte and 250156 bytes for
+        a 250000-character value. One shared rule now, so a fifth destination
+        inherits it (S3-R7-03).
+        """
+        module = hexctl_module()
+        hostile = (
+            "Fiat-Required: \x1b[2J\x1b[31mHACKED\x07\n"
+            "\n```carryover\nnone | none | nothing carried\n```\n"
+        )
+        long_value = (
+            "Fiat-Required: " + "Z" * 250000 + "\n"
+            "\n```carryover\nnone | none | nothing carried\n```\n"
+        )
+        args = argparse.Namespace(
+            dir=".", body=None, issue=self.ISSUE, title=None, label=[]
+        )
+
+        def issue_check(body):
+            originals = getattr(module, "github_rest")
+            module.github_rest = lambda base_dir, path, label: {
+                "number": 9, "body": body, "title": "a candidate", "labels": [],
+            }
+            err = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(io.StringIO()), \
+                        contextlib.redirect_stderr(err):
+                    with self.assertRaises(SystemExit):
+                        module.cmd_issue_check(args)
+            finally:
+                module.github_rest = originals
+            return err.getvalue()
+
+        printed = issue_check(hostile)
+        self.assertNotIn("\x1b", printed)
+        self.assertNotIn("\x07", printed)
+        self.assertIn("neither 1 (a Fiat run) nor 0", printed)
+        printed = issue_check(long_value)
+        self.assertLess(len(printed), 4096)
+
+        # The `done integrate` destination is pinned two ways rather than
+        # driven: the shared rule is exercised here, and the call site is read
+        # for the name of it. Reaching that line needs a whole integrating run.
+        bound = getattr(module, "bounded_issue_fault_detail", None)
+        self.assertIsNotNone(
+            bound, "the four destinations do not share one rule"
+        )
+        detail = bound(["a \x1b[31mfault\x07", "b" * 250000])
+        self.assertNotIn("\x1b", detail)
+        self.assertNotIn("\x07", detail)
+        self.assertLessEqual(len(detail), module.ISSUE_FAULT_DETAIL_MAX + 3)
+        with open(module.__file__, encoding="utf-8") as handle:
+            source = handle.read()
+        marker = "a `filed` carryover issue does not satisfy the publication"
+        site = source[source.index(marker):source.index(marker) + 220]
+        self.assertIn("bounded_issue_fault_detail", site)
+        self.assertNotIn('"; ".join(filed_issue_faults)', site)
+
+    ROUND_FIVE_PREFIX = "S3-R" + "5-0"
+
+    def test_every_finding_a_comment_cites_names_this_run_s_own_record(self):
+        """Six citations named ids this run never issued.
+
+        Round 6's repairs are S3-R6-01 and S3-R6-02 in the audit record and in
+        the commit message, and every one of the six in-source citations the
+        same commit added named a round 5 id instead. Round 5 of this run
+        recorded no finding at all, so those ids resolve to nothing here; they
+        do resolve elsewhere in this repository, to a low finding of another
+        run's step 3 round 5 about the commit gate's index anchoring, which is
+        a worse answer than none (S3-R7-01).
+
+        The prefix is assembled rather than written, because a case asserting
+        that a string is absent from its own file cannot spell it.
+        """
+        module = hexctl_module()
+        here = os.path.dirname(os.path.abspath(__file__))
+        for path in (module.__file__, os.path.join(here, os.path.basename(__file__))):
+            with self.subTest(path=os.path.basename(path)):
+                with open(path, encoding="utf-8") as handle:
+                    text = handle.read()
+                self.assertNotIn(self.ROUND_FIVE_PREFIX, text)
+                self.assertIn("S3-R6-0", text)
 
 
 if __name__ == "__main__":

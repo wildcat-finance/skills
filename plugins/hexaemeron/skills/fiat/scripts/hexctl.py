@@ -5119,10 +5119,8 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
         # sentence before it reaches stdout; this refusal, which is where the
         # sentence has always gone, did neither, so an escape sequence on a
         # `Fiat-Required` line rendered raw and a 250000-character value
-        # printed in full (S3-R5-02).
-        detail = clean("; ".join(faults))
-        if len(detail) > ISSUE_FAULT_DETAIL_MAX:
-            detail = detail[:ISSUE_FAULT_DETAIL_MAX] + "..."
+        # printed in full (S3-R6-02).
+        detail = bounded_issue_fault_detail(faults)
         die(
             "the filing contract is not satisfied: "
             + detail
@@ -5185,7 +5183,32 @@ The same bound for the same reason, at the destination the fault sentence has
 always had. Larger than `UNREADABLE_DECISION_DETAIL_MAX` because a refusal
 joins every fault the body carries rather than the filing one alone: the
 longest reader-authored set `issue_contract_faults` produces is 399 characters,
-so nothing a filer needs to read is cut (S3-R5-02)."""
+so nothing a filer needs to read is cut (S3-R6-02)."""
+
+
+def bounded_issue_fault_detail(
+    faults: list[str], limit: int = ISSUE_FAULT_DETAIL_MAX
+) -> str:
+    """Every fault one issue body earned, fit for an operator's stream.
+
+    The faults quote values copied out of the body, so this is somebody
+    else's text on its way to a terminal, and one `clean` and one bound are
+    what the destination owes it.
+
+    Extracted for the reason `admitted_issue_body`, `rest_filing_stamps` and
+    `fiat_required_declarations` were: each destination carried its own copy
+    of the rule and they did not agree. Round 6 read the sentence as having
+    two destinations, repaired the one that lacked the rule, and left two more
+    it had not enumerated -- `cmd_issue_check`'s fault printer and the filed
+    carryover refusal in `done integrate` -- both of which reached stderr raw
+    and unbounded, 2 escape sequences and a BEL byte for byte and 250156 bytes
+    for a 250000-character value. One function now, so a fifth destination
+    inherits the rule rather than restating it (S3-R7-03).
+    """
+    detail = clean("; ".join(faults))
+    if len(detail) > limit:
+        detail = detail[:limit] + "..."
+    return detail
 
 FILING_PROVENANCE_UNKNOWN = "unknown"
 """What the reader records for a field it could not read at all.
@@ -6369,7 +6392,7 @@ def cmd_issue_check(args) -> None:
             # string and reported as "declares no `Fiat-Required` line",
             # which is a claim about a body this reader never read, and no
             # `ISSUE_BODY_BYTES_MAX` cap applied, where the `--body` sibling
-            # above and `admitted_issue_body` both refuse (S3-R5-01).
+            # above and `admitted_issue_body` both refuse (S3-R6-01).
             text = admitted_issue_body(payload, repository, number, label)
             record, faults = issue_contract_faults(text, label)
 
@@ -6381,7 +6404,12 @@ def cmd_issue_check(args) -> None:
         else:
             record, faults = issue_contract_faults(text, label)
     for fault in faults:
-        print(f"{label}: {fault}" if not fault.startswith(label) else fault,
+        # Bounded per line rather than over the join, because this destination
+        # is a list a filer reads and works down. `CARRYOVER_ROWS_MAX` bounds
+        # the number of lines at 128, and the longest reader-authored fault is
+        # 399 characters, so nothing a filer needs is cut (S3-R7-03).
+        bounded = bounded_issue_fault_detail([fault])
+        print(f"{label}: {bounded}" if not fault.startswith(label) else bounded,
               file=sys.stderr)
     if faults:
         print(
@@ -11003,7 +11031,7 @@ def done_integrate(args, state: dict) -> None:
     if filed_issue_faults:
         die(
             "a `filed` carryover issue does not satisfy the publication "
-            "contract: " + "; ".join(filed_issue_faults)
+            "contract: " + bounded_issue_fault_detail(filed_issue_faults)
         )
     remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
     final_step = state["steps"][-1]["n"]
@@ -13699,9 +13727,22 @@ def inspect_pull_request(
         die("pull request topology is missing its body")
     # REST spells an empty body as null rather than as an empty string. There
     # is no byline in either, so the absence of text is not a missing field.
-    body = payload["body"] or ""
+    #
+    # `or ""` made the type check below unreachable for a falsy non-string, so
+    # a body of `[]`, `0`, `False` or `{}` was read as an empty body: the
+    # runtime-host byline gate searched the substitution rather than the
+    # response, returned no match and passed, and the closing-reference check
+    # told the operator to add `Closes #N` to a body this reader never read.
+    # It is S3-R6-01's reading reached through the pull request body rather
+    # than the issue body, and round 6 ruled it out of the class on the
+    # ground that no filing decision is read here, which is a statement about
+    # what the body is for and not about whether the reader read it
+    # (S3-R7-02).
+    body = payload["body"]
+    if body is None:
+        body = ""
     if not isinstance(body, str):
-        die("pull request topology is missing its body")
+        die("pull request topology returned a body that is not text")
     if HOST_BYLINE_RE.search(body):
         die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
     closing_issue = None
@@ -17747,9 +17788,9 @@ def filing_decision_divergence(
         # The fault embeds a value copied out of the issue body, so it is
         # cleaned and bounded before it reaches stdout, on the same terms as
         # the divergence rows below.
-        detail = clean("; ".join(filing_faults))
-        if len(detail) > UNREADABLE_DECISION_DETAIL_MAX:
-            detail = detail[:UNREADABLE_DECISION_DETAIL_MAX] + "..."
+        detail = bounded_issue_fault_detail(
+            filing_faults, UNREADABLE_DECISION_DETAIL_MAX
+        )
         filing_unreadable = (
             f"the issue's body does not declare one readable filing "
             f"decision -- {detail}"
