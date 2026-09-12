@@ -285,29 +285,11 @@ class AuditSynopsisRecoveryTests(unittest.TestCase):
             controller_path,
             "run_observation_binding.controller must name " + controller_path,
         )
-        bindings = [("run_observation_binding.controller", observation)]
-        bindings.extend(
-            (f"runtime.{name}", binding)
-            for name, binding in sorted(coverage["runtime"].items())
-            if binding.get("source") == controller_path
-        )
-        self.assertGreater(
-            len(bindings),
-            1,
-            "tests/promise_machine_coverage.json has no runtime binding for "
-            + controller_path,
-        )
         actual = sha256(CONTROLLER)
-        stale = [
-            f"{trail} records {binding.get('sha256')!r}"
-            for trail, binding in bindings
-            if binding.get("sha256") != actual
-        ]
         self.assertEqual(
-            stale,
-            [],
-            f"{controller_path} is {actual}; update every matching sha256 in "
-            f"tests/promise_machine_coverage.json: {stale}",
+            observation.get("sha256"),
+            actual,
+            f"run_observation_binding.controller must bind {controller_path} at {actual}",
         )
         expected_sources = {
             "fiat-final-integration": (

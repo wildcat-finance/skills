@@ -1,0 +1,140 @@
+{
+  "cases": [
+    {
+      "id": "hexaemeron-fizz-convert-properties",
+      "prompt": "hexaemeron-fizz-convert-properties.txt",
+      "prompt_sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-fizz-harness-campaign",
+      "prompt": "hexaemeron-fizz-harness-campaign.txt",
+      "prompt_sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-fizz-sync-drift",
+      "prompt": "hexaemeron-fizz-sync-drift.txt",
+      "prompt_sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-solidity-audit-report",
+      "prompt": "hexaemeron-solidity-audit-report.txt",
+      "prompt_sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hexaemeron-x-ray-preaudit",
+      "prompt": "hexaemeron-x-ray-preaudit.txt",
+      "prompt_sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "hypomnema-record-placement",
+      "prompt": "hypomnema-record-placement.txt",
+      "prompt_sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "kronos-fiat-dispatch",
+      "prompt": "kronos-fiat-dispatch.txt",
+      "prompt_sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "sapheneia-deactivation",
+      "prompt": "sapheneia-deactivation.txt",
+      "prompt_sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "sapheneia-durable-record-shape",
+      "prompt": "sapheneia-durable-record-shape.txt",
+      "prompt_sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "sapheneia-session-shape",
+      "prompt": "sapheneia-session-shape.txt",
+      "prompt_sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    },
+    {
+      "id": "vulgate-register-rewrite",
+      "prompt": "vulgate-register-rewrite.txt",
+      "prompt_sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463",
+      "scenarios": [
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05"
+      ]
+    }
+  ],
+  "contract": "promise-machine-evaluation-packet/v1",
+  "corpus_sha256": "b9b6dfa8d1993c8bf7d7fea38adc3af765ac089b4efb7ce97d0c5e4f73ced427",
+  "prompt_template_sha256": "bb58f1dc5b6da0c37ae4303415f210d5158344516b51cc24f20bc623909eb5c2",
+  "tree_sha256": "e9c750d7246a3a96b39f1cb4bfae1d1f359f9a699215db719c953cb81ef45a04"
+}

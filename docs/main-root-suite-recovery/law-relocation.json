@@ -1,0 +1,50 @@
+{
+  "old_source": {
+    "end": "24109",
+    "id": "promise-machine",
+    "path": "PROMISE_MACHINE.md",
+    "sha256": "f996fb645c81a8f398a2384ed4d8da0e058a9c017ea37fbbee36e499c9ef2e15",
+    "span_sha256": "8dac2250f0116fd2068db3b0f4416baa91b2f214ab67b9250060b74e6a0ab3ee",
+    "start": "18285"
+  },
+  "new_source": {
+    "end": "28521",
+    "id": "promise-machine",
+    "path": "PROMISE_MACHINE.md",
+    "sha256": "ae019700f378a250fe08a3d6cb68c0553ee60a410cbb6035d3c9c3cd2866b34f",
+    "span_sha256": "8dac2250f0116fd2068db3b0f4416baa91b2f214ab67b9250060b74e6a0ab3ee",
+    "start": "22697"
+  },
+  "old_git_object": "49fc2caf^:PROMISE_MACHINE.md",
+  "shift": 4412,
+  "bindings": [
+    {
+      "end": "28521",
+      "node": "promise-machine-router-selection",
+      "reviewer": "shoggoth",
+      "sha256": "8dac2250f0116fd2068db3b0f4416baa91b2f214ab67b9250060b74e6a0ab3ee",
+      "start": "22697"
+    },
+    {
+      "end": "28521",
+      "node": "router-selection-promise",
+      "reviewer": "shoggoth",
+      "sha256": "8dac2250f0116fd2068db3b0f4416baa91b2f214ab67b9250060b74e6a0ab3ee",
+      "start": "22697"
+    },
+    {
+      "end": "28519",
+      "node": "promise-machine-router-selection.v1",
+      "reviewer": "shoggoth",
+      "sha256": "f2214fdbe4dd6395f6134acb8b21229628f8a6326b815743bcb5a5ab5be7e844",
+      "start": "22764"
+    },
+    {
+      "end": "28519",
+      "node": "router-selection-check",
+      "reviewer": "shoggoth",
+      "sha256": "f2214fdbe4dd6395f6134acb8b21229628f8a6326b815743bcb5a5ab5be7e844",
+      "start": "22764"
+    }
+  ]
+}
