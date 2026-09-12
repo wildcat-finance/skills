@@ -1,4 +1,4 @@
-# Decision: A constant template literal is not a message built by formatting
+# ADR-089: A constant template literal is not a message built by formatting
 
 ## Status
 

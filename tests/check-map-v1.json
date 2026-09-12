@@ -441,7 +441,7 @@
     {"path": "tests/test_skills_sh_package.py", "scope": "promise-machine"},
     {"path": "tests/emit_main_root_recovery_report.py", "scope": "promise-machine"},
     {"path": "docs/main-root-suite-recovery", "scope": "promise-machine"},
-    {"path": "docs/decisions/drafts/omit-portable-decorative-portraits.md", "scope": "promise-machine"},
+    {"path": "docs/decisions/ADR-090-omit-portable-decorative-portraits.md", "scope": "promise-machine"},
     {"path": "plugins/alexandria/PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "plugins/ariadne/PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "plugins/berean/PROMISE_MACHINE.md", "scope": "promise-machine"},

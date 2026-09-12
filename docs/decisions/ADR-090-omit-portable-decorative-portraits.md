@@ -1,4 +1,4 @@
-# Decision: Omit decorative portraits from the portable runtime
+# ADR-090: Omit decorative portraits from the portable runtime
 
 ## Status
 
