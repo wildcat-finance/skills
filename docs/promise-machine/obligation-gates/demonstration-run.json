@@ -585,9 +585,9 @@
       "sha256": "f7add2a0249850d1f19becd859d6153bce44267338815c2f657ec3ff82f7fe50"
     },
     {
-      "bytes": 51333,
+      "bytes": 51331,
       "path": "tests/promise_machine_id_history.json",
-      "sha256": "56271bdfb40d76d22314b2adb8a8ea4de7c9e7fad27bbb336d26ba4ecf022537"
+      "sha256": "c315434f786ed32d52b66885ec78138153fc07ac9a909b5dd34fabeae3d9c05d"
     },
     {
       "bytes": 26778,

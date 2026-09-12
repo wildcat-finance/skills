@@ -1,0 +1,9 @@
+{
+  "candidate": "unmasked-regex",
+  "command": "python3 .hexaemeron/design-probes/runtime.py unmasked-regex (median of three runs: 2761.4, 2813.2, 2880.9 ms)",
+  "criterion": "cap-scale-runtime",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 2813
+}
