@@ -1,0 +1,9 @@
+{
+  "candidate": "staged-general-v1",
+  "command": "uv run --no-project --python 3.14.6 python .hexaemeron/scripts/probe_reconciliation_design.py --candidate staged-general-v1",
+  "criterion": "legacy-v1",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

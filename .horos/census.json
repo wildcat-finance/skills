@@ -8,8 +8,8 @@
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 21289112,
-      "files": 1091,
+      "bytes": 21328175,
+      "files": 1095,
       "suffix": ".md"
     },
     {
@@ -20,14 +20,14 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 14327389,
-      "files": 1081,
+      "bytes": 14516697,
+      "files": 1124,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 13353580,
-      "files": 603,
+      "bytes": 13366013,
+      "files": 606,
       "suffix": ".py"
     },
     {
@@ -56,8 +56,8 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 110352,
-      "files": 39,
+      "bytes": 159951,
+      "files": 45,
       "suffix": ".txt"
     },
     {
@@ -71,6 +71,12 @@
       "bytes": 58214,
       "files": 1,
       "suffix": ".webp"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 51075,
+      "files": 7,
+      "suffix": ".stdout"
     },
     {
       "boundary_bytes": 0,
@@ -89,12 +95,6 @@
       "bytes": 12191,
       "files": 33,
       "suffix": ".yaml"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 11069,
-      "files": 4,
-      "suffix": ".stdout"
     },
     {
       "boundary_bytes": 0,
@@ -152,6 +152,12 @@
     },
     {
       "boundary_bytes": 0,
+      "bytes": 453,
+      "files": 7,
+      "suffix": ".stderr"
+    },
+    {
+      "boundary_bytes": 0,
       "bytes": 449,
       "files": 1,
       "suffix": ".asc"
@@ -197,16 +203,10 @@
       "bytes": 11,
       "files": 1,
       "suffix": ".bin"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 0,
-      "files": 4,
-      "suffix": ".stderr"
     }
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 106138415,
-  "total_files": 3261
+  "total_bytes": 106469277,
+  "total_files": 3323
 }
