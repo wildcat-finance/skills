@@ -375,6 +375,8 @@ class ObservedHandleRefusalTests(unittest.TestCase):
             self.assertIn("(character)", message, hex(code))
             self.assertIn(f"U+{code:04X}", message)
             self.assertIn("at index 21", message)
+            self.assertNotIn(chr(code), message)
+            self.assertNotIn(self.EXPECTED, message)
 
     def test_non_printable_characters_are_refused_on_character_without_echo(self):
         # Each renders as nothing, reorders what follows or has no agreed glyph,
