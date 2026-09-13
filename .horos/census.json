@@ -8,8 +8,8 @@
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 20252458,
-      "files": 1051,
+      "bytes": 22450108,
+      "files": 1117,
       "suffix": ".md"
     },
     {
@@ -20,33 +20,45 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 12791484,
-      "files": 855,
+      "bytes": 15810530,
+      "files": 1158,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 12321686,
-      "files": 574,
+      "bytes": 13709616,
+      "files": 618,
       "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
-      "bytes": 8096750,
-      "files": 115,
+      "bytes": 8097291,
+      "files": 116,
       "suffix": "(no suffix)"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 3801350,
-      "files": 59,
+      "bytes": 4137405,
+      "files": 67,
       "suffix": ".jsonl"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 3446915,
+      "files": 151,
+      "suffix": ".bin"
     },
     {
       "boundary_bytes": 949,
       "bytes": 627681,
       "files": 116,
       "suffix": ".sol"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 214614,
+      "files": 53,
+      "suffix": ".txt"
     },
     {
       "boundary_bytes": 117,
@@ -56,7 +68,7 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 68842,
+      "bytes": 69900,
       "files": 15,
       "suffix": ".yml"
     },
@@ -68,9 +80,21 @@
     },
     {
       "boundary_bytes": 0,
+      "bytes": 51075,
+      "files": 10,
+      "suffix": ".stdout"
+    },
+    {
+      "boundary_bytes": 0,
       "bytes": 33767,
       "files": 2,
       "suffix": ".graphql"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 20046,
+      "files": 10,
+      "suffix": ".stderr"
     },
     {
       "boundary_bytes": 0,
@@ -86,21 +110,21 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 8566,
-      "files": 14,
+      "bytes": 9703,
+      "files": 20,
       "suffix": ".ts"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 7163,
-      "files": 5,
-      "suffix": ".txt"
     },
     {
       "boundary_bytes": 0,
       "bytes": 6694,
       "files": 6,
       "suffix": ".wai"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 3098,
+      "files": 1,
+      "suffix": ".log"
     },
     {
       "boundary_bytes": 0,
@@ -179,16 +203,10 @@
       "bytes": 17,
       "files": 1,
       "suffix": ".woff2"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 11,
-      "files": 1,
-      "suffix": ".bin"
     }
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 102183894,
-  "total_files": 2933
+  "total_bytes": 112855885,
+  "total_files": 3580
 }

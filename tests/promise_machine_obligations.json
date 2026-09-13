@@ -1,0 +1,186 @@
+{
+  "contract": "promise-machine/v1",
+  "schema": "promise-machine-obligations/v1",
+  "obligations": [
+    {
+      "id": "law-contract-identity",
+      "clause_sha256": "1e4cfcd2d01bc9bbfc4e5b6e93f58867114a3191b488ffba3a627aa1247d4be1",
+      "gate": "law.contract-identity",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-contract-identity.json",
+      "finding": "PM007",
+      "consequence": 3,
+      "blocked_transition": "publish or consume a law under a competing contract identity",
+      "recovery": "restore the one promise-machine/v1 contract identity and rerun the obligation check"
+    },
+    {
+      "id": "law-composition-lemma-boundary",
+      "clause_sha256": "cfa8e9445e421a0ebcb176f8f8f9c8703fed5c1aa9b28974000759d81858ae1d",
+      "gate": "composition.lemma-retrieval-to-berean-corpus",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "admit source-linked chunks as retrieval input",
+      "recovery": "return to the cited source bytes"
+    },
+    {
+      "id": "law-composition-lazarus-boundary",
+      "clause_sha256": "85a7135e01ead8eee132472bcc426ca08868801609ad6e9a53a7863d47a2f181",
+      "gate": "composition.lazarus-rpc-to-berean-answer",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "admit recorded RPC evidence to the pinned answer evidence set",
+      "recovery": "run the named proof checker for the exact fixture"
+    },
+    {
+      "id": "law-composition-berean-boundary",
+      "clause_sha256": "014a5c68553e7f7654693dc08c0149b9c5d2ec8f1baf34e2a8af6c30cf693567",
+      "gate": "composition.berean-promotion-to-ariadne-capture",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "bind the promoted Berean release digest to its declared evidence",
+      "recovery": "inspect the pinned corpus, answers, and evaluation record"
+    },
+    {
+      "id": "law-composition-janus-boundary",
+      "clause_sha256": "4b25765f9a8d7c4fd116d9e58ba7975a501cc509fb152dbbf0b1ad7b86d7472e",
+      "gate": "composition.janus-bounded-to-ariadne-capture",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "bind the bounded Janus result to its host-specific evidence",
+      "recovery": "rerun against the named host adapter and bounded manifest"
+    },
+    {
+      "id": "law-composition-ariadne-boundary",
+      "clause_sha256": "e93b1f2112733c6406194f01674449d4e5649dd361ccf92fa7b55fa7629b4b2c",
+      "gate": "composition.ariadne-verification-to-fiat-delivery",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "consume the verified statement as an artefact-evidence binding",
+      "recovery": "run an external signature verifier bound to the statement"
+    },
+    {
+      "id": "law-composition-fiat-observation-boundary",
+      "clause_sha256": "48b93c6d57958d7c04f0ea69938a6d880fa91f8adbe28a0c29c107f089ea64a1",
+      "gate": "composition.fiat-observation-to-synkrisis-cohort",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "admit the checked observation prefix to the named comparison cohort",
+      "recovery": "return to the validator, capture, and bound receipt"
+    },
+    {
+      "id": "law-composition-synkrisis-boundary",
+      "clause_sha256": "e3e202d89778883c0dcf83ba6932eaad94b438e6649d1811bfd4d298bb8bc910",
+      "gate": "composition.synkrisis-verification-to-fiat-integration",
+      "specimen": "tests/fixtures/promise-machine/composition/cases.json",
+      "finding": "PM097",
+      "consequence": 3,
+      "blocked_transition": "consume the recomputable comparison as bounded integration evidence",
+      "recovery": "inspect the cohort, findings, report, counterevidence, and unknown runs"
+    },
+    {
+      "id": "law-declaration-fields",
+      "clause_sha256": "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
+      "gate": "law.declaration-fields",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-declaration-fields.json",
+      "finding": "PM008",
+      "consequence": 2,
+      "blocked_transition": "accept an authored law that omits a required promise declaration field",
+      "recovery": "restore all nine required schema fields and rerun the obligation check"
+    },
+    {
+      "id": "law-core-checker-side-effects",
+      "clause_sha256": "f60a0bf02e71859a024c223fa267f68d4d521900a0eb50c3933f8483e7ff20b9",
+      "gate": "checker.side-effects",
+      "specimen": "tests/fixtures/promise-machine/imports/subprocess.json",
+      "finding": "PM094",
+      "consequence": 3,
+      "blocked_transition": "run a core checker capable of network, credential, shell, subprocess, dynamic-code or evidence-command access",
+      "recovery": "remove the forbidden import or call and rerun the offline core-checker guard"
+    },
+    {
+      "id": "law-exception-resolution",
+      "clause_sha256": "d2867efaa4e5ac58beecd645d4c3b4e0673171911cb938c619aa8228eaad6b78",
+      "gate": "exception.resolution",
+      "specimen": "tests/fixtures/promise-machine/exceptions/expired.json",
+      "finding": "PM093",
+      "consequence": 3,
+      "blocked_transition": "authorise a transition through an unresolved, mismatched, expired or revoked exception",
+      "recovery": "restore a digest-bound authority and reason record, matching promise, gate, subject and scope, valid expiry and explicit revocation state"
+    },
+    {
+      "id": "law-generated-copy-identity",
+      "clause_sha256": "b9da0367e1cda2d739a42d611a2e0c111121cf71aea0e6597ce21a439399461b",
+      "gate": "law.generated-copy-marker",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
+      "finding": "PM005",
+      "consequence": 3,
+      "blocked_transition": "publish generated installation copies without the canonical-source identity",
+      "recovery": "restore the canonical generated-copy marker, regenerate copies, and rerun the obligation check"
+    },
+    {
+      "id": "law-governing-principle",
+      "clause_sha256": "f8cd9cdd6129e69f588f81143bc5f4f597246fb3b3e6ae5b9a7ced9c1911d07b",
+      "gate": "law.governing-principle",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
+      "finding": "PM009",
+      "consequence": 3,
+      "blocked_transition": "accept an authored law whose governing-principle sentence changed",
+      "recovery": "restore the settled governing-principle sentence and rerun the obligation check"
+    },
+    {
+      "id": "law-refusal-shape",
+      "clause_sha256": "e3383a98a024c4eecc2902f9cb0edae50cd3ff12f5c248ee47fd7cb1f86d17a1",
+      "gate": "refusal.structured",
+      "specimen": "tests/fixtures/promise-machine/findings/missing-recovery.json",
+      "finding": "PM092",
+      "consequence": 2,
+      "blocked_transition": "emit or consume an incomplete refusal record",
+      "recovery": "restore the complete refusal fields and render text and JSON again from the same finding"
+    },
+    {
+      "id": "law-required-sections",
+      "clause_sha256": "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
+      "gate": "law.required-sections",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-required-sections.json",
+      "finding": "PM006",
+      "consequence": 2,
+      "blocked_transition": "accept a root law with a missing or duplicated normative section",
+      "recovery": "restore every required heading exactly once and rerun the obligation check"
+    },
+    {
+      "id": "law-unknowns-non-authorising",
+      "clause_sha256": "0086ce72fafa819da188612d5c8399caa5097d16f38e2a4dc12ed2bbe69f1f1f",
+      "gate": "transition.unknowns",
+      "specimen": "tests/fixtures/promise-machine/consequences/unknown.json",
+      "finding": "PM091",
+      "consequence": 3,
+      "blocked_transition": "authorise a positive transition from unknown, not-run, missing, stale or unresolved evidence",
+      "recovery": "record resolved positive evidence for the same subject and scope, preserve remaining unknowns, and rerun the transition check"
+    },
+    {
+      "id": "law-consequence-separation",
+      "clause_sha256": "4ca54c2c47e119492b505fd0b1e2746f1b2da5eb297054147f29424a86637716",
+      "gate": "transition.consequence",
+      "specimen": "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+      "finding": "PM090",
+      "consequence": 3,
+      "blocked_transition": "authorise a transition without its consequence-specific evidence path",
+      "recovery": "supply the exact evidence required by the declared consequence and rerun the transition check"
+    },
+    {
+      "id": "law-runtime-result-binding",
+      "clause_sha256": "5ab3a7b96df72ab8e457533b60d82f2b8986a9c9701697889ed7f4267c0e3e00",
+      "gate": "runtime.binding",
+      "specimen": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
+      "finding": "PM095",
+      "consequence": 3,
+      "blocked_transition": "accept a level-two or level-three result without its source-bound native fields",
+      "recovery": "restore the bounded reader, native fields, source digest, and level-three authority evidence, then rerun the runtime check"
+    }
+  ]
+}

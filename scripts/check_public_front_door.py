@@ -104,6 +104,15 @@ page -- so the join is bounded rather than asserted. What a marked claim
 establishes is that the named ledger stands at the declared version, not that
 the sentence is about it.
 
+Each ledger is read the first time a claim binds to it, and never before. The
+sweep once resolved every governed ledger's version before it opened a page,
+so one `EVOLUTION.md` with no `- Current version:` row ended the whole run at
+exit 2 with no findings list, while an absent maintained page was one `FD01`
+beside every other page reporting normally. A ledger that cannot be read, or
+that reads cleanly and declares no current version row, is now `FD39` against
+each claim that needed it, the rest of the sweep reports as it would have, and
+a ledger no claim binds is never opened.
+
 What it does not do: it never grades free-form voice, which belongs to
 Imprimatur, Vulgate, Brevitas and human review. It does not decide whether a
 member-status sentence is true, only whether it still describes the version its
@@ -122,8 +131,8 @@ section heading quoted inside a fence is an example rather than the heading it
 imitates. Everything else still reads the fence, because the `COMMAND_RE` a
 card must display sits inside one.
 
-Exit 0 when the contract holds, 1 when a rule reports, 2 when an input cannot
-be read at all.
+Exit 0 when the contract holds, 1 when a rule reports, 2 when the topology or
+the demonstration records cannot be read at all.
 """
 
 from __future__ import annotations
@@ -525,6 +534,7 @@ REFUSALS = {
     "FD36": "generated-region claim is carried by the skill's own ledger",
     "FD37": "marked status prose names the version its marker declares",
     "FD38": "a marker that begins its line carries no prose on that line",
+    "FD39": "bound ledger is readable and declares its current version",
 }
 
 
@@ -591,13 +601,76 @@ def maintained_documents(topology) -> tuple[Maintained, ...]:
 def ledger_version(root: Path, directory: str) -> str:
     """The version one governed skill's own ledger currently records."""
 
-    text = read_document(root, f"{directory}/{LEDGER_NAME}")
+    return recorded_version(
+        read_document(root, f"{directory}/{LEDGER_NAME}"), directory
+    )
+
+
+def recorded_version(text: str, directory: str) -> str:
+    """The `- Current version:` row of one ledger, refusing one without it."""
+
     match = LEDGER_VERSION_RE.search(text)
     if match is None:
         raise FrontDoorError(
             f"{directory}/{LEDGER_NAME} declares no current version row"
         )
     return match.group("version")
+
+
+class Ledgers:
+    """Every governed ledger, each read the first time a claim binds to it.
+
+    The sweep once resolved all of these before it opened a page, so one
+    ledger with no version row raised out of the whole run at exit 2 with no
+    findings list, on a tree where no page said anything about that skill.
+    Reading at the point of use gives the condition the shape of every other
+    declared one: `FD39` against the claim that needed the ledger, with the
+    rest of the sweep reporting as it would have.
+
+    Each ledger is opened at most once. The outcome is kept whether it was the
+    text or the error that stopped the read, so a ledger bound by several
+    claims is read once and an unreadable one is reported at each claim
+    without being opened again.
+    """
+
+    def __init__(self, root: Path, by_skill: dict[str, str]) -> None:
+        self.root = root
+        self.by_skill = by_skill
+        self._read: dict[str, str | FrontDoorError] = {}
+
+    def governed(self, skill: str) -> bool:
+        return skill in self.by_skill
+
+    def text(self, skill: str) -> str:
+        """The ledger as text, or the error that stopped its read."""
+
+        if skill not in self._read:
+            try:
+                self._read[skill] = read_document(
+                    self.root, f"{self.by_skill[skill]}/{LEDGER_NAME}"
+                )
+            except FrontDoorError as exc:
+                self._read[skill] = exc
+        outcome = self._read[skill]
+        if isinstance(outcome, FrontDoorError):
+            raise outcome
+        return outcome
+
+    def version(self, skill: str) -> str:
+        """The version the ledger currently records."""
+
+        return recorded_version(self.text(skill), self.by_skill[skill])
+
+    def carries(self, skill: str, display: str, offset: int) -> bool:
+        """Whether the ledger holds the sentence making the claim at `offset`.
+
+        Normalised the same way `claim_sentence` normalises the page, so the
+        two sides of the comparison differ only where the prose does.
+        """
+
+        return ledger_carries(
+            display, offset, flat(self.text(skill).replace("*", " "))
+        )
 
 
 def rendered(text: str) -> str:
@@ -794,6 +867,48 @@ def ledger_carries(display: str, offset: int, ledger: str) -> bool:
 
     sentence = claim_sentence(display, offset)
     return bool(sentence) and bool(ledger) and sentence in ledger
+
+
+def check_region_claim(
+    where: str,
+    kind: str,
+    claim: re.Match,
+    display: str,
+    entry: str | None,
+    ledgers: Ledgers | None,
+    findings: list[Finding],
+) -> None:
+    """Decide one claim inside a region that quotes the page's own ledger.
+
+    The region exempts the claim only when the entry skill's ledger carries
+    the sentence making it. The ledger is read here, at the first claim that
+    needs it, and not before; one that cannot be read shows nothing, so the
+    claim is refused against that ledger rather than against the sentence.
+    """
+
+    word = word_index(display, claim.start())
+    carried = False
+    if entry is not None and ledgers is not None and ledgers.governed(entry):
+        try:
+            carried = ledgers.carries(entry, display, claim.start())
+        except FrontDoorError as exc:
+            _finding(
+                findings,
+                "FD39",
+                f"{where}: the {kind} claim {claim.group(0)!r} at word {word} "
+                f"sits in a generated region quoting {entry}'s ledger, and "
+                f"{exc}; a ledger that cannot be read exempts nothing",
+            )
+            return
+    if carried:
+        return
+    _finding(
+        findings,
+        "FD36",
+        f"{where}: the {kind} claim {claim.group(0)!r} at word {word} sits in "
+        "a generated region and no sentence in this skill's own EVOLUTION.md "
+        "carries it, so the region exempts nothing here",
+    )
 
 
 def markers(text: str) -> list[Marker]:
@@ -1170,7 +1285,8 @@ def check_counts(
     findings: list[Finding],
     *,
     history: bool = False,
-    ledger: str = "",
+    entry: str | None = None,
+    ledgers: Ledgers | None = None,
 ) -> None:
     """Every current count claim names a derived quantity and agrees with it."""
 
@@ -1321,15 +1437,8 @@ def check_counts(
         if claim.start() in marked or inside(spans, claim.start(), COUNT_RULE):
             continue
         if ledger_backed(spans, claim.start()):
-            if ledger_carries(display, claim.start(), ledger):
-                continue
-            _finding(
-                findings,
-                "FD36",
-                f"{where}: the count claim {claim.group(0)!r} at word "
-                f"{word_index(display, claim.start())} sits in a generated "
-                "region and no sentence in this skill's own EVOLUTION.md "
-                "carries it, so the region exempts nothing here",
+            check_region_claim(
+                where, "count", claim, display, entry, ledgers, findings
             )
             continue
         _finding(
@@ -1345,14 +1454,13 @@ def check_status(
     where: str,
     text: str,
     display: str,
-    versions: dict[str, str],
+    ledgers: Ledgers,
     spans: Sequence[tuple[int, int, frozenset[str], bool]],
     findings: list[Finding],
     *,
     plugin: str | None = None,
     by_plugin: dict[str, str] | None = None,
     entry: str | None = None,
-    ledger: str = "",
 ) -> None:
     """Every member-status claim names the ledger version it describes.
 
@@ -1399,8 +1507,7 @@ def check_status(
         covered.update(region[0] + start for start in claims)
         skill = marker.attributes["skill"]
         declared = marker.attributes["version"]
-        current = versions.get(skill)
-        if current is None:
+        if not ledgers.governed(skill):
             _finding(
                 findings,
                 "FD32",
@@ -1460,6 +1567,20 @@ def check_status(
                 "names and for no other",
             )
             continue
+        # The ledger is read here, at the comparison that needs it, and not
+        # before. The three rules above are decided from the page alone, so a
+        # ledger that cannot be read refuses this marker and hides nothing else.
+        try:
+            current = ledgers.version(skill)
+        except FrontDoorError as exc:
+            _finding(
+                findings,
+                "FD39",
+                f"{where}: the status marker at word "
+                f"{word_index(display, marker.start)} binds {skill!r}, and "
+                f"{exc}, so nothing decides whether {declared} is current",
+            )
+            continue
         if declared != current:
             _finding(
                 findings,
@@ -1473,15 +1594,8 @@ def check_status(
         if claim.start() in covered or inside(spans, claim.start(), STATUS_RULE):
             continue
         if ledger_backed(spans, claim.start()):
-            if ledger_carries(display, claim.start(), ledger):
-                continue
-            _finding(
-                findings,
-                "FD36",
-                f"{where}: the member-status claim {claim.group(0)!r} at word "
-                f"{word_index(display, claim.start())} sits in a generated "
-                "region and no sentence in this skill's own EVOLUTION.md "
-                "carries it, so the region exempts nothing here",
+            check_region_claim(
+                where, "member-status", claim, display, entry, ledgers, findings
             )
             continue
         _finding(
@@ -1717,9 +1831,10 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
     by_plugin = {
         skill: directory.split("/")[1] for skill, directory in by_skill.items()
     }
-    versions = {
-        skill: ledger_version(root, directory) for skill, directory in by_skill.items()
-    }
+    # No ledger is read here. Each is opened by the first claim that binds to
+    # it, so a ledger no page describes is never read, and one that cannot be
+    # read is a refusal against that claim rather than the end of the sweep.
+    ledgers = Ledgers(root, by_skill)
     # The entry skill one landing page is about, and the ledger its generated
     # region quotes. A landing block is the skill's own frontier prose copied
     # out of `EVOLUTION.md`, so the ledger is what decides whether a claim
@@ -1727,15 +1842,6 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
     entries = {
         directory.split("/")[1]: directory.rsplit("/", 1)[-1]
         for directory in topology.canonical
-    }
-    # Normalised the same way `claim_sentence` normalises the page, so the two
-    # sides of the comparison differ only where the prose does.
-    ledgers = {
-        plugin: flat(
-            read_document(root, f"{by_skill[skill]}/{LEDGER_NAME}").replace("*", " ")
-        )
-        for plugin, skill in entries.items()
-        if skill in by_skill
     }
     counts = topology.counts()
 
@@ -1760,20 +1866,20 @@ def check(root: Path) -> tuple[list[Finding], list[dict]]:
                 spans,
                 findings,
                 history=item.carries(HISTORY_RULE),
-                ledger=ledgers.get(owner or "", ""),
+                entry=entries.get(owner or ""),
+                ledgers=ledgers,
             )
         if item.carries(STATUS_RULE):
             check_status(
                 item.relative,
                 text,
                 display,
-                versions,
+                ledgers,
                 spans,
                 findings,
                 plugin=owner,
                 by_plugin=by_plugin,
                 entry=entries.get(owner or ""),
-                ledger=ledgers.get(owner or "", ""),
             )
         if item.carries(FRONT_DOOR_RULE):
             records = demonstrations.load_records(root)

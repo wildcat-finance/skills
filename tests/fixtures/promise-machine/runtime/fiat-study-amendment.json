@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_study_amendment": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-study-amendment without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-study-amendment",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-study-amendment",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_valid_append_records_digest_history_and_reconstructs_the_packet"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-study-amendment",
+        "scope": "structural binding for fiat-study-amendment",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_valid_append_records_digest_history_and_reconstructs_the_packet",
+        "transition": {
+          "action": "structurally bind fiat-study-amendment without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_study_amendment": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-study-amendment without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_hexctl.py",
+                "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-study-amendment",
+          "source": {
+            "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+          },
+          "target": {
+            "scope": "structural binding for fiat-study-amendment",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_valid_append_records_digest_history_and_reconstructs_the_packet"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_hexctl.py",
+            "sha256": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-study-amendment",
+        "scope": "structural binding for fiat-study-amendment",
+        "source_digest": "aca3869ef53593fa401be9476fa613c60cca80647f98a81d67e7c6827669ca6f",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl.py#test_valid_append_records_digest_history_and_reconstructs_the_packet",
+        "transition": {
+          "action": "structurally bind fiat-study-amendment without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

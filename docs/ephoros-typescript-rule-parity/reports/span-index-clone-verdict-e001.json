@@ -1,0 +1,9 @@
+{
+  "candidate": "span-index",
+  "command": "python3 .hexaemeron/design-probes/clone_verdict.py",
+  "criterion": "clone-verdict-e001",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 14
+}

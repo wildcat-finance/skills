@@ -1,0 +1,523 @@
+{
+  "copies": [
+    {
+      "bytes": 0,
+      "copy": "docs/agent-instruction-reconciliation/baseline/corpus-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/baseline/corpus-check.stderr",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 10372,
+      "copy": "docs/agent-instruction-reconciliation/baseline/corpus-check.stdout",
+      "sha256": "da111897dbb03969fef912819ce62b7911d805df3b7bd7eb2eb48f605afe77a1",
+      "source": ".hexaemeron/baseline/corpus-check.stdout",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 453,
+      "copy": "docs/agent-instruction-reconciliation/baseline/focused-tests.stderr",
+      "sha256": "605768747f4f6342035966627646f706a402b6787f92454e745780c35feacef5",
+      "source": ".hexaemeron/baseline/focused-tests.stderr",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 0,
+      "copy": "docs/agent-instruction-reconciliation/baseline/focused-tests.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/baseline/focused-tests.stdout",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 1171,
+      "copy": "docs/agent-instruction-reconciliation/baseline/proof.json",
+      "sha256": "e487c00e56c0f485cb96a658a5250d0633efaf54863f6adf4442a70343654c1f",
+      "source": ".hexaemeron/baseline/proof.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 10712,
+      "copy": "docs/agent-instruction-reconciliation/design-evidence.json",
+      "sha256": "ba069a46a51f1528dd6b8bf81dce76d7054b2df3806cbdb46342f795beaf4a3b",
+      "source": ".hexaemeron/design-evidence.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-fixed.stderr",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-fixed.stderr",
+      "sha256": "821506d744cf3686ef9ed15ffd8a5684343f43fac64f4bc39447f9b606ec79b2",
+      "bytes": 291,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-fixed.stdout",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-fixed.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-old.stderr",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-old.stderr",
+      "sha256": "9abf8bd3302eb41e90e8bc9d8a9218d01ef5391ce583c9ed41a3b1fa672016f1",
+      "bytes": 1564,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-old.stdout",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-old.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-fixture-guard-proof.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/guard-proof.json",
+      "sha256": "d93f9604e7f62b6c6e2ec9756ae03d1ed87866516822dbaabaf7679a316fe62d",
+      "bytes": 1798,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-demonstrations-reproduction.stderr",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/independent-demonstrations.stderr",
+      "sha256": "981bc2c538a1643b95ce5622429b9b1dcea1e3af433a2337d8f3a983afa06e52",
+      "bytes": 17738,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-demonstrations-reproduction.stdout",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/independent-demonstrations.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/independent-reproduction.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/independent-reproduction.json",
+      "sha256": "07227cd313472352bcb119391de0e4b8b8f97c5f8d7b0c2cb3a6eea93ac8145f",
+      "bytes": 1832,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/metadata-reproduction.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/metadata-reproduction.json",
+      "sha256": "db5252cc441b329b510900f2b2d19451c94d19e3ca021fa8424f32a41600a89a",
+      "bytes": 1024,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook-fixture-isolation-imprimatur-final.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/runbook-fixture-isolation-imprimatur-final.json",
+      "sha256": "029e811ac715d7fa5446ccfc7fcb426111f967f39dee2570d2a0a648c3a53a8e",
+      "bytes": 940,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook-fixture-isolation-imprimatur-first.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/runbook-fixture-isolation-imprimatur-first.json",
+      "sha256": "029e811ac715d7fa5446ccfc7fcb426111f967f39dee2570d2a0a648c3a53a8e",
+      "bytes": 940,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook-fixture-isolation-prose.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/runbook-prose-proof.json",
+      "sha256": "40d54540894b4f7af61a96db447a9ba2ba147b2704e6a5aeb94c402c17ede095",
+      "bytes": 4692,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/step-1-checks.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/step-1-checks.json",
+      "sha256": "b013452a62af68acfef3267657bc7a6f54c7212907e50a9f390d4bb2c3d200c3",
+      "bytes": 347023,
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 11709,
+      "copy": "docs/agent-instruction-reconciliation/history/runbook-before-fixture-isolation.md.txt",
+      "sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+      "source": ".hexaemeron/runbook.md",
+      "transformation": "byte-identical",
+      "source_snapshot": "Before fixture-isolation amendment; committed at 0d15f21c520ca506fd134a4005696a7411a015c8"
+    },
+    {
+      "bytes": 7057,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/issue-1192.json",
+      "sha256": "25cc622369ec2bea5cfa34f479ecff962bf64f6ed354ea83a4d5b68e684991ef",
+      "source": ".hexaemeron/prior-art/issue-1192.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 6831,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/issue-1467.json",
+      "sha256": "921622bf4d7884c1c3c6b082020e8b84c8f24d1ef59d96275d8481a99b437ebd",
+      "source": ".hexaemeron/prior-art/issue-1467.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 6693,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/issue-1513.json",
+      "sha256": "2b9075db0cc3bf28cf2ce42ba7843acdaa0d6edd4ba625e459b28117efa2525a",
+      "source": ".hexaemeron/prior-art/issue-1513.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 2637,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/pr-1416.json",
+      "sha256": "c8a85cb03eba46617c72d2a219cd3b05c997a24af149ed7eefb4c9fc32fddebb",
+      "source": ".hexaemeron/prior-art/pr-1416.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 11486,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/pr-1548.json",
+      "sha256": "ea09175d49af3d8ff320c8fa273cd38d010001dea4939247b30581215505558a",
+      "source": ".hexaemeron/prior-art/pr-1548.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 5110,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/pr-1550.json",
+      "sha256": "d6501fbfb9deb4d886fb4b2f4ee6dc179652e6bdc4ed0889a7af45dd6d3ce005",
+      "source": ".hexaemeron/prior-art/pr-1550.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 9741,
+      "copy": "docs/agent-instruction-reconciliation/prior-art/pr-1554.json",
+      "sha256": "266671b5ab491a625c804107b19334202e641228472cf9e1a5184eba6c196557",
+      "source": ".hexaemeron/prior-art/pr-1554.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 295,
+      "copy": "docs/agent-instruction-reconciliation/reports/fixed-live-v1-fixture-placements.json",
+      "sha256": "2db54ebc6b6ff1557f55159ec6a002dc509251394ca41657b002c5551f8151ef",
+      "source": ".hexaemeron/reports/fixed-live-v1-fixture-placements.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 291,
+      "copy": "docs/agent-instruction-reconciliation/reports/fixed-live-v1-legacy-v1.json",
+      "sha256": "a2678f12c9c672d04f4c1ccee404800b867c7b27f7f77bab2ddb5b47ccf0af6d",
+      "source": ".hexaemeron/reports/fixed-live-v1-legacy-v1.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 297,
+      "copy": "docs/agent-instruction-reconciliation/reports/fixed-live-v1-prepare-p95.json",
+      "sha256": "3ce40b8c464b81c60887f4f1c245187896cfae1811bfa2e8569a4e7f92799538",
+      "source": ".hexaemeron/reports/fixed-live-v1-prepare-p95.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 299,
+      "copy": "docs/agent-instruction-reconciliation/reports/fixed-live-v1-recover-preimage.json",
+      "sha256": "3169f0054f4438ed0cfa65737ea3aae4d3a580caabdd82b2757016e4b637af6c",
+      "source": ".hexaemeron/reports/fixed-live-v1-recover-preimage.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 298,
+      "copy": "docs/agent-instruction-reconciliation/reports/fixed-live-v1-review-boundary.json",
+      "sha256": "3bdaca4e3c72fed1fc2c0badb24c0c411724f3dbc425316c353cba52c84d0ffe",
+      "source": ".hexaemeron/reports/fixed-live-v1-review-boundary.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 290,
+      "copy": "docs/agent-instruction-reconciliation/reports/fixed-live-v1-staging-bytes.json",
+      "sha256": "4082e8ddf961839bfd955ad143c6e5a610e61c0221f205fe32d26aa89c2f439c",
+      "source": ".hexaemeron/reports/fixed-live-v1-staging-bytes.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 311,
+      "copy": "docs/agent-instruction-reconciliation/reports/sequential-general-v1-fixture-placements.json",
+      "sha256": "2a49d90fb2aec9f92a5f9bde49c75b0748a21ae79118d4df821c2fc87cfa5ac2",
+      "source": ".hexaemeron/reports/sequential-general-v1-fixture-placements.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 307,
+      "copy": "docs/agent-instruction-reconciliation/reports/sequential-general-v1-legacy-v1.json",
+      "sha256": "de36eafc660bb3cdf38b80b5653c9c1e181136c7d70ad2d4c08047f876fdf42e",
+      "source": ".hexaemeron/reports/sequential-general-v1-legacy-v1.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 313,
+      "copy": "docs/agent-instruction-reconciliation/reports/sequential-general-v1-prepare-p95.json",
+      "sha256": "b39239ae4ce7a35fed02fed2fd94dcb6bb89c2cbacc89a5fa5345b1130552faa",
+      "source": ".hexaemeron/reports/sequential-general-v1-prepare-p95.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 315,
+      "copy": "docs/agent-instruction-reconciliation/reports/sequential-general-v1-recover-preimage.json",
+      "sha256": "2f8aedcdcf200f31622e947d19999b21399d44b56688697c7f33ab0644da2e5c",
+      "source": ".hexaemeron/reports/sequential-general-v1-recover-preimage.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 313,
+      "copy": "docs/agent-instruction-reconciliation/reports/sequential-general-v1-review-boundary.json",
+      "sha256": "ee295e7bf2fd6ac79a126a9e3f4d4cf26fc6d73bde6b2b4bd2929bb536cccb34",
+      "source": ".hexaemeron/reports/sequential-general-v1-review-boundary.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 306,
+      "copy": "docs/agent-instruction-reconciliation/reports/sequential-general-v1-staging-bytes.json",
+      "sha256": "2b072ca2f7c23a8fd45593b7d3fa7f4f99396c616d64251c922390b5892b1a4d",
+      "source": ".hexaemeron/reports/sequential-general-v1-staging-bytes.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 303,
+      "copy": "docs/agent-instruction-reconciliation/reports/staged-general-v1-fixture-placements.json",
+      "sha256": "ac3e4a6eda4f89feccfa1828099306bad0475824c718851625c4dd600485a6a4",
+      "source": ".hexaemeron/reports/staged-general-v1-fixture-placements.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 299,
+      "copy": "docs/agent-instruction-reconciliation/reports/staged-general-v1-legacy-v1.json",
+      "sha256": "a92c11672c7d860c0e5982129f70ff0bcce905868a1655066bbbb29d5b23887f",
+      "source": ".hexaemeron/reports/staged-general-v1-legacy-v1.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 305,
+      "copy": "docs/agent-instruction-reconciliation/reports/staged-general-v1-prepare-p95.json",
+      "sha256": "04bcefabf515a618def89e388ffd1b335d1d2d1691f515b2acb41402032b14c8",
+      "source": ".hexaemeron/reports/staged-general-v1-prepare-p95.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 306,
+      "copy": "docs/agent-instruction-reconciliation/reports/staged-general-v1-recover-preimage.json",
+      "sha256": "b242aba670ba646ef5d7528c81e7d7f3e30f5288fb8811f6a7e5dabac99d7a15",
+      "source": ".hexaemeron/reports/staged-general-v1-recover-preimage.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 305,
+      "copy": "docs/agent-instruction-reconciliation/reports/staged-general-v1-review-boundary.json",
+      "sha256": "ccface15b27b5a1588fd8762934921c7d4b73284e178dbe3f5136988b0b9550b",
+      "source": ".hexaemeron/reports/staged-general-v1-review-boundary.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 302,
+      "copy": "docs/agent-instruction-reconciliation/reports/staged-general-v1-staging-bytes.json",
+      "sha256": "309360ab791ab75199d047813d33cd4a7c0970f2c42ca65010ea86d99a75ee4a",
+      "source": ".hexaemeron/reports/staged-general-v1-staging-bytes.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 939,
+      "copy": "docs/agent-instruction-reconciliation/runbook-imprimatur-final.json",
+      "sha256": "edc6fe314221d2355e9d8b1c8a03f7b14733233b40c02fd99c3abc49a794df7d",
+      "source": ".hexaemeron/runbook-imprimatur-final.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 3838,
+      "copy": "docs/agent-instruction-reconciliation/runbook-prose-proof.json",
+      "sha256": "d7c2ccf8878902622072e4a6106aa2be8386cb1e623993b4e08b0b3393f3d8fe",
+      "source": ".hexaemeron/runbook-prose-proof.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 11709,
+      "copy": "docs/agent-instruction-reconciliation/runbook-prose-source.md.txt",
+      "path_adaptation": "historical draft retained with .txt suffix; source bytes unchanged",
+      "sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+      "source": ".hexaemeron/runbook-prose-source.md",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 6,
+      "copy": "docs/agent-instruction-reconciliation/runbook-protasis-final.txt",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/runbook-protasis-final.txt",
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook.md",
+      "copy": "docs/agent-instruction-reconciliation/runbook.md",
+      "sha256": "34b9c853f0c29cb110bdc02a2be3bd90be5bcb73fce551292910e9ed5fee1b39",
+      "bytes": 15168,
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 6343,
+      "copy": "docs/agent-instruction-reconciliation/scripts/probe_reconciliation_design.py",
+      "sha256": "d70bde0aed58bc0220f06ecd7fa168228634e88d97d0d2bc432224002aba6e7b",
+      "source": ".hexaemeron/scripts/probe_reconciliation_design.py",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 5018,
+      "copy": "docs/agent-instruction-reconciliation/scripts/resolve_reconciliation_conformance.py",
+      "sha256": "f9bb573048b0f6023e28a42a64483e49929e807ff146bb388079b19fd87bfe30",
+      "source": ".hexaemeron/scripts/resolve_reconciliation_conformance.py",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 67355,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/audit-read-inventory.json",
+      "sha256": "6d859c8e71d3266ef2c35290fb7a7d122960607bd8f91ea084deb1b3b4f2bde3",
+      "source": ".hexaemeron/study-evidence/audit-read-inventory.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 0,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/audit-synopsis-check.stderr",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/study-evidence/audit-synopsis-check.stderr",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 29634,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/audit-synopsis-check.stdout",
+      "sha256": "34cb19a160bc447ebef4569210dbccd35a9c9053ec5b4e4ecb3a6c01fe1525dc",
+      "source": ".hexaemeron/study-evidence/audit-synopsis-check.stdout",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 6,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/design-lock-final.txt",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/study-evidence/design-lock-final.txt",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 5065,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/fixed-live-v1.json",
+      "sha256": "8da3c61d194312a4cf0d9e3d5ade5c7c9b2dd3c2a99e875ae16920e4bad84631",
+      "source": ".hexaemeron/study-evidence/fixed-live-v1.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 4253,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/fixed-live-v1.stdout.json",
+      "sha256": "c45705049bb25ce0787627cb25a1b068ee6f3d1b0fd71161baab7ce214e54a38",
+      "source": ".hexaemeron/study-evidence/fixed-live-v1.stdout.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 1470,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/handoff.json",
+      "sha256": "eacd129215ce1345f214eda75c6f527cb4be66b73dbe1ec7ce56340bd86fc091",
+      "source": ".hexaemeron/study-evidence/handoff.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 959,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/imprimatur-after.json",
+      "sha256": "3a4f773fe700237bf98cdc3042922210fe70e0b914f828f8e43ee026b6efaaf1",
+      "source": ".hexaemeron/study-evidence/imprimatur-after.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 1406,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/imprimatur-before.json",
+      "sha256": "238b4179144b218c0d95219e4e75eeb7fcd7e337bfe830ec25ea2edac39791b3",
+      "source": ".hexaemeron/study-evidence/imprimatur-before.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 959,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/imprimatur-final.json",
+      "sha256": "3a4f773fe700237bf98cdc3042922210fe70e0b914f828f8e43ee026b6efaaf1",
+      "source": ".hexaemeron/study-evidence/imprimatur-final.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 812,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/probe-environment.json",
+      "sha256": "920926ff3ef30884b8e1fd0b57dc2d142f8e4fa1a1fdd6da1c8e611d193f5317",
+      "source": ".hexaemeron/study-evidence/probe-environment.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 5087,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/prose-proof.json",
+      "sha256": "75968cf2433e556db7f0410c85d5332a61db8f6fabf1eb724e79b31810c6f29f",
+      "source": ".hexaemeron/study-evidence/prose-proof.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 6,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/protasis-final.txt",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/study-evidence/protasis-final.txt",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 3129,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/sequential-general-v1.json",
+      "sha256": "a38042647bba16dbf1da7ea2eb214ec963e4b460aadb66fbc39680d44e6ee960",
+      "source": ".hexaemeron/study-evidence/sequential-general-v1.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 2407,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/sequential-general-v1.stdout.json",
+      "sha256": "e5af238cea0a9a6043447e217b7e1efa395022958dea067c95a34415b033fb39",
+      "source": ".hexaemeron/study-evidence/sequential-general-v1.stdout.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 3125,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/staged-general-v1.json",
+      "sha256": "a9b2be91bc9fce692075939ad214d193722732a3ddb25e5bac87af02a2f2b5fd",
+      "source": ".hexaemeron/study-evidence/staged-general-v1.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 2403,
+      "copy": "docs/agent-instruction-reconciliation/study-evidence/staged-general-v1.stdout.json",
+      "sha256": "2e34a2af5db88d8a8bfa56c888b876259f34685765af2d96c5ffa38e1ed16dde",
+      "source": ".hexaemeron/study-evidence/staged-general-v1.stdout.json",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 19304,
+      "copy": "docs/agent-instruction-reconciliation/study-prose-source.md.txt",
+      "path_adaptation": "historical draft retained with .txt suffix; source bytes unchanged",
+      "sha256": "79ee47e4f34623cfee12453df49d023654cc847677267b22fcebbd7ea4814716",
+      "source": ".hexaemeron/study-prose-source.md",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 18568,
+      "copy": "docs/agent-instruction-reconciliation/study-source.md.txt",
+      "path_adaptation": "historical draft retained with .txt suffix; source bytes unchanged",
+      "sha256": "bfef0313c8010a81b7604bfbcac4b1faf39b56c97d87f3eeb8c117a4b24ba237",
+      "source": ".hexaemeron/study-source.md",
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 19304,
+      "copy": "docs/agent-instruction-reconciliation/study.md",
+      "copy_sha256": "0878ea0ab3b75a14631a886560efa0e688ac45266a60d1a59238dbca58e88e02",
+      "sha256": "79ee47e4f34623cfee12453df49d023654cc847677267b22fcebbd7ea4814716",
+      "source": ".hexaemeron/study.md",
+      "transformation": "exact source prefix followed only by the design-bridge block"
+    }
+  ],
+  "schema": "issue1513-scaffold-source-copies/v1",
+  "source_head": "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
+  "source_tree": "5f48caffde9c41846e13dfdda5c5f10165d3e274",
+  "fixture_isolation_amendment": {
+    "date": "2026-09-13",
+    "runbook_source_sha256": "34b9c853f0c29cb110bdc02a2be3bd90be5bcb73fce551292910e9ed5fee1b39",
+    "previous_runbook_sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+    "previous_runbook_copy": "docs/agent-instruction-reconciliation/history/runbook-before-fixture-isolation.md.txt",
+    "historical_binding": "Existing source paths and hashes describe their preserved observation; runbook.md now carries the appended receipt. Original records and commands are unchanged. The independent reproduction names the original .hexaemeron paths; the bound observations are copied under fixture-isolation with the mappings above."
+  }
+}

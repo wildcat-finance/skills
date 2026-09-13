@@ -1,0 +1,139 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "fiat_version_resolution": {
+          "binding": {
+            "promise_id": "fiat-version-resolution",
+            "scope": "structural binding for fiat-version-resolution",
+            "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_version_relations.py",
+              "sha256": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind fiat-version-resolution without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_version_relations.py",
+            "sha256": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-version-resolution",
+        "scope": "structural binding for fiat-version-resolution",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit",
+        "transition": {
+          "action": "structurally bind fiat-version-resolution without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "fiat_version_resolution": {
+          "binding": {
+            "promise_id": "fiat-version-resolution",
+            "scope": "structural binding for fiat-version-resolution",
+            "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_version_relations.py",
+              "sha256": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef"
+            }
+          ],
+          "source_digest": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef",
+          "transition": {
+            "action": "structurally bind fiat-version-resolution without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_version_relations.py",
+            "sha256": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-version-resolution",
+        "scope": "structural binding for fiat-version-resolution",
+        "source_digest": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef",
+        "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit",
+        "transition": {
+          "action": "structurally bind fiat-version-resolution without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

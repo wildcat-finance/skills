@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-09-12T18:49:08.942222+00:00",
+  "attempt": "parity-attempt-1.json",
+  "failed_pair": "gptoss/fiat-study-runbook-phase/fiat-after-study",
+  "failed_mode": "source",
+  "adapter_code": "WAI-E-ADAPTER.UNAVAILABLE",
+  "server_observations": {
+    "load_start": "2026-09-12T19:42:22.935+01:00",
+    "client_abort": "2026-09-12T19:45:12.732+01:00",
+    "http_status": 499,
+    "subsequent_compact_call_http_status": 200,
+    "subsequent_load_ready": "2026-09-12T19:46:26.995+01:00",
+    "excerpt_sha256": "83c8e66068200e8080f829de26aebff5856a43732d2ce9875e10697e00a8b717"
+  },
+  "mechanism": "The source call exhausted the unchanged 170-second curl limit while the server was loading gptoss. The server recorded client cancellation before model load completed; the next call loaded successfully and all remaining pairs completed.",
+  "uncertainty": "The reason this model load exceeded 170 seconds is not established.",
+  "retry": "Acquire the entire cohort once again with unchanged reviewed profiles, inputs, limits and answers; preserve this refused attempt separately."
+}

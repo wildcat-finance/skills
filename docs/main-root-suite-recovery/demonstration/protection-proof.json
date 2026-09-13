@@ -1,0 +1,29 @@
+{
+  "observed_at": "2026-09-12T20:53:47.406684+00:00",
+  "repository": "wildcat-finance/skills",
+  "branch": "main",
+  "actor": "laurenceday",
+  "required_context": "invariants",
+  "producer_app_id": 15368,
+  "strict": true,
+  "enforce_admins": true,
+  "existing_rules_preserved": true,
+  "red_pr": "https://github.com/wildcat-finance/skills/pull/1547",
+  "red_pr_head": "388aaf829f1f44138b91a5a13f3b99b84b238c5b",
+  "before_mergeable_state": "unstable",
+  "after_mergeable_state": "blocked",
+  "required_check_state": [
+    {
+      "bucket": "fail",
+      "link": "https://github.com/wildcat-finance/skills/actions/runs/34708398254/job/103592553163",
+      "name": "invariants",
+      "state": "FAILURE"
+    }
+  ],
+  "required_check_query_exit": 0,
+  "red_check_url": "https://github.com/wildcat-finance/skills/actions/runs/34708398254/job/103592553163",
+  "no_merge_attempt": true,
+  "effective_request": "request-effective.json",
+  "effective_request_sha256": "0acfe3dc8e05e5b716d74889160f344effaf145d3fc8ee3434a01876dbe80fae",
+  "first_request_outcome": "HTTP 422: supplying both legacy contexts and checks matched more than one API subschema; checks-only retry accepted"
+}

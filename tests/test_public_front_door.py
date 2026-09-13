@@ -37,8 +37,9 @@ import re
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))  # noqa: E402  (locates the checker)
@@ -88,6 +89,10 @@ LEDGER_FRONTIER = (
     "The seed release holds 41 findings from three skills chosen by hand, "
     "and the compile path has not shipped."
 )
+# The ledger the planted lantern page binds, and one no planted page binds.
+LANTERN_LEDGER = "plugins/lantern/skills/lantern/EVOLUTION.md"
+HOLLOW = "hollow"
+HOLLOW_LEDGER = f"plugins/{HOLLOW}/skills/{HOLLOW}/EVOLUTION.md"
 
 
 def write(path: Path, body: str) -> str:
@@ -344,7 +349,9 @@ def install(root: Path, records: dict[str, dict], overrides: dict[str, str]) -> 
     """Write every swept document, with the named ones replaced.
 
     `clean.md` is the default front door, so a specimen for another page is
-    checked against a repository that holds its contract everywhere else.
+    checked against a repository that holds its contract everywhere else. An
+    override may also name a file that is not a swept page, such as a ledger,
+    and is written the same way.
     """
 
     pages = {front_door.FRONT_DOOR: read_specimen("clean"), **COMPANIONS, **overrides}
@@ -641,6 +648,14 @@ PROVOCATIONS = {
             "This version rebuilds the held specimen and claims nothing beyond it.",
             "{{stale:lantern}} has not shipped the rebuild path.",
         )
+    },
+    # The ledger a page binds, not the page. A ledger that reads cleanly and
+    # records no version row was an exit rather than a refusal, so nothing
+    # here could provoke it. The planted frontier row stays so the generated
+    # region still finds its sentence and this remains one break.
+    "FD39": lambda: {
+        LANTERN_LEDGER: "# LEDGER\n\n- Frontier status: `open`\n"
+        f"- Current frontier: {LEDGER_FRONTIER}\n"
     },
 }
 
@@ -1234,6 +1249,39 @@ def phase_host_codes(landing: str) -> list[str]:
     return [finding.code for finding in findings]
 
 
+def plant_unbound_member(root: Path) -> None:
+    """Add one governed plugin whose landing page says nothing about its version.
+
+    Every member `plant` writes binds its own ledger from its landing page, so
+    a case about a ledger nothing binds needs a member the sweep can read
+    without ever opening the ledger behind it.
+    """
+
+    record_for(root, {"id": HOLLOW, "status": "mixed"})
+    write(
+        root / "plugins" / HOLLOW / "README.md",
+        f"# {HOLLOW.upper()}\n\n## WHAT IT IS\n\nA member whose page states "
+        "nothing about what its current release does.\n",
+    )
+    for manifest, entry in (
+        (
+            ".claude-plugin/marketplace.json",
+            {"name": HOLLOW, "source": f"./plugins/{HOLLOW}"},
+        ),
+        (
+            ".agents/plugins/marketplace.json",
+            {
+                "name": HOLLOW,
+                "source": {"source": "local", "path": f"./plugins/{HOLLOW}"},
+            },
+        ),
+    ):
+        path = root / manifest
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["plugins"].append(entry)
+        write(path, json.dumps(payload, indent=2) + "\n")
+
+
 @unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
 class StepFiveAuditRoundTwoTests(unittest.TestCase):
     """The partial fixes round one left, and the two rules it wrote.
@@ -1453,6 +1501,108 @@ class StepFiveAuditRoundTwoTests(unittest.TestCase):
         self.assertTrue(
             sentence_case,
             "no pinned sentence-case heading occurs in PROMISE_MACHINE.md",
+        )
+
+
+@unittest.skipIf(front_door is None, "Step 4 checker is absent on the entry parent")
+class LedgerReadAtPointOfUseTests(unittest.TestCase):
+    """A ledger is read by the claim that binds it, and refused there.
+
+    `check()` once resolved every governed ledger's version before it opened a
+    page, so one `EVOLUTION.md` with no `- Current version:` row raised out of
+    the whole sweep at exit 2 with no findings list, even on a tree where no
+    page said anything about that skill, while an absent maintained page was
+    one `FD01` beside every other page reporting normally. Issue #1313 records
+    the asymmetry; these cases hold the repair.
+    """
+
+    def malformed(self) -> dict[str, str]:
+        """lantern's ledger with its version row removed and nothing else."""
+
+        return PROVOCATIONS["FD39"]()
+
+    def test_a_ledger_without_a_version_row_is_refused_at_the_claim_that_binds_it(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            records = plant(root)
+            install(root, records, self.malformed())
+            findings, events = front_door.check(root)
+        self.assertEqual([finding.code for finding in findings], ["FD39"])
+        message = str(findings[0])
+        self.assertIn("plugins/lantern/README.md", message)
+        self.assertIn(LANTERN_LEDGER, message)
+        self.assertIn(LEDGER_VERSION.format(plugin="lantern"), message)
+        # The rest of the sweep reported as it would have: the front door's
+        # cards were still checked and still bind every real-data record.
+        self.assertEqual(
+            len(events), sum(member["status"] == "real-data" for member in MEMBERS)
+        )
+
+    def test_an_unreadable_ledger_is_refused_at_every_claim_that_needed_it(self):
+        """Three claims on lantern's page need its ledger; each is refused once.
+
+        The status marker needs the version, and the count and status claims
+        quoted into the generated region need the text. A ledger that is not
+        UTF-8 passes discovery, which opens it and decodes nothing, and fails
+        at the checker's own read.
+        """
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            records = plant(root)
+            install(root, records, {})
+            (root / LANTERN_LEDGER).write_bytes(b"# LEDGER\n\n\xff\xfe\n")
+            findings, _ = front_door.check(root)
+        self.assertEqual([finding.code for finding in findings], ["FD39"] * 3)
+        for finding in findings:
+            with self.subTest(finding=str(finding)):
+                self.assertIn(LANTERN_LEDGER, str(finding))
+                self.assertIn("not UTF-8", str(finding))
+
+    def test_a_ledger_no_claim_binds_is_never_opened(self):
+        """Nothing describes hollow, so its ledger is not read, whatever it holds."""
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            records = plant(root)
+            plant_unbound_member(root)
+            install(root, records, {})
+            write(root / HOLLOW_LEDGER, "# LEDGER\n\n- Frontier status: `open`\n")
+            opened: list[str] = []
+            original = front_door.read_document
+
+            def recording(root_: Path, relative: str) -> str:
+                opened.append(relative)
+                return original(root_, relative)
+
+            with mock.patch.object(front_door, "read_document", recording):
+                findings, _ = front_door.check(root)
+        self.assertEqual(findings, [])
+        self.assertNotIn(HOLLOW_LEDGER, opened)
+        # Three claims on lantern's page bind its ledger; it was opened once.
+        self.assertEqual(opened.count(LANTERN_LEDGER), 1)
+
+    def test_a_rule_decided_from_the_page_alone_reports_before_the_ledger_is_read(self):
+        """FD37 needs no ledger, so a ledger with no version row hides nothing."""
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            records = plant(root)
+            install(root, records, {**PROVOCATIONS["FD37"](), **self.malformed()})
+            findings, _ = front_door.check(root)
+        self.assertEqual([finding.code for finding in findings], ["FD37"])
+
+    def test_main_reports_a_malformed_ledger_as_a_finding_at_exit_one(self):
+        """The symptom the issue records was exit 2 with no findings list."""
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            records = plant(root)
+            install(root, records, self.malformed())
+            out, err = io.StringIO(), io.StringIO()
+            with redirect_stdout(out), redirect_stderr(err):
+                code = front_door.main(["--root", str(root)])
+        self.assertEqual(code, 1)
+        self.assertIn("FD39", err.getvalue())
+        self.assertRegex(
+            err.getvalue(),
+            r"maintained surface: 1 finding\(s\) across \d+ document\(s\)",
         )
 
 

@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_decision_assignment_composition": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-decision-assignment-composition without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+                "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+                "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-decision-assignment-composition",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-decision-assignment-composition",
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+            "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+            "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-decision-assignment-composition",
+        "scope": "structural binding for fiat-decision-assignment-composition",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted",
+        "transition": {
+          "action": "structurally bind fiat-decision-assignment-composition without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_decision_assignment_composition": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-decision-assignment-composition without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+                "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+                "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-decision-assignment-composition",
+          "source": {
+            "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+          },
+          "target": {
+            "scope": "structural binding for fiat-decision-assignment-composition",
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+            "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
+            "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-decision-assignment-composition",
+        "scope": "structural binding for fiat-decision-assignment-composition",
+        "source_digest": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted",
+        "transition": {
+          "action": "structurally bind fiat-decision-assignment-composition without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

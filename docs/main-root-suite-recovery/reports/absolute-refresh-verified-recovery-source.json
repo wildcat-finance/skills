@@ -1,0 +1,9 @@
+{
+  "candidate": "absolute-refresh",
+  "command": "python3 .hexaemeron/resolve_design.py --candidate absolute-refresh --criterion verified-recovery-source",
+  "criterion": "verified-recovery-source",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

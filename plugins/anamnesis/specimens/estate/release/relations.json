@@ -1,0 +1,257 @@
+[
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-01",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-01",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-01"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-02",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-02",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-02"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-03",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-03",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-03"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-04",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-04",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-04"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-05",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-05",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-05"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-06",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-06",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-06"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-07",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-07",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-07"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-08",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-08",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-08"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-09",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-09",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-09"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-10",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-10",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-10"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-11",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-11",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-11"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R1-12",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R1-12",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R1-12"
+  },
+  {
+    "from": "find:archive-verification-2026-08-31:V1-R2-01",
+    "id": "rel:occurs-at:occ:archive-verification-2026-08-31:V1-R2-01",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:archive-verification-2026-08-31:V1-R2-01"
+  },
+  {
+    "from": "find:counterparty-history-2026-09-05:P1-R1-01",
+    "id": "rel:occurs-at:occ:counterparty-history-2026-09-05:P1-R1-01",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:counterparty-history-2026-09-05:P1-R1-01"
+  },
+  {
+    "from": "find:counterparty-history-2026-09-05:P1-R2-01",
+    "id": "rel:occurs-at:occ:counterparty-history-2026-09-05:P1-R2-01",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:counterparty-history-2026-09-05:P1-R2-01"
+  },
+  {
+    "from": "find:counterparty-history-2026-09-05:P1-R2-02",
+    "id": "rel:occurs-at:occ:counterparty-history-2026-09-05:P1-R2-02",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:counterparty-history-2026-09-05:P1-R2-02"
+  },
+  {
+    "from": "find:counterparty-history-2026-09-05:P1-R2-03",
+    "id": "rel:occurs-at:occ:counterparty-history-2026-09-05:P1-R2-03",
+    "kind": "occurs-at",
+    "policy_version": "estate-2026-09-06",
+    "to": "occ:counterparty-history-2026-09-05:P1-R2-03"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-01",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-01",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-01"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-02",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-02",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-02"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-03",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-03",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-03"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-04",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-04",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-04"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-05",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-05",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-05"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-06",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-06",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-06"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-07",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-07",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-07"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-08",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-08",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-08"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-09",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-09",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-09"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-10",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-10",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-10"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-11",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-11",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-11"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R1-12",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R1-12",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R1-12"
+  },
+  {
+    "from": "sub:archive-verification-2026-08-31:V1-R2-01",
+    "id": "rel:reported-as:sub:archive-verification-2026-08-31:V1-R2-01",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:archive-verification-2026-08-31:V1-R2-01"
+  },
+  {
+    "from": "sub:counterparty-history-2026-09-05:P1-R1-01",
+    "id": "rel:reported-as:sub:counterparty-history-2026-09-05:P1-R1-01",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:counterparty-history-2026-09-05:P1-R1-01"
+  },
+  {
+    "from": "sub:counterparty-history-2026-09-05:P1-R2-01",
+    "id": "rel:reported-as:sub:counterparty-history-2026-09-05:P1-R2-01",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:counterparty-history-2026-09-05:P1-R2-01"
+  },
+  {
+    "from": "sub:counterparty-history-2026-09-05:P1-R2-02",
+    "id": "rel:reported-as:sub:counterparty-history-2026-09-05:P1-R2-02",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:counterparty-history-2026-09-05:P1-R2-02"
+  },
+  {
+    "from": "sub:counterparty-history-2026-09-05:P1-R2-03",
+    "id": "rel:reported-as:sub:counterparty-history-2026-09-05:P1-R2-03",
+    "kind": "reported-as",
+    "policy_version": "estate-2026-09-06",
+    "rationale": "one submission, adjudicated to itself",
+    "to": "find:counterparty-history-2026-09-05:P1-R2-03"
+  }
+]

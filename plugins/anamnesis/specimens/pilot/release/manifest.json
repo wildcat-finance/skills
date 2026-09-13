@@ -11,9 +11,9 @@
       "sha256": "9cc7e1845a9ac11398d2ffdd5e21a40918bde69510a964dda7f5593dd1736253"
     },
     {
-      "bytes": 326,
+      "bytes": 666,
       "path": "policy.json",
-      "sha256": "385391d430ce741219b40ff57f6bdf498d4dfec09d210a70bf19354129d015a0"
+      "sha256": "158a49da1dfc02b52e79bec2ba853c918d37e4218debd57298b3ab053b5d0244"
     },
     {
       "bytes": 3,
@@ -23,7 +23,7 @@
     {
       "bytes": 48203,
       "path": "relations.json",
-      "sha256": "329b39751f5bcbe32d060f72ed9d738a89241d4d1dc9175375a4fd59f8ebb6cb"
+      "sha256": "341407011996f763c33f8277977badba9ea77f74884a34af5d12139498b9404f"
     },
     {
       "bytes": 118,
@@ -53,6 +53,19 @@
       "name": "warden-audit-round-markdown",
       "version": "1"
     },
+    "scope": {
+      "id": "warden-seed-pilot",
+      "preserves": "Warden audit rounds from three first-party skills as preserved at commit 1c1137898bce.",
+      "records": {
+        "maximum": 50,
+        "minimum": 25
+      },
+      "sources": [
+        "hexaemeron-audit-rounds",
+        "pandects-audit-rounds",
+        "tabularium-audit-rounds"
+      ]
+    },
     "taxonomy": {
       "name": "warden-severity",
       "severities": [
@@ -62,9 +75,9 @@
       ],
       "version": "1"
     },
-    "version": "curation-2026-08-31"
+    "version": "curation-2026-09-06"
   },
-  "release_id": "079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56",
+  "release_id": "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf",
   "schema": "anamnesis-release/v1",
   "sources": [
     {

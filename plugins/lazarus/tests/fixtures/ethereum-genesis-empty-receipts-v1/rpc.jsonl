@@ -1,0 +1,1 @@
+{"evidence":"recorded-rpc","method":"eth_getBlockReceipts","name":"block-receipts","outcome":{"result":[]},"params":["0xd4e56740f876aef8c010b86a40d5f56745a118d0906a34e69aec8c0db1cb8fa3"],"request_key":"fd0e91cf646c968173ab163ca9164b90830e9724f9a4e1ad742287410ea775ae","required":true,"schema_version":1}

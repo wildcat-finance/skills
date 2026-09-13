@@ -1,0 +1,302 @@
+{
+  "candidates": [
+    {
+      "id": "absolute-refresh",
+      "summary": "Keep v1 absolute offsets; recover the reviewed law bytes, re-record current profiles and reacquire the complete measured cohort."
+    },
+    {
+      "id": "relative-schema",
+      "summary": "Change bindings to reviewed-span-relative offsets and introduce the new reader and codec contract required by issue 1192."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "reviewed-bindings-preserved",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 4,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "v1-source-binding-compatibility",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": 4,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "profile-identity-commands",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "projected-representation-bytes",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "verified-recovery-source",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "active-root-green",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "full-checks-green",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "corpus-check-accepted",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "at-least",
+      "concern": "space",
+      "id": "package-headroom",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "conformance",
+      "threshold": 5242880,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "required-invariants",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "absolute-refresh",
+      "criterion": "reviewed-bindings-preserved",
+      "report": {
+        "path": "reports/absolute-refresh-reviewed-bindings-preserved.json",
+        "sha256": "44182ab7fbaf31cdc46bdd6b0a00e7f88c2c1819b485f9cabc3cdb8027441431"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "absolute-refresh",
+      "criterion": "v1-source-binding-compatibility",
+      "report": {
+        "path": "reports/absolute-refresh-v1-source-binding-compatibility.json",
+        "sha256": "6bae4c56a2ab50041623af9792569e9a2c7ef3d8d8d262954ed7c36beeb3e2db"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "absolute-refresh",
+      "criterion": "profile-identity-commands",
+      "report": {
+        "path": "reports/absolute-refresh-profile-identity-commands.json",
+        "sha256": "9ebee990dad83a558abc3a7475258ab6e6c70cca3c5dad6d77392cafd216971d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "absolute-refresh",
+      "criterion": "projected-representation-bytes",
+      "report": {
+        "path": "reports/absolute-refresh-projected-representation-bytes.json",
+        "sha256": "4fd92c76cd8b155d417d3bd5658e229ff44e55fbf3dc95f7471a6c6210446896"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "absolute-refresh",
+      "criterion": "verified-recovery-source",
+      "report": {
+        "path": "reports/absolute-refresh-verified-recovery-source.json",
+        "sha256": "bdcd42d535bd8218fc719c7a33c493ed3909ab51f737e0998ab7e39744c06915"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "absolute-refresh",
+      "criterion": "active-root-green",
+      "report": "reports/absolute-refresh-active-root-green.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate absolute-refresh --criterion active-root-green",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "absolute-refresh",
+      "criterion": "full-checks-green",
+      "report": "reports/absolute-refresh-full-checks-green.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate absolute-refresh --criterion full-checks-green",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "absolute-refresh",
+      "criterion": "corpus-check-accepted",
+      "report": "reports/absolute-refresh-corpus-check-accepted.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate absolute-refresh --criterion corpus-check-accepted",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "absolute-refresh",
+      "criterion": "package-headroom",
+      "report": "reports/absolute-refresh-package-headroom.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate absolute-refresh --criterion package-headroom",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "absolute-refresh",
+      "criterion": "required-invariants",
+      "report": "reports/absolute-refresh-required-invariants.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate absolute-refresh --criterion required-invariants",
+      "state": "pending"
+    },
+    {
+      "candidate": "relative-schema",
+      "criterion": "reviewed-bindings-preserved",
+      "report": {
+        "path": "reports/relative-schema-reviewed-bindings-preserved.json",
+        "sha256": "f90e28ca50529b33ab632353a08e43f222913807ba329aa37e8c685e077e6dda"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "relative-schema",
+      "criterion": "v1-source-binding-compatibility",
+      "report": {
+        "path": "reports/relative-schema-v1-source-binding-compatibility.json",
+        "sha256": "9c86a72336052dc5db1582a6aa1700f0ecd332cb1fa5f4affe4b6a7755db90eb"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "relative-schema",
+      "criterion": "profile-identity-commands",
+      "report": {
+        "path": "reports/relative-schema-profile-identity-commands.json",
+        "sha256": "1adb2b3b69e2b30d446b2d16f6d3e91764d1b97897321d5a15d448967efdb9f1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "relative-schema",
+      "criterion": "projected-representation-bytes",
+      "report": {
+        "path": "reports/relative-schema-projected-representation-bytes.json",
+        "sha256": "e9e223901175aa9c8b2d05927805cc53ded277f498ae8194215ed16f71a134c6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "relative-schema",
+      "criterion": "verified-recovery-source",
+      "report": {
+        "path": "reports/relative-schema-verified-recovery-source.json",
+        "sha256": "81a1d15638ba626760051354e7d3644e3d88f1318689d0853c79190020c7e423"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "relative-schema",
+      "criterion": "active-root-green",
+      "report": "reports/relative-schema-active-root-green.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate relative-schema --criterion active-root-green",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "relative-schema",
+      "criterion": "full-checks-green",
+      "report": "reports/relative-schema-full-checks-green.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate relative-schema --criterion full-checks-green",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "relative-schema",
+      "criterion": "corpus-check-accepted",
+      "report": "reports/relative-schema-corpus-check-accepted.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate relative-schema --criterion corpus-check-accepted",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "relative-schema",
+      "criterion": "package-headroom",
+      "report": "reports/relative-schema-package-headroom.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate relative-schema --criterion package-headroom",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "relative-schema",
+      "criterion": "required-invariants",
+      "report": "reports/relative-schema-required-invariants.json",
+      "resolver": "python3 .hexaemeron/resolve_completion.py --candidate relative-schema --criterion required-invariants",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "absolute-refresh",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

@@ -173,12 +173,6 @@
     "receipt_witness": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "block_receipts_request",
-        "target_receipt_lookup_request",
-        "target_transaction_index",
-        "filtered_logs_request"
-      ],
       "properties": {
         "block_receipts_request": {
           "type": "string",
@@ -195,7 +189,41 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9_.-]{0,127}$"
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "block_receipts_request"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "target_receipt_lookup_request"
+                ]
+              },
+              {
+                "required": [
+                  "target_transaction_index"
+                ]
+              },
+              {
+                "required": [
+                  "filtered_logs_request"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "block_receipts_request",
+            "target_receipt_lookup_request",
+            "target_transaction_index",
+            "filtered_logs_request"
+          ]
+        }
+      ]
     }
   },
   "$defs": {

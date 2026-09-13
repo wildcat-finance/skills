@@ -1,0 +1,56 @@
+{
+  "analogues": [
+    {
+      "adjudication": "unknown",
+      "finding": "find:archive-verification-2026-08-31:V1-R1-01",
+      "locator": {
+        "line": 16
+      },
+      "native_id": "V1-R1-01",
+      "remediations": [],
+      "severity": "high",
+      "source": "archive-verification-2026-08-31"
+    },
+    {
+      "adjudication": "unknown",
+      "finding": "find:archive-verification-2026-08-31:V1-R1-02",
+      "locator": {
+        "line": 17
+      },
+      "native_id": "V1-R1-02",
+      "remediations": [],
+      "severity": "high",
+      "source": "archive-verification-2026-08-31"
+    },
+    {
+      "adjudication": "unknown",
+      "finding": "find:archive-verification-2026-08-31:V1-R1-03",
+      "locator": {
+        "line": 18
+      },
+      "native_id": "V1-R1-03",
+      "remediations": [],
+      "severity": "high",
+      "source": "archive-verification-2026-08-31"
+    },
+    {
+      "adjudication": "unknown",
+      "finding": "find:archive-verification-2026-08-31:V1-R1-04",
+      "locator": {
+        "line": 19
+      },
+      "native_id": "V1-R1-04",
+      "remediations": [],
+      "severity": "high",
+      "source": "archive-verification-2026-08-31"
+    }
+  ],
+  "not_established": "An analogue is a past case that looks similar. It does not establish a cause for the present failure, that the present failure is the same defect, or that any remedy recorded here would work again. Elenchus must still reproduce the present failure and still earn its own guard.",
+  "query": {
+    "kind": "severity",
+    "value": "high"
+  },
+  "release_id": "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3",
+  "schema": "anamnesis-elenchus-analogue/v1",
+  "verdict": null
+}

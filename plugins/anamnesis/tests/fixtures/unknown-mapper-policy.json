@@ -1,0 +1,33 @@
+{
+  "version": "estate-2026-09-06",
+  "mapper": {
+    "name": "a-mapper-that-does-not-exist",
+    "version": "9"
+  },
+  "taxonomy": {
+    "name": "estate-severity",
+    "version": "1",
+    "severities": [
+      "high",
+      "medium",
+      "unrated"
+    ]
+  },
+  "disclosure": {
+    "derived_text": [
+      "public"
+    ]
+  },
+  "scope": {
+    "id": "capture-estate-findings",
+    "preserves": "The capture estate's own verification findings and open actions of 31 August and 5 September 2026.",
+    "sources": [
+      "archive-verification-2026-08-31",
+      "counterparty-history-2026-09-05"
+    ],
+    "records": {
+      "minimum": 10,
+      "maximum": 40
+    }
+  }
+}
