@@ -7,6 +7,9 @@ import {AssemblyEmitWrapper} from "../src/AssemblyEmitWrapper.sol";
 import {MirrorEmitReference} from "../src/MirrorEmitReference.sol";
 import {WrongTopic0Specimen} from "../src/specimens/WrongTopic0Specimen.sol";
 import {WrongDataSpecimen} from "../src/specimens/WrongDataSpecimen.sol";
+import {WrongTopicCountSpecimen} from "../src/specimens/WrongTopicCountSpecimen.sol";
+import {WrongIndexedTopicSpecimen} from "../src/specimens/WrongIndexedTopicSpecimen.sol";
+import {WrongDataLengthSpecimen} from "../src/specimens/WrongDataLengthSpecimen.sol";
 
 /// @dev The emitter-fidelity differential suite: 27 fuzz cases, one per
 ///      assembly emitter, each recording exactly two logs in one window and
@@ -25,6 +28,9 @@ contract EmitterFidelityTest {
   MirrorEmitReference internal mirror;
   WrongTopic0Specimen internal wrongTopic0;
   WrongDataSpecimen internal wrongData;
+  WrongTopicCountSpecimen internal wrongTopicCount;
+  WrongIndexedTopicSpecimen internal wrongIndexedTopic;
+  WrongDataLengthSpecimen internal wrongDataLength;
 
   /// @dev The recording window opens in every case, after this deployment,
   ///      so no construction-time log can enter a pair.
@@ -33,6 +39,9 @@ contract EmitterFidelityTest {
     mirror = new MirrorEmitReference();
     wrongTopic0 = new WrongTopic0Specimen();
     wrongData = new WrongDataSpecimen();
+    wrongTopicCount = new WrongTopicCountSpecimen();
+    wrongIndexedTopic = new WrongIndexedTopicSpecimen();
+    wrongDataLength = new WrongDataLengthSpecimen();
   }
 
   // ---- pairing -----------------------------------------------------------
@@ -52,9 +61,11 @@ contract EmitterFidelityTest {
     LogComparison.compare(actual, expected);
   }
 
-  /// @dev Free memory pointer after the wrapper's last call equals the one before it.
+  /// @dev Free memory pointer after the wrapper's last call equals the one
+  ///      before it, and the zero slot at `0x60` still holds zero.
   function _requireFreePointerUnchanged(string memory which) internal view {
     require(wrapper.freePointerBefore() == wrapper.freePointerAfter(), which);
+    require(wrapper.zeroSlotAfter() == 0, string(abi.encodePacked(which, " (zero slot)")));
   }
 
   // ---- per-emitter helpers, shared by the fuzz and companion cases -------
@@ -575,11 +586,24 @@ contract EmitterFidelityTest {
     _rejects(address(wrongData), "data bytes");
   }
 
+  function test_rejects_wrong_topic_count_specimen() external {
+    _rejects(address(wrongTopicCount), "topic count");
+  }
+
+  function test_rejects_wrong_indexed_topic_specimen() external {
+    _rejects(address(wrongIndexedTopic), "topic1");
+  }
+
+  function test_rejects_wrong_data_length_specimen() external {
+    _rejects(address(wrongDataLength), "data length");
+  }
+
   // ---- memory: the free pointer and the scratch space ----------------------
 
   /// @dev The free memory pointer at `0x40`, read in the calling frame
   ///      immediately before and after each emitter, is unchanged for every
-  ///      one of the 27, with and without a dirtied scratch space.
+  ///      one of the 27, with and without a dirtied scratch space, and the
+  ///      zero slot at `0x60` still holds zero after each emitter.
   function test_memory_free_pointer_unchanged_across_every_emitter(
     address a,
     address b,
@@ -650,8 +674,10 @@ contract EmitterFidelityTest {
     _requireFreePointerUnchanged("NewAllowedSenderOnchain moved 0x40");
   }
 
-  /// @dev A dirtied scratch space (`0x00`..`0x5f`) before each emitter call
-  ///      does not change the recorded log. Every emitter is driven twice in
+  /// @dev A dirtied scratch space before each emitter call (a non-zero
+  ///      pattern over `0x00`..`0x3f` and the pointer word at `0x40` moved,
+  ///      as the wrapper describes) does not change the recorded log. Every
+  ///      emitter is driven twice in
   ///      one window, clean then dirty, and the two logs are compared with the
   ///      same field-by-field helper: the dirty log at index 1 is held to the
   ///      clean log at index 0, so a scratch byte that leaked into the data

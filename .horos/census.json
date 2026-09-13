@@ -44,8 +44,8 @@
     },
     {
       "boundary_bytes": 949,
-      "bytes": 623210,
-      "files": 113,
+      "bytes": 627681,
+      "files": 116,
       "suffix": ".sol"
     },
     {
@@ -189,6 +189,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 102086635,
-  "total_files": 2926
+  "total_bytes": 102091106,
+  "total_files": 2929
 }

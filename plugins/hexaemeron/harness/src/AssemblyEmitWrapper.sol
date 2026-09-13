@@ -47,11 +47,15 @@ import {
 ///      and moves the pointer at `0x40` one word up after writing the pattern
 ///      into the word it vacates, so the slot no longer holds the value the
 ///      compiler left there while memory stays well formed for the code that
-///      runs after the emitter. Storage writes touch no memory.
+///      runs after the emitter. The zero slot at `0x60` is read after the
+///      emitter and stored as well, because a write there is invisible to the
+///      recorded log and to the pointer at `0x40`. Storage writes touch no
+///      memory.
 contract AssemblyEmitWrapper {
   bool public dirtyScratch;
   uint256 public freePointerBefore;
   uint256 public freePointerAfter;
+  uint256 public zeroSlotAfter;
 
   uint256 internal constant SCRATCH_PATTERN =
     0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef;
@@ -79,10 +83,13 @@ contract AssemblyEmitWrapper {
 
   function _leave() internal {
     uint256 afterCall;
+    uint256 zeroSlot;
     assembly {
       afterCall := mload(0x40)
+      zeroSlot := mload(0x60)
     }
     freePointerAfter = afterCall;
+    zeroSlotAfter = zeroSlot;
   }
 
   // ---- MarketEvents.sol ----------------------------------------------------
