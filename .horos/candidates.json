@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 22475302,
+    "bytes_blob": 23054335,
     "bytes_generated": 98
   },
   "entries": [
@@ -75,6 +75,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.synopsis.md"
+    },
+    {
+      "bytes": 288275,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 144137",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1345-route-a-zero-decision-and-gate-the-line-tha.md"
+    },
+    {
+      "bytes": 289601,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1345-route-a-zero-decision-and-gate-the-line-tha.synopsis.md"
     },
     {
       "bytes": 126085,
@@ -791,16 +805,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 66420,
+      "bytes": 67336,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 33210",
+      "evidence": "mean line length above 400 in a window at offset 33668",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 78621,
+      "bytes": 78862,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 76573",
+      "evidence": "mean line length above 400 in a window at offset 76814",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

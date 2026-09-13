@@ -121,8 +121,10 @@ reasoning, the alternatives and what the checks deliberately do not read.
 the work needs a run and `Fiat-Required: 0` when one independent pull request
 will do. Not everything earns a study, a runbook and an audit loop per step; a
 wonky regular expression does not. A `0` names the pull request that answers it
-before the issue closes. `hexctl init` reads the line and refuses to start a run
-against a `0` before it creates any state, worktree or branch.
+before the issue closes. `hexctl init` reads the line before it creates any
+state, worktree or branch: on a `0` it prints one directive naming that pull
+request route and exits 0, and on a `1` it refuses a decision that moved inside
+the last fifteen minutes.
 
 The issue also carries a label matching that line: `fiat-run-needed` for `1`,
 `only-pr-needed` for `0`. The filer sets it the same way `held-job`, `wish` and
