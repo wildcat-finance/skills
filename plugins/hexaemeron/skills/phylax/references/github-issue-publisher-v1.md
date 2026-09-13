@@ -3,9 +3,10 @@
 This reference defines the Phylax component that admits one agent-authored
 issue candidate before any GitHub App credential can be used. It is the
 standing interface identified by
-`adr/use-a-credential-owning-github-issue-publisher`. The current Step 1
-implementation proves admission only. Signer, transport, socket service,
-deployment, and hostile conformance arrive in their receipted later steps.
+`adr/use-a-credential-owning-github-issue-publisher`. Steps 1 and 2 establish
+offline admission and the injected signer-to-GitHub component path. They do
+not establish a deployed service, live credential isolation, or a live GitHub
+publication.
 
 ## Promise boundary
 
@@ -184,16 +185,105 @@ credential.
 Admission is a necessary input to the later runtime. It is not an issue
 publication receipt and authorises no mutation by itself.
 
-## Step 1 conformance reports
+## Socket and peer boundary
+
+The client sends one frame to
+`/var/run/wildcat-github-issue-publisher.sock`. A frame is a four-byte
+big-endian unsigned length followed by that many payload bytes. Request frames
+are at most 1 MiB and result frames are at most 4,096 bytes. Empty, short,
+oversized, concatenated, and trailing frames refuse. The reader consumes to
+EOF before it accepts the frame, so a second frame cannot hide behind a valid
+first frame.
+
+Before connecting, the client requires that exact path to be a single-link
+Unix socket owned by the configured service UID and GID with mode `0660`. The
+server obtains the peer identity from the kernel. UID 0, the service UID, an
+invalid UID, or an invalid GID refuses before request admission. Filesystem
+group membership controls which other identities can connect; root and
+administrators remain outside the promise.
+
+The client exposes one `publish(request)` operation. It imports neither the
+signer nor the HTTPS transport and accepts no PEM path, token, repository,
+endpoint, method, header, or general HTTP request.
+
+## Signer boundary
+
+Admission completes before the signer is called. The production signer runs
+only `/usr/bin/openssl` with arguments `dgst`, `-sha256`, `-sign`, and the fixed
+key path
+`/var/db/wildcat-github-issue-publisher/shoggoth-wildcat-labs.pem`. It passes
+the bounded ASCII JWT signing input on stdin, inherits no environment,
+discards stderr, waits at most five seconds, and accepts only a 256-byte
+signature under a 4,096-byte output ceiling. It returns no raw subprocess
+error.
+
+The App JWT fixes issuer `4764812`, issued-at time to 60 seconds before the
+service clock, and expiry to 540 seconds after it. The JWT remains inside the
+service process.
+
+## GitHub transport boundary
+
+The transport uses the standard-library HTTPS client and default validating
+TLS context. Code fixes host `api.github.com`, port 443, repository
+`wildcat-finance/skills`, installation `157591976`, API version `2022-11-28`,
+and these routes:
+
+- `POST /app/installations/157591976/access_tokens`;
+- `POST /repos/wildcat-finance/skills/issues`; and
+- `GET /repos/wildcat-finance/skills/issues/{positive issue number}`.
+
+The token request body is exactly
+`{"permissions":{"issues":"write"},"repositories":["skills"]}`. The
+response must name only `issues:write`, selected-repository scope, and
+`wildcat-finance/skills`; its UTC expiry must be more than 30 and no more than
+3,660 seconds after the checked service time. The installation token remains
+inside service-owned authorization headers.
+
+Redirects refuse. Token exchange is capped at 15 seconds, create at 20 seconds,
+and each readback at 10 seconds. Each response has a 16 KiB header ceiling, an
+8 KiB body ceiling, closed JSON shape limits, and duplicate-name rejection.
+Every response closes on success and refusal.
+
+## Publication lifecycle and result
+
+The runtime retains the admitted final title and body strings and serialises
+that same pair into one issue POST. It never reopens a caller path. Once the
+POST starts, any failure that prevents a confirmed result returns
+`create-indeterminate`; the runtime does not retry. An operator reconciles the
+request digest before any later action.
+
+A returned issue must have the canonical
+`https://github.com/wildcat-finance/skills/issues/{number}` URL and the exact
+title and body. The runtime then reads that same issue once with the
+installation token and once without credentials. Both reads must match the
+number, URL, title, and body before the outcome is `published`. A mismatch or
+readback failure returns `created-but-unverified` and does not edit, delete, or
+retry the issue.
+
+The total lifecycle ceiling is 60 seconds. Safety time and byte ceilings make
+no performance claim. On every post-admission terminal route, the runtime
+closes signer and transport components and clears its JWT and token references;
+it does not claim process-memory erasure.
+
+Successful and failed component paths retain fixed stage events joined by one
+correlation digest. Events contain only schema, stage, outcome, refusal code,
+attempt counts, elapsed milliseconds, and that digest. The terminal result
+adds request and final digests, canonical issue identity when known, readback
+state, cleanup state, and attempt counts. It contains no prose, credential,
+header, response body, or raw error. Outcomes are `refused`, `published`,
+`create-indeterminate`, `created-but-unverified`, `receipt-failed`, and
+`cleanup-failed`.
+
+## Component conformance reports
 
 The code-owned manifest schema is
 `github-issue-publisher-admission-manifest/v1`. It contains exactly `schema`
-and `files`. `files` lists the six Step 1 fixtures by basename and SHA-256
+and `files`. `files` lists the seven component fixtures by basename and SHA-256
 digest. Paths outside that fixed set, duplicate rows, extra fields, malformed
 digests, unsafe files, and changed fixture bytes refuse.
 
 The CLI accepts only the frozen `conformance` command for candidate
-`isolated-publisher`, one of the three Step 1 criteria, and that criterion's
+`isolated-publisher`, one of the four component criteria, and that criterion's
 exact report path below `.hexaemeron/design-reports/`. Before writing a report,
 it checks every fixture digest, admits the golden request and the allowed
 leading-metadata form with the pinned local Imprimatur runner, executes all four
@@ -203,18 +293,23 @@ title, body, and candidate digests.
 The report writer opens each directory component relative to the working
 directory with no-follow directory descriptors, then atomically replaces only
 a regular single-link destination. An intermediate or final symlink refuses.
-No conformance path can mint, sign, read a credential, send HTTP, or publish.
+Conformance uses only injected signer and HTTPS doubles. It cannot read a
+credential, open a socket, send a network request, or publish.
 
 Each report has schema `protasis-design-report/v1` and exactly `schema`,
 `candidate`, `criterion`, `value`, `unit`, `command`, and `exit`.
 `ordered-admission-chain` reports `true` in `boolean`; `request-work-bound`
 reports the enforced aggregate JSON-member ceiling of `256` in `count`; and
 `request-byte-bound` reports the enforced request ceiling of `1048576` in
-`bytes`. `exit` is `0`, and `command` is the exact frozen resolver command.
+`bytes`. `signer-and-post-boundary` reports `true` in `boolean` after the
+injected runtime completes one signer call, narrowed token exchange, issue
+POST, authenticated readback, anonymous readback, response closure, cleanup,
+receipt, and credential-canary scan. `exit` is `0`, and `command` is the exact
+frozen resolver command.
 
-These reports prove only the selected Step 1 component predicates over the
-digest-bound fixtures and current code. They are not signer, transport,
-deployment, live-isolation, or GitHub publication evidence.
+These reports prove only the named component predicates over the digest-bound
+fixtures and current code. They are not deployment, live-isolation, or GitHub
+publication evidence.
 
 ## Refusal codes
 
@@ -241,14 +336,28 @@ deployment, live-isolation, or GitHub publication evidence.
 Public diagnostics contain only schema, outcome, code, and field. They do not
 copy a request value or exception message.
 
+Step 2 adds these codes:
+
+- `GIP200` to `GIP203`: frame length, I/O, completeness, and trailing state;
+- `GIP210` to `GIP213`: signer input, availability, exit, output, and signature;
+- `GIP220` and `GIP221`: socket identity and peer policy;
+- `GIP300` to `GIP307`, plus `GIP309`: fixed transport, response, and close;
+- `GIP310` and `GIP311`: JWT, token, expiry, permission, and repository scope;
+- `GIP320` and `GIP321`: returned issue identity and exact bytes;
+- `GIP330`: stage or total deadline;
+- `GIP400` to `GIP402`: result, event, and receipt boundary; and
+- `GIP500` and `GIP501`: runtime component or cleanup failure.
+
 ## Step boundaries
 
 Step 1 establishes credential-free admission and the exact #855 refusal. It
 exposes only the credential-free conformance report command described above.
 
 Step 2 adds socket framing, peer policy, signer, fixed GitHub transport,
-readback, receipt, and cleanup under injected tests. It still makes no live
-network call in the repository suite.
+readback, receipt, and cleanup under injected tests. Its
+`signer-and-post-boundary` report has boolean value `true` only after the
+digest-bound runtime case exercises each boundary and the canary scan. The
+repository suite makes no live network call and reads no real PEM.
 
 Step 3 adds the closed hostile manifest, macOS deployment kit and verifier,
 Phylax Promise declaration, repository route, package generation, and
