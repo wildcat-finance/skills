@@ -3878,6 +3878,107 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         # before it refused is not left behind.
         self.assertFalse(os.path.exists(destination))
 
+    # -- step 4, round 3 guards ---------------------------------------------
+    #
+    # Both apply a rule round 2 established at a site round 2's repair did not
+    # reach, so they keep that round's naming and stay outside the Exit's
+    # `-k restore_from_archive` clause for the same reason.
+
+    def test_archive_restore_removes_a_destination_it_created_when_admission_refuses(self):
+        """S4-R3-03: the admission's own refusals leave nothing it created.
+
+        `_checkpoint_restore_archive_destination` creates an absent
+        destination and can then refuse inside itself, below that `os.mkdir`.
+        Those refusals return nothing to `_checkpoint_restore_from_archive`,
+        so its `finally` never runs and the S4-R1-04 removal never reaches
+        them: the path stayed behind, reclassified for the next attempt from
+        absent to empty and admitted again.
+        """
+        destination = self.restore_destination("admission-refused")
+        self.assertFalse(os.path.exists(destination))
+        module = hexctl_module()
+
+        captured = StringIO()
+        with mock.patch.object(
+            module.os, "fstat", side_effect=OSError("destination changed under us")
+        ):
+            with redirect_stderr(captured):
+                with self.assertRaises(SystemExit) as stopped:
+                    module._checkpoint_restore_archive_destination(destination)
+
+        self.assertEqual(1, stopped.exception.code)
+        self.assertEqual("destination-occupied\n", captured.getvalue())
+        self.assertFalse(
+            os.path.exists(destination),
+            "the admission refused and left behind the directory it created",
+        )
+
+    def test_archive_restore_diagnoses_its_own_identity_scratch_failure_as_itself(self):
+        """S4-R3-02: the identity scratch is the process's own, like the outer one.
+
+        S4-R1-07 separated the outer scratch root's failure from
+        `destination-occupied`. The identity scratch under it was left
+        unguarded, and `main` carries no catch-all, so an `OSError` there
+        reached the operator as a traceback carrying local absolute paths out
+        of a command whose refusals are one bounded line.
+
+        Driven in process for S4-R1-07's reason: `tempfile` falls through an
+        unusable TMPDIR to `/tmp`, so this failure has no command-line surface.
+
+        The escaping `OSError` is caught here and turned into a failure rather
+        than left to propagate. The defect this guard names *is* an uncaught
+        exception, so on the unfixed parent an `assertRaises(SystemExit)` alone
+        never sees it: the `OSError` is not that type, it escapes the test, and
+        unittest records an error. Elenchus reads any error as an
+        infrastructure failure and returns `inconclusive` for the whole run, so
+        a guard shaped that way cannot report what it proved. Catching it
+        states the same property as an assertion and leaves the verdict
+        readable.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination("identity-scratchless")
+        module = hexctl_module()
+        real_mkdtemp = module.tempfile.mkdtemp
+
+        def refuse_only_the_identity_scratch(*args, **kwargs):
+            prefix = kwargs.get("prefix", "")
+            if prefix.startswith(".fiat-checkpoint-restore-identity-"):
+                raise OSError("no identity scratch here")
+            return real_mkdtemp(*args, **kwargs)
+
+        captured = StringIO()
+        code = None
+        with mock.patch.object(
+            module.tempfile, "mkdtemp", side_effect=refuse_only_the_identity_scratch
+        ):
+            with redirect_stderr(captured):
+                try:
+                    module._checkpoint_restore_from_archive(
+                        destination, str(archive), digest
+                    )
+                except SystemExit as stopped:
+                    code = stopped.code
+                except OSError as escaped:
+                    self.fail(
+                        "the identity scratch failure escaped as an uncaught "
+                        f"OSError ({escaped!r}) instead of one bounded refusal; "
+                        "hexctl installs no excepthook and `main` has no "
+                        "catch-all, so this reaches the operator as a traceback"
+                    )
+                else:
+                    self.fail(
+                        "the restore completed where the identity scratch "
+                        "failure should have refused"
+                    )
+
+        self.assertEqual(2, code)
+        diagnosis = captured.getvalue()
+        self.assertIn("hexctl: error:", diagnosis)
+        self.assertIn("scratch directory could not be created", diagnosis)
+        self.assertNotIn("identity-mismatch", diagnosis)
+        self.assertNotIn("Traceback", diagnosis)
+
 
 if __name__ == "__main__":
     unittest.main()

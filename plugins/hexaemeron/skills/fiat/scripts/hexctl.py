@@ -17177,6 +17177,12 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
     that the emptiness they found is that inode's rather than a later
     replacement's. The third return value says whether this function created
     the destination, so a refusal after this point can remove what it made.
+
+    S4-R3-03: the refusals raised *below* the `os.mkdir` return nothing to the
+    caller, so the caller's `finally` never runs and cannot remove that
+    directory. They remove it themselves, on the caller's own bound: `rmdir`
+    only, and only when this call created it, so a directory the operator
+    already had and one a racing writer has filled are both left alone.
     """
     supplied = os.path.abspath(base_dir)
     name = os.path.basename(supplied)
@@ -17206,6 +17212,9 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
             | getattr(os, "O_NOFOLLOW", 0),
         )
     except OSError:
+        if created:
+            with contextlib.suppress(OSError):
+                os.rmdir(destination)
         _checkpoint_archive_refuse("destination-occupied")
     try:
         opened = os.fstat(descriptor)
@@ -17216,6 +17225,9 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
                 raise OSError("checkpoint restore destination is occupied")
     except OSError:
         os.close(descriptor)
+        if created:
+            with contextlib.suppress(OSError):
+                os.rmdir(destination)
         _checkpoint_archive_refuse("destination-occupied")
     return destination, descriptor, created
 
@@ -17293,9 +17305,15 @@ def _checkpoint_restore_from_archive(
     anywhere in that reader still refuses before any archive byte reaches the
     destination. Admission itself is the one exception, and it is one inode:
     an absent destination is created, mode 0700 and empty, before the
-    inspector runs (S4-R1-04). The `finally` below removes it again on every
-    path that does not complete, so a refused restore leaves the tree as it
-    found it. Only then does `git init` run, the bundle member is fetched
+    inspector runs (S4-R1-04). The `finally` below removes it again, and
+    `_checkpoint_restore_archive_destination` removes it on the refusals it
+    raises inside itself (S4-R3-03), but both by `rmdir` alone. So the
+    reach of that removal is exact: a refusal raised while the destination is
+    still empty leaves the tree as it was found, and one raised after
+    `git init` has filled it leaves the repository behind. S4-R2-01 records
+    which classes are on which side of that line, and why neither this
+    function nor the reference tears an operator-named destination down.
+    Only then does `git init` run, the bundle member is fetched
     into it (never the network), the capsule is extracted under `.git/` and
     re-verified by the existing capsule reader, and the base branch it names
     is checked out. The ancestry and ref join happen once that working
@@ -17439,10 +17457,20 @@ def _checkpoint_restore_from_archive(
         )
 
         worktree = relocated["worktree"]
-        identity_scratch = tempfile.mkdtemp(
-            prefix=".fiat-checkpoint-restore-identity-", dir=scratch
-        )
-        os.chmod(identity_scratch, 0o700)
+        # S4-R3-02: the separation S4-R1-07 made at the outer scratch root,
+        # applied to the second one. This directory is the process's own, under
+        # its own scratch root, so a failure to create it is neither a fact
+        # about the operator's destination nor an identity mismatch. It has to
+        # be caught here: `main` has no catch-all, so an escaping OSError would
+        # reach the operator as a traceback carrying local absolute paths, out
+        # of a command whose refusals are one bounded line.
+        try:
+            identity_scratch = tempfile.mkdtemp(
+                prefix=".fiat-checkpoint-restore-identity-", dir=scratch
+            )
+            os.chmod(identity_scratch, 0o700)
+        except OSError:
+            die("checkpoint restore scratch directory could not be created")
         relocated_state = load_state(worktree)
         recomputed_status, recomputed_snapshot = _checkpoint_archive_identity(
             worktree, relocated_state, identity_scratch
@@ -17461,9 +17489,19 @@ def _checkpoint_restore_from_archive(
         # S4-R1-03: the capsule has been relocated into active controller state
         # and re-verified from it, so the disposable root the glossary names has
         # nothing left to serve. Removing it here rather than in the `finally`
-        # leaves the interrupted and refused paths exactly as the reference
-        # fixes them: a killed restore still leaves this root and the relocation
-        # marker for the existing retry rules to resume or refuse.
+        # leaves a killed restore exactly as the reference fixes it: this root
+        # and the relocation marker, for the existing retry rules to resume or
+        # refuse.
+        #
+        # S4-R3-04 bounds that to a *killed* restore. The `identity-mismatch`
+        # above is decided from the relocated state, so it refuses after the
+        # relocation transaction has completed and retired its own marker, and
+        # leaves the destination holding active controller state -- `verify`,
+        # `status` and `next` all succeed against it -- with this root beside it
+        # and no marker to pair with. The refusal says the archive's identity
+        # claim was wrong; it does not undo a transaction the existing code
+        # completed, and this function does not tear an operator-named
+        # destination down to make it look as though it had.
         shutil.rmtree(restore_root, ignore_errors=True)
         with contextlib.suppress(OSError):
             os.rmdir(os.path.dirname(restore_root))
