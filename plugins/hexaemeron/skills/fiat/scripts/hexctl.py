@@ -2713,6 +2713,31 @@ def cmd_init(args) -> None:
             # not because something was cleaned up afterwards.
             print(json.dumps(routed_filing_directive(task_issue_contract)))
             sys.exit(0)
+        provenance = task_issue_contract.get("provenance")
+        if isinstance(provenance, dict):
+            window = filing_decision_window(
+                provenance, task_issue_contract.get("fiat_required")
+            )
+            if window["verdict"] == "refuse":
+                # The observation, and nothing after it. The refusal this
+                # delivery replaced ended by naming the edit that turned it
+                # off, and an agent told to start a run read that as the
+                # instruction. So this names what was seen and stops: no edit,
+                # no flag, no variable, and no instruction to wait, because a
+                # sentence about when the window clears is the same sentence
+                # with time in place of an edit.
+                die(
+                    f"task issue {task_issue_contract['repository']}#"
+                    f"{task_issue_contract['number']}: "
+                    f"{clean(window['observed'])}. No run state, worktree or "
+                    f"branch was created.",
+                    1,
+                )
+            # Beside the provenance block, not inside it. `provenance` records
+            # what was read, and its key set is held so no readable field can
+            # go missing unnoticed; the window is a judgement drawn from those
+            # fields, and filing it among them would blur the two.
+            task_issue_contract["filing_window"] = window
     else:
         task_issue_contract = {
             "issue": None,
@@ -5273,10 +5298,13 @@ def github_issue_edit_provenance(
     body, is dropped here. Prior bodies are somebody else's text and there is
     no receipt, ledger or stream they belong in.
 
-    The request is never required. GraphQL needs a token scope REST does not,
-    and `diff` needs write access on the repository, so an environment that can
-    read the issue may still not reach this. Every failure returns `unknown`
-    with its reason rather than a value that reads like an answer.
+    The request is never required. An environment that reads the issue over
+    REST may still not reach GraphQL, and a revision's `diff` may come back
+    null. Why it is withheld is not established: on 2026-09-13 `diff` was
+    readable on a public repository with read access alone, against the
+    write-access reading the study and this docstring carried (S4-R1-03).
+    Every failure returns `unknown` with its reason rather than a value that
+    reads like an answer.
     """
     owner, _, name = repository.partition("/")
     if not owner or not name or not number.isdigit():
@@ -5408,9 +5436,13 @@ def github_issue_edit_provenance(
     else:
         body = revisions[1].get("diff")
         if not isinstance(body, str):
+            # What was read, and nothing about why. This sentence used to
+            # attribute a null `diff` to write access on the repository, a
+            # cause the reader never observed and one measured false on a
+            # public repository with read access alone (S4-R1-03).
             reasons.append(
-                "the prior revision carried no readable body, which `diff` "
-                "withholds without write access on the repository"
+                "the prior revision's `diff` was absent or not text, so no "
+                "prior body was read"
             )
         else:
             # The only thing taken from a prior body, before it goes out of
@@ -5458,6 +5490,145 @@ def github_issue_edit_provenance(
         # written last.
         "reason": "; ".join(reasons) if reasons else None,
     }
+
+
+FILING_DECISION_WINDOW_SECONDS = 900
+"""How recently a filing decision may have moved before `init` refuses to run on it.
+
+Fifteen minutes, and a judgement rather than a measurement.
+`adr/route-a-filed-zero-as-an-answer` records the length as a tuned parameter
+rather than a decision, so changing it is a code change with a test.
+
+What the window is for: an agent that met a refusal, edited the issue, and
+started the run. On skills#1337 the edit that moved the line to `1` landed six
+minutes and fifty-six seconds after the issue was filed, and a run followed
+within minutes. Anything above about five minutes catches that sequence, and
+fifteen is twice the observed interval.
+
+What a longer window costs: the recovery is time, and a filer who legitimately
+corrected a decision has nothing else to do but let it pass.
+
+There is no clock override and there must not be one. A variable that moved
+"now" forward would be a variable that clears the refusal, which the decision
+record rules out by name. Tests build their timestamps from the real clock.
+"""
+
+
+def _filing_stamp(value) -> datetime.datetime | None:
+    """One recorded timestamp as an aware datetime, or None if it is not one."""
+    if not isinstance(value, str) or value == FILING_PROVENANCE_UNKNOWN:
+        return None
+    try:
+        stamp = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return stamp if stamp.tzinfo is not None else None
+
+
+def filing_decision_window(provenance: dict, current: object) -> dict:
+    """Whether the filing decision is too young for a run to start on.
+
+    Three verdicts, and only one of them stops the run.
+
+    `refuse` needs GraphQL to show the body changed inside the window and
+    either the decision line moved or the prior revision's line could not be
+    read. A body edit that left the decision where it was is not refused: the
+    study's refinement exists to remove that false positive.
+
+    `clear` means the evidence rules out a recent change. REST can say this
+    much on its own, because `updated_at` moves on every edit and so bounds
+    the last body change from above: if it is older than the window, the body
+    is too.
+
+    `undiscriminated` means something moved inside the window and nothing read
+    here can say whether it was the body. The maintainer decided on 6 September
+    2026 that this proceeds, because a comment moves `updated_at` too and a
+    refusal on that read would stop a run for the wrong reason most times it
+    fired. The observation is recorded and never described as enforced.
+    """
+    seconds = FILING_DECISION_WINDOW_SECONDS
+    moment = datetime.datetime.now(datetime.timezone.utc)
+
+    def age(stamp: datetime.datetime) -> float:
+        return (moment - stamp).total_seconds()
+
+    def verdict(kind: str, observed: str) -> dict:
+        return {"seconds": seconds, "verdict": kind, "observed": observed}
+
+    created = _filing_stamp(provenance.get("created_at"))
+    updated = _filing_stamp(provenance.get("updated_at"))
+    edits = provenance.get("edit_count")
+    last = _filing_stamp(provenance.get("last_edited_at"))
+
+    def rest_only(why: str) -> dict:
+        if updated is None:
+            return verdict(
+                "undiscriminated",
+                f"{why}, and `updated_at` could not be read either",
+            )
+        if age(updated) > seconds:
+            return verdict(
+                "clear",
+                f"{why}, but `updated_at` is {int(age(updated))}s old, which "
+                f"bounds the last body change from above",
+            )
+        if created is not None and updated == created:
+            return verdict(
+                "clear",
+                f"{why}, and `updated_at` equals `created_at`, so nothing has "
+                f"changed since the issue was filed",
+            )
+        return verdict(
+            "undiscriminated",
+            f"{why}; `updated_at` is {int(age(updated))}s old, inside the "
+            f"window, and a comment or a label moves it as readily as an edit, "
+            f"so this read cannot say whether the body changed",
+        )
+
+    if isinstance(edits, bool) or not isinstance(edits, int):
+        return rest_only("GraphQL could not say whether the body changed")
+    if edits <= 1:
+        return verdict(
+            "clear",
+            "the body has one revision, so it has not changed since it was filed",
+        )
+    if last is None:
+        return rest_only(
+            "the body has more than one revision but its last edit time could "
+            "not be read"
+        )
+    if age(last) > seconds:
+        return verdict(
+            "clear",
+            f"the body last changed {int(age(last))}s ago, outside the window",
+        )
+    prior = provenance.get("prior_fiat_required")
+    when = f"{int(age(last))}s ago"
+    if prior == FILING_PROVENANCE_UNKNOWN:
+        return verdict(
+            "refuse",
+            f"the body changed {when}, inside the {seconds // 60}-minute window, "
+            f"and the prior revision's `{FIAT_REQUIRED_KEY}` line could not be "
+            f"read, so a moved decision cannot be ruled out",
+        )
+    if prior is None:
+        return verdict(
+            "refuse",
+            f"the body changed {when}, inside the {seconds // 60}-minute window, "
+            f"and the prior revision declared no readable "
+            f"`{FIAT_REQUIRED_KEY}` decision",
+        )
+    if prior != current:
+        return verdict(
+            "refuse",
+            f"the `{FIAT_REQUIRED_KEY}` decision moved from {prior} to {current} "
+            f"{when}, inside the {seconds // 60}-minute window",
+        )
+    return verdict(
+        "clear",
+        f"the body changed {when}, inside the window, but the "
+        f"`{FIAT_REQUIRED_KEY}` decision stayed {current}",
+    )
 
 
 def routed_filing_directive(contract: dict) -> dict:
