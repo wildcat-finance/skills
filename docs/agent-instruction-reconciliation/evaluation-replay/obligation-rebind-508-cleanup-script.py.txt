@@ -1,0 +1,30 @@
+from pathlib import Path
+import hashlib,importlib.util,json,subprocess
+ROOT=Path.cwd()
+OUT=ROOT/'.hexaemeron/cleanup-508-obligation-rebind';OUT.mkdir()
+record_path=ROOT/'docs/promise-machine/obligation-gates/demonstration-run.json'
+prose_path=record_path.with_name('demonstration-evidence.md')
+old_raw=record_path.read_bytes();old_prose=prose_path.read_bytes();old=json.loads(old_raw)
+(OUT/'original-run.json').write_bytes(old_raw);(OUT/'original-evidence.md.txt').write_bytes(old_prose)
+spec=importlib.util.spec_from_file_location('obligation_demo_owner',ROOT/'tests/test_obligation_gate_demonstration.py')
+owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner)
+owner.typed(old,owner.RECORD_SHAPE,'record')
+changed=[];new=json.loads(old_raw);prose=old_prose
+for entry in new['inputs']:
+ raw=owner.confined(entry['path']).read_bytes();digest=hashlib.sha256(raw).hexdigest()
+ if entry['sha256']==digest and entry['bytes']==len(raw):continue
+ assert entry['path'] in {'tests/promise_machine_coverage.json','docs/promise-machine/obligation-gates/evaluation-run.json'}
+ before=dict(entry);entry['sha256']=digest;entry['bytes']=len(raw)
+ previous=f"- `{entry['path']}`, SHA-256 `{before['sha256']}`, {before['bytes']} bytes".encode()
+ following=f"- `{entry['path']}`, SHA-256 `{digest}`, {len(raw)} bytes".encode()
+ assert prose.count(previous)==1
+ prose=prose.replace(previous,following)
+ changed.append({'old':before,'new':entry})
+assert len(changed)==2
+assert {k:v for k,v in new.items() if k!='inputs'}=={k:v for k,v in old.items() if k!='inputs'}
+record_path.write_text(json.dumps(new,sort_keys=True,indent=2)+'\n');prose_path.write_bytes(prose)
+result={'operation':'recompute-owned-demonstration-input-descriptors','owner':'tests/test_obligation_gate_demonstration.py','changed':changed,'historical_commands_outcomes_date_unchanged':True,'old_record_sha256':hashlib.sha256(old_raw).hexdigest(),'new_record_sha256':hashlib.sha256(record_path.read_bytes()).hexdigest(),'prose_changes':'only the two rendered input digest/byte descriptors','new_execution_claim':False}
+(OUT/'rebind.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+for old_name,new_name in [('original-run.json','before-508-cleanup-obligation-demonstration-run.json'),('original-evidence.md.txt','before-508-cleanup-obligation-demonstration-evidence.md.txt'),('rebind.json','obligation-input-rebind-508-cleanup.json')]:
+ (ROOT/'docs/agent-instruction-reconciliation/evaluation-replay'/new_name).write_bytes((OUT/old_name).read_bytes())
+print(json.dumps(result))
