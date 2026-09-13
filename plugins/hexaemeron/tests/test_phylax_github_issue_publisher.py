@@ -728,6 +728,55 @@ class SocketBoundaryTests(BoundaryTestCase):
 
 
 class SignerBoundaryTests(BoundaryTestCase):
+    @classmethod
+    def _is_production_signer_command(cls, arguments: object) -> bool:
+        if not isinstance(arguments, (list, tuple)):
+            return False
+        return tuple(arguments) == OPENSSL_ARGUMENTS or PEM_PATH in arguments
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._real_popen = subprocess.Popen
+        cls._spawn_calls: list[
+            tuple[tuple[object, ...], dict[str, object]]
+        ] = []
+
+        def guarded_popen(*popen_args, **popen_kwargs):
+            arguments = (
+                popen_kwargs.get("args")
+                if "args" in popen_kwargs
+                else popen_args[0] if popen_args else None
+            )
+            if cls._is_production_signer_command(arguments):
+                raise AssertionError("test attempted the production signer command")
+            cls._spawn_calls.append((popen_args, popen_kwargs))
+            return cls._real_popen(*popen_args, **popen_kwargs)
+
+        cls._popen_guard = mock.patch.object(
+            publisher_signer.subprocess,
+            "Popen",
+            side_effect=guarded_popen,
+        )
+        cls._popen_guard.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._popen_guard.stop()
+        super().tearDownClass()
+
+    def setUp(self):
+        self._spawn_calls.clear()
+
+    def test_production_signer_spawn_guard_covers_executable_and_key(self):
+        self.assertTrue(self._is_production_signer_command(OPENSSL_ARGUMENTS))
+        self.assertTrue(
+            self._is_production_signer_command((sys.executable, PEM_PATH))
+        )
+        self.assertFalse(
+            self._is_production_signer_command((sys.executable, "-c", "pass"))
+        )
+
     def test_signer_uses_fixed_arguments_stdin_timeout_and_output_limit(self):
         observed: list[tuple[tuple[str, ...], bytes, float, int]] = []
 
@@ -756,23 +805,76 @@ class SignerBoundaryTests(BoundaryTestCase):
 
     def test_default_signer_inherits_no_environment_and_hides_stderr(self):
         canary = "STEP2_CREDENTIAL_CANARY"
-        completed = subprocess.CompletedProcess(
-            OPENSSL_ARGUMENTS, 0, stdout=b"s" * RSA_SIGNATURE_BYTES
+        program = (
+            "import os,sys;"
+            f"sys.exit(7) if {canary!r} in os.environ else "
+            f"sys.stdout.buffer.write(b's'*{RSA_SIGNATURE_BYTES})"
         )
+        arguments = (sys.executable, "-c", program)
         with (
             mock.patch.dict(os.environ, {canary: "must-not-cross"}),
-            mock.patch.object(
-                publisher_signer.subprocess, "run", return_value=completed
-            ) as run,
+            mock.patch.object(publisher_signer, "OPENSSL_ARGUMENTS", arguments),
         ):
-            OpenSSLSigner().sign(b"header.payload", timeout_seconds=5.0)
-        kwargs = run.call_args.kwargs
+            self.assertEqual(
+                b"s" * RSA_SIGNATURE_BYTES,
+                OpenSSLSigner().sign(b"header.payload", timeout_seconds=5.0),
+            )
+        self.assertEqual(1, len(self._spawn_calls))
+        popen_args, kwargs = self._spawn_calls[0]
+        self.assertEqual((list(arguments),), popen_args)
         self.assertEqual({}, kwargs["env"])
         self.assertEqual(subprocess.DEVNULL, kwargs["stderr"])
         self.assertEqual(subprocess.PIPE, kwargs["stdout"])
+        self.assertEqual(subprocess.PIPE, kwargs["stdin"])
         self.assertTrue(kwargs["close_fds"])
         self.assertNotIn("shell", kwargs)
-        self.assertNotIn(canary, repr(run.call_args))
+        self.assertNotIn("must-not-cross", repr(self._spawn_calls))
+
+    def test_default_signer_stops_child_at_output_ceiling(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sentinel = Path(directory) / "crossed-output-limit"
+            program = (
+                "import os,pathlib,sys;"
+                "[os.write(1,b'x'*65536) for _ in range(16)];"
+                "pathlib.Path(sys.argv[1]).write_text('crossed')"
+            )
+            arguments = (sys.executable, "-c", program, str(sentinel))
+            with mock.patch.object(
+                publisher_signer,
+                "OPENSSL_ARGUMENTS",
+                arguments,
+            ):
+                self.assert_publisher_error(
+                    "GIP211",
+                    "signer.output",
+                    lambda: OpenSSLSigner().sign(
+                        b"header.payload", timeout_seconds=5.0
+                    ),
+                )
+            self.assertFalse(sentinel.exists())
+
+    def test_default_signer_kills_child_at_timeout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sentinel = Path(directory) / "crossed-timeout"
+            program = (
+                "import pathlib,sys,time;"
+                "time.sleep(1);"
+                "pathlib.Path(sys.argv[1]).write_text('crossed')"
+            )
+            arguments = (sys.executable, "-c", program, str(sentinel))
+            with mock.patch.object(
+                publisher_signer,
+                "OPENSSL_ARGUMENTS",
+                arguments,
+            ):
+                self.assert_publisher_error(
+                    "GIP211",
+                    "signer.unavailable",
+                    lambda: OpenSSLSigner().sign(
+                        b"header.payload", timeout_seconds=0.05
+                    ),
+                )
+            self.assertFalse(sentinel.exists())
 
     def test_signer_refuses_timeout_overflow_nonzero_and_bad_signature(self):
         self.assert_publisher_error(
@@ -796,10 +898,12 @@ class SignerBoundaryTests(BoundaryTestCase):
                 b"header.payload", timeout_seconds=5.0
             ),
         )
-        completed = subprocess.CompletedProcess(OPENSSL_ARGUMENTS, 7, stdout=b"private")
-        with mock.patch.object(
-            publisher_signer.subprocess, "run", return_value=completed
-        ):
+        arguments = (
+            sys.executable,
+            "-c",
+            "import os;os.write(1,b'private');raise SystemExit(7)",
+        )
+        with mock.patch.object(publisher_signer, "OPENSSL_ARGUMENTS", arguments):
             self.assert_publisher_error(
                 "GIP212",
                 "signer.exit",
@@ -1411,6 +1515,38 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertEqual([], exchange.requests)
         self.assertTrue(signer.closed)
         self.assertTrue(sink.closed)
+
+    def test_server_diagnostic_retains_attempts_after_terminal_event_failure(self):
+        class CleanupFailureEvents(RetainedEvents):
+            def emit(self, **values) -> None:
+                if values.get("stage") == "cleanup":
+                    raise PublisherError("GIP401", "events.value")
+                super().emit(**values)
+
+        document, runtime, signer, sink, exchange = runtime_fixture()
+        runtime._events = CleanupFailureEvents()
+        request = encoded(document)
+        connection = ChunkConnection(
+            encode_frame(request, max_bytes=MAX_REQUEST_BYTES),
+            b"",
+        )
+        server = PublisherServer(
+            runtime=runtime,
+            service_uid=600,
+            peer_reader=lambda _connection: PeerIdentity(uid=501, gid=502),
+        )
+        server.serve_connection(connection)
+
+        length = struct.unpack(">I", bytes(connection.sent[:4]))[0]
+        diagnostic = json.loads(bytes(connection.sent[4 : 4 + length]))
+        self.assertEqual("GIP401", diagnostic["code"])
+        self.assertEqual(1, diagnostic["mint_attempts"])
+        self.assertEqual(1, diagnostic["post_attempts"])
+        self.assertEqual(4, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertTrue(connection.closed)
 
     def test_credential_canary_stays_out_of_public_surfaces_and_file_receipt(self):
         canary = "ghs_STEP2_CANARY_0123456789abcdef"
@@ -2531,7 +2667,9 @@ class ContractTests(unittest.TestCase):
         self.assertIn("Admission is a necessary input", reference)
         self.assertIn("github-issue-publisher-admission-manifest/v1", reference)
         self.assertIn("signer-and-post-boundary", reference)
+        self.assertIn("retains at most 4,097 stdout bytes", reference)
         self.assertIn("create-indeterminate", reference)
+        self.assertIn("cannot appear as a zero-attempt refusal", reference)
         self.assertIn("repository suite makes no live network call", reference)
         self.assertIn("version `0.3.0`", reference)
         self.assertNotIn("ADR-054", reference)

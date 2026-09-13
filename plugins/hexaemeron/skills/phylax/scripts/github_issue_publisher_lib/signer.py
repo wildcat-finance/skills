@@ -5,7 +5,10 @@ from __future__ import annotations
 import base64
 from collections.abc import Callable
 import math
+import os
+import select
 import subprocess
+import time
 from typing import Protocol
 
 from .canonical import canonical_json
@@ -49,22 +52,67 @@ def _default_runner(
 ) -> bytes:
     """Run the fixed executable without a shell or inherited environment."""
 
-    completed = subprocess.run(
-        list(arguments),
-        input=signing_input,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        timeout=timeout_seconds,
-        check=False,
-        close_fds=True,
-        env={},
-    )
-    if completed.returncode != 0:
-        refuse("GIP212", "signer.exit")
-    output = completed.stdout
-    if not isinstance(output, bytes) or len(output) > output_limit:
-        refuse("GIP211", "signer.output")
-    return output
+    process: subprocess.Popen[bytes] | None = None
+    deadline = time.monotonic() + timeout_seconds
+    try:
+        process = subprocess.Popen(
+            list(arguments),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+            env={},
+        )
+        if process.stdin is None or process.stdout is None:
+            refuse("GIP211", "signer.unavailable")
+        process.stdin.write(signing_input)
+        process.stdin.close()
+
+        descriptor = process.stdout.fileno()
+        chunks: list[bytes] = []
+        length = 0
+        # communicate() would retain all stdout before the output bound can refuse.
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(arguments, timeout_seconds)
+            ready, _, _ = select.select((descriptor,), (), (), remaining)
+            if not ready:
+                raise subprocess.TimeoutExpired(arguments, timeout_seconds)
+            chunk = os.read(descriptor, min(4_096, output_limit - length + 1))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            length += len(chunk)
+            if length > output_limit:
+                refuse("GIP211", "signer.output")
+
+        remaining = deadline - time.monotonic()
+        returncode = process.poll()
+        if returncode is None:
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(arguments, timeout_seconds)
+            returncode = process.wait(timeout=remaining)
+        if returncode != 0:
+            refuse("GIP212", "signer.exit")
+        return b"".join(chunks)
+    finally:
+        if process is not None:
+            for stream in (process.stdin, process.stdout):
+                if stream is not None:
+                    try:
+                        stream.close()
+                    except OSError:
+                        pass
+            if process.poll() is None:
+                try:
+                    process.kill()
+                except OSError:
+                    pass
+                try:
+                    process.wait(timeout=1.0)
+                except (OSError, subprocess.SubprocessError):
+                    pass
 
 
 class OpenSSLSigner:

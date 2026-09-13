@@ -216,7 +216,8 @@ key path
 the bounded ASCII JWT signing input on stdin, inherits no environment,
 discards stderr, waits at most five seconds, and accepts only a 256-byte
 signature under a 4,096-byte output ceiling. It returns no raw subprocess
-error.
+error. The default runner retains at most 4,097 stdout bytes, then kills and
+reaps the child when output crosses the 4,096-byte ceiling.
 
 The App JWT fixes issuer `4764812`, issued-at time to 60 seconds before the
 service clock, and expiry to 540 seconds after it. The JWT remains inside the
@@ -276,7 +277,10 @@ header, response body, or raw error. Outcomes are `refused`, `published`,
 `create-indeterminate`, `created-but-unverified`, `receipt-failed`, and
 `cleanup-failed`. The client rejects non-integer diagnostic attempt counts,
 non-monotone lifecycle counts, and result-field combinations that no one-shot
-lifecycle can emit.
+lifecycle can emit. If a terminal event cannot be retained after token exchange
+or the issue POST, the public diagnostic preserves the observed mint and POST
+attempt counts; a completed POST cannot appear as a zero-attempt refusal on
+that path.
 
 ## Component conformance reports
 

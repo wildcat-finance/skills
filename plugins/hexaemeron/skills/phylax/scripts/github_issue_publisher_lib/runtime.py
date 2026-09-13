@@ -72,6 +72,20 @@ def _empty_counts() -> dict[str, int]:
     }
 
 
+def _error_with_attempts(
+    error: PublisherError,
+    counts: dict[str, int],
+) -> PublisherError:
+    """Retain mutation-relevant counts when a result cannot be built."""
+
+    return PublisherError(
+        error.code,
+        error.field,
+        mint_attempts=counts["token_attempts"],
+        post_attempts=counts["post_attempts"],
+    )
+
+
 class PublisherRuntime:
     """Keep credential authority inside one admitted service operation."""
 
@@ -173,8 +187,13 @@ class PublisherRuntime:
 
         try:
             self._emit(budget, correlation, stage, outcome, code, counts)
-        except BaseException:
+        except BaseException as exc:
             self._close_before_result()
+            if isinstance(exc, PublisherError):
+                raise _error_with_attempts(exc, counts) from exc
+            if isinstance(exc, Exception):
+                error = PublisherError("GIP500", "runtime.events")
+                raise _error_with_attempts(error, counts) from exc
             raise
 
     def publish(self, raw: bytes) -> dict[str, object]:
@@ -407,7 +426,14 @@ class PublisherRuntime:
                 self._receipt_sink.close()
             except Exception:
                 pass
-            self._emit(budget, correlation, "receipt", "refused", "GIP402", counts)
+            self._emit_or_close(
+                budget,
+                correlation,
+                "receipt",
+                "refused",
+                "GIP402",
+                counts,
+            )
             document = result_document(
                 outcome=(
                     outcome
