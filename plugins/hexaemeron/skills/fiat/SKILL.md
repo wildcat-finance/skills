@@ -526,10 +526,17 @@ do not enter the packet.
 
 A broken runbook verdict blocks the current step. A holding runbook amendment
 clears a broken study verdict only when it names the current step, carries at
-least one complete replacement field and records the current study digest. A
-later study amendment changes that digest, so an older repair no longer
-applies. Recovery remains another checked amendment or an explicit halt; state
-and ledger history are not edited to manufacture a holding result.
+least one complete replacement field and is bound to the current study digest.
+Each study amendment records one decision per runbook amendment effective under
+the prior digest: retained when every step the amendment touches reads entry
+holds and exit holds in the new verdicts, and displaced otherwise. The packet
+builders admit an amendment whose recorded study digest, followed through
+retained decisions in study-amendment order, reaches the current digest. A
+displaced amendment leaves the packet and its step stays blocked until a new
+runbook amendment bound to the current study digest is receipted; `verify`
+recomputes every recorded decision from the two receipt histories. Recovery
+remains another checked amendment or an explicit halt; state and ledger history
+are not edited to manufacture a holding result.
 
 **Implementation.** Build the candidate named by the checked design receipt;
 the design choice is not reopened inside a step. The step runs under the phase skills: `phylax` names
