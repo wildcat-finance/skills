@@ -11,7 +11,9 @@ is inferred from how the emitters are written rather than from a declaration.
 
 `campaign.json` beside this file records the run that exercised them: engine,
 seed, run length, the commit compiled, the protocol ref, the emitter count and
-the per-test result, every value parsed from the run's own output.
+the per-test result, every value parsed from the run's own output, which is
+committed byte for byte as `campaign-output.txt` and named by
+`output_sha256`.
 
 ## Properties
 

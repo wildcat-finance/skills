@@ -1,11 +1,13 @@
 """The campaign record agrees with the tree it claims to describe.
 
-`fizz_data/campaign.json` is generated from a forge run's captured output. A
-hand-edited record, or one left behind after the suite changed, disagrees
-with the vendored emitter files, the case names in the `.t.sol` files or the
-provenance record, and this suite fails. Nothing here writes.
+`fizz_data/campaign.json` is generated from a forge run's captured output,
+committed beside it as `fizz_data/campaign-output.txt`. A hand-edited record,
+or one left behind after the suite changed, disagrees with the vendored
+emitter files, the case names in the `.t.sol` files, the provenance record or
+the captured output, and this suite fails. Nothing here writes.
 """
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -15,6 +17,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 HARNESS = os.path.normpath(os.path.join(HERE, os.pardir, "harness"))
 CAMPAIGN = os.path.join(HARNESS, "fizz_data", "campaign.json")
+OUTPUT = os.path.join(HARNESS, "fizz_data", "campaign-output.txt")
 PROVENANCE = os.path.join(HARNESS, "src", "vendor", "PROVENANCE.json")
 TEST_DIR = os.path.join(HARNESS, "test")
 TEST_FUNCTION = re.compile(r"^\s*function (test\w*)\s*\(", re.MULTILINE)
@@ -35,6 +38,7 @@ REQUIRED = {
     "fuzz_seed": str,
     "harness_src_tree": str,
     "harness_test_tree": str,
+    "output_bytes": int,
     "output_sha256": str,
     "protocol": dict,
     "repository_commit": str,
@@ -141,6 +145,27 @@ class HarnessCampaignTests(unittest.TestCase):
         provenance = load(PROVENANCE)
         self.assertEqual(self.record["protocol"]["ref"], provenance["ref"])
         self.assertEqual(self.record["protocol"]["repository"], provenance["repository"])
+
+    def test_the_captured_output_is_committed_and_the_record_is_read_from_it(self):
+        # S4-R1-01: the bytes `output_sha256` names live in the tree, and every
+        # per-test row, run count and the summary line are lines of them.
+        with open(OUTPUT, "rb") as fh:
+            raw = fh.read()
+        self.assertEqual(len(raw), self.record["output_bytes"])
+        self.assertEqual(hashlib.sha256(raw).hexdigest(), self.record["output_sha256"])
+        lines = raw.decode("utf-8").splitlines()
+        self.assertIn(self.record["summary"]["line"], lines)
+        for suite in self.record["suites"]:
+            self.assertIn("Ran %d tests for %s" % (suite["declared"], suite["name"]), lines)
+        for test in self.recorded_tests:
+            prefix = "[PASS] " + test["signature"] + " ("
+            if test["kind"] == "fuzz":
+                prefix += "runs: %d," % test["runs"]
+            self.assertTrue(any(line.startswith(prefix) for line in lines), test["signature"])
+        self.assertEqual(
+            sum(1 for line in lines if line.startswith("[PASS] ")), self.record["tests_passed"]
+        )
+        self.assertEqual(sum(1 for line in lines if line.startswith("[FAIL")), self.record["tests_failed"])
 
 
 if __name__ == "__main__":
