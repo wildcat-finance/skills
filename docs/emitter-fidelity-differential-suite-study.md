@@ -751,3 +751,23 @@ check command) and S1-R1-04 (the two counts).
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds;
 exit broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit
 broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** One correction to the amendment above: the `misplaced`
+classification in
+`plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py` is at
+lines 485 to 487, with `misplaced[path] = entry` at line 487, not at lines 476
+to 478, which hold the `identity-duplicate` refusal. Line 49 and lines 602 to
+604 stand as cited.
+
+**Why.** Audit round 2 of step 1 recorded S1-R2-01. This amendment moves the
+study digest, which un-binds the four runbook amendments until each is
+re-issued against the new digest; the exits below are broken for that reason
+and for no other.
+
+**Steps touched.** Steps 1, 2, 3 and 4.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds;
+exit broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit
+broken.
