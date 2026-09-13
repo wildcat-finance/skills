@@ -643,3 +643,27 @@ flip on host load rather than on the guard.
 described less than the step carries.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Files: `AGENTS.md`, `plugins/hexaemeron/skills/fiat/SKILL.md`, `plugins/hexaemeron/skills/fiat/EVOLUTION.md`, `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `tests/fixtures/agent-instruction-v1/manifest.json`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/`, `tests/fixtures/agent-instruction-v1/evidence/`, `tests/promise_machine_coverage.json`, `tests/test_version_propagation.py`, `tests/test_evolution_contract.py`, `plugins/hexaemeron/tests/test_phylax_model_proxy.py`, `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `docs/route-a-zero-decision-demo.md`, `docs/route-a-zero-decision-runbook.md`, `.horos/boundary.json`, `.horos/candidates.json`, `.horos/census.json`. Complete replacement Tests: No new case beyond the demo record. The step's claims are what `tests/test_version_propagation.py`, `tests/test_evolution_contract.py`, `tests/test_agent_instruction_corpus.py` and `python3 scripts/promise_machine.py coverage --check` already assert. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-5.json --timeout 2400`, format `unittest-json-v1`, report file `.elenchus/step-5.json`.
+
+**Why.** Files named sixteen paths and the version bump alone reaches four more.
+Resolved from the tree rather than from memory: `hexctl.py` holds
+`CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS`, which must gain the new
+`fiat-v5.54.1` or the checkpoint restore tests refuse the new controller, and
+editing it re-pins the controller digest; `tests/test_evolution_contract.py`
+pins `fiat-v5.53.1` at two assertions; `.horos/candidates.json` moves with the
+census on every tracked edit, as it did in steps 2 to 4; and the shipped runbook
+goes stale on this amendment and every later one. The runner contract gains
+`--timeout 2400` to match steps 3 and 4, after the 900-second default returned
+`inconclusive` twice under host load in step 4.
+
+`tests/fixtures/promise-machine/runtime/fiat-final-integration.json`, which pins
+the ledger's digest on `main`, is absent on this branch: it reached `main` after
+the run's base, so it is owed at the integration sync rather than here.
+
+**Steps touched.** Step 5, whose Files omitted the version bump's reach into the
+controller and its contract test.
+
+**Still holding.** Step 5: entry holds; exit holds.

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.53.1"
+  version: "5.54.1"
 ---
 
 <p align="center">
@@ -179,12 +179,12 @@ the second.
    `--task-issue`, that override must start with `fiat/<issue>-`.
 
    With a GitHub task issue, `init` reads that issue's filing contract before it
-   creates any state, worktree or branch. `Fiat-Required: 0` refuses: the filer
-   decided the work is one independent pull request, so do it that way, point the
-   issue at that pull request, and close it there. A body that declares neither
-   the line nor a `carryover` block refuses too, naming what to add. Do not
-   reword the issue past the refusal to get a run: if the decision was wrong,
-   change it to `Fiat-Required: 1` and say why in the issue first.
+   creates any state, worktree or branch. On `Fiat-Required: 0` it prints one
+   directive and exits 0: the filer decided the work is one independent pull
+   request, so do it that way, point the issue at that pull request, and close
+   it there. A body that declares neither the line nor a `carryover` block
+   refuses, naming what to add. On `Fiat-Required: 1`, `init` refuses when the
+   decision moved inside the last fifteen minutes, and states what it observed.
 
 **Sync the base first.** A run inherits every mistake in the ref it was cut
 from, and a local checkout that has been sitting is the normal case rather than
@@ -302,8 +302,9 @@ state transition.
    invent an issue. A first `task_issue` record after initialization is refused
    because the stored branch might already be published; an exact repeat of the
    initial receipt is a no-op. `init` reads that issue's `Fiat-Required` line
-   and `carryover` block and refuses a `0` or a malformed contract before it
-   creates anything, so a refusal costs nothing but the read. A run naming no
+   and `carryover` block before it creates anything: a `0` routes to one pull
+   request, and a malformed contract or a decision that moved inside the window
+   refuses, so neither costs more than the reads. A run naming no
    issue, or a tracker that is not GitHub, records the nulls in the init
    receipt and warns; report that gap rather than treating it as a `1`.
 7. Nothing else.
@@ -795,8 +796,10 @@ Use `hexctl halt --reason ...` so the stop itself is on the ledger.
 - Never file an in-run issue under a carryover-only title or body convention.
   The target repository's ordinary queue, label, opening, protected-inventory,
   and prose-publication rules apply unchanged.
-- Never start a run against an issue declaring `Fiat-Required: 0`, and never
-  edit that line to `1` yourself to get past the refusal.
+- Never start a run against an issue whose filed decision is `0`: `init` routes
+  it to one pull request, and that pull request is the work. The filed decision
+  belongs to whoever filed the issue. If it looks wrong, say so on the issue and
+  stop; do not alter an issue to change what `init` will do.
 - Never leave an outstanding item named in prose alone. Every one is filed as its
   own issue, pointed at the issue that already carries it, or refused with a
   stated reason, in the run pull request's `carryover` block.
