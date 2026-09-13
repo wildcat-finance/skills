@@ -1,0 +1,97 @@
+[
+  {
+    "id": "valid-shape",
+    "valid": true,
+    "value": {
+      "schema": "issue508-launch-fixture/v1",
+      "execution_root": "/fixture/scratch",
+      "argv": [
+        "/fixture/python3",
+        "worker.py"
+      ],
+      "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tools": [
+        "python"
+      ],
+      "deadline_seconds": 2,
+      "output_cap_bytes": 1048576
+    }
+  },
+  {
+    "id": "missing-schema",
+    "valid": false,
+    "value": {
+      "execution_root": "/fixture/scratch",
+      "argv": [
+        "/fixture/python3",
+        "worker.py"
+      ],
+      "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tools": [
+        "python"
+      ],
+      "deadline_seconds": 2,
+      "output_cap_bytes": 1048576
+    }
+  },
+  {
+    "id": "unknown-field",
+    "valid": false,
+    "value": {
+      "schema": "issue508-launch-fixture/v1",
+      "execution_root": "/fixture/scratch",
+      "argv": [
+        "/fixture/python3",
+        "worker.py"
+      ],
+      "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tools": [
+        "python"
+      ],
+      "deadline_seconds": 2,
+      "output_cap_bytes": 1048576,
+      "unregistered": true
+    }
+  },
+  {
+    "id": "wrong-schema-type",
+    "valid": false,
+    "value": {
+      "schema": 3,
+      "execution_root": "/fixture/scratch",
+      "argv": [
+        "/fixture/python3",
+        "worker.py"
+      ],
+      "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tools": [
+        "python"
+      ],
+      "deadline_seconds": 2,
+      "output_cap_bytes": 1048576
+    }
+  },
+  {
+    "id": "boolean-is-not-integer",
+    "valid": false,
+    "value": {
+      "schema": "issue508-launch-fixture/v1",
+      "execution_root": "/fixture/scratch",
+      "argv": [
+        "/fixture/python3",
+        "worker.py"
+      ],
+      "executable_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "policy_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tools": [
+        "python"
+      ],
+      "deadline_seconds": true,
+      "output_cap_bytes": 1048576
+    }
+  }
+]
