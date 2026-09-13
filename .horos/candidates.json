@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21673386,
+    "bytes_blob": 21693459,
     "bytes_generated": 98
   },
   "entries": [
@@ -33,6 +33,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
+    },
+    {
+      "bytes": 18978,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1264-rebind-runbook-amendments-across-a-study-am.synopsis.md"
     },
     {
       "bytes": 131133,
@@ -623,16 +630,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 66420,
+      "bytes": 67425,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 33210",
+      "evidence": "mean line length above 400 in a window at offset 33712",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 79145,
+      "bytes": 79235,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 77097",
+      "evidence": "mean line length above 400 in a window at offset 77187",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.54.1"
+  version: "5.55.1"
 ---
 
 <p align="center">
@@ -527,9 +527,11 @@ do not enter the packet.
 A broken runbook verdict blocks the current step. A holding runbook amendment
 clears a broken study verdict only when it names the current step, carries at
 least one complete replacement field and is bound to the current study digest.
-Each study amendment records one decision per runbook amendment effective under
-the prior digest: retained when every step the amendment touches reads entry
-holds and exit holds in the new verdicts, and displaced otherwise. The packet
+Each study amendment records one decision per distinct runbook amendment
+effective under the prior digest: retained when every unbuilt step the
+amendment touches reads entry holds and exit holds in the new verdicts, and
+displaced otherwise; a touched step already completed takes no verdict and
+counts as holding. The packet
 builders admit an amendment whose recorded study digest, followed through
 retained decisions in study-amendment order, reaches the current digest. A
 displaced amendment leaves the packet and its step stays blocked until a new
