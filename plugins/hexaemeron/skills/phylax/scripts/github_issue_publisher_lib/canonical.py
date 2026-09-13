@@ -60,6 +60,15 @@ def _pairs(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def _bounded_string(value: str) -> None:
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError as exc:
+        raise PublisherError("GIP103", "request.string") from exc
+    if len(encoded) > MAX_STRING_BYTES:
+        refuse("GIP103", "request.string")
+
+
 def _shape(value: Any, *, depth: int = 0) -> int:
     if depth > MAX_JSON_DEPTH:
         refuse("GIP103", "request.depth")
@@ -70,12 +79,7 @@ def _shape(value: Any, *, depth: int = 0) -> int:
             refuse("GIP103", "request.number")
         refuse("GIP103", "request.number")
     if isinstance(value, str):
-        try:
-            encoded = value.encode("utf-8")
-        except UnicodeEncodeError as exc:
-            raise PublisherError("GIP103", "request.string") from exc
-        if len(encoded) > MAX_STRING_BYTES:
-            refuse("GIP103", "request.string")
+        _bounded_string(value)
         return 0
     if isinstance(value, list):
         if len(value) > MAX_JSON_MEMBERS:
@@ -88,6 +92,7 @@ def _shape(value: Any, *, depth: int = 0) -> int:
         for key, item in value.items():
             if not isinstance(key, str):
                 refuse("GIP103", "request.key")
+            _bounded_string(key)
             count += _shape(item, depth=depth + 1)
         return count
     refuse("GIP103", "request.type")
@@ -177,9 +182,11 @@ def safe_text(
     for char in value:
         if char in "\n\t" and multiline:
             continue
-        if char == "\r" or unicodedata.category(char).startswith("C"):
-            refuse("GIP110", field)
-        if not multiline and char in "\n\t":
+        if (
+            (not multiline and not char.isprintable())
+            or char == "\r"
+            or unicodedata.category(char).startswith("C")
+        ):
             refuse("GIP110", field)
     return value
 

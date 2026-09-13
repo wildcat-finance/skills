@@ -31,18 +31,38 @@ AUTHORITY_SCHEMA = "github-publication-authority/v1"
 SAPHENEIA_VERSION = "0.3.0"
 IMPRIMATUR_VERSION = "2.3.0"
 VULGATE_VERSION = "1.1.0"
-FRAMEWORK_OPENING = "Protasis decides which skill or skills this observation upgrades."
+FRAMEWORK_OPENING = (
+    "Protasis decides which skill or skills this observation upgrades. "
+    "The filer is the wrong party to guess."
+)
 MAX_LABELS = 16
 MAX_FROZEN_ITEMS = 64
+MAX_CARRYOVER_ROWS = 128
+MAX_CARRYOVER_REASON_BYTES = 512
 LABEL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 .:_/-]{0,49}")
 REFERENCE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9#:/._-]{0,127}")
-SKILL_RE = r"[a-z][a-z0-9-]*"
+SKILL_RE = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+FENCE_RE = re.compile(r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>.*)$")
+FIAT_REQUIRED_RE = re.compile(
+    r"^ {0,3}(?:[-*+]\s+|>\s*)?\*{0,2}Fiat-Required\*{0,2}\s*:\s*(?P<value>.*?)\s*$"
+)
+CARRYOVER_ID_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+GITHUB_ISSUE_RE = re.compile(
+    r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/issues/[1-9][0-9]*/?"
+)
+STATUS_BLOCK_START = "<!-- status:start -->"
+STATUS_BLOCK_END = "<!-- status:end -->"
+DECISION_LABELS = frozenset(("fiat-run-needed", "only-pr-needed"))
 QUEUE_RULES = {
     "held-job": (re.compile(rf"(?P<skill>{SKILL_RE})-next"), "held-job", ""),
-    "wish": (re.compile(rf"(?P<skill>{SKILL_RE})-[0-9]+"), "wish", ""),
+    "wish": (re.compile(rf"(?P<skill>{SKILL_RE})-[1-9][0-9]*"), "wish", ""),
     "skill-wish": (re.compile(rf"(?P<skill>{SKILL_RE})-wish"), None, ""),
-    "observation": (re.compile(r"framework-[0-9]+"), "observation", FRAMEWORK_OPENING),
+    "observation": (
+        re.compile(r"framework-[1-9][0-9]*"),
+        "observation",
+        FRAMEWORK_OPENING,
+    ),
 }
 QUEUE_LABELS = frozenset(
     required_label
@@ -141,6 +161,155 @@ def _ordered_presence(values: tuple[str, ...], candidate: Candidate, field: str)
         cursor = found + len(value)
 
 
+def _unfenced_lines(text: str) -> list[str]:
+    visible: list[str] = []
+    open_mark: str | None = None
+    open_length: int | None = None
+    for physical in text.splitlines(keepends=True):
+        line = physical.rstrip("\r\n")
+        fence = FENCE_RE.match(line)
+        if fence is not None:
+            sequence = fence.group("mark")
+            mark = sequence[0]
+            info = fence.group("info").strip()
+            if open_mark is None:
+                open_mark, open_length = mark, len(sequence)
+            elif mark == open_mark and len(sequence) >= (open_length or 0) and not info:
+                open_mark, open_length = None, None
+            continue
+        if open_mark is None:
+            visible.append(physical)
+    return visible
+
+
+def _fenced_rows(text: str, info: str) -> list[str] | None:
+    lines = text.splitlines(keepends=True)
+    blocks: list[tuple[int, bool, int, bool]] = []
+    open_mark: str | None = None
+    open_length: int | None = None
+    opened: tuple[int, bool] | None = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        fence_info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = fence_info.split()
+            opened = (
+                (index, fence_info == info)
+                if words and words[0] == info
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= (open_length or 0) and not fence_info:
+            if opened is not None:
+                blocks.append((*opened, index, True))
+            open_mark, open_length, opened = None, None, None
+    if opened is not None:
+        blocks.append((*opened, len(lines) - 1, False))
+    if not blocks:
+        return None
+    if len(blocks) != 1:
+        refuse("GIP132", "publication.carryover")
+    opening, exact_info, closing, closed = blocks[0]
+    if not exact_info or not closed:
+        refuse("GIP132", "publication.carryover")
+    return [line.rstrip("\r\n") for line in lines[opening + 1 : closing]]
+
+
+def _status_block(text: str) -> tuple[int, int] | None:
+    opened: int | None = None
+    closed: int | None = None
+    lines = _unfenced_lines(text)
+    for number, physical in enumerate(lines, start=1):
+        line = physical.rstrip("\r\n").strip()
+        if line == STATUS_BLOCK_START:
+            if opened is not None:
+                refuse("GIP132", "publication.status")
+            opened = number
+        elif line == STATUS_BLOCK_END:
+            if opened is None or closed is not None:
+                refuse("GIP132", "publication.status")
+            closed = number
+    if opened is None:
+        return
+    if closed is None:
+        refuse("GIP132", "publication.status")
+    for physical in lines[: opened - 1]:
+        line = physical.strip()
+        if line and not (line.startswith("<!--") and line.endswith("-->")):
+            refuse("GIP132", "publication.status")
+    if any(
+        not character.isprintable()
+        for physical in lines[opened : closed - 1]
+        for character in physical.rstrip("\r\n")
+    ):
+        refuse("GIP132", "publication.status")
+    return opened, closed
+
+
+def _has_frozen_opening(text: str, opening: str) -> bool:
+    status = _status_block(text)
+    start = 0 if status is None else status[1]
+    for physical in _unfenced_lines(text)[start:]:
+        line = physical.strip()
+        if not line or (line.startswith("<!--") and line.endswith("-->")):
+            continue
+        return line == opening
+    return False
+
+
+def _carryover(text: str) -> None:
+    rows = _fenced_rows(text, "carryover")
+    if rows is None:
+        refuse("GIP132", "publication.carryover")
+    entries = [row.strip() for row in rows if row.strip()]
+    if not entries or len(entries) > MAX_CARRYOVER_ROWS:
+        refuse("GIP132", "publication.carryover")
+    seen: set[str] = set()
+    for row in entries:
+        if any(not character.isprintable() for character in row):
+            refuse("GIP132", "publication.carryover")
+        fields = [field.strip() for field in row.split("|")]
+        if len(fields) != 3:
+            refuse("GIP132", "publication.carryover")
+        item, disposition, reference = fields
+        if item == "none":
+            if len(entries) != 1 or disposition != "none":
+                refuse("GIP132", "publication.carryover")
+        elif CARRYOVER_ID_RE.fullmatch(item) is None or item in seen:
+            refuse("GIP132", "publication.carryover")
+        else:
+            seen.add(item)
+        if disposition in ("filed", "duplicate"):
+            if GITHUB_ISSUE_RE.fullmatch(reference) is None:
+                refuse("GIP132", "publication.carryover")
+        elif disposition == "none":
+            if not reference or len(reference.encode("utf-8")) > MAX_CARRYOVER_REASON_BYTES:
+                refuse("GIP132", "publication.carryover")
+        else:
+            refuse("GIP132", "publication.carryover")
+
+
+def _publication_contract(candidate: Candidate, labels: tuple[str, ...]) -> None:
+    declarations = []
+    for physical in _unfenced_lines(candidate.body):
+        match = FIAT_REQUIRED_RE.match(physical.rstrip("\r\n"))
+        if match is not None:
+            declarations.append(match.group("value"))
+    if len(declarations) != 1 or declarations[0] not in ("0", "1"):
+        refuse("GIP132", "publication.fiat-required")
+    expected_label = "fiat-run-needed" if declarations[0] == "1" else "only-pr-needed"
+    if set(labels) & DECISION_LABELS != {expected_label}:
+        refuse("GIP131", "publication.decision-label")
+    _carryover(candidate.body)
+    _status_block(candidate.body)
+
+
 def _frozen(document: Any, candidates: tuple[Candidate, ...]) -> tuple[dict[str, Any], str]:
     frozen = _exact(
         document,
@@ -187,10 +356,7 @@ def _frozen(document: Any, candidates: tuple[Candidate, ...]) -> tuple[dict[str,
             or not candidate.title[len(title_marker):].strip()
         ):
             refuse("GIP141", "frozen.title_prefix")
-        if body_opening and not (
-            candidate.body == body_opening
-            or candidate.body.startswith(f"{body_opening}\n")
-        ):
+        if body_opening and not _has_frozen_opening(candidate.body, body_opening):
             refuse("GIP141", "frozen.body_opening")
         _ordered_presence(safe_structure, candidate, "frozen.host_structure")
         _ordered_presence(safe_inventory, candidate, "frozen.protected_inventory")
@@ -217,7 +383,13 @@ def _labels(value: Any) -> tuple[str, ...]:
     return labels
 
 
-def _queue(queue: Any, prefix: str, opening: str, labels: tuple[str, ...]) -> str:
+def _queue(
+    queue: Any,
+    prefix: str,
+    opening: str,
+    labels: tuple[str, ...],
+    candidates: tuple[Candidate, ...],
+) -> str:
     if not isinstance(queue, str) or queue not in QUEUE_RULES:
         refuse("GIP130", "queue")
     pattern, required_label, required_opening = QUEUE_RULES[queue]
@@ -232,6 +404,9 @@ def _queue(queue: Any, prefix: str, opening: str, labels: tuple[str, ...]) -> st
         refuse("GIP130", "queue.labels")
     if required_opening != opening:
         refuse("GIP130", "queue.body_opening")
+    title_pattern = re.compile(rf"{re.escape(prefix)}: \S.*")
+    if any(title_pattern.fullmatch(candidate.title) is None for candidate in candidates):
+        refuse("GIP130", "queue.title")
     return queue
 
 
@@ -452,7 +627,10 @@ def admit_request(
         frozen["title_prefix"],
         frozen["body_opening"],
         labels,
+        (source, shaped, final),
     )
+    for candidate in (source, shaped, final):
+        _publication_contract(candidate, labels)
     _authority(request["authority"], final.sha256)
     gate_versions = _gates(
         request["gates"],

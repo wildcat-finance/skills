@@ -47,9 +47,9 @@ duplicate names before a dictionary exists. It accepts no floating-point
 value, unknown field, coercion, default, or trailing byte.
 
 The request is at most 1 MiB, depth 8, and 256 aggregate members. A title is at
-most 256 UTF-8 bytes. Each body stage is at most 256 KiB. Strings are NFC and
-contain no control or directional-formatting character; a body may contain
-line feed and tab. A title may contain neither.
+most 256 UTF-8 bytes, is NFC, and contains only printable characters. Each body
+stage is at most 256 KiB. Other prose strings are NFC and contain no control or
+directional-formatting character; a body may contain line feed and tab.
 
 ## Candidate identity
 
@@ -81,11 +81,12 @@ fields:
 - `schema`.
 
 Every source, Sapheneia, and final candidate has non-empty title text after the
-frozen prefix. Each body is either the frozen opening alone or starts with that
-opening followed by a line feed. Every structure and inventory string occurs
-in order in each candidate. This mechanical membership check does not
-establish that the inventory is complete or that a connective edit preserved
-meaning.
+frozen prefix. For a queue with a frozen opening, that opening is the first
+visible filing-prose line after any leading blank lines, whole-line HTML
+metadata comments, and optional status block. Every structure and inventory
+string occurs in order in each candidate. This mechanical membership check
+does not establish that the inventory is complete or that a connective edit
+preserved meaning.
 
 The frozen digest is SHA-256 over its canonical JSON object. The Sapheneia and
 Vulgate records carry that digest.
@@ -99,13 +100,36 @@ The queue field selects one code-owned rule:
 | `held-job` | `{skill}-next` | `held-job` | none |
 | `wish` | `{skill}-N` | `wish` | none |
 | `skill-wish` | `{skill}-wish` | no queue label | none |
-| `observation` | `framework-N` | `observation` | `Protasis decides which skill or skills this observation upgrades.` |
+| `observation` | `framework-N` | `observation` | `Protasis decides which skill or skills this observation upgrades. The filer is the wrong party to guess.` |
 
-`{skill}` is lowercase ASCII with digits and hyphens after its first letter.
-`framework` is reserved for the observation queue. A request carries exactly
-the queue label selected by this table, or none for `skill-wish`; it may not
-carry another queue's label. Other repository labels remain bounded, sorted,
-and unique.
+`{skill}` is one or more lowercase ASCII letter-or-digit segments separated by
+single hyphens. `N` is a positive decimal integer without a leading zero.
+The full title has exactly `: ` between its prefix and a summary whose first
+character is not whitespace. `framework` is reserved for the observation
+queue. A request carries exactly the queue label selected by this table, or
+none for `skill-wish`; it may not carry another queue's label. Other repository
+labels remain bounded, sorted, and unique.
+
+## Repository publication contract
+
+The source, Sapheneia, and final bodies each carry exactly one unfenced
+`Fiat-Required: 0` or `Fiat-Required: 1` declaration and exactly one closed
+fence whose info string is `carryover`. A declaration inside a Markdown fence
+does not count. The request labels include `only-pr-needed` for `0` or
+`fiat-run-needed` for `1`, never both.
+
+The `carryover` fence holds from one to 128 non-empty rows. Each row has exactly
+`id | disposition | reference`. An id is lowercase kebab-case and appears once.
+`filed` and `duplicate` point to one canonical GitHub issue URL. `none` carries
+a non-empty reason of at most 512 bytes. The reserved row id `none` is valid
+only in the single row `none | none | <reason>`.
+
+An optional status block uses one `<!-- status:start -->` and one later
+`<!-- status:end -->` outside fenced code. It appears before filing prose, has
+no unmatched or repeated marker, and contains no control character. These
+checks run before authority and the supplied gate records. For an observation,
+the frozen opening is the first visible filing-prose line after this block; the
+block itself cannot satisfy or replace that exact opening.
 
 ## Authority record
 
@@ -171,11 +195,15 @@ digests, unsafe files, and changed fixture bytes refuse.
 The CLI accepts only the frozen `conformance` command for candidate
 `isolated-publisher`, one of the three Step 1 criteria, and that criterion's
 exact report path below `.hexaemeron/design-reports/`. Before writing a report,
-it checks every fixture digest, admits the golden request with the pinned local
-Imprimatur runner, checks the four queue rows and seven rejection-case
-identifiers, and binds the #855 source metadata to the exact title, body, and
-candidate digests. No conformance path can mint, sign, read a credential, send
-HTTP, or publish.
+it checks every fixture digest, admits the golden request and the allowed
+leading-metadata form with the pinned local Imprimatur runner, executes all four
+queue cases and all eleven rejection cases, exercises the accepted and refused
+sides of both parser limits, and binds the #855 source metadata to the exact
+title, body, and candidate digests.
+The report writer opens each directory component relative to the working
+directory with no-follow directory descriptors, then atomically replaces only
+a regular single-link destination. An intermediate or final symlink refuses.
+No conformance path can mint, sign, read a credential, send HTTP, or publish.
 
 Each report has schema `protasis-design-report/v1` and exactly `schema`,
 `candidate`, `criterion`, `value`, `unit`, `command`, and `exit`.
@@ -201,6 +229,7 @@ deployment, live-isolation, or GitHub publication evidence.
 - `GIP121`: malformed digest;
 - `GIP130`: queue rule;
 - `GIP131`: label rule;
+- `GIP132`: repository publication body rule;
 - `GIP140`: frozen declaration;
 - `GIP141`: frozen content missing from a candidate;
 - `GIP150`: gate shape, order, subject, result, or digest;
