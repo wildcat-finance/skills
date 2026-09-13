@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20929388,
+    "bytes_blob": 21007997,
     "bytes_generated": 98,
     "bytes_vendored": 49702
   },
@@ -85,7 +85,14 @@
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
     },
     {
-      "bytes": 57673,
+      "bytes": 67847,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 65799",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1354-fizz-4-emitter-fidelity-differential-suite.md"
+    },
+    {
+      "bytes": 68435,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
