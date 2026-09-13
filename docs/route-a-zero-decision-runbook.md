@@ -511,3 +511,89 @@ commit that closes it.
 of it.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Exit: The init receipt carries a provenance block for the filing decision: the value read, the body digest, `created_at`, `updated_at`, and, where GraphQL is reachable, the edit count, the last edit time and the prior `Fiat-Required` value. Where it is not reachable, each of those is recorded as `unknown` with its reason, never omitted. Prior body text reaches neither the receipt, the ledger nor stderr: it is reduced to the value and a digest inside the reader. `hexctl verify --check-filing-decision` compares the recorded provenance against the issue as it stands and reports a divergence rather than treating the receipt as the whole truth. Plain `verify` makes no request, so the internal calls `amend` and `done` make are unchanged. `cmd_record` still refuses `task_issue_contract`. `init` makes at most two network requests for the filing decision and no other command gains one, counted by a test against a stubbed API. Proved by `python3 scripts/run_checks.py --base fiat/1345-route-a-zero-decision-and-gate-the-line-tha` reporting `outcome green`. The bare command reports `outcome nothing-selected` on a clean tree and exits 0 without selecting a check, so it establishes nothing. Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_hexctl.py`, `plugins/hexaemeron/tests/hexctl_harness.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`, `docs/route-a-zero-decision-runbook.md`.
+
+**Why.** The Exit could not be satisfied as written, and Files named two of the
+six paths the step edits.
+
+The study asks for both halves of a contradiction. Item 8 says `verify` compares
+the recorded provenance against the issue as it stands now, which requires
+reading the issue. Item 10 says `verify` makes no additional request. `verify_run`
+is not only a user command: `amend` and `done` call it after writing state, so an
+unconditional read would put a GitHub round trip inside every receipt and make
+every offline receipt fail. The flag answers item 8 on demand and leaves item 10
+true for every automatic invocation. It reports a divergence and changes no gate,
+so it is a diagnostic rather than a way into a refused run, which is the
+distinction this whole delivery turns on. The study keeps the contradiction: a
+study amendment would move `study_sha256` and silently drop all fourteen runbook
+amendments.
+
+Files gains four paths. The fake `gh` in `hexctl_harness.py` returns `number`,
+`body`, `title` and `labels` only, and this step needs `created_at`,
+`updated_at` and a GraphQL branch from it. `tests/promise_machine_coverage.json`
+carries the controller digest in eleven bindings and any edit to `hexctl.py`
+reddens them. `.horos/census.json` moves on any tracked-file edit. And
+`docs/route-a-zero-decision-runbook.md` is the copy this repository ships, which
+goes stale on every amendment including this one, so each step refreshes it
+before the commit that closes it.
+
+**Steps touched.** Step 3, whose Exit asked for a request its own budget forbids.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_hexctl.py`, `plugins/hexaemeron/tests/hexctl_harness.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`, `docs/route-a-zero-decision-runbook.md`, `plugins/hexaemeron/tests/test_filing_decision_provenance.py`, `plugins/hexaemeron/tests/test_issue_filing_contract.py`.
+
+**Why.** Two more paths, both forced by the root suite rather than chosen.
+
+`test_hexctl.py` is bounded at 262144 bytes and this step's seven cases pushed
+it to 265382. `test_promise_machine_contract` and `test_run_observation_capture`
+both refuse a contract over that limit with PM003, and the Hexaemeron suite does
+not see it, so the failure appears only in the root suite the commit gate runs.
+The cases move to `test_filing_decision_provenance.py`, which returns
+`test_hexctl.py` to 259222 bytes. That file's own docstring records the same
+reason for the harness having moved out before them.
+
+`test_issue_filing_contract.py`'s module docstring still said `init` refuses to
+create any state on a `0` so the run does not get a chance to start. Step 2
+changed that behaviour and rewrote the case below it without correcting the
+prose above it, which is the `stale-claim-elsewhere` risk inside a file the run
+had already edited.
+
+**Steps touched.** Step 3, whose test law outgrew the file it was written into.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/hexctl_harness.py`, `plugins/hexaemeron/tests/test_filing_decision_provenance.py`, `plugins/hexaemeron/tests/test_issue_filing_contract.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`, `.horos/boundary.json`, `docs/route-a-zero-decision-runbook.md`. Complete replacement Tests: `plugins/hexaemeron/tests/test_filing_decision_provenance.py` gains cases for the provenance block against a readable and an unreachable GraphQL, for `unknown` carrying a reason rather than a field being absent, for no body text reaching any recorded surface, for `verify --check-filing-decision` reporting a divergence, and for the request count against a stubbed API. Expected new cases: 7. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-3.json --timeout 2400`, format `unittest-json-v1`, report file `.elenchus/step-3.json`, timeout 2400 seconds.
+
+**Why.** Files named eight paths and the step commit `f4f0d4b8` edits eight, but
+not the same eight. `.horos/boundary.json` is edited and unnamed.
+`plugins/hexaemeron/tests/test_hexctl.py` is named and its net change is zero,
+because the previous amendment moved this step's seven cases out of it before
+the commit was made and returned it to 259222 bytes. `boundary.json` moves in
+the step commit rather than in the audit loop's own output, which is the
+distinction that held `.horos/candidates.json` unowed, so it is owed here.
+
+Tests still named `test_hexctl.py` as the file the cases land in, which the same
+move made false, and its runner contract named no `--timeout`. `elenchus.py`
+defaults that to 900 seconds and returns `inconclusive` reading `the run did not
+finish inside 900s`. The suite the contract names does not finish inside it on
+this repository: `run_checks` timed `hexaemeron-suite` at 1297.9s, and the round
+1 contract run took 904 seconds of wall clock, 2026-09-07T15:36:36Z to 15:51:40Z,
+exiting 0 with that detail and an empty report. The contract as written could
+therefore return no verdict about a guard for any commit that changes a test
+file. 2400 seconds is chosen against the 1297.9s measurement. A second reason
+for `inconclusive` stands behind the clock and this replacement does not touch
+it: `classify` returns `inconclusive` whenever `errors` exceeds zero, tested
+before assertion failures are read.
+
+**Steps touched.** Step 3, whose Files and Tests both named a file the step does
+not edit.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

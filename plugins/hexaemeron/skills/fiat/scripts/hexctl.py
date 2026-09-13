@@ -2692,8 +2692,14 @@ def cmd_init(args) -> None:
     # The two network reads are the last pre-mutation checks, because every
     # cheaper refusal has already had its chance. The filing decision goes
     # first: whether this work earned a run at all precedes any question about
-    # the controller that would run it, and a `0` verdict must cost the operator
-    # nothing but the read. A run naming no issue reads no decision, and says so
+    # the controller that would run it, and a `0` verdict costs the operator
+    # the reads and nothing else. Since the provenance block, that is two
+    # reads rather than one: a `0` pays for a GraphQL request whose answer
+    # `routed_filing_directive` never carries, and can wait `GIT_TIMEOUT`
+    # twice. The reader builds the block unconditionally on purpose, because
+    # routing on the value inside it would put the decision about a `0` in two
+    # places, which the note at the end of `read_task_issue_contract` refuses
+    # (S3-R1-04). A run naming no issue reads no decision, and says so
     # rather than passing quietly for the same reason the carried-forward
     # heading is mandatory: an absent answer cannot be told apart from a
     # question nobody asked.
@@ -4847,6 +4853,23 @@ def stale_body_report(bodies: list[dict]) -> dict:
     }
 
 
+def fiat_required_declarations(text: str) -> list[str]:
+    """Every `Fiat-Required` value one body declares, in the order declared.
+
+    Extracted so a reader that needs the *shape* of a declaration -- none, one,
+    or several -- asks the parser that reads the value rather than counting the
+    lines a second way. `admitted_issue_body` and `rest_filing_stamps` were
+    extracted for the same reason: two readers of one response that do not
+    share a rule end up disagreeing about it (S3-R4-04).
+    """
+    declarations = []
+    for physical in _unfenced_markdown_lines(text):
+        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
+        if match is not None:
+            declarations.append(match.group("value"))
+    return declarations
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -4854,11 +4877,7 @@ def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     decide anything. More than one declaration is a fault rather than a
     precedence rule: an issue carrying both answers has made no decision.
     """
-    declarations = []
-    for physical in _unfenced_markdown_lines(text):
-        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
-        if match is not None:
-            declarations.append(match.group("value"))
+    declarations = fiat_required_declarations(text)
     if not declarations:
         return None, [
             f"{label} declares no `{FIAT_REQUIRED_KEY}` line. Add exactly one "
@@ -5016,6 +5035,41 @@ def issue_publication_from_payload(
     return issue_publication_contract_faults(title, labels, body, label)
 
 
+def admitted_issue_body(
+    payload: dict, repository: str, number: str, label: str
+) -> str:
+    """The issue body a filing-decision reader is allowed to read.
+
+    One response, two readers, and they did not agree about it. `init`
+    refuses a body that is not text in the transport shape and dies on one
+    above the cap; `filing_decision_divergence` substituted `""` for the
+    first and parsed the second, so `verify --check-filing-decision` reported
+    the SHA-256 of the empty string as the issue's current body digest under
+    "the filing decision has moved since this run read it" (S3-R3-01). Both
+    builders of the block go through here for the same reason
+    `rest_filing_stamps` exists.
+
+    A null body is not that case. GitHub sends it for an issue whose body is
+    empty, so `""` is what the response says rather than a substitution for
+    what it did not.
+    """
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(
+            label,
+            f"repos/{repository}/issues/{number}",
+            "returned a body that is not text",
+        )
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            f"reader will parse, so its filing decisions went unread"
+        )
+    return body
+
+
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     """The filing decisions one GitHub issue carries, read over REST.
 
@@ -5056,25 +5110,20 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     payload = github_rest(
         base_dir, f"repos/{repository}/issues/{number}", label
     )
-    body = payload.get("body")
-    if body is None:
-        body = ""
-    if not isinstance(body, str):
-        github_unreachable(
-            label,
-            f"repos/{repository}/issues/{number}",
-            "returned a body that is not text",
-        )
-    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
-        die(
-            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
-            f"reader will parse, so its filing decisions went unread"
-        )
+    body = admitted_issue_body(payload, repository, number, label)
     record, faults = issue_contract_faults(body, label)
     if faults:
+        # The faults quote values copied out of the issue body, which is
+        # somebody else's text on its way to an operator's terminal.
+        # `filing_decision_divergence` cleans and bounds the identical
+        # sentence before it reaches stdout; this refusal, which is where the
+        # sentence has always gone, did neither, so an escape sequence on a
+        # `Fiat-Required` line rendered raw and a 250000-character value
+        # printed in full (S3-R6-02).
+        detail = bounded_issue_fault_detail(faults)
         die(
             "the filing contract is not satisfied: "
-            + "; ".join(faults)
+            + detail
             + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
             f"line and one `{CARRYOVER_INFO}` block, then start the run again"
         )
@@ -5083,11 +5132,331 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     # decision about what to do with a `0` in one place instead of two.
     # `adr/route-a-filed-zero-as-an-answer` records why it stopped being an
     # error, and why the bytes that used to end this refusal are gone.
+    #
+    # The provenance block answers "why did this run start" from the run's own
+    # evidence. `created_at` and `updated_at` come out of the response already
+    # read, so the REST half costs nothing; the GraphQL half is the one extra
+    # request this command makes and it is never required.
+    provenance = {
+        **rest_filing_stamps(payload),
+        **github_issue_edit_provenance(base_dir, repository, number),
+    }
     return {
         "issue": issue_url,
         "repository": repository,
         "number": number,
         **record,
+        "provenance": provenance,
+    }
+
+
+ISSUE_EDITS_QUERY = (
+    "query($owner:String!,$name:String!,$number:Int!){"
+    "repository(owner:$owner,name:$name){"
+    "issue(number:$number){userContentEdits(first:20){"
+    "totalCount nodes{editedAt diff}}}}}"
+)
+"""The one GraphQL request this controller makes.
+
+`userContentEdits` is the only surface that says whether an issue's *body*
+changed, as opposed to `updated_at`, which a comment or a label also moves.
+`diff` is misnamed: it returns the whole body at that revision, newest first,
+including the revision the issue was created with. That is why the reader below
+reduces it to a value and a digest and never keeps it.
+"""
+
+ISSUE_EDIT_NODES_MAX = 20
+"""Matched to the `first:` argument, so a response claiming more is refused
+rather than silently truncated into a smaller edit count than the issue has."""
+
+UNREADABLE_DECISION_DETAIL_MAX = 200
+"""How much of an unreadable-decision fault reaches stdout.
+
+The fault copies a value out of the issue body, and a body line runs to
+`ISSUE_BODY_BYTES_MAX`. Bounded here so a diagnostic cannot be made to print
+a quarter of a megabyte of somebody else's text."""
+
+ISSUE_FAULT_DETAIL_MAX = 2000
+"""How much of the filing contract's refusal reaches stderr.
+
+The same bound for the same reason, at the destination the fault sentence has
+always had. Larger than `UNREADABLE_DECISION_DETAIL_MAX` because a refusal
+joins every fault the body carries rather than the filing one alone: the
+longest reader-authored set `issue_contract_faults` produces is 399 characters,
+so nothing a filer needs to read is cut (S3-R6-02)."""
+
+
+def bounded_issue_fault_detail(
+    faults: list[str], limit: int = ISSUE_FAULT_DETAIL_MAX
+) -> str:
+    """Every fault one issue body earned, fit for an operator's stream.
+
+    The faults quote values copied out of the body, so this is somebody
+    else's text on its way to a terminal, and one `clean` and one bound are
+    what the destination owes it.
+
+    Extracted for the reason `admitted_issue_body`, `rest_filing_stamps` and
+    `fiat_required_declarations` were: each destination carried its own copy
+    of the rule and they did not agree. Round 6 read the sentence as having
+    two destinations, repaired the one that lacked the rule, and left two more
+    it had not enumerated -- `cmd_issue_check`'s fault printer and the filed
+    carryover refusal in `done integrate` -- both of which reached stderr raw
+    and unbounded, 2 escape sequences and a BEL byte for byte and 250156 bytes
+    for a 250000-character value. One function now, so a fifth destination
+    inherits the rule rather than restating it (S3-R7-03).
+    """
+    detail = clean("; ".join(faults))
+    if len(detail) > limit:
+        detail = detail[:limit] + "..."
+    return detail
+
+FILING_PROVENANCE_UNKNOWN = "unknown"
+"""What the reader records for a field it could not read at all.
+
+`unknown_filing_provenance` writes this instead of a value or an absence, so a
+receipt can tell "no edit history" from "could not look". Every reader of a
+recorded provenance block owes that distinction back: comparing the sentinel as
+though it were a value throws it away in both directions (S3-R2-01).
+"""
+
+
+def rest_filing_stamps(payload: dict) -> dict:
+    """The two provenance fields the REST response already carries.
+
+    Both builders of a provenance block go through here so the recorded and the
+    re-read halves normalise identically. They did not: `init` coerced a
+    non-string `updated_at` to `None` and the divergence reader kept it, so the
+    two sides of one comparison disagreed about the same response (S3-R2-01).
+
+    Agreeing with each other was not enough. A stamp the response did not
+    carry as text is a stamp this reader did not read, and coercing it to
+    `None` handed `filing_decision_divergence` an absence to compare as though
+    it were a value: a run whose `init` read a non-string `updated_at`
+    reported "the issue has been touched since this run read it" over an issue
+    nothing had touched (S3-R4-02). `FILING_PROVENANCE_UNKNOWN` is what says
+    "could not read", so it is what an unread stamp gets, and the comparison
+    already declines to read that as data.
+    """
+    stamps = {}
+    for field in ("created_at", "updated_at"):
+        value = payload.get(field)
+        stamps[field] = (
+            value if isinstance(value, str) else FILING_PROVENANCE_UNKNOWN
+        )
+    return stamps
+
+
+def unknown_filing_provenance(reason: str) -> dict:
+    """Every readable field as `unknown`, with the reason it could not be read.
+
+    An absent field cannot be told apart from a question nobody asked, which is
+    the rule ADR-067 already applies to the nulls it records. So a transport
+    that failed says so in every field it would have filled, and the caller can
+    tell "no edit history" from "could not look".
+    """
+    return {
+        "edit_count": FILING_PROVENANCE_UNKNOWN,
+        "last_edited_at": FILING_PROVENANCE_UNKNOWN,
+        "prior_fiat_required": FILING_PROVENANCE_UNKNOWN,
+        "reason": reason,
+    }
+
+
+def github_issue_edit_provenance(
+    base_dir: str, repository: str, number: str
+) -> dict:
+    """Reduce one issue's edit history to what the filing decision needs.
+
+    Three values leave this function: how many revisions the body has, when the
+    most recent one landed, and what the `Fiat-Required` line said in the
+    revision before it. Everything else, including every byte of every prior
+    body, is dropped here. Prior bodies are somebody else's text and there is
+    no receipt, ledger or stream they belong in.
+
+    The request is never required. GraphQL needs a token scope REST does not,
+    and `diff` needs write access on the repository, so an environment that can
+    read the issue may still not reach this. Every failure returns `unknown`
+    with its reason rather than a value that reads like an answer.
+    """
+    owner, _, name = repository.partition("/")
+    if not owner or not name or not number.isdigit():
+        return unknown_filing_provenance(
+            "the issue identity is not one GraphQL can be asked about"
+        )
+    returncode, output, failure = bounded_probe(
+        base_dir,
+        "gh",
+        [
+            "api",
+            "graphql",
+            "-f",
+            f"query={ISSUE_EDITS_QUERY}",
+            "-F",
+            f"owner={owner}",
+            "-F",
+            f"name={name}",
+            "-F",
+            f"number={number}",
+        ],
+    )
+    if failure == "start":
+        return unknown_filing_provenance("could not start the gh client")
+    if failure == "timeout":
+        return unknown_filing_provenance(
+            f"the GraphQL read timed out after {GIT_TIMEOUT} seconds"
+        )
+    if failure == "output-cap":
+        return unknown_filing_provenance(
+            f"the GraphQL response exceeded the {GIT_OUTPUT_MAX}-byte cap"
+        )
+    if returncode != 0:
+        return unknown_filing_provenance(
+            f"the GraphQL read failed with exit {returncode}"
+        )
+    try:
+        payload = json.loads(output.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        # `RecursionError` is not a `ValueError`, so a deeply nested array
+        # walked the caller off the interpreter's stack instead of landing in
+        # the `unknown` every other malformed response produces. 400000 bytes
+        # of `[` reaches it, well inside the GIT_OUTPUT_MAX cap, so the cap is
+        # not the bound here and the parser has to say so itself (S3-R1-02).
+        return unknown_filing_provenance(
+            "the GraphQL response was not UTF-8 JSON"
+        )
+    if as_dict(payload).get("errors"):
+        return unknown_filing_provenance("the GraphQL response carried errors")
+    edits = as_dict(
+        as_dict(as_dict(as_dict(payload).get("data")).get("repository")).get("issue")
+    ).get("userContentEdits")
+    edits = as_dict(edits)
+    total = edits.get("totalCount")
+    nodes = edits.get("nodes")
+    # `bool` is a subclass of `int`, so a `totalCount` of `true` passed as a
+    # count, compared `False` against `ISSUE_EDIT_NODES_MAX`, and recorded
+    # `"edit_count": true`. It then compared equal to a real count of 1 in
+    # `filing_decision_divergence`, because `True == 1`, so a moved edit count
+    # reported no divergence at all. Rejected here rather than coerced, which
+    # is what the boundary is for (S3-R1-03).
+    if (
+        not isinstance(total, int)
+        or isinstance(total, bool)
+        or not isinstance(nodes, list)
+    ):
+        return unknown_filing_provenance(
+            "the GraphQL response did not carry an edit history"
+        )
+    if total > ISSUE_EDIT_NODES_MAX:
+        return unknown_filing_provenance(
+            f"the issue has {total} revisions, above the "
+            f"{ISSUE_EDIT_NODES_MAX} this reader requests"
+        )
+    # `totalCount` and `nodes` were validated separately and never against
+    # each other, so one response could answer the same question twice and be
+    # believed both times. A response claiming 3 revisions and carrying none
+    # recorded `edit_count: 3` beside `last_edited_at: None`, and that `None`
+    # is the "read, and there is no last-edit time" of the note below, which
+    # the response did not say: the comparison then read it as a value and
+    # printed "the filing decision has moved since this run read it" on
+    # `last_edited_at: recorded None, now <time>` over a body whose digest,
+    # decision, `updated_at` and `edit_count` were all identical (S3-R4-03).
+    # `first:` equals `ISSUE_EDIT_NODES_MAX` and a larger `totalCount` is
+    # already refused above, so a well-formed response carries exactly `total`
+    # nodes. Anything else is one read the two halves disagree about, and a
+    # count no node list supports is not a count this reader read. This also
+    # refuses a negative `totalCount`, which passed both checks above and
+    # recorded `edit_count: -3`, because no list length can equal it.
+    if len(nodes) != total:
+        return unknown_filing_provenance(
+            f"the GraphQL response claimed {total} revisions and carried "
+            f"{len(nodes)}, so its edit history was not read"
+        )
+    revisions = [as_dict(node) for node in nodes]
+    # Three states, not two. A response carrying no revision at all was read
+    # and says there is no last-edit time, so that is `None`. A newest node
+    # whose `editedAt` is absent or is not text was not read, and recording
+    # `None` for it put an absence into the one compared field that carries
+    # the strong headline: an issue whose body never moved reported
+    # "the filing decision has moved since this run read it" on
+    # `last_edited_at: recorded None, now <time>` alone (S3-R4-01). The
+    # sibling field on the same node, `diff`, already takes the sentinel when
+    # it is withheld; this one did not.
+    last_edited = None
+    reasons: list[str] = []
+    if revisions:
+        edited = revisions[0].get("editedAt")
+        if isinstance(edited, str):
+            last_edited = edited
+        else:
+            last_edited = FILING_PROVENANCE_UNKNOWN
+            reasons.append(
+                "the newest revision carried no readable `editedAt`"
+            )
+    prior = FILING_PROVENANCE_UNKNOWN
+    if len(revisions) < 2:
+        prior = None
+        # Counted off the nodes actually carried, not off `totalCount`. The
+        # two are validated separately and a response where they disagree
+        # wrote `edit_count: 4` beside "the body has one revision", which is a
+        # revision count the run never read (S3-R2-03). An empty node list
+        # said the same thing about a body it had seen nothing of.
+        reasons.append(
+            f"the response carried {len(revisions)} "
+            f"{'revision' if len(revisions) == 1 else 'revisions'}, so it "
+            "carries no prior value"
+        )
+    else:
+        body = revisions[1].get("diff")
+        if not isinstance(body, str):
+            reasons.append(
+                "the prior revision carried no readable body, which `diff` "
+                "withholds without write access on the repository"
+            )
+        else:
+            # The only thing taken from a prior body, before it goes out of
+            # scope. `fiat_required_value` reads outside fenced code, so a
+            # prior body quoting the line decides nothing here either.
+            #
+            # Three readings, not one. That function returns `None` for a body
+            # declaring no line, for one declaring the line more than once,
+            # and for one declaring a value that is neither 0 nor 1, and all
+            # three recorded `None` under "the prior revision declared no
+            # `Fiat-Required` line". The first was read and has no prior
+            # value, which is what `None` says here; the other two are bodies
+            # this reader could not read a decision out of, and naming them as
+            # an absence is the reading S3-R4-01 removed from `last_edited_at`
+            # and S3-R4-02 from the REST stamps, reached through the prior
+            # revision (S3-R4-04). The shape comes from the same parser rather
+            # than from a second count, and the reason names it without
+            # quoting the body: `init`'s own fault copies the declared value
+            # out, and a prior body reaches no recorded surface.
+            value, _faults = fiat_required_value(body, "a prior revision")
+            declarations = fiat_required_declarations(body)
+            if value is not None:
+                prior = int(value)
+            elif not declarations:
+                prior = None
+                reasons.append(
+                    "the prior revision declared no `Fiat-Required` line"
+                )
+            elif len(declarations) > 1:
+                reasons.append(
+                    f"the prior revision declared `Fiat-Required` "
+                    f"{len(declarations)} times, so it made no decision"
+                )
+            else:
+                reasons.append(
+                    "the prior revision declared a `Fiat-Required` value that "
+                    "is neither 0 nor 1"
+                )
+    return {
+        "edit_count": total,
+        "last_edited_at": last_edited,
+        "prior_fiat_required": prior,
+        # A list because one block can now carry two unread fields, and the
+        # single string this used to be could only explain whichever was
+        # written last.
+        "reason": "; ".join(reasons) if reasons else None,
     }
 
 
@@ -5170,7 +5539,11 @@ def carried_forward_fault(path: str) -> str | None:
     try:
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
+        # `UnicodeDecodeError` derives from `ValueError`, so `OSError` alone
+        # let a body that is not UTF-8 out as a traceback while every other
+        # unreadable body earned this sentence. The exception's own text names
+        # the byte and its offset and quotes no content (S3-R8-01).
         return (f"the run-level pull request body {path} cannot be read "
                 f"({exc}); the prose phase writes it and the integration pull "
                 f"request is opened from it")
@@ -5189,8 +5562,14 @@ def carried_forward_fault(path: str) -> str | None:
         section, f"the '{CARRIED_FORWARD_HEADING}' section of {path}"
     )
     if faults:
+        # Bounded per row rather than over the join, the shape
+        # `cmd_issue_check` uses, because this is a list a filer works down
+        # and `CARRYOVER_ROWS_MAX` already bounds it at 128 lines. The faults
+        # quote a row's id and disposition out of the body, so the destination
+        # owes them the same one rule the four filing-fault destinations take
+        # (S3-R8-02).
         return (
-            "; ".join(faults)
+            "; ".join(bounded_issue_fault_detail([fault]) for fault in faults)
             + f". Integration cannot proceed until every outstanding item under "
             f"'{CARRIED_FORWARD_HEADING}' has been considered for an issue of "
             f"its own and compared against what is already filed"
@@ -6015,9 +6394,16 @@ def cmd_issue_check(args) -> None:
                 payload, label, path
             )
         else:
-            text = payload.get("body") or ""
-            if not isinstance(text, str):
-                github_unreachable(label, path, "returned a body that is not text")
+            # The third reader of one response. `read_task_issue_contract`
+            # and `filing_decision_divergence` both go through
+            # `admitted_issue_body`; this one kept its own rule and agreed
+            # with neither. `or ""` made the type check below it unreachable
+            # for a falsy non-string, so a body of `[]` was read as an empty
+            # string and reported as "declares no `Fiat-Required` line",
+            # which is a claim about a body this reader never read, and no
+            # `ISSUE_BODY_BYTES_MAX` cap applied, where the `--body` sibling
+            # above and `admitted_issue_body` both refuse (S3-R6-01).
+            text = admitted_issue_body(payload, repository, number, label)
             record, faults = issue_contract_faults(text, label)
 
     if args.body:
@@ -6028,7 +6414,12 @@ def cmd_issue_check(args) -> None:
         else:
             record, faults = issue_contract_faults(text, label)
     for fault in faults:
-        print(f"{label}: {fault}" if not fault.startswith(label) else fault,
+        # Bounded per line rather than over the join, because this destination
+        # is a list a filer reads and works down. `CARRYOVER_ROWS_MAX` bounds
+        # the number of lines at 128, and the longest reader-authored fault is
+        # 399 characters, so nothing a filer needs is cut (S3-R7-03).
+        bounded = bounded_issue_fault_detail([fault])
+        print(f"{label}: {bounded}" if not fault.startswith(label) else bounded,
               file=sys.stderr)
     if faults:
         print(
@@ -10650,7 +11041,7 @@ def done_integrate(args, state: dict) -> None:
     if filed_issue_faults:
         die(
             "a `filed` carryover issue does not satisfy the publication "
-            "contract: " + "; ".join(filed_issue_faults)
+            "contract: " + bounded_issue_fault_detail(filed_issue_faults)
         )
     remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
     final_step = state["steps"][-1]["n"]
@@ -12321,7 +12712,14 @@ def github_rest(base_dir: str, path: str, label: str) -> dict:
         github_unreachable(label, path, "returned output that is not UTF-8")
     try:
         payload = json.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):
+        # `RecursionError` derives from `RuntimeError`, so a deeply nested
+        # array walked the caller off the interpreter's stack instead of
+        # refusing in the transport shape. This is the REST sibling of the
+        # GraphQL parser S3-R1-02 repaired, and step 3 gave it a second call
+        # site inside `filing_decision_divergence`. 400000 bytes of `[`
+        # reaches it, well inside `GIT_OUTPUT_MAX`, so the cap is not the
+        # bound and the parser has to say so itself (S3-R3-03).
         github_unreachable(label, path, "returned a response that is not JSON")
     if not isinstance(payload, dict):
         github_unreachable(label, path, "returned a response that is not one object")
@@ -13339,9 +13737,22 @@ def inspect_pull_request(
         die("pull request topology is missing its body")
     # REST spells an empty body as null rather than as an empty string. There
     # is no byline in either, so the absence of text is not a missing field.
-    body = payload["body"] or ""
+    #
+    # `or ""` made the type check below unreachable for a falsy non-string, so
+    # a body of `[]`, `0`, `False` or `{}` was read as an empty body: the
+    # runtime-host byline gate searched the substitution rather than the
+    # response, returned no match and passed, and the closing-reference check
+    # told the operator to add `Closes #N` to a body this reader never read.
+    # It is S3-R6-01's reading reached through the pull request body rather
+    # than the issue body, and round 6 ruled it out of the class on the
+    # ground that no filing decision is read here, which is a statement about
+    # what the body is for and not about whether the reader read it
+    # (S3-R7-02).
+    body = payload["body"]
+    if body is None:
+        body = ""
     if not isinstance(body, str):
-        die("pull request topology is missing its body")
+        die("pull request topology returned a body that is not text")
     if HOST_BYLINE_RE.search(body):
         die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
     closing_issue = None
@@ -17324,8 +17735,151 @@ def verify_run(
     return count
 
 
+def uncomparable_filing_field(was, now) -> str:
+    """Which side of one field could not be read, in the words a reader needs.
+
+    A field is not compared when either end is the `unknown` sentinel, so the
+    account has to say which end, or the reader learns only that something is
+    missing and not whose read failed.
+    """
+    was_unknown = was == FILING_PROVENANCE_UNKNOWN
+    now_unknown = now == FILING_PROVENANCE_UNKNOWN
+    if was_unknown and now_unknown:
+        return "neither this run's read nor the current one could read it"
+    if was_unknown:
+        return "this run recorded it as `unknown`, so it read no value to compare"
+    return "the current read returned `unknown`, so there is no value to compare"
+
+
+def filing_decision_divergence(
+    base_dir: str, state: dict
+) -> tuple[list, list, str]:
+    """What the issue says now, against what this run recorded when it started.
+
+    The receipt is what the run read, not what is true afterwards. A filing
+    decision can move under a run and the receipt cannot know, so this reads
+    the issue again and reports the difference rather than letting the
+    recorded value stand as the whole account.
+
+    Three lists come back, not two, because a field can also be uncomparable.
+    Reading the `unknown` sentinel as a value made a failed GraphQL read at
+    either end report a body edit that never happened, and made two failed
+    reads compare equal and report a history that "stands as recorded" when
+    neither end had ever been read -- the pass the `graphql-transport` line
+    refuses (S3-R2-01). A receipt written before this reader existed carries no
+    provenance block at all, and read the same way.
+
+    It refuses nothing. A run already under way cannot be un-started by a
+    divergence, and a gate here would be a second place to argue about a
+    decision the window gate already settled at `init`.
+    """
+    recorded = as_dict(as_dict(state.get("receipts")).get("task_issue_contract"))
+    issue_url = recorded.get("issue")
+    if not isinstance(issue_url, str) or not issue_url:
+        return [], [], "this run named no task issue, so there is nothing to compare"
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        return [], [], f"{issue_url} is not a GitHub issue this reader can re-read"
+    repository, number = identity
+    label = f"task issue {repository}#{number}"
+    payload = github_rest(base_dir, f"repos/{repository}/issues/{number}", label)
+    body = admitted_issue_body(payload, repository, number, label)
+    now_record, _faults = issue_contract_faults(body, label)
+    # Only the `Fiat-Required` fault, because this comparison is about the
+    # filing decision and a body can fail the carryover or status-block rule
+    # while declaring a decision perfectly well. `issue_contract_faults`
+    # returns `None` for a body it could not read one decision out of -- the
+    # line declared twice, or a value that is neither 0 nor 1 -- and the fault
+    # saying which was dropped, so the report read `fiat_required: recorded 1,
+    # now None`, which is a third thing the issue does not say (S3-R3-02).
+    _now_value, filing_faults = fiat_required_value(body, label)
+    filing_unreadable = None
+    if filing_faults:
+        # The fault embeds a value copied out of the issue body, so it is
+        # cleaned and bounded before it reaches stdout, on the same terms as
+        # the divergence rows below.
+        detail = bounded_issue_fault_detail(
+            filing_faults, UNREADABLE_DECISION_DETAIL_MAX
+        )
+        filing_unreadable = (
+            f"the issue's body does not declare one readable filing "
+            f"decision -- {detail}"
+        )
+    now_provenance = {
+        **rest_filing_stamps(payload),
+        **github_issue_edit_provenance(base_dir, repository, number),
+    }
+    was_provenance = as_dict(recorded.get("provenance"))
+    recorded_provenance = isinstance(recorded.get("provenance"), dict)
+    divergences: list = []
+    uncomparable: list = []
+    for field, was, now, from_provenance, unreadable in (
+        (
+            "fiat_required",
+            recorded.get("fiat_required"),
+            now_record["fiat_required"],
+            False,
+            filing_unreadable,
+        ),
+        ("sha256", recorded.get("sha256"), now_record["sha256"], False, None),
+        (
+            "updated_at",
+            was_provenance.get("updated_at"),
+            now_provenance["updated_at"],
+            True,
+            None,
+        ),
+        (
+            "edit_count",
+            was_provenance.get("edit_count"),
+            now_provenance["edit_count"],
+            True,
+            None,
+        ),
+        (
+            "last_edited_at",
+            was_provenance.get("last_edited_at"),
+            now_provenance["last_edited_at"],
+            True,
+            None,
+        ),
+    ):
+        if unreadable:
+            uncomparable.append({"field": field, "why": unreadable})
+            continue
+        if from_provenance and not recorded_provenance:
+            uncomparable.append({
+                "field": field,
+                "why": "this run's receipt carries no provenance block, so it "
+                       "recorded no value to compare",
+            })
+            continue
+        if FILING_PROVENANCE_UNKNOWN in (was, now):
+            uncomparable.append(
+                {"field": field, "why": uncomparable_filing_field(was, now)}
+            )
+            continue
+        if was != now:
+            divergences.append({"field": field, "recorded": was, "now": now})
+    return divergences, uncomparable, ""
+
+
+UNDISCRIMINATED_DIVERGENCE_FIELDS = frozenset({"updated_at"})
+"""Fields whose movement is not evidence that the body changed.
+
+`updated_at` moves on a comment and on a label, which
+`ISSUE_EDITS_QUERY`'s own docstring is the reason this reader asks GraphQL at
+all. Reporting it under "the filing decision has moved" named an
+undiscriminated read as a body edit, which is exactly what the
+`window-undiscriminated-read` line refuses at `init` (S3-R1-01). The two
+fields that do discriminate, `edit_count` and `last_edited_at`, are compared
+beside it.
+"""
+
+
 def cmd_verify(args) -> None:
     count = verify_run(args.dir)
+    reported = False
     if args.observations:
         state = load_state(args.dir)
         observation_count, tail_bytes = verify_observation_bindings(args.dir, state)
@@ -17337,8 +17891,80 @@ def cmd_verify(args) -> None:
             f"ok: {count} ledger entries, chain intact, state consistent; "
             f"{observation_count} observation {noun} verified{suffix}"
         )
+        # No `return` here. This branch used to end the command, so
+        # `--observations --check-filing-decision` printed the observation line
+        # and dropped the filing-decision comparison without saying so: exit 0
+        # over an issue whose body had moved (S3-R2-02).
+        reported = True
+    if getattr(args, "check_filing_decision", False):
+        state = load_state(args.dir)
+        divergences, uncomparable, skipped = filing_decision_divergence(
+            args.dir, state
+        )
+        if skipped:
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"filing decision not compared: {skipped}"
+            )
+            return
+        if divergences:
+            moved = [
+                entry for entry in divergences
+                if entry["field"] not in UNDISCRIMINATED_DIVERGENCE_FIELDS
+            ]
+            headline = (
+                "the filing decision has moved since this run read it:"
+                if moved
+                else "the issue has been touched since this run read it, and "
+                     "nothing that records the body has moved:"
+            )
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"{headline}"
+            )
+            for entry in divergences:
+                note = (
+                    " (a comment or a label moves this too, so on its own it "
+                    "is not a body edit)"
+                    if entry["field"] in UNDISCRIMINATED_DIVERGENCE_FIELDS
+                    else ""
+                )
+                print(
+                    f"  {entry['field']}: recorded "
+                    f"{clean(str(entry['recorded']))}, now "
+                    f"{clean(str(entry['now']))}{note}"
+                )
+            print_uncomparable_filing_fields(uncomparable)
+            sys.exit(1)
+        if uncomparable:
+            noun = "field" if len(uncomparable) == 1 else "fields"
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"the filing decision stands as recorded on every field this "
+                f"run could compare, and {len(uncomparable)} {noun} could not "
+                f"be compared:"
+            )
+            print_uncomparable_filing_fields(uncomparable)
+            return
+        print(
+            f"ok: {count} ledger entries, chain intact, state consistent; "
+            f"the filing decision stands as recorded"
+        )
         return
-    print(f"ok: {count} ledger entries, chain intact, state consistent")
+    if not reported:
+        print(f"ok: {count} ledger entries, chain intact, state consistent")
+
+
+def print_uncomparable_filing_fields(uncomparable: list) -> None:
+    """Name every field the comparison could not reach, and why.
+
+    Printed beside a divergence as well as instead of one: a run that could
+    read two of the three body-recording fields has not established that the
+    third stands, and the line that says so is the whole difference between
+    reporting a read and reporting a pass.
+    """
+    for entry in uncomparable:
+        print(f"  {entry['field']}: not compared, because {entry['why']}")
 
 
 def cmd_reset(args) -> None:
@@ -17627,6 +18253,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--observations",
         action="store_true",
         help="also recompute every selected companion observation prefix",
+    )
+    sp.add_argument(
+        "--check-filing-decision",
+        action="store_true",
+        dest="check_filing_decision",
+        help=(
+            "also re-read the task issue and report any divergence from the "
+            "filing decision this run recorded; makes up to two network "
+            "requests, which plain verify never does"
+        ),
     )
     sp.set_defaults(fn=cmd_verify)
 
