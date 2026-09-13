@@ -622,3 +622,24 @@ real clock instead.
 the one its Exit requires.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_filing_decision_window.py`, `tests/promise_machine_coverage.json`, `.horos/boundary.json`, `.horos/candidates.json`, `.horos/census.json`, `docs/route-a-zero-decision-runbook.md`. Complete replacement Tests: `plugins/hexaemeron/tests/test_filing_decision_window.py` holds eleven cases: a refusal when the decision moved inside the window; acceptance when it moved before it; acceptance of a recent body edit that left the decision alone; a refusal when the prior revision's line could not be read; an undiscriminated REST read proceeding and naming itself as such; an old `updated_at` clearing on REST alone; the refusal text naming no grant; the receipt recording an unreadable prior body as observed rather than attributing a cause; and three absence cases, which read `init`'s parser, the gate's own source, and the segment of `cmd_init` between the provenance read and the `filing_window` assignment, because an override would be read at that call site where `args` is in scope. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-4.json --timeout 2400`, format `unittest-json-v1`, report file `.elenchus/step-4.json`.
+
+**Why.** Step 4 round 1 measured three undercounts, raised as S4-R1-02. Files
+named five paths where the step edits seven: `.horos/boundary.json` and
+`.horos/candidates.json` move with the census on every tracked edit. Tests named
+nine cases where the module now holds eleven, the two added by round 1 being the
+call-site absence case and the observed-reason case. And the runner contract
+named no `--timeout`, so it inherited Elenchus's 900-second default for a suite
+that ran 620 seconds on a quiet host: on the shared host that default returned
+`inconclusive` twice against the fix commit, and the same contract returned
+`guarded` twice once the load fell, in 406 and 370 seconds. Step 3's amended
+contract already names 2400, and this one now matches it, so a verdict cannot
+flip on host load rather than on the guard.
+
+**Steps touched.** Step 4, whose Files, case count and runner contract all
+described less than the step carries.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
