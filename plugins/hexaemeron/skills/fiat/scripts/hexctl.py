@@ -5298,10 +5298,13 @@ def github_issue_edit_provenance(
     body, is dropped here. Prior bodies are somebody else's text and there is
     no receipt, ledger or stream they belong in.
 
-    The request is never required. GraphQL needs a token scope REST does not,
-    and `diff` needs write access on the repository, so an environment that can
-    read the issue may still not reach this. Every failure returns `unknown`
-    with its reason rather than a value that reads like an answer.
+    The request is never required. An environment that reads the issue over
+    REST may still not reach GraphQL, and a revision's `diff` may come back
+    null. Why it is withheld is not established: on 2026-09-13 `diff` was
+    readable on a public repository with read access alone, against the
+    write-access reading the study and this docstring carried (S4-R1-03).
+    Every failure returns `unknown` with its reason rather than a value that
+    reads like an answer.
     """
     owner, _, name = repository.partition("/")
     if not owner or not name or not number.isdigit():
@@ -5433,9 +5436,13 @@ def github_issue_edit_provenance(
     else:
         body = revisions[1].get("diff")
         if not isinstance(body, str):
+            # What was read, and nothing about why. This sentence used to
+            # attribute a null `diff` to write access on the repository, a
+            # cause the reader never observed and one measured false on a
+            # public repository with read access alone (S4-R1-03).
             reasons.append(
-                "the prior revision carried no readable body, which `diff` "
-                "withholds without write access on the repository"
+                "the prior revision's `diff` was absent or not text, so no "
+                "prior body was read"
             )
         else:
             # The only thing taken from a prior body, before it goes out of

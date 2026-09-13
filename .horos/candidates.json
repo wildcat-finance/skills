@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20644890,
+    "bytes_blob": 20666745,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,14 +63,14 @@
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
     },
     {
-      "bytes": 264049,
+      "bytes": 274953,
       "category": "blob",
-      "evidence": "no newline in a 2048-byte window at offset 132024 of 264049 bytes",
+      "evidence": "no newline in a 2048-byte window at offset 137476 of 274953 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1345-route-a-zero-decision-and-gate-the-line-tha.md"
     },
     {
-      "bytes": 265287,
+      "bytes": 276238,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

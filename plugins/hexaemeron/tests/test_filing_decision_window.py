@@ -136,6 +136,25 @@ class FilingDecisionWindowTests(HexctlCase):
         self.init()
         self.assertEqual(self.window()["verdict"], "clear")
 
+    def test_an_unreadable_prior_body_is_recorded_as_observed(self):
+        """The receipt says what was read, not why GitHub withheld it.
+
+        The reason attributed a null `diff` to write access on the repository.
+        Measured on 2026-09-13, `diff` was readable on a public repository with
+        read access alone, so the sentence named a cause the reader never
+        observed (S4-R1-03). The last edit sits outside the window so the run
+        proceeds and the receipt is written.
+        """
+        self.seed(current=1, updated=self.OLD, nodes=[
+            {"editedAt": stamp(self.OLD), "diff": self.body(1)},
+            {"editedAt": stamp(self.OLD + 600), "diff": None},
+        ])
+        self.init()
+        provenance = self.state()["receipts"]["task_issue_contract"]["provenance"]
+        self.assertEqual(provenance["prior_fiat_required"], "unknown")
+        self.assertIn("`diff` was absent or not text", provenance["reason"])
+        self.assertNotIn("write access", provenance["reason"])
+
     def test_the_refusal_names_no_way_to_get_this_run(self):
         self.seed(current=1, nodes=[
             {"editedAt": stamp(self.RECENT), "diff": self.body(1)},
@@ -190,6 +209,27 @@ class NoOverrideExistsTests(unittest.TestCase):
         for door in ("environ", "getenv", "HEXCTL_", "FAKE_"):
             self.assertNotIn(door, source, f"the window gate reads {door!r}")
         self.assertIn("datetime.datetime.now", source)
+
+    def test_the_call_site_consults_nothing_between_the_verdict_and_the_refusal(self):
+        """The door would be at the call site, not inside the gate.
+
+        The gate is a function of the provenance block alone, so an option or
+        a variable that cleared the refusal would be read in `cmd_init` between
+        the verdict and `die`, where `args` is in scope. The parser case above
+        is a six-word denylist, and it cannot hold `waiver`, the one door-shaped
+        word `init` already uses in `--controller-currency-waiver`, so it trips
+        on some names and proves nothing about the rest. This reads the segment
+        itself (S4-R1-01).
+        """
+        module = hexctl_module()
+        source = inspect.getsource(module.cmd_init)
+        start = source.index('provenance = task_issue_contract.get("provenance")')
+        end = source.index('task_issue_contract["filing_window"] = window')
+        segment = source[start:end]
+        self.assertIn('window["verdict"] == "refuse"', segment)
+        self.assertIn("die(", segment)
+        for door in ("args.", "environ", "getenv", "config", "input(", "open("):
+            self.assertNotIn(door, segment, f"the call site reads {door!r}")
 
 
 if __name__ == "__main__":
