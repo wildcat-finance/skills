@@ -3,7 +3,8 @@
 ## Status
 
 Selected, 2026-09-13, for [issue #1513](https://github.com/wildcat-finance/skills/issues/1513).
-Step 1 records the design; implementation and three integration gates remain pending.
+Step 2 implements the staged repair and completes the fresh law demonstration.
+The three integration resolvers remain required before delivery.
 
 ## Context
 
@@ -26,8 +27,12 @@ hold the contract. Preparation uniquely relocates exact reviewed spans and
 nodes, keeps the contributor's edit, and refuses unexplained sibling drift.
 Moved measured inputs require fresh complete measurement and parity records
 under unchanged profile authority. Apply records intent before writing;
-recovery restores only targets matching the recorded old or planned new bytes
-and refuses any third version. Manifest and coverage follow their inputs.
+recovery restores only targets matching the recorded bytes and stable
+identities. Atomic exchange keeps displaced files in journal-bound publication
+and restoration slots. A concurrent version remains preserved, with its target,
+path and digest in the refusal; recovery refuses while that conflict remains.
+Unsupported hosts or filesystems refuse without replacement fallback.
+Manifest and coverage follow their inputs.
 
 ## Alternatives
 
@@ -40,8 +45,10 @@ and refuses any third version. Manifest and coverage follow their inputs.
 Classification includes a before-span evidence refusal. It does not mean six
 accepted corpora. The nearest-rank p95 values are 226, 263 and 227 ms in row
 order, from six preparation samples per candidate; they establish no speed
-improvement. The fault probe handles injected `OSError` only and supplies no
-durable journal, killed-process recovery or coverage-publication evidence.
+improvement. That selection probe handles injected `OSError` only. The subsequent
+[implementation demonstration](../../agent-instruction-reconciliation/demonstration.json)
+records durable intent, actual killed-process recovery, coverage publication
+and one fully checked law repair with fresh owner evidence.
 
 ## Consequences
 

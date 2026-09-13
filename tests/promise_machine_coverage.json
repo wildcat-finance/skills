@@ -114,11 +114,21 @@
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "cecb3aa6b3b67b6534f716f6a42f38cc7356a13babf456baceb266be25a85135"
+      "sha256": "e4c396ce502e9c97f75d5d9be2ff885ef236b6aa91ea80da24eef5ccef323c53"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
       "sha256": "98de5696079ad66ea74bef77472c31f58251e11082ff5d214e18bf0b9f9df097"
+    },
+    "staged_reconciliation": {
+      "helper": {
+        "path": "scripts/agent_instruction_reconciliation.py",
+        "sha256": "84632d90863afe513293779d7dd1241bac2aa3c5e63e1303aaebf5bc1e953093"
+      },
+      "tests": {
+        "path": "tests/test_agent_instruction_reconciliation.py",
+        "sha256": "d3ff51761363afe4833167b8163efbf5021726aeb29d29d2607e53bf3b05dc3c"
+      }
     },
     "tests": {
       "path": "tests/test_agent_instruction.py",
