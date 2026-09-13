@@ -1,6 +1,6 @@
 """The task identity a delegation is named for, and the reader that checks one.
 
-Issue 363: a Warden continued under a handle minted for another issue kept that
+Issue 363: a Mason continued under a handle minted for another issue kept that
 issue's name. The controller now derives a `fiat-task-identity/v1` object and a
 `fiat-<task>-<phase>-<role>` handle from state alone, and reads an observed
 handle as hostile argv. Nothing calls either yet; these cases hold the grammar,
@@ -169,6 +169,33 @@ class TopicOnlyRunTests(unittest.TestCase):
         self.assertEqual(identity["task"], "run")
         self.assertEqual(identity["handle"], "fiat-run-step-1-mason")
 
+    def test_a_digits_only_topic_cannot_take_an_issue_handle(self):
+        # Bare, a slug of digits is the `<task>` an issue-backed run with that
+        # number derives, so that issue's handle would pass this run's check.
+        issue = self.hexctl.task_identity(
+            issue_state(363), "warden", step=1, round=1
+        )
+        external = {"kind": "external", "sha256": "ab" * 32}
+        for state in (
+            topic_only_state("363"),
+            topic_only_state("#363"),
+            state_with_task(external, "363"),
+            {"topic": "363"},
+        ):
+            identity = self.hexctl.task_identity(state, "warden", step=1, round=1)
+            self.assertEqual(identity["task"], "topic-363", state)
+            self.assertEqual(identity["handle"], "fiat-topic-363-step-1-warden")
+            self.assertNotEqual(identity["handle"], issue["handle"])
+            refusal = self.hexctl.task_handle_refusal(
+                issue["handle"], identity["handle"]
+            )
+            self.assertIsNotNone(refusal)
+            self.assertIn("(equality)", refusal)
+        mixed = self.hexctl.task_identity(
+            topic_only_state("363 follow-up"), "warden", step=1
+        )
+        self.assertEqual(mixed["task"], "363-follow-up")
+
 
 class RoundContinuityTests(unittest.TestCase):
     """Round lives in the object and stays out of the handle."""
@@ -335,6 +362,31 @@ class ObservedHandleRefusalTests(unittest.TestCase):
         message = self.refusal("fiat-320-step-2-mason\udcff")
         self.assertIn("(character)", message)
         self.assertIn("U+DCFF", message)
+
+    def test_every_lone_surrogate_is_refused_rather_than_raised(self):
+        # POSIX argv decoding yields only U+DC80..U+DCFF, but a JSON escape or a
+        # direct caller can hand over any lone surrogate.
+        for code in (0xD800, 0xDBFF, 0xDC00, 0xDC7F, 0xDC80, 0xDCFF, 0xDD00, 0xDFFF):
+            observed = f"{self.EXPECTED}{chr(code)}"
+            try:
+                message = self.refusal(observed)
+            except UnicodeError as error:
+                self.fail(f"U+{code:04X} raised {type(error).__name__}")
+            self.assertIn("(character)", message, hex(code))
+            self.assertIn(f"U+{code:04X}", message)
+            self.assertIn("at index 21", message)
+
+    def test_non_printable_characters_are_refused_on_character_without_echo(self):
+        # Each renders as nothing, reorders what follows or has no agreed glyph,
+        # so an equality diagnostic echoing one could print two handles that look
+        # identical.
+        for code in (0x00AD, 0x200B, 0x200E, 0x202E, 0x2066, 0xFEFF, 0xE000):
+            observed = f"{self.EXPECTED}{chr(code)}"
+            message = self.refusal(observed)
+            self.assertIn("(character)", message, hex(code))
+            self.assertIn(f"U+{code:04X}", message)
+            self.assertNotIn(chr(code), message)
+            self.assertNotIn(self.EXPECTED, message)
 
     def test_empty_and_non_string_observed_are_refused_on_length(self):
         for observed in ("", None, 320, b"fiat-320-step-2-mason", ["fiat"]):
