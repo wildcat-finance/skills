@@ -197,10 +197,11 @@ first frame.
 
 Before connecting, the client requires that exact path to be a single-link
 Unix socket owned by the configured service UID and GID with mode `0660`. The
-server obtains the peer identity from the kernel. UID 0, the service UID, an
-invalid UID, or an invalid GID refuses before request admission. Filesystem
-group membership controls which other identities can connect; root and
-administrators remain outside the promise.
+server reads Darwin `LOCAL_PEERCRED` from the accepted socket and sets a
+60-second I/O timeout before peer admission or frame reading. UID 0, the
+service UID, an invalid UID, or an invalid GID refuses before request
+admission. Filesystem group membership controls which other identities can
+connect; root and administrators remain outside the promise.
 
 The client exposes one `publish(request)` operation. It imports neither the
 signer nor the HTTPS transport and accepts no PEM path, token, repository,
@@ -242,7 +243,8 @@ inside service-owned authorization headers.
 Redirects refuse. Token exchange is capped at 15 seconds, create at 20 seconds,
 and each readback at 10 seconds. Each response has a 16 KiB header ceiling, an
 8 KiB body ceiling, closed JSON shape limits, and duplicate-name rejection.
-Every response closes on success and refusal.
+The live reader applies the header ceiling before the standard-library parser
+retains those bytes. Every response closes on success and refusal.
 
 ## Publication lifecycle and result
 
@@ -272,7 +274,9 @@ adds request and final digests, canonical issue identity when known, readback
 state, cleanup state, and attempt counts. It contains no prose, credential,
 header, response body, or raw error. Outcomes are `refused`, `published`,
 `create-indeterminate`, `created-but-unverified`, `receipt-failed`, and
-`cleanup-failed`.
+`cleanup-failed`. The client rejects non-integer diagnostic attempt counts,
+non-monotone lifecycle counts, and result-field combinations that no one-shot
+lifecycle can emit.
 
 ## Component conformance reports
 
@@ -333,8 +337,9 @@ publication evidence.
 - `GIP160`: authority record; and
 - `GIP199`: unavailable, conformance, report, or internal operation.
 
-Public diagnostics contain only schema, outcome, code, and field. They do not
-copy a request value or exception message.
+Public diagnostics contain only schema, outcome, code, field, and bounded
+integer mint and POST attempt counts. They do not copy a request value or
+exception message.
 
 Step 2 adds these codes:
 

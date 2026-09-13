@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21702825,
+    "bytes_blob": 21711743,
     "bytes_generated": 98
   },
   "entries": [
@@ -420,7 +420,7 @@
       "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
     },
     {
-      "bytes": 29963,
+      "bytes": 38881,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

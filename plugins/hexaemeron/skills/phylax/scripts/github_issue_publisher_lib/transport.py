@@ -78,6 +78,60 @@ class IssueRecord:
     body: str = field(repr=False)
 
 
+class _BoundedHeaderReader:
+    """Limit response-header bytes before the stdlib parser retains them."""
+
+    def __init__(self, stream: Any):
+        self._stream = stream
+        self._header_bytes = 0
+        self._counting = True
+        self._expect_status = True
+
+    def readline(self, size: int = -1) -> bytes:
+        if not self._counting:
+            line = self._stream.readline(size)
+            return line
+        if self._expect_status:
+            bounded_size = MAX_REMOTE_HEADER_BYTES + 1
+            if isinstance(size, int) and size >= 0:
+                bounded_size = min(size, bounded_size)
+            line = self._stream.readline(bounded_size)
+            if len(line) > MAX_REMOTE_HEADER_BYTES:
+                refuse("GIP302", "transport.headers")
+            self._expect_status = False
+            return line
+        remaining = MAX_REMOTE_HEADER_BYTES - self._header_bytes
+        bounded_size = remaining + 1
+        if isinstance(size, int) and size >= 0:
+            bounded_size = min(size, bounded_size)
+        line = self._stream.readline(bounded_size)
+        self._header_bytes += len(line)
+        if self._header_bytes > MAX_REMOTE_HEADER_BYTES:
+            refuse("GIP302", "transport.headers")
+        if line in (b"\r\n", b"\n", b""):
+            self._expect_status = True
+        return line
+
+    def stop_counting(self) -> None:
+        self._counting = False
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._stream, name)
+
+
+class _BoundedHTTPResponse(http.client.HTTPResponse):
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.fp = _BoundedHeaderReader(self.fp)
+
+    def begin(self) -> None:
+        reader = self.fp
+        try:
+            super().begin()
+        finally:
+            reader.stop_counting()
+
+
 class _LiveResponse:
     def __init__(
         self,
@@ -106,6 +160,7 @@ def _live_exchange(request: HTTPSRequest, context: ssl.SSLContext) -> HTTPSRespo
         timeout=request.timeout_seconds,
         context=context,
     )
+    connection.response_class = _BoundedHTTPResponse
     try:
         connection.request(
             request.method,

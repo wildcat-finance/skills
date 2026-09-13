@@ -6,6 +6,7 @@ import ast
 from copy import deepcopy
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -78,6 +79,7 @@ from github_issue_publisher_lib.server import (  # noqa: E402
     PeerIdentity,
     PublisherServer,
     admit_peer,
+    default_peer_reader,
 )
 from github_issue_publisher_lib.signer import (  # noqa: E402
     MAX_SIGNATURE_BYTES,
@@ -398,6 +400,7 @@ class ChunkConnection:
         self.chunks = list(chunks)
         self.sent = bytearray()
         self.shutdowns: list[int] = []
+        self.timeouts: list[float] = []
         self.closed = False
 
     def recv(self, size: int) -> bytes:
@@ -414,6 +417,9 @@ class ChunkConnection:
 
     def shutdown(self, how: int) -> None:
         self.shutdowns.append(how)
+
+    def settimeout(self, timeout_seconds: float) -> None:
+        self.timeouts.append(timeout_seconds)
 
     def close(self) -> None:
         self.closed = True
@@ -575,6 +581,46 @@ class SocketBoundaryTests(BoundaryTestCase):
                     lambda peer=peer: admit_peer(peer, service_uid=600),
                 )
 
+    def test_default_peer_reader_uses_macos_local_peer_credentials(self):
+        class Connection:
+            calls: list[tuple[int, int, int]] = []
+
+            def getsockopt(self, level: int, option: int, size: int) -> bytes:
+                self.calls.append((level, option, size))
+                return struct.pack(
+                    "@IIh2x16I",
+                    0,
+                    501,
+                    2,
+                    502,
+                    503,
+                    *([0] * 14),
+                )
+
+        connection = Connection()
+        try:
+            observed: object = default_peer_reader(connection)
+        except PublisherError as exc:
+            observed = (exc.code, exc.field)
+        self.assertEqual(PeerIdentity(uid=501, gid=502), observed)
+        self.assertEqual([(0, 1, 76)], connection.calls)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS LOCAL_PEERCRED only")
+    def test_default_peer_reader_matches_a_live_macos_socketpair(self):
+        left, right = socket.socketpair()
+        try:
+            try:
+                observed: object = default_peer_reader(left)
+            except PublisherError as exc:
+                observed = (exc.code, exc.field)
+            self.assertEqual(
+                PeerIdentity(uid=os.geteuid(), gid=os.getegid()),
+                observed,
+            )
+        finally:
+            left.close()
+            right.close()
+
     def test_client_uses_one_fixed_socket_operation(self):
         result = sample_result()
         connection = ChunkConnection(
@@ -678,6 +724,7 @@ class SocketBoundaryTests(BoundaryTestCase):
             parse_closed_result(bytes(connection.sent[4 : 4 + length])),
         )
         self.assertEqual(4 + length, len(connection.sent))
+        self.assertEqual([60.0], connection.timeouts)
 
 
 class SignerBoundaryTests(BoundaryTestCase):
@@ -943,6 +990,63 @@ class TransportBoundaryTests(BoundaryTestCase):
                 body=b"{}",
                 timeout_seconds=15.0,
             ),
+        )
+
+    def test_live_transport_caps_headers_while_the_socket_is_read(self):
+        read_sizes: list[int] = []
+        response_head = (
+            b"HTTP/1.1 201 Created\r\nX-Oversized: "
+            + b"x" * publisher_transport.MAX_REMOTE_HEADER_BYTES
+            + b"\r\n\r\n{}"
+        )
+
+        class Stream(io.BytesIO):
+            def readline(self, size: int = -1) -> bytes:
+                read_sizes.append(size)
+                if size > publisher_transport.MAX_REMOTE_HEADER_BYTES + 1:
+                    raise OSError("header read crossed the declared ceiling")
+                return super().readline(size)
+
+        class Socket:
+            def makefile(self, _mode: str) -> Stream:
+                return Stream(response_head)
+
+        class Connection:
+            response_class = publisher_transport.http.client.HTTPResponse
+            closed = False
+
+            def request(self, *_args, **_kwargs) -> None:
+                return None
+
+            def getresponse(self):
+                response = self.response_class(Socket(), method="POST")
+                response.begin()
+                return response
+
+            def close(self) -> None:
+                self.closed = True
+
+        connection = Connection()
+        with mock.patch.object(
+            publisher_transport.http.client,
+            "HTTPSConnection",
+            return_value=connection,
+        ):
+            self.assert_publisher_error(
+                "GIP302",
+                "transport.headers",
+                lambda: PinnedGitHubTransport().request(
+                    method="POST",
+                    path=TOKEN_ROUTE,
+                    headers=(("Accept", "application/json"),),
+                    body=b"{}",
+                    timeout_seconds=15.0,
+                ),
+            )
+        self.assertTrue(connection.closed)
+        self.assertLessEqual(
+            max(read_sizes),
+            publisher_transport.MAX_REMOTE_HEADER_BYTES + 1,
         )
 
     def test_transport_refuses_every_caller_selected_destination(self):
@@ -1348,6 +1452,95 @@ class ReceiptBoundaryTests(BoundaryTestCase):
             "receipt.diagnostic",
             lambda: parse_closed_result(canonical_json(diagnostic)),
         )
+
+    def test_client_refuses_non_integer_diagnostic_attempt_counts(self):
+        for field, value in (
+            ("mint_attempts", "REQUEST_CONTROLLED_CANARY"),
+            ("post_attempts", {"value": "REQUEST_CONTROLLED_CANARY"}),
+            ("mint_attempts", True),
+            ("post_attempts", 2),
+        ):
+            with self.subTest(field=field, value=value):
+                diagnostic = PublisherError("GIP220", "socket.path").diagnostic()
+                diagnostic[field] = value
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.diagnostic",
+                    lambda diagnostic=diagnostic: parse_closed_result(
+                        canonical_json(diagnostic)
+                    ),
+                )
+
+        diagnostic = PublisherError("GIP220", "socket.path").diagnostic()
+        diagnostic["code"] = "GIP000"
+        self.assert_publisher_error(
+            "GIP400",
+            "receipt.diagnostic",
+            lambda: parse_closed_result(canonical_json(diagnostic)),
+        )
+
+    def test_client_refuses_semantically_impossible_results(self):
+        cases: list[dict[str, object]] = []
+
+        published_without_publication = sample_result()
+        published_without_publication.update(
+            issue_number=None,
+            issue_url=None,
+            counts={
+                "signer_attempts": 0,
+                "token_attempts": 0,
+                "post_attempts": 0,
+                "authenticated_readbacks": 0,
+                "anonymous_readbacks": 0,
+            },
+            readback="not-run",
+            cleanup_complete=False,
+            code="GIP999",
+        )
+        cases.append(published_without_publication)
+
+        non_monotone_attempts = sample_result()
+        non_monotone_attempts["counts"]["token_attempts"] = 0
+        cases.append(non_monotone_attempts)
+
+        indeterminate_with_issue = sample_result()
+        indeterminate_with_issue.update(
+            outcome="create-indeterminate",
+            readback="not-run",
+            code="GIP301",
+        )
+        cases.append(indeterminate_with_issue)
+
+        matched_without_anonymous_readback = sample_result()
+        matched_without_anonymous_readback["counts"]["anonymous_readbacks"] = 0
+        cases.append(matched_without_anonymous_readback)
+
+        refused_with_cleanup_code = sample_result()
+        refused_with_cleanup_code.update(
+            outcome="refused",
+            issue_number=None,
+            issue_url=None,
+            counts={
+                "signer_attempts": 1,
+                "token_attempts": 0,
+                "post_attempts": 0,
+                "authenticated_readbacks": 0,
+                "anonymous_readbacks": 0,
+            },
+            readback="not-run",
+            code="GIP501",
+        )
+        cases.append(refused_with_cleanup_code)
+
+        for document in cases:
+            with self.subTest(outcome=document["outcome"]):
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.value",
+                    lambda document=document: parse_closed_result(
+                        canonical_json(document)
+                    ),
+                )
 
     def test_returned_event_documents_cannot_mutate_retained_counts(self):
         events = RetainedEvents()
@@ -2358,7 +2551,8 @@ class ContractTests(unittest.TestCase):
             "Step 1 establishes neither live deployment nor live isolation",
             adr,
         )
-        self.assertIn("Step 2 establishes those component paths only", adr)
+        self.assertIn("Step 2 establishes those component paths with injected", adr)
+        self.assertIn("macOS peer-credential ABI", adr)
         self.assertNotIn("ADR-054", adr)
 
 
