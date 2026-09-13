@@ -597,3 +597,28 @@ before assertion failures are read.
 not edit.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_filing_decision_window.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`, `docs/route-a-zero-decision-runbook.md`. Complete replacement Tests: `plugins/hexaemeron/tests/test_filing_decision_window.py` holds nine cases: a refusal when the decision moved inside the window; acceptance when it moved before it; acceptance of a recent body edit that left the decision alone, which is the false positive the GraphQL refinement exists to remove; a refusal when the prior revision's line could not be read; an undiscriminated REST read proceeding and naming itself as such; an old `updated_at` clearing on REST alone; the refusal text naming no grant; and two absence cases that read `init`'s parser and the gate's own source, because a test that drove only the documented interface would pass whether or not a door had been added. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-4.json`, format `unittest-json-v1`, report file `.elenchus/step-4.json`.
+
+**Why.** Files named `test_hexctl.py`, which this step does not edit, and
+omitted four paths it does. `test_hexctl.py` sits at 259222 bytes against a
+262144-byte limit that `test_promise_machine_contract` and
+`test_run_observation_capture` both enforce as PM003, so the cases go in their
+own module for the reason step 3 already recorded. `hexctl.py`'s digest is
+bound in `tests/promise_machine_coverage.json`, the census moves on any tracked
+edit, and the shipped runbook goes stale on every amendment including this one.
+
+Tests moves from six cases to nine. Two cover the verdicts the Exit implies but
+did not list: a body edit that left the decision alone, and an old `updated_at`
+that clears on REST alone because it bounds the last body change from above.
+Two more hold the absence of an override directly. The gate reads the real
+clock and has no test seam for it, because a variable that moved "now" would be
+a variable that clears the refusal, so the cases build their timestamps from the
+real clock instead.
+
+**Steps touched.** Step 4, whose Files and Tests described a smaller step than
+the one its Exit requires.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
