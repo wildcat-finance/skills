@@ -21,6 +21,7 @@ MODULES = (
     "tests.test_agent_instruction",
     "tests.test_agent_instruction_corpus",
     "tests.test_joined_front_door",
+    "tests.test_agent_instruction_reconciliation",
 )
 
 

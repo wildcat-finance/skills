@@ -1,0 +1,60 @@
+from pathlib import Path
+import json,sys
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+BUILD=ROOT/'.hexaemeron/demo-build'
+PREFIX='docs/agent-instruction-reconciliation/demonstration-evidence'
+STORE=ROOT/PREFIX
+STORE.mkdir(exist_ok=True)
+dependencies={}
+def save(body):
+ digest=a.sha(body);relative=PREFIX+'/'+digest+'.bin';target=ROOT/relative
+ if target.exists():assert target.read_bytes()==body
+ else:target.write_bytes(body)
+ dependencies[relative]=digest
+ return relative
+def artifact(path):return save(Path(path).read_bytes())
+def files(root,paths):return {path:artifact(root/path) for path in sorted(paths)}
+rows=json.loads((BUILD/'cases-exchange.json').read_bytes())
+first=Path(rows['cases'][0]['root'])/'tmp/stage/baseline'
+manifest=json.loads((first/a.MANIFEST).read_bytes());paths=a.closure(manifest)
+objects=json.loads((BUILD/'baseline-objects.json').read_bytes())
+value={'schema':a.DEMONSTRATION_SCHEMA,'baseline':{'commit':rows['baseline'],'tree':rows['baseline_tree'],'files':files(first,paths),'objects':{key:artifact(BUILD/'objects'/digest) for key,digest in objects.items()}},'dependencies':dependencies,'cases':[]}
+for row in rows['cases']:
+ root=Path(row['root']);complete=row['id']=='promise-machine-router-selection-before'
+ value['cases'].append({'fixture':row['fixture'],'placement':row['placement'],'prepared':files(root/'tmp/stage/work',paths),'plan':artifact(root/'tmp/stage/plan.json'),'prepare_result':artifact(BUILD/'publication-attempt-2/prepare.json' if complete else BUILD/(row['id']+'.prepare.json')),'accepted':files(root,paths) if complete else None,'apply_result':artifact(BUILD/'publication-attempt-2/law-apply.json') if complete else None,'journal':artifact(root/'tmp/stage/publication/journal.json') if complete else None,'publication':files(root,{entry[role] for entry in json.loads((root/'tmp/stage/publication/journal.json').read_bytes())['targets'] for role in ['old','new','publish_slot','restore_slot']}) if complete else None})
+value['acquisitions']={}
+for verb,filename in [('measure','measurement'),('parity','parity')]:
+ attempt=BUILD/'acquisition-attempt-1'
+ value['acquisitions'][verb]={'result':artifact(attempt/(verb+'.result.json')),'stdout':artifact(attempt/(verb+'.stdout')),'stderr':artifact(attempt/(verb+'.stderr')),'output':artifact(attempt/(filename+'.json'))}
+boundary=BUILD/'boundary-attempt-3'
+value['boundary']={key:artifact(boundary/name) for key,name in [('report','report.json'),('observations','observations.json'),('stdout','stdout'),('stderr','stderr'),('test_source','test-source.py')]}
+value['boundary']['implementation']={path:artifact(boundary/Path(path).name) for path in ['scripts/agent_instruction_reconciliation.py','scripts/prove_agent_instruction_reconciliation.py']}
+value['counterfactual']={'script':artifact(ROOT/'.hexaemeron/scripts/record_behavioral_counterfactual.py')}
+for mode in ['legacy','fixed']:
+ value['counterfactual'][mode]={key:artifact(BUILD/('counterfactual-'+mode)/name) for key,name in [('report','report.json'),('stdout','stdout'),('stderr','stderr')]}
+for name in ['report.json','stdout','stderr']:
+ artifact(BUILD/'counterfactual-fixed-failed-1'/name)
+# Preserve the raw command/result path, not just the accepted reports.
+for name in ['prepare.stdout','prepare.stderr','acquisition-attempt-1.stdout','acquisition-attempt-1.stderr','law-full-staged-check.json','law-apply.events.jsonl','law-final-check.json','apply.stdout','apply.stderr']:
+ artifact(BUILD/name)
+for name in ['prepare_actual_demonstration.py','acquire_actual_demonstration.py','apply_actual_demonstration.py','record_actual_boundaries.py']:
+ artifact(ROOT/'.hexaemeron/scripts'/name)
+value['counterfactual']['exchange']={'script':artifact(ROOT/'.hexaemeron/scripts/record_exchange_counterfactual.py')}
+for mode in ['old','fixed']:
+ value['counterfactual']['exchange'][mode]={key:artifact(BUILD/('exchange-counterfactual-'+mode)/name) for key,name in [('report','report.json'),('stdout','stdout'),('stderr','stderr'),('helper','helper.py'),('tests','tests.py')]}
+# Keep the complete successful but vulnerable-writer attempt as historical evidence.
+old_record=ROOT/'.hexaemeron/step-2-before-exchange-demonstration.json'
+artifact(old_record)
+for name in json.loads(old_record.read_bytes())['dependencies']:
+ artifact(ROOT/name)
+for name in ['acquisition-reuse.json','prepare.json','law-full-staged-check.json','law-apply.events.jsonl','law-final-check.json']:
+ artifact(BUILD/'publication-attempt-2'/name)
+for name in ['step-2-parent-replace-race.json','step-2-parent-race-unfixed.py','reproduce_step2_replace_race.py']:
+ artifact(ROOT/'.hexaemeron'/name)
+for name in ['demonstrate_repaired_exchange.py','package_exchange_demonstration.py']:
+ artifact(ROOT/'.hexaemeron/scripts'/name)
+value['limits']={'history':'Preserved commit, path-tree and blob objects prove this bounded baseline; parent ancestry, signatures and historical execution are not verified here. No Git fetch or model call occurs during verification.','observations':'Raw owner records bind the measured bytes and model answers. Offline verification recomputes owner semantics and digests; it does not independently recount model tokens, establish model quality or authenticate the acquisition clock.','profiles':'Profile observed_on remains 2026-09-12; separate UTC started_at and finished_at fields record the fresh 2026-09-13 calls. No failed acquisition occurred on this attempt.','coverage':'Disposable apply rebinds its owned coverage inputs. Whole-repository coverage replay, generated copies and checks are separate final composition obligations.','publication':'Atomic exchange retains displaced files in journal-bound publication and restoration slots. Exact-syscall guards preserve third and fourth versions and refuse recovery with a conflict; unsupported hosts or filesystems refuse without replacement fallback. Exchange-induced ctime is excluded from stable identity comparison. The journal covers handled failure and killed processes, including a kill immediately after exchange; it does not claim hardware power-loss atomicity. The earlier successful vulnerable-writer attempt remains preserved. The repaired publication reused the fresh reports only after all 28 acquisition inputs were proven byte-identical.'}
+(ROOT/'docs/agent-instruction-reconciliation/demonstration.json').write_bytes(a.encoded(value))
+print(json.dumps({'dependencies':len(dependencies),'bytes':sum((ROOT/p).stat().st_size for p in dependencies)}))
