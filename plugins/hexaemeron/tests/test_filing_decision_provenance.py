@@ -20,6 +20,7 @@ import io
 import json
 import os
 import subprocess
+import tempfile
 import unittest
 
 try:
@@ -959,6 +960,130 @@ class PayloadReaderScopeTests(unittest.TestCase):
                     text = handle.read()
                 self.assertNotIn(self.ROUND_FIVE_PREFIX, text)
                 self.assertIn("S3-R6-0", text)
+
+
+class LocalSourceReaderScopeTests(unittest.TestCase):
+    """The surfaces round 7 enumerated out, read under the same rule.
+
+    Round 7 bounded its enumeration to `hexctl.py`'s GitHub payload readers
+    and named three neighbours it excluded and did not claim clean: local Git
+    output at the runtime-host byline gate, the run's own pull request body
+    through `carried_forward_fault`, and the design-evidence reads.
+
+    Round 8 read all three. The Git and design-evidence surfaces are
+    fail-closed at every branch and coerce nothing, so they carry no case
+    here. The run-level pull request body carried two, neither of them the
+    coercion class -- one exception class that let a decode failure out as a
+    traceback, and one body-derived fault sentence that reached `die`
+    unbounded (S3-R8-01, S3-R8-02).
+
+    Driven by direct call, because both need a run-level pull request body a
+    completed integrating run would not produce.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.dir = self.tmp.name
+
+    def carried_forward_body(self, rows):
+        """One run-level pull request body carrying exactly these rows."""
+        return (
+            "## Carried forward\n"
+            "\n"
+            "```carryover\n"
+            + "\n".join(rows)
+            + "\n```\n"
+        )
+
+    def test_the_run_pull_request_reader_refuses_a_body_it_cannot_decode(self):
+        """`except OSError` alone let a decode failure out as a traceback.
+
+        `carried_forward_fault` answers "why this run has not said what it
+        leaves unfinished, or None", and its own handler proves the intent:
+        an unreadable body returns a fault naming the path and the phase that
+        writes it. `UnicodeDecodeError` derives from `ValueError`, not
+        `OSError`, so a run-level pull request body that is not UTF-8 aborted
+        `done integrate` with a traceback instead of that sentence. It is
+        S3-R1-02's exception-class shape reached through the run's own file
+        rather than a GraphQL response (S3-R8-01).
+        """
+        module = hexctl_module()
+        path = os.path.join(self.dir, "run-pr.md")
+        with open(path, "wb") as handle:
+            handle.write(
+                b"## Carried forward\n\n```carryover\n"
+                b"none | none | caf\xe9 nothing carried\n```\n"
+            )
+        # Caught here rather than left to escape, so this case fails by
+        # assertion at `b9eb5a31` with zero errors: `classify` returns
+        # `inconclusive` on any error before it reads an assertion failure.
+        try:
+            fault = module.carried_forward_fault(path)
+        except UnicodeDecodeError as exc:
+            self.fail(f"the reader let a decode failure out as a traceback: {exc}")
+        self.assertIsNotNone(fault)
+        self.assertIn("cannot be read", fault)
+        self.assertIn(path, fault)
+        # The file content is never quoted back: a decode failure names the
+        # byte and its offset, which is the reader's own diagnosis.
+        self.assertNotIn("nothing carried", fault)
+        # An absent file is still the same answer, and a readable body is
+        # still None. Both are the regression guards for what already worked.
+        self.assertIn(
+            "cannot be read",
+            module.carried_forward_fault(os.path.join(self.dir, "absent.md")),
+        )
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(self.carried_forward_body(["none | none | nothing carried"]))
+        self.assertIsNone(module.carried_forward_fault(path))
+
+    def test_the_carryover_fault_bounds_every_row_it_quotes(self):
+        """The fifth destination of the body-derived fault sentence.
+
+        `carryover_row_faults` quotes a row's id and disposition straight out
+        of the run-level pull request body, and `carried_forward_fault` joined
+        them raw. Observed at `b9eb5a31`: one row carrying a 250000-character
+        id produced 250308 bytes, and 128 rows carrying 20000-character ids
+        produced 2578383 bytes, all of it on its way to `die` in
+        `done integrate`. Bounded per row rather than over the join, the shape
+        `cmd_issue_check` uses, because this destination is a list a filer
+        works down and `CARRYOVER_ROWS_MAX` already bounds it at 128 lines
+        (S3-R8-02).
+        """
+        module = hexctl_module()
+        path = os.path.join(self.dir, "run-pr.md")
+        limit = module.ISSUE_FAULT_DETAIL_MAX
+        reference = "https://github.com/wildcat-finance/skills/issues/1"
+
+        def fault_for(rows):
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(self.carried_forward_body(rows))
+            found = module.carried_forward_fault(path)
+            self.assertIsNotNone(found)
+            return found
+
+        one = fault_for(["A" * 250000 + f" | filed | {reference}"])
+        self.assertLess(len(one.encode("utf-8")), limit + 512)
+        many = fault_for([
+            "B" * 20000 + f"{index} | filed | {reference}" for index in range(128)
+        ])
+        self.assertLess(len(many.encode("utf-8")), 128 * (limit + 512))
+        # Every row still earns its own line: bounding the join would have cut
+        # the tail of a list the filer has to work down.
+        self.assertEqual(many.count("row "), 128)
+        self.assertIn("row 128", many)
+        # Control characters were already refused per row without being
+        # echoed, and that stays true.
+        hostile = fault_for(["ok-id | none | why\x1b[2J\x07"])
+        self.assertNotIn("\x1b", hostile)
+        self.assertNotIn("\x07", hostile)
+        self.assertIn("contains a control character", hostile)
+        # A reader-authored fault set is well inside the bound, so nothing a
+        # filer needs is cut.
+        short = fault_for(["Not Kebab | none | why"])
+        self.assertLess(len(short), limit)
+        self.assertIn("is not kebab-case", short)
 
 
 if __name__ == "__main__":

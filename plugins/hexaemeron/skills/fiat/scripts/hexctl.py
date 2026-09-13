@@ -5539,7 +5539,11 @@ def carried_forward_fault(path: str) -> str | None:
     try:
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
+        # `UnicodeDecodeError` derives from `ValueError`, so `OSError` alone
+        # let a body that is not UTF-8 out as a traceback while every other
+        # unreadable body earned this sentence. The exception's own text names
+        # the byte and its offset and quotes no content (S3-R8-01).
         return (f"the run-level pull request body {path} cannot be read "
                 f"({exc}); the prose phase writes it and the integration pull "
                 f"request is opened from it")
@@ -5558,8 +5562,14 @@ def carried_forward_fault(path: str) -> str | None:
         section, f"the '{CARRIED_FORWARD_HEADING}' section of {path}"
     )
     if faults:
+        # Bounded per row rather than over the join, the shape
+        # `cmd_issue_check` uses, because this is a list a filer works down
+        # and `CARRYOVER_ROWS_MAX` already bounds it at 128 lines. The faults
+        # quote a row's id and disposition out of the body, so the destination
+        # owes them the same one rule the four filing-fault destinations take
+        # (S3-R8-02).
         return (
-            "; ".join(faults)
+            "; ".join(bounded_issue_fault_detail([fault]) for fault in faults)
             + f". Integration cannot proceed until every outstanding item under "
             f"'{CARRIED_FORWARD_HEADING}' has been considered for an issue of "
             f"its own and compared against what is already filed"
