@@ -2941,20 +2941,20 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
     # -- the bundle and the three-way ref join ------------------------------
 
     def test_hostile_missing_object(self):
+        """The good bundle's own header is reused byte for byte, so its heads
+        and prerequisite count still equal the manifest's `refs` exactly;
+        only the packed object data after the header is truncated, which
+        `git fetch` and `git bundle verify` refuse as incomplete without the
+        ref join ever seeing a discrepancy (S3-R4-01: the ref join runs on
+        the header first, so a specimen meant to isolate the missing object
+        alone must not also disturb the heads the header reports).
+        """
         members = self.good_members()
         manifest = self.manifest(members)
-        parent = self.git("rev-parse", "HEAD~1").stdout.strip()
-        incomplete = os.path.join(self.dir, "incomplete.bundle")
-        subprocess.run(
-            [
-                "git", "-c", "pack.threads=1", "bundle", "create", incomplete,
-                "HEAD", f"^{parent}",
-            ],
-            cwd=self.target,
-            check=True,
-            capture_output=True,
-        )
-        new_bytes = Path(incomplete).read_bytes()
+        good_bundle = members["git/repository.bundle"]
+        header_end = good_bundle.index(b"\n\n") + 2
+        self.assertGreater(len(good_bundle), header_end + 64, "bundle too small to truncate")
+        new_bytes = good_bundle[: header_end + 64]
         self.retarget(members, manifest, "git/repository.bundle", new_bytes)
         self.set_manifest(members, manifest)
         path = self.write_specimen(members)
@@ -3395,6 +3395,43 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         self.assertEqual(2, proc.returncode)
         self.assertIn("not a regular file", proc.stderr)
         self.assertNotIn(fifo, proc.stderr)
+
+    # -- round 4: the ref join runs on the header, before completeness ------
+
+    def test_inspect_reports_ref_disagreement_over_a_bundle_that_is_also_incomplete(
+        self,
+    ):
+        """S3-R4-01. The reference states the three-way ref join as decided
+        on the bundle's own header, with `git bundle verify` kept as "the
+        independent second opinion", and the runbook's Exit lists the ref
+        join before that verify. Until this fix, `_checkpoint_inspect_bundle`
+        ran the header's prerequisite count, the disposable clone's fetch and
+        `git bundle verify` before the caller ever reached the ref join, so a
+        specimen that was both an incomplete bundle and ref-mismatched
+        refused `bundle-incomplete` and `ref-disagreement` was never reached.
+        A specimen bad in both ways must refuse the header-decided class.
+        """
+        members = self.good_members()
+        manifest = self.manifest(members)
+        # The good bundle's own header is reused byte for byte and only the
+        # packed object data is truncated, the same construction
+        # test_hostile_missing_object uses, so the bundle is genuinely
+        # incomplete without its heads differing from the manifest on their
+        # own; the ref map is then tampered explicitly below, so this
+        # specimen's two defects are independent and neither masks the other.
+        good_bundle = members["git/repository.bundle"]
+        header_end = good_bundle.index(b"\n\n") + 2
+        self.assertGreater(len(good_bundle), header_end + 64, "bundle too small to truncate")
+        new_bytes = good_bundle[: header_end + 64]
+        self.retarget(members, manifest, "git/repository.bundle", new_bytes)
+        refs = dict(manifest["refs"])
+        target_name = sorted(refs)[0]
+        original = refs[target_name]
+        refs[target_name] = ("0" if original[0] != "0" else "1") + original[1:]
+        manifest["refs"] = refs
+        self.set_manifest(members, manifest)
+        path = self.write_specimen(members)
+        self.assert_refuses(path, "ref-disagreement")
 
 
 if __name__ == "__main__":

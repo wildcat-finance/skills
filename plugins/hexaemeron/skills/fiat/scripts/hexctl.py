@@ -18634,11 +18634,11 @@ def _checkpoint_inspect_clone(scratch: str, bundle_path: str) -> str:
     return repo_dir
 
 
-def _checkpoint_inspect_bundle(
-    manifest: dict, bundle_path: str, repo_dir: str
-) -> None:
+def _checkpoint_inspect_bundle_heads(
+    manifest: dict, bundle_path: str
+) -> tuple[dict, int, str]:
     """The manifest's `bundle` block joined to its member, then the bundle's own
-    header, its independent `verify`, and the size ceiling.
+    header, read directly with no clone and no subprocess.
 
     `checkpoint.json` records the bundle's digest and length twice: in
     `archive.entries`, which `_checkpoint_inspect_members` has already held to
@@ -18646,6 +18646,18 @@ def _checkpoint_inspect_bundle(
     Nothing joined the second to the first, so a `bundle` block naming another
     digest passed and was echoed as though verified (S3-R3-01). The join here
     makes the printed block a statement about the member's bytes.
+
+    The reference states the three-way ref join as decided on the header
+    (`git bundle list-heads`) with `git bundle verify` kept as "the
+    independent second opinion" -- `_checkpoint_archive_bundle_header`'s own
+    docstring says so -- so this function stops at the header and leaves the
+    prerequisite count, the object-format check and the disposable clone's
+    `verify` to `_checkpoint_inspect_bundle_completeness`, called only after
+    the ref join. Until S3-R4-01 the caller ran the completeness check first:
+    an incomplete bundle whose `refs` were also tampered exited
+    `bundle-incomplete`, and `ref-disagreement` was never reached for a
+    specimen bad in both ways, contrary to the order this docstring and the
+    runbook's Exit both state.
     """
     record = next(
         (
@@ -18661,14 +18673,28 @@ def _checkpoint_inspect_bundle(
         or record["sha256"] != manifest["bundle"]["sha256"]
     ):
         _checkpoint_archive_refuse("manifest-mismatch")
-    heads, prerequisites, algorithm = _checkpoint_archive_bundle_header(bundle_path)
+    return _checkpoint_archive_bundle_header(bundle_path)
+
+
+def _checkpoint_inspect_bundle_completeness(
+    manifest: dict,
+    bundle_path: str,
+    repo_dir: str,
+    prerequisites: int,
+    algorithm: str,
+) -> None:
+    """The size ceiling and the bundle's independent `verify`, after the ref join.
+
+    `prerequisites` and `algorithm` are `_checkpoint_inspect_bundle_heads`'s
+    own header read, carried here rather than re-parsed, so there is one
+    parse of the bundle's header and one place its findings are acted on.
+    """
     if prerequisites or algorithm != manifest["bundle"]["hash_algorithm"]:
         _checkpoint_archive_refuse("bundle-incomplete")
     if os.path.getsize(bundle_path) > CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX:
         _checkpoint_archive_refuse("bundle-oversized")
     if bounded_run(repo_dir, "git", ["bundle", "verify", bundle_path])[0] != 0:
         _checkpoint_archive_refuse("bundle-incomplete")
-    return heads
 
 
 def _checkpoint_inspect_signatures(
@@ -18867,12 +18893,15 @@ def _checkpoint_inspect_archive(
     the ceilings, the name policy and both uniqueness rules, entry mode,
     compression, encryption, ZIP64 and trailing bytes; `checkpoint.json`'s
     closed schema; every member's digest and size against it; the capsule
-    manifest's own digest; the three-way ref join; the bundle's header,
-    ceiling and independent verify; every claimed signature, re-verified in a
-    disposable keyring; the identity member's own recompute; the acceptance
-    rules; and, last, the six secret patterns over every member already
-    streamed. Nothing is extracted before the central directory is read, and
-    no member's content is ever printed.
+    manifest's own digest; the bundle's own header and the three-way ref join
+    it decides (S3-R4-01: on the header, before the heavier check below, so a
+    bundle that is both incomplete and ref-mismatched still refuses
+    `ref-disagreement`); the bundle's ceiling and its independent `verify`;
+    every claimed signature, re-verified in a disposable keyring; the
+    identity member's own recompute; the acceptance rules; and, last, the six
+    secret patterns over every member already streamed. Nothing is extracted
+    before the central directory is read, and no member's content is ever
+    printed.
     """
     # The supplied path is read exactly once, by the capture below. `size` is
     # the count of bytes that capture digested, not a separate `stat` of a file
@@ -18917,9 +18946,19 @@ def _checkpoint_inspect_archive(
 
     if bundle_path is None:
         _checkpoint_archive_refuse("manifest-mismatch")
-    repo_dir = existing_repo or _checkpoint_inspect_clone(scratch, bundle_path)
-    heads = _checkpoint_inspect_bundle(manifest, bundle_path, repo_dir)
+    # The ref join is decided on the bundle's own header (S3-R4-01), so it
+    # runs before the disposable clone and `git bundle verify` rather than
+    # after: a bundle that is both incomplete and ref-mismatched must refuse
+    # `ref-disagreement`, the cheaper-to-state defect, not let the
+    # completeness check answer for it.
+    heads, prerequisites, algorithm = _checkpoint_inspect_bundle_heads(
+        manifest, bundle_path
+    )
     _checkpoint_inspect_refs(manifest, capsule_manifest, heads)
+    repo_dir = existing_repo or _checkpoint_inspect_clone(scratch, bundle_path)
+    _checkpoint_inspect_bundle_completeness(
+        manifest, bundle_path, repo_dir, prerequisites, algorithm
+    )
 
     signatures = _checkpoint_inspect_signatures(repo_dir, manifest, captured, scratch)
     _checkpoint_inspect_identity(
