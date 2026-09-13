@@ -288,3 +288,63 @@ Complete replacement Tests: `test_fiat_skill` pins that the SKILL.md sentence ma
 **Steps touched.** Step 3
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.**
+
+Complete replacement Files: Change `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_task_identity.py`, `plugins/hexaemeron/tests/test_hexctl.py`, `plugins/hexaemeron/tests/test_version_relations.py`, whose literal directive comparison gains the new key, `tests/promise_machine_coverage.json`, `docs/promise-machine/obligation-gates/evaluation-run.json`, `docs/promise-machine/obligation-gates/demonstration-run.json`, `docs/promise-machine/obligation-gates/demonstration-evidence.md`, `tests/fixtures/promise-machine/composition/cases.json`, `tests/fixtures/promise-machine/runtime/fiat-final-integration.json`, `tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json`, `tests/fixtures/promise-machine/runtime/fiat-study-amendment.json`, `tests/fixtures/promise-machine/runtime/fiat-version-resolution.json`, `.horos/boundary.json`, `.horos/candidates.json` and `.horos/census.json`. Refresh `docs/fiat-delegated-task-identity-study.md` and `docs/fiat-delegated-task-identity-runbook.md` from `.hexaemeron/study.md` and `.hexaemeron/runbook.md` when an amendment has moved either. Create nothing.
+
+Complete replacement Exit: Every envelope carrying a non-null `agent` carries `task_identity`; an inline directive carries `agent: null` and refuses `--task-handle` with a named diagnostic rather than accepting it silently. The four pinned brief key sets are unchanged, because the identity sits at the envelope level. A Warden continued across the rounds of one step sees the same handle, and a step change refuses. Refusal exits 2 before any directive bytes reach stdout, and writes no state and no ledger entry. Every digest the `hexctl.py` edit moved is re-pinned in this step: the coverage pin, the evaluation run record recomputed from its committed answers rather than a fresh model run, both demonstration records, and the Horos artefacts. Every fixture that pins `plugins/hexaemeron/tests/test_hexctl.py` or `plugins/hexaemeron/tests/test_version_relations.py` by SHA-256 carries the changed file's digest. The two committed copies are byte-identical to the canonical study and runbook. Prove the green exit with:
+
+```bash
+python3 -m unittest plugins.hexaemeron.tests.test_task_identity plugins.hexaemeron.tests.test_hexctl -v
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/promise_machine.py check
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+cmp .hexaemeron/study.md docs/fiat-delegated-task-identity-study.md
+cmp .hexaemeron/runbook.md docs/fiat-delegated-task-identity-runbook.md
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+git diff --check
+```
+
+**Why.** Step 2 changes `plugins/hexaemeron/tests/test_hexctl.py` and `plugins/hexaemeron/tests/test_version_relations.py`. At the Step 1 head `cc8ee17417bd8c96b70c35effb909ed724ead032` the first file's whole-file SHA-256 is pinned in `tests/fixtures/promise-machine/composition/cases.json` and the `fiat-final-integration`, `fiat-receipted-delivery` and `fiat-study-amendment` runtime fixtures, and the second's in the `fiat-version-resolution` runtime fixture, beside `tests/promise_machine_coverage.json`. The issue 1264 run re-pinned the same four files when its Step 2 changed `test_hexctl.py`. `scripts/promise_machine.py check` reads both fixture sets, so without them in Files the Step 2 Exit cannot pass.
+
+**Steps touched.** Step 2
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.**
+
+Complete replacement Files: Change `plugins/hexaemeron/skills/fiat/SKILL.md`, `plugins/hexaemeron/agents/surveyor.md`, `plugins/hexaemeron/agents/mason.md`, `plugins/hexaemeron/agents/warden.md`, `plugins/hexaemeron/agents/scribe.md`, `plugins/hexaemeron/tests/test_fiat_skill.py`, `tests/promise_machine_coverage.json`, `docs/promise-machine/obligation-gates/evaluation-run.json`, `docs/promise-machine/obligation-gates/demonstration-run.json`, `docs/promise-machine/obligation-gates/demonstration-evidence.md`, `tests/fixtures/agent-instruction-v1/manifest.json`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`, `tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json`, `.horos/boundary.json`, `.horos/candidates.json` and `.horos/census.json`. Create one unnumbered decision record draft under `docs/decisions/drafts/` for study decisions 12.1 and 12.2. Refresh `docs/fiat-delegated-task-identity-study.md` and `docs/fiat-delegated-task-identity-runbook.md` from `.hexaemeron/study.md` and `.hexaemeron/runbook.md` when an amendment has moved either.
+
+Complete replacement Exit: Fiat `SKILL.md` states that the orchestrator runs the handle check before continuing any existing handle, unconditionally, and the four agent files name the identity they are spawned under. `.hexaemeron/resolve_conformance.py` produces `stale-handle-regression-guarded`, `resume-identity-reproducible` and `next-wall-clock-bound`, the last as the median of five `next` runs at most 1000 ms. Every digest the `hexctl.py` edit moved is re-pinned in this step: `tests/promise_machine_coverage.json`, the evaluation run record recomputed from its committed answers rather than a fresh model run, both demonstration records, and the Horos boundary and census. The decision record draft states the handle grammar, including the `topic-` prefix for a digits-only topic slug, and the envelope-level placement with its accepted signal gap. Every fixture that pins `plugins/hexaemeron/skills/fiat/SKILL.md` or `plugins/hexaemeron/tests/test_fiat_skill.py` by SHA-256 carries the changed file's digest. The two committed copies are byte-identical to the canonical study and runbook. Prove the green exit with:
+
+```bash
+python3 -m unittest plugins.hexaemeron.tests.test_task_identity plugins.hexaemeron.tests.test_hexctl plugins.hexaemeron.tests.test_fiat_skill -v
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/promise_machine.py check
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/SKILL.md --max-defects 0
+cmp .hexaemeron/study.md docs/fiat-delegated-task-identity-study.md
+cmp .hexaemeron/runbook.md docs/fiat-delegated-task-identity-runbook.md
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+git diff --check
+```
+
+**Why.** Step 3 changes `plugins/hexaemeron/skills/fiat/SKILL.md` and `plugins/hexaemeron/tests/test_fiat_skill.py`. At the Step 1 head `cc8ee17417bd8c96b70c35effb909ed724ead032` the first file's whole-file SHA-256 is pinned in `tests/fixtures/agent-instruction-v1/manifest.json` and the three `fiat-study-runbook-phase` fixtures, and the second's in the `fiat-runbook-amendment` runtime fixture, beside `tests/promise_machine_coverage.json`. The issue 1264 run re-pinned the same agent-instruction files when it changed `SKILL.md`. `scripts/agent_instruction.py` reads those fixtures for `tests/test_agent_instruction.py`, and `scripts/promise_machine.py check` reads the runtime fixture, so without them in Files the Step 3 Exit cannot pass.
+
+**Steps touched.** Step 3
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
