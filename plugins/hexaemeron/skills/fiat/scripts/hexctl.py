@@ -275,6 +275,9 @@ def now() -> str:
 
 SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
+# A study amendment's write-ahead marker carries one runbook rebind record per
+# effective runbook amendment, so the marker cap grows with the history cap.
+AMENDMENT_PENDING_BYTES_MAX = 65536 + AMENDMENT_HISTORY_MAX * 320
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
 # Two surfaces grow with work the count is not about, so each carries its own
@@ -1819,11 +1822,15 @@ def load_amendment_pending(base_dir: str, subject: str) -> dict | None:
         die(f"{subject} amendment pending record is not a regular file", 1)
     try:
         with open(path, "rb") as handle:
-            raw = handle.read(65537)
+            raw = handle.read(AMENDMENT_PENDING_BYTES_MAX + 1)
     except OSError as exc:
         die(f"{subject} amendment pending record cannot be read: {exc}", 1)
-    if len(raw) > 65536:
-        die(f"{subject} amendment pending record exceeds 65536-byte cap", 1)
+    if len(raw) > AMENDMENT_PENDING_BYTES_MAX:
+        die(
+            f"{subject} amendment pending record exceeds "
+            f"{AMENDMENT_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     try:
         value = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
@@ -1879,13 +1886,21 @@ def write_amendment_pending(base_dir: str, subject: str, value: dict) -> None:
     root = state_root(base_dir)
     path = amendment_pending_path(base_dir, subject)
     value = {**value, "subject": subject}
+    encoded = json.dumps(value, sort_keys=True) + "\n"
+    if len(encoded.encode("utf-8")) > AMENDMENT_PENDING_BYTES_MAX:
+        # Refuse before the marker, the artefact or the ledger is touched:
+        # a marker the reader cannot load would leave the run unrecoverable.
+        die(
+            f"{subject} amendment pending record exceeds "
+            f"{AMENDMENT_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     descriptor, temporary = tempfile.mkstemp(
         prefix=f".{subject}-amendment-pending-", dir=root
     )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, sort_keys=True)
-            handle.write("\n")
+            handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
@@ -2418,9 +2433,10 @@ def amendment_block(state: dict) -> dict | None:
         return None
 
     current_study = study_receipt.get("sha256")
+    rebind_index = _runbook_rebind_index(study_amendments)
     for amendment in reversed(runbook_amendments or []):
         item = as_dict(amendment)
-        if item.get("study_sha256") != current_study:
+        if effective_study_sha256(item, None, index=rebind_index) != current_study:
             continue
         if step_number not in (item.get("steps_touched") or []):
             continue
@@ -11182,6 +11198,208 @@ def _replace_runbook_bytes(path: str, data: bytes) -> None:
         die(f"runbook artefact could not be replaced atomically: {exc}", 1)
 
 
+RUNBOOK_REBIND_DECISIONS = ("retained", "displaced")
+RUNBOOK_REBIND_KEYS = (
+    "amendment_sha256",
+    "from_study_sha256",
+    "to_study_sha256",
+    "decision",
+)
+
+
+def _runbook_rebind_index(study_amendments) -> list[dict | None]:
+    """Validate every recorded rebind once and index it by amendment digest.
+
+    One entry per study amendment, in history order: ``None`` for a legacy
+    entry without ``runbook_rebinds``, else a map from the runbook amendment
+    digest to its record. A malformed record dies naming the study amendment.
+    """
+    if study_amendments is None:
+        return []
+    if not isinstance(study_amendments, list):
+        die("study receipt amendments history must be an array", 1)
+    index = []
+    for position, raw in enumerate(study_amendments, 1):
+        entry = as_dict(raw)
+        if "runbook_rebinds" not in entry:
+            index.append(None)
+            continue
+        records = entry.get("runbook_rebinds")
+        if not isinstance(records, list):
+            die(f"study amendment {position} runbook_rebinds must be an array", 1)
+        by_amendment = {}
+        for record in records:
+            if not isinstance(record, dict) or any(
+                key not in record for key in RUNBOOK_REBIND_KEYS
+            ):
+                die(
+                    f"study amendment {position} has a malformed runbook "
+                    "rebind record",
+                    1,
+                )
+            for key in RUNBOOK_REBIND_KEYS[:3]:
+                value = record[key]
+                if not isinstance(value, str) or not re.fullmatch(
+                    r"[0-9a-f]{64}", value
+                ):
+                    die(
+                        f"study amendment {position} runbook rebind {key} "
+                        "is not a sha256 digest",
+                        1,
+                    )
+            if record["decision"] not in RUNBOOK_REBIND_DECISIONS:
+                die(
+                    f"study amendment {position} runbook rebind has an "
+                    "unknown decision",
+                    1,
+                )
+            if record["amendment_sha256"] in by_amendment:
+                die(
+                    f"study amendment {position} rebinds one runbook "
+                    "amendment twice",
+                    1,
+                )
+            by_amendment[record["amendment_sha256"]] = record
+        index.append(by_amendment)
+    return index
+
+
+def effective_study_sha256(
+    amendment: dict, study_amendments, *, index: list | None = None
+) -> str | None:
+    """Follow one runbook amendment's study binding through retained rebinds.
+
+    Start at the digest the amendment recorded and walk the study amendment
+    history in order. A ``retained`` record for this amendment whose
+    ``from_study_sha256`` is the digest reached so far advances the chain to
+    its ``to_study_sha256``; a ``displaced`` record stops the chain there; a
+    study amendment without ``runbook_rebinds`` leaves it untouched.
+    """
+    if index is None:
+        index = _runbook_rebind_index(study_amendments)
+    item = as_dict(amendment)
+    current = item.get("study_sha256")
+    target = item.get("amendment_sha256")
+    for by_amendment in index:
+        if not by_amendment:
+            continue
+        record = by_amendment.get(target)
+        if record is None or record["from_study_sha256"] != current:
+            continue
+        if record["decision"] == "displaced":
+            return current
+        current = record["to_study_sha256"]
+    return current
+
+
+def _runbook_rebinds(
+    runbook_amendments,
+    study_amendments,
+    prior_study_sha256: str,
+    new_study_sha256: str,
+    step_verdicts: list,
+) -> list[dict]:
+    """Decide retained or displaced for every runbook amendment effective now.
+
+    A runbook amendment is effective when its recorded study digest, followed
+    through the retained rebinds already in ``study_amendments``, reaches
+    ``prior_study_sha256``. It is retained when every step it touches reads
+    entry holds and exit holds in ``step_verdicts``; a step the verdicts do
+    not cover is a completed step and counts as holding.
+    """
+    if runbook_amendments is not None and not isinstance(runbook_amendments, list):
+        die("runbook receipt amendments history must be an array", 1)
+    index = _runbook_rebind_index(study_amendments)
+    verdict_by_step = {}
+    for verdict in step_verdicts:
+        item = as_dict(verdict)
+        verdict_by_step[item.get("step")] = item
+    records = []
+    for raw in runbook_amendments or []:
+        item = as_dict(raw)
+        if effective_study_sha256(item, None, index=index) != prior_study_sha256:
+            continue
+        retained = all(
+            step not in verdict_by_step
+            or (
+                verdict_by_step[step].get("entry") == "holds"
+                and verdict_by_step[step].get("exit") == "holds"
+            )
+            for step in (item.get("steps_touched") or [])
+        )
+        records.append(
+            {
+                "amendment_sha256": item.get("amendment_sha256"),
+                "from_study_sha256": prior_study_sha256,
+                "to_study_sha256": new_study_sha256,
+                "decision": "retained" if retained else "displaced",
+            }
+        )
+    return records
+
+
+def _print_runbook_rebinds(records: list[dict], runbook_amendments) -> None:
+    """One line per decision: digests, step numbers and replaced field names only."""
+    by_digest = {}
+    for raw in runbook_amendments or []:
+        item = as_dict(raw)
+        by_digest[item.get("amendment_sha256")] = item
+    counts = {"retained": 0, "displaced": 0}
+    for record in records:
+        item = by_digest.get(record["amendment_sha256"], {})
+        steps = [
+            step for step in (item.get("steps_touched") or [])
+            if isinstance(step, int) and not isinstance(step, bool)
+        ]
+        fields = [
+            field for field in (item.get("replacement_fields") or [])
+            if field in RUNBOOK_FIELDS
+        ]
+        counts[record["decision"]] += 1
+        print(
+            f"runbook amendment {record['amendment_sha256']} "
+            f"{record['decision']}: steps [{', '.join(str(n) for n in steps)}]; "
+            f"fields [{', '.join(fields)}]"
+        )
+    if not records:
+        print("runbook rebinds: none")
+        return
+    print(
+        f"runbook rebinds: {counts['retained']} retained, "
+        f"{counts['displaced']} displaced"
+    )
+
+
+def _verify_runbook_rebinds(study_receipt: dict, runbook_receipt: dict) -> None:
+    """Recompute every recorded rebind list from the two receipt histories."""
+    study_amendments = study_receipt.get("amendments")
+    if study_amendments is None:
+        return
+    if not isinstance(study_amendments, list):
+        die("study receipt amendments history must be an array", 1)
+    runbook_amendments = runbook_receipt.get("amendments")
+    if runbook_amendments is not None and not isinstance(runbook_amendments, list):
+        die("runbook receipt amendments history must be an array", 1)
+    _runbook_rebind_index(study_amendments)
+    for position, raw in enumerate(study_amendments, 1):
+        entry = as_dict(raw)
+        if "runbook_rebinds" not in entry:
+            continue
+        expected = _runbook_rebinds(
+            runbook_amendments,
+            study_amendments[: position - 1],
+            entry.get("prior_sha256"),
+            entry.get("new_sha256"),
+            entry.get("step_verdicts") or [],
+        )
+        if entry.get("runbook_rebinds") != expected:
+            die(
+                f"study amendment {position} runbook_rebinds do not recompute "
+                "from the study and runbook histories",
+                1,
+            )
+
+
 def _study_amendment_record(
     state: dict, expected: str, candidate: bytes
 ) -> dict:
@@ -11194,13 +11412,24 @@ def _study_amendment_record(
     touched, verdicts = _study_step_verdicts(fields, state)
     prefix_bytes = text[:boundary].encode("utf-8")
     amendment_bytes = candidate[len(prefix_bytes):]
+    prior_sha256 = hashlib.sha256(prefix_bytes).hexdigest()
+    new_sha256 = hashlib.sha256(candidate).hexdigest()
+    receipts = as_dict(state.get("receipts"))
+    rebinds = _runbook_rebinds(
+        as_dict(receipts.get("runbook")).get("amendments"),
+        as_dict(receipts.get("study")).get("amendments"),
+        prior_sha256,
+        new_sha256,
+        verdicts,
+    )
     return {
         "date": date_text,
-        "prior_sha256": hashlib.sha256(prefix_bytes).hexdigest(),
-        "new_sha256": hashlib.sha256(candidate).hexdigest(),
+        "prior_sha256": prior_sha256,
+        "new_sha256": new_sha256,
         "amendment_sha256": hashlib.sha256(amendment_bytes).hexdigest(),
         "steps_touched": touched,
         "step_verdicts": verdicts,
+        "runbook_rebinds": rebinds,
     }
 
 
@@ -11357,6 +11586,12 @@ def _recover_study_amendment(
 
     _check_amended_study(base_dir, canonical)
     recovered = _study_amendment_record(state, prior, canonical)
+    if recovered.get("runbook_rebinds") != amendment.get("runbook_rebinds"):
+        die(
+            "pending study amendment runbook_rebinds do not recompute from the "
+            "receipt histories",
+            1,
+        )
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
     existing_history = receipt.get("amendments")
@@ -11445,6 +11680,10 @@ def cmd_amend_study(args) -> None:
         f"study amended: prior {amendment['prior_sha256']}; "
         f"new {amendment['new_sha256']}; amendment "
         f"{amendment['amendment_sha256']}; step {current} {disposition}"
+    )
+    _print_runbook_rebinds(
+        amendment["runbook_rebinds"],
+        as_dict(as_dict(state.get("receipts")).get("runbook")).get("amendments"),
     )
 
 
@@ -11655,11 +11894,18 @@ def source_runbook_step(
     step: dict,
     *,
     current_study_sha256: str | None = None,
+    study_amendments: list | None = None,
     version_relations: dict | None = None,
 ) -> dict:
-    """Carry one exact baseline step plus its current receipted amendments."""
+    """Carry one exact baseline step plus its current receipted amendments.
+
+    An amendment is current when the study digest it recorded, followed
+    through the retained rebinds in ``study_amendments``, reaches
+    ``current_study_sha256``.
+    """
     text = source["text"]
     amendments = _receipted_runbook_amendments(source)
+    rebind_index = _runbook_rebind_index(study_amendments)
     if amendments:
         baseline_bytes = text.encode("utf-8")[: amendments[0]["amendment_start"]]
         baseline_text = decoded_source(baseline_bytes, "runbook baseline")
@@ -11695,7 +11941,10 @@ def source_runbook_step(
     for amendment in amendments:
         if step["n"] not in (amendment.get("steps_touched") or []):
             continue
-        if amendment.get("study_sha256") != current_study_sha256:
+        if (
+            effective_study_sha256(amendment, None, index=rebind_index)
+            != current_study_sha256
+        ):
             continue
         applicable.append(
             {
@@ -13671,6 +13920,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
                 runbook,
                 step,
                 current_study_sha256=study["sha256"],
+                study_amendments=as_dict(study.get("receipt")).get("amendments"),
                 version_relations=version_relations,
             ),
             "branch": plan["branch"],
@@ -13716,6 +13966,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
                 runbook,
                 step,
                 current_study_sha256=study["sha256"],
+                study_amendments=as_dict(study.get("receipt")).get("amendments"),
                 version_relations=version_relations,
             ),
         }
@@ -17287,6 +17538,7 @@ def verify_run(
     if runbook_receipt.get("sha256") is not None:
         runbook = receipted_source(base_dir, state, "runbook")
         _receipted_runbook_amendments(runbook)
+        _verify_runbook_rebinds(study_receipt, runbook_receipt)
         version_relations = receipted_version_relations(
             base_dir, runbook, state=state
         )
