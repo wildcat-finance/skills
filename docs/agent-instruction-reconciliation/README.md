@@ -156,7 +156,7 @@ composition. Historical evaluation answers may be replayed only after every
 corresponding prompt is proven byte-identical, retaining the original model
 and date with explicit replay status.
 
-The [current owner replay](evaluation-replay/replay-after-exchange.json) proved all 11 historical
+The [earlier owner replay](evaluation-replay/replay-after-exchange.json) proved all 11 historical
 prompts byte-identical and changed only `tree_sha256`. It retains the original
 2026-08-31 model, date and answers; it is not a new model observation.
 
@@ -198,6 +198,21 @@ replacement, and refuse a conflict arising during recovery. The recorded
 boundary run passed all 26 named tests. A separate development attempt caught a wrong
 `canonical_model` field lookup in measured-stream reporting; its two errors
 are preserved and do not count as behavioral counterfactual proof.
+
+## Command cleanup evidence
+
+The current demonstration reruns 29 boundary tests and one publication guard
+against the repaired command helper. The [prior record](history/demonstration-before-command-cleanup.json)
+and its evidence objects remain preserved. Model acquisition records retain
+their original inputs and observations. The [cleanup replay](evaluation-replay/replay-command-cleanup.json)
+confirms all 11 prompts are unchanged and updates only the evaluation tree
+digest. It preserves the model, date and answers.
+
+After a command exits, Darwin can return `EPERM` while its unreaped process
+group contains only zombies. Cleanup now reaps the exited leader and checks
+that the group is absent with signal `0` before preserving the command refusal.
+A live leader, surviving group or denied probe still refuses. Output pipes
+close even when cleanup fails; no terminating signal follows reaping.
 
 ## Fixture isolation evidence
 

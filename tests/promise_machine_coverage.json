@@ -123,11 +123,11 @@
     "staged_reconciliation": {
       "helper": {
         "path": "scripts/agent_instruction_reconciliation.py",
-        "sha256": "84632d90863afe513293779d7dd1241bac2aa3c5e63e1303aaebf5bc1e953093"
+        "sha256": "515f86cfe82569f372ae17828872290c2d71e6342d54cec3d2b1fd14f43cb14d"
       },
       "tests": {
         "path": "tests/test_agent_instruction_reconciliation.py",
-        "sha256": "d3ff51761363afe4833167b8163efbf5021726aeb29d29d2607e53bf3b05dc3c"
+        "sha256": "5dd86cce1d9241676f2d771288ee80c1e9e5f96a632aee46d62fd8840f8d2a9c"
       }
     },
     "tests": {
