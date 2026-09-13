@@ -456,3 +456,173 @@ written could be met without running a check.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Entry: The run branch at starting ref
+`e7d0fdea`, working tree clean, no tracked file from this run present. The top
+level of `docs/` holds 51 `<slug>-study.md` and 50 `<slug>-runbook.md` files
+and no index. `docs/decisions/` holds numbered records named
+`ADR-NNN-<slug>.md`, and `docs/decisions/drafts/` is the one directory the
+decision allocator reads unnumbered drafts from, each named `<slug>.md` with a
+first heading `# Decision: <title>`. Complete replacement Exit: All of the
+following hold on the committed head: 1. `docs/emitter-fidelity-differential-suite-study.md`
+is byte-identical to the receipted `.hexaemeron/study.md` and
+`docs/emitter-fidelity-differential-suite-runbook.md` is byte-identical to the
+receipted `.hexaemeron/runbook.md`, each proved by `cmp -s` exiting 0. 2.
+`docs/decisions/drafts/deliver-the-emitter-fidelity-suite-as-a-first-party-harness.md`
+exists with the first heading `# Decision: Deliver the emitter-fidelity suite
+as a first-party harness`, carries a dated status, context, decision, the three
+rejected candidates with the gate each failed, alternatives and consequences,
+and states the mirror-emit oracle, the vendored-closure re-pinning duty and the
+absence of a version increment as sections of that one record. It is unnumbered
+at this step and cited elsewhere by its stable slug. 3.
+`python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/emitter-fidelity-differential-suite-study.md`
+and
+`python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/emitter-fidelity-differential-suite-runbook.md`
+exit 0. 4. `python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py`,
+`python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py` and
+`python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py` each report
+no defect over the three documents at their committed paths, and
+`python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py --study docs/emitter-fidelity-differential-suite-study.md --design-evidence .hexaemeron/design-evidence.json --repo-root .`
+reports no finding. 5. The Horos boundary and census are regenerated and
+`python3 plugins/horos/skills/horos/scripts/horos.py check .` reports that the
+boundary matches the tree. 6. `python3 scripts/run_checks.py --base main --format json`
+exits 0 with `outcome` `green` and `root-suite` among the checks run, and
+`git diff --check` exits 0. Complete replacement Files: Create the two
+documents under `docs/` and the one draft under `docs/decisions/drafts/`.
+Rewrite `.horos/boundary.json` and `.horos/census.json` only through the Horos
+scanner. No Solidity, no workflow, no configuration, no dependency. Complete
+replacement Tests: None written. The two receipted artefacts are copied without
+rewriting a byte. The runner contract for any repair of this step: the test
+command is `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
+the report format is `unittest-json-v1`, and the report file is
+`.hexaemeron/elenchus-step-1.json`; the `unittest-text-v1` form named in the
+preamble is not a format Elenchus accepts and is superseded by this field.
+
+**Why.** S1-R1-01, because the allocator reads drafts only from
+`docs/decisions/drafts/` and the amended study now carries a design bridge to
+that record; S1-R1-03, because the bare check command plans nothing on a clean
+committed head; S1-R1-04, for the count of paired documents; and the preamble's
+step-1 report format, which Elenchus does not accept. Re-issued unchanged after the second study amendment moved the study
+digest to `aef775a6`, which un-bound the first issue of this amendment;
+the replacement clauses are byte-identical to that issue.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. `plugins/hexaemeron/harness/foundry.toml` exists, copies the
+Janus profile with `libs = []`, `bytecode_hash = "none"`, the optimizer on at
+200 runs, and declares neither `ffi` nor any `fs_permissions` entry beyond
+`out`. 2. Eleven files exist under `plugins/hexaemeron/harness/src/vendor/`,
+each byte-identical to its counterpart at protocol ref `f5a26146`, together
+46,799 bytes, and `grep -rn 'import' ` over them resolves every import inside
+that directory with no remapping. 3.
+`plugins/hexaemeron/harness/src/vendor/PROVENANCE.json` records the protocol
+repository, the ref, and each file's path and SHA-256, and a test asserts every
+recorded digest against the file on disk so drift fails rather than
+re-baselining. 4. `tests/check-map-v1.json` gains exactly two checks,
+`hexaemeron-forge-build` and `hexaemeron-forge-test`, each with
+`"cwd": "plugins/hexaemeron/harness"` and `"requires_executable": "forge"`,
+ordered in one group, and both added to the `hexaemeron` scope. Nothing else in
+that file changes. 5. `.github/workflows/hexaemeron-forge.yml` exists, triggers
+on the harness path and on itself, and runs `forge build` then `forge test` in
+that working directory. 6. `forge build` exits 0 from
+`plugins/hexaemeron/harness`, and `forge test` exits 0 there with the
+provenance test passing and no other test present. 7.
+`python3 scripts/run_checks.py --base main --format json` exits 0 with
+`outcome` `green`, plans both new checks, and refuses no path in the diff for
+want of an owner. The Horos boundary and census are regenerated and
+`horos.py check .` reports a match.
+
+**Why.** S1-R1-03: the bare `python3 scripts/run_checks.py` plans nothing on a
+clean committed head and exits 0 with `nothing-selected`, so the exit as
+written could be met without running a check. Re-issued unchanged after the second study amendment moved the study
+digest to `aef775a6`, which un-bound the first issue of this amendment;
+the replacement clauses are byte-identical to that issue.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit broken. Step 4: entry holds; exit broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. A reference contract under `plugins/hexaemeron/harness/src/`
+declares no event of its own, imports `IMarketEventsAndErrors` and
+`SphereXConfig` from `src/vendor/`, and emits each of the 27 events through
+high-level `emit`. 2. An external wrapper under the same root calls each of the
+27 assembly emitters, because a free function that emits must be invoked
+externally for a recorded log to be attributable. 3. A comparison helper
+reports topic0, the topic count, each indexed topic and the data region as
+separate assertions, compares the topic array on length before element, and
+compares the data region on length before content, with no hard-coded topic
+ceiling. 4. The harness suite holds 27 fuzz cases, one per emitter, each
+recording exactly two `Vm.Log` entries in one `vm.recordLogs` window and
+pairing them by position rather than by topic0. Each case bounds its domain by
+the emitter's own parameter types, and the one case where the emitter's
+`uint32 expiry` narrows the declared `uint256 expiry` states that widening
+explicitly. 5. Two deliberate wrong-answer specimens are committed, one with a
+wrong topic0 and one with wrong data bytes, and the suite asserts that the
+comparison rejects both, so the comparison is proved able to fail. 6. A test
+asserts that the count of `emit_` free functions in the two vendored emitter
+files equals the count of cases, so a new emitter with no case fails the suite
+rather than being skipped. 7. Two memory tests hold: the free memory pointer at
+`0x40` is unchanged across every emitter call, and a dirtied scratch space at
+`0x00` to `0x5f` before a call does not change the recorded data. 8.
+`forge build` and `forge test` both exit 0 in the harness,
+`python3 scripts/run_checks.py --base main --format json` exits 0 with
+`outcome` `green`, `git diff --check` exits 0, and the Horos boundary and
+census match the tree.
+
+**Why.** S1-R1-03: the bare `python3 scripts/run_checks.py` plans nothing on a
+clean committed head and exits 0 with `nothing-selected`, so the exit as
+written could be met without running a check. Re-issued unchanged after the second study amendment moved the study
+digest to `aef775a6`, which un-bound the first issue of this amendment;
+the replacement clauses are byte-identical to that issue.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. `plugins/hexaemeron/harness/fizz_data/PROPERTIES.md` states
+each property with a stable spec identifier and a `SHOULD-HOLD` or
+`EXPLORATORY` guarantee tag, covering topic0, topic count, indexed topics, data
+bytes, the free pointer and scratch space. 2.
+`plugins/hexaemeron/harness/fizz_data/campaign.json` records the engine, the
+`--fuzz-seed` used, the run length, this repository's commit, the protocol ref
+`f5a26146`, the emitter count and the counterexample count. Every value is read
+back from the run that produced it. 3. A test re-reads `campaign.json` and
+asserts its emitter count against the suite's own pairing count, so a
+hand-written record disagrees with the tree. 4.
+`forge test --fuzz-seed <the recorded seed>` exits 0 from the harness at the
+recorded run length, and the command and its output are quoted in the step's
+record. 5. Zero counterexamples, or each counterexample committed as a
+deterministic replay test that fails without its fix and is named in
+`campaign.json`. An unresolved divergence prevents the fidelity claim and stops
+the step. 6. `python3 scripts/run_checks.py --base main --format json` exits 0
+with `outcome` `green`, `git diff --check` exits 0, and the Horos boundary and
+census match the tree. 7. The pull request body states that no skill version
+is incremented, and names the design record digest, the protocol ref, the seed
+and the run length.
+
+**Why.** S1-R1-03: the bare `python3 scripts/run_checks.py` plans nothing on a
+clean committed head and exits 0 with `nothing-selected`, so the exit as
+written could be met without running a check. Re-issued unchanged after the second study amendment moved the study
+digest to `aef775a6`, which un-bound the first issue of this amendment;
+the replacement clauses are byte-identical to that issue.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
