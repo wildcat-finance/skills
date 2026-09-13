@@ -1,17 +1,16 @@
-# Deliver the emitter-fidelity suite as a first-party harness
+# Decision: Deliver the emitter-fidelity suite as a first-party harness
 
 ## Status
 
-Proposed, 2026-09-07. Unnumbered on purpose, and nothing assigns the number
-yet. Numbers are compared against the default branch by
-`tests/test_decision_records.py`, so a number picked while this branch is open
-can collide with one another open branch lands first. Whoever merges this
-record gives it a number by hand, or leaves it unnumbered knowingly.
-
-The filename carries no `ADR-` prefix because `tests/test_decision_records.py`
-globs `ADR-*.md` and then requires digits, so a prefixed draft fails
-`test_every_filename_follows_the_convention`. Elsewhere this record is cited by
-its stable slug, `deliver-the-emitter-fidelity-suite-as-a-first-party-harness`.
+Proposed, 2026-09-07. Unnumbered on purpose: it lives at
+`docs/decisions/drafts/`, the one directory the decision allocator
+(`plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py`) reads
+drafts from, and takes its `ADR-NNN` number from that allocator at integration
+composition. Numbers are compared against the default branch by
+`tests/test_decision_records.py`, which globs `ADR-*.md` directly under
+`docs/decisions/`, so a number picked while this branch is open can collide
+with one another open branch lands first. Elsewhere this record is cited by its
+stable slug, `deliver-the-emitter-fidelity-suite-as-a-first-party-harness`.
 
 This record supersedes nothing.
 

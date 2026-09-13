@@ -707,3 +707,47 @@ in `docs/decisions/` would read as a policy nobody made.
 follow: `docs/emitter-fidelity-differential-suite-study.md` and
 `docs/emitter-fidelity-differential-suite-runbook.md`, committed by step 1 and
 linted at those paths.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Five corrections. First, the `source-resolution-ms` column
+in section 4: the twenty reports the design record binds by digest hold 0,
+1063, 956 and 1 for skills-harness, fizz-inline, spec-only and
+fixture-project; the matrix rows and the sentence "the pinned 0, 1193, 577
+and 0" quoted an unpinned run of the resolver, and the sentence "Nothing in
+the matrix is transcribed from this prose" was false for that column alone.
+The three gate columns and `carried-source-bytes` match the reports exactly
+and the selection is unchanged. Second, section 2: `plugins/janus/harness/`
+holds 20 tracked `.sol` files under `src/` (13) and `test/` (7) at
+`e7d0fdea`, plus `adapters/ManifestFuzz.sol`, not fifteen. Third, section
+12: the top level of `docs/` holds 51 `-study.md` and 50 `-runbook.md` files
+at `e7d0fdea`, not twelve pairs. Fourth, section 12: the decision draft's
+home is
+`docs/decisions/drafts/deliver-the-emitter-fidelity-suite-as-a-first-party-harness.md`,
+the one directory
+`plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py` reads
+drafts from (`DRAFTS`, line 49), with the first heading `# Decision: Deliver
+the emitter-fidelity suite as a first-party harness`; a non-`ADR-` file
+directly under `docs/decisions/` is classified `misplaced` (lines 476 to 478)
+and refused as `draft-placement` at composition (lines 602 to 604). The block
+below binds the selected candidate to that record. Fifth, the Boundaries in
+section 3: the repository-wide command is
+`python3 scripts/run_checks.py --base main --format json` with `outcome`
+`green`; the bare form plans nothing on a clean committed head and exits 0
+with `nothing-selected`.
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | skills-harness
+record | docs/decisions/drafts/deliver-the-emitter-fidelity-suite-as-a-first-party-harness.md
+```
+
+**Why.** Audit round 1 of step 1 recorded S1-R1-01 (draft placement and the
+missing design bridge), S1-R1-02 (the timing column), S1-R1-03 (the bare
+check command) and S1-R1-04 (the two counts).
+
+**Steps touched.** Steps 1, 2, 3 and 4.
+
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds;
+exit broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit
+broken.
