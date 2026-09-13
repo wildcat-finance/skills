@@ -13854,18 +13854,55 @@ def task_handle_refusal(observed, expected: str):
     return None
 
 
+def next_task_handle_refusal(packet: dict, observed):
+    """Check the handle an orchestrator is about to continue against one packet.
+
+    Returns None when the packet names a delegate and `observed` is exactly its
+    `task_identity.handle`, else one bounded diagnostic for `next` to exit on.
+    A packet with no delegate is refused as `delegate` without the observed
+    value being read, because an inline directive names no handle that could
+    be continued. Every other refusal is `task_handle_refusal`'s and names the
+    expected handle: the equality refusal already does, and the length and
+    character refusals, which never echo what they refused, carry it as a
+    suffix.
+    """
+    identity = packet.get("task_identity")
+    if packet.get("agent") is None or not isinstance(identity, dict):
+        return (
+            f"task handle refused (delegate): the {packet.get('do')} directive "
+            "has no delegate, so no task handle applies"
+        )
+    expected = identity["handle"]
+    refusal = task_handle_refusal(observed, expected)
+    if refusal is None or "(equality)" in refusal:
+        return refusal
+    return f"{refusal}; expected {expected}"
+
+
 def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
     """Add the total packet envelope and build only the four delegated briefs."""
     packet = {
         **directive,
         "state_sha256": state_fingerprint(state),
         "agent": None,
+        # The task a delegation is named for sits beside `agent` and never in
+        # `brief`, so the four pinned brief shapes hold and `--brief-out` leaves
+        # it on the directive the orchestrator reads. It is null exactly when
+        # `agent` is: an inline directive has no delegate to name (issue 363).
+        "task_identity": None,
         "brief": {},
     }
+
+    def delegate(role: str, **position) -> None:
+        # Both fields in one place, so no envelope names a delegate without
+        # the task, step and role that delegate is spawned or continued for.
+        packet["agent"] = role
+        packet["task_identity"] = task_identity(state, role, **position)
+
     action = directive.get("do")
     root = os.path.realpath(base_dir)
     if action == "study":
-        packet["agent"] = "surveyor"
+        delegate("surveyor")
         packet["brief"] = {
             "topic": state["topic"],
             "target_dir": root,
@@ -13902,7 +13939,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
     plan = branch_plan(state, step)
     root_plugin = plugin_root()
     if action == "implement":
-        packet["agent"] = "mason"
+        delegate("mason", step=step["n"])
         packet["brief"] = {
             "runbook_step": source_runbook_step(
                 runbook,
@@ -13930,7 +13967,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             ["check-ref-format", "--branch", stacked_branch],
             "stacked_branch is not a valid Git branch",
         )
-        packet["agent"] = "warden"
+        delegate("warden", step=step["n"], round=directive["round"])
         # Which Warden the controller delegates to, not what that Warden has
         # read. A step's first round has no earlier agent to continue, so it
         # says `new`; a later round of the same step says `same-agent`. The
@@ -13961,7 +13998,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         return packet
 
     pr_base = plan["pr_base"]
-    packet["agent"] = "scribe"
+    delegate("scribe", step=step["n"])
     packet["brief"] = {
         "files": scribe_files(root, pr_base, plan["branch"]),
         "pr_base": pr_base,
@@ -16977,6 +17014,14 @@ def cmd_next(args) -> None:
         refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
     out = delegation_packet(args.dir, state, directive)
+    observed = getattr(args, "task_handle", None)
+    if observed is not None:
+        # Before `--brief-out` writes and before stdout: a handle that is
+        # refused never receives the brief it was about to be continued with.
+        # `next` holds no lock and writes no state or ledger entry either way.
+        refusal = next_task_handle_refusal(out, observed)
+        if refusal is not None:
+            die(refusal)
     brief_out = getattr(args, "brief_out", None)
     if brief_out is not None and out["brief"]:
         # The controller delegates this packet rather than reading it, so the
@@ -17783,6 +17828,16 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "write the delegated brief to PATH and name it in brief_path, "
             "instead of printing its body"
+        ),
+    )
+    sp.add_argument(
+        "--task-handle",
+        metavar="HANDLE",
+        help=(
+            "check HANDLE, the name of a delegate about to be continued, "
+            "against task_identity.handle; a mismatch, a malformed HANDLE or "
+            "a directive with no delegate exits 2 before the directive is "
+            "printed"
         ),
     )
     sp.set_defaults(fn=cmd_next)

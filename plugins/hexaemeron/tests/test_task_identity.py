@@ -3,8 +3,9 @@
 Issue 363: a Mason continued under a handle minted for another issue kept that
 issue's name. The controller now derives a `fiat-task-identity/v1` object and a
 `fiat-<task>-<phase>-<role>` handle from state alone, and reads an observed
-handle as hostile argv. Nothing calls either yet; these cases hold the grammar,
-the determinism and the refusal shape before `next` carries them.
+handle as hostile argv. `next` carries the object beside `agent` on every
+delegated envelope and checks `--task-handle` before it prints; these cases
+hold the grammar, the determinism, the refusal shape and that envelope.
 """
 
 import json
@@ -19,7 +20,7 @@ import unittest
 # next door rather than in a package.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from hexctl_harness import HEXCTL, hexctl_module
+from hexctl_harness import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module
 
 TOPIC = "Bind delegated task identity to step and role"
 TOPIC_SLUG = "bind-delegated-task-identity-to-step-and-role"
@@ -441,6 +442,212 @@ class ObservedHandleRefusalTests(unittest.TestCase):
                 handle = identity["handle"]
                 self.assertLessEqual(len(handle.encode("utf-8")), 200)
                 self.assertIsNone(self.hexctl.task_handle_refusal(handle, handle))
+
+
+WAIVED = '"waived: prose-only fixture"'
+
+
+class EnvelopeIdentityTests(HexctlCase):
+    """`next` carries the identity beside `agent` and checks `--task-handle` first.
+
+    The fixture run has no task issue, so every handle here is named for the
+    `test topic` slug. The issue-backed case, `issue318_step2` refused against
+    `fiat-320-step-2-mason`, and the checkpoint restore sit in `test_hexctl`'s
+    `TestTaskIdentity`, which the run's conformance cells name.
+    """
+
+    def assert_delegated(self, packet, role, step=None, round=None):
+        if not hasattr(self, "hexctl"):
+            self.hexctl = hexctl_module()
+        self.assertEqual(packet["agent"], role)
+        self.assertEqual(
+            packet["task_identity"],
+            self.hexctl.task_identity(self.state(), role, step=step, round=round),
+        )
+        phase = "study" if step is None else f"step-{step}"
+        self.assertEqual(
+            packet["task_identity"]["handle"], f"fiat-test-topic-{phase}-{role}"
+        )
+        # Beside `agent`, never inside `brief`: the pinned brief key sets hold.
+        keys = list(packet)
+        self.assertEqual(keys.index("task_identity"), keys.index("agent") + 1)
+        self.assertLess(keys.index("task_identity"), keys.index("brief"))
+        self.assertNotIn("task_identity", packet["brief"])
+
+    def assert_inline(self, packet, action):
+        self.assertEqual(
+            (packet["do"], packet["agent"], packet["task_identity"], packet["brief"]),
+            (action, None, None, {}),
+        )
+
+    def controller_bytes(self):
+        root = os.path.join(self.target, ".hexaemeron")
+        found = {}
+        for name in sorted(os.listdir(root)):
+            path = os.path.join(root, name)
+            if os.path.isfile(path):
+                with open(path, "rb") as handle:
+                    found[name] = handle.read()
+        return found
+
+    def refuse(self, *argv):
+        """Run a refused `next`: exit 2, empty stdout, one stderr line, no write."""
+        before = self.controller_bytes()
+        proc = self.run_ctl(
+            "next", *argv, "--brief-out", ".hexaemeron/brief.json", expect=2
+        )
+        self.assertEqual(proc.stdout, "")
+        self.assertEqual(self.controller_bytes(), before)
+        self.assertNotIn("brief.json", before)
+        self.assertEqual(proc.stderr.count("\n"), 1, proc.stderr)
+        self.assertNotIn("Traceback", proc.stderr)
+        return proc.stderr
+
+    def test_every_delegated_envelope_names_its_task_and_inline_ones_carry_null(self):
+        self.init()
+        self.assert_delegated(self.next_json(), "surveyor")
+        study = self.write(
+            "study.md", "# Study\n\n```risk-register\none | boundary | check\n```\n"
+        )
+        self.run_ctl("done", "study", "--artifact", study)
+        self.assert_inline(self.next_json(), "runbook")
+        runbook = self.write(
+            "runbook.md", "# Runbook\n\n## Step 1: Core\n\n**Goal.** Build.\n"
+        )
+        steps = self.write("steps.json", '["Core"]')
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        self.git("add", study, runbook, steps)
+        self.git("commit", "-m", "base")
+        self.git("branch", self.step_branch(1))
+        self.assert_delegated(self.next_json(), "mason", step=1)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1), "--commit", "abc"
+        )
+        self.assert_inline(self.next_json(), "resolve-security-suite")
+        self.run_ctl("record", "security_suite", WAIVED)
+        self.assert_delegated(self.next_json(), "warden", step=1, round=1)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.assert_inline(self.next_json(), "close-audit")
+        self.run_ctl("done", "audit")
+        self.assert_delegated(self.next_json(), "scribe", step=1)
+        self.run_ctl("done", "prose", "--files", "1", "--skills",
+                     "hexaemeron:imprimatur,hexaemeron:vulgate")
+        self.assert_inline(self.next_json(), "push")
+
+    def test_a_matching_handle_exits_zero_with_the_bare_bytes(self):
+        self.to_steps()
+        bare = self.run_ctl("next").stdout
+        handle = json.loads(bare)["task_identity"]["handle"]
+        self.assertEqual(handle, "fiat-test-topic-step-1-mason")
+        self.assertEqual(self.run_ctl("next", "--task-handle", handle).stdout, bare)
+        diverted = self.run_ctl(
+            "next", "--task-handle", handle, "--brief-out", ".hexaemeron/brief.json"
+        )
+        self.assertEqual(
+            json.loads(diverted.stdout)["task_identity"],
+            json.loads(bare)["task_identity"],
+        )
+
+    def test_a_differing_handle_exits_two_naming_both_before_printing(self):
+        self.to_steps()
+        for observed in (
+            "issue318_step2",
+            "fiat-test-topic-step-2-mason",
+            "fiat-test-topic-step-1-warden",
+            "fiat-test-topic-step-1-masonx",
+        ):
+            with self.subTest(observed=observed):
+                self.assertEqual(
+                    self.refuse("--task-handle", observed),
+                    "hexctl: error: task handle refused (equality): expected "
+                    f"fiat-test-topic-step-1-mason, observed {observed}\n",
+                )
+
+    def test_a_malformed_handle_is_refused_without_echo(self):
+        self.to_steps()
+        expected = "; expected fiat-test-topic-step-1-mason\n"
+        for observed, reason in (
+            ("x" * 201, "(length): observed handle is 201 bytes"),
+            ("", "(length): observed handle is empty"),
+            ("fiat-test-topic-step-1-mason\x1b[31m", "(character): U+001B at index 28"),
+            ("fiat-test-topic step-1-mason", "(character): U+0020 at index 15"),
+            (
+                "fiat-test-topic-step-1-mason" + chr(0x202E),
+                "(character): U+202E at index 28",
+            ),
+        ):
+            with self.subTest(reason=reason):
+                message = self.refuse("--task-handle", observed)
+                self.assertTrue(
+                    message.startswith(f"hexctl: error: task handle refused {reason}"),
+                    message,
+                )
+                self.assertTrue(message.endswith(expected), message)
+                if observed:
+                    self.assertNotIn(observed, message)
+                self.assertNotIn("\x1b", message)
+                self.assertNotIn("xxxx", message)
+
+    def test_a_handle_against_an_inline_directive_is_refused_by_name(self):
+        self.to_audit()
+        self.assert_inline(self.next_json(), "resolve-security-suite")
+        for observed in ("fiat-test-topic-step-1-warden", "\x1b[31m"):
+            with self.subTest(observed=observed):
+                self.assertEqual(
+                    self.refuse("--task-handle", observed),
+                    "hexctl: error: task handle refused (delegate): the "
+                    "resolve-security-suite directive has no delegate, so no task "
+                    "handle applies\n",
+                )
+
+    def test_a_warden_keeps_its_handle_across_rounds_and_a_step_change_refuses_it(self):
+        self.to_steps()
+        self.run_ctl("record", "security_suite", WAIVED)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1), "--commit", "abc1"
+        )
+        first = self.next_json()
+        handle = first["task_identity"]["handle"]
+        self.assertEqual(handle, "fiat-test-topic-step-1-warden")
+        self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
+        second = self.next_json()
+        self.assertEqual(
+            (second["round"], second["brief"]["warden_continuity"]), (2, "same-agent")
+        )
+        self.assertEqual(second["task_identity"]["handle"], handle)
+        self.assertEqual(
+            (first["task_identity"]["round"], second["task_identity"]["round"]), (1, 2)
+        )
+        self.assertEqual(
+            self.run_ctl("next", "--task-handle", handle).stdout,
+            self.run_ctl("next").stdout,
+        )
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
+        self.run_ctl("done", "audit", "--fixes-ref", "deadbeef")
+        self.run_ctl("done", "prose", "--files", "3", "--skills",
+                     "hexaemeron:imprimatur,hexaemeron:vulgate")
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", self.fake_sha("head1"),
+            "--pr-base", self.step_base(1),
+        )
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(2), "--commit", "abc2"
+        )
+        third = self.next_json()
+        self.assertEqual(
+            (third["step"], third["round"], third["brief"]["warden_continuity"]),
+            (2, 1, "new"),
+        )
+        self.assertEqual(
+            third["task_identity"]["handle"], "fiat-test-topic-step-2-warden"
+        )
+        self.assertEqual(
+            self.refuse("--task-handle", handle),
+            "hexctl: error: task handle refused (equality): expected "
+            f"fiat-test-topic-step-2-warden, observed {handle}\n",
+        )
 
 
 if __name__ == "__main__":

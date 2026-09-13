@@ -2908,6 +2908,14 @@ class VersionRelationTests(HexctlCase):
             "merge_now": False,
             "state_sha256": hexctl_module().state_fingerprint(state),
             "agent": "mason",
+            "task_identity": {
+                "schema": "fiat-task-identity/v1",
+                "handle": "fiat-test-topic-step-1-mason",
+                "task": "test-topic",
+                "step": 1,
+                "round": None,
+                "role": "mason",
+            },
             "brief": {
                 "runbook_step": {
                     "markdown": step_markdown,
