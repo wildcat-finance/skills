@@ -1,8 +1,9 @@
 # Reviewed corpus reconciliation
 
 Step 1 preserves the selected `staged-general-v1` contract and adds a report
-emitter for the existing 352 corpus tests. Prepare, apply, recovery and the
-completed law demonstration remain Step 2 work.
+emitter for the existing 352 corpus tests and the joined front-door module.
+It also isolates that module's scratch fixtures from their sources. Prepare,
+apply, recovery and the completed law demonstration remain Step 2 work.
 
 ## Contract and evidence
 
@@ -18,7 +19,9 @@ probe results outside the matrix; those are preserved observations.
 design bridge to the exact receipted prefix. The runbook, design matrix,
 reports, raw probes, scripts, baseline, prior-art responses and scoped audit
 inventory retain their source bytes. No controller state, receipt or operator
-configuration is part of this package.
+configuration is part of this package. The runbook includes the receipted
+fixture-isolation amendment; its previous bytes remain in
+[the historical copy](history/runbook-before-fixture-isolation.md.txt).
 
 Historical `study-source.md`, `study-prose-source.md` and
 `runbook-prose-source.md` copies carry a `.txt` suffix here. Their bytes and
@@ -43,8 +46,9 @@ From this repository root, use the interpreter in
 uv run --no-project --python "$(cat .python-version)" python tests/emit_agent_instruction_reconciliation_report.py .elenchus/agent-instruction-reconciliation.json
 ```
 
-The emitter runs `tests.test_agent_instruction` and
-`tests.test_agent_instruction_corpus` in process with fixed module names.
+The emitter runs `tests.test_agent_instruction`,
+`tests.test_agent_instruction_corpus` and `tests.test_joined_front_door`
+in process with fixed module names.
 It reuses the confined writer in `tests/emit_run_observation_report.py`:
 one fresh path inside the current worktree, exclusive file creation and
 identity-checked readback. Preserve an earlier report before reusing its name.
@@ -52,6 +56,24 @@ The output uses `elenchus.unittest.v1`; counts come from the actual completed
 run. Failed tests and unexpected successes exit 1; report-path or write failure
 exits 2. An interrupted run does not emit a completed result. The report answers
 which tests ran, whether the run completed, and what failed or was skipped.
+
+## Fixture isolation evidence
+
+The [first full report](fixture-isolation/step-1-checks.json) passed 34 of 35
+checks. One demonstration setup refused a source with D025
+`file-changed-during-read`. The independent demonstration suite then passed
+114 tests on the same signed commit. The
+[disposable reproduction](fixture-isolation/metadata-reproduction.json)
+shows that creating a hard link changes source ctime without changing its
+bytes. The original failing process was not instrumented, so attribution to
+the concurrent joined front-door fixture remains inferred.
+
+The fixture builder now creates independent copies. Its new guard checks that
+source identity and bytes survive fixture creation, mutation and deletion.
+The [original implementation fails](fixture-isolation/fixture-guard-old.stderr)
+that guard; the [copy implementation passes](fixture-isolation/fixture-guard-fixed.stderr).
+This proves the fixture repair. It does not replay the original scheduling
+race or establish corpus reconciliation behavior.
 
 ## Reproduce the selection probes
 

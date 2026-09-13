@@ -1,0 +1,41 @@
+{
+  "schema": "issue1513-step1-failure-investigation/v1",
+  "head": "0d15f21c520ca506fd134a4005696a7411a015c8",
+  "command": "uv run --no-project --python 3.14.6 python -m unittest tests.test_demonstrations -v",
+  "exit": 0,
+  "reports": [
+    {
+      "path": ".hexaemeron/step-1-demonstrations-reproduction.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": ".hexaemeron/step-1-demonstrations-reproduction.stderr",
+      "sha256": "981bc2c538a1643b95ce5622429b9b1dcea1e3af433a2337d8f3a983afa06e52"
+    },
+    {
+      "path": ".hexaemeron/step-1-full-failed/metadata-reproduction.json",
+      "sha256": "db5252cc441b329b510900f2b2d19451c94d19e3ca021fa8424f32a41600a89a"
+    }
+  ],
+  "same_head": true,
+  "tracked_changes": false,
+  "findings": {
+    "failing_setup": "tests/test_demonstrations.py:1482 load_records(ROOT)",
+    "identity_check": "scripts/demonstrations.py:353 compares opened/closed/named via scripts/shoggoth_topology.py:275 including ctime_ns",
+    "candidate_metadata_writer": "tests/test_joined_front_door.py:230 os.link(source,target) in plant_tree; runs in same shared snapshot",
+    "causal_limit": "The original failing process was not instrumented; hard-link fixture attribution is inferred. The unchanged-byte ctime failure itself is reproduced deterministically on a disposable exact source copy."
+  },
+  "parent_capacity_observation": {
+    "observed_local_time": "2026-09-13 04:12 Europe/London",
+    "load_average": [
+      104.54,
+      74.4,
+      79.33
+    ],
+    "cpu_count": 18,
+    "free_disk_gib": 369,
+    "source": "parent read-only observation",
+    "limit": "Host contention explains duration, not the metadata race."
+  },
+  "next": "Parent assessment before another full run; no unrelated product changes under Step 1."
+}

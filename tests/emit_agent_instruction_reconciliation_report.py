@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run both existing corpus modules and write one fresh Elenchus report."""
+"""Run the corpus and fixture modules and write one fresh Elenchus report."""
 
 from pathlib import Path
 import sys
@@ -20,6 +20,7 @@ from tests.emit_run_observation_report import (  # noqa: E402
 MODULES = (
     "tests.test_agent_instruction",
     "tests.test_agent_instruction_corpus",
+    "tests.test_joined_front_door",
 )
 
 

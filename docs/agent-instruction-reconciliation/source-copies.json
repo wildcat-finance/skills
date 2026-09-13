@@ -43,6 +43,105 @@
       "transformation": "byte-identical"
     },
     {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-fixed.stderr",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-fixed.stderr",
+      "sha256": "821506d744cf3686ef9ed15ffd8a5684343f43fac64f4bc39447f9b606ec79b2",
+      "bytes": 291,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-fixed.stdout",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-fixed.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-old.stderr",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-old.stderr",
+      "sha256": "9abf8bd3302eb41e90e8bc9d8a9218d01ef5391ce583c9ed41a3b1fa672016f1",
+      "bytes": 1564,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/fixture-guard-old.stdout",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/fixture-guard-old.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-fixture-guard-proof.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/guard-proof.json",
+      "sha256": "d93f9604e7f62b6c6e2ec9756ae03d1ed87866516822dbaabaf7679a316fe62d",
+      "bytes": 1798,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-demonstrations-reproduction.stderr",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/independent-demonstrations.stderr",
+      "sha256": "981bc2c538a1643b95ce5622429b9b1dcea1e3af433a2337d8f3a983afa06e52",
+      "bytes": 17738,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-demonstrations-reproduction.stdout",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/independent-demonstrations.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/independent-reproduction.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/independent-reproduction.json",
+      "sha256": "07227cd313472352bcb119391de0e4b8b8f97c5f8d7b0c2cb3a6eea93ac8145f",
+      "bytes": 1832,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/metadata-reproduction.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/metadata-reproduction.json",
+      "sha256": "db5252cc441b329b510900f2b2d19451c94d19e3ca021fa8424f32a41600a89a",
+      "bytes": 1024,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook-fixture-isolation-imprimatur-final.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/runbook-fixture-isolation-imprimatur-final.json",
+      "sha256": "029e811ac715d7fa5446ccfc7fcb426111f967f39dee2570d2a0a648c3a53a8e",
+      "bytes": 940,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook-fixture-isolation-imprimatur-first.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/runbook-fixture-isolation-imprimatur-first.json",
+      "sha256": "029e811ac715d7fa5446ccfc7fcb426111f967f39dee2570d2a0a648c3a53a8e",
+      "bytes": 940,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/runbook-fixture-isolation-prose.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/runbook-prose-proof.json",
+      "sha256": "40d54540894b4f7af61a96db447a9ba2ba147b2704e6a5aeb94c402c17ede095",
+      "bytes": 4692,
+      "transformation": "byte-identical"
+    },
+    {
+      "source": ".hexaemeron/step-1-full-failed/step-1-checks.json",
+      "copy": "docs/agent-instruction-reconciliation/fixture-isolation/step-1-checks.json",
+      "sha256": "b013452a62af68acfef3267657bc7a6f54c7212907e50a9f390d4bb2c3d200c3",
+      "bytes": 347023,
+      "transformation": "byte-identical"
+    },
+    {
+      "bytes": 11709,
+      "copy": "docs/agent-instruction-reconciliation/history/runbook-before-fixture-isolation.md.txt",
+      "sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+      "source": ".hexaemeron/runbook.md",
+      "transformation": "byte-identical",
+      "source_snapshot": "Before fixture-isolation amendment; committed at 0d15f21c520ca506fd134a4005696a7411a015c8"
+    },
+    {
       "bytes": 7057,
       "copy": "docs/agent-instruction-reconciliation/prior-art/issue-1192.json",
       "sha256": "25cc622369ec2bea5cfa34f479ecff962bf64f6ed354ea83a4d5b68e684991ef",
@@ -247,10 +346,10 @@
       "transformation": "byte-identical"
     },
     {
-      "bytes": 11709,
-      "copy": "docs/agent-instruction-reconciliation/runbook.md",
-      "sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
       "source": ".hexaemeron/runbook.md",
+      "copy": "docs/agent-instruction-reconciliation/runbook.md",
+      "sha256": "34b9c853f0c29cb110bdc02a2be3bd90be5bcb73fce551292910e9ed5fee1b39",
+      "bytes": 15168,
       "transformation": "byte-identical"
     },
     {
@@ -413,5 +512,12 @@
   ],
   "schema": "issue1513-scaffold-source-copies/v1",
   "source_head": "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
-  "source_tree": "5f48caffde9c41846e13dfdda5c5f10165d3e274"
+  "source_tree": "5f48caffde9c41846e13dfdda5c5f10165d3e274",
+  "fixture_isolation_amendment": {
+    "date": "2026-09-13",
+    "runbook_source_sha256": "34b9c853f0c29cb110bdc02a2be3bd90be5bcb73fce551292910e9ed5fee1b39",
+    "previous_runbook_sha256": "2749428a1fcc4e951d5d1dbb3945e89edb906a514bd72beb9cd59bdf0897eefd",
+    "previous_runbook_copy": "docs/agent-instruction-reconciliation/history/runbook-before-fixture-isolation.md.txt",
+    "historical_binding": "Existing source paths and hashes describe their preserved observation; runbook.md now carries the appended receipt. Original records and commands are unchanged. The independent reproduction names the original .hexaemeron paths; the bound observations are copied under fixture-isolation with the mappings above."
+  }
 }
