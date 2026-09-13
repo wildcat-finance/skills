@@ -2678,6 +2678,12 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             if entry["path"] == path:
                 entry["bytes"] = len(new_bytes)
                 entry["sha256"] = hashlib.sha256(new_bytes).hexdigest()
+                if path == "git/repository.bundle":
+                    # `checkpoint.json` records the bundle in its own block as
+                    # well, and since S3-R3-01 `inspect` joins the two, so a
+                    # specimen meant to disagree elsewhere keeps them equal.
+                    manifest_obj["bundle"]["bytes"] = entry["bytes"]
+                    manifest_obj["bundle"]["sha256"] = entry["sha256"]
                 return
         raise AssertionError(f"{path} is not a manifest entry")
 
@@ -3213,6 +3219,182 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         self.assertNotIn(marker, proc.stdout)
         self.assertNotIn("controller-capsule/controller/state.json", proc.stdout)
         self.assertNotIn(str(path), proc.stdout)
+
+    # -- round 3: the bundle block, the keyring root, value types, FIFOs ----
+
+    def inspect_within(self, archive_path, sha256, seconds):
+        """Run `inspect` and fail, rather than hang, if it has not returned."""
+        args = [
+            sys.executable,
+            HEXCTL,
+            "checkpoint",
+            "inspect",
+            "--archive",
+            str(archive_path),
+            "--sha256",
+            sha256,
+        ]
+        try:
+            return subprocess.run(args, capture_output=True, text=True, timeout=seconds)
+        except subprocess.TimeoutExpired:
+            self.fail(f"checkpoint inspect did not return within {seconds}s")
+
+    def members_of(self, archive_path):
+        with zipfile.ZipFile(archive_path) as container:
+            return {
+                info.filename: container.read(info.filename)
+                for info in container.infolist()
+            }
+
+    def test_inspect_joins_the_bundle_block_to_the_bundle_member(self):
+        """S3-R3-01. `checkpoint.json` records the bundle's digest and length
+        twice, in `archive.entries` and in `bundle`. Only the first was held to
+        the streamed bytes, and `bundle` is the copy `inspect` prints, so a
+        block naming another digest passed and was echoed at exit 0.
+        """
+        good = str(self.good_archive())
+        digest = self.outer_sha256(good)
+        members = self.members_of(good)
+        manifest = self.manifest(members)
+        record = next(
+            item
+            for item in manifest["archive"]["entries"]
+            if item["path"] == "git/repository.bundle"
+        )
+        printed = json.loads(self.run_inspect(good, digest, expect=0).stdout)["bundle"]
+        self.assertEqual(record["sha256"], printed["sha256"])
+        self.assertEqual(record["bytes"], printed["bytes"])
+        real = manifest["bundle"]["sha256"]
+        cases = (
+            ("sha256", ("0" if real[0] != "0" else "1") + real[1:], "manifest-mismatch"),
+            ("bytes", manifest["bundle"]["bytes"] + 1, "manifest-mismatch"),
+            ("complete_history", False, "schema-unsupported"),
+            ("hash_algorithm", "md5", "schema-unsupported"),
+        )
+        for index, (field, value, refusal) in enumerate(cases):
+            mutated = dict(members)
+            tampered = self.manifest(members)
+            tampered["bundle"][field] = value
+            self.set_manifest(mutated, tampered)
+            path = self.write_specimen(
+                mutated, path=self.specimen_path(f"bundle-{index}.zip")
+            )
+            self.assert_refuses(path, refusal)
+
+    def test_inspect_keeps_the_disposable_keyring_under_its_scratch_root(self):
+        """S3-R3-02. The reference promises a `GNUPGHOME` created 0700 under
+        the scratch root and an `inspect` that writes nothing outside it. The
+        home was made under the system temporary directory and removed before
+        the command returned, which a TMPDIR snapshot taken afterwards cannot
+        see; every temporary directory the command makes is recorded here.
+        """
+        good = str(self.good_archive())
+        scratch = os.path.join(self.dir, "keyring-scratch")
+        os.makedirs(scratch, 0o700)
+        module = hexctl_module()
+        made = []
+        real_mkdtemp = tempfile.mkdtemp
+
+        def recording(*args, **kwargs):
+            path = real_mkdtemp(*args, **kwargs)
+            made.append(path)
+            return path
+
+        with mock.patch.object(tempfile, "mkdtemp", recording), redirect_stdout(
+            StringIO()
+        ):
+            result = module._checkpoint_inspect_archive(
+                good, self.outer_sha256(good), scratch
+            )
+        self.assertEqual([], result["findings"])
+        homes = [
+            path for path in made if os.path.basename(path).startswith(".fiat-gpg-")
+        ]
+        self.assertEqual(1, len(homes), made)
+        self.assertEqual(scratch, os.path.dirname(homes[0]))
+        self.assertFalse(os.path.exists(homes[0]))
+        outside = [path for path in made if not path.startswith(scratch + os.sep)]
+        self.assertEqual([], outside)
+        # A home under a long root would put the agent socket past the AF_UNIX
+        # limit; the redirection files keep that from deciding the verdict.
+        long_scratch = os.path.join(self.dir, "l" * (150 - len(self.dir)))
+        self.run_inspect(good, self.outer_sha256(good), scratch=long_scratch, expect=0)
+        self.assertGreaterEqual(len(long_scratch), 150)
+
+    def test_inspect_refuses_a_malformed_signer_or_proof_block_with_one_class(self):
+        """S3-R3-03. `signer.key_path` was the one manifest value whose type
+        nothing checked before it reached a dictionary lookup; a list there
+        ended the command in a traceback rather than one class. The signer
+        and proof blocks now close their values as well as their keys.
+        """
+        members = self.good_members()
+        module = hexctl_module()
+        manifest = self.manifest(members)
+        self.assertEqual("proof/pubkey.asc", manifest["signer"]["key_path"])
+        signer_cases = (
+            ("key_path", [manifest["signer"]["key_path"]]),
+            ("key_path", "README.txt"),
+            ("fingerprints", [manifest["signer"]["fingerprints"][0], 7]),
+        )
+        for index, (field, value) in enumerate(signer_cases):
+            mutated = dict(members)
+            tampered = self.manifest(members)
+            tampered["signer"][field] = value
+            proof = json.loads(mutated["proof/signatures.json"])
+            proof["signer"] = tampered["signer"]
+            proof_bytes = module.canonical(proof).encode("utf-8") + b"\n"
+            self.retarget(mutated, tampered, "proof/signatures.json", proof_bytes)
+            tampered["proof"]["sha256"] = hashlib.sha256(proof_bytes).hexdigest()
+            self.set_manifest(mutated, tampered)
+            path = self.write_specimen(
+                mutated, path=self.specimen_path(f"signer-{index}.zip")
+            )
+            self.assert_refuses(path, "schema-unsupported")
+        proof_cases = (("commits", "1"), ("sha256", "not a digest"))
+        for index, (field, value) in enumerate(proof_cases):
+            mutated = dict(members)
+            tampered = self.manifest(members)
+            tampered["proof"][field] = value
+            self.set_manifest(mutated, tampered)
+            path = self.write_specimen(
+                mutated, path=self.specimen_path(f"proof-{index}.zip")
+            )
+            self.assert_refuses(path, "schema-unsupported")
+
+    def test_inspect_does_not_block_on_a_fifo_at_the_archive_or_its_sidecar(self):
+        """S3-R3-04. `open` on a FIFO waits for a writer, so a FIFO where the
+        sender's directory holds the archive or its sidecar held the inspector
+        for as long as the sender liked. The type is read off the opened
+        descriptor, so a symbolic link to a regular sidecar still compares and
+        one to a FIFO still refuses without waiting.
+        """
+        good = str(self.good_archive())
+        digest = self.outer_sha256(good)
+        beside = self.specimen_path("fifo-beside.zip")
+        shutil.copyfile(good, beside)
+        os.mkfifo(beside + ".sha256")
+        proc = self.inspect_within(beside, digest, 30)
+        self.assertEqual(
+            (1, "sidecar-mismatch\n", ""), (proc.returncode, proc.stderr, proc.stdout)
+        )
+        linked = self.specimen_path("linked.zip")
+        shutil.copyfile(good, linked)
+        real = self.specimen_path("real.sha256")
+        with open(real, "w", encoding="utf-8") as handle:
+            handle.write(f"{digest}  linked.zip\n")
+        os.symlink(real, linked + ".sha256")
+        proc = self.inspect_within(linked, digest, 30)
+        self.assertEqual((0, ""), (proc.returncode, proc.stderr))
+        os.remove(linked + ".sha256")
+        os.symlink(beside + ".sha256", linked + ".sha256")
+        proc = self.inspect_within(linked, digest, 30)
+        self.assertEqual((1, "sidecar-mismatch\n"), (proc.returncode, proc.stderr))
+        fifo = self.specimen_path("fifo-archive.zip")
+        os.mkfifo(fifo)
+        proc = self.inspect_within(fifo, digest, 30)
+        self.assertEqual(2, proc.returncode)
+        self.assertIn("not a regular file", proc.stderr)
+        self.assertNotIn(fifo, proc.stderr)
 
 
 if __name__ == "__main__":

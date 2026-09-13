@@ -590,6 +590,14 @@ CHECKPOINT_ARCHIVE_STAGES = (
     "publish",
 )
 CHECKPOINT_ARCHIVE_SIGNATURE_FORMATS = ("openpgp", "ssh")
+CHECKPOINT_ARCHIVE_HASH_ALGORITHMS = ("sha1", "sha256")
+"""The object formats a bundle header can name and the manifest may record.
+
+The exporter writes `sha1` today and refuses anything else; the reader admits
+the two names Git defines so that `bundle.hash_algorithm` is a closed value
+rather than free text, and the header comparison decides which of the two the
+bundle actually carries.
+"""
 CHECKPOINT_ARCHIVE_IDENTITY_UNAVAILABLE = "symbolic-base"
 CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
     {
@@ -849,6 +857,22 @@ present, sits immediately before the plain EOCD it points away from. Reading
 this many bytes ahead of the EOCD is enough to see it (or the EOCD64 record
 itself, for a specimen that omits the locator) without trusting anything the
 central directory offsets claim.
+"""
+CHECKPOINT_INSPECT_KEYRING_SOCKETS = ("S.gpg-agent", "S.keyboxd", "S.dirmngr")
+"""The socket names gpg looks for in a home, each redirected under `inspect`.
+
+GnuPG reads a regular file at a socket's name as a redirection when its first
+line is `%Assuan%` and a later line is `socket=<path>`. `inspect` writes one
+for each so a keyring under a scratch root of any length connects, and fails
+to connect, the way a short home with no running agent does.
+"""
+CHECKPOINT_INSPECT_NO_AGENT_SOCKET = os.path.join(
+    os.path.dirname(os.devnull), "fiat-checkpoint-no-agent"
+)
+"""Where the redirections point: a short path nothing can be listening on.
+
+The device directory is root-owned, so an unprivileged process cannot bind a
+socket there, and the connect fails with `No such file or directory`.
 """
 CHECKPOINT_ARCHIVE_ACCEPTANCE_ROOT = CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR.split("/")[0]
 """The directory every acceptance member has to sit under.
@@ -17420,20 +17444,41 @@ def _checkpoint_archive_commit_read(
     return parts[0].strip(), parts[1].strip(), parts[2]
 
 
-def _checkpoint_archive_disposable_keyring() -> str:
+def _checkpoint_archive_disposable_keyring(parent: str | None = None) -> str:
     """One private OpenPGP home, created here and removed here.
 
-    Not under the stage. An OpenPGP home is also where its agent's Unix socket
-    would go, and a socket path is capped near 104 bytes; the stage sits under
-    the derived store path, whose boundary directory alone is 45 characters,
-    so a keyring there refuses every import with a name-too-long connect error
-    rather than verifying anything. `--no-autostart` keeps the agent out of it
-    either way, and the directory is created at mode 0700 and deleted after
-    use, so nothing of the operator's keyring is read or written.
+    `archive` keeps it out of its stage. An OpenPGP home is also where its
+    agent's Unix socket would go, and a socket path is capped near 104 bytes;
+    the stage sits under the derived store path, whose boundary directory
+    alone is 45 characters, so a keyring there refuses every import with a
+    name-too-long connect error rather than verifying anything.
+    `--no-autostart` keeps the agent out of it either way, and the directory
+    is created at mode 0700 and deleted after use, so nothing of the
+    operator's keyring is read or written.
+
+    `inspect` passes its scratch root as `parent`. Its contract is that
+    nothing is written outside that root, and the reference says the keyring
+    is created under it; until S3-R3-02 it was created here, under the system
+    temporary directory, and removed before the command returned.
+    `--no-autostart` does not stop gpg from trying the agent socket first:
+    measured on gpg 2.5.21, an import from a home of 100 characters fails
+    with `File name too long` where one of 90 succeeds, and the default
+    scratch root on macOS puts the home at 101. So a home under `parent` also
+    carries GnuPG's own socket redirection files. `S.gpg-agent`, `S.keyboxd`
+    and `S.dirmngr` each name one short socket path that does not exist; the
+    connect then fails with `No such file or directory`, exactly as it does
+    under a short home with no agent, and gpg proceeds. The named path sits
+    under `/dev`, where an unprivileged process cannot bind a socket, so
+    nothing can be planted there for gpg to reach.
     """
     try:
-        home = tempfile.mkdtemp(prefix=".fiat-gpg-")
+        home = tempfile.mkdtemp(prefix=".fiat-gpg-", dir=parent)
         os.chmod(home, 0o700)
+        if parent is not None:
+            redirection = f"%Assuan%\nsocket={CHECKPOINT_INSPECT_NO_AGENT_SOCKET}\n"
+            for name in CHECKPOINT_INSPECT_KEYRING_SOCKETS:
+                with open(os.path.join(home, name), "w", encoding="utf-8") as handle:
+                    handle.write(redirection)
     except OSError:
         die("checkpoint archive disposable keyring could not be created")
     return home
@@ -17792,6 +17837,33 @@ def _checkpoint_inspect_scratch(supplied: str | None) -> tuple[str, bool]:
     return path, False
 
 
+def _checkpoint_inspect_open_regular(path: str):
+    """Open one path for reading once it is known to be a regular file.
+
+    The archive and its sidecar sit where the sender put them, and `open` on
+    a FIFO there blocks until a writer appears, which for this command is for
+    as long as the sender likes (S3-R3-04). Opening non-blocking and reading
+    the type back off the descriptor, rather than a `stat` before the `open`,
+    leaves no window in which the path can change kind; the flag has no effect
+    on reads from the regular file that is then handed back. Symbolic links
+    are followed, since an operator may name the archive through one, and it
+    is the target's type that decides. `None` means the path exists and is
+    not a regular file; an `OSError` is the caller's.
+    """
+    flags = os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_CLOEXEC", 0)
+    descriptor = os.open(path, flags)
+    try:
+        regular = stat.S_ISREG(os.fstat(descriptor).st_mode)
+        if not regular:
+            os.close(descriptor)
+            return None
+        return os.fdopen(descriptor, "rb")
+    except OSError:
+        with contextlib.suppress(OSError):
+            os.close(descriptor)
+        raise
+
+
 def _checkpoint_inspect_capture(archive_path: str, scratch: str) -> tuple[str, int, str]:
     """Copy the archive into the private scratch root while digesting it.
 
@@ -17813,7 +17885,13 @@ def _checkpoint_inspect_capture(archive_path: str, scratch: str) -> tuple[str, i
     digest = hashlib.sha256()
     total = 0
     try:
-        with open(archive_path, "rb") as source, open(local, "wb") as sink:
+        source = _checkpoint_inspect_open_regular(archive_path)
+    except OSError:
+        die("checkpoint inspect archive could not be read")
+    if source is None:
+        die("checkpoint inspect archive is not a regular file")
+    try:
+        with source, open(local, "wb") as sink:
             while True:
                 chunk = source.read(CHECKPOINT_IO_CHUNK)
                 if not chunk:
@@ -17837,7 +17915,10 @@ def _checkpoint_inspect_outer(
     travels out of band, exactly as the reference requires, and a sidecar
     is only ever compared, never trusted on its own. The bytes digested are
     captured as they are read, and the captured copy is what every later check
-    reads, so the digest covers exactly what is parsed.
+    reads, so the digest covers exactly what is parsed. The sidecar is a
+    sibling the sender controls as much as the archive, so it is read only
+    once it is known to be a regular file: anything else there is refused
+    rather than opened, and a FIFO in particular is never waited on.
     """
     if not isinstance(expected_sha256, str) or not re.fullmatch(
         r"[0-9a-f]{64}", expected_sha256
@@ -17849,7 +17930,10 @@ def _checkpoint_inspect_outer(
     sidecar_path = archive_path + ".sha256"
     if os.path.lexists(sidecar_path):
         try:
-            with open(sidecar_path, "rb") as handle:
+            handle = _checkpoint_inspect_open_regular(sidecar_path)
+            if handle is None:
+                _checkpoint_archive_refuse("sidecar-mismatch")
+            with handle:
                 sidecar = handle.read(4096)
         except OSError:
             _checkpoint_archive_refuse("sidecar-mismatch")
@@ -18283,11 +18367,21 @@ def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
         for name, value in refs.items()
     ):
         die("checkpoint inspect manifest refs block is invalid")
-    _checkpoint_inspect_closed(
+    bundle_block = _checkpoint_inspect_closed(
         manifest["bundle"],
         {"bytes", "sha256", "hash_algorithm", "complete_history"},
         "bundle",
     )
+    if (
+        not isinstance(bundle_block["bytes"], int)
+        or isinstance(bundle_block["bytes"], bool)
+        or bundle_block["bytes"] < 0
+        or not isinstance(bundle_block["sha256"], str)
+        or not re.fullmatch(r"[0-9a-f]{64}", bundle_block["sha256"])
+        or bundle_block["hash_algorithm"] not in CHECKPOINT_ARCHIVE_HASH_ALGORITHMS
+        or bundle_block["complete_history"] is not True
+    ):
+        die("checkpoint inspect manifest bundle block is invalid")
     _checkpoint_inspect_closed(
         manifest["controller_capsule"],
         {
@@ -18312,12 +18406,38 @@ def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
             die("checkpoint inspect manifest identity reason is unsupported")
     else:
         die("checkpoint inspect manifest identity status is unsupported")
-    _checkpoint_inspect_closed(
+    signer_block = _checkpoint_inspect_closed(
         manifest["signer"], {"format", "fingerprints", "key_path"}, "signer"
     )
-    if manifest["signer"]["format"] not in CHECKPOINT_ARCHIVE_SIGNATURE_FORMATS:
+    if signer_block["format"] not in CHECKPOINT_ARCHIVE_SIGNATURE_FORMATS:
         die("checkpoint inspect manifest signer format is unsupported")
-    _checkpoint_inspect_closed(manifest["proof"], {"commits", "sha256"}, "proof")
+    # The values, not only the keys. `key_path` was the one manifest value
+    # whose type nothing checked before it reached a dictionary lookup, so a
+    # list there ended the command in a traceback instead of one class
+    # (S3-R3-03). It is `None` on an empty proof and otherwise the one key
+    # member the format names.
+    key_entry = (
+        CHECKPOINT_ARCHIVE_PUBKEY_ENTRY
+        if signer_block["format"] == "openpgp"
+        else CHECKPOINT_ARCHIVE_SIGNERS_ENTRY
+    )
+    if (
+        signer_block["key_path"] not in (None, key_entry)
+        or not isinstance(signer_block["fingerprints"], list)
+        or any(not isinstance(item, str) for item in signer_block["fingerprints"])
+    ):
+        die("checkpoint inspect manifest signer block is invalid")
+    proof_block = _checkpoint_inspect_closed(
+        manifest["proof"], {"commits", "sha256"}, "proof"
+    )
+    if (
+        not isinstance(proof_block["commits"], int)
+        or isinstance(proof_block["commits"], bool)
+        or proof_block["commits"] < 0
+        or not isinstance(proof_block["sha256"], str)
+        or not re.fullmatch(r"[0-9a-f]{64}", proof_block["sha256"])
+    ):
+        die("checkpoint inspect manifest proof block is invalid")
     acceptance_block = _checkpoint_inspect_closed(
         manifest["acceptance"], {"current", "prior"}, "acceptance"
     )
@@ -18517,7 +18637,30 @@ def _checkpoint_inspect_clone(scratch: str, bundle_path: str) -> str:
 def _checkpoint_inspect_bundle(
     manifest: dict, bundle_path: str, repo_dir: str
 ) -> None:
-    """The bundle's own header, its independent `verify`, and the size ceiling."""
+    """The manifest's `bundle` block joined to its member, then the bundle's own
+    header, its independent `verify`, and the size ceiling.
+
+    `checkpoint.json` records the bundle's digest and length twice: in
+    `archive.entries`, which `_checkpoint_inspect_members` has already held to
+    the streamed bytes, and in `bundle`, which is the copy this command prints.
+    Nothing joined the second to the first, so a `bundle` block naming another
+    digest passed and was echoed as though verified (S3-R3-01). The join here
+    makes the printed block a statement about the member's bytes.
+    """
+    record = next(
+        (
+            item
+            for item in manifest["archive"]["entries"]
+            if item["path"] == CHECKPOINT_ARCHIVE_BUNDLE_ENTRY
+        ),
+        None,
+    )
+    if (
+        record is None
+        or record["bytes"] != manifest["bundle"]["bytes"]
+        or record["sha256"] != manifest["bundle"]["sha256"]
+    ):
+        _checkpoint_archive_refuse("manifest-mismatch")
     heads, prerequisites, algorithm = _checkpoint_archive_bundle_header(bundle_path)
     if prerequisites or algorithm != manifest["bundle"]["hash_algorithm"]:
         _checkpoint_archive_refuse("bundle-incomplete")
@@ -18597,7 +18740,7 @@ def _checkpoint_inspect_signatures(
     except OSError:
         die("checkpoint inspect key material could not be staged")
 
-    home = _checkpoint_archive_disposable_keyring()
+    home = _checkpoint_archive_disposable_keyring(scratch)
     records = []
     try:
         environment = _checkpoint_archive_keyring_environment(home)
