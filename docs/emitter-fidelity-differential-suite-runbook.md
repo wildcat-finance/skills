@@ -626,3 +626,213 @@ the replacement clauses are byte-identical to that issue.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. `plugins/hexaemeron/harness/foundry.toml` exists, copies the
+Janus profile with `libs = []`, `bytecode_hash = "none"`, the optimizer on at
+200 runs, and declares neither `ffi` nor any `fs_permissions` entry beyond
+`out`. 2. Eleven files exist under `plugins/hexaemeron/harness/src/vendor/`,
+each byte-identical to its counterpart at protocol ref `f5a26146`, together
+46,799 bytes, and `grep -rn 'import' ` over them resolves every import inside
+that directory with no remapping. 3.
+`plugins/hexaemeron/harness/src/vendor/PROVENANCE.json` records the protocol
+repository, the ref, and each file's path and SHA-256, and
+`plugins/hexaemeron/tests/test_harness_provenance.py`, run by the
+`hexaemeron-suite` check, asserts every recorded digest against the file on
+disk so drift fails rather than re-baselining. 4. `tests/check-map-v1.json`
+gains exactly two checks, `hexaemeron-forge-build` and `hexaemeron-forge-test`,
+each with `"cwd": "plugins/hexaemeron/harness"` and
+`"requires_executable": "forge"`, ordered in one group, and both added to the
+`hexaemeron` scope. Nothing else in that file changes. 5.
+`.github/workflows/hexaemeron-forge.yml` exists, triggers on the harness path
+and on itself, and runs `forge build` then `forge test` in that working
+directory. 6. `forge build` exits 0 from `plugins/hexaemeron/harness`, and
+`forge test` exits 0 there with one compile smoke test present under `test/`
+that reaches the vendored closure from a test contract and no other test
+present. 7. `python3 scripts/run_checks.py --base main --format json` exits 0
+with `outcome` `green`, plans both new checks, and refuses no path in the diff
+for want of an owner. The Horos boundary and census are regenerated and
+`horos.py check .` reports a match. Complete replacement Tests: One Python
+test, `plugins/hexaemeron/tests/test_harness_provenance.py`, asserting every
+`PROVENANCE.json` digest against the vendored file on disk so a silent re-pin
+fails; and one Solidity smoke test under `plugins/hexaemeron/harness/test/`
+proving the closure compiles and is reachable from a test contract.
+
+**Why.** The baseline named a Solidity provenance test, and a Solidity test
+cannot read a vendored file without an `fs_permissions` read entry, which
+Exit 1 forbids and the step-3 phylax discipline bans through `vm.readFile`;
+the digest check therefore runs in the Python suite the root check map already
+owns. `forge test` exits 0 with no test present, so an empty run would prove
+nothing, and a smoke test stands in until step 3 fills the suite.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Files: Create
+`plugins/hexaemeron/harness/foundry.toml`, the eleven files under
+`src/vendor/`, `src/vendor/PROVENANCE.json`, one smoke test under
+`plugins/hexaemeron/harness/test/`,
+`plugins/hexaemeron/tests/test_harness_provenance.py`, and
+`.github/workflows/hexaemeron-forge.yml`. Change `tests/check-map-v1.json`
+only to add the two checks, the group and the scope entries. Change
+`tests/test_skills_sh_package.py` only to move `MAX_FILES` from 1,300 to 1,400
+with a dated paragraph in the cap's own rationale, because the packaged
+payload met the cap at exactly 1,300 files once the harness was added, and
+that file's standing rule is that shipped content is not trimmed to hold a
+file count. Refresh `docs/emitter-fidelity-differential-suite-runbook.md` from
+the receipted `.hexaemeron/runbook.md`, as step 1's exit requires of every
+later commit. Rewrite `.horos/boundary.json`, `.horos/candidates.json` and
+`.horos/census.json` only through the Horos scanner. Nothing under
+`plugins/hexaemeron/skills/fizz/`, `x-ray/` or `solidity-auditor/` is written,
+and nothing is written into the protocol repository.
+
+**Why.** The commit gate went red on
+`test_manifest_binds_every_runtime_file_to_source_bytes` with `1300 not less
+than 1300`. The packaged Janus harness holds 28 files and the Pandects root 75,
+so a harness tree is shipped content, and the cap's rationale in that test
+moves the cap rather than trimming content; the payload measures 24,887,987
+bytes, 94.9% of the 25 MiB the CLI allows, which is the limit the next
+Solidity step has to answer for.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. `plugins/hexaemeron/harness/foundry.toml` exists, copies the
+Janus profile with `libs = []`, `bytecode_hash = "none"`, the optimizer on at
+200 runs, and declares neither `ffi` nor any `fs_permissions` entry beyond
+`out`. 2. Eleven files exist under `plugins/hexaemeron/harness/src/vendor/`,
+each byte-identical to its counterpart at protocol ref `f5a26146`, together
+46,799 bytes, and `grep -rn 'import' ` over them resolves every import inside
+that directory with no remapping. 3.
+`plugins/hexaemeron/harness/src/vendor/PROVENANCE.json` records the protocol
+repository, the ref, and each file's path and SHA-256, and
+`plugins/hexaemeron/tests/test_harness_provenance.py`, run by the
+`hexaemeron-suite` check, asserts every recorded digest against the file on
+disk so drift fails rather than re-baselining. 4. `tests/check-map-v1.json`
+gains exactly two checks, `hexaemeron-forge-build` and `hexaemeron-forge-test`,
+each with `"cwd": "plugins/hexaemeron/harness"` and
+`"requires_executable": "forge"`, ordered in one group, and both added to the
+`hexaemeron` scope. Nothing else in that file changes. 5.
+`.github/workflows/hexaemeron-forge.yml` exists, triggers on the harness path
+and on itself, and runs `forge build` then `forge test` in that working
+directory. 6. `forge build` exits 0 from `plugins/hexaemeron/harness`, and
+`forge test` exits 0 there with one compile smoke test present under `test/`
+that reaches the vendored closure from a test contract and no other test
+present. 7. `python3 scripts/run_checks.py --base main --format json` exits 0
+with `outcome` `green`, plans both new checks, and refuses no path in the diff
+for want of an owner. The Horos boundary and census are regenerated and
+`horos.py check .` reports a match. Complete replacement Tests: One Python
+test, `plugins/hexaemeron/tests/test_harness_provenance.py`, asserting every
+`PROVENANCE.json` digest against the vendored file on disk so a silent re-pin
+fails; and one Solidity smoke test under `plugins/hexaemeron/harness/test/`
+proving the closure compiles and is reachable from a test contract. Complete replacement Files: Create
+`plugins/hexaemeron/harness/foundry.toml`, the eleven files under
+`src/vendor/`, `src/vendor/PROVENANCE.json`, one smoke test under
+`plugins/hexaemeron/harness/test/`,
+`plugins/hexaemeron/tests/test_harness_provenance.py`, and
+`.github/workflows/hexaemeron-forge.yml`. Change `tests/check-map-v1.json`
+only to add the two checks, the group and the scope entries. Change
+`tests/test_skills_sh_package.py` only to move `MAX_FILES` from 1,300 to 1,400
+with a dated paragraph in the cap's own rationale, because the packaged
+payload met the cap at exactly 1,300 files once the harness was added, and
+that file's standing rule is that shipped content is not trimmed to hold a
+file count. Refresh `docs/emitter-fidelity-differential-suite-runbook.md` from
+the receipted `.hexaemeron/runbook.md`, as step 1's exit requires of every
+later commit. Rewrite `.horos/boundary.json`, `.horos/candidates.json` and
+`.horos/census.json` only through the Horos scanner. Nothing under
+`plugins/hexaemeron/skills/fizz/`, `x-ray/` or `solidity-auditor/` is written,
+and nothing is written into the protocol repository.
+
+**Why.** Re-issued after the third study amendment moved the study digest to
+`bdb91bc3`, which un-bound every runbook amendment. The replacement clauses are
+the last receipted values of each field, byte-identical in substance: S1-R1-03
+(the check command), the Python provenance test and Solidity smoke test, and
+the Files set that names the package-cap change and the runbook copy refresh.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+broken. Step 4: entry holds; exit broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. A reference contract under `plugins/hexaemeron/harness/src/`
+declares no event of its own, imports `IMarketEventsAndErrors` and
+`SphereXConfig` from `src/vendor/`, and emits each of the 27 events through
+high-level `emit`. 2. An external wrapper under the same root calls each of the
+27 assembly emitters, because a free function that emits must be invoked
+externally for a recorded log to be attributable. 3. A comparison helper
+reports topic0, the topic count, each indexed topic and the data region as
+separate assertions, compares the topic array on length before element, and
+compares the data region on length before content, with no hard-coded topic
+ceiling. 4. The harness suite holds 27 fuzz cases, one per emitter, each
+recording exactly two `Vm.Log` entries in one `vm.recordLogs` window and
+pairing them by position rather than by topic0. Each case bounds its domain by
+the emitter's own parameter types, and the one case where the emitter's
+`uint32 expiry` narrows the declared `uint256 expiry` states that widening
+explicitly. 5. Two deliberate wrong-answer specimens are committed, one with a
+wrong topic0 and one with wrong data bytes, and the suite asserts that the
+comparison rejects both, so the comparison is proved able to fail. 6. A test
+asserts that the count of `emit_` free functions in the two vendored emitter
+files equals the count of cases, so a new emitter with no case fails the suite
+rather than being skipped. 7. Two memory tests hold: the free memory pointer at
+`0x40` is unchanged across every emitter call, and a dirtied scratch space at
+`0x00` to `0x5f` before a call does not change the recorded data. 8.
+`forge build` and `forge test` both exit 0 in the harness,
+`python3 scripts/run_checks.py --base main --format json` exits 0 with
+`outcome` `green`, `git diff --check` exits 0, and the Horos boundary and
+census match the tree.
+
+**Why.** Re-issued after the third study amendment moved the study digest to
+`bdb91bc3`, which un-bound every runbook amendment; the replacement clause is
+the last receipted value of the field (S1-R1-03, the check command).
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. `plugins/hexaemeron/harness/fizz_data/PROPERTIES.md` states
+each property with a stable spec identifier and a `SHOULD-HOLD` or
+`EXPLORATORY` guarantee tag, covering topic0, topic count, indexed topics, data
+bytes, the free pointer and scratch space. 2.
+`plugins/hexaemeron/harness/fizz_data/campaign.json` records the engine, the
+`--fuzz-seed` used, the run length, this repository's commit, the protocol ref
+`f5a26146`, the emitter count and the counterexample count. Every value is read
+back from the run that produced it. 3. A test re-reads `campaign.json` and
+asserts its emitter count against the suite's own pairing count, so a
+hand-written record disagrees with the tree. 4.
+`forge test --fuzz-seed <the recorded seed>` exits 0 from the harness at the
+recorded run length, and the command and its output are quoted in the step's
+record. 5. Zero counterexamples, or each counterexample committed as a
+deterministic replay test that fails without its fix and is named in
+`campaign.json`. An unresolved divergence prevents the fidelity claim and stops
+the step. 6. `python3 scripts/run_checks.py --base main --format json` exits 0
+with `outcome` `green`, `git diff --check` exits 0, and the Horos boundary and
+census match the tree. 7. The pull request body states that no skill version
+is incremented, and names the design record digest, the protocol ref, the seed
+and the run length.
+
+**Why.** Re-issued after the third study amendment moved the study digest to
+`bdb91bc3`, which un-bound every runbook amendment; the replacement clause is
+the last receipted value of the field (S1-R1-03, the check command).
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.

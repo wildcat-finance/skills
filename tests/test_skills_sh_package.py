@@ -99,7 +99,17 @@ CONTRACT = "promise-machine/v1"
 # 25 MiB the CLI allows, against 88.3% when the last paragraph was written. The
 # byte cap is the CLI's own default, cannot be raised here, and is the one a
 # nineteenth plugin still has to answer for.
-MAX_FILES = 1_300
+#
+# The cap moves a fourth time, again without a nineteenth plugin. The emitter-
+# fidelity delivery adds a fourteen-file Foundry harness under
+# `plugins/hexaemeron/harness/`, in the shape the packaged Janus harness and the
+# Pandects root already have, and the payload met it at exactly 1,300 files.
+# The reasoning above holds as written: harness trees are shipped content, no
+# per-plugin trim closes a repository-wide gap, and content is not trimmed to
+# hold a file count. The payload now measures 24,887,987 bytes, 94.9% of the
+# 25 MiB the CLI allows, so the byte cap, not the file count, is what the next
+# Solidity step and any nineteenth plugin have to answer for.
+MAX_FILES = 1_400
 MAX_BYTES = 25 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {

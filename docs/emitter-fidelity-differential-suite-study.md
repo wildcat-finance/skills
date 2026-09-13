@@ -771,3 +771,23 @@ and for no other.
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds;
 exit broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit
 broken.
+
+### Amendment -- 2026-09-13
+
+**What changed.** One correction to section 3: `forge build` on the vendored
+closure exits 0 with 32 warning-level `unsafe-typecast` lints, 31 of them in
+`src/libraries/SafeCastLib.sol` and one at `src/libraries/FeeMath.sol:169:42`,
+a `uint32(timestamp)` cast, not all 32 in `SafeCastLib.sol`. The runbook's
+preamble repeats the earlier attribution; a preamble cannot be amended, so
+this amendment supersedes that sentence too.
+
+**Why.** Audit round 1 of step 2 recorded S2-R1-01 against the pull request
+body, and the same attribution stands in this study and in the runbook
+preamble. This amendment moves the study digest, which un-binds the runbook
+amendments until each is re-issued against the new digest; the exits below
+are broken for that reason and for no other.
+
+**Steps touched.** Steps 2, 3 and 4.
+
+**Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds;
+exit broken. Step 4: entry holds; exit broken.
