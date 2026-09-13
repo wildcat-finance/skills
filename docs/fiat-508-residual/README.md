@@ -14,6 +14,16 @@ for the original study, runbook, design record, audit inventory, probe scripts
 and observed selection reports. Their original absolute paths are historical
 identities, not portable execution instructions.
 
+[runbook.md](runbook.md) preserves the immutable original runbook named by
+`source-inventory.json`. [amended-runbook.md](amended-runbook.md) copies the
+current canonical runbook, including its seven appended amendments. Those
+amendments select the `unittest-json-v1` Elenchus adapter while retaining the
+`elenchus.unittest.v1` output schema, and name
+`test_confined_replacement_lifecycle.py` for Step 7. Read the amendments with
+the original step text; the preserved source inventory remains unchanged.
+Both runbooks record this delivery against its fixed starting commit and
+toolchain. For ordinary runtime use, follow [`.python-version`](../../.python-version).
+
 The JSON schemas under `plugins/hexaemeron/tests/fixtures/issue508/` describe
 inert envelopes only. Their tests check a closed JSON Schema subset without
 adding a dependency. Shape acceptance does not establish safe paths, signatures,
