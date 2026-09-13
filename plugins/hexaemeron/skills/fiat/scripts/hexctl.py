@@ -22,7 +22,10 @@ independent pull request rather than a run. The same read requires the issue's
 request body, so an outstanding item is either filed as its own issue, pointed
 at the issue that already carries it, or refused with a stated reason.
 `issue-check` also binds a candidate's title and labels to the repository's
-four issue queues before anything is filed. At integration, every `filed`
+four issue queues before anything is filed, and refuses a `framework-N` whose
+number another issue already holds, open or closed, because the shorthand that
+cites these issues in prose has to resolve to one of them. At integration,
+every `filed`
 carryover reference into wildcat-finance/skills is opened and replayed against
 that same publication contract; a URL alone is not a filing receipt.
 
@@ -4967,6 +4970,99 @@ def issue_publication_from_payload(
     return issue_publication_contract_faults(title, labels, body, label)
 
 
+def framework_number_holders(
+    base_dir: str, repository: str, number: str, label: str
+) -> list[dict]:
+    """Every issue whose title already claims this exact `framework-N`.
+
+    ADR-009 left who assigns `N` to #370, which closed without answering, so
+    nothing allocates the number and nothing refuses a second claim on it. The
+    shorthand is how this repository refers to these issues in prose, and it is
+    far from the issue number, so a duplicate does not merely look untidy: it
+    makes the reference ambiguous and has already sent work to the wrong topic.
+
+    One bounded search read, because the qualifier answers the exact question
+    and returns one object. `in:title` tokenises, so `framework-11` also comes
+    back for `framework-110`; every row is therefore re-matched against
+    `FRAMEWORK_ISSUE_TITLE_RE` and kept only when its parsed number is equal.
+    Closed issues count. A number freed by closing one issue is still the
+    number the prose in the tree cites, and #1036 is cited by URL precisely
+    because its shorthand is not unique.
+
+    Rows come back sorted by issue number so a refusal reads the same twice.
+    """
+    query = "+".join(
+        (
+            f"repo:{repository}",
+            "is:issue",
+            "in:title",
+            f"framework-{number}",
+        )
+    )
+    path = f"search/issues?q={query}&per_page=100"
+    payload = github_rest(base_dir, path, label)
+    items = payload.get("items")
+    if not isinstance(items, list):
+        github_unreachable(label, path, "returned items that are not an array")
+    if payload.get("incomplete_results") is True:
+        github_unreachable(label, path, "returned an incomplete search result")
+    holders = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            github_unreachable(label, path, f"returned result {index} as not one object")
+        title = item.get("title")
+        held = item.get("number")
+        if not isinstance(title, str) or not isinstance(held, int):
+            github_unreachable(
+                label, path, f"returned result {index} without a title and number"
+            )
+        match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+        if match is None or match.group("number") != number:
+            continue
+        state = item.get("state")
+        holders.append(
+            {
+                "number": held,
+                "state": state if isinstance(state, str) else "unknown",
+                "title": title,
+            }
+        )
+    return sorted(holders, key=lambda row: row["number"])
+
+
+def framework_number_faults(
+    base_dir: str, repository: str, title: str, label: str, own_number: int | None
+) -> list[str]:
+    """Refuse a `framework-N` another issue already holds.
+
+    The check runs only once the title has passed its shape rule, because an
+    ill-formed title carries no number to be unique about. `own_number` is the
+    issue being checked when one has already been filed; it holds its own
+    number and is not its own duplicate.
+
+    A transport that cannot answer refuses inside ``github_rest`` rather than
+    here, so an unreachable search never reads as a clean number.
+    """
+    match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+    if match is None:
+        return []
+    number = match.group("number")
+    others = [
+        row
+        for row in framework_number_holders(base_dir, repository, number, label)
+        if row["number"] != own_number
+    ]
+    if not others:
+        return []
+    held = ", ".join(f"#{row['number']} ({row['state']})" for row in others)
+    carries = "already holds" if len(others) == 1 else "already hold"
+    return [
+        f"{label} claims framework-{number}, which {held} {carries}; "
+        f"the shorthand has to resolve to one issue, so pick a number no "
+        f"issue in {repository} carries"
+    ]
+
+
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     """The filing decisions one GitHub issue carries, read over REST.
 
@@ -5918,6 +6014,18 @@ def cmd_issue_check(args) -> None:
             )
         else:
             record, faults = issue_contract_faults(text, label)
+    # Uniqueness is asked only of a title that already passed its shape rule,
+    # and only in the repository whose prose uses the shorthand. A candidate
+    # has no number of its own yet; a filed issue holds one and is not its own
+    # duplicate.
+    if skills_contract and not faults and record.get("queue") == "framework-N":
+        faults = framework_number_faults(
+            args.dir,
+            repository,
+            record["title"],
+            label,
+            int(number) if args.issue else None,
+        )
     for fault in faults:
         print(f"{label}: {fault}" if not fault.startswith(label) else fault,
               file=sys.stderr)

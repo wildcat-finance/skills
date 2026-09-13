@@ -1,4 +1,4 @@
-# Decision: Stage reviewed corpus reconciliation before publication
+# ADR-092: Stage reviewed corpus reconciliation before publication
 
 ## Status
 
@@ -11,7 +11,7 @@ The three integration resolvers remain required before delivery.
 The current repair selects `fiat-study-runbook-phase` alone. A law edit can
 therefore refuse as unrelated drift, and re-pinning its digest alone can report
 `nothing-to-reconcile` while deeper bindings remain stale. The six live passes
-also lack a transaction. [ADR-076](../ADR-076-digest-neutral-measured-corpus.md)
+also lack a transaction. [ADR-076](ADR-076-digest-neutral-measured-corpus.md)
 retains v1 absolute offsets, so moving a reviewed span can change measured
 model and compact bytes even when its meaning is unchanged.
 
@@ -21,8 +21,8 @@ Use `staged-general-v1`: prepare every fixture bound to one explicit source
 against an accepted immutable baseline, admit the complete staged corpus and
 its owner evidence, then apply through a recoverable publication journal.
 
-The [study](../../agent-instruction-reconciliation/study.md) and
-[checked matrix](../../agent-instruction-reconciliation/design-evidence.json)
+The [study](../agent-instruction-reconciliation/study.md) and
+[checked matrix](../agent-instruction-reconciliation/design-evidence.json)
 hold the contract. Preparation uniquely relocates exact reviewed spans and
 nodes, keeps the contributor's edit, and refuses unexplained sibling drift.
 Moved measured inputs require fresh complete measurement and parity records
@@ -46,7 +46,7 @@ Classification includes a before-span evidence refusal. It does not mean six
 accepted corpora. The nearest-rank p95 values are 226, 263 and 227 ms in row
 order, from six preparation samples per candidate; they establish no speed
 improvement. That selection probe handles injected `OSError` only. The subsequent
-[implementation demonstration](../../agent-instruction-reconciliation/demonstration.json)
+[implementation demonstration](../agent-instruction-reconciliation/demonstration.json)
 records durable intent, actual killed-process recovery, coverage publication
 and one fully checked law repair with fresh owner evidence.
 

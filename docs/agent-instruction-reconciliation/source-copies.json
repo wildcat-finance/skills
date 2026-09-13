@@ -504,7 +504,7 @@
     {
       "bytes": 19304,
       "copy": "docs/agent-instruction-reconciliation/study.md",
-      "copy_sha256": "6d963f6113ba63493828bdc7349e5f80572f08afe64e09d20247ff8638df092f",
+      "copy_sha256": "0878ea0ab3b75a14631a886560efa0e688ac45266a60d1a59238dbca58e88e02",
       "sha256": "79ee47e4f34623cfee12453df49d023654cc847677267b22fcebbd7ea4814716",
       "source": ".hexaemeron/study.md",
       "transformation": "exact source prefix followed only by the design-bridge block"

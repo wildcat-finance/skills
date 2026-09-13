@@ -312,5 +312,5 @@ fresh demonstration acquisitions and final composition remain unestablished.
 ```design-bridge
 schema | hypomnema-design-bridge/v1
 decision | staged-general-v1
-record | docs/decisions/drafts/stage-reviewed-corpus-reconciliation.md
+record | docs/decisions/ADR-092-stage-reviewed-corpus-reconciliation.md
 ```

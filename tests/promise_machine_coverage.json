@@ -4156,7 +4156,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "8faac076c06f86e96156f0af52ca9beaef11dcc5a9e53bfd7e2e4af248a83f05"
+      "sha256": "0c7b3fca99db6927be802e867715d457037826fbe17991655716319a730afeb1"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -5507,16 +5507,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "negative",
-        "sha256": "5ae866782c46170a792518db5e62e009fc9b9597178f3f851042681b8bdd317a"
+        "sha256": "8c377f6b89bead883ae3d66841e8213ce8dc9862ec7bf0ea125409faad91574f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "positive",
-        "sha256": "5ae866782c46170a792518db5e62e009fc9b9597178f3f851042681b8bdd317a"
+        "sha256": "8c377f6b89bead883ae3d66841e8213ce8dc9862ec7bf0ea125409faad91574f"
       },
       "reader": "native-json-v1",
       "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
-      "sha256": "fe26ecd200ed661b1d7314a9747ff093785ad4e47ed90e6472e2cd8624aba16e",
+      "sha256": "f1684c58fa887ce697a6c6416e0e9851a0d1b4a808ad24d51b0cdb2f8fa123fa",
       "source": "plugins/hexaemeron/tests/test_metron_check.py"
     },
     "pandects-search-record": {
