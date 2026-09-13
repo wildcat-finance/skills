@@ -369,6 +369,66 @@ class StudyAmendmentRebindCases:
             )
             self.assertEqual([item["decision"] for item in records], [decision])
 
+    def test_a_completed_touched_step_is_judged_on_its_unbuilt_steps(self):
+        """End to end: a runbook amendment touching steps 1 and 2 survives step
+        1's completion and is then judged on step 2's verdict alone."""
+        study_text, runbook_text, suffix = self.receipt_runbook_amendment()
+        amendment_sha256 = hashlib.sha256(suffix.encode()).hexdigest()
+        self.run_ctl("record", "security_suite", '"waived: prose-only repo"')
+        self.finish_step(1)
+        self.assertEqual(self.next_json()["brief"]["runbook_step"]["number"], 2)
+        digest_0 = self.state()["receipts"]["study"]["sha256"]
+
+        holding_text = study_text + self.amendment(
+            "Step 2: entry holds; exit holds.", touched="Step 2."
+        )
+        result = self.run_ctl(
+            "amend", "study", "--artifact", self.write("study-1.md", holding_text)
+        )
+        digest_1 = hashlib.sha256(holding_text.encode()).hexdigest()
+        self.assertEqual(
+            self.state()["receipts"]["study"]["amendments"][-1]["runbook_rebinds"],
+            [{
+                "amendment_sha256": amendment_sha256,
+                "from_study_sha256": digest_0,
+                "to_study_sha256": digest_1,
+                "decision": "retained",
+            }],
+        )
+        self.assertIn(
+            f"runbook amendment {amendment_sha256} retained: steps [1, 2]; "
+            "fields [Exit]",
+            result.stdout,
+        )
+        self.run_ctl("verify")
+        directive = self.next_json()
+        self.assertEqual((directive["do"], directive["agent"]), ("implement", "mason"))
+        carried = directive["brief"]["runbook_step"]["amendments"]
+        self.assertEqual([item["markdown"] for item in carried], [suffix])
+        self.assertIn("fiat-v2.0.0", directive["brief"]["runbook_step"]["markdown"])
+
+        broken_text = holding_text + self.amendment(
+            "Step 2: entry holds; exit broken.",
+            date="2026-08-23", what="A second baseline fact changed.", touched="Step 2.",
+        )
+        result = self.run_ctl(
+            "amend", "study", "--artifact", self.write("study-2.md", broken_text)
+        )
+        digest_2 = hashlib.sha256(broken_text.encode()).hexdigest()
+        self.assertEqual(
+            self.state()["receipts"]["study"]["amendments"][-1]["runbook_rebinds"],
+            [{
+                "amendment_sha256": amendment_sha256,
+                "from_study_sha256": digest_1,
+                "to_study_sha256": digest_2,
+                "decision": "displaced",
+            }],
+        )
+        self.assertIn("runbook rebinds: 0 retained, 1 displaced", result.stdout)
+        self.run_ctl("verify")
+        self.assertEqual(self.packet_amendments(), [])
+        self.assertEqual(self.next_json()["do"], "blocked")
+
     def test_a_legacy_study_amendment_without_rebinds_still_verifies_and_drops(self):
         study_text, _, suffix = self.receipt_runbook_amendment()
         self.run_ctl(
