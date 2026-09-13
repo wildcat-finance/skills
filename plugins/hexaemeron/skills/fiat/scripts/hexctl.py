@@ -624,15 +624,18 @@ CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
         "schema-unsupported",
         "identity-mismatch",
         "acceptance-self-reference",
+        "destination-occupied",
     }
 )
-"""The classes `checkpoint archive` and `checkpoint inspect` may print. One
-name, exit 1, nothing else.
+"""The classes `checkpoint archive`, `checkpoint inspect` and
+`checkpoint restore --archive` may print. One name, exit 1, nothing else.
 
 Closed here so a new refusal site cannot invent a class the reference does not
 name, and so the inspector reads the same vocabulary the exporter already
 does. The eleven added for Step 3 are the ones only `inspect`'s central
-directory, manifest, bundle and identity checks can raise.
+directory, manifest, bundle and identity checks can raise. `destination-occupied`
+is Step 4's one addition, for the one check only a restore into a fresh or
+empty directory has to make.
 """
 CHECKPOINT_ARCHIVE_SECRET_LABEL = rb"[A-Z0-9]{1,16}(?: [A-Z0-9]{1,16}){0,3}"
 """The PEM armour label the pattern below admits: up to four words of up to 16.
@@ -836,6 +839,13 @@ operator's explicit `hexctl next`.
 
 
 CHECKPOINT_ARCHIVE_INSPECT_SCHEMA = "fiat-checkpoint-inspect/v1"
+CHECKPOINT_ARCHIVE_RESTORE_SCHEMA = "fiat-checkpoint-archive-restore/v1"
+CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR = "fiat-checkpoint-restore"
+"""Where `checkpoint restore --archive` extracts the capsule: under `.git/`,
+so it sits inside a path every ordinary Git and controller reader already
+ignores, named by the archive's own outer SHA-256 so two archives restored in
+sequence into the same destination never collide.
+"""
 CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY = (
     CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/" + CHECKPOINT_MANIFEST_FILE
 )
@@ -16810,18 +16820,30 @@ def _checkpoint_restore_result(
     }
 
 
-def cmd_checkpoint_restore(args) -> None:
-    """Restore one verified capsule into a fresh, separately restored Git tree."""
-    origin = _checkpoint_restore_origin(args.dir)
-    capsule, manifest, imported, _, ledger_prefix, inventory = (
-        _checkpoint_restore_capsule(args.source, args.manifest_sha256)
-    )
+def _checkpoint_restore_relocate(
+    origin: str,
+    capsule: str,
+    manifest: dict,
+    imported: dict,
+    ledger_prefix: bytes,
+    inventory: list[dict],
+    manifest_sha256: str,
+) -> dict:
+    """Relocate one verified capsule into a fresh, separately restored Git tree.
+
+    The transaction `checkpoint restore --from` has always run, factored out
+    unchanged so `checkpoint restore --archive` can call the exact same
+    marker, retry and refusal rules once it has built `origin` itself and
+    extracted its own capsule under `.git/`. Every name below that used to
+    read `manifest_sha256` or `args.source` now reads the parameter a
+    caller supplies instead; nothing else moved.
+    """
     refs = _checkpoint_refs(origin, imported)
     if refs != manifest["boundary"]["refs"]:
         die("checkpoint restored Git refs do not match the manifest")
 
     worktree, stage, marker = _checkpoint_restore_marker_paths(
-        origin, imported, args.manifest_sha256
+        origin, imported, manifest_sha256
     )
     if os.path.realpath(os.path.dirname(worktree)) != os.path.dirname(worktree):
         die("checkpoint restore derived worktree path crosses a symlink")
@@ -16831,7 +16853,7 @@ def cmd_checkpoint_restore(args) -> None:
         check_worktree_path(origin, worktree)
         refuse_checked_out_branch(origin, run_branch_of(imported))
     worktree, stage, marker, resumed = _checkpoint_restore_marker(
-        origin, imported, args.manifest_sha256
+        origin, imported, manifest_sha256
     )
 
     final_root = state_root(worktree)
@@ -16853,7 +16875,7 @@ def cmd_checkpoint_restore(args) -> None:
             imported,
             origin,
             manifest,
-            args.manifest_sha256,
+            manifest_sha256,
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -16868,7 +16890,7 @@ def cmd_checkpoint_restore(args) -> None:
             imported,
             origin,
             manifest,
-            args.manifest_sha256,
+            manifest_sha256,
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -16883,7 +16905,7 @@ def cmd_checkpoint_restore(args) -> None:
             imported,
             origin,
             manifest,
-            args.manifest_sha256,
+            manifest_sha256,
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -16892,26 +16914,20 @@ def cmd_checkpoint_restore(args) -> None:
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
         _checkpoint_restore_retire_marker(
-            origin, imported, args.manifest_sha256, marker
+            origin, imported, manifest_sha256, marker
         )
-        print(
-            json.dumps(
-                _checkpoint_restore_result(
-                    manifest=manifest,
-                    digest=args.manifest_sha256,
-                    worktree=worktree,
-                    ledger=ledger,
-                    ledger_tail=ledger_tail,
-                    verify_count=verify_count,
-                    directive=directive,
-                    status_sha256=status_digest,
-                    state_fingerprint_value=state_fingerprint(state),
-                    recovery="finalized-interrupted-publication",
-                ),
-                sort_keys=True,
-            )
+        return _checkpoint_restore_result(
+            manifest=manifest,
+            digest=manifest_sha256,
+            worktree=worktree,
+            ledger=ledger,
+            ledger_tail=ledger_tail,
+            verify_count=verify_count,
+            directive=directive,
+            status_sha256=status_digest,
+            state_fingerprint_value=state_fingerprint(state),
+            recovery="finalized-interrupted-publication",
         )
-        return
     if resumed and (os.path.lexists(worktree) or os.path.lexists(stage)):
         die(
             "checkpoint restore transaction was interrupted before active state; "
@@ -16959,7 +16975,7 @@ def cmd_checkpoint_restore(args) -> None:
         _checkpoint_restore_verify_source(worktree, stage, imported, name)
 
     relocated, receipt = _checkpoint_restore_state(
-        imported, origin, worktree, manifest, args.manifest_sha256
+        imported, origin, worktree, manifest, manifest_sha256
     )
     ledger, ledger_tail = _checkpoint_restore_write_files(
         stage, relocated, ledger_prefix, receipt
@@ -17031,7 +17047,7 @@ def cmd_checkpoint_restore(args) -> None:
         imported,
         origin,
         manifest,
-        args.manifest_sha256,
+        manifest_sha256,
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -17046,7 +17062,7 @@ def cmd_checkpoint_restore(args) -> None:
         imported,
         origin,
         manifest,
-        args.manifest_sha256,
+        manifest_sha256,
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -17055,25 +17071,349 @@ def cmd_checkpoint_restore(args) -> None:
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
     _checkpoint_restore_retire_marker(
-        origin, imported, args.manifest_sha256, marker
+        origin, imported, manifest_sha256, marker
     )
-    print(
-        json.dumps(
-            _checkpoint_restore_result(
-                manifest=manifest,
-                digest=args.manifest_sha256,
-                worktree=worktree,
-                ledger=ledger,
-                ledger_tail=ledger_tail,
-                verify_count=verify_count,
-                directive=directive,
-                status_sha256=status_digest,
-                state_fingerprint_value=state_fingerprint(relocated),
-                recovery="new",
-            ),
-            sort_keys=True,
+    return _checkpoint_restore_result(
+        manifest=manifest,
+        digest=manifest_sha256,
+        worktree=worktree,
+        ledger=ledger,
+        ledger_tail=ledger_tail,
+        verify_count=verify_count,
+        directive=directive,
+        status_sha256=status_digest,
+        state_fingerprint_value=state_fingerprint(relocated),
+        recovery="new",
+    )
+
+
+def cmd_checkpoint_restore(args) -> None:
+    """Restore one verified capsule, from a capsule directory or one archive."""
+    source = getattr(args, "source", None)
+    manifest_sha256 = getattr(args, "manifest_sha256", None)
+    archive = getattr(args, "archive", None)
+    sha256 = getattr(args, "sha256", None)
+    capsule_mode = source is not None or manifest_sha256 is not None
+    archive_mode = archive is not None or sha256 is not None
+    if capsule_mode and archive_mode:
+        die(
+            "checkpoint restore accepts --from/--manifest-sha256 or "
+            "--archive/--sha256, not both"
         )
+    if archive_mode:
+        if archive is None or sha256 is None:
+            die("checkpoint restore --archive requires --sha256")
+        result = _checkpoint_restore_from_archive(
+            os.path.abspath(args.dir), archive, sha256
+        )
+        print(canonical(result))
+        return
+    if source is None or manifest_sha256 is None:
+        die(
+            "checkpoint restore requires --from and --manifest-sha256, or "
+            "--archive and --sha256"
+        )
+    origin = _checkpoint_restore_origin(args.dir)
+    capsule, manifest, imported, _, ledger_prefix, inventory = (
+        _checkpoint_restore_capsule(source, manifest_sha256)
     )
+    result = _checkpoint_restore_relocate(
+        origin, capsule, manifest, imported, ledger_prefix, inventory,
+        manifest_sha256,
+    )
+    print(json.dumps(result, sort_keys=True))
+
+
+def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int]:
+    """Admit an absent-or-empty, non-symlink destination; return it open.
+
+    Unlike `_checkpoint_destination` (export's sibling publish target, which
+    must be entirely absent), a restore destination may already exist as long
+    as it holds nothing: an operator's own empty staging directory is the
+    ordinary case. Either way the returned descriptor pins the directory this
+    function just admitted, opened `O_NOFOLLOW`, so nothing between this
+    check and `git init` can swap it for a symlink.
+    """
+    destination = os.path.abspath(base_dir)
+    parent = os.path.dirname(destination)
+    if not os.path.basename(destination) or os.path.realpath(parent) != parent:
+        _checkpoint_archive_refuse("destination-occupied")
+    try:
+        initial = os.lstat(destination)
+    except FileNotFoundError:
+        try:
+            os.mkdir(destination, 0o700)
+        except OSError:
+            _checkpoint_archive_refuse("destination-occupied")
+    except OSError:
+        _checkpoint_archive_refuse("destination-occupied")
+    else:
+        if stat.S_ISLNK(initial.st_mode) or not stat.S_ISDIR(initial.st_mode):
+            _checkpoint_archive_refuse("destination-occupied")
+    try:
+        descriptor = os.open(
+            destination,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+    except OSError:
+        _checkpoint_archive_refuse("destination-occupied")
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISDIR(opened.st_mode) or os.path.realpath(destination) != destination:
+            raise OSError("checkpoint restore destination changed kind")
+        with os.scandir(descriptor) as iterator:
+            for _entry in iterator:
+                raise OSError("checkpoint restore destination is occupied")
+    except OSError:
+        os.close(descriptor)
+        _checkpoint_archive_refuse("destination-occupied")
+    return destination, descriptor
+
+
+def _checkpoint_restore_archive_extract_capsule(
+    local: str, physical: list[dict], destination: str, outer_sha256: str
+) -> str:
+    """Extract the archived capsule under `.git/`, from the captured local copy.
+
+    `local` and `physical` are the inspector's own captured file and parsed
+    central directory, already fully verified by
+    `_checkpoint_inspect_archive_verified`; this reads no byte the inspector
+    did not already digest and accept. The capsule lands at exactly the
+    directory shape `_checkpoint_restore_capsule` already requires --
+    `MANIFEST.json` and `controller/` -- so that existing reader verifies it
+    completely a second time, hostile-fixture rules unchanged.
+    """
+    prefix = CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/"
+    restore_root = os.path.join(
+        destination, ".git", CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR, outer_sha256
+    )
+    try:
+        os.makedirs(restore_root, 0o700)
+    except OSError:
+        die("checkpoint restore capsule stage could not be created")
+    wrote_any = False
+    for item in physical:
+        name = item["name"]
+        if not name.startswith(prefix):
+            continue
+        relative = name[len(prefix):]
+        if not relative:
+            _checkpoint_archive_refuse("manifest-mismatch")
+        parts = tuple(relative.split("/"))
+        if _checkpoint_safe_relative(parts) != relative:
+            _checkpoint_archive_refuse("manifest-mismatch")
+        target = os.path.join(restore_root, *parts)
+        parent = os.path.dirname(target)
+        try:
+            os.makedirs(parent, 0o700, exist_ok=True)
+        except OSError:
+            die("checkpoint restore capsule stage could not be created")
+        data = _checkpoint_inspect_read_slice(local, item["data_offset"], item["size"])
+        try:
+            descriptor = os.open(
+                target,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+            try:
+                _checkpoint_write_all(descriptor, data)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        except OSError:
+            die("checkpoint restore capsule member could not be written")
+        wrote_any = True
+    if not wrote_any:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    return restore_root
+
+
+def _checkpoint_restore_from_archive(
+    base_dir: str, archive_path: str, expected_sha256: str
+) -> dict:
+    """Restore one run from a verified archive into a fresh or empty directory.
+
+    Order matters and is fixed here. The destination is admitted first, then
+    the whole Step 3 inspector runs to completion against the archive alone
+    -- untouched by anything this function later creates -- and any finding
+    anywhere in that reader still refuses before this function has written
+    one byte. Only then does `git init` run, the bundle member is fetched
+    into it (never the network), the capsule is extracted under `.git/` and
+    re-verified by the existing capsule reader, and the base branch it names
+    is checked out. The ancestry and ref join happen once that working
+    commit exists, against the archive's own outer manifest. The existing
+    relocation transaction then runs entirely unchanged. Identity is
+    reminted from the relocated state last, because it is the one property
+    the relocation transaction itself cannot corrupt but a hostile archive's
+    claimed `unavailable` could still misstate.
+    """
+    destination, destination_descriptor = _checkpoint_restore_archive_destination(
+        base_dir
+    )
+    try:
+        scratch = tempfile.mkdtemp(prefix=".fiat-checkpoint-restore-inspect-")
+        os.chmod(scratch, 0o700)
+    except OSError:
+        _checkpoint_archive_refuse("destination-occupied")
+    try:
+        result, context = _checkpoint_inspect_archive_verified(
+            archive_path, expected_sha256, scratch
+        )
+        manifest = context["manifest"]
+        local = context["local"]
+        physical = context["physical"]
+        outer_sha256 = result["outer_sha256"]
+
+        bundle_path = os.path.join(scratch, "repository.bundle")
+        if not os.path.isfile(bundle_path):
+            _checkpoint_archive_refuse("manifest-mismatch")
+
+        bounded_git(
+            destination,
+            ["init", "--quiet"],
+            refusal="checkpoint restore could not initialise the destination",
+        )
+        bounded_git(
+            destination,
+            [
+                "fetch",
+                "--quiet",
+                bundle_path,
+                "+refs/heads/*:refs/heads/*",
+                "--no-tags",
+            ],
+            refusal="checkpoint restore could not fetch the archived bundle",
+        )
+
+        restore_root = _checkpoint_restore_archive_extract_capsule(
+            local, physical, destination, outer_sha256
+        )
+        capsule, capsule_manifest, imported, _, ledger_prefix, inventory = (
+            _checkpoint_restore_capsule(
+                restore_root, manifest["controller_capsule"]["manifest_sha256"]
+            )
+        )
+
+        # The bundle's own heads are `refs/heads/<name>` for every *named* ref
+        # the archive recorded -- the run branch and each step branch -- and
+        # never `config.git.base` itself when the run's base is the immutable
+        # commit `cmd_init` always records: that commit travelled as a bare
+        # revision so its objects are packed, but `git bundle` names no ref
+        # for it. So the fetch above may have left `config.git.base` with an
+        # unreferenced but present commit, and checking it out means making
+        # the local branch, exactly as an original clone already has one. A
+        # pre-3.4 run recorded its base as the branch name itself, which the
+        # fetch already created as an ordinary named ref, and checking that
+        # out takes the plain form.
+        base_branch = integration_base_of(imported)
+        base_commit = imported.get("base")
+        already_named = (
+            bounded_run(
+                destination,
+                "git",
+                ["rev-parse", "--verify", "--quiet", f"refs/heads/{base_branch}"],
+            )[0]
+            == 0
+        )
+        if already_named:
+            bounded_git(
+                destination,
+                ["checkout", "--quiet", base_branch],
+                refusal="checkpoint restore could not check out the run's base branch",
+            )
+        elif isinstance(base_commit, str) and COMMIT_RE.fullmatch(base_commit):
+            bounded_git(
+                destination,
+                ["checkout", "--quiet", "-b", base_branch, base_commit],
+                refusal="checkpoint restore could not check out the run's base branch",
+            )
+        else:
+            die("checkpoint restore could not resolve the run's base branch")
+
+        anchor_receipt = as_dict(imported.get("receipts")).get(RUN_ANCHOR_RECEIPT)
+        if anchor_receipt is not None:
+            anchor = validate_run_anchor_shape(anchor_receipt)
+            repository = anchor["repository"]
+            if isinstance(repository, str):
+                bounded_git(
+                    destination,
+                    [
+                        "config",
+                        "remote.origin.url",
+                        f"https://github.com/{repository}.git",
+                    ],
+                    refusal="checkpoint restore could not record the origin remote",
+                )
+
+        initial_base_sha = manifest["run"]["initial_base_sha"]
+        if (
+            not isinstance(initial_base_sha, str)
+            or COMMIT_RE.fullmatch(initial_base_sha) is None
+        ):
+            _checkpoint_archive_refuse("ref-disagreement")
+        working_commit = _checkpoint_archive_guarded(
+            "ref-disagreement",
+            lambda: resolved_commit(destination, "HEAD", "checkpoint restore"),
+        )
+        if not commit_is_ancestor(
+            destination, initial_base_sha, working_commit, "checkpoint restore"
+        ):
+            _checkpoint_archive_refuse("ref-disagreement")
+        computed_refs = _checkpoint_archive_guarded(
+            "ref-disagreement", lambda: _checkpoint_refs(destination, imported)
+        )
+        if computed_refs != manifest["refs"]:
+            _checkpoint_archive_refuse("ref-disagreement")
+
+        relocated = _checkpoint_restore_relocate(
+            destination,
+            capsule,
+            capsule_manifest,
+            imported,
+            ledger_prefix,
+            inventory,
+            manifest["controller_capsule"]["manifest_sha256"],
+        )
+
+        worktree = relocated["worktree"]
+        identity_scratch = tempfile.mkdtemp(
+            prefix=".fiat-checkpoint-restore-identity-", dir=scratch
+        )
+        os.chmod(identity_scratch, 0o700)
+        relocated_state = load_state(worktree)
+        recomputed_status, recomputed_snapshot = _checkpoint_archive_identity(
+            worktree, relocated_state, identity_scratch
+        )
+        archived_identity = manifest["identity"]
+        if archived_identity.get("status") == "bound":
+            if (
+                recomputed_status.get("status") != "bound"
+                or recomputed_status.get("snapshot_id")
+                != archived_identity.get("snapshot_id")
+            ):
+                _checkpoint_archive_refuse("identity-mismatch")
+        elif recomputed_status.get("status") == "bound":
+            _checkpoint_archive_refuse("identity-mismatch")
+
+        return {
+            "schema": CHECKPOINT_ARCHIVE_RESTORE_SCHEMA,
+            "restore": relocated,
+            "verify": relocated["verify"],
+            "status_sha256": relocated["status_sha256"],
+            "next": relocated["next"],
+            "outer_sha256": outer_sha256,
+            "snapshot_id": recomputed_snapshot,
+        }
+    finally:
+        os.close(destination_descriptor)
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 def _checkpoint_archive_refuse(refusal: str) -> None:
@@ -18888,6 +19228,27 @@ def _checkpoint_inspect_archive(
 ) -> dict:
     """Read one outer checkpoint archive from outside the process that built it.
 
+    Thin wrapper over `_checkpoint_inspect_archive_verified`, for the two
+    callers -- `checkpoint inspect` and `checkpoint archive`'s own self-check
+    -- that want only the printed result and never the manifest, the captured
+    local copy or the parsed central directory `checkpoint restore --archive`
+    goes on to read.
+    """
+    result, _context = _checkpoint_inspect_archive_verified(
+        archive_path, expected_sha256, scratch, existing_repo=existing_repo
+    )
+    return result
+
+
+def _checkpoint_inspect_archive_verified(
+    archive_path: str,
+    expected_sha256: str,
+    scratch: str,
+    *,
+    existing_repo: str | None = None,
+) -> tuple[dict, dict]:
+    """Read one outer checkpoint archive from outside the process that built it.
+
     Every check the reference names, in its exact order, stopping at the
     first refusal: the outer digest and sidecar; the central directory under
     the ceilings, the name policy and both uniqueness rules, entry mode,
@@ -18969,7 +19330,7 @@ def _checkpoint_inspect_archive(
     if secret_found:
         _checkpoint_archive_refuse("secret-shaped-member")
 
-    return {
+    result = {
         "schema": CHECKPOINT_ARCHIVE_INSPECT_SCHEMA,
         "outer_sha256": outer_digest,
         "entries": len(physical),
@@ -18980,6 +19341,7 @@ def _checkpoint_inspect_archive(
         "identity": manifest["identity"],
         "refs": manifest["refs"],
     }
+    return result, {"manifest": manifest, "local": local, "physical": physical}
 
 
 
@@ -20297,9 +20659,13 @@ def build_parser() -> argparse.ArgumentParser:
     restore = checkpoint.add_parser(
         "restore", help="relocate one verified controller capsule"
     )
-    restore.add_argument("--from", dest="source", required=True, metavar="DIRECTORY")
+    restore.add_argument("--from", dest="source", metavar="DIRECTORY")
+    restore.add_argument("--manifest-sha256", metavar="SHA256")
     restore.add_argument(
-        "--manifest-sha256", required=True, metavar="SHA256"
+        "--archive", metavar="ZIP", help="restore from one outer checkpoint archive"
+    )
+    restore.add_argument(
+        "--sha256", metavar="SHA256", help="the archive's out-of-band outer SHA-256"
     )
     restore.set_defaults(fn=cmd_checkpoint_restore)
 

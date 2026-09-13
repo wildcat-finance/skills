@@ -1489,6 +1489,68 @@ class SignedRunFixture(HexctlCase):
         self.assertEqual(1, len(found), found)
         return found[0]
 
+    def good_archive(self):
+        """One real, published archive from one really signed, receipted run."""
+        self.to_post_push()
+        self.archive()
+        return self.published()
+
+    def good_members(self, path=None):
+        with zipfile.ZipFile(path or self.good_archive()) as container:
+            return {
+                info.filename: container.read(info.filename)
+                for info in container.infolist()
+            }
+
+    def outer_sha256(self, path):
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+    def manifest(self, members):
+        return json.loads(members["checkpoint.json"])
+
+    def set_manifest(self, members, manifest_obj):
+        module = hexctl_module()
+        members["checkpoint.json"] = (
+            module.canonical(manifest_obj).encode("utf-8") + b"\n"
+        )
+
+    def retarget(self, members, manifest_obj, path, new_bytes):
+        """Change one member's bytes and its own manifest record together,
+        so only the check under test is left disagreeing with the rest.
+        """
+        members[path] = new_bytes
+        for entry in manifest_obj["archive"]["entries"]:
+            if entry["path"] == path:
+                entry["bytes"] = len(new_bytes)
+                entry["sha256"] = hashlib.sha256(new_bytes).hexdigest()
+                if path == "git/repository.bundle":
+                    # `checkpoint.json` records the bundle in its own block as
+                    # well, and since S3-R3-01 `inspect` joins the two, so a
+                    # specimen meant to disagree elsewhere keeps them equal.
+                    manifest_obj["bundle"]["bytes"] = entry["bytes"]
+                    manifest_obj["bundle"]["sha256"] = entry["sha256"]
+                return
+        raise AssertionError(f"{path} is not a manifest entry")
+
+    def specimen_path(self, name="specimen.zip"):
+        return os.path.join(self.dir, name)
+
+    def write_specimen(self, members, overrides=None, *, path=None):
+        """Pack `members` (name -> bytes), sorted by UTF-8 bytes, with any
+        named entry's mode, method, flags, extra field or declared central-
+        directory size overridden by `overrides`.
+        """
+        overrides = overrides or {}
+        names = sorted(members, key=lambda item: item.encode("utf-8"))
+        entries = []
+        for name in names:
+            entry = {"name": name.encode("utf-8"), "data": members[name]}
+            entry.update(overrides.get(name, {}))
+            entries.append(entry)
+        target = path or self.specimen_path()
+        write_raw_zip(target, entries)
+        return target
+
     def controller_bytes(self):
         root = Path(self.target) / ".hexaemeron"
         return (
@@ -2646,69 +2708,6 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
 
     # -- fixture plumbing -------------------------------------------------
 
-    def good_archive(self):
-        """One real, published archive from one really signed, receipted run."""
-        self.to_post_push()
-        self.archive()
-        return self.published()
-
-    def good_members(self):
-        path = self.good_archive()
-        with zipfile.ZipFile(path) as container:
-            return {
-                info.filename: container.read(info.filename)
-                for info in container.infolist()
-            }
-
-    def manifest(self, members):
-        return json.loads(members["checkpoint.json"])
-
-    def set_manifest(self, members, manifest_obj):
-        module = hexctl_module()
-        members["checkpoint.json"] = (
-            module.canonical(manifest_obj).encode("utf-8") + b"\n"
-        )
-
-    def retarget(self, members, manifest_obj, path, new_bytes):
-        """Change one member's bytes and its own manifest record together,
-        so only the check under test is left disagreeing with the rest.
-        """
-        members[path] = new_bytes
-        for entry in manifest_obj["archive"]["entries"]:
-            if entry["path"] == path:
-                entry["bytes"] = len(new_bytes)
-                entry["sha256"] = hashlib.sha256(new_bytes).hexdigest()
-                if path == "git/repository.bundle":
-                    # `checkpoint.json` records the bundle in its own block as
-                    # well, and since S3-R3-01 `inspect` joins the two, so a
-                    # specimen meant to disagree elsewhere keeps them equal.
-                    manifest_obj["bundle"]["bytes"] = entry["bytes"]
-                    manifest_obj["bundle"]["sha256"] = entry["sha256"]
-                return
-        raise AssertionError(f"{path} is not a manifest entry")
-
-    def specimen_path(self, name="specimen.zip"):
-        return os.path.join(self.dir, name)
-
-    def write_specimen(self, members, overrides=None, *, path=None):
-        """Pack `members` (name -> bytes), sorted by UTF-8 bytes, with any
-        named entry's mode, method, flags, extra field or declared central-
-        directory size overridden by `overrides`.
-        """
-        overrides = overrides or {}
-        names = sorted(members, key=lambda item: item.encode("utf-8"))
-        entries = []
-        for name in names:
-            entry = {"name": name.encode("utf-8"), "data": members[name]}
-            entry.update(overrides.get(name, {}))
-            entries.append(entry)
-        target = path or self.specimen_path()
-        write_raw_zip(target, entries)
-        return target
-
-    def outer_sha256(self, path):
-        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
     def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1):
         args = [
             sys.executable,
@@ -3112,11 +3111,15 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             self.assertEqual(original, handle.read())
         self.assertEqual(len(original), size)
 
-        # And nothing downstream reads the supplied path again: inside
-        # `_checkpoint_inspect_archive` the parameter appears only in its own
-        # signature and in the capture call. A later reopen would put the
-        # fork back without failing anything else here.
-        body = inspect.getsource(module._checkpoint_inspect_archive)
+        # And nothing downstream reads the supplied path again. The parse
+        # logic itself lives in `_checkpoint_inspect_archive_verified` --
+        # `_checkpoint_inspect_archive` is a thin wrapper `checkpoint restore
+        # --archive` also calls, so it can read the same verified manifest,
+        # captured file and parsed central directory this test's own
+        # docstring already names -- and inside it the parameter appears only
+        # in its own signature and in the capture call. A later reopen would
+        # put the fork back without failing anything else here.
+        body = inspect.getsource(module._checkpoint_inspect_archive_verified)
         mentions = [
             line.strip()
             for line in body.splitlines()
@@ -3127,6 +3130,21 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             mentions,
             "the supplied path is read outside the capture, so the digest no "
             "longer covers everything the inspector parses",
+        )
+        # The wrapper itself forwards `archive_path` on to the verified
+        # reader above and nowhere else.
+        wrapper_body = inspect.getsource(module._checkpoint_inspect_archive)
+        wrapper_mentions = [
+            line.strip()
+            for line in wrapper_body.splitlines()
+            if "archive_path" in line and not line.strip().startswith("#")
+        ]
+        self.assertEqual(
+            [
+                "archive_path: str,",
+                "archive_path, expected_sha256, scratch, existing_repo=existing_repo",
+            ],
+            wrapper_mentions,
         )
 
     def test_inspect_refuses_a_current_acceptance_anywhere_under_its_root(self):
@@ -3432,6 +3450,314 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         self.set_manifest(members, manifest)
         path = self.write_specimen(members)
         self.assert_refuses(path, "ref-disagreement")
+
+
+class CheckpointArchiveRestoreTests(SignedRunFixture):
+    """`checkpoint restore --archive` over one real, really signed archive.
+
+    Every case here restores into a fresh destination this process controls
+    directly (never `self.target`, the fixture's own worktree), over a plain
+    subprocess with no `FAKE_GIT_*` environment: the destination's Git history
+    is whatever `git init` and the archive's own bundle actually produce, and
+    `merge-base`, `rev-parse` and the rest resolve for real against it.
+    """
+
+    # -- fixture plumbing --------------------------------------------------
+
+    def restore_destination(self, name="restore-dest"):
+        root = tempfile.mkdtemp(prefix="fiat861-restore-")
+        return os.path.join(root, name)
+
+    def run_restore(self, archive_path, sha256, destination, *, expect=0, env=None):
+        args = [
+            sys.executable,
+            HEXCTL,
+            "--dir",
+            str(destination),
+            "checkpoint",
+            "restore",
+            "--archive",
+            str(archive_path),
+            "--sha256",
+            sha256,
+        ]
+        proc = subprocess.run(args, capture_output=True, text=True, env=env)
+        if proc.returncode != expect:
+            raise AssertionError(
+                f"checkpoint restore --archive -> rc {proc.returncode} "
+                f"(expected {expect})\nstdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc
+
+    def assert_restore_refuses(self, archive_path, refusal, destination=None, *, sha256=None):
+        digest = sha256 if sha256 is not None else self.outer_sha256(archive_path)
+        destination = destination or self.restore_destination()
+        proc = self.run_restore(archive_path, digest, destination, expect=1)
+        self.assertEqual(f"{refusal}\n", proc.stderr)
+        self.assertEqual("", proc.stdout)
+
+    def hexctl_status_json(self, worktree):
+        proc = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", str(worktree), "status", "--json"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        payload = json.loads(proc.stdout)
+        payload.pop("observation_run_id", None)
+        payload.pop("version_resolution_status", None)
+        return payload
+
+    def hostile_identity_internally_consistent(self, members, manifest):
+        """Tamper the identity claim so its two copies still agree.
+
+        Unlike `test_hostile_identity_mismatch` above, which leaves the
+        member's own recorded `snapshot_id` disagreeing with `checkpoint.json`'s
+        copy -- a defect `checkpoint inspect` already catches on its own --
+        this changes the identity object itself and re-derives both copies
+        from the new, false content. `checkpoint inspect` sees two
+        self-consistent copies and passes; only a mint from the real
+        restored state, ledger and Git evidence can tell the claim is wrong.
+        """
+        target = "identity/checkpoint-identity.json"
+        payload = json.loads(members[target])
+        module = hexctl_module()
+        tampered_identity = dict(payload["identity"])
+        tampered_identity["restore_test_marker"] = "tampered"
+        recomputed = hashlib.sha256(
+            module.CHECKPOINT_IDENTITY_DOMAIN
+            + module.canonical(tampered_identity).encode("utf-8")
+        ).hexdigest()
+        payload["identity"] = tampered_identity
+        payload["snapshot_id"] = recomputed
+        new_bytes = module.canonical(payload).encode("utf-8") + b"\n"
+        self.retarget(members, manifest, target, new_bytes)
+        manifest["identity"]["snapshot_id"] = recomputed
+        self.set_manifest(members, manifest)
+
+    # -- cases --------------------------------------------------------------
+
+    def test_restore_from_archive_recreates_repository_and_controller_state(self):
+        archive = self.good_archive()
+        producer_state = self.state()
+        producer_ledger = (
+            Path(self.target) / ".hexaemeron" / "ledger.jsonl"
+        ).read_bytes()
+        digest = self.outer_sha256(archive)
+        manifest = self.manifest(self.good_members(archive))
+        destination = self.restore_destination()
+
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+        self.assertEqual(digest, payload["outer_sha256"])
+        worktree = payload["restore"]["worktree"]
+
+        verify_proc = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", worktree, "verify"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, verify_proc.returncode, verify_proc.stderr)
+
+        restored_state = self.hexctl_status_json(worktree)
+        for owned in (("config", "git", "worktree"), ("config", "git", "origin")):
+            producer_node, restored_node = producer_state, restored_state
+            for key in owned[:-1]:
+                producer_node, restored_node = producer_node[key], restored_node[key]
+            self.assertNotEqual(producer_node[owned[-1]], restored_node[owned[-1]])
+            producer_node.pop(owned[-1])
+            restored_node.pop(owned[-1])
+        self.assertEqual(producer_state, restored_state)
+
+        for name, expected_sha in manifest["refs"].items():
+            rev = subprocess.run(
+                ["git", "-C", destination, "rev-parse", "--verify", f"{name}^{{commit}}"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, rev.returncode, rev.stderr)
+            self.assertEqual(expected_sha, rev.stdout.strip())
+
+        restored_ledger = (Path(worktree) / ".hexaemeron" / "ledger.jsonl").read_bytes()
+        self.assertTrue(restored_ledger.startswith(producer_ledger))
+        appended = restored_ledger[len(producer_ledger):].decode("utf-8").splitlines()
+        self.assertEqual(1, len(appended))
+        self.assertEqual("checkpoint:restore", json.loads(appended[0])["event"])
+
+    def test_restore_from_archive_offline_after_source_clone_removed(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        portable_root = tempfile.mkdtemp(prefix="fiat861-portable-")
+        portable_archive = os.path.join(portable_root, "checkpoint.zip")
+        shutil.copyfile(archive, portable_archive)
+        shutil.copyfile(f"{archive}.sha256", f"{portable_archive}.sha256")
+
+        # The fixture's own worktree is the "source clone" the archive was
+        # built from. Destroying it before restoring proves the restore below
+        # reads only the portable archive copy above.
+        shutil.rmtree(self.target, ignore_errors=True)
+
+        scratch_home = tempfile.mkdtemp(prefix="fiat861-home-")
+        env = os.environ.copy()
+        env["HOME"] = scratch_home
+        env["GIT_CONFIG_GLOBAL"] = os.path.join(scratch_home, "gitconfig")
+        env.pop("GIT_CONFIG_SYSTEM", None)
+        destination = self.restore_destination()
+
+        proc = self.run_restore(portable_archive, digest, destination, env=env)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+
+        remote = subprocess.run(
+            ["git", "-C", destination, "config", "--get", "remote.origin.url"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, remote.returncode, remote.stderr)
+        self.assertEqual("https://github.com/wildcat-finance/example.git\n", remote.stdout)
+
+    def test_restore_from_archive_reverifies_signatures_receipts_identity_and_ancestry(
+        self,
+    ):
+        archive = self.good_archive()
+
+        # A proof status flipped from `G`: the same construction
+        # `test_hostile_signature_proof_mismatch` uses, over this archive.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        proof = json.loads(members["proof/signatures.json"])
+        original = proof["signer"]["fingerprints"][0]
+        bogus = ("0" if original[0] != "0" else "1") + original[1:]
+        proof["signer"]["fingerprints"] = [bogus]
+        module = hexctl_module()
+        proof_bytes = module.canonical(proof).encode("utf-8") + b"\n"
+        self.retarget(members, manifest, "proof/signatures.json", proof_bytes)
+        manifest["proof"]["sha256"] = hashlib.sha256(proof_bytes).hexdigest()
+        manifest["signer"]["fingerprints"] = [bogus]
+        self.set_manifest(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-signature.zip"))
+        self.assert_restore_refuses(specimen, "signature-unverified")
+
+        # A ledger byte changed inside the capsule: the outer manifest's own
+        # digest join for that member is kept consistent by `retarget`, but
+        # the capsule's own inner `MANIFEST.json` still names the original
+        # ledger bytes and size, so the existing capsule reader -- reused
+        # unchanged -- refuses once it re-verifies the capsule's file
+        # inventory after extraction.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        target = "controller-capsule/controller/ledger.jsonl"
+        tampered_ledger = members[target] + b'{"tampered": true}\n'
+        self.retarget(members, manifest, target, tampered_ledger)
+        self.set_manifest(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-ledger.zip"))
+        digest = self.outer_sha256(specimen)
+        destination = self.restore_destination()
+        proc = self.run_restore(specimen, digest, destination, expect=2)
+        self.assertIn("hexctl: error:", proc.stderr)
+        self.assertIn("checkpoint manifest inventory does not match controller bytes", proc.stderr)
+
+        # A snapshot_id changed: internally consistent, so only a fresh mint
+        # from the restored state, ledger and Git evidence exposes it.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        self.hostile_identity_internally_consistent(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-identity.zip"))
+        self.assert_restore_refuses(specimen, "identity-mismatch")
+
+        # A working commit outside the anchor's descendants: point
+        # `run.initial_base_sha` at a real commit this repository holds --
+        # the run branch's own tip -- which is a descendant of the base, not
+        # an ancestor of it, so the ancestry check refuses.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        run_branch_sha = manifest["refs"][self.run_branch()]
+        manifest["run"] = {**manifest["run"], "initial_base_sha": run_branch_sha}
+        self.set_manifest(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-ancestry.zip"))
+        self.assert_restore_refuses(specimen, "ref-disagreement")
+
+    def test_restore_from_archive_refuses_non_empty_destination(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        occupied = self.restore_destination("occupied")
+        os.makedirs(occupied)
+        with open(os.path.join(occupied, "keep.txt"), "w", encoding="utf-8") as handle:
+            handle.write("not empty\n")
+        self.assert_restore_refuses(archive, "destination-occupied", occupied, sha256=digest)
+
+        elsewhere = self.restore_destination("elsewhere")
+        os.makedirs(elsewhere)
+        symlinked = os.path.join(os.path.dirname(elsewhere), "symlinked")
+        os.symlink(elsewhere, symlinked)
+        self.assert_restore_refuses(archive, "destination-occupied", symlinked, sha256=digest)
+
+    def test_restore_from_archive_executes_no_directive(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination()
+
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        worktree = payload["restore"]["worktree"]
+
+        ledger_path = Path(worktree) / ".hexaemeron" / "ledger.jsonl"
+        before = ledger_path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual("checkpoint:restore", json.loads(before[-1])["event"])
+        state_before = self.hexctl_status_json(worktree)
+
+        next_proc = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", worktree, "next"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, next_proc.returncode, next_proc.stderr)
+        directive = json.loads(next_proc.stdout)
+        self.assertEqual(payload["next"]["do"], directive["do"])
+
+        after = ledger_path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(before, after)
+        self.assertEqual(state_before, self.hexctl_status_json(worktree))
+
+    def test_restore_from_archive_after_main_advances_stays_anchored(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        # Advance the real "main" branch elsewhere, simulating upstream
+        # having moved on since the archive was built. Restore reads only
+        # the bundle already frozen inside the archive and never this
+        # checkout, so this must not matter.
+        advanced = os.path.join(self.dir, "advanced.txt")
+        with open(advanced, "w", encoding="utf-8") as handle:
+            handle.write("main moved on after the archive was built\n")
+        subprocess.run(
+            ["git", "add", "advanced.txt"], cwd=self.dir, check=True, capture_output=True
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "main advances after the archive was built",
+            ],
+            cwd=self.dir,
+            check=True,
+            capture_output=True,
+        )
+
+        destination = self.restore_destination()
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
 
 
 if __name__ == "__main__":
