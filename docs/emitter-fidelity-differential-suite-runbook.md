@@ -836,3 +836,51 @@ the last receipted value of the field (S1-R1-03, the check command).
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Tests: The 27 differential cases, the
+fixed companion cases at all-zero and all-max arguments, five rejection
+specimens (wrong topic0, wrong data bytes, wrong topic count, wrong indexed
+topic, wrong data length), each refused on its named field, the pairing-count
+test in `plugins/hexaemeron/tests/test_harness_pairing.py`, and the two memory
+tests, the free-pointer sweep also holding the zero slot at `0x60`. Every
+expectation is derived from a declaration; no expected topic, arity or data
+offset is read from or transcribed out of the two emitter files. The runner
+contract for any repair of this step: the test command is
+`sh -c 'cd plugins/hexaemeron/harness && forge test --junit > "$0"' {report}`,
+the report format is `forge-junit-v1`, and the report file is
+`.hexaemeron/test-reports/step-3.json`; the `{report}` placeholder is its own
+argument, which Elenchus requires, and this field supersedes the preamble's
+form, which embedded it inside the quoted command.
+
+**Why.** Audit round 1 of step 3 recorded S3-R1-03: `elenchus.py` refuses a
+command that does not carry `{report}` as exactly one argument and returns
+`inconclusive` before running it, so the preamble's runner could never
+classify a repair. The same round's repair added three rejection specimens and
+the `0x60` observation for S3-R1-01 and S3-R1-02, which this field now names.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Tests: The campaign readback test, and
+one replay test per counterexample. The runner contract for any repair of this
+step: the test command is
+`sh -c 'cd plugins/hexaemeron/harness && forge test --junit > "$0"' {report}`,
+the report format is `forge-junit-v1`, and the report file is
+`.hexaemeron/test-reports/step-4.json`; the `{report}` placeholder is its own
+argument, which Elenchus requires, and this field supersedes the preamble's
+form.
+
+**Why.** Audit round 1 of step 3 recorded S3-R1-03 against the preamble's
+runner, which every step from 2 onward shares; `elenchus.py` returns
+`inconclusive` for a command whose `{report}` is not a separate argument.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds.

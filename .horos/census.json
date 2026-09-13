@@ -8,7 +8,7 @@
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 20208166,
+      "bytes": 20210548,
       "files": 1050,
       "suffix": ".md"
     },
@@ -189,6 +189,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 102115605,
+  "total_bytes": 102117987,
   "total_files": 2929
 }
