@@ -3759,6 +3759,125 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
         self.assertEqual("ok", payload["verify"])
 
+    # -- step 4, round 2 guards ---------------------------------------------
+    #
+    # Named `test_archive_restore_*` rather than `test_restore_from_archive_*`
+    # on purpose: Step 4's Exit pins `-k restore_from_archive` at exactly six
+    # tests, and these four are audit guards rather than that clause's cases.
+    # The module canonicalises TMPDIR at import (see the note beside
+    # `tempfile.tempdir` above), which is why the first guard below builds its
+    # own symlink instead of relying on the platform's.
+
+    def test_archive_restore_accepts_a_symlinked_destination_parent(self):
+        """S4-R1-05: a symlinked *parent* is not an occupied destination.
+
+        The destination here is absent, is no symlink and holds nothing; only
+        the directory it is reached through is a link. On macOS this is every
+        `/tmp` path, which is the ordinary staging location for a command whose
+        whole purpose is restoring onto another machine.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        real_parent = tempfile.mkdtemp(prefix="fiat861-restore-real-")
+        link_root = tempfile.mkdtemp(prefix="fiat861-restore-link-")
+        linked_parent = os.path.join(link_root, "via-symlink")
+        os.symlink(real_parent, linked_parent)
+        self.assertNotEqual(
+            os.path.realpath(linked_parent),
+            linked_parent,
+            "the guard needs a parent that is genuinely reached through a link",
+        )
+
+        destination = os.path.join(linked_parent, "restore-dest")
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+
+        # The run lands on the resolved path, which is the directory the
+        # operator named, reached by its real name.
+        self.assertTrue(os.path.isdir(os.path.join(real_parent, "restore-dest", ".git")))
+
+    def test_archive_restore_removes_the_capsule_stage_once_it_completes(self):
+        """S4-R1-03: the disposable root does not outlive a completed restore.
+
+        The capsule is relocated into active controller state and re-verified
+        from there, so leaving the staged copy under `.git/` duplicates the
+        whole capsule -- state, ledger, receipts and every carried acceptance
+        receipt -- for the life of the clone.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination()
+
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("ok", payload["verify"])
+
+        module = hexctl_module()
+        stage = os.path.join(destination, ".git", module.CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR)
+        self.assertFalse(
+            os.path.exists(stage),
+            f"the capsule stage survived a completed restore at {stage}",
+        )
+
+    def test_archive_restore_removes_a_destination_it_created_when_it_refuses(self):
+        """S4-R1-04: a refused restore leaves no path hexctl created.
+
+        The destination is admitted, and an absent one created, before the
+        inspector runs. A refusal after that point must not reclassify the
+        path for the next attempt from absent to empty and admit it again.
+        """
+        archive = self.good_archive()
+        destination = self.restore_destination("never-made")
+        self.assertFalse(os.path.exists(destination))
+
+        wrong_digest = "0" * 64
+        proc = self.run_restore(archive, wrong_digest, destination, expect=1)
+        self.assertEqual("outer-digest-mismatch\n", proc.stderr)
+        self.assertFalse(
+            os.path.exists(destination),
+            "a refused restore left behind the directory it created",
+        )
+
+    def test_archive_restore_diagnoses_its_own_scratch_failure_as_itself(self):
+        """S4-R1-07: the process's scratch root is not the operator's destination.
+
+        Reporting a failure to create this process's own temporary directory as
+        `destination-occupied` tells the operator a false fact about a path that
+        is absent, empty and entirely usable.
+
+        The failure is driven in process rather than over the command line:
+        `tempfile` falls through TMPDIR to `/tmp` and the rest of its candidate
+        list, so an unusable TMPDIR in the child's environment never reaches
+        this code path at all.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination("scratchless")
+        module = hexctl_module()
+
+        captured = StringIO()
+        with mock.patch.object(
+            module.tempfile, "mkdtemp", side_effect=OSError("no scratch here")
+        ):
+            with redirect_stderr(captured):
+                with self.assertRaises(SystemExit) as stopped:
+                    module._checkpoint_restore_from_archive(
+                        destination, str(archive), digest
+                    )
+
+        self.assertEqual(2, stopped.exception.code)
+        diagnosis = captured.getvalue()
+        self.assertIn("hexctl: error:", diagnosis)
+        self.assertIn("scratch directory could not be created", diagnosis)
+        self.assertNotIn("destination-occupied", diagnosis)
+
+        # S4-R1-04 again, on the same path: the destination this call created
+        # before it refused is not left behind.
+        self.assertFalse(os.path.exists(destination))
+
 
 if __name__ == "__main__":
     unittest.main()

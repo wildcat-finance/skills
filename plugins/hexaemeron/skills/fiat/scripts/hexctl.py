@@ -627,8 +627,7 @@ CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
         "destination-occupied",
     }
 )
-"""The classes `checkpoint archive`, `checkpoint inspect` and
-`checkpoint restore --archive` may print. One name, exit 1, nothing else.
+"""The reference's closed table of refusal classes: one name, exit 1, no more.
 
 Closed here so a new refusal site cannot invent a class the reference does not
 name, and so the inspector reads the same vocabulary the exporter already
@@ -636,6 +635,27 @@ does. The eleven added for Step 3 are the ones only `inspect`'s central
 directory, manifest, bundle and identity checks can raise. `destination-occupied`
 is Step 4's one addition, for the one check only a restore into a fresh or
 empty directory has to make.
+
+What this set governs is every refusal these commands raise *themselves*,
+through `_checkpoint_archive_refuse`. It is not the whole of what they can
+print (S4-R1-02). `checkpoint restore --archive` calls existing controller
+readers -- the capsule reader, the relocation transaction, `load_state`,
+`integration_base_of`, `validate_run_anchor_shape` and `bounded_git` -- and
+each keeps its own `die` diagnosis and exit 2 wherever
+`_checkpoint_archive_guarded` does not wrap it. The reference intends that
+rather than tolerating it: the archive study's section 4 leaves the relocation
+transaction "to the existing code including its marker, retry and refusal
+rules", section 11 repeats it for the marker the retry rules resume or refuse,
+and `controller-checkpoint.md`, which owns those readers, fixes no exit status
+or vocabulary for them at all. The reference does not go on to say which of
+the *other* reused readers, if any, owe translation; that question is open and
+the code's present answer is the one stated here.
+
+What holds across both is the `diagnostic-leak` rule, which is about content
+rather than status: every message either kind of refusal can print is a fixed
+literal, a structural JSON path built from literals and integer indices, or a
+local path the operator supplied. No entry name, entry content, `gpg` line or
+archive-supplied JSON value reaches stderr from either.
 """
 CHECKPOINT_ARCHIVE_SECRET_LABEL = rb"[A-Z0-9]{1,16}(?: [A-Z0-9]{1,16}){0,3}"
 """The PEM armour label the pattern below admits: up to four words of up to 16.
@@ -843,8 +863,15 @@ CHECKPOINT_ARCHIVE_RESTORE_SCHEMA = "fiat-checkpoint-archive-restore/v1"
 CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR = "fiat-checkpoint-restore"
 """Where `checkpoint restore --archive` extracts the capsule: under `.git/`,
 so it sits inside a path every ordinary Git and controller reader already
-ignores, named by the archive's own outer SHA-256 so two archives restored in
-sequence into the same destination never collide.
+ignores, named by the archive's own outer SHA-256 so an interrupted restore's
+residue says which archive left it.
+
+S4-R1-03: the collision this name was first said to prevent cannot arise,
+because the destination is admitted only when it holds nothing, so no earlier
+restore's root can be there. The digest earns its place as the label on what a
+killed run leaves behind, which the reference's fail-closed posture expects to
+find. A completed restore removes this root; only an interrupted or refused one
+leaves it, beside the relocation marker the existing retry rules read.
 """
 CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY = (
     CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/" + CHECKPOINT_MANIFEST_FILE
@@ -17124,20 +17151,39 @@ def cmd_checkpoint_restore(args) -> None:
     print(json.dumps(result, sort_keys=True))
 
 
-def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int]:
+def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bool]:
     """Admit an absent-or-empty, non-symlink destination; return it open.
 
     Unlike `_checkpoint_destination` (export's sibling publish target, which
     must be entirely absent), a restore destination may already exist as long
     as it holds nothing: an operator's own empty staging directory is the
-    ordinary case. Either way the returned descriptor pins the directory this
-    function just admitted, opened `O_NOFOLLOW`, so nothing between this
-    check and `git init` can swap it for a symlink.
+    ordinary case.
+
+    The parent is resolved rather than required to be its own `realpath`.
+    S4-R1-05: requiring it refused every destination reached through a
+    symlinked parent, which on macOS is every `/tmp` path, under a class name
+    asserting the destination was occupied when it was absent, was no symlink
+    and held nothing. The reference conditions `destination-occupied` on the
+    destination -- absent or an empty directory, checked through an opened
+    descriptor and never a symlink -- and says nothing about its parent, so
+    resolving once and admitting the resolved path is what it asks for.
+
+    The returned descriptor pins the *inode* this function admitted, not the
+    name it was reached by. S4-R1-06: every later operation resolves
+    `destination` by path and no `dir_fd` is passed anywhere, so a writer on
+    the parent can still replace the name between this admission and
+    `git init`. What the descriptor establishes is that the `fstat` and
+    `scandir` below read the directory that the `O_NOFOLLOW` open reached, and
+    that the emptiness they found is that inode's rather than a later
+    replacement's. The third return value says whether this function created
+    the destination, so a refusal after this point can remove what it made.
     """
-    destination = os.path.abspath(base_dir)
-    parent = os.path.dirname(destination)
-    if not os.path.basename(destination) or os.path.realpath(parent) != parent:
+    supplied = os.path.abspath(base_dir)
+    name = os.path.basename(supplied)
+    if not name:
         _checkpoint_archive_refuse("destination-occupied")
+    destination = os.path.join(os.path.realpath(os.path.dirname(supplied)), name)
+    created = False
     try:
         initial = os.lstat(destination)
     except FileNotFoundError:
@@ -17145,6 +17191,7 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int]:
             os.mkdir(destination, 0o700)
         except OSError:
             _checkpoint_archive_refuse("destination-occupied")
+        created = True
     except OSError:
         _checkpoint_archive_refuse("destination-occupied")
     else:
@@ -17170,7 +17217,7 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int]:
     except OSError:
         os.close(descriptor)
         _checkpoint_archive_refuse("destination-occupied")
-    return destination, descriptor
+    return destination, descriptor, created
 
 
 def _checkpoint_restore_archive_extract_capsule(
@@ -17243,8 +17290,12 @@ def _checkpoint_restore_from_archive(
     Order matters and is fixed here. The destination is admitted first, then
     the whole Step 3 inspector runs to completion against the archive alone
     -- untouched by anything this function later creates -- and any finding
-    anywhere in that reader still refuses before this function has written
-    one byte. Only then does `git init` run, the bundle member is fetched
+    anywhere in that reader still refuses before any archive byte reaches the
+    destination. Admission itself is the one exception, and it is one inode:
+    an absent destination is created, mode 0700 and empty, before the
+    inspector runs (S4-R1-04). The `finally` below removes it again on every
+    path that does not complete, so a refused restore leaves the tree as it
+    found it. Only then does `git init` run, the bundle member is fetched
     into it (never the network), the capsule is extracted under `.git/` and
     re-verified by the existing capsule reader, and the base branch it names
     is checked out. The ancestry and ref join happen once that working
@@ -17254,15 +17305,20 @@ def _checkpoint_restore_from_archive(
     the relocation transaction itself cannot corrupt but a hostile archive's
     claimed `unavailable` could still misstate.
     """
-    destination, destination_descriptor = _checkpoint_restore_archive_destination(
-        base_dir
+    destination, destination_descriptor, created_destination = (
+        _checkpoint_restore_archive_destination(base_dir)
     )
+    completed = False
+    scratch = None
     try:
-        scratch = tempfile.mkdtemp(prefix=".fiat-checkpoint-restore-inspect-")
-        os.chmod(scratch, 0o700)
-    except OSError:
-        _checkpoint_archive_refuse("destination-occupied")
-    try:
+        # S4-R1-07: this is the process's own scratch root, not the operator's
+        # destination, so its failure is diagnosed as itself. The sibling
+        # `_checkpoint_inspect_scratch` already separates the identical case.
+        try:
+            scratch = tempfile.mkdtemp(prefix=".fiat-checkpoint-restore-inspect-")
+            os.chmod(scratch, 0o700)
+        except OSError:
+            die("checkpoint restore scratch directory could not be created")
         result, context = _checkpoint_inspect_archive_verified(
             archive_path, expected_sha256, scratch
         )
@@ -17402,6 +17458,17 @@ def _checkpoint_restore_from_archive(
         elif recomputed_status.get("status") == "bound":
             _checkpoint_archive_refuse("identity-mismatch")
 
+        # S4-R1-03: the capsule has been relocated into active controller state
+        # and re-verified from it, so the disposable root the glossary names has
+        # nothing left to serve. Removing it here rather than in the `finally`
+        # leaves the interrupted and refused paths exactly as the reference
+        # fixes them: a killed restore still leaves this root and the relocation
+        # marker for the existing retry rules to resume or refuse.
+        shutil.rmtree(restore_root, ignore_errors=True)
+        with contextlib.suppress(OSError):
+            os.rmdir(os.path.dirname(restore_root))
+
+        completed = True
         return {
             "schema": CHECKPOINT_ARCHIVE_RESTORE_SCHEMA,
             "restore": relocated,
@@ -17413,16 +17480,26 @@ def _checkpoint_restore_from_archive(
         }
     finally:
         os.close(destination_descriptor)
-        shutil.rmtree(scratch, ignore_errors=True)
+        if scratch is not None:
+            shutil.rmtree(scratch, ignore_errors=True)
+        # S4-R1-04: the destination is admitted before the inspector runs, so a
+        # refusal can reach here having created a directory the operator did
+        # not. `rmdir` removes only an empty one, so nothing this function did
+        # not make, and nothing `git init` has since filled, is ever removed.
+        if created_destination and not completed:
+            with contextlib.suppress(OSError):
+                os.rmdir(destination)
 
 
 def _checkpoint_archive_refuse(refusal: str) -> None:
     """Exit on one bounded class name, with no path, member or tool output.
 
-    Every archive refusal is a name from the reference's closed table. The
-    diagnosis a reader needs is which check said no; anything more would carry
-    an entry name, an entry's content or `gpg` output out of a command whose
-    whole purpose is to keep hostile bytes inside its stage.
+    Every refusal raised *through here* is a name from the reference's closed
+    table; the reused controller readers this path also calls keep their own
+    `die`, which `CHECKPOINT_ARCHIVE_REFUSALS` above bounds. The diagnosis a
+    reader needs is which check said no; anything more would carry an entry
+    name, an entry's content or `gpg` output out of a command whose whole
+    purpose is to keep hostile bytes inside its stage.
     """
     if refusal not in CHECKPOINT_ARCHIVE_REFUSALS:
         refusal = "manifest-mismatch"
@@ -17435,8 +17512,13 @@ def _checkpoint_archive_guarded(refusal: str, operation):
 
     The readers this reuses -- the boundary rule, the ref set, the capsule
     exporter, the identity -- all refuse through `die`, which prints a path-
-    bearing sentence and exits 2. The archive owes one class name and exit 1,
-    so their stream is captured and their exit is translated here.
+    bearing sentence and exits 2. Where a reader's refusal is one the
+    reference's closed table already names, translating it here is what keeps
+    the two spellings of one class from both reaching an operator.
+
+    This wraps the call sites that have such a name to translate to, and only
+    those. It is not applied to every reused reader on the restore path, and
+    `CHECKPOINT_ARCHIVE_REFUSALS` above records why (S4-R1-02).
     """
     try:
         with contextlib.redirect_stderr(io.StringIO()):
