@@ -1,0 +1,251 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "span-index",
+      "summary": "Extend the existing bracket-anchored TypeScript pass and its per-file span index inside check_typescript, so the three recognisers reuse the masked lexer, the bracket-match table and the depth-zero punctuation tables the E005 pass already builds."
+    },
+    {
+      "id": "unmasked-regex",
+      "summary": "Recognise the three shapes with regular expressions over the raw file text, with no lexer and no mask, the cheapest strategy to write."
+    },
+    {
+      "id": "forward-scan",
+      "summary": "Add a second, independent pass over the masked text that walks every identifier chain forward to its bracket and reads each argument span on its own, sharing the lexer but none of the span index."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "interpolated-message-recall",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "ephoros",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 14,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "cap-scale-runtime",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "at-most",
+      "threshold": 2000,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "reader-peak-space",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "stdlib-only",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "fail-closed-bypass",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "clone-verdict-e001",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "ephoros",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 14,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "span-index",
+      "criterion": "interpolated-message-recall",
+      "state": "pass",
+      "report": {
+        "path": "reports/span-index-interpolated-message-recall.json",
+        "sha256": "a77abf460f2674ca99b3c950b4c3ae4d9b6c79db4b32bfebebd8a1f4674eaea8"
+      }
+    },
+    {
+      "candidate": "span-index",
+      "criterion": "cap-scale-runtime",
+      "state": "pass",
+      "report": {
+        "path": "reports/span-index-cap-scale-runtime.json",
+        "sha256": "1d4a9b858cbe51b9393571abd36c5d789c731121286347083bc1765169081395"
+      }
+    },
+    {
+      "candidate": "span-index",
+      "criterion": "reader-peak-space",
+      "state": "pass",
+      "report": {
+        "path": "reports/span-index-reader-peak-space.json",
+        "sha256": "b042c90f07ddb6a29985958712fa146caa480f7b6be9d31364db7aa6885efba9"
+      }
+    },
+    {
+      "candidate": "span-index",
+      "criterion": "stdlib-only",
+      "state": "pass",
+      "report": {
+        "path": "reports/span-index-stdlib-only.json",
+        "sha256": "215c0b5f865b2fb70330d367ebb156a76a89e4cb96253e381b022ecda0d1f3a7"
+      }
+    },
+    {
+      "candidate": "span-index",
+      "criterion": "fail-closed-bypass",
+      "state": "pass",
+      "report": {
+        "path": "reports/span-index-fail-closed-bypass.json",
+        "sha256": "ed5cd5d29814cb2475e74f80d8c973539be724dddbd5d574b751781c44e39dae"
+      }
+    },
+    {
+      "candidate": "span-index",
+      "criterion": "clone-verdict-e001",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design-probes/clone_verdict.py",
+      "report": "reports/span-index-clone-verdict-e001.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "unmasked-regex",
+      "criterion": "interpolated-message-recall",
+      "state": "fail",
+      "report": {
+        "path": "reports/unmasked-regex-interpolated-message-recall.json",
+        "sha256": "69ba0cd829562d5c9eacd315b3e3b10206e067ac5a7bca3253cbd75344f80e99"
+      }
+    },
+    {
+      "candidate": "unmasked-regex",
+      "criterion": "cap-scale-runtime",
+      "state": "fail",
+      "report": {
+        "path": "reports/unmasked-regex-cap-scale-runtime.json",
+        "sha256": "1a87f81eb1384b4ad0788b3a879dbddc93c7cb4b7f3b600fa4ed06dfd51895ad"
+      }
+    },
+    {
+      "candidate": "unmasked-regex",
+      "criterion": "reader-peak-space",
+      "state": "pass",
+      "report": {
+        "path": "reports/unmasked-regex-reader-peak-space.json",
+        "sha256": "eec5d4000988d8ce59906a46dfb32b524a59fab0bfb61c05d26ed9789b287b7d"
+      }
+    },
+    {
+      "candidate": "unmasked-regex",
+      "criterion": "stdlib-only",
+      "state": "pass",
+      "report": {
+        "path": "reports/unmasked-regex-stdlib-only.json",
+        "sha256": "501ff2733acbe532b984a419a06cfb6a1301926c6128072accb7a81eab813a73"
+      }
+    },
+    {
+      "candidate": "unmasked-regex",
+      "criterion": "fail-closed-bypass",
+      "state": "fail",
+      "report": {
+        "path": "reports/unmasked-regex-fail-closed-bypass.json",
+        "sha256": "9bf80d59ebfbf423a824e92110faee489cdd2402589ab3b94cb21df467d6cccd"
+      }
+    },
+    {
+      "candidate": "unmasked-regex",
+      "criterion": "clone-verdict-e001",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design-probes/clone_verdict.py",
+      "report": "reports/unmasked-regex-clone-verdict-e001.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "forward-scan",
+      "criterion": "interpolated-message-recall",
+      "state": "pass",
+      "report": {
+        "path": "reports/forward-scan-interpolated-message-recall.json",
+        "sha256": "b7c458d038b58603b7756d4f5e53426cc67dbb7f70b7d36eb86f7bedfde0e52b"
+      }
+    },
+    {
+      "candidate": "forward-scan",
+      "criterion": "cap-scale-runtime",
+      "state": "fail",
+      "report": {
+        "path": "reports/forward-scan-cap-scale-runtime.json",
+        "sha256": "47a62e36468d959ec9125671ff786fb823c30af3870dd58524cbdeb57248d964"
+      }
+    },
+    {
+      "candidate": "forward-scan",
+      "criterion": "reader-peak-space",
+      "state": "pass",
+      "report": {
+        "path": "reports/forward-scan-reader-peak-space.json",
+        "sha256": "ef3561e9e3395d7e2500c619d8118e0b05a9921339bd59983879ecaa04fc11be"
+      }
+    },
+    {
+      "candidate": "forward-scan",
+      "criterion": "stdlib-only",
+      "state": "pass",
+      "report": {
+        "path": "reports/forward-scan-stdlib-only.json",
+        "sha256": "35a5396a2bce7d30a657207ceec9d3bbc87415fb3ace640ff950a4ae8a256a17"
+      }
+    },
+    {
+      "candidate": "forward-scan",
+      "criterion": "fail-closed-bypass",
+      "state": "pass",
+      "report": {
+        "path": "reports/forward-scan-fail-closed-bypass.json",
+        "sha256": "22b7c53ce40eb2f2ef72a4121fb52e0c3c8a56c2b368c0e45d7dc75c63bd5c18"
+      }
+    },
+    {
+      "candidate": "forward-scan",
+      "criterion": "clone-verdict-e001",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design-probes/clone_verdict.py",
+      "report": "reports/forward-scan-clone-verdict-e001.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "span-index",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

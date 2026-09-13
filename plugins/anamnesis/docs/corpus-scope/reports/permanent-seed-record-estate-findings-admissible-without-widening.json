@@ -1,0 +1,9 @@
+{
+  "candidate": "permanent-seed-record",
+  "command": "python3 .hexaemeron/reports/resolve.py permanent-seed-record estate-findings-admissible-without-widening",
+  "criterion": "estate-findings-admissible-without-widening",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

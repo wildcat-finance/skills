@@ -2,10 +2,10 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://wildcat.finance/schemas/dokimasia/scrutiny/v1.json",
   "title": "Dokimasia scrutiny record",
-  "description": "One scrutiny of one pinned application commit against one reviewed workbook. Carries the three identities whose movement can explain a moved result, the digests of everything examined, and the closure figures as separate fields. Closed, so an unknown key is a refusal. The committed form drops the timing, because a measured duration would mean no two runs of the same inputs agreed on a digest.",
+  "description": "One scrutiny of one pinned application commit against one reviewed workbook. Carries the three identities whose movement can explain a moved result, the digests of everything examined, the closure figures as separate fields, and the coverage record's confirmations block unchanged, so the record says whose judgement its numerator is. Closed, so an unknown key is a refusal. The committed form drops the timing, because a measured duration would mean no two runs of the same inputs agreed on a digest.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "skill_version", "subject", "examined", "closure_ratio", "counts", "gaps", "undisposed"],
+  "required": ["schema", "skill_version", "subject", "examined", "closure_ratio", "counts", "gaps", "undisposed", "confirmations"],
   "properties": {
     "schema": { "const": "dokimasia-scrutiny/v1" },
     "skill_version": {
@@ -77,6 +77,33 @@
       "minimum": 0
     },
     "undisposed": { "type": "integer", "minimum": 0 },
+    "confirmations": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Whose judgement the numerator is, copied unchanged from the coverage record this scrutiny wraps: `people`, the count of distinct `confirmed_by` values; `by_person`, how many admitted entries each confirmed; `by_rule`, every declared rule with its text, the person who stated it and how many entries applied it; and `individual`, the entries confirmed with no rule. The rendered scrutiny states the people count, every rule and the individual count under \"Who decided\". The canonical digest covers this block.",
+      "required": ["people", "by_person", "by_rule", "individual"],
+      "properties": {
+        "people": { "type": "integer", "minimum": 0 },
+        "by_person": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "by_rule": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text", "stated_by", "applied"],
+            "properties": {
+              "text": { "type": "string", "minLength": 1, "maxLength": 512 },
+              "stated_by": { "type": "string", "minLength": 1, "maxLength": 128 },
+              "applied": { "type": "integer", "minimum": 0 }
+            }
+          }
+        },
+        "individual": { "type": "integer", "minimum": 0 }
+      }
+    },
     "timing": {
       "type": "object",
       "description": "Present on an emitted scrutiny and absent from a committed one. A measured duration cannot be part of a record two runs must agree on.",

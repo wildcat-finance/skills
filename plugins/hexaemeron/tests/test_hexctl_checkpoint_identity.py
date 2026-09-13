@@ -1254,6 +1254,40 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("allowed only", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
+    def test_identity_refuses_a_non_exhausted_audit_round_without_writes(self):
+        self.git(
+            "remote",
+            "add",
+            "origin",
+            "https://github.com/wildcat-finance/example.git",
+        )
+        self.to_steps(titles=("First", "Second"))
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        self.run_ctl(
+            "done",
+            "implement",
+            "--branch",
+            self.step_branch(1),
+            "--commit",
+            "abc1",
+        )
+        self.run_ctl(
+            "audit-round",
+            "--findings",
+            "1",
+            "--phylax-exit",
+            "0",
+            "--ephoros-exit",
+            "0",
+            "--hypomnema-exit",
+            "0",
+        )
+        before = self.state_ledger_bytes()
+        result = self.identity(expect=2)
+        self.assertEqual("", result.stdout)
+        self.assertIn("audit-verdict boundary is not active", result.stderr)
+        self.assertEqual(before, self.state_ledger_bytes())
+
 
 if __name__ == "__main__":
     unittest.main()

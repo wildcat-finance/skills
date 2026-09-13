@@ -42,7 +42,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
     }
   ],
   "observations": [
-    "The command exits 0 in about 0.8 seconds with no network.",
+    "The command exits 0 in about 15 seconds with no network, well inside the 600-second per-command timeout.",
     "Its last reported line is: OK"
   ],
   "frontier": {

@@ -210,6 +210,14 @@ identities, new ledger digest/count/tail, ref count, worktree, verification
 result, status-output digest, semantic next object and whether it completed a
 new or interrupted publication.
 
+The restored worktree may then run `checkpoint identity`. That command accepts
+only this one immediate, fully joined `checkpoint:restore` receipt, reconstructs
+the exact imported producer prefix and state, including its source-state digest,
+and emits the same semantic result bytes and `snapshot_id` as the producer. The relocation receipt remains required
+verification evidence but is not new progress. A second restore, another suffix,
+prefix drift, a path or ref substitution, or a non-exhausted audit round refuses
+before identity stdout and does not widen the two checkpoint boundaries.
+
 ## Outer recovery boundary
 
 These commands do not create or verify the Git bundle, package an archive,

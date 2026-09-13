@@ -17,10 +17,31 @@ PLUGIN = HERE.parents[2]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from dokimasia_lib import inventory as inventory_lib  # noqa: E402
+from dokimasia_lib import propose as propose_lib  # noqa: E402
 from dokimasia_lib import reconcile as reconcile_lib  # noqa: E402
 from dokimasia_lib import workbook as workbook_lib  # noqa: E402
 
 SCHEMA = reconcile_lib.DISPOSITIONS_SCHEMA
+
+# Two fictitious reviewers and the rules they stated. Every confirmed entry in
+# the closed fixture names one of them; the workbook rows are confirmed under
+# a rule and the compiled items individually, so the record's confirmations
+# block has both shapes to reconcile. One row is applied to nothing, because a
+# stated rule nobody used is reported rather than refused. See ADR-003.
+PERSON_ONE = "Reviewer One"
+PERSON_TWO = "Reviewer Two"
+ROW_RULE = "row-owner-walks-it"
+UNUSED_RULE = "stated-and-applied-to-nothing"
+RULES = {
+    ROW_RULE: {
+        "text": "the reviewer who wrote a row walks it",
+        "stated_by": PERSON_TWO,
+    },
+    UNUSED_RULE: {
+        "text": "a rule the table holds and no entry names",
+        "stated_by": PERSON_ONE,
+    },
+}
 
 
 def _records() -> tuple[dict, dict]:
@@ -44,12 +65,29 @@ def _records() -> tuple[dict, dict]:
     return inventory, workbook
 
 
-def _envelope(inventory: dict, workbook: dict, entries: list[dict]) -> dict:
-    return {
+def _envelope(
+    inventory: dict, workbook: dict, entries: list[dict], rules=RULES
+) -> dict:
+    body = {
         "schema": SCHEMA,
         "inventory_sha256": inventory["inventory_sha256"],
         "workbook_sha256": workbook["workbook_sha256"],
         "dispositions": entries,
+    }
+    if rules is not None:
+        body["rules"] = json.loads(json.dumps(rules))
+    return body
+
+
+def _draft(entry: dict) -> dict:
+    """The entry as a generator would have drafted it: unconfirmed, unattributed.
+
+    An unconfirmed entry may carry neither attribution field, so every fixture
+    that turns a confirmed entry back into a draft strips them here.
+    """
+    return {
+        **{k: v for k, v in entry.items() if k not in ("confirmed_by", "rule")},
+        "confirmed": False,
     }
 
 
@@ -72,6 +110,7 @@ def _closed_entries(inventory: dict, workbook: dict) -> list[dict]:
                 "disposition": "covered",
                 "oracle": reviewed[index % len(reviewed)],
                 "confirmed": True,
+                "confirmed_by": PERSON_ONE,
             })
         elif entry["kind"] == "guard":
             entries.append({
@@ -79,6 +118,7 @@ def _closed_entries(inventory: dict, workbook: dict) -> list[dict]:
                 "disposition": "manual",
                 "reason": "the gate is checked by a person against the access matrix",
                 "confirmed": True,
+                "confirmed_by": PERSON_ONE,
             })
         elif entry["kind"] == "action":
             entries.append({
@@ -86,6 +126,7 @@ def _closed_entries(inventory: dict, workbook: dict) -> list[dict]:
                 "disposition": "excluded",
                 "reason": "the action is exercised only through the routes above",
                 "confirmed": True,
+                "confirmed_by": PERSON_ONE,
             })
         else:
             entries.append({
@@ -93,6 +134,8 @@ def _closed_entries(inventory: dict, workbook: dict) -> list[dict]:
                 "disposition": "manual",
                 "reason": "the row is owned by the reviewer who wrote it",
                 "confirmed": True,
+                "confirmed_by": PERSON_TWO,
+                "rule": ROW_RULE,
             })
     return entries
 
@@ -143,6 +186,7 @@ def build_all(directory: Path) -> dict[str, Path]:
     bare = [dict(e) for e in closed]
     bare[closed.index(covered)] = {
         "item": covered["item"], "disposition": "covered", "confirmed": True,
+        "confirmed_by": PERSON_ONE,
     }
     write("covered-without-oracle.json", _envelope(inventory, workbook, bare))
 
@@ -166,6 +210,7 @@ def build_all(directory: Path) -> dict[str, Path]:
             "disposition": "excluded",
             "reason": "this item is not in the inventory",
             "confirmed": True,
+            "confirmed_by": PERSON_ONE,
         }]),
     )
 
@@ -188,6 +233,7 @@ def build_all(directory: Path) -> dict[str, Path]:
         "disposition": "covered",
         "oracle": case_entry["item"].split(":", 1)[1],
         "confirmed": True,
+        "confirmed_by": PERSON_ONE,
     }
     write("case-covered-by-itself.json", _envelope(inventory, workbook, circular))
 
@@ -198,12 +244,12 @@ def build_all(directory: Path) -> dict[str, Path]:
     # Confirmation fixtures. ADR-002 makes `confirmed` the only thing that
     # admits an entry, so these cover the four states a set can be in and the
     # two ways the field itself can be wrong.
-    drafted = [{**e, "confirmed": False} for e in closed]
+    drafted = [_draft(e) for e in closed]
     write("all-unconfirmed.json", _envelope(inventory, workbook, drafted))
 
     half = len(closed) // 2
     mixed = [
-        {**e, "confirmed": index < half} for index, e in enumerate(closed)
+        e if index < half else _draft(e) for index, e in enumerate(closed)
     ]
     write("mixed-confirmation.json", _envelope(inventory, workbook, mixed))
 
@@ -228,6 +274,158 @@ def build_all(directory: Path) -> dict[str, Path]:
         "unconfirmed-case-covered-by-itself.json",
         _envelope(inventory, workbook, unconfirmed_circular),
     )
+
+    # Attribution fixtures. ADR-003 requires a person on every confirmed
+    # entry and resolves a rule against the set's own table, so these cover
+    # each way the person, the rule or the table can be wrong, and each cap
+    # at its bound and one over it.
+    def with_first(**fields) -> list[dict]:
+        replaced = [dict(e) for e in closed]
+        replaced[0] = {**closed[0], **fields}
+        return replaced
+
+    def without_first(*fields) -> list[dict]:
+        replaced = [dict(e) for e in closed]
+        replaced[0] = {k: v for k, v in closed[0].items() if k not in fields}
+        return replaced
+
+    write(
+        "confirmed-without-person.json",
+        _envelope(inventory, workbook, without_first("confirmed_by")),
+    )
+    write(
+        "blank-person.json",
+        _envelope(inventory, workbook, with_first(confirmed_by="   ")),
+    )
+    write(
+        "non-string-person.json",
+        _envelope(inventory, workbook, with_first(confirmed_by=7)),
+    )
+
+    ruled = next(e for e in closed if e.get("rule") == ROW_RULE)
+    unknown_rule = [dict(e) for e in closed]
+    unknown_rule[closed.index(ruled)] = {**ruled, "rule": "no-such-rule"}
+    write("unknown-rule.json", _envelope(inventory, workbook, unknown_rule))
+
+    non_string_rule = [dict(e) for e in closed]
+    non_string_rule[closed.index(ruled)] = {**ruled, "rule": 3}
+    write("non-string-rule.json", _envelope(inventory, workbook, non_string_rule))
+
+    def table(**changes) -> dict:
+        rules = json.loads(json.dumps(RULES))
+        for rule_id, row in changes.items():
+            rules[rule_id] = row
+        return rules
+
+    write(
+        "rule-without-text.json",
+        _envelope(inventory, workbook, closed, table(**{
+            ROW_RULE: {**RULES[ROW_RULE], "text": "  "},
+        })),
+    )
+    write(
+        "rule-without-author.json",
+        _envelope(inventory, workbook, closed, table(**{
+            ROW_RULE: {**RULES[ROW_RULE], "stated_by": ""},
+        })),
+    )
+    write("rules-not-object.json", _envelope(inventory, workbook, closed, []))
+    write(
+        "unsafe-rule-id.json",
+        _envelope(inventory, workbook, closed, table(**{"../escaped": RULES[ROW_RULE]})),
+    )
+
+    # A draft may not pre-name its confirmer: the entry is unconfirmed, and
+    # the fields would read as attribution the moment the boolean flipped.
+    write(
+        "unconfirmed-with-person.json",
+        _envelope(inventory, workbook, with_first(
+            confirmed=False, confirmed_by=PERSON_ONE,
+        )),
+    )
+    only_rule = [dict(e) for e in closed]
+    only_rule[0] = {**_draft(closed[0]), "rule": ROW_RULE}
+    write("unconfirmed-with-rule.json", _envelope(inventory, workbook, only_rule))
+
+    # The shape a set confirmed under dokimasia-v2.1.0 has: no table, no
+    # person on any entry, drafts first and confirmations after them. It must
+    # refuse on its first confirmed entry, naming the item and the field,
+    # rather than be defaulted to anybody.
+    prior = [_draft(e) for e in closed[:half]] + [
+        {k: v for k, v in e.items() if k not in ("confirmed_by", "rule")}
+        for e in closed[half:]
+    ]
+    write("prior-shape.json", _envelope(inventory, workbook, prior, None))
+
+    # Each cap at its bound reconciles; one byte or one row over refuses.
+    at_person = "p" * reconcile_lib.MAX_PERSON_BYTES
+    write(
+        "person-at-cap.json",
+        _envelope(inventory, workbook, with_first(confirmed_by=at_person)),
+    )
+    write(
+        "person-over-cap.json",
+        _envelope(inventory, workbook, with_first(confirmed_by=at_person + "p")),
+    )
+    write(
+        "author-at-cap.json",
+        _envelope(inventory, workbook, closed, table(**{
+            ROW_RULE: {**RULES[ROW_RULE], "stated_by": at_person},
+        })),
+    )
+    write(
+        "author-over-cap.json",
+        _envelope(inventory, workbook, closed, table(**{
+            ROW_RULE: {**RULES[ROW_RULE], "stated_by": at_person + "p"},
+        })),
+    )
+    at_text = "t" * reconcile_lib.MAX_RULE_TEXT_BYTES
+    write(
+        "rule-text-at-cap.json",
+        _envelope(inventory, workbook, closed, table(**{
+            ROW_RULE: {**RULES[ROW_RULE], "text": at_text},
+        })),
+    )
+    write(
+        "rule-text-over-cap.json",
+        _envelope(inventory, workbook, closed, table(**{
+            ROW_RULE: {**RULES[ROW_RULE], "text": at_text + "t"},
+        })),
+    )
+    at_id = "r" * reconcile_lib.MAX_RULE_ID_BYTES
+    for name, rule_id in (
+        ("rule-id-at-cap.json", at_id),
+        ("rule-id-over-cap.json", at_id + "r"),
+    ):
+        renamed = [
+            {**e, "rule": rule_id} if e.get("rule") == ROW_RULE else dict(e)
+            for e in closed
+        ]
+        rules = {rule_id: RULES[ROW_RULE], UNUSED_RULE: RULES[UNUSED_RULE]}
+        write(name, _envelope(inventory, workbook, renamed, rules))
+    for name, rows in (
+        ("rules-at-cap.json", reconcile_lib.MAX_RULES),
+        ("rules-over-cap.json", reconcile_lib.MAX_RULES + 1),
+    ):
+        rules = {
+            f"rule-{index:04d}": {"text": f"rule number {index}", "stated_by": PERSON_ONE}
+            for index in range(rows - len(RULES))
+        }
+        rules.update(json.loads(json.dumps(RULES)))
+        write(name, _envelope(inventory, workbook, closed, rules))
+
+    # The shape a set has between two reviews: every workbook row confirmed
+    # under the stated rule, every compiled item still the untouched draft the
+    # generator wrote, and the table carrying the row nobody applied. A
+    # regeneration must carry the attributed half and the whole table byte
+    # for byte and replace only the drafts.
+    scoped = reconcile_lib.scoped_set(inventory, workbook)
+    between = [
+        next(e for e in closed if e["item"] == entry["id"])
+        if entry["side"] == "workbook" else propose_lib.draft_entry(entry)
+        for entry in scoped
+    ]
+    write("regeneration-input.json", _envelope(inventory, workbook, between))
 
     return made
 

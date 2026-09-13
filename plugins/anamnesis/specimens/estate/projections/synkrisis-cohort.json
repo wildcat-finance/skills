@@ -1,0 +1,66 @@
+{
+  "cohort": {
+    "id": "cohort:509239765f9fa2db",
+    "included": 17,
+    "members": [
+      "find:archive-verification-2026-08-31:V1-R1-01",
+      "find:archive-verification-2026-08-31:V1-R1-02",
+      "find:archive-verification-2026-08-31:V1-R1-03",
+      "find:archive-verification-2026-08-31:V1-R1-04",
+      "find:archive-verification-2026-08-31:V1-R1-05",
+      "find:archive-verification-2026-08-31:V1-R1-06",
+      "find:archive-verification-2026-08-31:V1-R1-07",
+      "find:archive-verification-2026-08-31:V1-R1-08",
+      "find:archive-verification-2026-08-31:V1-R1-09",
+      "find:archive-verification-2026-08-31:V1-R1-10",
+      "find:archive-verification-2026-08-31:V1-R1-11",
+      "find:archive-verification-2026-08-31:V1-R1-12",
+      "find:archive-verification-2026-08-31:V1-R2-01",
+      "find:counterparty-history-2026-09-05:P1-R1-01",
+      "find:counterparty-history-2026-09-05:P1-R2-01",
+      "find:counterparty-history-2026-09-05:P1-R2-02",
+      "find:counterparty-history-2026-09-05:P1-R2-03"
+    ]
+  },
+  "denominators": {
+    "engagements": 2,
+    "findings": 17,
+    "findings_withheld_by_disclosure": 0,
+    "occurrences": 17,
+    "relations": 34,
+    "remediations": 0,
+    "rounds": 4,
+    "rounds_with_no_findings": 0,
+    "submissions": 17,
+    "verifications": 4
+  },
+  "exclusions": [],
+  "not_established": "Every count here is a count of the records this release holds. It does not establish how common anything is outside them, that the corpus is complete, or that an excluded record was rightly excluded.",
+  "policy": {
+    "cohort_rule": "every public finding in the release",
+    "curation_version": "estate-2026-09-06",
+    "taxonomy": "estate-severity 1"
+  },
+  "producer": "anamnesis-synkrisis-observation/v1",
+  "release_id": "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3",
+  "schema": "anamnesis-synkrisis-observation/v1",
+  "scope": {
+    "id": "capture-estate-findings",
+    "preserves": "The capture estate's own verification findings and open actions of 31 August and 5 September 2026.",
+    "records": {
+      "maximum": 40,
+      "minimum": 10
+    },
+    "sources": [
+      "archive-verification-2026-08-31",
+      "counterparty-history-2026-09-05"
+    ]
+  },
+  "unknowns": {
+    "finding.adjudication": 17,
+    "finding.remediation": 17,
+    "round.native_schema": 4,
+    "round.verdict": 4,
+    "submission.adjudication": 17
+  }
+}

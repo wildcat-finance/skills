@@ -73,9 +73,12 @@ command writes a report to a path that must not already exist.
 
 ### ANAMNESIS REBUILDS A PRESERVED AUDIT CORPUS
 
-<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="e97b9dd7490b5d1c0168b9739186bc37f55857d733ad7a07c45b700beeff9ee7" -->
-[Anamnesis](./plugins/anamnesis) admits, curates and projects the pilot audit
-specimen from the producer's own bytes.
+<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="a862e3b018241f9e30f45404d1a83957a9185fa3fc1ed540b042baa7c9448a07" -->
+[Anamnesis](./plugins/anamnesis) admits, curates and projects preserved audit
+specimens from the producer's own bytes, and the mapper a curation policy
+declares now selects the implementation that reads each source rather than
+naming the only one there was. Admitting findings a party outside this
+repository produced, under a mapper declared per source, is the held job.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/anamnesis/skills/anamnesis --report tmp/demo/anamnesis.json
@@ -121,7 +124,7 @@ venue rows are stated gaps, not clean venues.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 
-<!-- front-door:demo skill="dokimasia" claim="dokimasia-wildcat-app-v2-scrutiny" digest="dea272f42a22a0193ee90eba8763eb18eb3c5dbe1408c3327c629f10b9d58f4b" -->
+<!-- front-door:demo skill="dokimasia" claim="dokimasia-wildcat-app-v2-scrutiny" digest="0f2d1b7edbc86ca2bea2ce5f39b564ba8c563110c718487535920ff467484e1d" -->
 [Dokimasia](./plugins/dokimasia) regenerates the `wildcat-app-v2` coverage
 record, scrutiny record and rendered report, and checks that the three agree.
 

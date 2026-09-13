@@ -282,1619 +282,2023 @@
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-01",
       "oracle": "",
       "proposed_sha256": "50c0e68587675593317095a802c7fe246768252aec0204facb1be408e6d6a78c",
-      "reason": "drafted from workbook row 1 Admin:6, identifier ADM-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:6, identifier ADM-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-02",
       "oracle": "",
       "proposed_sha256": "96eda432e342f44fc469fb1c40ef6a37af4927ebcca5728379b1e094c91289f3",
-      "reason": "drafted from workbook row 1 Admin:7, identifier ADM-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:7, identifier ADM-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-03",
       "oracle": "",
       "proposed_sha256": "57bf0993aabce7fee243b5415bd7a4f44fca184459b115064aed826b5382a375",
-      "reason": "drafted from workbook row 1 Admin:8, identifier ADM-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:8, identifier ADM-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-04",
       "oracle": "",
       "proposed_sha256": "68a89ff9c5d8d1b72cfe6878e67a05e1aec22117a35bd82ba562d68691fd0077",
-      "reason": "drafted from workbook row 1 Admin:9, identifier ADM-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:9, identifier ADM-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-05",
       "oracle": "",
       "proposed_sha256": "09d8095046636156fce0d9720e600b00023ac35851b600dab0c2ee980c06066c",
-      "reason": "drafted from workbook row 1 Admin:10, identifier ADM-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:10, identifier ADM-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-06",
       "oracle": "",
       "proposed_sha256": "e1d8482b0a845a5d211fc0367c02a1c109e0d20e494eb2fc1c207de1473531a1",
-      "reason": "drafted from workbook row 1 Admin:12, identifier ADM-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:12, identifier ADM-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-07",
       "oracle": "",
       "proposed_sha256": "baf9f88f13412b00937438cd8ab4d746aa53199c8f3814780d7f90d4b72dedf2",
-      "reason": "drafted from workbook row 1 Admin:13, identifier ADM-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:13, identifier ADM-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-08",
       "oracle": "",
       "proposed_sha256": "341fe5315cd03a8a67f97ed6177cd1649918b6b47ca8383375a71d5c004efaa3",
-      "reason": "drafted from workbook row 1 Admin:14, identifier ADM-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:14, identifier ADM-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-09",
       "oracle": "",
       "proposed_sha256": "dc9acad3f9e85f23386e99e92f6dce772575ac58514fef84dac4dfeb8274636c",
-      "reason": "drafted from workbook row 1 Admin:15, identifier ADM-09; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:15, identifier ADM-09; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-10",
       "oracle": "",
       "proposed_sha256": "d4a12ecd3ad1d9e62d21c7a94927e364bcaa56c965e154947a6007bc269cf299",
-      "reason": "drafted from workbook row 1 Admin:17, identifier ADM-10; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:17, identifier ADM-10; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-11",
       "oracle": "",
       "proposed_sha256": "2a5f422e23fc280515fa125a373ce7ca602865081dec97b76a116caff15d8e74",
-      "reason": "drafted from workbook row 1 Admin:18, identifier ADM-11; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:18, identifier ADM-11; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-12",
       "oracle": "",
       "proposed_sha256": "ea0de4e15b34d00dcbe12dfb6fad2df71c6cf6dc0dc187c2785d552a8ae900df",
-      "reason": "drafted from workbook row 1 Admin:19, identifier ADM-12; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:19, identifier ADM-12; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:ADM-13",
       "oracle": "",
       "proposed_sha256": "c2c510a216553490f0dd39e92dbd5d534d81cb2923bbc71c533b88c1b94de349",
-      "reason": "drafted from workbook row 1 Admin:20, identifier ADM-13; a reviewer owns this row"
+      "reason": "drafted from workbook row 1 Admin:20, identifier ADM-13; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-01",
       "oracle": "",
       "proposed_sha256": "650997b6f785d826dec2d905d934c58265be73d9d5319d9cb2d05de6ca246095",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:6, identifier BON-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:6, identifier BON-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-02",
       "oracle": "",
       "proposed_sha256": "ff4ab12067c9f0fdad683be214a939af4e79e499dec25fad5921069ff867d13c",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:7, identifier BON-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:7, identifier BON-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-03",
       "oracle": "",
       "proposed_sha256": "db38ed5d102639e08f153a4e6b6e7bb8538443628d36e741c9807a558f247a52",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:8, identifier BON-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:8, identifier BON-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-04",
       "oracle": "",
       "proposed_sha256": "35e80c047aac70108d0a812dc015298942ab75af3e511ba1b239ec231fbf2ad9",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:10, identifier BON-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:10, identifier BON-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-05",
       "oracle": "",
       "proposed_sha256": "f54857d24a87bea33cb89978bb706720eecf21fe00dabaee6744654f9b3b680b",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:11, identifier BON-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:11, identifier BON-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-06",
       "oracle": "",
       "proposed_sha256": "b7b8e8eca2bec7c2cd424030a3afc811b5d21c2c3b937b8f7a88b38048df4a30",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:12, identifier BON-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:12, identifier BON-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-07",
       "oracle": "",
       "proposed_sha256": "ac89a6f0479de19326d660f9feba467e6017d0db51cedc89962db448d359bf8f",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:13, identifier BON-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:13, identifier BON-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-08",
       "oracle": "",
       "proposed_sha256": "15ad35ff291c69c35153da289928fb11965d1c0a7dd48d858b265ae785715ce1",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:15, identifier BON-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:15, identifier BON-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-09",
       "oracle": "",
       "proposed_sha256": "913b4f8ec6260c62057955b1c7037ecc3031032602ba8b7fc8fa970406c215f4",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:16, identifier BON-09; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:16, identifier BON-09; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BON-10",
       "oracle": "",
       "proposed_sha256": "118f56df954e5457b6fe96122542ee23e331e7e30cf6195fb7900c63a131bf00",
-      "reason": "drafted from workbook row 2 Borrower Onboarding:17, identifier BON-10; a reviewer owns this row"
+      "reason": "drafted from workbook row 2 Borrower Onboarding:17, identifier BON-10; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-01",
       "oracle": "",
       "proposed_sha256": "fc6ec1e9b0d4034adfa5654cf920d4666ee2547b182ba7e0af36c0bb647cbc8a",
-      "reason": "drafted from workbook row 4 Borrower Ops:6, identifier BOP-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:6, identifier BOP-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-02",
       "oracle": "",
       "proposed_sha256": "8d561db7d6a6d60c9e5e4d9b8799605281aebe70af7d4f67f2f5a51fd1110a31",
-      "reason": "drafted from workbook row 4 Borrower Ops:7, identifier BOP-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:7, identifier BOP-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-03",
       "oracle": "",
       "proposed_sha256": "8b5932d0af33440f75c6c965bebbe3b8a1c0ddebfc7aea545d8b7243e5c5f5aa",
-      "reason": "drafted from workbook row 4 Borrower Ops:8, identifier BOP-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:8, identifier BOP-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-04",
       "oracle": "",
       "proposed_sha256": "a79c93307c0bed17571cb8906a0b5164fcb7c596e98d3b749292102f14ff63e0",
-      "reason": "drafted from workbook row 4 Borrower Ops:9, identifier BOP-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:9, identifier BOP-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-05",
       "oracle": "",
       "proposed_sha256": "d1ab79b52e2bf12b501ae8ec1a9b10a79701f89f980a0b79b030c00e514751f4",
-      "reason": "drafted from workbook row 4 Borrower Ops:10, identifier BOP-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:10, identifier BOP-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-06",
       "oracle": "",
       "proposed_sha256": "0a5a1955ba779aa828d53cf04667f2b2e47c7c6d7d5a2dd2b47164a6b9ae657c",
-      "reason": "drafted from workbook row 4 Borrower Ops:12, identifier BOP-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:12, identifier BOP-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-07",
       "oracle": "",
       "proposed_sha256": "34cc20129916a73388a892e7866dc45704450e4497a9a343bc4c854bdd67fbb2",
-      "reason": "drafted from workbook row 4 Borrower Ops:13, identifier BOP-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:13, identifier BOP-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-08",
       "oracle": "",
       "proposed_sha256": "53ed2274bd8000b5f7f73b9345efd80c9bfdffba5c39350e76cb227371579b48",
-      "reason": "drafted from workbook row 4 Borrower Ops:14, identifier BOP-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:14, identifier BOP-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-09",
       "oracle": "",
       "proposed_sha256": "908cfe20fb32dd141583bd2768b7ae33e2290c566bf0c73bd10f4115caff572d",
-      "reason": "drafted from workbook row 4 Borrower Ops:15, identifier BOP-09; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:15, identifier BOP-09; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-10",
       "oracle": "",
       "proposed_sha256": "75866ba37eeed422c54bbdee9a7dac4da50b7ddfec99db3234a61731dc6fa57d",
-      "reason": "drafted from workbook row 4 Borrower Ops:16, identifier BOP-10; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:16, identifier BOP-10; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-11",
       "oracle": "",
       "proposed_sha256": "edf84868b135366ef396e4c2f0e6504af1ee3dac42718d797e9d35307f590647",
-      "reason": "drafted from workbook row 4 Borrower Ops:17, identifier BOP-11; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:17, identifier BOP-11; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-12",
       "oracle": "",
       "proposed_sha256": "54b94ed1d063f3ca7c3a5c4ba840c455d7101f57335907beca1f504bb3a64012",
-      "reason": "drafted from workbook row 4 Borrower Ops:19, identifier BOP-12; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:19, identifier BOP-12; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-13",
       "oracle": "",
       "proposed_sha256": "519cbb15e8bf0cb64d4a692528f14894ea15e3bc654a320831fd6cc06d0cc21e",
-      "reason": "drafted from workbook row 4 Borrower Ops:20, identifier BOP-13; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:20, identifier BOP-13; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-14",
       "oracle": "",
       "proposed_sha256": "a64e2f2bd7babe22d34f388c0314f44a40b7a7a98c5abda422d61c18129d3143",
-      "reason": "drafted from workbook row 4 Borrower Ops:21, identifier BOP-14; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:21, identifier BOP-14; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-15",
       "oracle": "",
       "proposed_sha256": "eca499bc83f7e240ce99eaf1f2a28ae3226363f2271f6090c18d34e2c03701f8",
-      "reason": "drafted from workbook row 4 Borrower Ops:22, identifier BOP-15; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:22, identifier BOP-15; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-16",
       "oracle": "",
       "proposed_sha256": "60c9c2c52b82ac5e4c8a7bfde0e444d0d0fe2d35f860c96225191d470f726512",
-      "reason": "drafted from workbook row 4 Borrower Ops:23, identifier BOP-16; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:23, identifier BOP-16; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-17",
       "oracle": "",
       "proposed_sha256": "91c0bd989bba46600867542a21cfaa093f33aa7c1f73e4887088c46936bbe715",
-      "reason": "drafted from workbook row 4 Borrower Ops:24, identifier BOP-17; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:24, identifier BOP-17; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-18",
       "oracle": "",
       "proposed_sha256": "60c314c9cdc00cc0674441a48c2d08fe370e785495818786337f9c9bb23af66b",
-      "reason": "drafted from workbook row 4 Borrower Ops:25, identifier BOP-18; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:25, identifier BOP-18; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-19",
       "oracle": "",
       "proposed_sha256": "613f879c2201c05fcd59e3d130d5bb39b07a6e62175372e962348d1200cd5b29",
-      "reason": "drafted from workbook row 4 Borrower Ops:26, identifier BOP-19; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:26, identifier BOP-19; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-20",
       "oracle": "",
       "proposed_sha256": "eed253cb670bb30e4fb12598bdcd01ae08712eef4239d452ac1dc783e92b35a0",
-      "reason": "drafted from workbook row 4 Borrower Ops:27, identifier BOP-20; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:27, identifier BOP-20; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-21",
       "oracle": "",
       "proposed_sha256": "e5a0b1eeb00dfdee6818f313e4e77e820bc70e87580fba4353e0e817e2068aca",
-      "reason": "drafted from workbook row 4 Borrower Ops:28, identifier BOP-21; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:28, identifier BOP-21; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-22",
       "oracle": "",
       "proposed_sha256": "e9c3380708664f4062117c48d3b000d9445406e2decbfca2e6691be15a13fe51",
-      "reason": "drafted from workbook row 4 Borrower Ops:30, identifier BOP-22; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:30, identifier BOP-22; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-23",
       "oracle": "",
       "proposed_sha256": "1756d7626cb3cf1de1d0164e691fcab6654509f85da40190f5389d02fd8c7886",
-      "reason": "drafted from workbook row 4 Borrower Ops:31, identifier BOP-23; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:31, identifier BOP-23; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-24",
       "oracle": "",
       "proposed_sha256": "2eaf08423b120b0f39d5e370c689673d90c6959290f459edf0cf0e176e0aa998",
-      "reason": "drafted from workbook row 4 Borrower Ops:32, identifier BOP-24; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:32, identifier BOP-24; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-25",
       "oracle": "",
       "proposed_sha256": "1457540eee3ab430ff895ac5fcd6abd19918752e955557d150e1b4b9ac6d1bc3",
-      "reason": "drafted from workbook row 4 Borrower Ops:33, identifier BOP-25; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:33, identifier BOP-25; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-26",
       "oracle": "",
       "proposed_sha256": "a9eda8cda9805130768e16b7219c7838b4e6d0ae88877de33a5830a079d153f2",
-      "reason": "drafted from workbook row 4 Borrower Ops:35, identifier BOP-26; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:35, identifier BOP-26; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-27",
       "oracle": "",
       "proposed_sha256": "46c3624afbab4448788e34d73d96a5b48bee96309ead728ea658f269df8d6406",
-      "reason": "drafted from workbook row 4 Borrower Ops:36, identifier BOP-27; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:36, identifier BOP-27; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-28",
       "oracle": "",
       "proposed_sha256": "55c4892c2620d2dc38c72adfe462b6e1a9b1dc1fd284b8dfd0c2e7d2a3ddcc78",
-      "reason": "drafted from workbook row 4 Borrower Ops:37, identifier BOP-28; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:37, identifier BOP-28; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-29",
       "oracle": "",
       "proposed_sha256": "df725555e6f5d726b4bf11d145ee5b179397244cea9cd931d93a8da1f86bcdb9",
-      "reason": "drafted from workbook row 4 Borrower Ops:38, identifier BOP-29; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:38, identifier BOP-29; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-30",
       "oracle": "",
       "proposed_sha256": "4ab170f5948dbccc6dcb5d87cf19ec7d4d123d1f4d304a9ffd944341c20ba72b",
-      "reason": "drafted from workbook row 4 Borrower Ops:39, identifier BOP-30; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:39, identifier BOP-30; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-31",
       "oracle": "",
       "proposed_sha256": "40a4d6bf7c5eaac2f2c96358ef2e057abc6378a8a62eee10dfc2cf574f0e058c",
-      "reason": "drafted from workbook row 4 Borrower Ops:41, identifier BOP-31; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:41, identifier BOP-31; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-32",
       "oracle": "",
       "proposed_sha256": "12cb624a296066e3ddf69b2c3ddcada1700c988f7258031c57158b8d121d7772",
-      "reason": "drafted from workbook row 4 Borrower Ops:42, identifier BOP-32; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:42, identifier BOP-32; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:BOP-33",
       "oracle": "",
       "proposed_sha256": "5a2b89141b9c521f94a89ef57d754158d022740d42747a990ea0fca32223c3da",
-      "reason": "drafted from workbook row 4 Borrower Ops:43, identifier BOP-33; a reviewer owns this row"
+      "reason": "drafted from workbook row 4 Borrower Ops:43, identifier BOP-33; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-01",
       "oracle": "",
       "proposed_sha256": "2a7f2d1917382fbc0438c4e1a3900d396711638b2a05c13cd43bd8269c17da32",
-      "reason": "drafted from workbook row 10 Edge & Regression:5, identifier EDG-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:5, identifier EDG-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-02",
       "oracle": "",
       "proposed_sha256": "a5b5e0ad2626bc58c68fef0bda1131abae4420c4c7ad5c8a003e039d6d3c4913",
-      "reason": "drafted from workbook row 10 Edge & Regression:6, identifier EDG-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:6, identifier EDG-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-03",
       "oracle": "",
       "proposed_sha256": "ff74649da4e743b6e4bada72039eba2c3b31db64d93eba46cff1c40ab92ae841",
-      "reason": "drafted from workbook row 10 Edge & Regression:7, identifier EDG-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:7, identifier EDG-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-04",
       "oracle": "",
       "proposed_sha256": "c447074f2be8da2f6d4ca1ed7e5ff638d6c0377b8c36ca54283938443ff7f439",
-      "reason": "drafted from workbook row 10 Edge & Regression:8, identifier EDG-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:8, identifier EDG-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-05",
       "oracle": "",
       "proposed_sha256": "4e9c5702d07c634616de21239932a1969f21b7948151693d7d8413a4cc66a181",
-      "reason": "drafted from workbook row 10 Edge & Regression:9, identifier EDG-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:9, identifier EDG-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-06",
       "oracle": "",
       "proposed_sha256": "07ee6fd86f0fe35cb49a70ce76ea4a67bd7cc0c2160aab22b6e86556db586c79",
-      "reason": "drafted from workbook row 10 Edge & Regression:10, identifier EDG-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:10, identifier EDG-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-07",
       "oracle": "",
       "proposed_sha256": "6a9937fc7f58007d255cee372ed03cbd0c290f47355af32c792396c6fe4cb3fb",
-      "reason": "drafted from workbook row 10 Edge & Regression:12, identifier EDG-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:12, identifier EDG-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-08",
       "oracle": "",
       "proposed_sha256": "16300e8a4855a676958a61826a8c41561f843aec5daa88141fe9af9eac3c79a9",
-      "reason": "drafted from workbook row 10 Edge & Regression:13, identifier EDG-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:13, identifier EDG-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-09",
       "oracle": "",
       "proposed_sha256": "a1c1ea8025d87d8b82fa23d5e3dea4e90e283b97f4904527ba1512722d5eb5d0",
-      "reason": "drafted from workbook row 10 Edge & Regression:14, identifier EDG-09; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:14, identifier EDG-09; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-10",
       "oracle": "",
       "proposed_sha256": "f9e1ac22abb1262019c11cd183a13a391c1814f9160cd641ee6a19e409f8b5fc",
-      "reason": "drafted from workbook row 10 Edge & Regression:15, identifier EDG-10; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:15, identifier EDG-10; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-11",
       "oracle": "",
       "proposed_sha256": "18692d809a111c31fa3624de1519f7fcf5a399fed156d5a2c19b34fd51b06619",
-      "reason": "drafted from workbook row 10 Edge & Regression:16, identifier EDG-11; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:16, identifier EDG-11; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-12",
       "oracle": "",
       "proposed_sha256": "89579750d83cf5085f05257c70a4edf6220b7476afb313dac5ff5d0ce38f40ab",
-      "reason": "drafted from workbook row 10 Edge & Regression:17, identifier EDG-12; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:17, identifier EDG-12; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-13",
       "oracle": "",
       "proposed_sha256": "3b69a0bf1bb6eb8d19775f0fe67416ddcaaf71c6cc0385b2117cddd5d87553e5",
-      "reason": "drafted from workbook row 10 Edge & Regression:18, identifier EDG-13; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:18, identifier EDG-13; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-14",
       "oracle": "",
       "proposed_sha256": "6cde2ad4b6a61b902af7f701bb076a5552e34a2b0c989d65093e5c3b6295a1e0",
-      "reason": "drafted from workbook row 10 Edge & Regression:20, identifier EDG-14; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:20, identifier EDG-14; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:EDG-15",
       "oracle": "",
       "proposed_sha256": "059020bf293178154b9662437254d50098bc5b3ae02e5c078aa8e85d2371b04b",
-      "reason": "drafted from workbook row 10 Edge & Regression:21, identifier EDG-15; a reviewer owns this row"
+      "reason": "drafted from workbook row 10 Edge & Regression:21, identifier EDG-15; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-01",
       "oracle": "",
       "proposed_sha256": "b87b123147e338dce2a9c11588b02957b093dc32f0c958e989ce944f38496a41",
-      "reason": "drafted from workbook row 5 Lender Flows:6, identifier LEN-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:6, identifier LEN-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-02",
       "oracle": "",
       "proposed_sha256": "17b7a87c56f8f2211abf7390273774560b0ac0df4e1b74d7d7b5ab0513253c8c",
-      "reason": "drafted from workbook row 5 Lender Flows:7, identifier LEN-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:7, identifier LEN-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-03",
       "oracle": "",
       "proposed_sha256": "4124f2b37cd221ea4c0045ec16b26c78c614fef9dd83345a2ba9b0d2e3e50bf9",
-      "reason": "drafted from workbook row 5 Lender Flows:8, identifier LEN-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:8, identifier LEN-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-04",
       "oracle": "",
       "proposed_sha256": "2efb26447dd16fd31b13dda8e081761e5475e6e738574e9de69a54f75f23b150",
-      "reason": "drafted from workbook row 5 Lender Flows:9, identifier LEN-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:9, identifier LEN-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-05",
       "oracle": "",
       "proposed_sha256": "ed0b27c39703f3fc994775e6e57bcab22df784e2bcbc5c6476cfad4563a60f31",
-      "reason": "drafted from workbook row 5 Lender Flows:11, identifier LEN-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:11, identifier LEN-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-06",
       "oracle": "",
       "proposed_sha256": "f4650de9ee52e5fac62fd0ba032a41b5915876a323a9bdeb15ce3c190a13cf24",
-      "reason": "drafted from workbook row 5 Lender Flows:12, identifier LEN-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:12, identifier LEN-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-07",
       "oracle": "",
       "proposed_sha256": "f02b8d3929a51ab591e4671eb4845bbb5ff175cf29b4572387f1a705253106c9",
-      "reason": "drafted from workbook row 5 Lender Flows:13, identifier LEN-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:13, identifier LEN-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-08",
       "oracle": "",
       "proposed_sha256": "9a7217b1e4ad8922188689d86b818a4c9dc64c47788a090eb459322f48a0b3fb",
-      "reason": "drafted from workbook row 5 Lender Flows:14, identifier LEN-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:14, identifier LEN-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-09",
       "oracle": "",
       "proposed_sha256": "a5f79156171fd58fb184205d29d8db3308d4288fc528ed729e269e7bf64ebac6",
-      "reason": "drafted from workbook row 5 Lender Flows:15, identifier LEN-09; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:15, identifier LEN-09; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-10",
       "oracle": "",
       "proposed_sha256": "de6a644c4eaa6c40298933ebb949a3eb08ded9dcec50abde6a0a9e0710e46c5b",
-      "reason": "drafted from workbook row 5 Lender Flows:16, identifier LEN-10; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:16, identifier LEN-10; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-11",
       "oracle": "",
       "proposed_sha256": "5202c5d6302dc5834377325fd4eaf65c37997ca4123837a3d0a6b2aea766b4bb",
-      "reason": "drafted from workbook row 5 Lender Flows:17, identifier LEN-11; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:17, identifier LEN-11; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-12",
       "oracle": "",
       "proposed_sha256": "33008d0fc97cf03c6d323a50a645084019d8ad32e69312b65288174f7bc43468",
-      "reason": "drafted from workbook row 5 Lender Flows:18, identifier LEN-12; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:18, identifier LEN-12; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-13",
       "oracle": "",
       "proposed_sha256": "941bb4077baef513ff24b143407a6805c4b0b6da248172ef2f44febc75beb359",
-      "reason": "drafted from workbook row 5 Lender Flows:20, identifier LEN-13; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:20, identifier LEN-13; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-14",
       "oracle": "",
       "proposed_sha256": "d9b2f3a45604b7597329defbcfa100fc61f83677b24e6ac3d87435a641ba4986",
-      "reason": "drafted from workbook row 5 Lender Flows:21, identifier LEN-14; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:21, identifier LEN-14; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-15",
       "oracle": "",
       "proposed_sha256": "136e60a8308ef500fc592270d0b14d1af6fb4c4a4dd97c650205b4bad1d037ef",
-      "reason": "drafted from workbook row 5 Lender Flows:23, identifier LEN-15; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:23, identifier LEN-15; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-16",
       "oracle": "",
       "proposed_sha256": "71a81e5c0dee875436511152c6891ab305eaf924996a30bb25fbf6cf502f1609",
-      "reason": "drafted from workbook row 5 Lender Flows:24, identifier LEN-16; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:24, identifier LEN-16; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-17",
       "oracle": "",
       "proposed_sha256": "289545f3c423d93c21f1d7915fac472a86f7b5cf93f985f2dadbb4e531353abe",
-      "reason": "drafted from workbook row 5 Lender Flows:25, identifier LEN-17; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:25, identifier LEN-17; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-18",
       "oracle": "",
       "proposed_sha256": "c13698a234ae2ac4a402e90f94a6955cb4ba5db2155e6f0cb18ea721a8eb4526",
-      "reason": "drafted from workbook row 5 Lender Flows:26, identifier LEN-18; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:26, identifier LEN-18; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-19",
       "oracle": "",
       "proposed_sha256": "b7acbf98837ca28a4eb90720bae1111b41bb9f1a1db5b6ca677c27c6e86bb5e7",
-      "reason": "drafted from workbook row 5 Lender Flows:27, identifier LEN-19; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:27, identifier LEN-19; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-20",
       "oracle": "",
       "proposed_sha256": "104c38ca99ea3b3928a05570145bb0fbba3dfcc2c14eaacf915f87464c2bb171",
-      "reason": "drafted from workbook row 5 Lender Flows:28, identifier LEN-20; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:28, identifier LEN-20; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-21",
       "oracle": "",
       "proposed_sha256": "cdcccc8d7fa8ee56299bc5eaace446fee815dee796f3c2f918fe834b0f524918",
-      "reason": "drafted from workbook row 5 Lender Flows:29, identifier LEN-21; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:29, identifier LEN-21; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-22",
       "oracle": "",
       "proposed_sha256": "115200e639d80f03acc339bfab075562bb9e80757ee01a2410e201080f015817",
-      "reason": "drafted from workbook row 5 Lender Flows:30, identifier LEN-22; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:30, identifier LEN-22; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-23",
       "oracle": "",
       "proposed_sha256": "8145d1ca469c95a81bb4da689bddc443eb6f1f4dbbbdd0637855db916f495f74",
-      "reason": "drafted from workbook row 5 Lender Flows:32, identifier LEN-23; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:32, identifier LEN-23; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-24",
       "oracle": "",
       "proposed_sha256": "c13fc7dc455d410063d9f5d3bc286520a2c9fe9bb754e24820545b0362149728",
-      "reason": "drafted from workbook row 5 Lender Flows:33, identifier LEN-24; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:33, identifier LEN-24; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-25",
       "oracle": "",
       "proposed_sha256": "d3114d1de55dea31e0aa0f78da9b66f02639572e82bbc8cb27953c3bb035eded",
-      "reason": "drafted from workbook row 5 Lender Flows:34, identifier LEN-25; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:34, identifier LEN-25; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-26",
       "oracle": "",
       "proposed_sha256": "d22b44bb625defa8cc0bc06c368db8e94f178a5ab042faddcf8f4a8f3204325f",
-      "reason": "drafted from workbook row 5 Lender Flows:35, identifier LEN-26; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:35, identifier LEN-26; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-27",
       "oracle": "",
       "proposed_sha256": "b8dd33e1be6ca441e7242f7e77a56466883c9be9bfb4393afcbeb6b68092c3b7",
-      "reason": "drafted from workbook row 5 Lender Flows:36, identifier LEN-27; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:36, identifier LEN-27; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-28",
       "oracle": "",
       "proposed_sha256": "6310c9535e6eb01af73477462223d44c13f71aeefd087a2f5a80793a385aeb81",
-      "reason": "drafted from workbook row 5 Lender Flows:38, identifier LEN-28; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:38, identifier LEN-28; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-29",
       "oracle": "",
       "proposed_sha256": "3783d9d06fcbb08579896b474985541d1f6d9263caf3cf28b267cd1893f83dc7",
-      "reason": "drafted from workbook row 5 Lender Flows:39, identifier LEN-29; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:39, identifier LEN-29; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-30",
       "oracle": "",
       "proposed_sha256": "55db63187bb51d9b555c87eb8454614c510e26fafb9a0236baff8bf76530cb48",
-      "reason": "drafted from workbook row 5 Lender Flows:40, identifier LEN-30; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:40, identifier LEN-30; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-31",
       "oracle": "",
       "proposed_sha256": "dbfb95ef5c97441734e00bbbee8161cb06bda2bd7a70154b0978850ddafb3f13",
-      "reason": "drafted from workbook row 5 Lender Flows:41, identifier LEN-31; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:41, identifier LEN-31; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-32",
       "oracle": "",
       "proposed_sha256": "32b6ae3b68af14f9ee1e3373cb533452b1049c0213f8d50aee663b8b6145f600",
-      "reason": "drafted from workbook row 5 Lender Flows:43, identifier LEN-32; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:43, identifier LEN-32; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-33",
       "oracle": "",
       "proposed_sha256": "bdca474626742a6814fa5733cb6a885e8564f27c0bd3340ec5777232a24582a5",
-      "reason": "drafted from workbook row 5 Lender Flows:44, identifier LEN-33; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:44, identifier LEN-33; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-34",
       "oracle": "",
       "proposed_sha256": "a51b2f73096fb36ffa1666345e0cc680e27d604a2b165e66c49a0970e511a4e4",
-      "reason": "drafted from workbook row 5 Lender Flows:45, identifier LEN-34; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:45, identifier LEN-34; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:LEN-35",
       "oracle": "",
       "proposed_sha256": "2d23faabec5fd3803a56c0fa9421f828ed3bee506ecb6fa6ad9040052c52f7bc",
-      "reason": "drafted from workbook row 5 Lender Flows:46, identifier LEN-35; a reviewer owns this row"
+      "reason": "drafted from workbook row 5 Lender Flows:46, identifier LEN-35; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-01",
       "oracle": "",
       "proposed_sha256": "a9238cf87828d31cd443949c80cf4257a0ae0f18691beca2a182e9b8e1de4356",
-      "reason": "drafted from workbook row 9 Scenario Scripts:6, identifier M1-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:6, identifier M1-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-02",
       "oracle": "",
       "proposed_sha256": "5eb795a883229c76d7129b0faf0ac6a3a02e91604ae34c02abc153a6d952cbfc",
-      "reason": "drafted from workbook row 9 Scenario Scripts:7, identifier M1-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:7, identifier M1-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-03",
       "oracle": "",
       "proposed_sha256": "72b2abe73bad83f815ccf3cd574fae100d6e45dea8e1bd7365178ae710e96ca0",
-      "reason": "drafted from workbook row 9 Scenario Scripts:8, identifier M1-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:8, identifier M1-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-04",
       "oracle": "",
       "proposed_sha256": "ad4bdc24a8db46d4cc4fd93d2973d49fb89d31c5a69363f0e1090f624a1f4d61",
-      "reason": "drafted from workbook row 9 Scenario Scripts:9, identifier M1-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:9, identifier M1-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-05",
       "oracle": "",
       "proposed_sha256": "9816d175bee88a72c8674d706b512962856b47af4e96d02086e000ebe63d223b",
-      "reason": "drafted from workbook row 9 Scenario Scripts:10, identifier M1-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:10, identifier M1-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-06",
       "oracle": "",
       "proposed_sha256": "d76b3d91033ac6fdd59f08d9085eb70f34051d66fff6c0e7d50cb16e0a9dc567",
-      "reason": "drafted from workbook row 9 Scenario Scripts:11, identifier M1-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:11, identifier M1-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-07",
       "oracle": "",
       "proposed_sha256": "72ccba5ecfce7b2975492f09ce65da1abf95efbeb017abeb126849a5ce2c2ab3",
-      "reason": "drafted from workbook row 9 Scenario Scripts:12, identifier M1-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:12, identifier M1-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M1-08",
       "oracle": "",
       "proposed_sha256": "a2a8122004ce2e9d7c0135d989256a928804443da27f33026fe15cc4d1757441",
-      "reason": "drafted from workbook row 9 Scenario Scripts:13, identifier M1-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:13, identifier M1-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M2-01",
       "oracle": "",
       "proposed_sha256": "cdec85c21d44aaf454a920dd719721f210fb3694ca072e0c5bd8a6bf7faa6f29",
-      "reason": "drafted from workbook row 9 Scenario Scripts:15, identifier M2-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:15, identifier M2-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M2-02",
       "oracle": "",
       "proposed_sha256": "df8fd84147a4f27b07e5d1687305f8f6a3e49b947c2fab99d3265ca55c4555d7",
-      "reason": "drafted from workbook row 9 Scenario Scripts:16, identifier M2-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:16, identifier M2-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M2-03",
       "oracle": "",
       "proposed_sha256": "134d35a1ca53cad1743208e09fbd37857e878869b10e53e7c4e57cbc1c488835",
-      "reason": "drafted from workbook row 9 Scenario Scripts:17, identifier M2-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:17, identifier M2-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M2-04",
       "oracle": "",
       "proposed_sha256": "5cd3c7b29198b97fe73502c21b530c4b2adbd8eac97ca5f21e6b52bfb743185c",
-      "reason": "drafted from workbook row 9 Scenario Scripts:18, identifier M2-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:18, identifier M2-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M2-05",
       "oracle": "",
       "proposed_sha256": "5168fb5d1fe43b0ed6387c8eec33d39a2d1850346b05bc857d3a1d215e4da1ab",
-      "reason": "drafted from workbook row 9 Scenario Scripts:19, identifier M2-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:19, identifier M2-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M2-06",
       "oracle": "",
       "proposed_sha256": "314b6dccce55e0ecd44c84f6ae806b17da7397fad5595186b7d4a6ef062b0cef",
-      "reason": "drafted from workbook row 9 Scenario Scripts:20, identifier M2-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:20, identifier M2-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M3-01",
       "oracle": "",
       "proposed_sha256": "64e5ace60147d084a4862bd6a29a16329c791f01d61cb21177f8fd6d6a06fd36",
-      "reason": "drafted from workbook row 9 Scenario Scripts:22, identifier M3-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:22, identifier M3-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M3-02",
       "oracle": "",
       "proposed_sha256": "3c69108f534974ef037f7f4008e01a23b6cbaa4099bc4e2e4d5f9b2cd7146842",
-      "reason": "drafted from workbook row 9 Scenario Scripts:23, identifier M3-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:23, identifier M3-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M3-03",
       "oracle": "",
       "proposed_sha256": "e95aa6a32df109fb9a2c00d77f101698f6bb5cecd501d3145821e1fb0f821c72",
-      "reason": "drafted from workbook row 9 Scenario Scripts:24, identifier M3-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:24, identifier M3-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M3-04",
       "oracle": "",
       "proposed_sha256": "09106e3616561376e76e292150f36f755d1ec1e139ece6d22afd7530491a1f8e",
-      "reason": "drafted from workbook row 9 Scenario Scripts:25, identifier M3-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:25, identifier M3-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M4-01",
       "oracle": "",
       "proposed_sha256": "192468159151dde0aacdb5960d4212c90b522f36901cb2d831a8493ee4963997",
-      "reason": "drafted from workbook row 9 Scenario Scripts:27, identifier M4-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:27, identifier M4-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M4-02",
       "oracle": "",
       "proposed_sha256": "84d348d22f14c87715c299e12656bf87c3defc7c08ba10812293c53cb06ad6bd",
-      "reason": "drafted from workbook row 9 Scenario Scripts:28, identifier M4-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:28, identifier M4-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M4-03",
       "oracle": "",
       "proposed_sha256": "5a666f9d9b26aa03b39f09bac783213b091224001a4e71ec0554ceb3edab4d7c",
-      "reason": "drafted from workbook row 9 Scenario Scripts:29, identifier M4-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:29, identifier M4-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M4-04",
       "oracle": "",
       "proposed_sha256": "20947616cbee088bf60a6e06a5c1ae19c6dcf1ffc201b26c3e36567af87c86cf",
-      "reason": "drafted from workbook row 9 Scenario Scripts:30, identifier M4-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:30, identifier M4-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-01",
       "oracle": "",
       "proposed_sha256": "6131e05e67a86dec29ad4fa1b0b2e7996705fa4299ae1d13cb3019739dfa4109",
-      "reason": "drafted from workbook row 9 Scenario Scripts:32, identifier M5-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:32, identifier M5-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-02",
       "oracle": "",
       "proposed_sha256": "308ee183ff4cdb4ba5991fa1947c1000575d8889c61a9085683cb4cdb3fda337",
-      "reason": "drafted from workbook row 9 Scenario Scripts:33, identifier M5-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:33, identifier M5-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-03",
       "oracle": "",
       "proposed_sha256": "e724624a0c196f3d1b50e38d09cf3a87baca80080398c4d9f4acd27e4c967d5b",
-      "reason": "drafted from workbook row 9 Scenario Scripts:34, identifier M5-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:34, identifier M5-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-04",
       "oracle": "",
       "proposed_sha256": "9de95e1e2a7cbc5b81feb7466d44f0867919e7a13e6abcb47547fc38af561d15",
-      "reason": "drafted from workbook row 9 Scenario Scripts:35, identifier M5-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:35, identifier M5-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-05",
       "oracle": "",
       "proposed_sha256": "2e26f8136945644077433fbe09189d25e2452437626f3f2631ffe38de4ab8d8d",
-      "reason": "drafted from workbook row 9 Scenario Scripts:36, identifier M5-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:36, identifier M5-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-06",
       "oracle": "",
       "proposed_sha256": "0ed58399c1d50d2d5bb2c16c27c1c1c4a63ae9a65edd0c870455f4bf3e2aeee2",
-      "reason": "drafted from workbook row 9 Scenario Scripts:37, identifier M5-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:37, identifier M5-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M5-07",
       "oracle": "",
       "proposed_sha256": "692379eacbbd8d97dbba3762aea59aaeb369e01b61a11e11df149560ff7fb040",
-      "reason": "drafted from workbook row 9 Scenario Scripts:38, identifier M5-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:38, identifier M5-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M6-01",
       "oracle": "",
       "proposed_sha256": "8d5a3416187c3b2438049aad3f11286290aa0087fa981dbf0f1a1bca34e53dbb",
-      "reason": "drafted from workbook row 9 Scenario Scripts:40, identifier M6-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:40, identifier M6-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M6-02",
       "oracle": "",
       "proposed_sha256": "0adfe70c29d3338da1ab05ca4273d74320fb3ba20499ca416e99b08d9b86dc4e",
-      "reason": "drafted from workbook row 9 Scenario Scripts:41, identifier M6-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:41, identifier M6-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M6-03",
       "oracle": "",
       "proposed_sha256": "0bdd155714cb3c181a32b3a88e04edb407700ec6b78415fb56907d0425b405d6",
-      "reason": "drafted from workbook row 9 Scenario Scripts:42, identifier M6-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:42, identifier M6-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M6-04",
       "oracle": "",
       "proposed_sha256": "c625c10d6dcaf37a62818f6a9bcb53d788da4c13a66d716e45f3109f9908854c",
-      "reason": "drafted from workbook row 9 Scenario Scripts:43, identifier M6-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:43, identifier M6-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M6-05",
       "oracle": "",
       "proposed_sha256": "2253b70a31e05e3fe41cec0812e2b384dc3bb5b11c71b95f8f5c2d3d37cf13c2",
-      "reason": "drafted from workbook row 9 Scenario Scripts:44, identifier M6-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:44, identifier M6-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M6-06",
       "oracle": "",
       "proposed_sha256": "6c75b1c1dfb14ac15284244c8e07bf166b9eb55432664a48b2821ceb03b82bfe",
-      "reason": "drafted from workbook row 9 Scenario Scripts:45, identifier M6-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:45, identifier M6-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M7-01",
       "oracle": "",
       "proposed_sha256": "a2958f863dfd45af863483b3e9154105c8b12cf2d5b5276f7ceb4e08db4a88ce",
-      "reason": "drafted from workbook row 9 Scenario Scripts:47, identifier M7-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:47, identifier M7-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M7-02",
       "oracle": "",
       "proposed_sha256": "731f9ccf1b449674aab2a86783329872227cff00fd8e7e6b81514e859c93d1fd",
-      "reason": "drafted from workbook row 9 Scenario Scripts:48, identifier M7-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:48, identifier M7-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M7-03",
       "oracle": "",
       "proposed_sha256": "df45417e46c973f3f3f95860d714bafab977cfc4292c77d39410a88909e1e063",
-      "reason": "drafted from workbook row 9 Scenario Scripts:49, identifier M7-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:49, identifier M7-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M7-04",
       "oracle": "",
       "proposed_sha256": "c8fc494c86f19460cb66c8c2486c8858fccb5163b261d59c7a7a2ba1216be90c",
-      "reason": "drafted from workbook row 9 Scenario Scripts:50, identifier M7-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:50, identifier M7-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M7-05",
       "oracle": "",
       "proposed_sha256": "776884fd9ec2bc90c84a1eba40c4e1a3cde326c83f6ec1ce43a706f5a86dd99c",
-      "reason": "drafted from workbook row 9 Scenario Scripts:51, identifier M7-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:51, identifier M7-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M8-01",
       "oracle": "",
       "proposed_sha256": "5b7d429bb0c3f4c01efeb91a0c56087845b4234c63bdc4c9c47342c5acf91d84",
-      "reason": "drafted from workbook row 9 Scenario Scripts:53, identifier M8-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:53, identifier M8-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M8-02",
       "oracle": "",
       "proposed_sha256": "44ac62698487ff45177a01af1cbca9a2981d32483b1da0a10522bd2c7327f839",
-      "reason": "drafted from workbook row 9 Scenario Scripts:54, identifier M8-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:54, identifier M8-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M8-03",
       "oracle": "",
       "proposed_sha256": "3fa7cc0f94a70cf0c3a2ad212c8175b091aa93eac8f6e1339798c5aedacb62ca",
-      "reason": "drafted from workbook row 9 Scenario Scripts:55, identifier M8-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:55, identifier M8-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M8-04",
       "oracle": "",
       "proposed_sha256": "d3f9ab90168813f1b948369d8fb676d9fc6c3aff31d7a86bb980352cd2f40d0b",
-      "reason": "drafted from workbook row 9 Scenario Scripts:56, identifier M8-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:56, identifier M8-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-01",
       "oracle": "",
       "proposed_sha256": "ac35fb4bd69997ad7b276d71be456a604ded705e2d8869b33eccc74d65e91dca",
-      "reason": "drafted from workbook row 9 Scenario Scripts:58, identifier M9-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:58, identifier M9-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-02",
       "oracle": "",
       "proposed_sha256": "8e326ea63d190e0176aa072f310b0dd4937e0e352ea0fd4b176fb2e8dac27cd2",
-      "reason": "drafted from workbook row 9 Scenario Scripts:59, identifier M9-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:59, identifier M9-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-03",
       "oracle": "",
       "proposed_sha256": "e5ca4d5354c3bb1f47d098dcfc32dec0d3138ab94567bf9941e38e9dffd1dea7",
-      "reason": "drafted from workbook row 9 Scenario Scripts:60, identifier M9-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:60, identifier M9-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-04",
       "oracle": "",
       "proposed_sha256": "7662185990b158a332c066428e4e3a1a3f5cfc6d99f6196cd96c5567e9640cdd",
-      "reason": "drafted from workbook row 9 Scenario Scripts:61, identifier M9-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:61, identifier M9-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-05",
       "oracle": "",
       "proposed_sha256": "fe9e51f51d27a25134f69a46b7038d3b7d25f69fbc17ca3bf6ba7edc773cb50d",
-      "reason": "drafted from workbook row 9 Scenario Scripts:62, identifier M9-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:62, identifier M9-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-06",
       "oracle": "",
       "proposed_sha256": "a7da9b22e1c6abed508b2bb1b63f21587db7b64e652d649677f77eb13e8552c5",
-      "reason": "drafted from workbook row 9 Scenario Scripts:63, identifier M9-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:63, identifier M9-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-07",
       "oracle": "",
       "proposed_sha256": "fafbcc0a0ce6df5fa5d818b8401239199ae9437d9ad8a47a6f0c4d9d3243edcf",
-      "reason": "drafted from workbook row 9 Scenario Scripts:64, identifier M9-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:64, identifier M9-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:M9-08",
       "oracle": "",
       "proposed_sha256": "43acd5c1a54803eb49d72af1f85bc510a2d34da827786ee040e2fe010179dcf3",
-      "reason": "drafted from workbook row 9 Scenario Scripts:65, identifier M9-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 9 Scenario Scripts:65, identifier M9-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-01",
       "oracle": "",
       "proposed_sha256": "4772296bd9efa85eaa6fdadc442484c121db54501727c100be87b335dbf0151b",
-      "reason": "drafted from workbook row 3 Market Creation:6, identifier MKT-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:6, identifier MKT-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-02",
       "oracle": "",
       "proposed_sha256": "761d45514ec74e855669b50952544a9d6037ed9891d84e607092f429e9ad166c",
-      "reason": "drafted from workbook row 3 Market Creation:7, identifier MKT-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:7, identifier MKT-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-03",
       "oracle": "",
       "proposed_sha256": "bbe165dfdd754bbf552bfbb7fc9cfc2ee6073061c723b1ee9a8803dc7b6765e8",
-      "reason": "drafted from workbook row 3 Market Creation:8, identifier MKT-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:8, identifier MKT-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-04",
       "oracle": "",
       "proposed_sha256": "b87d134ddda80acea311dad724937801c368eb8679bee721dbf8bf363bac8739",
-      "reason": "drafted from workbook row 3 Market Creation:9, identifier MKT-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:9, identifier MKT-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-05",
       "oracle": "",
       "proposed_sha256": "1e27375dc319e81345cbd234eb50379800beb77a8da4148280b034585adb46eb",
-      "reason": "drafted from workbook row 3 Market Creation:10, identifier MKT-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:10, identifier MKT-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-06",
       "oracle": "",
       "proposed_sha256": "65f3c55e5acce41a9843a04e04084ad5651ddcb855c6bb057ccfcf5bdfe13f13",
-      "reason": "drafted from workbook row 3 Market Creation:11, identifier MKT-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:11, identifier MKT-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-07",
       "oracle": "",
       "proposed_sha256": "75239b46b38056489cdf876fc04aae4f4fa715ff34a87cb710c8a132706547f4",
-      "reason": "drafted from workbook row 3 Market Creation:12, identifier MKT-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:12, identifier MKT-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-08",
       "oracle": "",
       "proposed_sha256": "44025766f9be494c76772b743f05bda1e6860fcf74f2e6a896b72394076f2d87",
-      "reason": "drafted from workbook row 3 Market Creation:14, identifier MKT-08; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:14, identifier MKT-08; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-09",
       "oracle": "",
       "proposed_sha256": "60989df02c12833aa1c66af9ad8b1f9531f29c04e938ac0fd71cd44fc86529e0",
-      "reason": "drafted from workbook row 3 Market Creation:15, identifier MKT-09; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:15, identifier MKT-09; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-10",
       "oracle": "",
       "proposed_sha256": "4b1b6d53fb62e5328e4664774e774a81f61b049369ef0570d39e5d26d82f1f18",
-      "reason": "drafted from workbook row 3 Market Creation:16, identifier MKT-10; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:16, identifier MKT-10; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-11",
       "oracle": "",
       "proposed_sha256": "757fb77fe5418d8352f1362137bbebb442ee7a6698f7a0700b91d768e87fe6fa",
-      "reason": "drafted from workbook row 3 Market Creation:17, identifier MKT-11; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:17, identifier MKT-11; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-12",
       "oracle": "",
       "proposed_sha256": "26d9f8f3589f5e71b63dc4e425da76cc63bcae5e9b3784bf72972019e5cd52ef",
-      "reason": "drafted from workbook row 3 Market Creation:19, identifier MKT-12; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:19, identifier MKT-12; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-13",
       "oracle": "",
       "proposed_sha256": "42bde0309df66908536237e37627f77319e403c5fcca44dcc502b997891008ba",
-      "reason": "drafted from workbook row 3 Market Creation:20, identifier MKT-13; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:20, identifier MKT-13; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-14",
       "oracle": "",
       "proposed_sha256": "1abb7feffb43d23e71bbc9e2e3e9658ded4b5565bcc2dd5e30b84d6b6a84e760",
-      "reason": "drafted from workbook row 3 Market Creation:21, identifier MKT-14; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:21, identifier MKT-14; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-15",
       "oracle": "",
       "proposed_sha256": "1a3a2b6ec1f507557c284679f27f52220df09ef0d1114ba69ad30bce8449711b",
-      "reason": "drafted from workbook row 3 Market Creation:22, identifier MKT-15; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:22, identifier MKT-15; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-16",
       "oracle": "",
       "proposed_sha256": "d5bace93a2f16315ef44f451917d7a88e31157d38d6ddfd8123ac9c809d07a1f",
-      "reason": "drafted from workbook row 3 Market Creation:24, identifier MKT-16; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:24, identifier MKT-16; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-17",
       "oracle": "",
       "proposed_sha256": "6478da8597400c4f11a57727b639e50707fc428779ab3fea8c04a9fdc81e3234",
-      "reason": "drafted from workbook row 3 Market Creation:25, identifier MKT-17; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:25, identifier MKT-17; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-18",
       "oracle": "",
       "proposed_sha256": "d72d91aa87af4dd37a612a1013cbc7de3766fcfe8645e3906121c3816bfa4c8e",
-      "reason": "drafted from workbook row 3 Market Creation:26, identifier MKT-18; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:26, identifier MKT-18; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-19",
       "oracle": "",
       "proposed_sha256": "1f9c25bf72dc3a9681dcae1b1edbd772f65fd19d1cc98937de437f8eb815f363",
-      "reason": "drafted from workbook row 3 Market Creation:28, identifier MKT-19; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:28, identifier MKT-19; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-20",
       "oracle": "",
       "proposed_sha256": "24352bee1367062e19af6e0ac0f6bbd07418aa05a156e45b731fa40ed3231f9c",
-      "reason": "drafted from workbook row 3 Market Creation:29, identifier MKT-20; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:29, identifier MKT-20; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-21",
       "oracle": "",
       "proposed_sha256": "b4d5c896d3eea3537488efcc6c8e7e546b68c50871305af81834108347b61165",
-      "reason": "drafted from workbook row 3 Market Creation:30, identifier MKT-21; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:30, identifier MKT-21; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-22",
       "oracle": "",
       "proposed_sha256": "56e3d226722276ccf688e03b70c0d7596c41dad700b65db5c6883e1fd629ab63",
-      "reason": "drafted from workbook row 3 Market Creation:32, identifier MKT-22; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:32, identifier MKT-22; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-23",
       "oracle": "",
       "proposed_sha256": "3707b3b2282706c1aaf4e50d57ef32abfd7d9a7f97ed1f154f5f8a176d3b246f",
-      "reason": "drafted from workbook row 3 Market Creation:33, identifier MKT-23; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:33, identifier MKT-23; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:MKT-24",
       "oracle": "",
       "proposed_sha256": "2f79f813b9a818f5fa2dd8febae9b10a7f2188b3c8201f6245d760f6c975e12f",
-      "reason": "drafted from workbook row 3 Market Creation:34, identifier MKT-24; a reviewer owns this row"
+      "reason": "drafted from workbook row 3 Market Creation:34, identifier MKT-24; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:SET-01",
       "oracle": "",
       "proposed_sha256": "66330aca3688c932c7eb563332652e40526910171a060b8c19a6206c0b72aa45",
-      "reason": "drafted from workbook row 0 Setup:6, identifier SET-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 0 Setup:6, identifier SET-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:SET-02",
       "oracle": "",
       "proposed_sha256": "b784cd628e78d62a9c9aa391ecf2f8604ce2daa472a5e05fae00086db5cbd511",
-      "reason": "drafted from workbook row 0 Setup:7, identifier SET-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 0 Setup:7, identifier SET-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:SET-03",
       "oracle": "",
       "proposed_sha256": "b1ea7ccaeafcd3f38d9992eecff9f2e7cf2aaee66c77ce71f8bbe5a723013d9f",
-      "reason": "drafted from workbook row 0 Setup:8, identifier SET-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 0 Setup:8, identifier SET-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:SET-04",
       "oracle": "",
       "proposed_sha256": "4b1cc3a9107dfe98246d811567cbcef8bb47e23c1c3397ffe98c5a95e9859a12",
-      "reason": "drafted from workbook row 0 Setup:9, identifier SET-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 0 Setup:9, identifier SET-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:SET-05",
       "oracle": "",
       "proposed_sha256": "bc13e1387e64c481c71651e1fcf359e68f0d541d35d35ee6aa33dae8050e51a8",
-      "reason": "drafted from workbook row 0 Setup:10, identifier SET-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 0 Setup:10, identifier SET-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:SET-06",
       "oracle": "",
       "proposed_sha256": "5f2e62a0ea4433a959d434a773722dc431cadfbb7c9de6ac3f705f093af0a2cc",
-      "reason": "drafted from workbook row 0 Setup:11, identifier SET-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 0 Setup:11, identifier SET-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-01",
       "oracle": "",
       "proposed_sha256": "e1b9f19dfaf72b94e9f9a67454166d1edca0949bba32e56c339f349429e74a9b",
-      "reason": "drafted from workbook row 7 Wallet Matrix:6, identifier WAL-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:6, identifier WAL-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-02",
       "oracle": "",
       "proposed_sha256": "34af1c397d943d11f3fdaf6c6b33e3aa3258e3dddd7e8097473f0818f7dd3cf7",
-      "reason": "drafted from workbook row 7 Wallet Matrix:7, identifier WAL-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:7, identifier WAL-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-03",
       "oracle": "",
       "proposed_sha256": "a1e86a491e44e9abd245f72cf1563c6f3947956a73626e3fb621c2813b9f79cb",
-      "reason": "drafted from workbook row 7 Wallet Matrix:8, identifier WAL-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:8, identifier WAL-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-04",
       "oracle": "",
       "proposed_sha256": "00ab4e285cf6c86ad0c2bfb97836974983c8ad368072502c00363259a8c2f730",
-      "reason": "drafted from workbook row 7 Wallet Matrix:10, identifier WAL-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:10, identifier WAL-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-05",
       "oracle": "",
       "proposed_sha256": "0069577aadc249993bd1680acbef9357efcb529877416ac8ecc10376b3411986",
-      "reason": "drafted from workbook row 7 Wallet Matrix:12, identifier WAL-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:12, identifier WAL-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-06",
       "oracle": "",
       "proposed_sha256": "d65664f4b5de131c69fd1e3b897f51bb998775a686132df8205be77d331b21c2",
-      "reason": "drafted from workbook row 7 Wallet Matrix:13, identifier WAL-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:13, identifier WAL-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WAL-07",
       "oracle": "",
       "proposed_sha256": "262288cf4f00bbbc7c34186c929fa8747346c92e4764f7b39e890778d9cdd9f8",
-      "reason": "drafted from workbook row 7 Wallet Matrix:14, identifier WAL-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 7 Wallet Matrix:14, identifier WAL-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-01",
       "oracle": "",
       "proposed_sha256": "ad6209539571027b03b4f6152b49b6f5de09a2b0b3283f48956e69cbf8748c6d",
-      "reason": "drafted from workbook row 6 Wrappers:5, identifier WRP-01; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:5, identifier WRP-01; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-02",
       "oracle": "",
       "proposed_sha256": "aad89611c29def1c106548b7c1f14cc7261c09a54fe7464bf7a4a4bfe77ca0f2",
-      "reason": "drafted from workbook row 6 Wrappers:6, identifier WRP-02; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:6, identifier WRP-02; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-03",
       "oracle": "",
       "proposed_sha256": "acd20b5c38caa48c48ece36c085d0fa8fbba4b53e9254dbe340dd5e74600d465",
-      "reason": "drafted from workbook row 6 Wrappers:7, identifier WRP-03; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:7, identifier WRP-03; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-04",
       "oracle": "",
       "proposed_sha256": "07ace2c96907076731bf9044b4c280ebd399de8802e91f35bdc34a1ddd5b4fbf",
-      "reason": "drafted from workbook row 6 Wrappers:8, identifier WRP-04; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:8, identifier WRP-04; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-05",
       "oracle": "",
       "proposed_sha256": "f3fc62650d9096be339160447ea81b75c20743e8eb46728db49e6413bc3b927a",
-      "reason": "drafted from workbook row 6 Wrappers:9, identifier WRP-05; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:9, identifier WRP-05; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-06",
       "oracle": "",
       "proposed_sha256": "411886df202c32efb056539252194935d635c427ef6bd6a7a03790773b620000",
-      "reason": "drafted from workbook row 6 Wrappers:10, identifier WRP-06; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:10, identifier WRP-06; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": true,
+      "confirmed_by": "Laurence Day",
       "disposition": "manual",
       "item": "case:WRP-07",
       "oracle": "",
       "proposed_sha256": "7bd7b17a493607804f24fcfc804217aab39703c2468de44394e8343a2bb10baf",
-      "reason": "drafted from workbook row 6 Wrappers:11, identifier WRP-07; a reviewer owns this row"
+      "reason": "drafted from workbook row 6 Wrappers:11, identifier WRP-07; a reviewer owns this row",
+      "rule": "row-author-owns-walking-it"
     },
     {
       "confirmed": false,
@@ -2091,6 +2495,12 @@
   ],
   "generated_by": "2.1.0",
   "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
+  "rules": {
+    "row-author-owns-walking-it": {
+      "stated_by": "Laurence Day",
+      "text": "the reviewer who wrote a row owns walking it, which holds by construction of the workbook"
+    }
+  },
   "schema": "dokimasia-dispositions/v1",
   "workbook_sha256": "21493992f97e97124ccd0f8170cc447c44f204c09c3b29f2953a9bb938dd2eba"
 }

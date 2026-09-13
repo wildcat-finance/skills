@@ -1,0 +1,617 @@
+{
+  "candidates": [
+    {
+      "id": "opening-reads-in-collect",
+      "summary": "collect gains an opening phase after the shard loop that reads the interval's first block, each epoch boundary's slot and header, and each implementation's runtime code into a journaled, checkpointed epoch-evidence class; build discovers the epochs from that journal, ships the code as a component the epoch table names, and check re-hashes it."
+    },
+    {
+      "id": "epochs-subcommand",
+      "summary": "A third network command, epochs, runs after collect and before reconcile: it scans the staged logs for upgrades and reads the first block, the boundary slots and headers and the runtime code into its own journal; collect is unchanged and build and check consume the journal the same way."
+    },
+    {
+      "id": "operator-supplied-evidence",
+      "summary": "The shipped shape: the operator reads the first block, the slots and the runtime code out of band and hands build an epoch table plus a code file; the release preserves the code bytes but no journal binds them to a request the collector made."
+    },
+    {
+      "id": "trace-mandatory",
+      "summary": "Keep the three evidence classes fixed and add the opening reads to collect; the live run then needs a primary that serves trace_filter, which no provider reachable from this session without a credential does."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "start-hash-from-collector-read",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "code-read-journaled",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "code-rechecked-offline",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "reachable-provider-pair",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "resume-safe-after-kill",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "network-commands",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "new-release-components",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "finality-rebinds-after-tag-advance",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "opening-reads-resumable",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "scope-binds-both-hashes",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "code-hash-rechecked-from-component",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "live-interval-reconciled",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "demo-reproduces-live-release-id",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "start-hash-from-collector-read",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-start-hash-from-collector-read.json",
+        "sha256": "10e8841d1977c8bff5b4a6e8d1ed3160fd1874a11178a90a0a8fd723465d189a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "code-read-journaled",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-code-read-journaled.json",
+        "sha256": "15c49b79d33a055c8082d605ba16a427def048752c9880c4c0df21002545a172"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "code-rechecked-offline",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-code-rechecked-offline.json",
+        "sha256": "c9d588f0b6e277ed754ba56d9dc0746a93718cc9c0b8d2adb77a5d6bc94d3a4b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "reachable-provider-pair",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-reachable-provider-pair.json",
+        "sha256": "e950883c39b0b927ab27bf7ce2941efa895e6fb0e844864e0cb8ac52554b25f7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "resume-safe-after-kill",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-resume-safe-after-kill.json",
+        "sha256": "59f674b503b9fa2e6afc48aa6373cca4682898c4b73ddbfb84925bc2dc7ef7bb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "network-commands",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-network-commands.json",
+        "sha256": "a48e888574c74c1ff3df853b6cb9c95c1c90b6f309f58d7efb44533e0165a1c8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "opening-reads-in-collect",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/opening-reads-in-collect-new-release-components.json",
+        "sha256": "8681d54a191d82089c037f937888e78eaa633985b81543dbd83681351080872c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "opening-reads-in-collect",
+      "criterion": "finality-rebinds-after-tag-advance",
+      "report": "reports/conformance/opening-reads-in-collect-finality-rebinds-after-tag-advance.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py finality-rebinds-after-tag-advance",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "opening-reads-in-collect",
+      "criterion": "opening-reads-resumable",
+      "report": "reports/conformance/opening-reads-in-collect-opening-reads-resumable.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py opening-reads-resumable",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "opening-reads-in-collect",
+      "criterion": "scope-binds-both-hashes",
+      "report": "reports/conformance/opening-reads-in-collect-scope-binds-both-hashes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py scope-binds-both-hashes",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "opening-reads-in-collect",
+      "criterion": "code-hash-rechecked-from-component",
+      "report": "reports/conformance/opening-reads-in-collect-code-hash-rechecked-from-component.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py code-hash-rechecked-from-component",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "opening-reads-in-collect",
+      "criterion": "live-interval-reconciled",
+      "report": "reports/conformance/opening-reads-in-collect-live-interval-reconciled.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py live-interval-reconciled",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "opening-reads-in-collect",
+      "criterion": "demo-reproduces-live-release-id",
+      "report": "reports/conformance/opening-reads-in-collect-demo-reproduces-live-release-id.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py demo-reproduces-live-release-id",
+      "state": "pending"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "start-hash-from-collector-read",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-start-hash-from-collector-read.json",
+        "sha256": "ca3de86780b3d3a98c95cd1fd46cfce835ad3c0b96489163f200492f067b9bd7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "code-read-journaled",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-code-read-journaled.json",
+        "sha256": "9680412f78fb80bb9070e67480f42c40476a69866d3a1f580324059ba6b12332"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "code-rechecked-offline",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-code-rechecked-offline.json",
+        "sha256": "d4ceff6f6486ba546ac88673da6adb6d7ba0ec406b25c07898fd2852a9539026"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "reachable-provider-pair",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-reachable-provider-pair.json",
+        "sha256": "69c7ab3195120d499a610f9d718b7f314be7fe704887bd339b6ddc609a565d0f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "resume-safe-after-kill",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-resume-safe-after-kill.json",
+        "sha256": "8a7551f92184070ea63b5ecbafceb3af51a03d5e12c2cbea6b6b0bec8dcf8875"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "network-commands",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-network-commands.json",
+        "sha256": "33b2c24985cab21dc5ffbd270b314124d478926a114bb76eb31e1a0930129abc"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "epochs-subcommand",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/epochs-subcommand-new-release-components.json",
+        "sha256": "a93eeb65256f4fb64d24336070c34f2225a5480755c4c1ffdadcead77a7c664c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "epochs-subcommand",
+      "criterion": "finality-rebinds-after-tag-advance",
+      "report": "reports/conformance/epochs-subcommand-finality-rebinds-after-tag-advance.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py finality-rebinds-after-tag-advance",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "epochs-subcommand",
+      "criterion": "opening-reads-resumable",
+      "report": "reports/conformance/epochs-subcommand-opening-reads-resumable.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py opening-reads-resumable",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "epochs-subcommand",
+      "criterion": "scope-binds-both-hashes",
+      "report": "reports/conformance/epochs-subcommand-scope-binds-both-hashes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py scope-binds-both-hashes",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "epochs-subcommand",
+      "criterion": "code-hash-rechecked-from-component",
+      "report": "reports/conformance/epochs-subcommand-code-hash-rechecked-from-component.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py code-hash-rechecked-from-component",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "epochs-subcommand",
+      "criterion": "live-interval-reconciled",
+      "report": "reports/conformance/epochs-subcommand-live-interval-reconciled.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py live-interval-reconciled",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "epochs-subcommand",
+      "criterion": "demo-reproduces-live-release-id",
+      "report": "reports/conformance/epochs-subcommand-demo-reproduces-live-release-id.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py demo-reproduces-live-release-id",
+      "state": "pending"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "start-hash-from-collector-read",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-start-hash-from-collector-read.json",
+        "sha256": "793bbdf44c718f46b9a3260976aa4cc88847c5cdcdf1687e8f87e0e4d57c64ee"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "code-read-journaled",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-code-read-journaled.json",
+        "sha256": "a817235f47fe9a8134de1b9a53f8c9a7f8d955c9ae789df82f910c590cfcf6c0"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "code-rechecked-offline",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-code-rechecked-offline.json",
+        "sha256": "1bf852a930b59bcbf7c50e7df0005640a3b437adfa219ce22c4040b61b3d8365"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "reachable-provider-pair",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-reachable-provider-pair.json",
+        "sha256": "45d1aa969685c5a1826fb660757e8ba34bbbf1b3d339b3b0de8f3a7f30c19039"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "resume-safe-after-kill",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-resume-safe-after-kill.json",
+        "sha256": "9a6a47dd0cd16a50083cccabe849a8b80e06db9b4fa1e485b6ba8072dd3971e3"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "network-commands",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-network-commands.json",
+        "sha256": "98056940c6c48ce1284045b2482ed7e6172e97d21f4b1dfd0677377fc40178b9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "operator-supplied-evidence",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/operator-supplied-evidence-new-release-components.json",
+        "sha256": "e5e76f90865c5d13c60d4dcbc00f0379c46c7f4196ddd31a80d3310e00f64811"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "operator-supplied-evidence",
+      "criterion": "finality-rebinds-after-tag-advance",
+      "report": "reports/conformance/operator-supplied-evidence-finality-rebinds-after-tag-advance.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py finality-rebinds-after-tag-advance",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "operator-supplied-evidence",
+      "criterion": "opening-reads-resumable",
+      "report": "reports/conformance/operator-supplied-evidence-opening-reads-resumable.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py opening-reads-resumable",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "operator-supplied-evidence",
+      "criterion": "scope-binds-both-hashes",
+      "report": "reports/conformance/operator-supplied-evidence-scope-binds-both-hashes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py scope-binds-both-hashes",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "operator-supplied-evidence",
+      "criterion": "code-hash-rechecked-from-component",
+      "report": "reports/conformance/operator-supplied-evidence-code-hash-rechecked-from-component.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py code-hash-rechecked-from-component",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "operator-supplied-evidence",
+      "criterion": "live-interval-reconciled",
+      "report": "reports/conformance/operator-supplied-evidence-live-interval-reconciled.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py live-interval-reconciled",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "operator-supplied-evidence",
+      "criterion": "demo-reproduces-live-release-id",
+      "report": "reports/conformance/operator-supplied-evidence-demo-reproduces-live-release-id.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py demo-reproduces-live-release-id",
+      "state": "pending"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "start-hash-from-collector-read",
+      "report": {
+        "path": "reports/selection/trace-mandatory-start-hash-from-collector-read.json",
+        "sha256": "659efcae43199d1c71a0d518e2d68355c031c26795ae07179829d86f360ea475"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "code-read-journaled",
+      "report": {
+        "path": "reports/selection/trace-mandatory-code-read-journaled.json",
+        "sha256": "89fbabd8c6648424fc52dfb6903b56063c4ff613deb77379fb5d044966c58fcb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "code-rechecked-offline",
+      "report": {
+        "path": "reports/selection/trace-mandatory-code-rechecked-offline.json",
+        "sha256": "7bcedf1e10c435d29f2f36b2ec877f09a7f34cd4560c3b9126e8b08f731d17a8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "reachable-provider-pair",
+      "report": {
+        "path": "reports/selection/trace-mandatory-reachable-provider-pair.json",
+        "sha256": "66c751b4e5f72202c8ef23d1705b584d917cb08edb6f29ddaaaa1452d9bde105"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "resume-safe-after-kill",
+      "report": {
+        "path": "reports/selection/trace-mandatory-resume-safe-after-kill.json",
+        "sha256": "a08969380ee028ee40f5e5ab25196de1c9e94673dea653053e7db95e2013722f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "network-commands",
+      "report": {
+        "path": "reports/selection/trace-mandatory-network-commands.json",
+        "sha256": "8232d3ba2f9bd2b29e637ccbc4f734e67416d4dc8afc6fb8bf94b1253592d427"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "trace-mandatory",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/trace-mandatory-new-release-components.json",
+        "sha256": "3d7031bc47bcee939d530021c46807cca415455c55f1b645e0cadb17f65078b2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "trace-mandatory",
+      "criterion": "finality-rebinds-after-tag-advance",
+      "report": "reports/conformance/trace-mandatory-finality-rebinds-after-tag-advance.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py finality-rebinds-after-tag-advance",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "trace-mandatory",
+      "criterion": "opening-reads-resumable",
+      "report": "reports/conformance/trace-mandatory-opening-reads-resumable.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py opening-reads-resumable",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "trace-mandatory",
+      "criterion": "scope-binds-both-hashes",
+      "report": "reports/conformance/trace-mandatory-scope-binds-both-hashes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py scope-binds-both-hashes",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "trace-mandatory",
+      "criterion": "code-hash-rechecked-from-component",
+      "report": "reports/conformance/trace-mandatory-code-hash-rechecked-from-component.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py code-hash-rechecked-from-component",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "trace-mandatory",
+      "criterion": "live-interval-reconciled",
+      "report": "reports/conformance/trace-mandatory-live-interval-reconciled.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py live-interval-reconciled",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "trace-mandatory",
+      "criterion": "demo-reproduces-live-release-id",
+      "report": "reports/conformance/trace-mandatory-demo-reproduces-live-release-id.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py demo-reproduces-live-release-id",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "opening-reads-in-collect",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

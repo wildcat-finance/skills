@@ -1,11 +1,17 @@
 {
   "blocks": {
+    "15331586": "0x3547b7480d03f4c39fbf0f56f59d9055cf2cde3de9ec4af0c9a8426ec83d4a29",
     "15331605": "0xfc4769cf7851ef55373a76a5e9e8f8da357ba4d1880966eb468c02b7a6b1269c",
     "15331625": "0x52b08d0f4679b3782f0f4afb5b9be690482875ca36c07d5de17d3a1c89a4d2ca",
+    "15331626": "0x7e53caae90f51ed0b59d14725c4b039d92dbfb1372cee8a02291c7d2fc3a8182",
     "15331645": "0x8f5de04e06fb7c3fc7b2647f41ecfc79c7166c604ae0322194a6667785accd89",
     "15331665": "0x8123dc3704eb60051b9fc189283991861382d3dcd38025e2f375abc049fd8b17",
     "15331685": "0xdf561751a553bd49dd8d3c3a454f1f5a47c12fb6c39863d714bba865c8c00755",
     "15331749": "0x20fba891dfe745a7f2d5b4c207f91237c6daedfc343f8dbe2f6af1c70ae1d9dc"
+  },
+  "code": {
+    "0x42f9505a376761b180e27a01ba0554244ed1de7d": "0x60806040abababababababababababababababababababababababababababababababab",
+    "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b": "0x60806040cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
   },
   "logs": {
     "0": [
@@ -101,12 +107,12 @@
         "address": "0xc3d688b66703497daa19211eedff47f25384cdc3",
         "blockHash": "0x7e53caae90f51ed0b59d14725c4b039d92dbfb1372cee8a02291c7d2fc3a8182",
         "blockNumber": "0xe9f12a",
-        "data": "0xabababababababababababababababababababababababababababababababab",
+        "data": "0x",
         "logIndex": "0x0",
         "removed": false,
         "topics": [
-          "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
-          "0xefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+          "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b",
+          "0x0000000000000000000000008b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b"
         ],
         "transactionHash": "0x286bc5e5cc6aee4f264801731696ce59a6df6edfd167eee5731e5e56e6cf428e",
         "transactionIndex": "0x0"
@@ -229,7 +235,7 @@
       }
     ]
   },
-  "note": "Synthetic Ethereum USDC Comet interval evidence for the collector's tests. The proxy is the real Comet proxy; block hashes, transaction hashes and log payloads are derived from fixed strings and were not observed on any chain.",
+  "note": "Synthetic Ethereum USDC Comet interval evidence for the collector's tests. The proxy is the real Comet proxy; block hashes, transaction hashes and log payloads are derived from fixed strings and were not observed on any chain. Shard 2's first log is the one Upgraded(address) record, so the interval has two epochs; slots holds the EIP-1967 slot word at each epoch's opening block and code the runtime bytes of each implementation, all synthetic.",
   "plan": {
     "chain": "eip155:1",
     "deployment": "ethereum-usdc-comet",
@@ -283,6 +289,10 @@
       }
     ],
     "venue": "compound-v3"
+  },
+  "slots": {
+    "15331586": "0x00000000000000000000000042f9505a376761b180e27a01ba0554244ed1de7d",
+    "15331626": "0x0000000000000000000000008b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b"
   },
   "traces": {
     "0": [

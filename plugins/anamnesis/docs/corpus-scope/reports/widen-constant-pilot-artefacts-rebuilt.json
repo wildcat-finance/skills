@@ -1,0 +1,9 @@
+{
+  "candidate": "widen-constant",
+  "command": "python3 .hexaemeron/reports/resolve.py widen-constant pilot-artefacts-rebuilt",
+  "criterion": "pilot-artefacts-rebuilt",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

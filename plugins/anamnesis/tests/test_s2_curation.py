@@ -35,6 +35,12 @@ BASE_POLICY = {
     "taxonomy": {"name": "warden-severity", "version": "1",
                  "severities": ["high", "medium", "low"]},
     "disclosure": {"derived_text": ["public"]},
+    "scope": {
+        "id": "edge-cases",
+        "preserves": "The synthetic round shapes the pilot lacks.",
+        "sources": ["edge-cases"],
+        "records": {"minimum": 1, "maximum": 50},
+    },
 }
 
 

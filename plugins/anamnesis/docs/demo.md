@@ -1,11 +1,23 @@
-# The whole path, over the pilot
+# The whole path, over either corpus
 
-One command runs everything the member does, over the committed pilot:
+One command runs everything the member does, over one committed specimen:
 
 ```bash
 python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py demo \
   --specimen plugins/anamnesis/specimens/pilot
+
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py demo \
+  --specimen plugins/anamnesis/specimens/estate
 ```
+
+Two corpora are committed. The pilot holds 41 Warden findings from three
+first-party skills under scope `warden-seed-pilot`, which admits 25 to 50
+records. The estate holds 17 findings the capture estate recorded about itself
+under scope `capture-estate-findings`, which admits 10 to 40. They rebuild to
+different release ids, and neither builds under the other's declared scope:
+admission refuses `A074` for a source the scope does not name. The numbered
+readings below describe the pilot run; the estate prints the same five with its
+own figures.
 
 It prints five things and refuses rather than continuing if any of them fails.
 
@@ -28,10 +40,12 @@ It prints five things and refuses rather than continuing if any of them fails.
 
 ## What the demo does not establish
 
-That the corpus is complete, that any preserved finding was real, that any
-recorded remedy worked, or that the pilot's 41 findings are the right 41 to have
-kept. It establishes that the release rebuilds, that both views are closed, and
-that restricted material reaches neither.
+That either corpus is complete, that any preserved finding was real, that any
+recorded remedy worked, or that the pilot's 41 findings and the estate's 17 are
+the right ones to have kept. A declared scope says what a corpus was meant to
+hold; it does not establish that the holding was right. The demo establishes
+that the release rebuilds, that both views are closed, and that restricted
+material reaches neither.
 
 ## The two conformance commands
 

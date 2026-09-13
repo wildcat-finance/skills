@@ -1,0 +1,15 @@
+test_final_publication_syscall_preserves_concurrent_version (tests.test_agent_instruction_reconciliation.ReconciliationTests.test_final_publication_syscall_preserves_concurrent_version) ... FAIL
+
+======================================================================
+FAIL: test_final_publication_syscall_preserves_concurrent_version (tests.test_agent_instruction_reconciliation.ReconciliationTests.test_final_publication_syscall_preserves_concurrent_version)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/tests/test_agent_instruction_reconciliation.py", line 319, in test_final_publication_syscall_preserves_concurrent_version
+    self.assertIsNotNone(caught, "publication accepted and lost the concurrent version")
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: unexpectedly None : publication accepted and lost the concurrent version
+
+----------------------------------------------------------------------
+Ran 1 test in 0.116s
+
+FAILED (failures=1)

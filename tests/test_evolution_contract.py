@@ -351,7 +351,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.54.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.55.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -359,7 +359,7 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.54.1")
+        self.assertEqual(latest["version"], "fiat-v5.55.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
@@ -372,14 +372,22 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("held target stay unchanged", latest["change"])
         # Generations displaced from newest keep their own coverage: each is
         # still a transition the held frontier had to survive.
-        issue_filing = by_version["fiat-v5.53.1"]
-        self.assertEqual(issue_filing["axis"], "generation")
-        self.assertEqual(issue_filing["revision"], "state-shape-validation")
-        self.assertIn("Maintainer direction", issue_filing["evidence"])
-        self.assertIn("issue-check", issue_filing["change"])
-        self.assertIn("queue labels", issue_filing["change"])
-        self.assertIn("Sapheneia", issue_filing["change"])
-        self.assertIn("held target stay unchanged", issue_filing["change"])
+        halted_reset = by_version["fiat-v5.54.1"]
+        self.assertEqual(halted_reset["axis"], "generation")
+        self.assertEqual(halted_reset["revision"], "state-shape-validation")
+        self.assertIn("skills#1411", halted_reset["evidence"])
+        self.assertIn("retires a halted run", halted_reset["change"])
+        self.assertIn("`retire` ledger entry", halted_reset["change"])
+        self.assertIn("still refused", halted_reset["change"])
+        self.assertIn("held target stay unchanged", halted_reset["change"])
+        issue_check = by_version["fiat-v5.53.1"]
+        self.assertEqual(issue_check["axis"], "generation")
+        self.assertEqual(issue_check["revision"], "state-shape-validation")
+        self.assertIn("Maintainer direction", issue_check["evidence"])
+        self.assertIn("issue-check", issue_check["change"])
+        self.assertIn("queue labels", issue_check["change"])
+        self.assertIn("Sapheneia", issue_check["change"])
+        self.assertIn("held target stay unchanged", issue_check["change"])
         retarget = by_version["fiat-v5.51.1"]
         self.assertEqual(retarget["axis"], "generation")
         self.assertEqual(retarget["revision"], "state-shape-validation")

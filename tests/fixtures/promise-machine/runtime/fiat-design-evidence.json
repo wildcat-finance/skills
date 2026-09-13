@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_design_evidence": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-design-evidence without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-design-evidence",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-design-evidence",
+            "subject": "runtime source plugins/hexaemeron/tests/test_protasis_design_evidence.py#test_draft_design_lock_and_progressive_step_gate"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-design-evidence",
+        "scope": "structural binding for fiat-design-evidence",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_protasis_design_evidence.py#test_draft_design_lock_and_progressive_step_gate",
+        "transition": {
+          "action": "structurally bind fiat-design-evidence without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_design_evidence": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-design-evidence without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-design-evidence",
+          "source": {
+            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+          },
+          "target": {
+            "scope": "structural binding for fiat-design-evidence",
+            "subject": "runtime source plugins/hexaemeron/tests/test_protasis_design_evidence.py#test_draft_design_lock_and_progressive_step_gate"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
+            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-design-evidence",
+        "scope": "structural binding for fiat-design-evidence",
+        "source_digest": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6",
+        "subject": "runtime source plugins/hexaemeron/tests/test_protasis_design_evidence.py#test_draft_design_lock_and_progressive_step_gate",
+        "transition": {
+          "action": "structurally bind fiat-design-evidence without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <p align="center">
@@ -379,19 +379,32 @@ field on stderr and writes nothing.
 - `F002` a field is absent, or its value is not the shape the schema names.
 - `F004` the verdict is not `guarded`.
 - `F005` the draft is not one closed object holding exactly its seven keys.
-- `F007` the guard names a test absent from the repair's changed test files.
+- `F007` the guard names a file absent from the repair's changed test files.
 
-Those four are what a first draft hits, not the whole set. Eighteen codes ship,
-`F000` to `F017`, and the script's module docstring is the list. Eleven of them
+Those four are what a first draft hits, not the whole set. Twenty codes ship,
+`F000` to `F019`, and the script's module docstring is the list. Eleven of them
 are the closed enumeration of one rule: a record is refused when the fields it
 already carries contradict the Promise's Evidence or Boundary clauses, decided
 only from those fields and reading nothing outside the record. A twelfth member
 takes an amendment to the study that rule came from,
 `docs/elenchus-fixed-and-guarded-record/study.md`, because the rule does not
-authorise a refusal nobody has written down. The other seven refuse an input
-that will not read as one bounded closed object, a guard absent from the
-changed test files the comparison used, a parent that cannot be soundly derived
-from the result's own `ref`, and a destination the emitter will not write to.
+authorise a refusal nobody has written down. Five more refuse an input that
+will not read as one bounded closed object, a parent that cannot be soundly
+derived from the result's own `ref`, and a destination the emitter will not
+write to.
+
+The remaining four are the emit-path family: `F007`, `F010`, `F018` and
+`F019`. `F007` refuses a `guard.file` absent from the changed test files the
+comparison used, `F010` a result whose `ref` is not the commit the draft names
+as the repair, `F018` a `guard.test` whose segments, split on `.` and `:`, do
+not each occur as a whole word in `guard.file` at the repair commit, and
+`F019` a `repair.files` that omits a changed test file the comparison used.
+Each is decided against the result or the repository, evidence the emitter
+holds only while it emits. `--check` runs none of the four, and a record
+carries no trace of them, so `clean` excludes them by construction: it says
+the carried fields cohere, not that the guard named a test or that the repair
+declared every file. `F018` reads whole-word occurrence, not a parsed
+definition, so one rule covers unittest, Forge and Node guards alike.
 
 An emitted record establishes what the Promise says and no more. It covers the
 reproduced failure and the named guard. It does not prove the surrounding

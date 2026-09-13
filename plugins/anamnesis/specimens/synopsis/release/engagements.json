@@ -1,0 +1,271 @@
+[
+  {
+    "id": "eng:hexaemeron-audit-synopsis",
+    "producer": "Warden, Hexaemeron delivery runs, rendered as an audit synopsis",
+    "rounds": [
+      {
+        "date": "15 August 2026",
+        "findings": 0,
+        "id": "round:hexaemeron-audit-synopsis:1",
+        "label": "Step 0 (the plugin), round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "15 August 2026",
+        "findings": 0,
+        "id": "round:hexaemeron-audit-synopsis:2",
+        "label": "Step 0 (the plugin), round 2",
+        "native_schema": null,
+        "verdict": null
+      }
+    ],
+    "source": "hexaemeron-audit-synopsis"
+  },
+  {
+    "id": "eng:pandects-audit-synopsis",
+    "producer": "Warden, Pandects delivery runs, rendered as an audit synopsis",
+    "rounds": [
+      {
+        "date": "2026-08-16",
+        "findings": 4,
+        "id": "round:pandects-audit-synopsis:1",
+        "label": "Step 1, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 2,
+        "id": "round:pandects-audit-synopsis:2",
+        "label": "Step 1, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 1,
+        "id": "round:pandects-audit-synopsis:3",
+        "label": "Step 1, round 3",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:pandects-audit-synopsis:4",
+        "label": "Step 1, round 4",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 3,
+        "id": "round:pandects-audit-synopsis:5",
+        "label": "Step 2, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 4,
+        "id": "round:pandects-audit-synopsis:6",
+        "label": "Step 2, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:pandects-audit-synopsis:7",
+        "label": "Step 2, round 3",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 4,
+        "id": "round:pandects-audit-synopsis:8",
+        "label": "Step 3, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 2,
+        "id": "round:pandects-audit-synopsis:9",
+        "label": "Step 3, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:pandects-audit-synopsis:10",
+        "label": "Step 3, round 3",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 3,
+        "id": "round:pandects-audit-synopsis:11",
+        "label": "Step 4, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 2,
+        "id": "round:pandects-audit-synopsis:12",
+        "label": "Step 4, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:pandects-audit-synopsis:13",
+        "label": "Step 4, round 3",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 2,
+        "id": "round:pandects-audit-synopsis:14",
+        "label": "Step 5, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 2,
+        "id": "round:pandects-audit-synopsis:15",
+        "label": "Step 5, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:pandects-audit-synopsis:16",
+        "label": "Step 5, round 3",
+        "native_schema": null,
+        "verdict": null
+      }
+    ],
+    "source": "pandects-audit-synopsis"
+  },
+  {
+    "id": "eng:tabularium-audit-synopsis",
+    "producer": "Warden, Tabularium delivery runs, rendered as an audit synopsis",
+    "rounds": [
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:tabularium-audit-synopsis:1",
+        "label": "Step 1, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-17",
+        "findings": 3,
+        "id": "round:tabularium-audit-synopsis:2",
+        "label": "Euler releases, step 1, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-17",
+        "findings": 1,
+        "id": "round:tabularium-audit-synopsis:3",
+        "label": "Euler releases, step 1, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-17",
+        "findings": 2,
+        "id": "round:tabularium-audit-synopsis:4",
+        "label": "Euler releases, step 1, round 3",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-17",
+        "findings": 1,
+        "id": "round:tabularium-audit-synopsis:5",
+        "label": "Euler releases, step 1, round 4",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-17",
+        "findings": 0,
+        "id": "round:tabularium-audit-synopsis:6",
+        "label": "Euler releases, step 1, round 5",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 1,
+        "id": "round:tabularium-audit-synopsis:7",
+        "label": "Step 2, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:tabularium-audit-synopsis:8",
+        "label": "Step 2, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 1,
+        "id": "round:tabularium-audit-synopsis:9",
+        "label": "Step 3, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 2,
+        "id": "round:tabularium-audit-synopsis:10",
+        "label": "Step 3, round 2",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:tabularium-audit-synopsis:11",
+        "label": "Step 3, round 3",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 1,
+        "id": "round:tabularium-audit-synopsis:12",
+        "label": "Step 4, round 1",
+        "native_schema": null,
+        "verdict": null
+      },
+      {
+        "date": "2026-08-16",
+        "findings": 0,
+        "id": "round:tabularium-audit-synopsis:13",
+        "label": "Step 4, round 2",
+        "native_schema": null,
+        "verdict": null
+      }
+    ],
+    "source": "tabularium-audit-synopsis"
+  }
+]

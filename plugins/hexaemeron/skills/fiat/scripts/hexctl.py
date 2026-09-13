@@ -22,7 +22,10 @@ independent pull request rather than a run. The same read requires the issue's
 request body, so an outstanding item is either filed as its own issue, pointed
 at the issue that already carries it, or refused with a stated reason.
 `issue-check` also binds a candidate's title and labels to the repository's
-four issue queues before anything is filed. At integration, every `filed`
+four issue queues before anything is filed, and refuses a `framework-N` whose
+number another issue already holds, open or closed, because the shorthand that
+cites these issues in prose has to resolve to one of them. At integration,
+every `filed`
 carryover reference into wildcat-finance/skills is opened and replayed against
 that same publication contract; a URL alone is not a filing receipt.
 
@@ -467,6 +470,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.52.1",
         "fiat-v5.53.1",
         "fiat-v5.54.1",
+        "fiat-v5.55.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -5096,6 +5100,99 @@ def admitted_issue_body(
     return body
 
 
+def framework_number_holders(
+    base_dir: str, repository: str, number: str, label: str
+) -> list[dict]:
+    """Every issue whose title already claims this exact `framework-N`.
+
+    ADR-009 left who assigns `N` to #370, which closed without answering, so
+    nothing allocates the number and nothing refuses a second claim on it. The
+    shorthand is how this repository refers to these issues in prose, and it is
+    far from the issue number, so a duplicate does not merely look untidy: it
+    makes the reference ambiguous and has already sent work to the wrong topic.
+
+    One bounded search read, because the qualifier answers the exact question
+    and returns one object. `in:title` tokenises, so `framework-11` also comes
+    back for `framework-110`; every row is therefore re-matched against
+    `FRAMEWORK_ISSUE_TITLE_RE` and kept only when its parsed number is equal.
+    Closed issues count. A number freed by closing one issue is still the
+    number the prose in the tree cites, and #1036 is cited by URL precisely
+    because its shorthand is not unique.
+
+    Rows come back sorted by issue number so a refusal reads the same twice.
+    """
+    query = "+".join(
+        (
+            f"repo:{repository}",
+            "is:issue",
+            "in:title",
+            f"framework-{number}",
+        )
+    )
+    path = f"search/issues?q={query}&per_page=100"
+    payload = github_rest(base_dir, path, label)
+    items = payload.get("items")
+    if not isinstance(items, list):
+        github_unreachable(label, path, "returned items that are not an array")
+    if payload.get("incomplete_results") is True:
+        github_unreachable(label, path, "returned an incomplete search result")
+    holders = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            github_unreachable(label, path, f"returned result {index} as not one object")
+        title = item.get("title")
+        held = item.get("number")
+        if not isinstance(title, str) or not isinstance(held, int):
+            github_unreachable(
+                label, path, f"returned result {index} without a title and number"
+            )
+        match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+        if match is None or match.group("number") != number:
+            continue
+        state = item.get("state")
+        holders.append(
+            {
+                "number": held,
+                "state": state if isinstance(state, str) else "unknown",
+                "title": title,
+            }
+        )
+    return sorted(holders, key=lambda row: row["number"])
+
+
+def framework_number_faults(
+    base_dir: str, repository: str, title: str, label: str, own_number: int | None
+) -> list[str]:
+    """Refuse a `framework-N` another issue already holds.
+
+    The check runs only once the title has passed its shape rule, because an
+    ill-formed title carries no number to be unique about. `own_number` is the
+    issue being checked when one has already been filed; it holds its own
+    number and is not its own duplicate.
+
+    A transport that cannot answer refuses inside ``github_rest`` rather than
+    here, so an unreachable search never reads as a clean number.
+    """
+    match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+    if match is None:
+        return []
+    number = match.group("number")
+    others = [
+        row
+        for row in framework_number_holders(base_dir, repository, number, label)
+        if row["number"] != own_number
+    ]
+    if not others:
+        return []
+    held = ", ".join(f"#{row['number']} ({row['state']})" for row in others)
+    carries = "already holds" if len(others) == 1 else "already hold"
+    return [
+        f"{label} claims framework-{number}, which {held} {carries}; "
+        f"the shorthand has to resolve to one issue, so pick a number no "
+        f"issue in {repository} carries"
+    ]
+
+
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     """The filing decisions one GitHub issue carries, read over REST.
 
@@ -6585,6 +6682,18 @@ def cmd_issue_check(args) -> None:
             )
         else:
             record, faults = issue_contract_faults(text, label)
+    # Uniqueness is asked only of a title that already passed its shape rule,
+    # and only in the repository whose prose uses the shorthand. A candidate
+    # has no number of its own yet; a filed issue holds one and is not its own
+    # duplicate.
+    if skills_contract and not faults and record.get("queue") == "framework-N":
+        faults = framework_number_faults(
+            args.dir,
+            repository,
+            record["title"],
+            label,
+            int(number) if args.issue else None,
+        )
     for fault in faults:
         # Bounded per line rather than over the join, because this destination
         # is a list a filer reads and works down. `CARRYOVER_ROWS_MAX` bounds
@@ -15257,13 +15366,155 @@ def _checkpoint_identity_working_commit(
     return kind, step_number, working
 
 
+def _checkpoint_identity_semantic_capture(
+    state_bytes: bytes, ledger_bytes: bytes
+) -> tuple[dict, dict, list[dict], int, str, bytes, dict | None]:
+    """Remove one fully joined relocation receipt from semantic input."""
+    current = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
+        ledger_bytes, current
+    )
+    if entries[-1]["event"] != "checkpoint:restore":
+        return (
+            current,
+            current,
+            entries,
+            ledger_count,
+            ledger_tail,
+            ledger_bytes,
+            None,
+        )
+
+    receipt = entries[-1]["data"]
+    receipt_fields = {
+        "manifest_sha256",
+        "source_state_sha256",
+        "source_ledger_sha256",
+        "source_ledger_tail",
+        "refs",
+        "relocated_state_fingerprint",
+        "old_origin",
+        "old_worktree",
+        "origin",
+        "worktree",
+    }
+    if not isinstance(receipt, dict) or set(receipt) != receipt_fields:
+        die("checkpoint identity restore join has an unsupported shape")
+    for name in (
+        "manifest_sha256",
+        "source_state_sha256",
+        "source_ledger_sha256",
+        "source_ledger_tail",
+        "relocated_state_fingerprint",
+    ):
+        _checkpoint_identity_sha256(receipt.get(name), f"restore {name}")
+    if (
+        configured_git_path(current, "origin") != receipt.get("origin")
+        or configured_git_path(current, "worktree") != receipt.get("worktree")
+        or entries[-1]["prev"] != receipt["source_ledger_tail"]
+        or entries[-1]["state"] != receipt["relocated_state_fingerprint"]
+        or receipt["relocated_state_fingerprint"] != state_fingerprint(current)
+    ):
+        die("checkpoint identity restore join disagrees with relocated state")
+
+    run_branch = run_branch_of(current)
+    if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+        die("checkpoint identity restore path delta is not owned")
+
+    def restore_path(value) -> str:
+        try:
+            encoded = value.encode("utf-8") if isinstance(value, str) else b""
+        except UnicodeEncodeError:
+            encoded = b""
+        if (
+            not encoded
+            or not os.path.isabs(value)
+            or value.replace("\\", "/") != value
+            or os.path.normpath(value) != value
+            or len(encoded) > CHECKPOINT_PATH_BYTES_MAX
+            or any(ord(character) < 32 or ord(character) == 127 for character in value)
+        ):
+            die("checkpoint identity restore path delta is not owned")
+        return value
+
+    for origin_name, worktree_name in (
+        ("old_origin", "old_worktree"),
+        ("origin", "worktree"),
+    ):
+        origin = restore_path(receipt.get(origin_name))
+        worktree = restore_path(receipt.get(worktree_name))
+        expected_worktree = os.path.join(
+            origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if worktree != expected_worktree:
+            die("checkpoint identity restore path delta is not owned")
+
+    imported = json.loads(json.dumps(current))
+    imported["config"]["git"]["origin"] = receipt.get("old_origin")
+    imported["config"]["git"]["worktree"] = receipt.get("old_worktree")
+    imported_bytes = (
+        json.dumps(imported, indent=2, sort_keys=False).encode("utf-8") + b"\n"
+    )
+    if hashlib.sha256(imported_bytes).hexdigest() != receipt["source_state_sha256"]:
+        die("checkpoint identity restore source state does not match the receipt")
+    manifest = {
+        "source": {
+            "state_sha256": receipt["source_state_sha256"],
+            "ledger_sha256": receipt["source_ledger_sha256"],
+            "ledger_tail": receipt["source_ledger_tail"],
+        },
+        "boundary": {"refs": receipt.get("refs")},
+    }
+    expected_current, expected_receipt = _checkpoint_restore_state(
+        imported,
+        receipt.get("origin"),
+        receipt.get("worktree"),
+        manifest,
+        receipt["manifest_sha256"],
+    )
+    if current != expected_current or receipt != expected_receipt:
+        die("checkpoint identity restore path delta is not owned")
+
+    prefix_lines = ledger_bytes.splitlines(keepends=True)
+    prefix = b"".join(prefix_lines[:-1])
+    if (
+        hashlib.sha256(prefix).hexdigest() != receipt["source_ledger_sha256"]
+    ):
+        die("checkpoint identity restore source bytes do not match the receipt")
+    prefix_entries, prefix_count, prefix_tail = _checkpoint_identity_ledger(
+        prefix, imported
+    )
+    if (
+        prefix_tail != receipt["source_ledger_tail"]
+        or any(entry["event"] == "checkpoint:restore" for entry in prefix_entries)
+    ):
+        die("checkpoint identity restore prefix is not one accepted producer")
+    return (
+        imported,
+        current,
+        prefix_entries,
+        prefix_count,
+        prefix_tail,
+        prefix,
+        receipt,
+    )
+
+
 def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> dict:
     """Derive path-free semantics from two already captured bounded byte strings."""
     if type(state_bytes) is not bytes:
         die("checkpoint identity state input must be captured bytes")
     if not state_bytes or len(state_bytes) > CHECKPOINT_FILE_BYTES_MAX:
         die("checkpoint identity state exceeds its byte ceiling")
-    state = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    (
+        state,
+        runtime_state,
+        entries,
+        ledger_count,
+        ledger_tail,
+        semantic_ledger,
+        restore_receipt,
+    ) = _checkpoint_identity_semantic_capture(state_bytes, ledger_bytes)
     if (
         type(state.get("version")) is not int
         or state["version"] != 1
@@ -15283,9 +15534,6 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
         step_numbers.append(number)
     if len(step_numbers) != len(set(step_numbers)):
         die("checkpoint identity step numbers are duplicated")
-    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
-        ledger_bytes, state
-    )
     if (
         not isinstance(state.get("base"), str)
         or COMMIT_RE.fullmatch(state["base"]) is None
@@ -15333,6 +15581,8 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
     )
     return {
         "state": state,
+        "runtime_state": runtime_state,
+        "restore_receipt": restore_receipt,
         "anchor": anchor,
         "anchor_sha256": anchor_sha256,
         "boundary": boundary,
@@ -15344,7 +15594,7 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
         "observations": observations,
         "ledger_entries": ledger_count,
         "ledger_tail": ledger_tail,
-        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "ledger_sha256": hashlib.sha256(semantic_ledger).hexdigest(),
         "state_fingerprint": state_fingerprint(state),
     }
 
@@ -15395,6 +15645,10 @@ def _checkpoint_identity_validate_evidence(
         or git_evidence.get("ancestry") != "verified"
     ):
         die("checkpoint identity Git evidence does not match the captured run")
+
+    restore_receipt = semantics["restore_receipt"]
+    if restore_receipt is not None and refs != restore_receipt["refs"]:
+        die("checkpoint identity restore refs do not match the current Git boundary")
 
     sources = evidence.get("sources")
     if not isinstance(sources, dict) or set(sources) != {
@@ -15512,7 +15766,7 @@ def _checkpoint_identity_git_evidence(
 ) -> dict:
     """Resolve the fixed Git facts without admitting them into hashed identity."""
     state = semantics["state"]
-    origin = configured_git_path(state, "origin")
+    origin = configured_git_path(semantics["runtime_state"], "origin")
     if not isinstance(origin, str) or not origin:
         die("checkpoint identity cannot verify the target repository")
     repository = target_repository_binding(origin)
@@ -15601,7 +15855,7 @@ def cmd_checkpoint_identity(args) -> None:
         die("checkpoint identity source changed during verification")
 
     semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
-    state = semantics["state"]
+    state = semantics["runtime_state"]
     source_evidence, source_token = _checkpoint_identity_source_evidence(
         base_dir, state
     )
@@ -18140,7 +18394,7 @@ def print_uncomparable_filing_fields(uncomparable: list) -> None:
 
 
 def cmd_reset(args) -> None:
-    """Archive a completed run, and retire the worktree it ran in.
+    """Archive a completed or halted run, and retire the worktree it ran in.
 
     Retirement belongs here rather than in `done integrate`, because the
     controller's own contract has the caller run `status` and `verify` after the
@@ -18152,14 +18406,36 @@ def cmd_reset(args) -> None:
     A run that lived in a worktree archives into the checkout it was started
     from, because archiving inside the tree and then removing the tree would
     destroy the archive in the same breath.
+
+    A halted run is the other run this command accepts. Its stop is already on
+    the ledger with a reason, and no phase command advances it until `resume`,
+    so clearing it discards no live delivery. Retirement appends one `retire`
+    entry naming the phase the run stopped in and the recorded reason before
+    anything moves, so the archived ledger ends with the retirement rather than
+    with a halt that reads as paused. A run that is merely incomplete has no
+    recorded stop and is still refused.
     """
     count = verify_run(args.dir)
     state = load_state(args.dir)
-    if state["phase"] != "done":
+    halted = state.get("halted")
+    if state["phase"] != "done" and not halted:
         die(
             f"refusing to reset an incomplete run in phase '{state['phase']}'; "
-            "resume it or halt it explicitly"
+            "resume it, or record the stop with `hexctl halt --reason ...` and "
+            "reset again to retire it"
         )
+    if halted:
+        commit(
+            args.dir,
+            state,
+            "retire",
+            {
+                "phase": state["phase"],
+                "reason": halted["reason"],
+                "halted_ts": halted["ts"],
+            },
+        )
+        count += 1
 
     root = state_root(args.dir)
     origin = configured_git_path(state, "origin")
@@ -18170,7 +18446,8 @@ def cmd_reset(args) -> None:
     os.makedirs(archive_root, exist_ok=True)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     topic = re.sub(r"[^a-z0-9]+", "-", state["topic"].lower()).strip("-")[:48]
-    name = f"{stamp}-{topic or 'completed-run'}"
+    kind = "halted" if halted else "completed"
+    name = f"{stamp}-{f'halted-{topic}' if halted and topic else topic or f'{kind}-run'}"
     destination = os.path.join(archive_root, name)
     suffix = 2
     while os.path.exists(destination):
@@ -18184,9 +18461,12 @@ def cmd_reset(args) -> None:
             continue
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
+    stopped = (
+        f", stopped in phase '{state['phase']}': {halted['reason']}" if halted else ""
+    )
     print(
-        f"archived verified completed run ({count} ledger entries) locally at "
-        f"{destination}; active state cleared"
+        f"archived verified {kind} run ({count} ledger entries{stopped}) locally "
+        f"at {destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):
@@ -18416,7 +18696,7 @@ def build_parser() -> argparse.ArgumentParser:
     restore.set_defaults(fn=cmd_checkpoint_restore)
 
     sp = sub.add_parser(
-        "reset", help="archive a completed run and clear its active state"
+        "reset", help="archive a completed or halted run and clear its active state"
     )
     sp.set_defaults(fn=cmd_reset)
 

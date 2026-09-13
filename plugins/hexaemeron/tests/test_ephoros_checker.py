@@ -171,6 +171,13 @@ def ts_codes(source, name="sample.ts"):
         return sorted(f.code for f in ephoros.check(path))
 
 
+def ts_lines(source, name="sample.ts"):
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / name
+        path.write_text(source, encoding="utf-8")
+        return sorted((f.code, f.line) for f in ephoros.check(path))
+
+
 class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_flags_an_address_key_on_a_metric_label_set(self):
         findings = ephoros.check(TELEMETRY_FIXTURES / "metric-label-set.ts")
@@ -259,8 +266,11 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
     def test_it_allows_a_storage_key_built_from_an_address(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "storage-key.ts"))
 
-    def test_it_allows_a_logger_message_interpolating_an_address(self):
-        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts"))
+    def test_a_message_interpolating_an_address_is_e001_and_not_an_e005_key(self):
+        # The address rides in the message rather than in a key, so E005 still
+        # stays quiet; E001 claims the message itself.
+        findings = ephoros.check(TELEMETRY_FIXTURES / "logger-message.ts")
+        self.assertEqual(["E001"], [finding.code for finding in findings])
 
     def test_it_ignores_console_output_which_is_not_telemetry(self):
         self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "console-output.ts"))
@@ -309,6 +319,328 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
         self.assertEqual(["E005"], ts_codes(
             "/* // ephoros: allow smuggled reason */\n"
             "eventLog[walletAddress] = event\n"))
+
+
+class TypeScriptInterpolatedMessageTests(unittest.TestCase):
+    """E001 on the TypeScript surface: a message built by formatting.
+
+    A template literal carrying no `${}` is a constant string here, which is
+    where this surface diverges from Python's placeholder-free f-string.
+    """
+
+    def test_it_flags_an_interpolated_message_at_the_call_line(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "interpolated-message.ts")
+        self.assertEqual(["E001"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
+
+    def test_a_constant_template_message_beside_fields_stays_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "constant-message.ts"))
+
+    def test_an_interpolated_message_in_a_comment_or_a_string_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            "/* logger.debug(`Got lenders ${lenders}`) */\n"))
+        self.assertEqual([], ts_codes(
+            'const note = "logger.debug(`Got lenders ${lenders}`)"\n'))
+
+    def test_console_output_with_an_interpolated_message_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            "console.log(`Got lenders ${lenders}`)\n"))
+
+    def test_a_reasoned_slash_pragma_on_the_line_suppresses_e001(self):
+        self.assertEqual([], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)"
+            "  // ephoros: allow one operator-only trace line\n"))
+
+    def test_a_reasoned_slash_pragma_on_the_line_above_suppresses_e001(self):
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one operator-only trace line\n"
+            "logger.debug(`Got lenders ${lenders}`)\n"))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e001(self):
+        self.assertEqual(["E001"], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)  // ephoros: allow\n"))
+
+    def test_a_concatenation_with_a_string_literal_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes(
+            'logger.info("got lender " + lender)\n'))
+
+    def test_an_addition_with_no_string_literal_stays_clean(self):
+        self.assertEqual([], ts_codes("logger.info(a + b)\n"))
+
+    def test_a_single_quoted_literal_concatenation_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes(
+            "logger.info('got lender ' + lender)\n"))
+
+    def test_a_plus_inside_a_string_is_not_a_concatenation(self):
+        # The `+` is read from the mask, so a constant message naming one
+        # stays a constant message.
+        self.assertEqual([], ts_codes('logger.info("a + b")\n'))
+
+    def test_only_the_first_argument_decides(self):
+        self.assertEqual([], ts_codes(
+            'logger.info("cycle done", `took ${ms}ms`)\n'))
+
+    def test_a_non_log_method_on_a_logger_does_not_fire(self):
+        # `logger.debug(...)` is a log write; `logger.child(...)` is not.
+        self.assertEqual([], ts_codes("logger.child(`ctx ${id}`)\n"))
+
+    def test_whitespace_before_the_template_literal_does_not_hide_it(self):
+        self.assertEqual(["E001"], ts_codes("logger.debug( `Got ${x}` )\n"))
+
+    def test_a_string_literal_on_the_right_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes('logger.info(lender + " got")\n'))
+
+    def test_a_constant_template_plus_a_variable_is_a_formatted_message(self):
+        self.assertEqual(["E001"], ts_codes("logger.info(`got ` + lender)\n"))
+
+    def test_a_concatenation_after_the_call_does_not_reach_it(self):
+        # Both offset tables are file-wide and bisected, so the argument's
+        # end has to bound them or a later `"a" + b` fires here.
+        self.assertEqual([], ts_codes('logger.info(x)\nconst y = "a" + b\n'))
+
+    def test_a_multi_line_call_reports_the_opening_line(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "sample.ts"
+            path.write_text("logger.debug(\n  `Got ${x}`,\n  { y }\n)\n",
+                            encoding="utf-8")
+            findings = ephoros.check(path)
+        self.assertEqual([("E001", 1)],
+                         [(finding.code, finding.line) for finding in findings])
+
+    def test_an_unterminatable_file_reports_e000_alone_and_no_e001(self):
+        self.assertEqual(["E000"], ts_codes(
+            "logger.debug(`Got lenders ${lenders}`)\n"
+            "const s = `never terminated\n"))
+
+
+class TypeScriptUnboundedLabelTests(unittest.TestCase):
+    """E002 on the TypeScript surface: an unbounded key in a label container.
+
+    The address-shaped subset stays E005's, so the split the Python surface
+    already draws is inherited here rather than reopened.
+    """
+
+    def test_it_flags_a_request_id_key_in_a_labels_object(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "unbounded-label.ts")
+        self.assertEqual(["E002"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
+        self.assertIn("metric label `requestId` is unbounded",
+                      findings[0].message)
+
+    def test_bounded_keys_in_the_same_container_stay_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "bounded-label.ts"))
+
+    def test_an_address_key_in_that_container_is_e005_and_not_e002(self):
+        self.assertEqual(["E005"], ts_codes(
+            'metrics.increment("m", { labels: { walletAddress: depositor } })\n'))
+        # The word set names each plural as a whole word, so the Python `s?`
+        # gap does not exist here: `addresses` is E005's and `hashes` is
+        # E002's, where the Python rule passes both silently.
+        self.assertEqual(["E005"], ts_codes(
+            'metrics.increment("m", { tags: ["addresses"] })\n'))
+        self.assertEqual(["E002"], ts_codes(
+            'metrics.increment("m", { tags: ["hashes"] })\n'))
+
+    def test_the_same_key_outside_lexed_code_reports_no_e002(self):
+        # The key is read from the mask, so a comment and a string carry
+        # nothing; and a file the lexer refuses, or one over the 1 MiB cap,
+        # reports E000 alone with no E002 beside it.
+        self.assertEqual([], ts_codes(
+            '/* metrics.increment("m", { labels: { requestId: rid } }) */\n'))
+        self.assertEqual([], ts_codes(
+            "const note = 'metrics.increment(\"m\", "
+            "{ labels: { requestId: rid } })'\n"))
+        self.assertEqual(["E000"], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })\n'
+            "const s = `never terminated\n"))
+        self.assertEqual(["E000"], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })\n'
+            + "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES))
+
+    def test_the_labels_call_form_is_found_as_well_as_the_property_form(self):
+        self.assertEqual(["E002"], ts_codes(
+            "deposits.labels({ requestId: rid }).inc()\n"))
+        self.assertEqual(["E002"], ts_codes(
+            'const c = new client.Counter({ name: "c", '
+            'labelNames: ["tx_hash", "chain"] })\n'))
+        self.assertEqual(["E002"], ts_codes(
+            'analytics.track("deposit", { attributes: { "run_id": runId } })\n'))
+
+    def test_a_reasoned_slash_pragma_on_the_line_or_above_suppresses_e002(self):
+        self.assertEqual([], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })'
+            "  // ephoros: allow one operator-only counter\n"))
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one operator-only counter\n"
+            'metrics.increment("m", { labels: { requestId: rid } })\n'))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e002(self):
+        self.assertEqual(["E002"], ts_codes(
+            'metrics.increment("m", { labels: { requestId: rid } })'
+            "  // ephoros: allow\n"))
+
+    def test_a_key_carrying_both_vocabularies_is_e005_alone(self):
+        # `userAddress`, `walletId`, `wallet_id` and `address_hash` each hold
+        # one address word and one unbounded word. The address words are
+        # consulted first on the identifier path and the string path alike,
+        # so one key carries one code; a key from one vocabulary only, such
+        # as `walletAddress`, cannot tell the two orders apart.
+        self.assertEqual(["E005"], ts_codes(
+            'metrics.increment("m", { labels: { userAddress: a } })\n'))
+        self.assertEqual(["E005"], ts_codes(
+            "deposits.labels({ walletId: w }).inc()\n"))
+        self.assertEqual(["E005", "E005"], ts_codes(
+            'metrics.increment("m", { tags: ["wallet_id", "address_hash"] })\n'))
+
+    def test_a_key_on_its_own_line_reports_that_line_and_takes_its_pragma(self):
+        # A key in a multi-line container is reported where it is written,
+        # not at the comma or brace before it, so the documented pragma
+        # placement beside the key holds; E005 shares the path and moves too.
+        source = ('metrics.increment("m", { labels: {\n'
+                  "  route: r,\n"
+                  "  walletAddress: w,\n"
+                  "  requestId: rid } })\n")
+        self.assertEqual([("E002", 4), ("E005", 3)], ts_lines(source))
+        self.assertEqual([("E005", 3)], ts_lines(source.replace(
+            "requestId: rid }",
+            "requestId: rid,  // ephoros: allow one operator-only counter\n}")))
+        self.assertEqual([("E002", 3)], ts_lines(
+            'const c = new client.Counter({ name: "c", labelNames: [\n'
+            '  "chain",\n'
+            '  "requestId"\n'
+            "] })\n"))
+        # A comment on its own line between the separator and the key is
+        # blank in the mask, so it does not take the finding from the key.
+        self.assertEqual([("E002", 4)], ts_lines(
+            'metrics.increment("m", { labels: {\n'
+            "  route: r,\n"
+            "  // one label per request\n"
+            "  requestId: rid } })\n"))
+
+
+class TypeScriptMeanDurationTests(unittest.TestCase):
+    """E003 on the TypeScript surface: a duration reduced to a mean.
+
+    The shape is an assignment whose whole right-hand side is a named mean
+    call or the reduce-over-length idiom, with a duration word in the target
+    or the expression. The mean of anything else is arithmetic and passes.
+    """
+
+    def test_it_flags_a_named_mean_and_the_reduce_idiom_over_a_duration(self):
+        findings = ephoros.check(TELEMETRY_FIXTURES / "mean-duration.ts")
+        self.assertEqual(["E003", "E003"], [f.code for f in findings])
+        self.assertEqual([2, 3], [f.line for f in findings])
+        self.assertEqual(
+            "duration summarised as a mean; record a histogram and read p95",
+            findings[0].message)
+
+    def test_the_same_durations_recorded_as_a_histogram_stay_clean(self):
+        self.assertEqual(
+            [], ephoros.check(TELEMETRY_FIXTURES / "histogram-duration.ts"))
+
+    def test_a_mean_over_sentence_lengths_stays_clean(self):
+        self.assertEqual([], ts_codes(
+            "const meanLength = mean(sentenceLengths)\n"
+            "const average = lengths.reduce((a, b) => a + b, 0) / lengths.length\n"))
+
+    def test_a_mean_over_a_layout_position_stays_clean(self):
+        self.assertEqual([], ts_codes(
+            "const order = positions.reduce((a, b) => a + b, 0) / positions.length\n"
+            "const centre = stats.mean(offsets)\n"))
+
+    def test_a_mean_over_a_price_stays_clean(self):
+        self.assertEqual([], ts_codes(
+            "const avgPrice = average(prices)\n"
+            "const midMarket = quotes.reduce((a, q) => a + q.price, 0) / quotes.length\n"))
+
+    def test_the_same_shape_outside_lexed_code_reports_no_e003(self):
+        # The shape is read from the mask, so a comment and a template
+        # literal carry nothing; and a file the lexer refuses, or one over
+        # the 1 MiB cap, reports E000 alone, which no pragma suppresses.
+        self.assertEqual([], ts_codes(
+            "// const meanLatencyMs = mean(latenciesMs)\n"
+            "/* const avgWait = waits.reduce((a, b) => a + b, 0) / waits.length */\n"))
+        self.assertEqual([], ts_codes(
+            "const note = `${mean(latenciesMs)} ms mean latency`\n"))
+        self.assertEqual(["E000"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)\n"
+            "const s = `never terminated\n"))
+        # The pragma sits on the line above the E000 line, where it
+        # would suppress any other code; it must leave E000 standing.
+        self.assertEqual(["E000"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)\n"
+            "// ephoros: allow crafted reason\n"
+            "const s = `never terminated\n"))
+        self.assertEqual(["E000"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)\n"
+            + "//" + "x" * ephoros.TYPESCRIPT_MAX_BYTES))
+
+    def test_a_reasoned_slash_pragma_on_the_line_or_above_suppresses_e003(self):
+        self.assertEqual([], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)"
+            "  // ephoros: allow one offline report, histogram beside it\n"))
+        self.assertEqual([], ts_codes(
+            "// ephoros: allow one offline report, histogram beside it\n"
+            "const avgWait = waits.reduce((a, b) => a + b, 0) / waits.length\n"))
+
+    def test_a_bare_slash_pragma_does_not_suppress_e003(self):
+        self.assertEqual(["E003"], ts_codes(
+            "const meanLatencyMs = mean(latenciesMs)  // ephoros: allow\n"))
+
+
+class TypeScriptMeanDurationBoundaries(unittest.TestCase):
+    """The E003 recogniser's own gates, each pinned by a shape that turns
+    red when the gate is removed: the target-name path, the whole-right-hand-
+    side terminator, the plain `=` before the expression, the `.length` tail
+    after `reduce`, the annotation step, the comment-free word table and the
+    plural vocabulary. Every shape here is one SKILL.md names.
+    """
+
+    def test_the_target_name_alone_carries_the_duration_word(self):
+        self.assertEqual(["E003"], ts_codes("const avgLatency = mean(samples)\n"))
+        self.assertEqual(["E003"], ts_codes("this.avgLatency = mean(samples)\n"))
+        self.assertEqual(["E003"], ts_codes(
+            "const avgWait = xs.reduce((a, b) => a + b, 0) / xs.length\n"))
+
+    def test_a_mean_used_as_an_operand_stays_outside(self):
+        self.assertEqual([], ts_codes("const x = mean(latencies) * 1000\n"))
+        self.assertEqual([], ts_codes("const x = Math.round(mean(latencies))\n"))
+        self.assertEqual([], ts_codes(
+            "const x = xs.reduce((a, b) => a + b, 0) / latencies.length + 1\n"))
+
+    def test_a_comparison_or_compound_assignment_is_not_an_assignment(self):
+        self.assertEqual([], ts_codes("if (x == mean(latencies)) {}\n"))
+        self.assertEqual([], ts_codes("if (x >= mean(latencies)) {}\n"))
+        self.assertEqual([], ts_codes("total += mean(latencies)\n"))
+
+    def test_an_object_property_value_stays_outside(self):
+        self.assertEqual([], ts_codes(
+            "const o = { meanLatency: mean(latencies) }\n"))
+
+    def test_reduce_fires_only_over_a_dotted_length_tail(self):
+        self.assertEqual([], ts_codes(
+            "const avgWait = waits.reduce((a, b) => a + b, 0) / n\n"))
+        self.assertEqual([], ts_codes(
+            "const avgWait = waits.reduce((a, b) => a + b, 0) / length\n"))
+        self.assertEqual([], ts_codes(
+            "const avgLatency = sum(latencies) / latencies.length\n"))
+
+    def test_a_word_in_a_comment_carries_nothing_where_a_literal_does(self):
+        self.assertEqual([], ts_codes("const x = mean(xs /* latency */)\n"))
+        self.assertEqual(["E003"], ts_codes('const x = mean(xs, "latency")\n'))
+        self.assertEqual(["E003"], ts_codes("const x = mean(xs, `ms`)\n"))
+
+    def test_the_plural_latencies_fires_where_timeout_does_not(self):
+        self.assertEqual(["E003"], ts_codes("const x = mean(latencies)\n"))
+        self.assertEqual([], ts_codes("const avgTimeout = mean(timeouts)\n"))
+
+    def test_a_simple_or_dotted_annotation_is_stepped_over(self):
+        self.assertEqual(["E003"], ts_codes(
+            "let avgLatency: number = mean(samples)\n"))
+        self.assertEqual(["E003"], ts_codes(
+            "let avgLatency: stats.Value = mean(samples)\n"))
 
 
 class TypeScriptBoundaries(unittest.TestCase):
@@ -446,6 +778,23 @@ class TypeScriptBoundaries(unittest.TestCase):
         self.assertEqual(["E005"], [finding.code for finding in findings])
         self.assertEqual([2], [finding.line for finding in findings])
         self.assertIn("log index `walletAddress`", findings[0].message)
+
+    def test_a_mean_named_nest_keeps_its_single_exact_finding(self):
+        # E003 is the one recogniser this surface gained as a pass of its
+        # own, so the overlap shape that made three earlier passes
+        # quadratic is pinned against it: every nested `mean(` bracket
+        # passes the sink gate, and each inner one is rejected at its first
+        # character, because `(` is not `=`. Only the outermost is assigned.
+        depth = 8192
+        source = ("// nested mean specimen\n"
+                  + "const meanLatency = " + "mean(" * depth
+                  + "latencies" + ")" * depth + "\n")
+        with tempfile.TemporaryDirectory() as base:
+            specimen = Path(base) / "mean.ts"
+            specimen.write_text(source, encoding="utf-8")
+            findings = ephoros.check(specimen)
+        self.assertEqual(["E003"], [finding.code for finding in findings])
+        self.assertEqual([2], [finding.line for finding in findings])
 
     def test_a_findings_saturated_file_keeps_every_line_number(self):
         # Counting newlines from the top of the file for every finding cost

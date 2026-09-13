@@ -1,0 +1,147 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "hypomnema_decision_assignment": {
+          "authorised_transition": {
+            "action": "structurally bind hypomnema-decision-assignment without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+                "sha256": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "hypomnema-decision-assignment",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for hypomnema-decision-assignment",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py#test_plan_and_replay_emit_the_same_canonical_report"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+            "sha256": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hypomnema-decision-assignment",
+        "scope": "structural binding for hypomnema-decision-assignment",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py#test_plan_and_replay_emit_the_same_canonical_report",
+        "transition": {
+          "action": "structurally bind hypomnema-decision-assignment without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "hypomnema_decision_assignment": {
+          "authorised_transition": {
+            "action": "structurally bind hypomnema-decision-assignment without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+                "sha256": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "hypomnema-decision-assignment",
+          "source": {
+            "sha256": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d"
+          },
+          "target": {
+            "scope": "structural binding for hypomnema-decision-assignment",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py#test_plan_and_replay_emit_the_same_canonical_report"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+            "sha256": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hypomnema-decision-assignment",
+        "scope": "structural binding for hypomnema-decision-assignment",
+        "source_digest": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py#test_plan_and_replay_emit_the_same_canonical_report",
+        "transition": {
+          "action": "structurally bind hypomnema-decision-assignment without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # Lazarus runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Lazarus.** Lazarus captures the finite fixed-block Ethereum state and RPC evidence an application test needs, verifies the proof-backed part and replays only exact recorded requests. Use Alexandria for a lending-data archive, Tabularium for event interpretation and Ariadne to bind a released fixture to its evidence. **Current frontier:** Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
+> **Marketplace context: Lazarus.** Lazarus captures the finite fixed-block Ethereum state and RPC evidence an application test needs, verifies the proof-backed part and replays only exact recorded requests. Use Alexandria for a lending-data archive, Tabularium for event interpretation and Ariadne to bind a released fixture to its evidence. **Current frontier:** Receipt witnesses reconstruct receiptsRoot offline for full ordered receipt sets: scoped witnesses prove one consensus receipt payload and its log projection, while empty witnesses are accepted only at Ethereum's empty trie root and prove zero relations; transaction hashes and unrelated RPC results remain recorded evidence.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -66,7 +66,8 @@ validation, manifest construction and fixture verification reach no network.
 `manifest.json` beneath its explicit fixture root. `verify` checks schemas,
 safe paths, canonical manifest bytes, component sizes and SHA-256 digests,
 then verifies the header, EIP-1186 account and storage proofs, a declared full
-ordered receipt witness, the scoped receipt and log-projection relations,
+ordered receipt witness, either the scoped receipt and log-projection relations
+or the empty-root zero-relation result,
 proved response fields and captured code. `replay` verifies before binding
 loopback.
 It has no provider, proxy or fallback. `release` verifies its fixture, holds the
@@ -81,7 +82,8 @@ nothing. Neither reaches a network, and neither signs anything.
   rejected before the stored plan is written.
 - No proof claim for an ordinary RPC result. Only the consensus receipt payload
   and scoped consensus-log projection accepted through a reconstructed
-  `receiptsRoot` relation enter the receipt-trie-proved class. Transaction
+  `receiptsRoot` relation enter the positive receipt-trie-proved class. An
+  empty witness proves only the empty root and zero relations. Transaction
   hashes, calls, traces and unrelated fields remain recorded evidence.
 - No silent live fallback. An uncaptured replay request is a visible miss.
 - No secret persistence. Provider URLs, headers, credentials and raw provider

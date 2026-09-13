@@ -96,10 +96,17 @@ so a reader knows which queue a thing came from without opening it.
 - `framework-N`, labelled `observation`. Something a run noticed about the
   system as a whole. Its body opens by stating that Protasis decides which
   skill or skills it upgrades, because the filer is the wrong party to guess.
+  `N` has to be a number no other issue holds, open or closed: the shorthand is
+  how this repository cites these issues in prose, and it is far from the issue
+  number, so a second claim on one number makes the citation ambiguous.
+  `issue-check` reads the titles already filed and refuses a duplicate. Nothing
+  allocates `N`, so pick the lowest free number and let the check settle it.
 
 `{skill}` is the skill's own governed name rather than its plugin's, so Lemma's
-is `lemma`. The reasoning, the alternatives and the two questions still open are
-in [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md).
+is `lemma`. The reasoning and the alternatives are in
+[ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md), which
+left who assigns `N` to #370. That issue closed without answering it, and the
+uniqueness half is now checked rather than assigned.
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.
 
@@ -375,3 +382,18 @@ boundary is regenerated:
 ```bash
 python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
 ```
+
+`.horos/census.json` is the second generated artefact and moves for a
+different reason. The boundary lists classified sinks, so an ordinary source
+edit leaves it alone; the census counts bytes per filetype across every
+tracked file, so any change to any tracked file moves it. The root suite holds
+it to a fresh scan the same way, and a different flag rewrites it:
+
+```bash
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+```
+
+Run that before recording a green rather than after, and stage what it writes
+alongside the change. Every merge to `main` rewrites the census as well, so a
+branch left open across another merge conflicts on the byte counts: take
+`main`'s copy, run the command again, and stage the result.

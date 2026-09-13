@@ -1,0 +1,139 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "frontmatter": {
+        "hexaemeron_fizz_convert_properties": {
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+                "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "hexaemeron-fizz-convert-properties",
+          "scope": "structural binding for hexaemeron-fizz-convert-properties",
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
+          "transition": {
+            "action": "structurally bind hexaemeron-fizz-convert-properties without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hexaemeron-fizz-convert-properties",
+        "scope": "structural binding for hexaemeron-fizz-convert-properties",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
+        "transition": {
+          "action": "structurally bind hexaemeron-fizz-convert-properties without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    },
+    "positive": {
+      "frontmatter": {
+        "hexaemeron_fizz_convert_properties": {
+          "evidence": {
+            "classes": [
+              "checked"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+                "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+              }
+            ]
+          },
+          "exception": {
+            "status": "none"
+          },
+          "promise": "hexaemeron-fizz-convert-properties",
+          "scope": "structural binding for hexaemeron-fizz-convert-properties",
+          "source_digest": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
+          "transition": {
+            "action": "structurally bind hexaemeron-fizz-convert-properties without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "hexaemeron-fizz-convert-properties",
+        "scope": "structural binding for hexaemeron-fizz-convert-properties",
+        "source_digest": "855dc7d64cb24ce3404429c110d356e197de244c0f2ca634cb60b6c1416715fd",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
+        "transition": {
+          "action": "structurally bind hexaemeron-fizz-convert-properties without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-markdown-result-adapter/v1"
+    }
+  }
+}
