@@ -433,3 +433,81 @@ the true token in step 5's own packet. Raised as S1-R3-01 in step 1 round 3.
 **Steps touched.** Step 5, whose packet carried the false claim uncorrected.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_hexctl.py`, `plugins/hexaemeron/tests/test_issue_filing_contract.py`, `tests/promise_machine_coverage.json`. Complete replacement Tests: `plugins/hexaemeron/tests/test_hexctl.py` gains cases for the routed directive's shape and exit code, for the absence of run state after it, for the refusal bytes naming no grant, and for control-character stripping on an issue-derived field. Expected new cases: 6, because the stripping case splits: the contract parser refuses a control character in a carryover row before any body reaches the router, so one case holds that refusal and one exercises the directive builder directly. `plugins/hexaemeron/tests/test_issue_filing_contract.py` has its existing zero-refusal case rewritten to the routed outcome rather than deleted, because the question it asks, whether a `0` reaches a run, is the question this step answers differently. `tests/promise_machine_coverage.json` re-pins the eleven bindings that carry the controller digest. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-2.json`, format `unittest-json-v1`, report file `.elenchus/step-2.json`.
+
+**Why.** Two files the step must edit were absent from Files, and both are
+forced by the Exit rather than chosen. `test_issue_filing_contract.py` carries
+`test_a_zero_refuses_before_any_state_worktree_or_branch_exists`, which asserts
+the exit code and the refusal text this step removes; it fails the moment the
+Exit is met, so the step cannot be green at both ends without it.
+`tests/promise_machine_coverage.json` pins the controller's whole-file digest
+in eleven bindings, and `test_audit_synopsis_recovery` refuses any edit to
+`hexctl.py` until all eleven are re-pinned. Both were found by running the
+Hexaemeron suite against the built step: 2437 tests, these two failures, no
+others. The case count moves from 5 to 6 for the reason Tests now states.
+
+**Steps touched.** Step 2, whose Files named two of the four files it edits.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_hexctl.py`, `plugins/hexaemeron/tests/test_issue_filing_contract.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`. Complete replacement Tests: `plugins/hexaemeron/tests/test_hexctl.py` gains cases for the routed directive's shape and exit code, for the absence of run state after it, for the refusal bytes naming no grant, and for control-character stripping on an issue-derived field. Expected new cases: 7. The stripping case splits three ways: the contract parser refuses a control character in a carryover row before any body reaches the router, so one case holds that refusal, one exercises the directive builder on string values, and one holds the builder to its own docstring by passing keys, nesting and non-string values the parser does not currently produce. `plugins/hexaemeron/tests/test_issue_filing_contract.py` has its existing zero-refusal case rewritten to the routed outcome rather than deleted, because the question it asks, whether a `0` reaches a run, is the question this step answers differently. `tests/promise_machine_coverage.json` re-pins the eleven bindings that carry the controller digest. Elenchus runner contract: command `python3 "$PLUGIN_ROOT/skills/elenchus/scripts/elenchus.py" --ref HEAD --test-command "python3 plugins/hexaemeron/tests/run_tests.py {report}" --report-format unittest-json-v1 --report-file .elenchus/step-2.json`, format `unittest-json-v1`, report file `.elenchus/step-2.json`. Complete replacement Disciplines: phylax: the routed directive is a new surface an agent consumes, so the closed shape and the control-character stripping are its controls. ephoros: the routed directive is the only record that a `0` was routed, and study item 8 names the gap that nothing counts them. metron: none, no request is added here. elenchus: the runner reports `inconclusive` for this step and cannot report otherwise. A step that adds a function has no parent tree its new cases can run against: overlaying them on the entry commit makes `test_the_directive_strips_a_control_character_from_every_field` error rather than fail, because `routed_filing_directive` does not exist there, and `test_an_issue_body_carrying_a_control_character_never_reaches_a_run` pass, because it asserts parser behaviour this step leaves alone. Redness against the entry tree is therefore recorded per case rather than claimed for the set: four of the seven fail on the parent, one errors, one passes and is marked as asserting unchanged behaviour. hypomnema: none, step 1 recorded the decision this step implements.
+
+**Why.** Three repairs from step 2 round 1. Files named four paths where the
+commit edits five: `.horos/census.json` is forced by the same rule that admitted
+the coverage JSON, because any tracked-file edit reddens the census currency
+test (S2-R1-06). Tests moves from six cases to seven, the seventh holding the
+directive builder to its own docstring rather than to the parser coupling that
+currently makes the docstring true (S2-R1-04). Disciplines claimed each new case
+is observed red against the entry tree, which this step cannot deliver and no
+step that adds a function can: the measured outcome is four failures, one error
+and one pass, and the clause now states that instead of asserting what the
+runner cannot produce (S2-R1-08).
+
+**Steps touched.** Step 2, whose Files, Tests and Disciplines each overstated
+what the step delivers.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Disciplines: phylax: the routed directive is a new surface an agent consumes, so the closed shape and the control-character stripping are its controls. ephoros: the routed directive is the only record that a `0` was routed, and study item 8 names the gap that nothing counts them. metron: none, no request is added here. elenchus: the runner reports `inconclusive` for this step and cannot report otherwise. A step that adds a function has no parent tree its new cases can run against: overlaying them on the entry commit makes `test_the_directive_strips_a_control_character_from_every_field` error rather than fail, because `routed_filing_directive` does not exist there, and `test_an_issue_body_carrying_a_control_character_never_reaches_a_run` pass, because it asserts parser behaviour this step leaves alone. Redness against the entry tree is therefore recorded per case rather than claimed for the set. Measured by overlaying the three changed files on the entry commit and running each case alone: four of the seven fail, two error because `routed_filing_directive` does not exist there, and one passes and is marked as asserting unchanged behaviour. hypomnema: none, step 1 recorded the decision this step implements.
+
+**Why.** The Disciplines replacement above accounted for six cases across a set
+of seven and named one erroring case where there are two. The seventh case is
+the one that same amendment added for S2-R1-04, and it errors for the same
+reason. Measured by overlaying the three changed files on the entry commit and
+running each case alone: `test_the_directive_strips_a_control_character_from_every_field`
+and `test_the_directive_strips_control_characters_from_keys_and_nesting` both
+raise `AttributeError: module 'hexctl_under_test' has no attribute
+'routed_filing_directive'`. The true count is four failures, two errors and one
+pass. Raised as S2-R2-02 in step 2 round 2.
+
+**Steps touched.** Step 2, whose Disciplines clause counted six of seven cases.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-07
+
+**What changed.** Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, `plugins/hexaemeron/tests/test_hexctl.py`, `plugins/hexaemeron/tests/test_issue_filing_contract.py`, `tests/promise_machine_coverage.json`, `.horos/census.json`, `docs/route-a-zero-decision-runbook.md`.
+
+**Why.** `.hexaemeron/` carries `*` in its own `.gitignore`, so
+`.hexaemeron/runbook.md` is working state and
+`docs/route-a-zero-decision-runbook.md` is the runbook this repository ships.
+Step 1 committed that copy at runbook receipt `34adeafc`; four amendments have
+landed since, so the shipped copy is three amendment blocks and 57 lines behind
+the artefact it claims to be. Step 1's Exit reads that the committed file is
+this runbook, in the present tense, and it stopped being true the moment step 2
+amended anything. This step refreshes it, and names it in Files so the refresh
+is declared rather than incidental. The same obligation falls on every later
+step that amends: refresh after the last amendment of the step, before the
+commit that closes it.
+
+**Steps touched.** Step 2, which amended the runbook four times and shipped none
+of it.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
