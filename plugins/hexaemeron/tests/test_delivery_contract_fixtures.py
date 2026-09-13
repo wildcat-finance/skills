@@ -85,6 +85,8 @@ class Issue508Contracts(unittest.TestCase):
             report = Path(temp) / "report.json"
             for candidate in prove_issue_508.CANDIDATES:
                 for criterion in prove_issue_508.CRITERIA:
+                    if (candidate, criterion) in prove_issue_508.IMPLEMENTED:
+                        continue
                     with self.subTest(candidate=candidate, criterion=criterion):
                         result = subprocess.run(
                             [sys.executable, str(Path(prove_issue_508.__file__).resolve()),
@@ -100,7 +102,7 @@ class Issue508Contracts(unittest.TestCase):
             report.write_text("existing evidence\n")
             result = subprocess.run(
                 [sys.executable, str(Path(prove_issue_508.__file__).resolve()),
-                 "--candidate", "whole-worker-sandbox", "--criterion", "worker-deadline",
+                 "--candidate", "optional-tool-mediation", "--criterion", "worker-deadline",
                  "--report", str(report)], capture_output=True, timeout=10, check=False)
             self.assertEqual(result.returncode, 1)
             self.assertEqual(report.read_text(), "existing evidence\n")

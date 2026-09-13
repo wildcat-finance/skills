@@ -186,3 +186,13 @@ Complete replacement Files: plugins/hexaemeron/tests/prove_issue_508.py; plugins
 **Steps touched.** Step 7.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Files: plugins/hexaemeron/skills/fiat/scripts/worker_exec.py; plugins/hexaemeron/tests/test_worker_exec.py; plugins/hexaemeron/tests/prove_issue_508.py; plugins/hexaemeron/tests/test_delivery_contract_fixtures.py; plugins/hexaemeron/skills/fiat/SKILL.md; plugins/hexaemeron/skills/fiat/EVOLUTION.md; docs/fiat-508-residual/README.md; docs/fiat-508-residual/amended-runbook.md. In plugins/hexaemeron/skills/fiat/scripts/hexctl.py, add only the current relation-resolved Fiat version to CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS. Also update declared check ownership and generated copies when their sources change.
+
+**Why.** Step 2's standalone worker changes advance Fiat to the generation declared by its version relation. The checkpoint restore tests refuse that version because the finite compatibility set still ends at the anchor version. This step has changed no controller state shape, receipt schema, configuration shape or checkpoint serialization. Adding the current version preserves the identity checks and refusal of unsupported versions. The other named paths record the implemented scope, maintain the existing resolver fixtures and preserve this amendment.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23152247,
+    "bytes_blob": 23152797,
     "bytes_generated": 98
   },
   "entries": [
@@ -812,9 +812,9 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 67336,
+      "bytes": 67886,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 33668",
+      "evidence": "mean line length above 400 in a window at offset 33943",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
