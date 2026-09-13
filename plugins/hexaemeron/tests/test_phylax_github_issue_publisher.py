@@ -1462,6 +1462,40 @@ class RuntimeBoundaryTests(BoundaryTestCase):
             "GIP330", "deadline.stage", lambda: budget.finish(started, 20.0)
         )
 
+    def test_total_deadline_is_enforced_after_readback_during_cleanup(self):
+        class Clock:
+            value = 0.0
+
+            def __call__(self):
+                return self.value
+
+        class DelayedCloseSigner(FakeSigner):
+            def __init__(self, clock):
+                super().__init__()
+                self.clock = clock
+
+            def close(self) -> None:
+                self.clock.value = 60.001
+                super().close()
+
+        clock = Clock()
+        signer = DelayedCloseSigner(clock)
+        document, runtime, _signer, sink, exchange = runtime_fixture(
+            signer=signer,
+            monotonic=clock,
+        )
+        error = self.assert_publisher_error(
+            "GIP330",
+            "deadline.total",
+            lambda: runtime.publish(encoded(document)),
+        )
+        self.assertEqual(1, error.mint_attempts)
+        self.assertEqual(1, error.post_attempts)
+        self.assertEqual(4, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
     def test_nonfinite_clocks_refuse_without_reaching_the_signer(self):
         document, runtime, signer, sink, exchange = runtime_fixture(
             monotonic=lambda: float("nan")

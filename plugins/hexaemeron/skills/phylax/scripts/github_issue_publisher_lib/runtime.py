@@ -59,7 +59,9 @@ class _Budget:
 
     def elapsed_ms(self) -> int:
         elapsed = max(0.0, self._now() - self._started)
-        return min(60_000, int(elapsed * 1_000))
+        if elapsed > TOTAL_TIMEOUT_SECONDS:
+            refuse("GIP330", "deadline.total")
+        return int(elapsed * 1_000)
 
 
 def _empty_counts() -> dict[str, int]:
