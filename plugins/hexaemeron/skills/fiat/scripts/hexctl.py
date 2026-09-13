@@ -13725,6 +13725,125 @@ def scribe_files(base_dir: str, pr_base: str, branch: str) -> list[str]:
     return unique
 
 
+# ------------------------------------------------------------ task identity
+
+TASK_IDENTITY_SCHEMA = "fiat-task-identity/v1"
+TASK_IDENTITY_ROLES = ("surveyor", "mason", "warden", "scribe")
+TASK_HANDLE_PREFIX = "fiat"
+TASK_HANDLE_MAX_BYTES = 200
+TASK_HANDLE_FALLBACK_TASK = "run"
+
+
+def task_identity_task(state: dict) -> str:
+    """The `<task>` segment of a handle: the anchor's issue number, else the topic slug.
+
+    The run anchor's closed task vocabulary has three kinds (`run_anchor_task`),
+    and only `github-issue` carries a number this segment may use. `external`,
+    `none` and a state with no anchor at all fall back to the 48-character
+    topic slug, the same tail `init_preflight` gives the run branch, so a run
+    initialised without a task issue never acquires an issue number it was not
+    given. The slug's own fallback is the one the run branch uses too.
+    """
+    anchor = as_dict(as_dict(state.get("receipts")).get(RUN_ANCHOR_RECEIPT))
+    task = as_dict(anchor.get("task"))
+    number = task.get("number")
+    if (
+        task.get("kind") == "github-issue"
+        and isinstance(number, int)
+        and not isinstance(number, bool)
+        and number > 0
+    ):
+        return str(number)
+    topic = state.get("topic")
+    topic_slug = slug(topic) if isinstance(topic, str) else ""
+    return topic_slug or TASK_HANDLE_FALLBACK_TASK
+
+
+def task_identity(state: dict, role: str, *, step=None, round=None) -> dict:
+    """Derive the `fiat-task-identity/v1` object for one delegation.
+
+    Handle grammar is `fiat-<task>-<phase>-<role>`. `<task>` is the run anchor's
+    issue number or the topic slug (`task_identity_task`), so a handle from one
+    issue can never be read as another's. `<phase>` is `study` when `step` is
+    None and `step-<n>` otherwise, so the Surveyor's handle differs from every
+    step worker's and a step change changes the handle. `<role>` is one of the
+    four delegated agents, so a Mason and a Warden on the same step differ.
+    `round` is carried in the object and kept out of the handle on purpose: a
+    Warden continued across the rounds of one step (`warden_continuity` says
+    `same-agent`) must see the same handle, and a step change must not.
+
+    Everything here is a function of controller state and the directive: no
+    clock, pid, hostname or path enters, so identical state gives identical
+    bytes across processes, after compaction and after a checkpoint restore.
+    """
+    if role not in TASK_IDENTITY_ROLES:
+        raise ValueError("task identity role is not a delegated agent")
+    if step is None:
+        phase = "study"
+    elif isinstance(step, int) and not isinstance(step, bool) and step > 0:
+        phase = f"step-{step}"
+    else:
+        raise ValueError("task identity step is not a positive integer")
+    if round is not None and (
+        not isinstance(round, int) or isinstance(round, bool) or round < 1
+    ):
+        raise ValueError("task identity round is not a positive integer")
+    task = task_identity_task(state)
+    return {
+        "schema": TASK_IDENTITY_SCHEMA,
+        "handle": f"{TASK_HANDLE_PREFIX}-{task}-{phase}-{role}",
+        "task": task,
+        "step": step,
+        "round": round,
+        "role": role,
+    }
+
+
+def task_handle_refusal(observed, expected: str):
+    """Accept or refuse one observed handle against the handle state expects.
+
+    Returns None when `observed` equals `expected`, else one bounded diagnostic
+    that names which check failed: `length`, `character` or `equality`. The
+    observed value is host-supplied argv and is treated as hostile: it is
+    checked in that order, and the diagnostic never carries it until it has
+    passed the first two checks, so the only observed bytes a diagnostic can
+    echo are at most TASK_HANDLE_MAX_BYTES with no control or whitespace
+    character among them. The length refusal reports a byte count, and also
+    covers a value that is not a string or is empty; the character refusal
+    reports one code point and its index. Neither quotes the string.
+    Comparison is exact equality, never prefix, case or pattern.
+    """
+    if not isinstance(observed, str):
+        return "task handle refused (length): observed handle is not a string"
+    size = len(observed.encode("utf-8", "surrogateescape"))
+    if size > TASK_HANDLE_MAX_BYTES:
+        return (
+            "task handle refused (length): observed handle is "
+            f"{size} bytes, above the {TASK_HANDLE_MAX_BYTES}-byte bound"
+        )
+    if not observed:
+        return "task handle refused (length): observed handle is empty"
+    for index, character in enumerate(observed):
+        code = ord(character)
+        if (
+            character.isspace()
+            or code < 32
+            or 127 <= code < 160
+            or 0xD800 <= code <= 0xDFFF
+        ):
+            return (
+                "task handle refused (character): U+"
+                f"{code:04X} at index {index} is a control or whitespace "
+                "character"
+            )
+    if observed != expected:
+        return (
+            f"task handle refused (equality): expected {expected}, "
+            f"observed {observed}"
+        )
+    return None
+
+
 def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
     """Add the total packet envelope and build only the four delegated briefs."""
     packet = {
