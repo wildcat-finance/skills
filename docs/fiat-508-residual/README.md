@@ -2,8 +2,8 @@
 
 Step 1 preserves the receipted design and defines inert fixture shapes. Runtime
 launch, carryover admission and command validation are not implemented here.
-The [decision](../decisions/drafts/confine-the-worker-before-admitting-its-output.md)
-records the selected construction and rejected alternative.
+The decision `adr/confine-the-worker-before-admitting-its-output` records the
+selected construction and rejected alternative.
 
 [study.source.txt](study.source.txt) preserves the exact study bytes.
 [study.md](study.md) is a reading copy: its five discipline links change from
