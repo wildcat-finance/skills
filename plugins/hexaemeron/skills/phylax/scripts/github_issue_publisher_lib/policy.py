@@ -253,12 +253,9 @@ def _status_block(text: str) -> tuple[int, int] | None:
 
 
 def _has_frozen_opening(text: str, opening: str) -> bool:
-    if text == opening or text.startswith(f"{opening}\n"):
-        return True
     status = _status_block(text)
-    if status is None:
-        return False
-    for physical in _unfenced_lines(text)[status[1] :]:
+    start = 0 if status is None else status[1]
+    for physical in _unfenced_lines(text)[start:]:
         line = physical.strip()
         if not line or (line.startswith("<!--") and line.endswith("-->")):
             continue

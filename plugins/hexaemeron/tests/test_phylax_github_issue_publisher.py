@@ -317,6 +317,52 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual(0, result.mint_attempts)
         self.assertEqual(0, result.post_attempts)
 
+    def test_root_valid_leading_metadata_comment_is_admitted(self):
+        controller = PLUGIN_ROOT / "skills" / "fiat" / "scripts" / "hexctl.py"
+        specification = importlib.util.spec_from_file_location(
+            "hexctl_metadata_comment_contract", controller
+        )
+        self.assertIsNotNone(specification)
+        self.assertIsNotNone(specification.loader)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        body = (
+            "<!-- wildcat-origin: shoggoth -->\n\n"
+            + issue_body(
+                ROOT_FRAMEWORK_OPENING,
+                "## Status\n\n"
+                "The publisher checks exact bytes before it asks for a credential.",
+            )
+        )
+        document = valid_document(body=body)
+        record, faults = module.issue_publication_contract_faults(
+            document["final_candidate"]["title"],
+            document["labels"],
+            body,
+            "metadata-comment request",
+        )
+        self.assertEqual([], faults)
+        self.assertEqual("framework-N", record["queue"])
+        refusal = None
+        try:
+            result = admit_request(encoded(document))
+        except PublisherError as error:
+            refusal = (
+                error.code,
+                error.field,
+                error.mint_attempts,
+                error.post_attempts,
+            )
+        if refusal is not None:
+            self.assertEqual(("GIP141", "frozen.body_opening", 0, 0), refusal)
+            self.fail(
+                "root-valid leading metadata comment was refused at "
+                f"{refusal[0]}:{refusal[1]}"
+            )
+        self.assertEqual("observation", result.queue)
+        self.assertEqual(0, result.mint_attempts)
+        self.assertEqual(0, result.post_attempts)
+
     def test_root_queue_number_and_summary_grammar_is_enforced(self):
         for prefix in ("framework-0", "framework-01"):
             with self.subTest(prefix=prefix):
@@ -702,6 +748,37 @@ class AdmissionTests(unittest.TestCase):
         document = valid_document()
         document["source"]["body"] += "\u202e"
         self.assert_refused(document, "GIP110", "source.body")
+
+    def test_title_rejects_nonprinting_unicode_before_imprimatur(self):
+        controller = PLUGIN_ROOT / "skills" / "fiat" / "scripts" / "hexctl.py"
+        specification = importlib.util.spec_from_file_location(
+            "hexctl_nonprinting_title_contract", controller
+        )
+        self.assertIsNotNone(specification)
+        self.assertIsNotNone(specification.loader)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        for character in ("\u00a0", "\u2028", "\u2029"):
+            with self.subTest(codepoint=f"U+{ord(character):04X}"):
+                title = f"framework-56: checked{character}publication boundary"
+                document = valid_document(title=title)
+                _, faults = module.issue_publication_contract_faults(
+                    title,
+                    document["labels"],
+                    document["final_candidate"]["body"],
+                    "nonprinting-title request",
+                )
+                self.assertTrue(
+                    any("title contains a control character" in fault for fault in faults)
+                )
+                calls: list[str] = []
+                self.assert_refused(
+                    document,
+                    "GIP110",
+                    "source.title",
+                    runner=lambda text: calls.append(text) or {"defects": 0},
+                )
+                self.assertEqual([], calls)
 
     def test_frozen_shape_is_closed_and_nonempty(self):
         document = valid_document()

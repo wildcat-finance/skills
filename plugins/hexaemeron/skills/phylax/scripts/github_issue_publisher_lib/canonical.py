@@ -182,9 +182,11 @@ def safe_text(
     for char in value:
         if char in "\n\t" and multiline:
             continue
-        if char == "\r" or unicodedata.category(char).startswith("C"):
-            refuse("GIP110", field)
-        if not multiline and char in "\n\t":
+        if (
+            (not multiline and not char.isprintable())
+            or char == "\r"
+            or unicodedata.category(char).startswith("C")
+        ):
             refuse("GIP110", field)
     return value
 

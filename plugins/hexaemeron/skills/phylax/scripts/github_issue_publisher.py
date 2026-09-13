@@ -352,6 +352,20 @@ def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
 
     golden = _canonical_fixture(valid, "conformance.valid-request")
 
+    metadata_request = deepcopy(golden)
+    for name in ("source", "sapheneia_candidate", "final_candidate"):
+        metadata_request[name]["body"] = (
+            "<!-- wildcat-origin: shoggoth -->\n\n"
+            + metadata_request[name]["body"]
+        )
+    _refresh_request(metadata_request)
+    try:
+        metadata_admission = admit_request(canonical_json(metadata_request))
+    except PublisherError as exc:
+        raise PublisherError("GIP199", "conformance.metadata-comment") from exc
+    if metadata_admission.mint_attempts != 0 or metadata_admission.post_attempts != 0:
+        _refuse("conformance.metadata-comment")
+
     rejection_cases = _canonical_fixture(
         fixtures["rejection-cases.json"], "conformance.rejection-cases"
     )
@@ -387,6 +401,19 @@ def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
         request = _rejection_request(golden, case_id, fixtures)
         _expect_refusal(
             canonical_json(request), code, "conformance.rejection-cases"
+        )
+
+    for character in ("\u00a0", "\u2028", "\u2029"):
+        nonprinting_request = deepcopy(golden)
+        for name in ("source", "sapheneia_candidate", "final_candidate"):
+            nonprinting_request[name]["title"] = (
+                f"framework-56: checked{character}publication boundary"
+            )
+        _refresh_request(nonprinting_request)
+        _expect_refusal(
+            canonical_json(nonprinting_request),
+            "GIP110",
+            "conformance.nonprinting-title",
         )
 
     queue_cases = _canonical_fixture(
