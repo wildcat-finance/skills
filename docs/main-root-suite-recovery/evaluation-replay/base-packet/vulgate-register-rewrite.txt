@@ -1,0 +1,36 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is vulgate-register-rewrite. Its source path is plugins/hexaemeron/skills/vulgate/SKILL.md.
+The exact declaration is:
+
+### vulgate-register-rewrite
+
+- Promise: A completed Vulgate pass rewrites the named prose into the selected plain register while preserving its claims, evidence, uncertainty, scope, logical relations and required structure.
+- Evidence: The exact source and rewritten bytes, selected register, protected facts and structure, line-by-line content comparison and completed rewrite checklist.
+- Evidence classes: checked, inferred
+- Boundary: The pass changes register only; it does not establish truth, improve the underlying argument, supply missing evidence, diagnose authorship or override another skill's required format.
+- Authorises: Presentation of the rewritten prose with its substantive content and evidence boundary unchanged.
+- Consequence: 0
+- Refuses: Added facts, deleted caveats, changed severity, softened refusal, invented quotation, moved attribution or a voice change that alters meaning.
+- Recovery: Restore the source claim and protected evidence, redo only the affected sentence and compare the complete rewrite with the original before hand-off.
+- Exceptions: none
+
+The evaluation request is:
+
+Rewrite a source passage under Vulgate while holding all content constant.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A content-preserving rewrite is presented as factual verification, authorship diagnosis or an improved argument.
+E02. The source and rewrite are compared line by line and every fact, qualifier, uncertainty, relation and required structure survives in the selected register.
+E03. Restore the lost caveat or relation, redo only the affected sentence and repeat the complete source comparison.
+E04. The rewrite is supplied without its source or without a completed parity comparison.
+E05. The source bytes belong to another draft than the rewrite under review.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

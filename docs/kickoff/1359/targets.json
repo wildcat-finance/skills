@@ -3,10 +3,10 @@
   "record": "docs/kickoff/1359/targets.md",
   "issue": "https://github.com/wildcat-finance/skills/issues/1482",
   "parent_issue": "https://github.com/wildcat-finance/skills/issues/1359",
-  "produced_on": "2026-09-12",
-  "producer": "Shoggoth, acting as Surveyor under Protasis, in a session run by the publisher",
+  "produced_on": "2026-09-13",
+  "producer": "Dave Coleman, with Shoggoth as Surveyor under Protasis",
   "publisher": "Dave Coleman (kethcode), Wildcat Labs: committer and signer of the commit carrying this record",
-  "reviewer": "the reviewer of the pull request that carries this record",
+  "reviewer": "Scope approved by Dave Coleman; implementation review belongs to PR #1583",
   "check_command": "python3 scripts/kickoff_targets.py check",
   "specimen_command": "python3 scripts/kickoff_targets.py specimen --specimen docs/kickoff/1359/specimens/<file>",
   "consumers": [
@@ -22,10 +22,11 @@
         "evidence destination"
       ],
       "targets": [
-        "wildcat-v2-ethereum-mainnet",
-        "wildcat-v2-plasma-mainnet"
+        "wildcat-v2-ethereum-mainnet"
       ],
-      "decision": "kickoff-consumer-target"
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
     },
     {
       "issue": 1355,
@@ -40,10 +41,25 @@
         "hooks and role providers"
       ],
       "targets": [
-        "wildcat-v2-ethereum-mainnet",
-        "wildcat-v2-plasma-mainnet"
+        "wildcat-v2-ethereum-mainnet"
       ],
-      "decision": "kickoff-consumer-target"
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1358,
+      "url": "https://github.com/wildcat-finance/skills/issues/1358",
+      "title": "kickoff/janus-8: repaired, revision-pinned hook-effect manifest",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "This supplies the deployed comparison subject only. The existing Janus model remains modeled until #1376 binds it; its V2.5 label is not deployment evidence."
     },
     {
       "issue": 1359,
@@ -59,22 +75,17 @@
       "targets": [
         "wildcat-v1-ethereum-mainnet",
         "wildcat-v2-ethereum-mainnet",
-        "wildcat-v2-plasma-mainnet",
-        "wildcat-v2.5-release-line",
         "aave-v3",
-        "aave-v4",
-        "compound-v2",
-        "compound-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
         "euler-v1",
         "euler-v2",
-        "maple-v1",
-        "maple-v2",
-        "centrifuge-tinlake",
-        "centrifuge-v2",
-        "centrifuge-v3",
-        "clearpool-permissionless"
+        "centrifuge-v3"
       ],
-      "decision": "lemma-9-venue-order"
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
     },
     {
       "issue": 1361,
@@ -86,10 +97,11 @@
         "emitter and interface paths"
       ],
       "targets": [
-        "wildcat-v2-ethereum-mainnet",
-        "wildcat-v2-plasma-mainnet"
+        "wildcat-v2-ethereum-mainnet"
       ],
-      "decision": "kickoff-consumer-target"
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
     },
     {
       "issue": 1363,
@@ -99,102 +111,1060 @@
         "the deployed commit whose logs a capture decodes; the proposed commit is owned by issue 1485"
       ],
       "targets": [
-        "wildcat-v2-ethereum-mainnet",
-        "wildcat-v2-plasma-mainnet"
+        "wildcat-v2-ethereum-mainnet"
       ],
-      "decision": "kickoff-consumer-target"
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "Deployed comparison base only; #1485 owns the separately approved proposed indexed-actor source."
+    },
+    {
+      "issue": 1365,
+      "url": "https://github.com/wildcat-finance/skills/issues/1365",
+      "title": "kickoff/lemma-15: documentation corpus with deprecated trees excluded by name",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Historical V1 documents remain included for the V1 corpus. Deprecation excludes a path only from the incompatible generation, never from its own historical row."
+    },
+    {
+      "issue": 1366,
+      "url": "https://github.com/wildcat-finance/skills/issues/1366",
+      "title": "kickoff/lemma-16: indexed-flag validation in the callable-surface check",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1367,
+      "url": "https://github.com/wildcat-finance/skills/issues/1367",
+      "title": "kickoff/lazarus-17: multi-block, multi-chain plan",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "#1486 still owns the finite two-chain pilot; the registry supplies eligible target identities only."
+    },
+    {
+      "issue": 1368,
+      "url": "https://github.com/wildcat-finance/skills/issues/1368",
+      "title": "kickoff/probitas-18: a fourth provenance tier, `protocol-observed`",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1369,
+      "url": "https://github.com/wildcat-finance/skills/issues/1369",
+      "title": "kickoff/synkrisis-19: run observation per collector run",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1370,
+      "url": "https://github.com/wildcat-finance/skills/issues/1370",
+      "title": "kickoff/synkrisis-20: human-written comparison policy",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1371,
+      "url": "https://github.com/wildcat-finance/skills/issues/1371",
+      "title": "kickoff/solidity-auditor-21: named-file scope manifest with interfaces in scope",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1372,
+      "url": "https://github.com/wildcat-finance/skills/issues/1372",
+      "title": "kickoff/solidity-auditor-22: audit of an unreleased event-model diff",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "The approved registry supplies the deployed comparison base only; it does not select or approve unreleased code."
+    },
+    {
+      "issue": 1373,
+      "url": "https://github.com/wildcat-finance/skills/issues/1373",
+      "title": "kickoff/alexandria-23: component budget that survives a real venue capture",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1374,
+      "url": "https://github.com/wildcat-finance/skills/issues/1374",
+      "title": "kickoff/ariadne-24: `dataset/v1` statement over a sealed capture",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1375,
+      "url": "https://github.com/wildcat-finance/skills/issues/1375",
+      "title": "kickoff/berean-25: source class for protocol-observed sentences",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1376,
+      "url": "https://github.com/wildcat-finance/skills/issues/1376",
+      "title": "kickoff/janus-26: deployed-address binding, or a \"modeled, not deployed\" label",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "The existing V2.5 model cannot be relabelled as deployed V2. Match or correct the model through this consumer before a deployed claim."
+    },
+    {
+      "issue": 1377,
+      "url": "https://github.com/wildcat-finance/skills/issues/1377",
+      "title": "kickoff/synkrisis-27: the capture fleet as the first captured cohort",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1378,
+      "url": "https://github.com/wildcat-finance/skills/issues/1378",
+      "title": "kickoff/tabularium-28: a venue adapter that declares unattributable events unsupported",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1379,
+      "url": "https://github.com/wildcat-finance/skills/issues/1379",
+      "title": "kickoff/alexandria-29: subject-scoped collector across venues",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "The five-venue registry is the initial admitted scope. The original 200-subject, six-venue, five-chain campaign remains unfulfilled; this approval neither supplies the sixth venue nor authorises endpoints or spending."
+    },
+    {
+      "issue": 1381,
+      "url": "https://github.com/wildcat-finance/skills/issues/1381",
+      "title": "kickoff/hermes-31: `EXT-11` run pricing an added indexed topic",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Deployed comparison base only; the added-topic candidate remains with #1485."
+    },
+    {
+      "issue": 1382,
+      "url": "https://github.com/wildcat-finance/skills/issues/1382",
+      "title": "kickoff/homologia-32: declared pair for a scaled-to-normalized conversion",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1383,
+      "url": "https://github.com/wildcat-finance/skills/issues/1383",
+      "title": "kickoff/horos-33: evidence files readable by rule",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1384,
+      "url": "https://github.com/wildcat-finance/skills/issues/1384",
+      "title": "kickoff/lazarus-34: fixed-block fixture at a sealed capture's finalized boundary",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1385,
+      "url": "https://github.com/wildcat-finance/skills/issues/1385",
+      "title": "kickoff/probitas-35: one pinned source per venue row where sources disagree",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1386,
+      "url": "https://github.com/wildcat-finance/skills/issues/1386",
+      "title": "kickoff/pandects-36: `ICreditObservables` projection from canonical events",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1387,
+      "url": "https://github.com/wildcat-finance/skills/issues/1387",
+      "title": "kickoff/x-ray-37: reconciliation gate between entry points and each adapter",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1388,
+      "url": "https://github.com/wildcat-finance/skills/issues/1388",
+      "title": "kickoff/x-ray-38: a venue is mapped at a pinned commit before its adapter is written",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "aave-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Aave V3 is the first further adapter in #1395 under the approved venue order; the source map and effort evidence still precede implementation."
+    },
+    {
+      "issue": 1389,
+      "url": "https://github.com/wildcat-finance/skills/issues/1389",
+      "title": "kickoff/alexandria-39: verification split from serving",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1390,
+      "url": "https://github.com/wildcat-finance/skills/issues/1390",
+      "title": "kickoff/berean-40: a grounded release over a second protocol",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Wildcat is the grounded-release subject; the existing Aave V4 demonstration remains separate."
+    },
+    {
+      "issue": 1391,
+      "url": "https://github.com/wildcat-finance/skills/issues/1391",
+      "title": "kickoff/homologia-41: evidence class of chain-side integers per venue",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1392,
+      "url": "https://github.com/wildcat-finance/skills/issues/1392",
+      "title": "kickoff/lazarus-42: loopback replay boundary as the only RPC source in a consumer's tests",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1393,
+      "url": "https://github.com/wildcat-finance/skills/issues/1393",
+      "title": "kickoff/pandects-43: corpus replayed over a sealed capture, with a broken specimen",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1394,
+      "url": "https://github.com/wildcat-finance/skills/issues/1394",
+      "title": "kickoff/tabularium-44: merged coverage by intersection",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1395,
+      "url": "https://github.com/wildcat-finance/skills/issues/1395",
+      "title": "kickoff/tabularium-45: further adapters onto the v3 schema",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Three Maple contract families mean legacy V1, V2 fixed-term and V2 open-term; shared V2 and Syrup sources do not create an invented protocol generation."
+    },
+    {
+      "issue": 1396,
+      "url": "https://github.com/wildcat-finance/skills/issues/1396",
+      "title": "kickoff/anamnesis-46: blocking-finding projection read at build time",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1397,
+      "url": "https://github.com/wildcat-finance/skills/issues/1397",
+      "title": "kickoff/ariadne-47: `verify` never in a request path",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1398,
+      "url": "https://github.com/wildcat-finance/skills/issues/1398",
+      "title": "kickoff/berean-48: coverage windows as a release boundary with correct-refusal cases",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1399,
+      "url": "https://github.com/wildcat-finance/skills/issues/1399",
+      "title": "kickoff/fizz-49: log-replay invariant for indexed-side positions",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1400,
+      "url": "https://github.com/wildcat-finance/skills/issues/1400",
+      "title": "kickoff/homologia-50: pinned mirror execution through the adapter protocol",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1401,
+      "url": "https://github.com/wildcat-finance/skills/issues/1401",
+      "title": "kickoff/janus-51: exit-liveness evidence on the withdrawal path",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1402,
+      "url": "https://github.com/wildcat-finance/skills/issues/1402",
+      "title": "kickoff/pandects-52: per-integration applicability record",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1403,
+      "url": "https://github.com/wildcat-finance/skills/issues/1403",
+      "title": "kickoff/tabularium-53: address partition at build time",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1404,
+      "url": "https://github.com/wildcat-finance/skills/issues/1404",
+      "title": "kickoff/ariadne-54: registered `fused-view/v1` predicate",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1405,
+      "url": "https://github.com/wildcat-finance/skills/issues/1405",
+      "title": "kickoff/berean-55: promotion as a record",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1406,
+      "url": "https://github.com/wildcat-finance/skills/issues/1406",
+      "title": "kickoff/fizz-56: attribution-gap harness doubling as a branch merge gate",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Only the deployed comparison mode receives the approved V2 identity; #1485/#1372 still own the proposed mode."
+    },
+    {
+      "issue": 1407,
+      "url": "https://github.com/wildcat-finance/skills/issues/1407",
+      "title": "kickoff/fizz-57: ERC-4626 wrapper attribution invariant",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1408,
+      "url": "https://github.com/wildcat-finance/skills/issues/1408",
+      "title": "kickoff/probitas-58: coverage rows and gaps in the served artefact",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "target identity inherited through the issue input record",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1485,
+      "url": "https://github.com/wildcat-finance/skills/issues/1485",
+      "title": "protasis-wish: pin and decide the proposed indexed-actor event revision",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "The registry supplies only the deployed comparison base. Unreleased source selection is outside this approved scope."
+    },
+    {
+      "issue": 1486,
+      "url": "https://github.com/wildcat-finance/skills/issues/1486",
+      "title": "lazarus-wish: declare the finite two-chain fixture pilot",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Target identities only. Two-chain selection, block windows and finite proof bounds still belong to this child."
+    },
+    {
+      "issue": 1488,
+      "url": "https://github.com/wildcat-finance/skills/issues/1488",
+      "title": "protasis-wish: approve the capture fleet and bounded provider plan",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Target identities only. Fleet membership, endpoint entitlement, concurrency and budgets still need this child’s own decision."
+    },
+    {
+      "issue": 1490,
+      "url": "https://github.com/wildcat-finance/skills/issues/1490",
+      "title": "alexandria-wish: select and seal the kickoff reference capture",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Target identities only. No reference capture or historical interval is selected by scope approval."
+    },
+    {
+      "issue": 1492,
+      "url": "https://github.com/wildcat-finance/skills/issues/1492",
+      "title": "homologia-wish: select the scaled conversion and its independent expected vectors",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1493,
+      "url": "https://github.com/wildcat-finance/skills/issues/1493",
+      "title": "protasis-wish: map displayed and replayed credit values to exact evidence",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1494,
+      "url": "https://github.com/wildcat-finance/skills/issues/1494",
+      "title": "probitas-wish: identify conflicting venue sources and record the selection",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1497,
+      "url": "https://github.com/wildcat-finance/skills/issues/1497",
+      "title": "protasis-wish: pin the wrapper and end-account attribution oracle",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "wildcat-v2-ethereum-mainnet"
+      ],
+      "decision": "kickoff-consumer-target",
+      "binding": "direct prerequisite",
+      "boundary": "Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence."
+    },
+    {
+      "issue": 1498,
+      "url": "https://github.com/wildcat-finance/skills/issues/1498",
+      "title": "tabularium-wish: land the pinned-map prerequisite before further adapters",
+      "needs": [
+        "the source/deployment identity for the target-specific part of this issue; its own input record still governs artefact and execution requirements"
+      ],
+      "targets": [
+        "aave-v3"
+      ],
+      "decision": "lemma-9-venue-order",
+      "binding": "direct prerequisite",
+      "boundary": "Aave V3 is the first further adapter; the contribution rule and prior source map remain this child’s deliverable."
     }
   ],
   "decisions": [
     {
       "id": "kickoff-consumer-target",
-      "question": "Which deployed estate do kickoff issues 1354, 1355, 1361 and 1363 target: the estate whose events are emitted through hand-written log1, log2 and log3 and whose markets are deployed by a factory with hooks and role providers?",
+      "question": "Which deployed estate supplies the emitter and protected-estate consumers?",
       "decision_maker_role": "target maintainer for the Wildcat protocol",
-      "evidence_summary": "wildcat-v2-ethereum-mainnet is the only estate in the wildcat-finance organisation that carries both features: src/libraries/MarketEvents.sol emits every market event through assembly log1, log2 and log3, and HooksFactory 0xdd7dd3b5076cf89440d05585ff56d246386207be deploys markets from stored init code with hooks templates and role providers. The Plasma estate is the same source line on chain 9745. V1 emits through assembly too but has no hooks factory.",
+      "evidence_summary": "Dave Coleman approved Wildcat V2 on Ethereum mainnet, including all registered templates, instances, hooks and role providers. The approval settles scope; #1590 owns remaining deployment/source gaps.",
       "options": [
         {
           "id": "ethereum-only",
           "targets": [
             "wildcat-v2-ethereum-mainnet"
           ]
-        },
-        {
-          "id": "ethereum-and-plasma",
-          "targets": [
-            "wildcat-v2-ethereum-mainnet",
-            "wildcat-v2-plasma-mainnet"
-          ]
-        },
-        {
-          "id": "other",
-          "targets": [],
-          "note": "the maintainer names an estate this registry does not carry; a new row is then required"
         }
       ],
-      "sub_questions": [
-        "Does the third hooks template 0x731c775385d0efb2cac61074ba2d885d343a09cd (FixedTermHooks, 730-day maximum term, 16 markets, absent from every published manifest) belong to the protected set for issue 1355?",
-        "Which MarketLens is canonical: 0xc672760757da93b5f3275dc97203d145806dae33 (deployments.json) or 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7 (docs page)?"
-      ],
-      "status": "pending",
-      "decision_maker": null,
-      "selection": null,
-      "how_to_record": "set status to recorded, fill decision_maker with name, role, date and an https reference (the approving review on the pull request that carries this record, or an issue comment), set selection to one option id, then set every selected row's status to resolved with decision kickoff-consumer-target and run scripts/kickoff_targets.py check"
+      "status": "recorded",
+      "decision_maker": {
+        "name": "Dave Coleman",
+        "role": "approving operator and target maintainer",
+        "date": "2026-09-13",
+        "reference": "https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034"
+      },
+      "selection": "ethereum-only",
+      "how_to_record": "This decision is recorded. A later scope change needs attributed approval and an update to the bound approval evidence, selected rows and consumer mappings."
     },
     {
       "id": "lemma-9-venue-order",
-      "question": "Which venues and generations fill the five ordered slots kickoff issue 1359 inherited from its filing: the first venue's two generations, the second venue, the venue with three generations, then the two remaining venues?",
+      "question": "Which venue and contract-family rows fill the five ordered corpus slots?",
       "decision_maker_role": "target maintainer for the Skills repository kickoff programme",
-      "evidence_summary": "The filing names no venue. The reuse issues 1139 to 1144 and 1148 name seven venues. Two of them carry three generations in this inventory (Wildcat: V1, V2, V2.5; Centrifuge: Tinlake, v2, v3) and four carry two (Aave, Compound, Euler, Maple), so the ordinal description does not resolve on its own. Surveyor records the inventory and does not assign venues to slots.",
+      "evidence_summary": "Dave Coleman approved Wildcat V1/V2, Aave V3, Maple legacy V1/V2 fixed-term/V2 open-term, Euler V1/V2 and Centrifuge V3 in that order. The Maple split is an approved interpretation, not a recovered historical statement.",
       "options": [
         {
-          "id": "wildcat-first",
-          "note": "example shape only: Wildcat as the venue with three generations and four of the other six venues in the remaining slots; the maintainer writes the exact ordered list"
-        },
-        {
-          "id": "maintainer-restates",
-          "note": "the maintainer replaces the ordinal description with an explicit ordered list of target ids from this registry"
-        },
-        {
-          "id": "defer",
-          "note": "leave issue 1359 blocked on this decision and close 1482 on the inventory alone"
+          "id": "approved-order",
+          "targets": [
+            "wildcat-v1-ethereum-mainnet",
+            "wildcat-v2-ethereum-mainnet",
+            "aave-v3",
+            "maple-v1",
+            "maple-v2-fixed-term",
+            "maple-v2-open-term",
+            "euler-v1",
+            "euler-v2",
+            "centrifuge-v3"
+          ]
         }
       ],
-      "candidate_inventory": {
-        "Wildcat": [
-          "wildcat-v1-ethereum-mainnet",
-          "wildcat-v2-ethereum-mainnet",
-          "wildcat-v2-plasma-mainnet",
-          "wildcat-v2.5-release-line"
-        ],
-        "Aave": [
-          "aave-v3",
-          "aave-v4"
-        ],
-        "Compound": [
-          "compound-v2",
-          "compound-v3"
-        ],
-        "Euler": [
-          "euler-v1",
-          "euler-v2"
-        ],
-        "Maple": [
-          "maple-v1",
-          "maple-v2"
-        ],
-        "Centrifuge": [
-          "centrifuge-tinlake",
-          "centrifuge-v2",
-          "centrifuge-v3"
-        ],
-        "Clearpool": [
-          "clearpool-permissionless"
-        ]
+      "status": "recorded",
+      "decision_maker": {
+        "name": "Dave Coleman",
+        "role": "approving operator and target maintainer",
+        "date": "2026-09-13",
+        "reference": "https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034"
       },
-      "status": "pending",
-      "decision_maker": null,
-      "selection": null,
-      "how_to_record": "set status to recorded, fill decision_maker, set selection to the ordered list of target ids, mark the Wildcat rows the list names resolved with decision lemma-9-venue-order, and mark any non-Wildcat row the list names blocked with recovery pointing at its owner_issue until that issue delivers its deployment pin"
+      "selection": [
+        "wildcat-v1-ethereum-mainnet",
+        "wildcat-v2-ethereum-mainnet",
+        "aave-v3",
+        "maple-v1",
+        "maple-v2-fixed-term",
+        "maple-v2-open-term",
+        "euler-v1",
+        "euler-v2",
+        "centrifuge-v3"
+      ],
+      "how_to_record": "This decision is recorded. A later scope change needs attributed approval and an update to the bound approval evidence, selected rows and consumer mappings."
     }
   ],
   "targets": [
@@ -203,12 +1173,43 @@
       "venue": "Wildcat",
       "generation": "V1",
       "label": "Wildcat V1 controller-factory estate on Ethereum mainnet (deprecated on the docs page)",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
+      "status": "blocked",
       "consumers": [
-        1359
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1390,
+        1392,
+        1393,
+        1394,
+        1396,
+        1397,
+        1398,
+        1402,
+        1403,
+        1404,
+        1405,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
       ],
       "source": {
         "repository": "https://github.com/wildcat-finance/wildcat-protocol",
@@ -277,7 +1278,8 @@
           "src/interfaces/IMarketEventsAndErrors.sol",
           "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
           "src/interfaces/IWildcatArchController.sol"
-        ]
+        ],
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
       },
       "deployment": {
         "chain_id": 1,
@@ -458,25 +1460,78 @@
         "docs/kickoff/1359/evidence/sourcify-summary.json",
         "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md",
         "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
-        "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
-      ]
+        "docs/kickoff/1359/evidence/upstream/factory-inventory.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1589",
+      "blocker": "V1 controller and market init-code source matches have not been reproduced. The preserved Ethereum observation at block 25960042 identifies candidate contracts but does not establish all historical implementation epochs.",
+      "corpus_directory": "corpora/wildcat-v1-ethereum-mainnet",
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity."
     },
     {
       "id": "wildcat-v2-ethereum-mainnet",
       "venue": "Wildcat",
       "generation": "V2",
       "label": "Wildcat V2 HooksFactory estate on Ethereum mainnet",
-      "status": "candidate",
-      "pending_on": [
-        "kickoff-consumer-target",
-        "lemma-9-venue-order"
-      ],
+      "status": "blocked",
       "consumers": [
         1354,
         1355,
+        1358,
         1359,
         1361,
-        1363
+        1363,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1371,
+        1372,
+        1373,
+        1374,
+        1375,
+        1376,
+        1377,
+        1378,
+        1379,
+        1381,
+        1382,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1390,
+        1391,
+        1392,
+        1393,
+        1394,
+        1396,
+        1397,
+        1398,
+        1399,
+        1400,
+        1401,
+        1402,
+        1403,
+        1404,
+        1405,
+        1406,
+        1407,
+        1408,
+        1485,
+        1486,
+        1488,
+        1490,
+        1492,
+        1493,
+        1494,
+        1497
       ],
       "source": {
         "repository": "https://github.com/wildcat-finance/v2-protocol",
@@ -640,7 +1695,8 @@
             "path": "src/access/IRoleProvider.sol",
             "blob_sha1": "904b886f6d22798451b9f83ee347eeafd5422866"
           }
-        ]
+        ],
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
       },
       "deployment": {
         "chain_id": 1,
@@ -969,8 +2025,8 @@
         "template registration blocks were not established (the log query did not answer)"
       ],
       "unresolved": [
-        "the third hooks template 0x731c775385d0efb2cac61074ba2d885d343a09cd (FixedTermHooks, 730-day maximum term, 16 markets) appears in no manifest the organisation publishes; its source is pinned here by reproduction and the maintainer should confirm it belongs to the protected set",
-        "deployments.json names MarketLens 0xc672760757da93b5f3275dc97203d145806dae33 while the docs page names 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7; both are recorded",
+        "The third FixedTermHooks template is included by the approval of all registered templates. #1590 still owns its registration epoch and instance coverage; Hermes derives the protected set from that evidence.",
+        "Both MarketLens deployments remain recorded; #1590 maps their epochs and consumer use rather than selecting one by document precedence.",
         "WildcatFeeRecipient and CollateralFactory sources are not located in this pass"
       ],
       "existing_skills_records": [
@@ -985,26 +2041,607 @@
         "docs/kickoff/1359/evidence/sourcify-summary.json",
         "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md",
         "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
-        "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
-      ]
+        "docs/kickoff/1359/evidence/upstream/factory-inventory.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "kickoff-consumer-target",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1590",
+      "blocker": "The existing row matches core factory and stored init code but lacks the complete instance, hook and role-provider inventory. WildcatFeeRecipient and CollateralFactory source identity remains unestablished.",
+      "corpus_directory": "corpora/wildcat-v2-ethereum-mainnet",
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "emitter_source": {
+        "repository": "https://github.com/wildcat-finance/v2-protocol",
+        "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+        "source_record": "https://github.com/wildcat-finance/skills/blob/90702fa1c16be5faf48fc0e51c2d16b1c0097fe9/docs/emitter-fidelity-differential-suite-study.md",
+        "source_record_sha256": "aef775a60e65b3a35317ebdd66440ad9e3d67a5f99cf5daeb13c91c6fc16ea96",
+        "paths": [
+          "src/libraries/MarketEvents.sol",
+          "src/spherex/SphereXProtectedEvents.sol",
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/spherex/SphereXConfig.sol"
+        ],
+        "emitter_count_recorded": 27,
+        "boundary": "The earlier study records source identity and equivalence to v2.1.0; #1590 still binds the relevant deployed epochs."
+      }
+    },
+    {
+      "id": "aave-v3",
+      "venue": "Aave",
+      "generation": "v3",
+      "label": "Aave v3: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1388,
+        1389,
+        1392,
+        1393,
+        1394,
+        1395,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494,
+        1498
+      ],
+      "source": {
+        "repository": "https://github.com/aave-dao/aave-v3-origin",
+        "relation": "located",
+        "commit": "8305565ae342f1773c42cd2e4593f175fe5968a0",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-09-09T11:04:12Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v3.7.0",
+          "commit": "cff15de6d1271b0c800fc001f4aea4c263e8a597"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": null,
+      "companion_repository": {
+        "repository": "https://github.com/aave/aave-v3-origin",
+        "head": "5c2eb37f39959dd491ba97fdc2af94bb4ee88f41",
+        "head_date": "2025-09-19T10:39:19Z"
+      },
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1139",
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/registry.py (aave-v3, implemented False)"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1591",
+      "blocker": "The registry locates aave-v3-origin source, but carries no approved deployment/source epoch table or compiler-input bundle. The roughly 35 deployments cited by #1395 have not been enumerated against source.",
+      "corpus_directory": "corpora/aave-v3",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1591"
+    },
+    {
+      "id": "maple-v1",
+      "venue": "Maple",
+      "generation": "v1",
+      "label": "Maple v1: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1392,
+        1393,
+        1394,
+        1395,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
+      ],
+      "source": {
+        "repository": "https://github.com/maple-labs/maple-core",
+        "relation": "located",
+        "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2021-05-18T15:02:13Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v1.0.0",
+          "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1592",
+      "blocker": "The registry locates Maple repositories but has no deployment-to-source or compiler-input bundles for the approved three contract families.",
+      "corpus_directory": "corpora/maple-v1",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1592"
+    },
+    {
+      "id": "maple-v2-fixed-term",
+      "venue": "Maple",
+      "generation": "V2 fixed-term",
+      "label": "Maple V2 fixed-term",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1392,
+        1393,
+        1394,
+        1395,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
+      ],
+      "source": {
+        "repository": "https://github.com/maple-labs/maple-core-v2",
+        "relation": "located",
+        "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2025-11-27T14:19:22Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "2025-11",
+          "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "components": [
+          {
+            "repository": "https://github.com/maple-labs/fixed-term-loan",
+            "requested_ref": "main",
+            "sha": "8fb3675288897cb0b5748a5bbe90a12055bf9fa1",
+            "tree": "9d269185f4e93c9fa1a2ef75be318080874f31cc",
+            "url": "https://github.com/maple-labs/fixed-term-loan/commit/8fb3675288897cb0b5748a5bbe90a12055bf9fa1",
+            "commit_date": "2025-05-25T08:34:58Z"
+          }
+        ],
+        "components_note": "Located immutable loan-module revision; deployment selection and integration submodule agreement remain with recovery #1592.",
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": "Core V2 pool and manager contracts are shared; this row owns only its named loan/loan-manager family and the relevant Syrup pool/router coverage.",
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1592",
+      "blocker": "The registry locates Maple repositories but has no deployment-to-source or compiler-input bundles for the approved three contract families.",
+      "corpus_directory": "corpora/maple-v2-fixed-term",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1592"
+    },
+    {
+      "id": "maple-v2-open-term",
+      "venue": "Maple",
+      "generation": "V2 open-term",
+      "label": "Maple V2 open-term",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1392,
+        1393,
+        1394,
+        1395,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
+      ],
+      "source": {
+        "repository": "https://github.com/maple-labs/maple-core-v2",
+        "relation": "located",
+        "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2025-11-27T14:19:22Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "2025-11",
+          "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "components": [
+          {
+            "repository": "https://github.com/maple-labs/open-term-loan",
+            "requested_ref": "main",
+            "sha": "453cfb0e48b2db22727d901b5340e56f0e41ea26",
+            "tree": "08a9b4d4fb179849fe3fab1a2db309135b84a20d",
+            "url": "https://github.com/maple-labs/open-term-loan/commit/453cfb0e48b2db22727d901b5340e56f0e41ea26",
+            "commit_date": "2025-05-25T09:02:00Z"
+          }
+        ],
+        "components_note": "Located immutable loan-module revision; deployment selection and integration submodule agreement remain with recovery #1592.",
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": "Core V2 pool and manager contracts are shared; this row owns only its named loan/loan-manager family and the relevant Syrup pool/router coverage.",
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1592",
+      "blocker": "The registry locates Maple repositories but has no deployment-to-source or compiler-input bundles for the approved three contract families.",
+      "corpus_directory": "corpora/maple-v2-open-term",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1592"
+    },
+    {
+      "id": "euler-v1",
+      "venue": "Euler",
+      "generation": "v1",
+      "label": "Euler v1: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1392,
+        1393,
+        1394,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
+      ],
+      "source": {
+        "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+        "relation": "located",
+        "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+        "commit_ref": "default branch master head observed 2026-09-12, committed 2024-05-24T14:49:54Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "solidified-audit",
+          "commit": "86f81180d4257376f4d4f66fbcbb7c9df64e18c2"
+        },
+        "archived": true,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": null,
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1142",
+      "existing_skills_records": [
+        "plugins/probitas/scripts/probitas_lib/endpoints.py (EULER_V1_PROXY 0x27182842e098f60e3d576794a5bffb0777e025d3)",
+        "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1593",
+      "blocker": "The registry locates the V1 source, V2 vault kit and EVC repositories but has no complete deployed-source or compiler-input bundles. Existing event-adapter evidence does not establish those source matches.",
+      "corpus_directory": "corpora/euler-v1",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1593"
+    },
+    {
+      "id": "euler-v2",
+      "venue": "Euler",
+      "generation": "v2",
+      "label": "Euler v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1392,
+        1393,
+        1394,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
+      ],
+      "source": {
+        "repository": "https://github.com/euler-xyz/euler-vault-kit",
+        "relation": "located",
+        "commit": "bfb325a6e6ca09613d940b46f72ccfe017353933",
+        "commit_ref": "default branch master head observed 2026-09-12, committed 2026-09-01T11:48:48Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "yAudit-audit",
+          "commit": "7d2408dc1013b6f3149a5f08a69ded4dc99db7c8"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "components": [
+          {
+            "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+            "requested_ref": "master",
+            "sha": "838e5f72eaea25fab7d242760245244226096054",
+            "tree": "b02614bf59b839b7f945f1704cfd9d201cba81d5",
+            "url": "https://github.com/euler-xyz/ethereum-vault-connector/commit/838e5f72eaea25fab7d242760245244226096054",
+            "commit_date": "2026-09-01T11:19:48Z"
+          }
+        ],
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": null,
+      "companion_repository": {
+        "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+        "head": "838e5f72eaea25fab7d242760245244226096054",
+        "head_date": "2026-09-01T11:19:48Z",
+        "latest_tag": {
+          "name": "v1.0.1",
+          "commit": "a7d3c29ef7e4964736e47675e0588630d6afbfd7"
+        }
+      },
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1142",
+      "existing_skills_records": [
+        "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py",
+        "plugins/probitas/scripts/probitas_lib/adapters/euler.py"
+      ],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1593",
+      "blocker": "The registry locates the V1 source, V2 vault kit and EVC repositories but has no complete deployed-source or compiler-input bundles. Existing event-adapter evidence does not establish those source matches.",
+      "corpus_directory": "corpora/euler-v2",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1593"
+    },
+    {
+      "id": "centrifuge-v3",
+      "venue": "Centrifuge",
+      "generation": "v3 (protocol)",
+      "label": "Centrifuge v3 (protocol): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
+      "status": "blocked",
+      "consumers": [
+        1359,
+        1365,
+        1366,
+        1367,
+        1368,
+        1369,
+        1370,
+        1373,
+        1374,
+        1375,
+        1377,
+        1379,
+        1383,
+        1384,
+        1385,
+        1386,
+        1387,
+        1389,
+        1392,
+        1393,
+        1394,
+        1395,
+        1396,
+        1397,
+        1402,
+        1403,
+        1404,
+        1408,
+        1486,
+        1488,
+        1490,
+        1493,
+        1494
+      ],
+      "source": {
+        "repository": "https://github.com/centrifuge/protocol",
+        "relation": "located",
+        "commit": "48f7dff6ec83b2f7c044d35139084fb501da5f9a",
+        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-09-12T05:40:00Z",
+        "equivalent_commits": [],
+        "latest_tag": {
+          "name": "v3.2.0",
+          "commit": "87c358fa52bea91017fc3a848bc07db815eed91c"
+        },
+        "archived": false,
+        "build_inputs": [],
+        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection",
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+      },
+      "source_note": "v3.3.0-rc1 and -rc2 exist as pre-release tags",
+      "companion_repository": null,
+      "deployment": null,
+      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1148",
+      "existing_skills_records": [],
+      "evidence": [
+        "docs/kickoff/1359/evidence/source-match.json",
+        "docs/kickoff/1359/evidence/source-refs.json",
+        "docs/kickoff/1359/evidence/recovery-issues.json"
+      ],
+      "decision": "lemma-9-venue-order",
+      "recovery": "https://github.com/wildcat-finance/skills/issues/1594",
+      "blocker": "The registry locates the V3 protocol repository but has no bound hub/spoke deployment epochs or compiler-input bundle.",
+      "corpus_directory": "corpora/centrifuge-v3",
+      "documentation": [],
+      "documentation_gap": "A version-matched documentation revision, included paths and exclusions must be supplied by https://github.com/wildcat-finance/skills/issues/1594"
     },
     {
       "id": "wildcat-v2-plasma-mainnet",
       "venue": "Wildcat",
       "generation": "V2",
       "label": "Wildcat V2 HooksFactory estate on Plasma mainnet (chain 9745)",
-      "status": "candidate",
-      "pending_on": [
-        "kickoff-consumer-target",
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1354,
-        1355,
-        1359,
-        1361,
-        1363
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/wildcat-finance/v2-protocol",
         "relation": "deployed",
@@ -1432,20 +3069,16 @@
         "docs/kickoff/1359/evidence/sourcify-summary.json",
         "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md",
         "docs/kickoff/1359/evidence/upstream/subgraph-networks.json"
-      ]
+      ],
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "wildcat-v2.5-release-line",
       "venue": "Wildcat",
       "generation": "V2.5",
       "label": "Wildcat V2.5 release line (release/v2.5 at tag v2.5.4): proposed source, deployed on Sepolia only",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/wildcat-finance/v2-protocol",
         "relation": "proposed",
@@ -1491,62 +3124,16 @@
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json",
         "docs/kickoff/1359/evidence/upstream/factory-inventory.json"
-      ]
-    },
-    {
-      "id": "aave-v3",
-      "venue": "Aave",
-      "generation": "v3",
-      "label": "Aave v3: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
       ],
-      "consumers": [
-        1359
-      ],
-      "source": {
-        "repository": "https://github.com/aave-dao/aave-v3-origin",
-        "relation": "located",
-        "commit": "8305565ae342f1773c42cd2e4593f175fe5968a0",
-        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-09-09T11:04:12Z",
-        "equivalent_commits": [],
-        "latest_tag": {
-          "name": "v3.7.0",
-          "commit": "cff15de6d1271b0c800fc001f4aea4c263e8a597"
-        },
-        "archived": false,
-        "build_inputs": [],
-        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
-      },
-      "source_note": null,
-      "companion_repository": {
-        "repository": "https://github.com/aave/aave-v3-origin",
-        "head": "5c2eb37f39959dd491ba97fdc2af94bb4ee88f41",
-        "head_date": "2025-09-19T10:39:19Z"
-      },
-      "deployment": null,
-      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
-      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1139",
-      "existing_skills_records": [
-        "plugins/probitas/scripts/probitas_lib/registry.py (aave-v3, implemented False)"
-      ],
-      "evidence": [
-        "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "aave-v4",
       "venue": "Aave",
       "generation": "v4",
       "label": "Aave v4: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/aave/aave-v4",
         "relation": "located",
@@ -1574,20 +3161,16 @@
       ],
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      ],
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "compound-v2",
       "venue": "Compound",
       "generation": "v2",
       "label": "Compound v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/compound-finance/compound-protocol",
         "relation": "located",
@@ -1612,20 +3195,16 @@
       ],
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      ],
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "compound-v3",
       "venue": "Compound",
       "generation": "v3",
       "label": "Compound v3: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/compound-finance/comet",
         "relation": "located",
@@ -1650,178 +3229,16 @@
       ],
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json"
-      ]
-    },
-    {
-      "id": "euler-v1",
-      "venue": "Euler",
-      "generation": "v1",
-      "label": "Euler v1: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
       ],
-      "consumers": [
-        1359
-      ],
-      "source": {
-        "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
-        "relation": "located",
-        "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
-        "commit_ref": "default branch master head observed 2026-09-12, committed 2024-05-24T14:49:54Z",
-        "equivalent_commits": [],
-        "latest_tag": {
-          "name": "solidified-audit",
-          "commit": "86f81180d4257376f4d4f66fbcbb7c9df64e18c2"
-        },
-        "archived": true,
-        "build_inputs": [],
-        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
-      },
-      "source_note": null,
-      "companion_repository": null,
-      "deployment": null,
-      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
-      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1142",
-      "existing_skills_records": [
-        "plugins/probitas/scripts/probitas_lib/endpoints.py (EULER_V1_PROXY 0x27182842e098f60e3d576794a5bffb0777e025d3)",
-        "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py"
-      ],
-      "evidence": [
-        "docs/kickoff/1359/evidence/source-match.json"
-      ]
-    },
-    {
-      "id": "euler-v2",
-      "venue": "Euler",
-      "generation": "v2",
-      "label": "Euler v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
-      "source": {
-        "repository": "https://github.com/euler-xyz/euler-vault-kit",
-        "relation": "located",
-        "commit": "bfb325a6e6ca09613d940b46f72ccfe017353933",
-        "commit_ref": "default branch master head observed 2026-09-12, committed 2026-09-01T11:48:48Z",
-        "equivalent_commits": [],
-        "latest_tag": {
-          "name": "yAudit-audit",
-          "commit": "7d2408dc1013b6f3149a5f08a69ded4dc99db7c8"
-        },
-        "archived": false,
-        "build_inputs": [],
-        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
-      },
-      "source_note": null,
-      "companion_repository": {
-        "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
-        "head": "838e5f72eaea25fab7d242760245244226096054",
-        "head_date": "2026-09-01T11:19:48Z",
-        "latest_tag": {
-          "name": "v1.0.1",
-          "commit": "a7d3c29ef7e4964736e47675e0588630d6afbfd7"
-        }
-      },
-      "deployment": null,
-      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
-      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1142",
-      "existing_skills_records": [
-        "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py",
-        "plugins/probitas/scripts/probitas_lib/adapters/euler.py"
-      ],
-      "evidence": [
-        "docs/kickoff/1359/evidence/source-match.json"
-      ]
-    },
-    {
-      "id": "maple-v1",
-      "venue": "Maple",
-      "generation": "v1",
-      "label": "Maple v1: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
-      "source": {
-        "repository": "https://github.com/maple-labs/maple-core",
-        "relation": "located",
-        "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
-        "commit_ref": "default branch main head observed 2026-09-12, committed 2021-05-18T15:02:13Z",
-        "equivalent_commits": [],
-        "latest_tag": {
-          "name": "v1.0.0",
-          "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c"
-        },
-        "archived": false,
-        "build_inputs": [],
-        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
-      },
-      "source_note": null,
-      "companion_repository": null,
-      "deployment": null,
-      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
-      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
-      "existing_skills_records": [],
-      "evidence": [
-        "docs/kickoff/1359/evidence/source-match.json"
-      ]
-    },
-    {
-      "id": "maple-v2",
-      "venue": "Maple",
-      "generation": "v2",
-      "label": "Maple v2: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
-      "source": {
-        "repository": "https://github.com/maple-labs/maple-core-v2",
-        "relation": "located",
-        "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42",
-        "commit_ref": "default branch main head observed 2026-09-12, committed 2025-11-27T14:19:22Z",
-        "equivalent_commits": [],
-        "latest_tag": {
-          "name": "2025-11",
-          "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42"
-        },
-        "archived": false,
-        "build_inputs": [],
-        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
-      },
-      "source_note": null,
-      "companion_repository": null,
-      "deployment": null,
-      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
-      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1143",
-      "existing_skills_records": [],
-      "evidence": [
-        "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "centrifuge-tinlake",
       "venue": "Centrifuge",
       "generation": "Tinlake (legacy)",
       "label": "Centrifuge Tinlake (legacy): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/centrifuge/tinlake",
         "relation": "located",
@@ -1844,20 +3261,16 @@
       "existing_skills_records": [],
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      ],
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "centrifuge-v2",
       "venue": "Centrifuge",
       "generation": "v2 (liquidity pools)",
       "label": "Centrifuge v2 (liquidity pools): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": {
         "repository": "https://github.com/centrifuge/liquidity-pools",
         "relation": "located",
@@ -1880,56 +3293,16 @@
       "existing_skills_records": [],
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json"
-      ]
-    },
-    {
-      "id": "centrifuge-v3",
-      "venue": "Centrifuge",
-      "generation": "v3 (protocol)",
-      "label": "Centrifuge v3 (protocol): candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
       ],
-      "consumers": [
-        1359
-      ],
-      "source": {
-        "repository": "https://github.com/centrifuge/protocol",
-        "relation": "located",
-        "commit": "48f7dff6ec83b2f7c044d35139084fb501da5f9a",
-        "commit_ref": "default branch main head observed 2026-09-12, committed 2026-09-12T05:40:00Z",
-        "equivalent_commits": [],
-        "latest_tag": {
-          "name": "v3.2.0",
-          "commit": "87c358fa52bea91017fc3a848bc07db815eed91c"
-        },
-        "archived": false,
-        "build_inputs": [],
-        "build_inputs_note": "no build input pinned; the head is an observation of where the repository stood, not a selection"
-      },
-      "source_note": "v3.3.0-rc1 and -rc2 exist as pre-release tags",
-      "companion_repository": null,
-      "deployment": null,
-      "deployment_note": "no deployment, chain scope or code match established in this pass; the owning framework issue carries that work",
-      "owner_issue": "https://github.com/wildcat-finance/skills/issues/1148",
-      "existing_skills_records": [],
-      "evidence": [
-        "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     },
     {
       "id": "clearpool-permissionless",
       "venue": "Clearpool",
       "generation": "permissionless pools",
       "label": "Clearpool permissionless pools: candidate venue generation from the reuse issues; source repository located, deployment not established in this pass",
-      "status": "candidate",
-      "pending_on": [
-        "lemma-9-venue-order"
-      ],
-      "consumers": [
-        1359
-      ],
+      "status": "excluded",
+      "consumers": [],
       "source": null,
       "source_note": "no public contracts repository located under github.com/clearpool-finance; the organisation lists clearpool-payfi-vaults only (head a4ac27df697bc0bb399196df63bb1ed8d6d2297b, 2026-06-10T12:19:56Z)",
       "companion_repository": null,
@@ -1941,7 +3314,8 @@
       ],
       "evidence": [
         "docs/kickoff/1359/evidence/source-match.json"
-      ]
+      ],
+      "exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target."
     }
   ],
   "evidence_digests": {
@@ -1951,6 +3325,409 @@
     "docs/kickoff/1359/evidence/sourcify-summary.json": "5bf7a0cb3e5164b8d3a828fde8e447ab5aab3f57c88b030970c35bdf3a126eb6",
     "docs/kickoff/1359/evidence/upstream/factory-inventory.json": "87d15ea62f69714cedd0b603aa2ff1d6f506b83c14477179b9aff82e01dbb312",
     "docs/kickoff/1359/evidence/upstream/subgraph-networks.json": "e4033d3f1bb5e04697454ba0a14761fb438fd0abb06a770a26f8fd2d802e7888",
-    "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541"
-  }
+    "docs/kickoff/1359/evidence/upstream/wildcat-docs-contract-deployments.md": "fb46e0e41db8a226b3798c2ac8961342b24987364e11ea249cd10427043c9541",
+    "docs/kickoff/1359/evidence/scope-approval.json": "df147d44ba5cfbff58df62c91afc6937358701773ca760f84ff32ce7dcf73450",
+    "docs/kickoff/1359/evidence/source-refs.json": "1bb2c1951adc4433e351fc5aee75ba0eab52895de1e3baf7149423a195755347",
+    "docs/kickoff/1359/evidence/consumer-inputs.json": "a11720023981f8904a610f695ad5a6878fdda9f1e45b080bb96c5e867f5aa477",
+    "docs/kickoff/1359/evidence/recovery-issues.json": "a921e6ec46be87fb4dae040a8516f1dd36bc3ee924d3d64c33995548f8f6c8c5"
+  },
+  "scope": {
+    "approval_evidence": "docs/kickoff/1359/evidence/scope-approval.json",
+    "ordered_slots": [
+      {
+        "order": 1,
+        "venue": "Wildcat",
+        "targets": [
+          "wildcat-v1-ethereum-mainnet",
+          "wildcat-v2-ethereum-mainnet"
+        ]
+      },
+      {
+        "order": 2,
+        "venue": "Aave",
+        "targets": [
+          "aave-v3"
+        ]
+      },
+      {
+        "order": 3,
+        "venue": "Maple",
+        "targets": [
+          "maple-v1",
+          "maple-v2-fixed-term",
+          "maple-v2-open-term"
+        ]
+      },
+      {
+        "order": 4,
+        "venue": "Euler",
+        "targets": [
+          "euler-v1",
+          "euler-v2"
+        ]
+      },
+      {
+        "order": 5,
+        "venue": "Centrifuge",
+        "targets": [
+          "centrifuge-v3"
+        ]
+      }
+    ],
+    "estate_targets": [
+      "wildcat-v2-ethereum-mainnet"
+    ],
+    "excluded": [
+      "Wildcat Plasma",
+      "unreleased Wildcat source",
+      "Aave V4",
+      "Compound",
+      "Clearpool",
+      "Centrifuge Tinlake",
+      "Centrifuge V2"
+    ],
+    "closure_rule": "The registry may be accepted with a selected row blocked on its specific source-recovery child. A blocked row does not satisfy deployed-code acceptance in a consumer."
+  },
+  "consumer_census": [
+    {
+      "issue": 1350,
+      "disposition": "not-applicable",
+      "reason": "Closed delivery pins its own USDC reference interval; it is not a selection of these lending targets."
+    },
+    {
+      "issue": 1351,
+      "disposition": "not-applicable",
+      "reason": "Closed delivery owns its findings corpus and curation scope."
+    },
+    {
+      "issue": 1352,
+      "disposition": "not-applicable",
+      "reason": "Closed delivery owns the application workbook and reviewer attribution."
+    },
+    {
+      "issue": 1354,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1355,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1356,
+      "disposition": "not-applicable",
+      "reason": "Archive repository classification is owned by #1489; it does not select a deployed lending target."
+    },
+    {
+      "issue": 1357,
+      "disposition": "not-applicable",
+      "reason": "Closed delivery pins the application repository and its TypeScript boundary."
+    },
+    {
+      "issue": 1358,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1359,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1360,
+      "disposition": "not-applicable",
+      "reason": "Closed delivery owns the genesis/empty-receipt fixture."
+    },
+    {
+      "issue": 1361,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1362,
+      "disposition": "not-applicable",
+      "reason": "Schema implementation inventories all shipped adapters; the approved kickoff scope does not narrow its enum-compatibility obligation."
+    },
+    {
+      "issue": 1363,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1364,
+      "disposition": "not-applicable",
+      "reason": "Rights and disclosure for the findings corpus remain with its custodian; venue approval is not a rights basis."
+    },
+    {
+      "issue": 1365,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1366,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1367,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1368,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1369,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1370,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1371,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1372,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1373,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1374,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1375,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1376,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1377,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1378,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1379,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1380,
+      "disposition": "not-applicable",
+      "reason": "Application checkout/workbook binding is outside the lending target registry."
+    },
+    {
+      "issue": 1381,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1382,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1383,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1384,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1385,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1386,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1387,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1388,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1389,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1390,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1391,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1392,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1393,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1394,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1395,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1396,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1397,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1398,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1399,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1400,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1401,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1402,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1403,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1404,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1405,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1406,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1407,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1408,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1409,
+      "disposition": "not-applicable",
+      "reason": "Application routes and guards remain with the application owner."
+    },
+    {
+      "issue": 1485,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1486,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1488,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1490,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1492,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1493,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1494,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1497,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    },
+    {
+      "issue": 1498,
+      "disposition": "mapped",
+      "reason": "See the consumer row and its target-specific boundary."
+    }
+  ]
 }

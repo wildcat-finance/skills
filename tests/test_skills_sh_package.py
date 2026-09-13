@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 # The model proxy's receipt path refuses symlinked components by design.
@@ -144,10 +146,16 @@ CONTRACT = "promise-machine/v1"
 # now measures 26,408,839 bytes, 100.7% of the 25 MiB the CLI allows, against
 # 26,272,101 one paragraph above. Nothing here buys margin against it, and
 # framework-109 owns it.
+# Issue #1538 adopts the reviewed decorative-portrait omission and reference
+# repair, retaining the original byte cap and reserving five MiB below it.
+# Every generated manifest must satisfy that margin as well as the cap.
 MAX_FILES = 1_500
 MAX_BYTES = 25 * 1024 * 1024
+MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "assets/characters/*.{png,webp}",
+    "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
@@ -192,6 +200,13 @@ def load_manifest():
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
+def load_generator():
+    spec = importlib.util.spec_from_file_location("portable_package_test", GENERATOR)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 class SkillsShPackageTests(unittest.TestCase):
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
@@ -200,6 +215,11 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(manifest["file_count"], len(manifest["files"]))
         self.assertLess(manifest["file_count"], MAX_FILES)
         self.assertLess(manifest["total_bytes"], MAX_BYTES)
+        self.assertGreaterEqual(MAX_BYTES - manifest["total_bytes"], MIN_HEADROOM)
+        self.assertEqual(manifest["byte_budget"], {
+            "cap": MAX_BYTES, "minimum_headroom": MIN_HEADROOM,
+            "headroom": MAX_BYTES - manifest["total_bytes"],
+        })
         self.assertEqual(
             {entry["pattern"] for entry in manifest["omissions"]},
             EXPECTED_OMISSIONS,
@@ -231,7 +251,35 @@ class SkillsShPackageTests(unittest.TestCase):
                 else:
                     source = ROOT / row["source"]
                     self.assertTrue(source.is_file())
-                    self.assertEqual(data, source.read_bytes())
+                    original = source.read_bytes()
+                    if "transform" in row:
+                        self.assertEqual(row["source_bytes"], len(original))
+                        self.assertEqual(row["source_sha256"], hashlib.sha256(original).hexdigest())
+                    if row.get("transform") == "replay-unchanged-evaluation-prompts/v1":
+                        self.assertEqual(row["path"], "docs/promise-machine/obligation-gates/evaluation-run.json")
+                        source_run, derived_run = json.loads(original), json.loads(data)
+                        self.assertNotEqual(source_run["tree_sha256"], derived_run["tree_sha256"])
+                        source_run.pop("tree_sha256")
+                        derived_run.pop("tree_sha256")
+                        self.assertEqual(source_run, derived_run)
+                    elif "transform" in row:
+                        self.assertEqual(row["transform"], "remove-decorative-portrait-images/v1")
+                        cursor = 0
+                        pieces = []
+                        omitted = {item["path"] for item in manifest["omitted_files"]}
+                        for span in row["removed_images"]:
+                            self.assertGreaterEqual(span["start"], cursor)
+                            self.assertGreater(span["end"], span["start"])
+                            self.assertLessEqual(span["end"], len(original))
+                            self.assertIn(span["target"], omitted)
+                            image = original[span["start"]:span["end"]]
+                            self.assertTrue(image.startswith((b"![", b"<img")))
+                            pieces.append(original[cursor:span["start"]])
+                            cursor = span["end"]
+                        pieces.append(original[cursor:])
+                        self.assertEqual(data, b"".join(pieces))
+                    else:
+                        self.assertEqual(data, original)
                 self.assertEqual(row["bytes"], len(data))
                 self.assertEqual(row["sha256"], hashlib.sha256(data).hexdigest())
             total += row["bytes"]
@@ -254,6 +302,99 @@ class SkillsShPackageTests(unittest.TestCase):
             ).read_bytes(),
             (PACKAGE / "SKILL.md").read_bytes(),
         )
+
+    def test_portrait_omission_inventory_preserves_every_source(self):
+        manifest = load_manifest()
+        self.assertIn("omitted_files", manifest)
+        rows = manifest["omitted_files"]
+        self.assertTrue(rows)
+        self.assertEqual(len(rows), len({row["path"] for row in rows}))
+        packaged = {row["path"] for row in manifest["files"]}
+        for row in rows:
+            with self.subTest(path=row["path"]):
+                self.assertNotIn(row["path"], packaged)
+                self.assertFalse((RUNTIME / row["path"]).exists())
+                original = (ROOT / row["path"]).read_bytes()
+                self.assertEqual(row["bytes"], len(original))
+                self.assertEqual(row["sha256"], hashlib.sha256(original).hexdigest())
+        self.assertIn("plugins/anamnesis/assets/characters/anamnesis.webp", {row["path"] for row in rows})
+        for document in RUNTIME.rglob("*.md"):
+            text = document.read_text(encoding="utf-8")
+            images = re.findall(r'!\[[^\]]*\]\(([^)]+)\)|<img\b[^>]*\bsrc=[\"\x27]([^\"\x27]+)', text)
+            for markdown, html in images:
+                target = (document.parent / (markdown or html)).resolve()
+                self.assertNotIn(target, {(RUNTIME / row["path"]).resolve() for row in rows})
+
+    def test_portrait_class_does_not_capture_other_assets(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "decorative_portrait"))
+        for path in ("assets/characters/new.png", "plugins/future/assets/characters/new.webp"):
+            self.assertTrue(generator.decorative_portrait(Path(path)), path)
+        for path in ("assets/diagram.png", "plugins/future/examples/characters/new.png", "plugins/future/assets/characters/nested/new.png", "plugins/future/assets/characters/proof.json", "plugins/future/assets/characters/code.py", "plugins/future/assets/characters/new.svg"):
+            self.assertFalse(generator.decorative_portrait(Path(path)), path)
+
+    def test_only_inline_images_of_omitted_portraits_are_transformed(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "transform_portrait_images"))
+        path = Path("plugins/example/skills/example/SKILL.md")
+        omitted = {"plugins/example/assets/characters/face.png", "plugins/example/assets/characters/face.webp"}
+        images = (b'![Face](../../assets/characters/face.png)', b'<img alt="a > b" width="1200" src="../../assets/characters/face.webp">')
+        untouched = b'[law](../../PROMISE_MACHINE.md)\n[portrait](../../assets/characters/face.png)\n![diagram](../../assets/diagram.png)\n<img src="https://example.org/face.png">\n<img data-src="../../assets/characters/face.png" src="../../assets/diagram.png">\n'
+        untouched += b'<img alt="example src=\'../../assets/characters/face.png\'" src="../../assets/diagram.png">\n'
+        original = b"before\n" + images[0] + b"\nbetween\n" + images[1] + b"\nafter\n" + untouched
+        transformed, spans = generator.transform_portrait_images(path, original, omitted)
+        self.assertEqual(transformed, b"before\n\nbetween\n\nafter\n" + untouched)
+        self.assertEqual([original[span["start"]:span["end"]] for span in spans], list(images))
+        self.assertEqual(generator.transform_portrait_images(Path("specimen.json"), original, omitted), (original, []))
+
+    def test_runtime_refuses_the_first_byte_inside_reserved_headroom(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "require_byte_headroom"))
+        self.assertEqual(generator.MAX_RUNTIME_BYTES, MAX_BYTES)
+        self.assertEqual(generator.MIN_BYTE_HEADROOM, MIN_HEADROOM)
+        generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM)
+        with self.assertRaisesRegex(generator.PackageError, "headroom"):
+            generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM + 1)
+
+    def test_complete_package_reserves_headroom_for_manifest_and_outer_files(self):
+        total = sum(path.stat().st_size for path in GENERATED.rglob("*") if path.is_file())
+        self.assertGreater(total, load_manifest()["total_bytes"])
+        self.assertGreaterEqual(MAX_BYTES - total, MIN_HEADROOM)
+        generator = load_generator()
+        at_boundary = {"probe.txt": b"x" * (MAX_BYTES - MIN_HEADROOM)}
+        with mock.patch.object(generator, "expected_files", return_value=(at_boundary, b"{}\n")):
+            with self.assertRaisesRegex(generator.PackageError, "headroom"):
+                generator._package_bytes(ROOT, "a" * 40)
+
+    def test_isolated_runtime_evaluation_accepts_derived_record(self):
+        completed = subprocess.run(  # phylax: allow subprocess: fixed isolated runtime checker argv
+            [sys.executable, str(RUNTIME / "scripts/promise_machine.py"),
+             "check", "--root", str(RUNTIME), "--only", "evaluation", "--json"],
+            cwd=GENERATED, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        report = json.loads(completed.stdout)
+        self.assertEqual(report["findings"], [])
+        self.assertEqual(report["counts"]["evaluation_cases"], 11)
+        self.assertEqual(report["counts"]["evaluation_outcomes"], 55)
+        row = next(row for row in load_manifest()["files"]
+                   if row["path"] == "docs/promise-machine/obligation-gates/evaluation-run.json")
+        self.assertEqual(row["generated_by"], "tests/promise_evaluation_driver.py")
+        self.assertIs(row["new_model_observation"], False)
+        self.assertEqual(len(row["unchanged_prompts"]), 11)
+        self.assertEqual(len({p["case"] for p in row["unchanged_prompts"]}), 11)
+
+    def test_packaging_refuses_replay_when_a_model_prompt_changes(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "derive_portable_evaluation"))
+        payload = {row["path"]: (RUNTIME / row["path"]).read_bytes()
+                   for row in load_manifest()["files"]}
+        path = "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+        original = payload[path]
+        payload[path] = original.replace(b"- Promise: A completed", b"- Promise: An altered", 1)
+        self.assertNotEqual(original, payload[path])
+        with self.assertRaisesRegex(generator.PackageError, "prompts changed"):
+            generator.derive_portable_evaluation(ROOT, payload)
 
     def test_runtime_contracts_reach_every_copied_canonical_skill(self):
         plugins = RUNTIME / "plugins"

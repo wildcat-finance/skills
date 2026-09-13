@@ -1,0 +1,23 @@
+{
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/scripts/agent_instruction.py",
+    "parity",
+    "--root",
+    "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/demo-build/promise-machine-router-selection-before/tmp/stage/work",
+    "--manifest",
+    "tests/fixtures/agent-instruction-v1/manifest.json",
+    "--output",
+    "acquisitions/parity.json"
+  ],
+  "elapsed_seconds": 201.785,
+  "exit": 0,
+  "finished_at": "2026-09-13T05:07:59.536630+00:00",
+  "observation": "timestamps record these calls; the owner report retains the frozen profile observation date",
+  "output_sha256": "b8520b37c164fc426952e408415b7bc9f434ac6ca47d776a4959930acb98dd4d",
+  "profile_observed_on": "2026-09-12",
+  "started_at": "2026-09-13T05:04:37.765283+00:00",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_sha256": "f9fd915829c11a86f6cbee03db57fe61eaaa135796ffc6c76f753436e344fd35",
+  "timed_out": false
+}

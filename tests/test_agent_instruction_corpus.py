@@ -45,6 +45,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -116,6 +117,18 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             {"code": code, "node_path": node_path},
             outcome["refusals"][0],
         )
+
+    def candidate_fixture(self, scratch):
+        """Give CLI tests their own design record and source-bound copy."""
+        tree = self.work.copy_tree(Path(scratch))
+        shutil.copy2(PROVER, tree / "scripts/prove_agent_instruction_reconciliation.py")
+        shutil.copy2(ROOT / self.prover.COVERAGE, tree / self.prover.COVERAGE)
+        record = tree / self.prover.DESIGN_EVIDENCE
+        record.parent.mkdir(parents=True)
+        record.write_text(json.dumps({
+            "candidates": [{"id": value} for value in self.prover.FALLBACK_CANDIDATES],
+        }), encoding="utf-8")
+        return tree
 
     def assertPlantedSpanRefuses(self, plant, message):
         """`plant` one drift into `source-spans.json`, then re-derive against it.
@@ -522,7 +535,7 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                         expected, [[item["start"], item["end"]] for item in entries]
                     )
 
-        # And the pass is load-bearing: omitted, the same edit leaves the
+        # Omitting the pass leaves the same edit's
         # recorded offsets pointing at bytes the edit displaced.
         omitted = self.work.reconcile(before_span, skip=(self.prover.OFFSET_PASS,))
         self.assertRefused(
@@ -681,6 +694,7 @@ class AgentInstructionCorpusTests(unittest.TestCase):
         report at the paths the record's own resolver commands name.
         """
         with tempfile.TemporaryDirectory() as scratch:
+            tree = self.candidate_fixture(scratch)
             reports = {}
             for command, expected_exit in (
                 ("selftest", 0),
@@ -696,8 +710,8 @@ class AgentInstructionCorpusTests(unittest.TestCase):
                 target = Path(scratch) / f"{command}.json"
                 completed = subprocess.run(
                     [
-                        sys.executable, str(PROVER), command,
-                        "--root", str(ROOT),
+                        sys.executable, str(tree / "scripts/prove_agent_instruction_reconciliation.py"), command,
+                        "--root", str(tree),
                         "--candidate", "digest-neutral-corpus",
                         "--report", str(target),
                     ],
@@ -864,18 +878,17 @@ class AgentInstructionCorpusTests(unittest.TestCase):
             hasattr(self.prover, "candidate_choices"),
             "the prover reads no candidate set, so `--candidate` is not closed",
         )
-        self.assertEqual(
-            sorted(self.prover.candidate_choices(ROOT)),
-            sorted(self.prover.FALLBACK_CANDIDATES),
-        )
-        self.assertIn("digest-neutral-corpus", self.prover.candidate_choices(ROOT))
-
         with tempfile.TemporaryDirectory() as scratch:
+            tree = self.candidate_fixture(scratch)
+            self.assertEqual(
+                self.prover.candidate_choices(tree), self.prover.FALLBACK_CANDIDATES,
+            )
+            self.assertIn("digest-neutral-corpus", self.prover.candidate_choices(tree))
             target = Path(scratch) / "report.json"
             completed = subprocess.run(
                 [
-                    sys.executable, str(PROVER), "selftest",
-                    "--root", str(ROOT),
+                    sys.executable, str(tree / "scripts/prove_agent_instruction_reconciliation.py"), "selftest",
+                    "--root", str(tree),
                     "--candidate", "not-a-candidate",
                     "--report", str(target),
                 ],

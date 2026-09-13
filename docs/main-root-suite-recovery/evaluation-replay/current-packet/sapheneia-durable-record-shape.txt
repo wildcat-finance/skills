@@ -1,0 +1,36 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is sapheneia-durable-record-shape. Its source path is plugins/sapheneia/skills/sapheneia/SKILL.md.
+The exact declaration is:
+
+### sapheneia-durable-record-shape
+
+- Promise: A completed durable-record pass establishes that one named piece of agent-authored prose written to a file or published to a host, such as an audit record, a GitHub issue title and body, a GitHub issue comment, a pull request, a repository document or a commit message, retained its protected evidence inventory and required host structure while only claim-neutral connective or process prose changed.
+- Evidence: The named subject, exact source and candidate bytes, protected evidence inventory, required host structure, item-by-item comparison, and completed five-step durable-record check.
+- Evidence classes: recorded, checked, inferred
+- Boundary: The pass does not establish factual truth, completeness outside the inventory, that the candidate is the shortest form available, server-side GitHub enforcement, audit-host enforcement, human authorship, or session-wide Sapheneia activation, and it never authorises changes to existing durable records.
+- Authorises: Handing the checked candidate to the next prose or publication gate named by the owning workflow, with its evidence gaps and structure still visible.
+- Consequence: 1
+- Refuses: A subject whose bytes another owner fixes by generator, digest, manifest or fixed template, an existing record, code or data rather than prose, missing or mismatched inventory evidence, changed host structure, dropped uncertainty, changed severity or verdict, altered exact evidence, or a claim that the pass itself authorised publication.
+- Recovery: Restore the source content or required structure in the candidate, rebuild the inventory where needed, repeat the comparison, and rerun the bounded pass without editing an existing record.
+- Exceptions: none
+
+The evaluation request is:
+
+Shape one named durable record while preserving its evidence inventory and host structure.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A completed shaping checklist is presented as proof that GitHub enforced the rule, that the record is factually true, or that no shorter candidate exists.
+E02. One agent-authored audit record is shortened only by removing claim-neutral connective prose while every finding, severity, file:line location, unknown and required audit field survives.
+E03. Restore the missing exact identifier and required opening, rebuild the inventory, then repeat the checklist on the repaired candidate.
+E04. A pull request body has no protected evidence inventory, so content parity cannot be checked after compression.
+E05. The inventory belongs to a different record than the candidate being shaped, or the candidate's bytes are fixed by a generator, digest or fixed template.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

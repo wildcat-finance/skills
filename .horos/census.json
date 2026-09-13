@@ -8,8 +8,8 @@
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 21257171,
-      "files": 1086,
+      "bytes": 22198885,
+      "files": 1111,
       "suffix": ".md"
     },
     {
@@ -20,20 +20,20 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 13807913,
-      "files": 1062,
+      "bytes": 15794592,
+      "files": 1156,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 13362607,
-      "files": 602,
+      "bytes": 13696967,
+      "files": 615,
       "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
-      "bytes": 8097278,
-      "files": 115,
+      "bytes": 8097291,
+      "files": 116,
       "suffix": "(no suffix)"
     },
     {
@@ -43,10 +43,22 @@
       "suffix": ".jsonl"
     },
     {
+      "boundary_bytes": 0,
+      "bytes": 3446915,
+      "files": 151,
+      "suffix": ".bin"
+    },
+    {
       "boundary_bytes": 949,
       "bytes": 522784,
       "files": 94,
       "suffix": ".sol"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 210463,
+      "files": 52,
+      "suffix": ".txt"
     },
     {
       "boundary_bytes": 117,
@@ -68,9 +80,21 @@
     },
     {
       "boundary_bytes": 0,
+      "bytes": 51075,
+      "files": 10,
+      "suffix": ".stdout"
+    },
+    {
+      "boundary_bytes": 0,
       "bytes": 33767,
       "files": 2,
       "suffix": ".graphql"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 20046,
+      "files": 10,
+      "suffix": ".stderr"
     },
     {
       "boundary_bytes": 0,
@@ -98,9 +122,9 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 3774,
-      "files": 5,
-      "suffix": ".txt"
+      "bytes": 3098,
+      "files": 1,
+      "suffix": ".log"
     },
     {
       "boundary_bytes": 0,
@@ -179,16 +203,10 @@
       "bytes": 17,
       "files": 1,
       "suffix": ".woff2"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 11,
-      "files": 1,
-      "suffix": ".bin"
     }
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 105475280,
-  "total_files": 3193
+  "total_bytes": 112465858,
+  "total_files": 3544
 }

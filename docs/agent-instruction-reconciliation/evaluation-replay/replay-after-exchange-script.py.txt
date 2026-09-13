@@ -1,0 +1,40 @@
+from pathlib import Path
+import hashlib,importlib.util,json,subprocess,sys
+ROOT=Path(__file__).resolve().parents[2]
+BASE='cbcf3c6bf9cdb5c6cca45cddd8e87c98d24e90a0'
+OUT=ROOT/'.hexaemeron/step-2-evaluation-replay-after-exchange'
+OUT.mkdir()
+sha=lambda b:hashlib.sha256(b).hexdigest()
+spec=importlib.util.spec_from_file_location('evaluation_owner',ROOT/'tests/promise_evaluation_driver.py')
+owner=importlib.util.module_from_spec(spec);spec.loader.exec_module(owner)
+oldroot=OUT/'baseline';oldroot.mkdir()
+RUN='docs/promise-machine/obligation-gates/evaluation-run.json'
+ANSWERS='docs/promise-machine/obligation-gates/evaluation-answers.json'
+paths={p.relative_to(ROOT).as_posix() for p in owner.input_files(ROOT)}|{RUN,ANSWERS}
+for path in sorted(paths):
+ body=subprocess.check_output(['/usr/bin/git','show',BASE+':'+path],cwd=ROOT)
+ target=oldroot/path;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(body)
+oldpacket=owner.emit(OUT/'old-packet',root=oldroot)
+owner.verify(OUT/'old-packet',oldroot/ANSWERS,oldroot/RUN,root=oldroot)
+coverage_path=ROOT/'tests/promise_machine_coverage.json'
+raw=coverage_path.read_bytes();coverage=json.loads(raw)
+assert raw==(json.dumps(coverage,indent=2,sort_keys=True)+'\n').encode()
+row=coverage['agent_instruction']
+row['prover']['sha256']=sha((ROOT/row['prover']['path']).read_bytes())
+row['staged_reconciliation']={role:{'path':path,'sha256':sha((ROOT/path).read_bytes())} for role,path in [('helper','scripts/agent_instruction_reconciliation.py'),('tests','tests/test_agent_instruction_reconciliation.py')]}
+coverage_path.write_text(json.dumps(coverage,indent=2,sort_keys=True)+'\n')
+newpacket=owner.emit(OUT/'current-packet',root=ROOT)
+assert oldpacket['cases']==newpacket['cases']
+prompts=[]
+for case in oldpacket['cases']:
+ before=(OUT/'old-packet'/case['prompt']).read_bytes();after=(OUT/'current-packet'/case['prompt']).read_bytes()
+ assert before==after
+ prompts.append({'case':case['id'],'sha256':sha(before),'bytes':len(before)})
+old=json.loads((oldroot/RUN).read_bytes())
+new=owner.tally(OUT/'current-packet',ROOT/ANSWERS,OUT/'replayed-run.json',old['model'],old['date'],root=ROOT)
+assert [k for k in old if old[k]!=new[k]]==['tree_sha256']
+owner.verify(OUT/'current-packet',ROOT/ANSWERS,OUT/'replayed-run.json',root=ROOT)
+(ROOT/RUN).write_bytes((OUT/'replayed-run.json').read_bytes())
+result={'operation':'historical-answer-tally-replay','owner':'tests/promise_evaluation_driver.py','baseline':BASE,'new_model_observation':False,'model':old['model'],'date':old['date'],'unchanged_prompts':prompts,'changed_run_fields':['tree_sha256'],'original_run_sha256':sha((oldroot/RUN).read_bytes()),'current_run_sha256':sha((ROOT/RUN).read_bytes()),'answers_sha256':sha((ROOT/ANSWERS).read_bytes()),'coverage_sha256':sha(coverage_path.read_bytes()),'exit':0}
+(OUT/'replay.json').write_text(json.dumps(result,sort_keys=True,indent=2)+'\n')
+print(json.dumps(result))

@@ -1,0 +1,2 @@
+ollama version is 0.32.15
+Warning: client version is 0.33.3

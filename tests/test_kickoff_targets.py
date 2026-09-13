@@ -31,7 +31,8 @@ SCRIPT = ROOT / "scripts" / "kickoff_targets.py"
 REGISTRY = ROOT / "docs" / "kickoff" / "1359" / "targets.json"
 SPECIMENS = ROOT / "docs" / "kickoff" / "1359" / "specimens"
 RECORD = ROOT / "docs" / "kickoff" / "1359" / "targets.md"
-CONSUMERS = (1354, 1355, 1359, 1361, 1363)
+CONSUMERS = (1354, 1355, 1359, 1361, 1363, 1365, 1376, 1379, 1395,
+             1485, 1486, 1488, 1490, 1492, 1493, 1494, 1497, 1498)
 
 
 def load_module():
@@ -199,21 +200,19 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("does not list it back" in f for f in findings), findings)
 
     def test_resolved_on_a_pending_decision_is_named(self):
+        decision = next(d for d in self.registry["decisions"] if d["id"] == "kickoff-consumer-target")
+        decision.update(status="pending", decision_maker=None, selection=None)
         target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
         findings = self.findings()
         self.assertTrue(any("still pending" in f for f in findings), findings)
 
-    def test_resolved_on_a_recorded_decision_passes(self):
-        decision = next(d for d in self.registry["decisions"] if d["id"] == "kickoff-consumer-target")
-        decision["status"] = "recorded"
-        decision["decision_maker"] = {"name": "A Maintainer", "role": "target maintainer", "date": "2026-09-12", "reference": "https://github.com/wildcat-finance/skills/pull/0"}
-        decision["selection"] = "ethereum-only"
+    def test_scope_approval_does_not_resolve_missing_source_evidence(self):
         target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
-        self.assertEqual(self.findings(), [])
+        self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
 
     def test_a_recorded_decision_without_a_reference_is_named(self):
         decision = self.registry["decisions"][0]
@@ -240,13 +239,15 @@ class MutationTests(unittest.TestCase):
         target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
         target["status"] = "blocked"
         target["blocker"] = "no deployment pin"
+        recovery = target.pop("recovery")
         findings = self.findings()
         self.assertTrue(any("without a recovery issue URL" in f for f in findings), findings)
-        target["recovery"] = "https://github.com/wildcat-finance/skills/issues/1139"
+        target["recovery"] = recovery
         self.assertEqual(self.findings(), [])
 
     def test_a_candidate_needs_a_known_pending_decision(self):
         target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
+        target["status"] = "candidate"
         target["pending_on"] = ["nobody-decides-this"]
         findings = self.findings()
         self.assertTrue(any("unknown decision 'nobody-decides-this'" in f for f in findings), findings)
@@ -268,6 +269,79 @@ class MutationTests(unittest.TestCase):
         result = run("--root", str(self.scratch), "check")
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
         self.assertIn("not JSON", result.stderr)
+
+    def test_swapping_venues_without_approval_is_rejected(self):
+        slots = self.registry["scope"]["ordered_slots"]
+        slots[3], slots[4] = slots[4], slots[3]
+        for position, slot in enumerate(slots, 1):
+            slot["order"] = position
+        findings = self.findings()
+        self.assertTrue(any("ordered_slots differs from approval evidence" in f for f in findings), findings)
+
+    def test_omitting_an_approved_maple_family_is_rejected(self):
+        self.registry["scope"]["ordered_slots"][2]["targets"].pop()
+        findings = self.findings()
+        self.assertTrue(any("slot 3 has the wrong generation count" in f for f in findings), findings)
+
+    def test_a_deleted_consumer_cannot_shrink_the_denominator(self):
+        self.registry["consumers"] = [c for c in self.registry["consumers"] if c["issue"] != 1395]
+        findings = self.findings()
+        self.assertTrue(any("mapped dispositions differ" in f for f in findings), findings)
+
+    def test_an_excluded_row_cannot_supply_a_consumer(self):
+        consumer = self.registry["consumers"][0]
+        consumer["targets"] = ["wildcat-v2-plasma-mainnet"]
+        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-plasma-mainnet")
+        target["consumers"] = [consumer["issue"]]
+        findings = self.findings()
+        self.assertTrue(any("uses excluded target" in f for f in findings), findings)
+
+    def test_a_broad_epic_is_not_the_specific_source_recovery(self):
+        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
+        target["recovery"] = "https://github.com/wildcat-finance/skills/issues/1139"
+        findings = self.findings()
+        self.assertTrue(any("not its recorded source-recovery child" in f for f in findings), findings)
+
+    def test_an_evidence_symlink_cannot_escape_the_repository(self):
+        evidence = self.scratch / "docs/kickoff/1359/evidence/scope-approval.json"
+        original = evidence.read_bytes()
+        with tempfile.TemporaryDirectory(prefix="kickoff-outside-") as outside:
+            remote = Path(outside) / "approval.json"
+            remote.write_bytes(original)
+            evidence.unlink()
+            evidence.symlink_to(remote)
+            findings = self.findings()
+        self.assertTrue(any("escapes repository root" in f for f in findings), findings)
+
+    def test_specimen_command_refuses_a_changed_evidence_file(self):
+        evidence = self.scratch / "docs/kickoff/1359/evidence/scope-approval.json"
+        evidence.write_bytes(evidence.read_bytes() + b" ")
+        result = run("--root", str(self.scratch), "specimen", "--specimen", str(SPECIMENS / "accepted-v2-market-init-code.json"))
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertIn("registry validation failed", result.stdout)
+
+    def test_duplicate_json_keys_and_malformed_containers_refuse(self):
+        self.path.write_text('{"schema":"first","schema":"second"}')
+        result = run("--root", str(self.scratch), "check")
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn("duplicate JSON key", result.stderr)
+        self.registry["decisions"][0]["selection"] = {"unexpected": []}
+        findings = self.findings()
+        self.assertTrue(findings)
+
+    def test_boolean_chain_and_unhashable_target_refuse(self):
+        specimen = json.loads((SPECIMENS / "accepted-v2-market-init-code.json").read_text())
+        specimen["chain_id"] = True
+        self.assertEqual(self.module.judge_specimen(self.registry, specimen), ["specimen chain_id is not a positive integer"])
+        specimen["target"] = []
+        self.assertTrue(self.module.judge_specimen(self.registry, specimen))
+
+    def test_bounded_file_read_refuses_oversize_and_special_files(self):
+        self.path.write_bytes(b"x" * 65)
+        with self.assertRaises(self.module.RegistryError):
+            self.module.read_json(self.path, limit=64)
+        with self.assertRaises(self.module.RegistryError):
+            self.module.read_json(Path('/dev/null'))
 
 
 if __name__ == "__main__":

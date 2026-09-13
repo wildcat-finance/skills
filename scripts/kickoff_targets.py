@@ -34,15 +34,17 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import stat
 import sys
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REGISTRY = Path("docs/kickoff/1359/targets.json")
 SCHEMA = "wildcat.kickoff-targets.v1"
 OBSERVATIONS_SCHEMA = "wildcat.kickoff-targets.observations.v1"
-STATUSES = ("resolved", "candidate", "blocked")
+STATUSES = ("resolved", "candidate", "blocked", "excluded")
 DECISION_STATUSES = ("pending", "recorded")
 MAX_BYTES = 4 * 1024 * 1024
 
@@ -58,36 +60,49 @@ class RegistryError(Exception):
     """The file is not a registry this module can read."""
 
 
-def read_json(path: Path, limit: int = MAX_BYTES):
-    """Read one JSON document from a regular file below the size cap."""
-    if not path.is_file():
-        raise RegistryError(f"{path}: not a regular file")
-    size = path.stat().st_size
-    if size > limit:
-        raise RegistryError(f"{path}: {size} bytes exceeds the {limit} byte cap")
-    with path.open("rb") as handle:
-        raw = handle.read(limit + 1)
+def read_bytes(path: Path, limit: int = MAX_BYTES) -> bytes:
+    """Read a bounded regular file; refuse links and special files."""
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+        with os.fdopen(descriptor, "rb") as handle:
+            info = os.fstat(handle.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                raise RegistryError(f"{path}: not a regular file")
+            if info.st_size > limit:
+                raise RegistryError(f"{path}: exceeds the {limit} byte cap")
+            raw = handle.read(limit + 1)
+    except (OSError, ValueError) as error:
+        raise RegistryError(f"{path}: cannot read regular file ({error})") from error
     if len(raw) > limit:
         raise RegistryError(f"{path}: grew past the {limit} byte cap while reading")
+    return raw
+
+
+def decode_json(raw: bytes, path: Path):
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise RegistryError(f"{path}: duplicate JSON key {key!r}")
+            result[key] = value
+        return result
+
+    def constant(value):
+        raise RegistryError(f"{path}: non-finite JSON number {value}")
+
     try:
-        return json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        return json.loads(raw.decode("utf-8"), object_pairs_hook=unique, parse_constant=constant)
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError) as error:
         raise RegistryError(f"{path}: not JSON ({error})") from error
 
 
+def read_json(path: Path, limit: int = MAX_BYTES):
+    """Read one JSON document from a regular file below the size cap."""
+    return decode_json(read_bytes(path, limit), path)
+
+
 def sha256_of(path: Path, limit: int = MAX_BYTES) -> str:
-    if not path.is_file():
-        raise RegistryError(f"{path}: not a regular file")
-    if path.stat().st_size > limit:
-        raise RegistryError(f"{path}: exceeds the {limit} byte cap")
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while True:
-            block = handle.read(65536)
-            if not block:
-                break
-            digest.update(block)
-    return digest.hexdigest()
+    return hashlib.sha256(read_bytes(path, limit)).hexdigest()
 
 
 def _is_str(value) -> bool:
@@ -103,6 +118,7 @@ class Checker:
         self.registry_path = registry_path
         self.findings: list[str] = []
         self.observations: dict[int, dict[str, dict]] = {}
+        self.evidence_documents: dict[str, dict] = {}
 
     def finding(self, text: str) -> None:
         self.findings.append(text)
@@ -119,10 +135,14 @@ class Checker:
         for key in ("record", "produced_on", "producer", "consumers", "decisions", "targets", "evidence_digests"):
             if key not in registry:
                 self.finding(f"registry: missing top-level key {key!r}")
-        self.check_evidence_digests()
-        decisions = self.check_decisions()
-        targets = self.check_targets(decisions)
-        self.check_consumers(targets)
+        try:
+            self.check_evidence_digests()
+            decisions = self.check_decisions()
+            targets = self.check_targets(decisions)
+            self.check_consumers(targets)
+            self.check_scope(targets, decisions)
+        except (TypeError, ValueError, KeyError, AttributeError, RegistryError) as error:
+            self.finding(f"registry: malformed field ({error})")
         return self.findings
 
     # -- evidence ----------------------------------------------------------
@@ -141,26 +161,27 @@ class Checker:
                 continue
             path = self.root / relative
             try:
-                actual = sha256_of(path)
-            except RegistryError as error:
+                if not path.resolve().is_relative_to(self.root.resolve()):
+                    raise RegistryError(f"{relative}: evidence path escapes repository root")
+                raw = read_bytes(path)
+                actual = hashlib.sha256(raw).hexdigest()
+            except (RegistryError, OSError, ValueError) as error:
                 self.finding(f"evidence_digests: {error}")
                 continue
             if actual != recorded:
                 self.finding(f"evidence_digests: {relative}: sha256 {actual} differs from recorded {recorded}")
                 continue
             if relative.endswith(".json") and "/evidence/" in relative:
-                self.load_observations(path, relative)
+                document = decode_json(raw, path)
+                if isinstance(document, dict):
+                    self.evidence_documents[relative] = document
+                self.load_observations(document, relative)
 
-    def load_observations(self, path: Path, relative: str) -> None:
-        try:
-            document = read_json(path)
-        except RegistryError as error:
-            self.finding(f"evidence: {error}")
-            return
+    def load_observations(self, document, relative: str) -> None:
         if not isinstance(document, dict) or document.get("schema") != OBSERVATIONS_SCHEMA:
             return
         chain_id = document.get("chain_id")
-        if not isinstance(chain_id, int):
+        if type(chain_id) is not int or chain_id <= 0:
             self.finding(f"evidence: {relative}: chain_id is not an integer")
             return
         table = self.observations.setdefault(chain_id, {})
@@ -284,7 +305,14 @@ class Checker:
                 for item in pending:
                     if item not in decisions:
                         self.finding(f"{prefix}: pending_on names unknown decision {item!r}")
+        if status == "excluded":
+            if not _is_str(target.get("exclusion_reason")):
+                self.finding(f"{prefix}: excluded without an exclusion_reason")
+            if consumers:
+                self.finding(f"{prefix}: excluded yet has consumers")
         if status == "resolved":
+            if target.get("unresolved") or target.get("blocker") or target.get("documentation_gap"):
+                self.finding(f"{prefix}: resolved with unresolved evidence")
             decided_by = target.get("decision")
             if decided_by not in decisions:
                 self.finding(f"{prefix}: resolved without a known decision id")
@@ -294,6 +322,8 @@ class Checker:
                 self.finding(f"{prefix}: resolved without a source object")
             if not isinstance(deployment, dict):
                 self.finding(f"{prefix}: resolved without a deployment object")
+            if not target.get("documentation"):
+                self.finding(f"{prefix}: resolved without documentation inputs")
         if isinstance(source, dict):
             self.check_source(prefix, source, strict=(status == "resolved"))
         if isinstance(deployment, dict):
@@ -311,6 +341,8 @@ class Checker:
                 self.finding(f"{prefix}: source.equivalent_commits carries a malformed SHA")
         if source.get("relation") not in ("deployed", "proposed", "located"):
             self.finding(f"{prefix}: source.relation must be deployed, proposed or located")
+        if strict and source.get("relation") != "deployed":
+            self.finding(f"{prefix}: resolved source is not matched to a deployment")
         inputs = source.get("build_inputs")
         if strict and (not isinstance(inputs, list) or not inputs):
             self.finding(f"{prefix}: resolved without build_inputs")
@@ -333,7 +365,7 @@ class Checker:
 
     def check_deployment(self, prefix: str, deployment: dict, strict: bool) -> None:
         chain_id = deployment.get("chain_id")
-        if not isinstance(chain_id, int):
+        if type(chain_id) is not int or chain_id <= 0:
             self.finding(f"{prefix}: deployment.chain_id is not an integer")
             return
         observed = deployment.get("observed_block")
@@ -377,6 +409,8 @@ class Checker:
                 self.finding(f"{label}: code_match.method is empty")
             elif match.get("source_commit") is not None and not HEX40.fullmatch(str(match["source_commit"])):
                 self.finding(f"{label}: code_match.source_commit is malformed")
+            if strict and (not isinstance(match, dict) or not match.get("source_commit")):
+                self.finding(f"{label}: resolved without a source match")
 
     # -- consumers ---------------------------------------------------------
 
@@ -410,6 +444,80 @@ class Checker:
                     self.finding(f"consumer {issue}: names unknown target {row!r}")
                 elif issue not in (targets[row].get("consumers") or []):
                     self.finding(f"consumer {issue}: target {row} does not list it back")
+                elif targets[row].get("status") == "excluded":
+                    self.finding(f"consumer {issue}: uses excluded target {row}")
+
+    def check_scope(self, targets: dict, decisions: dict) -> None:
+        """Bind the approved order and consumer denominator to preserved inputs."""
+        scope = self.registry.get("scope")
+        if not isinstance(scope, dict):
+            self.finding("scope: missing approved scope object")
+            return
+        approval = self.evidence_documents.get(scope.get("approval_evidence"))
+        if not isinstance(approval, dict) or approval.get("schema") != "wildcat.kickoff-scope-approval.v1":
+            self.finding("scope: approval evidence is absent or unverified")
+            return
+        for key, recorded in [("ordered_slots", "slots"), ("estate_targets", "estate_targets"), ("excluded", "excluded")]:
+            if scope.get(key) != approval.get(recorded):
+                self.finding(f"scope: {key} differs from approval evidence")
+        body = approval.get("comment_body")
+        if not isinstance(body, str) or hashlib.sha256(body.encode()).hexdigest() != approval.get("comment_body_sha256"):
+            self.finding("scope: approval comment body digest differs")
+        slots = scope.get("ordered_slots")
+        if not isinstance(slots, list) or len(slots) != 5:
+            self.finding("scope: expected five ordered venue slots")
+            return
+        selected = []
+        for position, slot in enumerate(slots, 1):
+            if not isinstance(slot, dict) or slot.get("order") != position or not isinstance(slot.get("targets"), list):
+                self.finding(f"scope: malformed ordered slot {position}")
+                continue
+            rows = slot["targets"]
+            if not rows or (position <= 3 and len(rows) != (2, 1, 3)[position - 1]):
+                self.finding(f"scope: slot {position} has the wrong generation count")
+            for row in rows:
+                if row not in targets or targets[row].get("venue") != slot.get("venue"):
+                    self.finding(f"scope: slot {position} names an unknown or wrong-venue target")
+                elif targets[row].get("status") not in ("blocked", "resolved"):
+                    self.finding(f"scope: selected target {row} is neither blocked nor resolved")
+                selected.append(row)
+        if len(selected) != len(set(selected)):
+            self.finding("scope: a target appears in more than one slot")
+        if {t for t, row in targets.items() if row.get("status") != "excluded"} != set(selected):
+            self.finding("scope: admitted rows differ from approved slots")
+        order = decisions.get("lemma-9-venue-order", {})
+        estate = decisions.get("kickoff-consumer-target", {})
+        if order.get("selection") != selected:
+            self.finding("scope: venue decision differs from approved order")
+        if estate.get("selection") != "ethereum-only" or scope.get("estate_targets") != ["wildcat-v2-ethereum-mainnet"]:
+            self.finding("scope: estate decision differs from approved Ethereum V2 scope")
+        for decision in (order, estate):
+            if decision.get("status") != "recorded" or decision.get("decision_maker") != approval.get("decision_maker"):
+                self.finding("scope: decision lacks the recorded approval attribution")
+        consumers = {c["issue"]: c for c in self.registry["consumers"]}
+        if consumers.get(1359, {}).get("targets") != selected:
+            self.finding("consumer 1359: target order differs from approved slots")
+        inputs = self.evidence_documents.get("docs/kickoff/1359/evidence/consumer-inputs.json", {})
+        expected = {i["issue"] for i in inputs.get("issues", [])}
+        census = self.registry.get("consumer_census", [])
+        if not expected or len(census) != len(expected) or {c.get("issue") for c in census} != expected:
+            self.finding("consumer_census: does not cover the preserved input issues exactly")
+        mapped = {c["issue"] for c in census if c.get("disposition") == "mapped"}
+        if mapped != set(consumers):
+            self.finding("consumer_census: mapped dispositions differ from consumer rows")
+        for entry in census:
+            if entry.get("disposition") not in ("mapped", "not-applicable") or not _is_str(entry.get("reason")):
+                self.finding("consumer_census: invalid disposition or empty reason")
+        if not set(inputs.get("github_blocking", [])) <= mapped:
+            self.finding("consumer_census: a direct prerequisite consumer is not mapped")
+        recoveries = self.evidence_documents.get("docs/kickoff/1359/evidence/recovery-issues.json", {}).get("issues", [])
+        for row in selected:
+            target = targets.get(row, {})
+            if target.get("status") != "blocked":
+                continue
+            matches = [r for r in recoveries if r.get("url") == target.get("recovery") and row in r.get("targets", [])]
+            if len(matches) != 1 or matches[0].get("parent") != self.registry.get("issue"):
+                self.finding(f"target {row}: recovery is not its recorded source-recovery child")
 
 
 def judge_specimen(registry: dict, specimen: dict) -> list[str]:
@@ -422,10 +530,16 @@ def judge_specimen(registry: dict, specimen: dict) -> list[str]:
             reasons.append(f"specimen lacks {key}")
     if reasons:
         return reasons
+    if not isinstance(registry, dict) or not isinstance(specimen["target"], str):
+        return ["specimen target or registry is malformed"]
+    if type(specimen["chain_id"]) is not int or specimen["chain_id"] <= 0:
+        return ["specimen chain_id is not a positive integer"]
     targets = {t.get("id"): t for t in registry.get("targets") or [] if isinstance(t, dict)}
     target = targets.get(specimen["target"])
     if target is None:
         return [f"unknown target {specimen['target']!r}"]
+    if target.get("status") == "excluded":
+        reasons.append("target is excluded from the approved scope")
     if specimen["generation"] != target.get("generation"):
         reasons.append(f"generation {specimen['generation']!r} is not the row's {target.get('generation')!r}")
     deployment = target.get("deployment") or {}
@@ -468,7 +582,7 @@ def command_check(arguments) -> int:
     print(
         f"kickoff-targets: clean; {len(registry.get('consumers') or [])} consumers, "
         f"{len(targets)} targets ({counts['resolved']} resolved, {counts['candidate']} candidate, "
-        f"{counts['blocked']} blocked), {pending} pending decision(s)"
+        f"{counts['blocked']} blocked, {counts['excluded']} excluded), {pending} pending decision(s)"
     )
     return 0
 
@@ -482,11 +596,15 @@ def command_specimen(arguments) -> int:
     except RegistryError as error:
         print(f"kickoff-targets: {error}", file=sys.stderr)
         return 2
+    findings = Checker(registry, root, registry_path).run()
+    if findings:
+        print("rejected: registry validation failed; " + "; ".join(findings))
+        return 1
     reasons = judge_specimen(registry, specimen)
     if reasons:
         print("rejected: " + "; ".join(reasons))
         return 1
-    print(f"accepted: {specimen['address'].lower()} is {specimen['target']} generation {specimen['generation']} on chain {specimen['chain_id']}")
+    print(f"accepted: identity comparison for {specimen['address'].lower()}, {specimen['target']} generation {specimen['generation']} on chain {specimen['chain_id']}; this does not admit a blocked row for deployed-code use")
     return 0
 
 

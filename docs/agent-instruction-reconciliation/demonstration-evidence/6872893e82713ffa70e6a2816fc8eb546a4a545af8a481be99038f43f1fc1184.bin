@@ -1,0 +1,33 @@
+#!/usr/bin/env python3
+"""Replay the confirmed race against the preserved, unfixed writer only."""
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+from unittest import mock
+
+run = Path(__file__).resolve().parent.parent
+source = run / ".hexaemeron/step-2-parent-race-unfixed.py"
+assert hashlib.sha256(source.read_bytes()).hexdigest() == "b75288b4c49c6e0863884e824e28414804fa38de9869008c134cdcf43f358dd5"
+sys.path.insert(0, str(run / "scripts"))
+spec = importlib.util.spec_from_file_location("preserved_unfixed_writer", source)
+air = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(air)
+with tempfile.TemporaryDirectory(prefix="fiat1513-parent-replace-race-") as raw:
+    root = Path(raw).resolve()
+    target = root / "target"
+    target.write_bytes(b"original\n")
+    real_replace = os.replace
+    with air.Root(root) as handle:
+        _, key = handle.read("target")
+        def raced(src, dst, **kwargs):
+            target.write_bytes(b"third-party-edit\n")
+            assert target.read_bytes() == b"third-party-edit\n"
+            return real_replace(src, dst, **kwargs)
+        with mock.patch.object(air.os, "replace", side_effect=raced):
+            handle.write("target", b"planned\n", expected=key)
+    assert target.read_bytes() == b"planned\n", "counterfactual did not reproduce the recorded overwrite"
+    print(json.dumps({"reproduced": True, "write_returned_success": True, "third_version_preserved": False}))

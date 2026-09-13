@@ -1,124 +1,198 @@
 # Kickoff target-input registry for issue 1359
 
-Issue: https://github.com/wildcat-finance/skills/issues/1482 (prerequisite
-child of https://github.com/wildcat-finance/skills/issues/1359).
-Written 2026-09-12 by Shoggoth, acting as Surveyor under Protasis, in a
-session run and published by Dave Coleman (kethcode, Wildcat Labs), who is
-the committer and signer of the commit that carries it. The reviewer is
-whoever reviews the pull request that lands it.
+Issue: https://github.com/wildcat-finance/skills/issues/1482, a prerequisite
+child of https://github.com/wildcat-finance/skills/issues/1359.
 
-The four kickoff issues that depend on an unnamed venue are #1354, #1355,
-#1359 and #1361; #1363 names the same registry as a prerequisite and is
-carried too. Each of them now maps to at least one row of
-[`targets.json`](targets.json), the machine-readable registry beside this
-page. This page says what the rows hold, what still needs a human decision,
-how the evidence was gathered and how to check it.
+Dave Coleman approved the scope on 2026-09-13 in the delivery session and
+authorised the PR update. The [approval record](https://github.com/wildcat-finance/skills/pull/1583#issuecomment-5655443034) preserves the
+selected order, estate, exclusions and operator statement; it was posted by
+the publisher and is not a separate GitHub review. The same record is bound
+by SHA-256 in [`evidence/scope-approval.json`](evidence/scope-approval.json).
 
-Two decisions are the target maintainer's and are recorded as `pending`.
-Surveyor did not guess them, because the filing says a venue named by
-protocol name is a guess. Every row is therefore `candidate` today; the
-decisions section says how a row becomes `resolved`.
+This revision was prepared by Dave Coleman with Shoggoth as Surveyor under
+Protasis. The original chain observations and source experiments were
+recorded by Shoggoth on 2026-09-12 and are preserved unchanged. Dave owns the
+scope decision; the reviewer of PR #1583 owns implementation review. The
+exact source commits, input digests and source links live in
+[`targets.json`](targets.json) and the evidence files it names.
+
+## Approved decisions
+
+`lemma-9-venue-order` is recorded with the following five ordered slots:
+
+| Slot | Venue | Ordered target rows |
+| --- | --- | --- |
+| 1 | Wildcat | `wildcat-v1-ethereum-mainnet`, `wildcat-v2-ethereum-mainnet` |
+| 2 | Aave V3 | `aave-v3` |
+| 3 | Maple | `maple-v1`, `maple-v2-fixed-term`, `maple-v2-open-term` |
+| 4 | Euler | `euler-v1`, `euler-v2` |
+| 5 | Centrifuge V3 | `centrifuge-v3`, covering the hub and corresponding ERC-7540 spokes |
+
+The Maple slot means three contract families: legacy V1, V2 fixed-term and
+V2 open-term. Both term families are V2; relevant Syrup pools and routers
+belong alongside V2. This interpretation was proposed and approved, rather
+than recovered as an explicit historical generation list. Source pins for
+the separate loan modules are recorded in `source.components` and
+[`evidence/source-refs.json`](evidence/source-refs.json).
+
+`kickoff-consumer-target` is recorded as `ethereum-only`: Wildcat V2 on
+Ethereum mainnet for #1354, #1355 and #1361, including the factory,
+registered templates, instances, hooks and role providers. #1363 consumes
+the same deployed comparison base. The third FixedTermHooks template is
+included by that scope. Hermes still derives its protected set from the
+deployment map. Both MarketLens observations remain available; #1590 maps
+their epochs and consumer use.
+
+The emitter source record from [PR #1460](https://github.com/wildcat-finance/skills/pull/1460)
+pins `wildcat-finance/v2-protocol` at
+`f5a26146987926f4811b72a795d662813dedfe85`. It records 27 emitters in
+`src/libraries/MarketEvents.sol` and `src/spherex/SphereXProtectedEvents.sol`,
+with declarations in `src/interfaces/IMarketEventsAndErrors.sol` and
+`src/spherex/SphereXConfig.sol`. The registry records that study's digest.
+Its source equivalence to `v2.1.0` does not establish every deployed epoch;
+the remaining epoch mapping belongs to #1590.
+
+Alternatives were an unresolved choice among all seven reuse epics, Wildcat
+or Centrifuge in the three-generation slot, and closure on an unselected
+inventory. The approval replaces the first; #1395's explicit Maple scope
+rules out the second; #1482's acceptance rules out the third. Euler leads
+the later pair because its existing adapters supply reusable work; the
+Centrifuge hub/spoke mapping follows. Plasma, unreleased Wildcat code,
+Aave V4, Compound, Clearpool, Tinlake and Centrifuge V2 are excluded from
+this initial registry scope. Their dated rows remain marked `excluded`.
+
+## Admission and recovery
+
+Scope is settled. Deployment identity remains a separate field. All nine
+selected rows currently carry a specific `blocker` and source-recovery child;
+none is silently promoted from a source-only record to deployed identity.
+The eight excluded rows have no consumers. Each admitted row names its
+intended corpus directory, source inputs, observed deployment evidence where
+available and the exact missing-input owner.
+
+| Recovery | Rows | Missing evidence |
+| --- | --- | --- |
+| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Init-code reproduction, lens source and historical instance epochs |
+| [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Complete instance/hook/role-provider map, missing fee/collateral source and emitter epoch binding |
+| [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Deployment/source table, compiler inputs and documentation revisions |
+| [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Separate source/deployment and build bundles, shared V2/Syrup coverage |
+| [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Proxy/module and vault/EVC deployment bindings, build and documentation inputs |
+| [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Joined hub/spoke epochs, source, compiler and documentation inputs |
+
+These are children of #1482 and were compared with the existing open queue
+before filing. Their exact bodies, target coverage and parent are preserved
+in [`evidence/recovery-issues.json`](evidence/recovery-issues.json). A child
+changes a row to `resolved` only after supplying the missing evidence;
+approval alone cannot clear an evidence gap. #1482 permits this blocked-row
+handoff. It does not require downstream corpora, adapters, audits or campaigns
+to land before the registry can be accepted.
+
+## Consumers
+
+[`evidence/consumer-inputs.json`](evidence/consumer-inputs.json) preserves the
+59 kickoff bodies and nine prerequisite bodies inspected on 2026-09-13.
+The registry classifies all 68: 58 have target mappings and ten have stated
+reasons for being outside this registry. All 17 GitHub dependency edges out
+of #1482 are mapped; #1376 also names the registry in its body. The checker
+requires the preserved denominator, dispositions and reverse row references
+to agree. A consumer mapping supplies only the approved identity for that
+consumer's target-specific work; the full boundary is in its JSON row.
+
+| Consumer | Target rows | Boundary |
+| --- | --- | --- |
+| [#1354](https://github.com/wildcat-finance/skills/issues/1354) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1355](https://github.com/wildcat-finance/skills/issues/1355) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1358](https://github.com/wildcat-finance/skills/issues/1358) | Wildcat V2 Ethereum | This supplies the deployed comparison subject only. The existing Janus model remains modeled until #1376 binds it; its V2.5 label is not deployment evidence. |
+| [#1359](https://github.com/wildcat-finance/skills/issues/1359) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1361](https://github.com/wildcat-finance/skills/issues/1361) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1363](https://github.com/wildcat-finance/skills/issues/1363) | Wildcat V2 Ethereum | Deployed comparison base only; #1485 owns the separately approved proposed indexed-actor source. |
+| [#1365](https://github.com/wildcat-finance/skills/issues/1365) | All nine selected rows | Historical V1 documents remain included for the V1 corpus. Deprecation excludes a path only from the incompatible generation, never from its own historical row. |
+| [#1366](https://github.com/wildcat-finance/skills/issues/1366) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1367](https://github.com/wildcat-finance/skills/issues/1367) | All nine selected rows | #1486 still owns the finite two-chain pilot; the registry supplies eligible target identities only. |
+| [#1368](https://github.com/wildcat-finance/skills/issues/1368) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1369](https://github.com/wildcat-finance/skills/issues/1369) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1370](https://github.com/wildcat-finance/skills/issues/1370) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1371](https://github.com/wildcat-finance/skills/issues/1371) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1372](https://github.com/wildcat-finance/skills/issues/1372) | Wildcat V2 Ethereum | The approved registry supplies the deployed comparison base only; it does not select or approve unreleased code. |
+| [#1373](https://github.com/wildcat-finance/skills/issues/1373) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1374](https://github.com/wildcat-finance/skills/issues/1374) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1375](https://github.com/wildcat-finance/skills/issues/1375) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1376](https://github.com/wildcat-finance/skills/issues/1376) | Wildcat V2 Ethereum | The existing V2.5 model cannot be relabelled as deployed V2. Match or correct the model through this consumer before a deployed claim. |
+| [#1377](https://github.com/wildcat-finance/skills/issues/1377) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1378](https://github.com/wildcat-finance/skills/issues/1378) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1379](https://github.com/wildcat-finance/skills/issues/1379) | All nine selected rows | The five-venue registry is the initial admitted scope. The original 200-subject, six-venue, five-chain campaign remains unfulfilled; this approval neither supplies the sixth venue nor authorises endpoints or spending. |
+| [#1381](https://github.com/wildcat-finance/skills/issues/1381) | Wildcat V2 Ethereum | Deployed comparison base only; the added-topic candidate remains with #1485. |
+| [#1382](https://github.com/wildcat-finance/skills/issues/1382) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1383](https://github.com/wildcat-finance/skills/issues/1383) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1384](https://github.com/wildcat-finance/skills/issues/1384) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1385](https://github.com/wildcat-finance/skills/issues/1385) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1386](https://github.com/wildcat-finance/skills/issues/1386) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1387](https://github.com/wildcat-finance/skills/issues/1387) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1388](https://github.com/wildcat-finance/skills/issues/1388) | `aave-v3` | Aave V3 is the first further adapter in #1395 under the approved venue order; the source map and effort evidence still precede implementation. |
+| [#1389](https://github.com/wildcat-finance/skills/issues/1389) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1390](https://github.com/wildcat-finance/skills/issues/1390) | Wildcat V1 and V2 Ethereum | Wildcat is the grounded-release subject; the existing Aave V4 demonstration remains separate. |
+| [#1391](https://github.com/wildcat-finance/skills/issues/1391) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1392](https://github.com/wildcat-finance/skills/issues/1392) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1393](https://github.com/wildcat-finance/skills/issues/1393) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1394](https://github.com/wildcat-finance/skills/issues/1394) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1395](https://github.com/wildcat-finance/skills/issues/1395) | Aave V3, three Maple families, Centrifuge V3 | Three Maple contract families mean legacy V1, V2 fixed-term and V2 open-term; shared V2 and Syrup sources do not create an invented protocol generation. |
+| [#1396](https://github.com/wildcat-finance/skills/issues/1396) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1397](https://github.com/wildcat-finance/skills/issues/1397) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1398](https://github.com/wildcat-finance/skills/issues/1398) | Wildcat V1 and V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1399](https://github.com/wildcat-finance/skills/issues/1399) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1400](https://github.com/wildcat-finance/skills/issues/1400) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1401](https://github.com/wildcat-finance/skills/issues/1401) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1402](https://github.com/wildcat-finance/skills/issues/1402) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1403](https://github.com/wildcat-finance/skills/issues/1403) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1404](https://github.com/wildcat-finance/skills/issues/1404) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1405](https://github.com/wildcat-finance/skills/issues/1405) | Wildcat V1 and V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1406](https://github.com/wildcat-finance/skills/issues/1406) | Wildcat V2 Ethereum | Only the deployed comparison mode receives the approved V2 identity; #1485/#1372 still own the proposed mode. |
+| [#1407](https://github.com/wildcat-finance/skills/issues/1407) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1408](https://github.com/wildcat-finance/skills/issues/1408) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1485](https://github.com/wildcat-finance/skills/issues/1485) | Wildcat V2 Ethereum | The registry supplies only the deployed comparison base. Unreleased source selection is outside this approved scope. |
+| [#1486](https://github.com/wildcat-finance/skills/issues/1486) | All nine selected rows | Target identities only. Two-chain selection, block windows and finite proof bounds still belong to this child. |
+| [#1488](https://github.com/wildcat-finance/skills/issues/1488) | All nine selected rows | Target identities only. Fleet membership, endpoint entitlement, concurrency and budgets still need this child’s own decision. |
+| [#1490](https://github.com/wildcat-finance/skills/issues/1490) | All nine selected rows | Target identities only. No reference capture or historical interval is selected by scope approval. |
+| [#1492](https://github.com/wildcat-finance/skills/issues/1492) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1493](https://github.com/wildcat-finance/skills/issues/1493) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1494](https://github.com/wildcat-finance/skills/issues/1494) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1497](https://github.com/wildcat-finance/skills/issues/1497) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1498](https://github.com/wildcat-finance/skills/issues/1498) | `aave-v3` | Aave V3 is the first further adapter; the contribution rule and prior source map remain this child’s deliverable. |
+
+The excluded census entries are #1350, #1351, #1352, #1356, #1357, #1360,
+#1362, #1364, #1380 and #1409. Their exact reasons remain in
+`consumer_census`; a closed reference delivery or a schema/application task
+does not acquire a new venue scope from this registry.
+
+The original six-venue, five-chain, 200-subject requirement in #1379 remains
+unchanged. This five-venue approval does not supply the sixth venue, a
+capture interval, endpoint entitlement or a budget. The finite two-chain
+pilot and the proposed indexed-actor branch also retain their own owners.
+Historical V1 documentation belongs in the V1 corpus even when deprecated;
+#1365 must apply exclusions per generation, not remove historical evidence
+from every corpus.
 
 ## Check it
 
 ```bash
 python3 scripts/kickoff_targets.py check
+python3 scripts/kickoff_targets.py specimen --specimen docs/kickoff/1359/specimens/accepted-v2-market-init-code.json
 python3 scripts/kickoff_targets.py specimen --specimen docs/kickoff/1359/specimens/wrong-generation.json
+python3 -m unittest discover -s tests -p test_kickoff_targets.py
 ```
 
-The first command reads the registry, recomputes the SHA-256 of every
-evidence file it names, and cross-checks every contract's code hash against
-the chain observation it cites. On 2026-09-12 it printed:
+Use the exact interpreter recorded in `.python-version`. The 2026-09-13
+validation used its `3.14.6` pin. The checker verifies the approved order,
+attribution, consumer denominator, recovery links, file digests and recorded
+code-hash comparisons offline. A specimen command first validates
+the registry. Identity acceptance means the specimen matches that recorded
+row; it does not admit a blocked row for deployed-code use. Wrong generation,
+hash, chain or excluded scope refuses.
 
-```text
-kickoff-targets: clean; 5 consumers, 16 targets (0 resolved, 16 candidate, 0 blocked), 2 pending decision(s)
-```
-
-The second command rejects a specimen that claims the V2 market init code as
-generation V1. The [specimen section](#specimens) lists all five.
-`tests/test_kickoff_targets.py` holds both commands and breaks the registry
-one field at a time to show the checker names each break.
-
-## Consumers
-
-| Issue | What it needs from the registry | Rows | Decision |
-| --- | --- | --- | --- |
-| [#1354](https://github.com/wildcat-finance/skills/issues/1354) fizz-4 | assembly-emitter repository, exact SHA, Foundry root, emitter and interface paths, compiler settings | `wildcat-v2-ethereum-mainnet`, `wildcat-v2-plasma-mainnet` | `kickoff-consumer-target` |
-| [#1355](https://github.com/wildcat-finance/skills/issues/1355) hermes-5 | repository and commit, chain, reference block, factory, template and instance addresses, instance types mapped to source, hooks and role providers | same two rows | `kickoff-consumer-target` |
-| [#1359](https://github.com/wildcat-finance/skills/issues/1359) lemma-9 | venue and generation inventory in order, source SHA per generation, chain and block scope, deployment evidence, pinned standard JSON and compiler identity | all 16 rows | `lemma-9-venue-order` |
-| [#1361](https://github.com/wildcat-finance/skills/issues/1361) solidity-auditor-11 | the same inventory as #1354, deployed-source SHA per epoch | same two rows | `kickoff-consumer-target` |
-| [#1363](https://github.com/wildcat-finance/skills/issues/1363) x-ray-13 | the deployed commit whose logs a capture decodes; the proposed commit belongs to #1485 | same two rows | `kickoff-consumer-target` |
-
-## Decisions the target maintainer owes
-
-### `kickoff-consumer-target`
-
-Which deployed estate do #1354, #1355, #1361 and #1363 mean: the one whose
-events are emitted through hand-written `log1`, `log2` and `log3`, and
-whose markets a factory deploys with hooks and role providers?
-
-What the evidence says. In the `wildcat-finance` organisation, exactly one
-estate carries both features. `src/libraries/MarketEvents.sol` in
-`v2-protocol` emits every market event through assembly, 22 sites at tag
-v2.0.0 (9 `log1`, 9 `log2`, 4 `log3`), and `HooksFactory`
-`0xdd7dd3b5076cf89440d05585ff56d246386207be` on Ethereum deploys markets
-from stored init code under three hooks templates that consult role
-providers. The Plasma estate is the same source line on chain 9745. V1 also
-emits through assembly (21 sites at its head) but has no hooks factory and
-is deprecated on the docs page.
-
-Options: `ethereum-only` (`wildcat-v2-ethereum-mainnet`),
-`ethereum-and-plasma` (both V2 rows), or `other` (the maintainer names an
-estate this registry does not carry, which needs a new row).
-
-Two sub-questions travel with it:
-
-1. The factory lists a third hooks template,
-   `0x731c775385d0efb2cac61074ba2d885d343a09cd`, named `FixedTermHooks`
-   with 16 markets. It is in no deployment manifest, not on the docs page
-   and not on Sourcify. This registry pins its source by reproduction (see
-   the V2 row). Does it belong to the protected set for #1355?
-2. `deployments/mainnet/deployments.json` names `MarketLens`
-   `0xc672760757da93b5f3275dc97203d145806dae33`; the docs page names
-   `0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7`. Both are recorded. Which
-   one is canonical?
-
-### `lemma-9-venue-order`
-
-Which venues and generations fill the five ordered slots #1359 inherited
-from its filing: "the first venue's two generations, the second venue, the
-venue with three generations, then the two remaining venues"?
-
-The filing names no venue. The reuse issues #1139 to #1144 and #1148 name
-seven. In this inventory two of them carry three generations and four carry
-two, so the ordinal description does not settle on its own:
-
-| Venue | Generations in this registry | Row ids |
-| --- | --- | --- |
-| Wildcat | V1, V2 (Ethereum and Plasma), V2.5 release line | `wildcat-v1-ethereum-mainnet`, `wildcat-v2-ethereum-mainnet`, `wildcat-v2-plasma-mainnet`, `wildcat-v2.5-release-line` |
-| Aave | v3, v4 | `aave-v3`, `aave-v4` |
-| Compound | v2, v3 | `compound-v2`, `compound-v3` |
-| Euler | v1, v2 | `euler-v1`, `euler-v2` |
-| Maple | v1, v2 | `maple-v1`, `maple-v2` |
-| Centrifuge | Tinlake, v2 liquidity pools, v3 protocol | `centrifuge-tinlake`, `centrifuge-v2`, `centrifuge-v3` |
-| Clearpool | permissionless pools | `clearpool-permissionless` |
-
-Options: `wildcat-first` (an example shape, with Wildcat as the
-three-generation venue), `maintainer-restates` (an explicit ordered list of
-row ids replaces the ordinal description), or `defer` (#1359 stays blocked
-on this and #1482 closes on the inventory alone).
-
-### How a decision is recorded
-
-Edit `targets.json`: set the decision's `status` to `recorded`, fill
-`decision_maker` with `name`, `role`, `date` and an `https` `reference` (the
-approving review on the pull request that carries the change, or an issue
-comment), and set `selection`. Then set each selected row's `status` to
-`resolved` with `decision` naming the decision id. A non-Wildcat row that a
-selection names becomes `blocked` with `recovery` pointing at its
-`owner_issue`, because its deployment is not pinned here. Run the check
-command; it refuses a `resolved` row whose decision is still `pending` and a
-`recorded` decision without a reference.
+The source-reference fetch on 2026-09-13 confirmed that the named immutable
+Git commits resolve. It did not repeat historical RPC reads or compiler
+reproduction. The source and observation details below retain their dated
+producer and limits; repository and specimen checks are separate evidence.
 
 ## Wildcat rows
 
@@ -269,6 +343,8 @@ source repositories.
 
 ### `wildcat-v2-plasma-mainnet`
 
+Excluded by the 2026-09-13 scope approval; the dated observations below are retained.
+
 The same estate shape on Plasma mainnet, chain 9745 (`eth_chainId`
 `0x2611` from `https://rpc.plasma.to`). Observed at finalized block
 32261184, hash
@@ -375,6 +451,8 @@ five equivalent commits are one source state, not one checkout.
 
 ### `wildcat-v2.5-release-line`
 
+Excluded from deployed scope; #1485 owns any proposed-source comparison.
+
 Proposed source, not a deployment. `v2-protocol` tag v2.5.4, commit
 `bea503c2736d47de7fd34130c64f10783dc35b39`, also the `release/v2.5` head
 (2026-09-05). Its `foundry.toml` sets solc 0.8.25, `cancun`, `viaIR` and
@@ -391,12 +469,12 @@ deployment of this line exists outside the repository records is
 unresolved. The Janus manifest `wildcat-open-term.json` names host
 `wildcat-v2.5` with no commit binding.
 
-## Candidate venues from the reuse issues
+## Repository observations from the reuse issues
 
-These rows record where each repository stood on 2026-09-12. They pin no
-deployment and no build input; the owning framework issue carries that
-work, and a selection under `lemma-9-venue-order` turns the row `blocked`
-with `recovery` pointing there.
+The original observations below date from 2026-09-12. Selected rows are now
+blocked on the specific recovery children above; the rest are excluded.
+The broad framework epics remain reuse sources, not substitutes for those
+recovery children. Maple V2 is now split into two approved family rows.
 
 | Row | Repository | Default-branch head (date) | Latest tag | Owner issue | Records already in this repository |
 | --- | --- | --- | --- | --- | --- |
@@ -407,7 +485,8 @@ with `recovery` pointing there.
 | `euler-v1` | https://github.com/euler-legacy-xyz/euler-contracts (archived) | `24da0f2de98d984b0007133b2c251e7fbbda4115` (2024-05-24) | solidified-audit `86f81180d4257376f4d4f66fbcbb7c9df64e18c2` | #1142 | Probitas `EULER_V1_PROXY`, Tabularium `adapters/euler_v1.py` |
 | `euler-v2` | https://github.com/euler-xyz/euler-vault-kit, with https://github.com/euler-xyz/ethereum-vault-connector | `bfb325a6e6ca09613d940b46f72ccfe017353933` (2026-09-01); connector `838e5f72eaea25fab7d242760245244226096054` | yAudit-audit `7d2408dc1013b6f3149a5f08a69ded4dc99db7c8`; connector v1.0.1 `a7d3c29ef7e4964736e47675e0588630d6afbfd7` | #1142 | Tabularium `adapters/euler_v2.py`, Probitas `adapters/euler.py` |
 | `maple-v1` | https://github.com/maple-labs/maple-core | `4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea` (2021-05-18) | v1.0.0 `d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c` | #1143 | none |
-| `maple-v2` | https://github.com/maple-labs/maple-core-v2 | `f59f30c691fa0b831426d15832ee642f5ce38a42` (2025-11-27) | 2025-11, the head | #1143 | none |
+| `maple-v2-fixed-term` | https://github.com/maple-labs/maple-core-v2 | `f59f30c691fa0b831426d15832ee642f5ce38a42` (2025-11-27) | 2025-11, the head | #1592 | fixed-term loan source recorded separately |
+| `maple-v2-open-term` | https://github.com/maple-labs/maple-core-v2 | `f59f30c691fa0b831426d15832ee642f5ce38a42` (2025-11-27) | 2025-11, the head | #1592 | open-term loan source recorded separately |
 | `centrifuge-tinlake` | https://github.com/centrifuge/tinlake | `4584b0d0cc6f4c8e7600a45f72ae8dc7d6c906c7` (2022-12-29) | v0.3.0 `fc1f8e275a9d05d877e64f46810c107cde0808ce` | #1148 | none |
 | `centrifuge-v2` | https://github.com/centrifuge/liquidity-pools | `e556c1a7a0ec7f6d700b47841eb586f5f4801406` (2025-01-13) | release-v2.0 `109ba1560a0aa80e906e462147ac295d31e75b73` | #1148 | none |
 | `centrifuge-v3` | https://github.com/centrifuge/protocol | `48f7dff6ec83b2f7c044d35139084fb501da5f9a` (2026-09-12) | v3.2.0 `87c358fa52bea91017fc3a848bc07db815eed91c` | #1148 | none |
@@ -418,6 +497,10 @@ at `5c2eb37f39959dd491ba97fdc2af94bb4ee88f41` (2025-09-19); the row names
 the `aave-dao` one and records the other.
 
 ## Method
+
+This is the original producer’s 2026-09-12 method and result record. The
+2026-09-13 revision preserves its bytes and reports separately which checks
+were rerun.
 
 Chain reads used `cast` 1.7.1 (`4072e48705af9d93e3c0f6e29e93b5e9a40caed8`)
 against `https://ethereum-rpc.publicnode.com` and `https://rpc.plasma.to`:
@@ -460,27 +543,29 @@ chain is generation G of target T with code hash H". Results on
 | `wrong-template-source.json` | the 730-day template carrying the 365-day template's hash | rejected on code hash |
 | `wrong-chain.json` | the Plasma sanctions-list copy at `0xfeb516d9d946dd487a9346f6fee11f40c6945ee4` claimed on chain 1 | rejected: chain 1 is not the row's 9745 |
 
-## What this record establishes, and what it does not
+## Evidence boundary
 
-It establishes that the named contracts held the recorded code at the
-recorded blocks, that the recorded source commits compile to that code
-under the recorded compilers, that the verification inputs live at the
-recorded paths and digests, and that the registry agrees with its evidence
-files under the checker. It establishes that every kickoff consumer maps to
-a candidate row and that a wrong-generation, wrong-hash or wrong-chain
-specimen is refused.
+The approval establishes the selected venue order and Wildcat Ethereum estate.
+The offline checker establishes agreement between the registry, its preserved
+approval and consumer records, recovery coverage, digests and recorded code
+hashes. The source-reference record establishes retrievability of the named
+Git commits at the recorded time.
 
-It does not establish which estate the kickoff filer meant, which venues
-fill #1359's slots, that any contract is safe, that the chain still holds
-the recorded code, that a source commit is the checkout a deployer used
-rather than one of the equivalent commits, or anything about the
-non-Wildcat venues beyond where their repositories stood on the day. A
-maintainer's selection is recorded in `targets.json` when it happens, and
-this page does not pretend to have it.
+The original evidence files record chain observations, blob comparisons and
+compiler-reproduction results with their stated limits. A hash-only entry,
+an unresolved source match or a located repository head does not establish
+deployed identity. No selected row currently claims complete deployment
+coverage. No result here establishes contract safety, current chain state,
+an exact deployer checkout among equivalent source trees, or completion of
+a consumer’s own capture, corpus, policy, proof, audit or campaign.
 
 ## Files
 
 - [`targets.json`](targets.json): the registry the checker reads.
+- [`evidence/scope-approval.json`](evidence/scope-approval.json): operator approval, exact recorded comment and selected slots.
+- [`evidence/consumer-inputs.json`](evidence/consumer-inputs.json): preserved input issues and dependency denominator.
+- [`evidence/recovery-issues.json`](evidence/recovery-issues.json): source-recovery children and row coverage.
+- [`evidence/source-refs.json`](evidence/source-refs.json): successful immutable source-reference reads.
 - [`evidence/ethereum-mainnet.json`](evidence/ethereum-mainnet.json) and
   [`evidence/plasma-mainnet.json`](evidence/plasma-mainnet.json): every
   code read, factory and arch-controller view, market list and block anchor.
