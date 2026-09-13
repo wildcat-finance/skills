@@ -626,3 +626,81 @@ the replacement clauses are byte-identical to that issue.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Exit: All of the following hold on the
+committed head: 1. `plugins/hexaemeron/harness/foundry.toml` exists, copies the
+Janus profile with `libs = []`, `bytecode_hash = "none"`, the optimizer on at
+200 runs, and declares neither `ffi` nor any `fs_permissions` entry beyond
+`out`. 2. Eleven files exist under `plugins/hexaemeron/harness/src/vendor/`,
+each byte-identical to its counterpart at protocol ref `f5a26146`, together
+46,799 bytes, and `grep -rn 'import' ` over them resolves every import inside
+that directory with no remapping. 3.
+`plugins/hexaemeron/harness/src/vendor/PROVENANCE.json` records the protocol
+repository, the ref, and each file's path and SHA-256, and
+`plugins/hexaemeron/tests/test_harness_provenance.py`, run by the
+`hexaemeron-suite` check, asserts every recorded digest against the file on
+disk so drift fails rather than re-baselining. 4. `tests/check-map-v1.json`
+gains exactly two checks, `hexaemeron-forge-build` and `hexaemeron-forge-test`,
+each with `"cwd": "plugins/hexaemeron/harness"` and
+`"requires_executable": "forge"`, ordered in one group, and both added to the
+`hexaemeron` scope. Nothing else in that file changes. 5.
+`.github/workflows/hexaemeron-forge.yml` exists, triggers on the harness path
+and on itself, and runs `forge build` then `forge test` in that working
+directory. 6. `forge build` exits 0 from `plugins/hexaemeron/harness`, and
+`forge test` exits 0 there with one compile smoke test present under `test/`
+that reaches the vendored closure from a test contract and no other test
+present. 7. `python3 scripts/run_checks.py --base main --format json` exits 0
+with `outcome` `green`, plans both new checks, and refuses no path in the diff
+for want of an owner. The Horos boundary and census are regenerated and
+`horos.py check .` reports a match. Complete replacement Tests: One Python
+test, `plugins/hexaemeron/tests/test_harness_provenance.py`, asserting every
+`PROVENANCE.json` digest against the vendored file on disk so a silent re-pin
+fails; and one Solidity smoke test under `plugins/hexaemeron/harness/test/`
+proving the closure compiles and is reachable from a test contract.
+
+**Why.** The baseline named a Solidity provenance test, and a Solidity test
+cannot read a vendored file without an `fs_permissions` read entry, which
+Exit 1 forbids and the step-3 phylax discipline bans through `vm.readFile`;
+the digest check therefore runs in the Python suite the root check map already
+owns. `forge test` exits 0 with no test present, so an empty run would prove
+nothing, and a smoke test stands in until step 3 fills the suite.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-13
+
+**What changed.** Complete replacement Files: Create
+`plugins/hexaemeron/harness/foundry.toml`, the eleven files under
+`src/vendor/`, `src/vendor/PROVENANCE.json`, one smoke test under
+`plugins/hexaemeron/harness/test/`,
+`plugins/hexaemeron/tests/test_harness_provenance.py`, and
+`.github/workflows/hexaemeron-forge.yml`. Change `tests/check-map-v1.json`
+only to add the two checks, the group and the scope entries. Change
+`tests/test_skills_sh_package.py` only to move `MAX_FILES` from 1,300 to 1,400
+with a dated paragraph in the cap's own rationale, because the packaged
+payload met the cap at exactly 1,300 files once the harness was added, and
+that file's standing rule is that shipped content is not trimmed to hold a
+file count. Refresh `docs/emitter-fidelity-differential-suite-runbook.md` from
+the receipted `.hexaemeron/runbook.md`, as step 1's exit requires of every
+later commit. Rewrite `.horos/boundary.json`, `.horos/candidates.json` and
+`.horos/census.json` only through the Horos scanner. Nothing under
+`plugins/hexaemeron/skills/fizz/`, `x-ray/` or `solidity-auditor/` is written,
+and nothing is written into the protocol repository.
+
+**Why.** The commit gate went red on
+`test_manifest_binds_every_runtime_file_to_source_bytes` with `1300 not less
+than 1300`. The packaged Janus harness holds 28 files and the Pandects root 75,
+so a harness tree is shipped content, and the cap's rationale in that test
+moves the cap rather than trimming content; the payload measures 24,887,987
+bytes, 94.9% of the 25 MiB the CLI allows, which is the limit the next
+Solidity step has to answer for.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.

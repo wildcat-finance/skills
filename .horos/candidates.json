@@ -3,7 +3,8 @@
     "bytes_asset": 138,
     "bytes_binary": 11,
     "bytes_blob": 20894661,
-    "bytes_generated": 98
+    "bytes_generated": 98,
+    "bytes_vendored": 49702
   },
   "entries": [
     {
@@ -579,6 +580,14 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 49702,
+      "category": "vendored",
+      "evidence": "directory name vendor alone, uncorroborated",
+      "files": 12,
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/harness/src/vendor/"
     },
     {
       "bytes": 66420,

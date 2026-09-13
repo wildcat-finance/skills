@@ -1,0 +1,75 @@
+{
+  "schema": "wildcat.hexaemeron-harness-provenance.v1",
+  "repository": "wildcat-finance/v2-protocol",
+  "ref": "f5a26146987926f4811b72a795d662813dedfe85",
+  "tag_note": "Solidity-identical to the v2.1.0 release sources",
+  "total_bytes": 46799,
+  "files": [
+    {
+      "vendored_path": "src/vendor/interfaces/IMarketEventsAndErrors.sol",
+      "upstream_path": "src/interfaces/IMarketEventsAndErrors.sol",
+      "bytes": 4271,
+      "sha256": "b70cdb05567a8e64a3e41f3f5658af93de8d7bc9b869be18b94d144fad9298b5"
+    },
+    {
+      "vendored_path": "src/vendor/libraries/Errors.sol",
+      "upstream_path": "src/libraries/Errors.sol",
+      "bytes": 1938,
+      "sha256": "16f5464fc6d5eda8b1ab693866f35e25d0917e1145f791b9bbb255facad87e9a"
+    },
+    {
+      "vendored_path": "src/vendor/libraries/FeeMath.sol",
+      "upstream_path": "src/libraries/FeeMath.sol",
+      "bytes": 6537,
+      "sha256": "4c81fce68038e7ee049540b71e69682b765fc692a6b27820d5b6e64df9aa060c"
+    },
+    {
+      "vendored_path": "src/vendor/libraries/MarketEvents.sol",
+      "upstream_path": "src/libraries/MarketEvents.sol",
+      "bytes": 6728,
+      "sha256": "bffeeebe2e4847a1beebdb40285e94f2838691320cc4f5958e5314d95bc83b57"
+    },
+    {
+      "vendored_path": "src/vendor/libraries/MarketState.sol",
+      "upstream_path": "src/libraries/MarketState.sol",
+      "bytes": 4938,
+      "sha256": "1aa122075f0c45098599aff3df10fe86744d168a8bbe61a12570116739a67b8c"
+    },
+    {
+      "vendored_path": "src/vendor/libraries/MathUtils.sol",
+      "upstream_path": "src/libraries/MathUtils.sol",
+      "bytes": 6984,
+      "sha256": "6d75952ae99e472d73706d2f9277ead1fb77b8c6adc374c47491ccba1ad9c843"
+    },
+    {
+      "vendored_path": "src/vendor/libraries/SafeCastLib.sol",
+      "upstream_path": "src/libraries/SafeCastLib.sol",
+      "bytes": 4074,
+      "sha256": "844e319a8e2494fa03a74696ffa8b4507205229aa68bf1fb253edc5d6f86645d"
+    },
+    {
+      "vendored_path": "src/vendor/spherex/ISphereXEngine.sol",
+      "upstream_path": "src/spherex/ISphereXEngine.sol",
+      "bytes": 1743,
+      "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92"
+    },
+    {
+      "vendored_path": "src/vendor/spherex/SphereXConfig.sol",
+      "upstream_path": "src/spherex/SphereXConfig.sol",
+      "bytes": 7681,
+      "sha256": "35bb7a0506954ebdd456a1c031019b6cf663d91fc3930d072d406f505753f324"
+    },
+    {
+      "vendored_path": "src/vendor/spherex/SphereXProtectedErrors.sol",
+      "upstream_path": "src/spherex/SphereXProtectedErrors.sol",
+      "bytes": 643,
+      "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884"
+    },
+    {
+      "vendored_path": "src/vendor/spherex/SphereXProtectedEvents.sol",
+      "upstream_path": "src/spherex/SphereXProtectedEvents.sol",
+      "bytes": 1262,
+      "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63"
+    }
+  ]
+}
