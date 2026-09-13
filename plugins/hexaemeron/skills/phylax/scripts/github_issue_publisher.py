@@ -9,18 +9,22 @@ steps.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import sys
 import os
 from pathlib import Path
 import stat
 
 from github_issue_publisher_lib import (
+    FRAMEWORK_OPENING,
     MAX_JSON_MEMBERS,
     MAX_REQUEST_BYTES,
+    MAX_STRING_BYTES,
     PublisherError,
     admit_request,
     candidate_sha256,
     canonical_json,
+    frozen_sha256,
     parse_json_bytes,
     read_bounded_file,
     sha256_bytes,
@@ -46,6 +50,7 @@ CRITERIA = {
     "request-byte-bound": (MAX_REQUEST_BYTES, "bytes"),
 }
 CLI_PREFIX = "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py"
+CARRYOVER_ROW = "none | none | This publication carries no work into another issue."
 
 
 def _refuse(field: str) -> None:
@@ -102,6 +107,234 @@ def _fixture_bytes(root: Path, files: dict[str, str]) -> dict[str, bytes]:
     return fixtures
 
 
+def _refresh_request(document: dict[str, object]) -> None:
+    try:
+        source = document["source"]
+        shaped = document["sapheneia_candidate"]
+        final = document["final_candidate"]
+        frozen = document["frozen"]
+        gates = document["gates"]
+        authority = document["authority"]
+        if not all(
+            isinstance(value, dict) for value in (source, shaped, final, frozen, authority)
+        ) or not isinstance(gates, list) or len(gates) != 4:
+            _refuse("conformance.request-builder")
+        source_digest = candidate_sha256(source["title"], source["body"])
+        shaped_digest = candidate_sha256(shaped["title"], shaped["body"])
+        final_digest = candidate_sha256(final["title"], final["body"])
+        frozen_digest = frozen_sha256(frozen)
+        gates[0].update(
+            source_sha256=source_digest,
+            candidate_sha256=shaped_digest,
+            subject_sha256=shaped_digest,
+            frozen_sha256=frozen_digest,
+        )
+        gates[1]["subject_sha256"] = shaped_digest
+        gates[2].update(
+            source_sha256=shaped_digest,
+            candidate_sha256=final_digest,
+            subject_sha256=final_digest,
+            frozen_sha256=frozen_digest,
+        )
+        gates[3]["subject_sha256"] = final_digest
+        authority["subject_sha256"] = final_digest
+    except (KeyError, TypeError):
+        _refuse("conformance.request-builder")
+
+
+def _set_candidate(
+    document: dict[str, object],
+    *,
+    title: str,
+    body: str,
+    prefix: str,
+    opening: str,
+    structure: list[str],
+    inventory: list[str],
+) -> None:
+    for name in ("source", "sapheneia_candidate", "final_candidate"):
+        candidate = document.get(name)
+        if not isinstance(candidate, dict):
+            _refuse("conformance.request-builder")
+        candidate["title"] = title
+        candidate["body"] = body
+    frozen = document.get("frozen")
+    if not isinstance(frozen, dict):
+        _refuse("conformance.request-builder")
+    frozen.update(
+        title_prefix=prefix,
+        body_opening=opening,
+        host_structure=structure,
+        protected_inventory=inventory,
+    )
+    _refresh_request(document)
+
+
+def _queue_request(golden: dict[str, object], row: dict[str, object]) -> dict[str, object]:
+    document = deepcopy(golden)
+    queue = row["queue"]
+    prefix = row["prefix"]
+    opening = row["body_opening"]
+    labels = row["labels"]
+    if not all(isinstance(value, str) for value in (queue, prefix, opening)):
+        _refuse("conformance.queue-cases")
+    if not isinstance(labels, list) or any(not isinstance(label, str) for label in labels):
+        _refuse("conformance.queue-cases")
+    prose = "## Status\n\nThe publisher checks exact bytes before it asks for a credential."
+    sections = [prose, "Fiat-Required: 1", f"```carryover\n{CARRYOVER_ROW}\n```"]
+    if opening:
+        sections.insert(0, opening)
+    if queue == "observation":
+        sections.insert(
+            0,
+            "<!-- status:start -->\n"
+            "Publication is pending a current admission record.\n"
+            "<!-- status:end -->",
+        )
+    inventory = [prefix]
+    if opening:
+        inventory.append(opening)
+    inventory.extend(
+        ["## Status", "exact bytes", "credential", "Fiat-Required: 1", CARRYOVER_ROW]
+    )
+    document["queue"] = queue
+    document["labels"] = list(labels)
+    _set_candidate(
+        document,
+        title=f"{prefix}: checked publication boundary",
+        body="\n\n".join(sections),
+        prefix=prefix,
+        opening=opening,
+        structure=["## Status"],
+        inventory=inventory,
+    )
+    return document
+
+
+def _rejection_request(
+    golden: dict[str, object],
+    case_id: str,
+    fixtures: dict[str, bytes],
+) -> dict[str, object]:
+    document = deepcopy(golden)
+    if case_id == "issue-855-missing-framework-opening":
+        try:
+            title = fixtures["issue-855-title.txt"].removesuffix(b"\n").decode("utf-8")
+            body = fixtures["issue-855-body.txt"].decode("utf-8")
+        except UnicodeDecodeError:
+            _refuse("conformance.issue-855")
+        document["labels"] = ["fiat-run-needed", "observation", "origin:ai"]
+        _set_candidate(
+            document,
+            title=title,
+            body=body,
+            prefix="framework-51",
+            opening="",
+            structure=["## What it looks like", "## Why it matters beyond one PR"],
+            inventory=[
+                "framework-51",
+                "shoggoth-wildcat-labs",
+                "## What it looks like",
+                "wildcat-finance/skills#853",
+                "## Why it matters beyond one PR",
+                "HOST_PR_LOGINS",
+            ],
+        )
+    elif case_id == "missing-gate":
+        document["gates"].pop()
+    elif case_id == "failed-gate":
+        document["gates"][0]["outcome"] = "failed"
+    elif case_id == "reordered-gate":
+        document["gates"][0], document["gates"][1] = (
+            document["gates"][1],
+            document["gates"][0],
+        )
+    elif case_id == "gate-subject-mismatch":
+        document["gates"][0]["subject_sha256"] = "0" * 64
+    elif case_id == "imprimatur-defect":
+        for name in ("source", "sapheneia_candidate", "final_candidate"):
+            document[name]["body"] += "\n\nThis load-bearing phrase must be refused."
+        _refresh_request(document)
+    elif case_id == "authority-subject-mismatch":
+        document["authority"]["subject_sha256"] = "0" * 64
+    elif case_id == "missing-fiat-required":
+        for name in ("source", "sapheneia_candidate", "final_candidate"):
+            document[name]["body"] = document[name]["body"].replace(
+                "\n\nFiat-Required: 1", ""
+            )
+        document["frozen"]["protected_inventory"].remove("Fiat-Required: 1")
+        _refresh_request(document)
+    elif case_id == "missing-carryover":
+        carryover = f"\n\n```carryover\n{CARRYOVER_ROW}\n```"
+        for name in ("source", "sapheneia_candidate", "final_candidate"):
+            document[name]["body"] = document[name]["body"].replace(carryover, "")
+        document["frozen"]["protected_inventory"].remove(CARRYOVER_ROW)
+        _refresh_request(document)
+    elif case_id == "noncanonical-title":
+        _set_candidate(
+            document,
+            title="framework-0: checked publication boundary",
+            body=document["source"]["body"],
+            prefix="framework-0",
+            opening=FRAMEWORK_OPENING,
+            structure=document["frozen"]["host_structure"],
+            inventory=[
+                "framework-0" if item == "framework-56" else item
+                for item in document["frozen"]["protected_inventory"]
+            ],
+        )
+    elif case_id == "decision-label-mismatch":
+        document["labels"] = ["observation", "only-pr-needed", "origin:ai"]
+    else:
+        _refuse("conformance.rejection-cases")
+    return document
+
+
+def _expect_refusal(raw: bytes, code: str, field: str) -> None:
+    try:
+        admit_request(raw)
+    except PublisherError as exc:
+        if exc.code != code or exc.mint_attempts != 0 or exc.post_attempts != 0:
+            _refuse(field)
+    else:
+        _refuse(field)
+
+
+def _verify_parser_bounds() -> None:
+    at_member_limit = {f"field-{index}": index for index in range(MAX_JSON_MEMBERS)}
+    parsed = parse_json_bytes(canonical_json(at_member_limit))
+    if parsed != at_member_limit:
+        _refuse("conformance.request-work-bound")
+    above_member_limit = {
+        f"field-{index}": index for index in range(MAX_JSON_MEMBERS + 1)
+    }
+    try:
+        parse_json_bytes(canonical_json(above_member_limit))
+    except PublisherError as exc:
+        if exc.code != "GIP103" or exc.field != "request.members":
+            _refuse("conformance.request-work-bound")
+    else:
+        _refuse("conformance.request-work-bound")
+    at_string_limit = {"x" * MAX_STRING_BYTES: 0}
+    if parse_json_bytes(canonical_json(at_string_limit)) != at_string_limit:
+        _refuse("conformance.request-work-bound")
+    above_string_limit = {"x" * (MAX_STRING_BYTES + 1): 0}
+    try:
+        parse_json_bytes(canonical_json(above_string_limit))
+    except PublisherError as exc:
+        if exc.code != "GIP103" or exc.field != "request.string":
+            _refuse("conformance.request-work-bound")
+    else:
+        _refuse("conformance.request-work-bound")
+    try:
+        parse_json_bytes(b" " * (MAX_REQUEST_BYTES + 1))
+    except PublisherError as exc:
+        if exc.code != "GIP100" or exc.field != "request.bytes":
+            _refuse("conformance.request-byte-bound")
+    else:
+        _refuse("conformance.request-byte-bound")
+
+
 def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
     valid = fixtures["valid-request.json"]
     if not valid.endswith(b"\n") or valid.endswith(b"\n\n"):
@@ -117,18 +350,62 @@ def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
     ):
         _refuse("conformance.valid-request")
 
+    golden = _canonical_fixture(valid, "conformance.valid-request")
+
+    rejection_cases = _canonical_fixture(
+        fixtures["rejection-cases.json"], "conformance.rejection-cases"
+    )
+    expected_rejections = {
+        "issue-855-missing-framework-opening": "GIP130",
+        "missing-gate": "GIP150",
+        "failed-gate": "GIP150",
+        "reordered-gate": "GIP120",
+        "gate-subject-mismatch": "GIP150",
+        "imprimatur-defect": "GIP151",
+        "authority-subject-mismatch": "GIP160",
+        "missing-fiat-required": "GIP132",
+        "missing-carryover": "GIP132",
+        "noncanonical-title": "GIP130",
+        "decision-label-mismatch": "GIP131",
+    }
+    rejection_rows = rejection_cases.get("cases")
+    if (
+        set(rejection_cases) != {"schema", "cases"}
+        or rejection_cases.get("schema")
+        != "github-issue-publisher-rejection-cases/v1"
+        or not isinstance(rejection_rows, list)
+        or {
+            row.get("id"): row.get("code")
+            for row in rejection_rows
+            if isinstance(row, dict) and set(row) == {"id", "code"}
+        }
+        != expected_rejections
+        or len(rejection_rows) != len(expected_rejections)
+    ):
+        _refuse("conformance.rejection-cases")
+    for case_id, code in expected_rejections.items():
+        request = _rejection_request(golden, case_id, fixtures)
+        _expect_refusal(
+            canonical_json(request), code, "conformance.rejection-cases"
+        )
+
     queue_cases = _canonical_fixture(
         fixtures["queue-cases.json"], "conformance.queue-cases"
     )
     expected_queues = {
-        ("held-job", "phylax-next", "", ("held-job", "origin:ai")),
-        ("wish", "phylax-7", "", ("origin:ai", "wish")),
-        ("skill-wish", "phylax-wish", "", ("origin:ai",)),
+        (
+            "held-job",
+            "phylax-next",
+            "",
+            ("fiat-run-needed", "held-job", "origin:ai"),
+        ),
+        ("wish", "phylax-7", "", ("fiat-run-needed", "origin:ai", "wish")),
+        ("skill-wish", "phylax-wish", "", ("fiat-run-needed", "origin:ai")),
         (
             "observation",
             "framework-56",
-            "Protasis decides which skill or skills this observation upgrades.",
-            ("observation", "origin:ai"),
+            FRAMEWORK_OPENING,
+            ("fiat-run-needed", "observation", "origin:ai"),
         ),
     }
     rows = queue_cases.get("cases")
@@ -157,34 +434,20 @@ def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
         observed_queues.add((values[0], values[1], values[2], tuple(labels)))
     if observed_queues != expected_queues:
         _refuse("conformance.queue-cases")
+    for row in rows:
+        request = _queue_request(golden, row)
+        try:
+            queue_admission = admit_request(canonical_json(request))
+        except PublisherError as exc:
+            raise PublisherError("GIP199", "conformance.queue-cases") from exc
+        if (
+            queue_admission.queue != row["queue"]
+            or queue_admission.mint_attempts != 0
+            or queue_admission.post_attempts != 0
+        ):
+            _refuse("conformance.queue-cases")
 
-    rejection_cases = _canonical_fixture(
-        fixtures["rejection-cases.json"], "conformance.rejection-cases"
-    )
-    expected_rejections = {
-        ("issue-855-missing-framework-opening", "GIP130"),
-        ("missing-gate", "GIP150"),
-        ("failed-gate", "GIP150"),
-        ("reordered-gate", "GIP150"),
-        ("gate-subject-mismatch", "GIP150"),
-        ("imprimatur-defect", "GIP151"),
-        ("authority-subject-mismatch", "GIP160"),
-    }
-    rejection_rows = rejection_cases.get("cases")
-    if (
-        set(rejection_cases) != {"schema", "cases"}
-        or rejection_cases.get("schema")
-        != "github-issue-publisher-rejection-cases/v1"
-        or not isinstance(rejection_rows, list)
-        or {
-            (row.get("id"), row.get("code"))
-            for row in rejection_rows
-            if isinstance(row, dict) and set(row) == {"id", "code"}
-        }
-        != expected_rejections
-        or len(rejection_rows) != len(expected_rejections)
-    ):
-        _refuse("conformance.rejection-cases")
+    _verify_parser_bounds()
 
     source = _canonical_fixture(
         fixtures["issue-855-source.json"], "conformance.issue-855"
@@ -218,9 +481,7 @@ def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
         or source.get("body_sha256") != sha256_bytes(body.encode("utf-8"))
         or source.get("candidate_sha256") != candidate_sha256(title, body)
         or not title.startswith("framework-51: ")
-        or body.startswith(
-            "Protasis decides which skill or skills this observation upgrades."
-        )
+        or body.startswith(FRAMEWORK_OPENING)
     ):
         _refuse("conformance.issue-855")
 
@@ -229,20 +490,36 @@ def _report_path(candidate: str, criterion: str) -> str:
     return f".hexaemeron/design-reports/{candidate}-{criterion}.json"
 
 
+def _directory_descriptor(relative: Path) -> int:
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    if relative.is_absolute() or not no_follow or any(
+        part in ("", ".", "..") for part in relative.parts
+    ):
+        _refuse("conformance.report")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | no_follow
+    )
+    descriptor = -1
+    try:
+        descriptor = os.open(".", flags)
+        for component in relative.parts:
+            child = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = child
+        return descriptor
+    except OSError as exc:
+        if descriptor >= 0:
+            os.close(descriptor)
+        raise PublisherError("GIP199", "conformance.report") from exc
+
+
 def _write_report(relative: str, payload: bytes) -> None:
     destination = Path(relative)
-    parent = destination.parent
     try:
-        parent_stat = parent.lstat()
-        if not stat.S_ISDIR(parent_stat.st_mode) or stat.S_ISLNK(parent_stat.st_mode):
-            _refuse("conformance.report")
-        descriptor = os.open(
-            parent,
-            os.O_RDONLY
-            | getattr(os, "O_CLOEXEC", 0)
-            | getattr(os, "O_DIRECTORY", 0)
-            | getattr(os, "O_NOFOLLOW", 0),
-        )
+        descriptor = _directory_descriptor(destination.parent)
     except (OSError, PublisherError) as exc:
         raise PublisherError("GIP199", "conformance.report") from exc
     temporary = f".{destination.name}.tmp-{os.getpid()}"

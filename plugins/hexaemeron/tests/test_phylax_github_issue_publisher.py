@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from copy import deepcopy
 import hashlib
 import importlib.util
@@ -32,6 +33,7 @@ from github_issue_publisher_lib import (  # noqa: E402
     IMPRIMATUR_VERSION,
     MAX_JSON_MEMBERS,
     MAX_REQUEST_BYTES,
+    MAX_STRING_BYTES,
     OPERATION,
     PublisherError,
     REPOSITORY,
@@ -49,6 +51,21 @@ from github_issue_publisher_lib import (  # noqa: E402
 )
 import github_issue_publisher_lib.policy as publisher_policy  # noqa: E402
 from github_issue_publisher_lib.policy import default_imprimatur  # noqa: E402
+import github_issue_publisher as publisher_cli  # noqa: E402
+
+
+ROOT_FRAMEWORK_OPENING = (
+    "Protasis decides which skill or skills this observation upgrades. "
+    "The filer is the wrong party to guess."
+)
+CARRYOVER_ROW = "none | none | This publication carries no work into another issue."
+
+
+def issue_body(opening: str, prose: str) -> str:
+    sections = [prose, "Fiat-Required: 1", f"```carryover\n{CARRYOVER_ROW}\n```"]
+    if opening:
+        sections.insert(0, opening)
+    return "\n\n".join(sections)
 
 
 def candidate(title: str, body: str) -> dict[str, str]:
@@ -58,11 +75,7 @@ def candidate(title: str, body: str) -> dict[str, str]:
 def valid_document(
     *,
     title: str = "framework-56: checked publication boundary",
-    body: str = (
-        f"{FRAMEWORK_OPENING}\n\n"
-        "## Status\n\n"
-        "The publisher checks exact bytes before it asks for a credential."
-    ),
+    body: str | None = None,
     queue: str = "observation",
     labels: list[str] | None = None,
     title_prefix: str = "framework-56",
@@ -70,7 +83,16 @@ def valid_document(
     host_structure: list[str] | None = None,
     protected_inventory: list[str] | None = None,
 ) -> dict[str, object]:
-    labels = ["observation", "origin:ai"] if labels is None else labels
+    if body is None:
+        body = issue_body(
+            FRAMEWORK_OPENING,
+            "## Status\n\nThe publisher checks exact bytes before it asks for a credential.",
+        )
+    labels = (
+        ["fiat-run-needed", "observation", "origin:ai"]
+        if labels is None
+        else labels
+    )
     host_structure = ["## Status"] if host_structure is None else host_structure
     protected_inventory = (
         [
@@ -79,6 +101,8 @@ def valid_document(
             "## Status",
             "exact bytes",
             "credential",
+            "Fiat-Required: 1",
+            CARRYOVER_ROW,
         ]
         if protected_inventory is None
         else protected_inventory
@@ -193,7 +217,9 @@ class AdmissionTests(unittest.TestCase):
         document = valid_document()
         result = admit_request(encoded(document), imprimatur_runner=runner)
         self.assertEqual("observation", result.queue)
-        self.assertEqual(("observation", "origin:ai"), result.labels)
+        self.assertEqual(
+            ("fiat-run-needed", "observation", "origin:ai"), result.labels
+        )
         self.assertEqual(2, len(observed))
         self.assertEqual(observed[0], observed[1])
         self.assertEqual(0, result.mint_attempts)
@@ -202,11 +228,123 @@ class AdmissionTests(unittest.TestCase):
         self.assertNotIn("title", result.document())
         self.assertNotIn("body", result.document())
 
+    def test_root_publication_contract_is_enforced_before_imprimatur(self):
+        self.assertEqual(ROOT_FRAMEWORK_OPENING, FRAMEWORK_OPENING)
+        document = valid_document(
+            body=(
+                f"{ROOT_FRAMEWORK_OPENING}\n\n"
+                "## Status\n\n"
+                "The publisher checks exact bytes before it asks for a credential."
+            ),
+            protected_inventory=[
+                "framework-56",
+                ROOT_FRAMEWORK_OPENING,
+                "## Status",
+                "exact bytes",
+                "credential",
+            ],
+        )
+        self.assert_refused(document, "GIP132", "publication.fiat-required")
+        document = valid_document(
+            body=(
+                f"{ROOT_FRAMEWORK_OPENING}\n\n"
+                "## Status\n\n"
+                "The publisher checks exact bytes before it asks for a credential.\n\n"
+                "Fiat-Required: 1"
+            ),
+            protected_inventory=[
+                "framework-56",
+                ROOT_FRAMEWORK_OPENING,
+                "## Status",
+                "exact bytes",
+                "credential",
+                "Fiat-Required: 1",
+            ],
+        )
+        self.assert_refused(document, "GIP132", "publication.carryover")
+        document = valid_document(labels=["observation", "only-pr-needed", "origin:ai"])
+        self.assert_refused(document, "GIP131", "publication.decision-label")
+
+    def test_golden_candidate_passes_the_root_publication_contract(self):
+        controller = PLUGIN_ROOT / "skills" / "fiat" / "scripts" / "hexctl.py"
+        specification = importlib.util.spec_from_file_location(
+            "hexctl_publisher_contract", controller
+        )
+        self.assertIsNotNone(specification)
+        self.assertIsNotNone(specification.loader)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        document = valid_document()
+        final = document["final_candidate"]
+        record, faults = module.issue_publication_contract_faults(
+            final["title"], document["labels"], final["body"], "golden request"
+        )
+        self.assertEqual([], faults)
+        self.assertEqual("framework-N", record["queue"])
+        self.assertEqual(1, record["fiat_required"])
+        self.assertEqual("none", record["carryover"][0]["id"])
+
+    def test_root_valid_top_status_block_is_admitted(self):
+        controller = PLUGIN_ROOT / "skills" / "fiat" / "scripts" / "hexctl.py"
+        specification = importlib.util.spec_from_file_location(
+            "hexctl_status_block_contract", controller
+        )
+        self.assertIsNotNone(specification)
+        self.assertIsNotNone(specification.loader)
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        body = (
+            "<!-- status:start -->\n"
+            "Publication is pending a current admission record.\n"
+            "<!-- status:end -->\n\n"
+            + issue_body(
+                ROOT_FRAMEWORK_OPENING,
+                "## Status\n\n"
+                "The publisher checks exact bytes before it asks for a credential.",
+            )
+        )
+        document = valid_document(body=body)
+        record, faults = module.issue_publication_contract_faults(
+            document["final_candidate"]["title"],
+            document["labels"],
+            body,
+            "status-block request",
+        )
+        self.assertEqual([], faults)
+        self.assertEqual([1, 3], record["status_block"])
+        result = admit_request(encoded(document))
+        self.assertEqual("observation", result.queue)
+        self.assertEqual(0, result.mint_attempts)
+        self.assertEqual(0, result.post_attempts)
+
+    def test_root_queue_number_and_summary_grammar_is_enforced(self):
+        for prefix in ("framework-0", "framework-01"):
+            with self.subTest(prefix=prefix):
+                document = valid_document(
+                    title=f"{prefix}: checked publication boundary",
+                    title_prefix=prefix,
+                    protected_inventory=[
+                        prefix,
+                        FRAMEWORK_OPENING,
+                        "## Status",
+                        "exact bytes",
+                        "credential",
+                        "Fiat-Required: 1",
+                        CARRYOVER_ROW,
+                    ],
+                )
+                self.assert_refused(document, "GIP130", "queue.title_prefix")
+        document = valid_document(title="framework-56:  checked publication boundary")
+        self.assert_refused(document, "GIP130", "queue.title")
+
     def test_valid_fixture_is_the_canonical_golden_request(self):
         fixture = (FIXTURES / "valid-request.json").read_bytes().removesuffix(b"\n")
         self.assertEqual(encoded(valid_document()), fixture)
         result = admit_request(fixture, imprimatur_runner=lambda _text: {"defects": 0})
-        self.assertEqual("839b0f95b0ebb0dffb580e3eebbf48a443babd8cea2a29d5a7d35d4710ec6f05", result.final_sha256)
+        self.assertEqual(
+            "b7e467f4923807aa4dd70cdaeccd8f2c6dd418f09535dd230dc2c92daeebb2bb",
+            result.final_sha256,
+        )
 
     def test_default_imprimatur_accepts_clean_fixture(self):
         result = admit_request(encoded(valid_document()))
@@ -285,7 +423,7 @@ class AdmissionTests(unittest.TestCase):
     def test_issue_855_prose_is_rejected_by_in_service_imprimatur(self):
         title = (FIXTURES / "issue-855-title.txt").read_text(encoding="utf-8").removesuffix("\n")
         original = (FIXTURES / "issue-855-body.txt").read_text(encoding="utf-8")
-        body = f"{FRAMEWORK_OPENING}\n\n{original}"
+        body = issue_body(FRAMEWORK_OPENING, original)
         document = valid_document(
             title=title,
             body=body,
@@ -406,10 +544,9 @@ class AdmissionTests(unittest.TestCase):
             with self.subTest(queue=queue):
                 title = f"{prefix}: checked publication boundary"
                 opening = case["body_opening"]
-                body = (
-                    f"{opening}\n\n## Status\n\nThe publisher preserves exact bytes and credential evidence."
-                    if opening
-                    else "## Status\n\nThe publisher preserves exact bytes and credential evidence."
+                body = issue_body(
+                    opening,
+                    "## Status\n\nThe publisher preserves exact bytes and credential evidence.",
                 )
                 document = valid_document(
                     title=title,
@@ -419,9 +556,24 @@ class AdmissionTests(unittest.TestCase):
                     title_prefix=prefix,
                     body_opening=opening,
                     protected_inventory=(
-                        [prefix, opening, "## Status", "exact bytes", "credential"]
+                        [
+                            prefix,
+                            opening,
+                            "## Status",
+                            "exact bytes",
+                            "credential",
+                            "Fiat-Required: 1",
+                            CARRYOVER_ROW,
+                        ]
                         if opening
-                        else [prefix, "## Status", "exact bytes", "credential"]
+                        else [
+                            prefix,
+                            "## Status",
+                            "exact bytes",
+                            "credential",
+                            "Fiat-Required: 1",
+                            CARRYOVER_ROW,
+                        ]
                     ),
                 )
                 result = admit_request(encoded(document), imprimatur_runner=lambda _text: {"defects": 0})
@@ -535,6 +687,12 @@ class AdmissionTests(unittest.TestCase):
     def test_request_rejects_member_and_byte_caps(self):
         raw_document = {f"field-{index}": index for index in range(257)}
         self.assert_refused(encoded(raw_document), "GIP103", "request.members")
+        at_string_limit = {"x" * MAX_STRING_BYTES: 0}
+        self.assertEqual(at_string_limit, parse_json_bytes(encoded(at_string_limit)))
+        above_string_limit = {"x" * (MAX_STRING_BYTES + 1): 0}
+        self.assert_refused(
+            encoded(above_string_limit), "GIP103", "request.string"
+        )
         self.assert_refused(b"{" + b" " * (1 << 20), "GIP100", "request.bytes")
 
     def test_text_must_be_nfc_and_control_free(self):
@@ -577,6 +735,10 @@ class AdmissionTests(unittest.TestCase):
                 "gate-subject-mismatch",
                 "imprimatur-defect",
                 "authority-subject-mismatch",
+                "missing-fiat-required",
+                "missing-carryover",
+                "noncanonical-title",
+                "decision-label-mismatch",
             },
             {case["id"] for case in fixture["cases"]},
         )
@@ -743,6 +905,70 @@ class AdmissionTests(unittest.TestCase):
             self.assertEqual(0, diagnostic["post_attempts"])
             self.assertFalse(report.exists())
 
+    def test_conformance_report_refuses_an_intermediate_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "work"
+            outside = Path(directory) / "outside"
+            fixture_root = (
+                root
+                / "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1"
+            )
+            shutil.copytree(FIXTURES, fixture_root)
+            (outside / "design-reports").mkdir(parents=True)
+            (root / ".hexaemeron").symlink_to(outside, target_is_directory=True)
+            report = (
+                outside
+                / "design-reports/isolated-publisher-ordered-admission-chain.json"
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(CLI),
+                    "conformance",
+                    "--manifest",
+                    "plugins/hexaemeron/tests/fixtures/"
+                    "github-issue-publisher-v1/manifest.json",
+                    "--design-candidate",
+                    "isolated-publisher",
+                    "--design-criterion",
+                    "ordered-admission-chain",
+                    "--design-report",
+                    ".hexaemeron/design-reports/"
+                    "isolated-publisher-ordered-admission-chain.json",
+                ],
+                cwd=root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=10,
+                check=False,
+            )
+            self.assertEqual(2, completed.returncode)
+            self.assertEqual(b"", completed.stdout)
+            diagnostic = json.loads(completed.stderr)
+            self.assertEqual("GIP199", diagnostic["code"])
+            self.assertEqual("conformance.report", diagnostic["field"])
+            self.assertEqual(0, diagnostic["mint_attempts"])
+            self.assertEqual(0, diagnostic["post_attempts"])
+            self.assertFalse(report.exists())
+
+    def test_conformance_checks_policy_refusals_instead_of_only_fixture_names(self):
+        manifest = publisher_cli.read_bounded_file(publisher_cli.MANIFEST_PATH)
+        files = publisher_cli._closed_manifest(manifest)
+        fixtures = publisher_cli._fixture_bytes(Path(publisher_cli.MANIFEST_PATH).parent, files)
+
+        class Bypass:
+            mint_attempts = 0
+            post_attempts = 0
+            gate_versions = ("0.3.0", "2.3.0", "1.1.0", "2.3.0")
+
+        with (
+            mock.patch.object(publisher_cli, "admit_request", return_value=Bypass()),
+            self.assertRaises(PublisherError) as caught,
+        ):
+            publisher_cli._verify_fixture_contract(fixtures)
+        self.assertEqual("GIP199", caught.exception.code)
+        self.assertEqual("conformance.rejection-cases", caught.exception.field)
+
     def test_step_one_surface_has_no_signer_or_transport_modules(self):
         package = SCRIPT_DIR / "github_issue_publisher_lib"
         self.assertEqual(
@@ -753,6 +979,32 @@ class AdmissionTests(unittest.TestCase):
         self.assertNotIn("urllib", cli_source)
         self.assertNotIn("http.client", cli_source)
         self.assertNotIn("subprocess", cli_source)
+        forbidden_imports = {"http", "requests", "socket", "ssl", "subprocess", "urllib"}
+        forbidden_literals = {
+            "/access_tokens",
+            "api.github.com",
+            "begin private key",
+            "shoggoth-wildcat-labs.pem",
+        }
+        for path in (CLI, *sorted(package.glob("*.py"))):
+            with self.subTest(path=path.name):
+                source = path.read_text(encoding="utf-8")
+                tree = ast.parse(source)
+                imports = {
+                    alias.name.split(".", 1)[0]
+                    for node in ast.walk(tree)
+                    if isinstance(node, (ast.Import, ast.ImportFrom))
+                    for alias in (
+                        node.names
+                        if isinstance(node, ast.Import)
+                        else [ast.alias(name=node.module or "")]
+                    )
+                }
+                self.assertFalse(imports & forbidden_imports)
+                lowered = source.casefold()
+                self.assertFalse(
+                    {literal for literal in forbidden_literals if literal in lowered}
+                )
 
 
 class ContractTests(unittest.TestCase):
