@@ -8,8 +8,8 @@
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 21294170,
-      "files": 1092,
+      "bytes": 21359564,
+      "files": 1098,
       "suffix": ".md"
     },
     {
@@ -20,20 +20,20 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 14327389,
-      "files": 1081,
+      "bytes": 15049982,
+      "files": 1140,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 13366507,
-      "files": 603,
+      "bytes": 13489536,
+      "files": 608,
       "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
-      "bytes": 8097278,
-      "files": 115,
+      "bytes": 8097291,
+      "files": 116,
       "suffix": "(no suffix)"
     },
     {
@@ -43,22 +43,28 @@
       "suffix": ".jsonl"
     },
     {
+      "boundary_bytes": 0,
+      "bytes": 3446915,
+      "files": 151,
+      "suffix": ".bin"
+    },
+    {
       "boundary_bytes": 949,
       "bytes": 522784,
       "files": 94,
       "suffix": ".sol"
     },
     {
+      "boundary_bytes": 0,
+      "bytes": 210463,
+      "files": 52,
+      "suffix": ".txt"
+    },
+    {
       "boundary_bytes": 117,
       "bytes": 183526,
       "files": 13,
       "suffix": ".js"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 110352,
-      "files": 39,
-      "suffix": ".txt"
     },
     {
       "boundary_bytes": 0,
@@ -74,9 +80,21 @@
     },
     {
       "boundary_bytes": 0,
+      "bytes": 51075,
+      "files": 10,
+      "suffix": ".stdout"
+    },
+    {
+      "boundary_bytes": 0,
       "bytes": 33767,
       "files": 2,
       "suffix": ".graphql"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 20046,
+      "files": 10,
+      "suffix": ".stderr"
     },
     {
       "boundary_bytes": 0,
@@ -89,12 +107,6 @@
       "bytes": 12191,
       "files": 33,
       "suffix": ".yaml"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 11069,
-      "files": 4,
-      "suffix": ".stdout"
     },
     {
       "boundary_bytes": 0,
@@ -191,22 +203,10 @@
       "bytes": 17,
       "files": 1,
       "suffix": ".woff2"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 11,
-      "files": 1,
-      "suffix": ".bin"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 0,
-      "files": 4,
-      "suffix": ".stderr"
     }
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 106156400,
-  "total_files": 3262
+  "total_bytes": 110674496,
+  "total_files": 3508
 }

@@ -1,0 +1,26 @@
+tree 094008cadba3e6929e438b523552877959c01319
+parent ef3ad66728430fda4f82455503a638799b17964c
+author Shoggoth <shoggoth@wildcat.finance> 1789272857 +0100
+committer Laurence Day <laurence@wildcat.finance> 1789273379 +0100
+gpgsig -----BEGIN PGP SIGNATURE-----
+ 
+ iQGzBAABCAAdFiEEO82e/aZnCj9lr2eeuDtgrhb13RoFAmqmJSMACgkQuDtgrhb1
+ 3Rp6aAv/XjIYw7S5P1EU9EpycbF1UbM3DjLe423dhGebUrX3Z2+seOuKmy1Spq23
+ Xx1Z+u5IDOzshhfC5Bn3+ZbbnmwSNz+UbvzaIlglaQlRJJXI6B848RA7jWK89U06
+ B9f/GA8FIeKaU19nlS3AuIDzBK+j/6z8tZPeYBZ7dlHn+La/Ns4h+d3Jm784x60q
+ Cdk30Zmu+NJyzWs6yH0nxfFdPnU8IB/i9yPEPH9yiUTsIvVeKFJGTo24zAxqu0Tk
+ 8n3/csCm4pl0YBtSPit6ca6o7Osj5Ht0cr25gTPY9PpR22cYfS47bFTn9wHg8Y1q
+ TBdQxsHJx0FnOecqge8XuMnJgf/QXmB8He1PTEHRA2RxBPVY+IeJP9bnkrWMTw60
+ Fz5qxLlIwmeJHrfxBP2DoeO+YjIlAB5qLQceD58ISra4YHW7bylxtiopFZV45DYF
+ bQBiwksVyTu97BLWFl7Y8KSMu/TFg9nY3fel28LmZShY1/5Xw+lCRM//QkjEo/FF
+ ReO+Z7kA
+ =ObKD
+ -----END PGP SIGNATURE-----
+
+Record the independent Step 1 reconciliation audit
+
+Preserve the reviewed scope, source-copy checks, fixture guard comparison and
+reporting limits. No additional defect or audit fix was identified.
+
+Co-authored-by: Shoggoth <shoggoth@wildcat.finance>
+Wildcat-Origin: shoggoth
