@@ -577,7 +577,42 @@ if mode == "nonzero":
 if mode == "invalid-json":
     print("not json")
     raise SystemExit(0)
+if args[:2] == ["api", "graphql"]:
+    if mode == "graphql-unreachable":
+        sys.stderr.write("graphql is not reachable in this fixture")
+        raise SystemExit(1)
+    if mode == "graphql-not-json":
+        print("this is not json")
+        raise SystemExit(0)
+    edits = json.loads(os.environ.get("FAKE_GH_EDITS", "null"))
+    if edits is None:
+        edits = {"totalCount": 1,
+                 "nodes": [{"editedAt": "2026-09-01T00:00:00Z",
+                            "diff": DEFAULT_ISSUE_BODY}]}
+    print(json.dumps({"data": {"repository": {"issue": {
+        "userContentEdits": edits}}}}))
+    raise SystemExit(0)
 path = args[-1]
+search = re.match(r"search/issues\\?q=(?P<query>[^&]*)", path)
+if search:
+    # The framework-N uniqueness read. Empty by default, so a case that is not
+    # about uniqueness keeps its fixture title without inheriting a collision.
+    holders = json.loads(os.environ.get("FAKE_GH_FRAMEWORK_HOLDERS", "[]"))
+    if mode == "search-incomplete":
+        print(json.dumps({"incomplete_results": True, "items": holders}))
+        raise SystemExit(0)
+    if mode == "search-items-not-array":
+        print(json.dumps({"incomplete_results": False, "items": {}}))
+        raise SystemExit(0)
+    if mode == "search-row-not-object":
+        print(json.dumps({"incomplete_results": False, "items": ["not an object"]}))
+        raise SystemExit(0)
+    if mode == "search-row-untyped":
+        print(json.dumps({"incomplete_results": False,
+                          "items": [{"title": 17, "number": "x"}]}))
+        raise SystemExit(0)
+    print(json.dumps({"incomplete_results": False, "items": holders}))
+    raise SystemExit(0)
 if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
     print(json.dumps({"full_name": repository}))
@@ -602,8 +637,12 @@ if issue:
         labels = DEFAULT_ISSUE_LABELS
     if mode == "issue-body-not-text":
         body = 17
+    stamps = json.loads(os.environ.get("FAKE_GH_ISSUE_STAMPS", "{}"))
+    stamp = stamps.get(url, stamps.get("default", {}))
     print(json.dumps({"number": int(issue.group("number")), "body": body,
-                      "title": title, "labels": labels}))
+                      "title": title, "labels": labels,
+                      "created_at": stamp.get("created_at", "2026-09-01T00:00:00Z"),
+                      "updated_at": stamp.get("updated_at", "2026-09-01T00:00:00Z")}))
     raise SystemExit(0)
 pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
 if pull:

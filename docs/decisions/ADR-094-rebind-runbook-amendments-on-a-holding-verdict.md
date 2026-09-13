@@ -1,4 +1,4 @@
-# Decision: Rebind a runbook amendment on a holding verdict rather than dropping it
+# ADR-094: Rebind a runbook amendment on a holding verdict rather than dropping it
 
 ## Status
 
