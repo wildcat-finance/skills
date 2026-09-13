@@ -11306,6 +11306,11 @@ def _runbook_rebinds(
     ``prior_study_sha256``. It is retained when every step it touches reads
     entry holds and exit holds in ``step_verdicts``; a step the verdicts do
     not cover is a completed step and counts as holding.
+
+    A record names its amendment by content digest, so two history entries
+    with identical bytes are one amendment to the chain and take one record:
+    the rebind index refuses a digest recorded twice, and that refusal must
+    never fire on a list this function built.
     """
     if runbook_amendments is not None and not isinstance(runbook_amendments, list):
         die("runbook receipt amendments history must be an array", 1)
@@ -11315,10 +11320,14 @@ def _runbook_rebinds(
         item = as_dict(verdict)
         verdict_by_step[item.get("step")] = item
     records = []
+    recorded = set()
     for raw in runbook_amendments or []:
         item = as_dict(raw)
         if effective_study_sha256(item, None, index=index) != prior_study_sha256:
             continue
+        if item.get("amendment_sha256") in recorded:
+            continue
+        recorded.add(item.get("amendment_sha256"))
         retained = all(
             step not in verdict_by_step
             or (

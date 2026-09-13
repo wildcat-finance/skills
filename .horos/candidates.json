@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21673386,
+    "bytes_blob": 21673476,
     "bytes_generated": 98
   },
   "entries": [
@@ -630,9 +630,9 @@
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 79145,
+      "bytes": 79235,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 77097",
+      "evidence": "mean line length above 400 in a window at offset 77187",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
