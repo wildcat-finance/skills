@@ -5915,8 +5915,13 @@ class TestTaskIdentity(HexctlCase):
         with open(crumb, encoding="utf-8") as handle:
             restored = handle.read().strip()
         after = control(restored, "next")
+        # The identity is compared as emitted, before anything is put back:
+        # the substitution below would also rewrite a path or digest inside it.
+        identity = json.loads(after)["task_identity"]
+        self.assertEqual(identity, json.loads(first)["task_identity"])
+        self.assertEqual(identity["handle"], self.HANDLE)
         # A restore moves the run, so its paths and state digest move with it.
-        # Put both back and every other byte, the identity's included, holds.
+        # Put both back and every other byte holds.
         was, now = (json.loads(out)["state_sha256"] for out in (first, after))
         self.assertNotEqual(was, now)
         self.assertEqual(
