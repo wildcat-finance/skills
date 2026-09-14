@@ -286,7 +286,6 @@ class PublisherRuntime:
                     transport=self._transport,
                     timeout_seconds=timeout,
                 )
-                budget.finish(started, CREATE_TIMEOUT_SECONDS)
             except PublisherError as exc:
                 outcome = "create-indeterminate"
                 code = exc.code
@@ -299,6 +298,7 @@ class PublisherRuntime:
                     counts,
                 )
             else:
+                budget.finish(started, CREATE_TIMEOUT_SECONDS)
                 self._emit(budget, correlation, "create", "confirmed", "GIP000", counts)
 
             if issue is not None:

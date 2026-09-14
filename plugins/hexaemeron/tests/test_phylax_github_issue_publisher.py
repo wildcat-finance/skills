@@ -1462,6 +1462,72 @@ class RuntimeBoundaryTests(BoundaryTestCase):
             "GIP330", "deadline.stage", lambda: budget.finish(started, 20.0)
         )
 
+    def test_create_stage_overrun_after_response_keeps_mutation_evidence(self):
+        class Clock:
+            value = 0.0
+
+            def __call__(self):
+                return self.value
+
+        class DelayedCreateResponse(FakeResponse):
+            def __init__(self, *args, clock, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.clock = clock
+
+            def close(self) -> None:
+                super().close()
+                self.clock.value = publisher_transport.CREATE_TIMEOUT_SECONDS + 0.001
+
+        clock = Clock()
+        document = valid_document()
+        issue = issue_document(document)
+        responses = [
+            FakeResponse(201, token_document()),
+            DelayedCreateResponse(201, issue, clock=clock),
+            FakeResponse(200, issue),
+            FakeResponse(200, issue),
+        ]
+        _document, runtime, signer, sink, exchange = runtime_fixture(
+            document=document,
+            responses=responses,
+            monotonic=clock,
+        )
+
+        try:
+            result = runtime.publish(encoded(document))
+        except PublisherError as exc:
+            result = None
+            observed = (
+                exc.diagnostic()["outcome"],
+                exc.code,
+                exc.mint_attempts,
+                exc.post_attempts,
+            )
+        else:
+            observed = (
+                result["outcome"],
+                result["code"],
+                result["counts"]["token_attempts"],
+                result["counts"]["post_attempts"],
+            )
+
+        self.assertEqual(("created-but-unverified", "GIP330", 1, 1), observed)
+        self.assertIsNotNone(result)
+        self.assertEqual(9250, result["issue_number"])
+        self.assertEqual("failed", result["readback"])
+        self.assertTrue(result["cleanup_complete"])
+        self.assertEqual(0, result["counts"]["authenticated_readbacks"])
+        self.assertEqual(0, result["counts"]["anonymous_readbacks"])
+        self.assertEqual(2, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertEqual(result_bytes(result), sink.payload)
+        self.assertEqual(
+            ["admission", "signer", "token", "create", "cleanup", "receipt"],
+            [event["stage"] for event in runtime.events],
+        )
+
     def test_total_deadline_is_enforced_after_readback_during_cleanup(self):
         class Clock:
             value = 0.0
