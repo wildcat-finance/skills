@@ -252,10 +252,6 @@ class FiatSkillContractTests(unittest.TestCase):
                 "`topic`, `target_dir`, `base_ref`, `output_path`, "
                 "`design_output_path`, and `plugin_root`"
             ),
-            "mason": (
-                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
-                "and `plugin_root`"
-            ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
                 "`audit_log_path`, `step`, `round`, `warden_continuity`, "
@@ -268,6 +264,96 @@ class FiatSkillContractTests(unittest.TestCase):
             with self.subTest(role=role):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
+
+        mason = " ".join(AGENTS["mason"].split())
+        implementation = (
+            "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+            "and `plugin_root`"
+        )
+        self.assertIn(
+            f"An `implement` directive gives you one `brief` object with "
+            f"{implementation}",
+            mason,
+        )
+        self.assertIn(
+            "A capture-aware implementation brief also carries `step_parent`. "
+            "An assigned-finding receipt adds the immutable `guard_commit`; "
+            "a zero-assigned receipt omits it",
+            mason,
+        )
+        self.assertIn(
+            "Never recreate either branch or resolve `branch_from` again",
+            mason,
+        )
+        for field in (
+            "study_sha256",
+            "runbook_sha256",
+            "inventory_sha256",
+            "known_failure_inventory",
+            "consuming_step",
+            "assigned_findings",
+            "allowed_guard_paths",
+            "reporter_contracts",
+            "branch",
+            "branch_from",
+            "step_parent",
+            "evidence_directory",
+            "plugin_root",
+        ):
+            self.assertIn(f"`{field}`", mason)
+
+    def test_inoculation_contract_is_one_source_bound_loop_directive(self):
+        loop = self.fiat.split("## The loop", 1)[1].split("## ", 1)[0]
+        inoculation = self.fiat.split("**Inoculation.**", 1)[1].split(
+            "**Implementation.**", 1
+        )[0]
+        fiat = " ".join(self.fiat.split())
+        mason = " ".join(AGENTS["mason"].split())
+
+        self.assertIn("| `inoculate` |", loop)
+        self.assertIn(
+            "That loader/capture rule and the loop's existing Step action are one\n"
+            "`inoculate-phase` directive, not two independent instructions.",
+            self.fiat,
+        )
+        self.assertIn("`load_checked_inventory` operation is the sole ingestion path", self.fiat)
+        self.assertIn("`done inoculate` takes no phase-specific options", inoculation)
+        self.assertIn("fiat-known-failure-inoculation/v1", inoculation)
+        self.assertIn("fiat-no-known-findings/v1", inoculation)
+        self.assertIn("no-known-findings-for-step", inoculation)
+        self.assertIn("opens `implement` on that same branch", inoculation)
+        self.assertIn("also carries the full `step_parent`", fiat)
+        self.assertIn(
+            "assigned-finding receipt adds its exact guard commit", fiat
+        )
+        self.assertIn("`step_parent` for a zero-assigned Step", fiat)
+        self.assertIn(
+            "Do not recreate it from the parent or resolve a symbolic ref again",
+            fiat,
+        )
+        self.assertIn("the orchestrator calls `hexctl retain-guard`", mason)
+        self.assertIn("`completed_ids`, `remaining_ids`", mason)
+        self.assertIn("When `guard_commit` is present", mason)
+        self.assertIn(
+            "atomic create-only creation of the exact `branch` from `step_parent`",
+            mason,
+        )
+        self.assertIn("If that branch already exists at any tip", mason)
+        self.assertIn(
+            "make no edit, reset, repoint or checkout and request a fresh `next` packet",
+            mason,
+        )
+        self.assertIn(
+            "A packet without `guard_commit` authorises only atomic create-only creation",
+            fiat,
+        )
+        self.assertIn(
+            "current immutable context before loading or calling the runner",
+            fiat,
+        )
+        self.assertIn("it never samples a second execution", fiat)
+        self.assertIn("current live Step 3 is explicitly pre-contract", mason)
+        self.assertIn("No product path may ride along", mason)
 
     def test_task_identity_check_is_unconditional_before_any_continuation(self):
         # Issue 363: an orchestrator continued a Mason under a handle left from

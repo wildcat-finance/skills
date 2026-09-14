@@ -6,6 +6,20 @@ step's branch, logs everything, fixes on a stacked branch, and repeats
 until a round comes back clean or the remaining leads are judged not worth
 another pass.
 
+## Admission
+
+The first Warden audit of a source-bound step begins only after a complete
+inoculation receipt and final-green implementation evidence. A step carrying a
+known-failure capture reaches `audit` through `done implement`, which binds one
+final-green manifest per assigned finding on the exact implementation head and
+the exit of every repository suite the check map declares. Until that receipt
+exists, `next` emits no audit-round directive and `audit-round` refuses. The
+red guard commit stays inside its open step, and a round recorded against it
+would report a suite result for a tree the step had already moved past.
+
+A run with no receipted capture keeps its recorded implementation-first path,
+and its first round opens as it always did.
+
 ## One warden per step
 
 Delegate a step's first round to a new Warden, and every later round of the
@@ -255,5 +269,6 @@ ledger the whole loop stands on.
 The verdict is checked-and-recorded operator evidence associated with a
 verified fixes range. Fiat does not attest the Elenchus report bytes or infer
 the value from stdout or an exit code. `unguarded`, `passed`, and
-`inconclusive` stay distinct, recordable, and non-blocking here; issue 453 owns
-the later evidence binding and production gate.
+`inconclusive` stay distinct, recordable, and non-blocking inside a round. What
+blocks is the admission above, which issue 453 built: a step whose findings
+have no fixed-tree evidence gets no round at all.

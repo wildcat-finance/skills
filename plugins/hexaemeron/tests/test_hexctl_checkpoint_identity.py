@@ -1240,6 +1240,17 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("post-push receipt is incomplete", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
+    def test_this_controller_can_restore_the_capsules_it_writes(self):
+        """A ledger bump that forgets the compatibility set is a dead capsule."""
+        controller = load_hexctl()
+        current = controller.ledger_version(
+            HEXCTL.parent.parent / "EVOLUTION.md"
+        )
+        self.assertRegex(current, r"^fiat-v[0-9]+\.[0-9]+\.[0-9]+$")
+        self.assertIn(
+            current, controller.CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        )
+
     def test_identity_refuses_a_non_checkpoint_phase_without_writes(self):
         self.git(
             "remote",
