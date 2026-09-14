@@ -83,12 +83,12 @@ refuses only a handle it is shown, so a host or orchestrator that continues a
 delegate without asking is not caught, and whether a host displays the handle
 as the task's name is outside the controller.
 
-A refusal leaves no durable record. `next` writes nothing, so whether a refusal
-happened earlier in a run cannot be answered from state or the ledger; only the
-session that saw it knows. That signal gap is accepted to keep `next`
-read-only. For the same reason, a brief that an earlier `next --brief-out`
-call left at its path survives a refused call and is not the current
-directive's.
+A refusal leaves no durable record. A refused `next` writes nothing, and no
+`next` call writes state or a ledger entry, so whether a refusal happened
+earlier in a run cannot be answered from state or the ledger; only the session
+that saw it knows. That signal gap is accepted to keep `next` read-only. For
+the same reason, a brief that an earlier `next --brief-out` call left at its
+path survives a refused call and is not the current directive's.
 
 A handle carries no run discriminator. A run reset and initialised again for
 the same issue, or a run of that issue in another clone, derives the same
