@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import subprocess
 import sys
 import tempfile
 import time
@@ -25,7 +26,157 @@ CRITERIA = (
 
 
 IMPLEMENTED = frozenset({("whole-worker-sandbox", "worker-deadline"),
-                         ("whole-worker-sandbox", "worker-output-cap")})
+                         ("whole-worker-sandbox", "worker-output-cap"),
+                         ("whole-worker-sandbox", "whole-launch-dispatch"),
+                         ("whole-worker-sandbox", "origin-drift-recovery")})
+
+
+def dispatch_request(root, code, *, origin=None):
+    """Retain the producer-relative declaration; only child argv is resolved."""
+    source = ".hexaemeron/reports/result.json"
+    return {"schema": "fiat-worker-request/v1", "root": str(root),
+            "argv": [str(Path(sys.executable).resolve()), "-I", "-c", code, source],
+            "tools": list(worker_exec.TOOLS), "deadline_seconds": 10,
+            "output_cap_bytes": worker_exec.DEFAULT_CAP,
+            "reports": [{"index": 4, "source": source, "output": "result.json"}],
+            "origin": origin or {"root": str(root), "paths": []}}
+
+
+def dispatch_cli(root, request, pass_fds=()):
+    request_path = root / "request.json"
+    request_path.write_text(json.dumps(request))
+    command = [sys.executable, str(Path(worker_exec.__file__).with_name("hexctl.py")),
+               "--dir", str(root), "worker-exec", "--request", str(request_path)]
+    result = subprocess.run(command, capture_output=True, timeout=20, check=False,
+                            pass_fds=pass_fds)
+    require(result.returncode in (0, 1), "controller-launch-refused")
+    launch = json.loads(result.stdout)
+    require(launch["record"]["request"] == request, "source-declaration-rewritten")
+    return launch
+
+
+def admit_cli(root, launch):
+    command = [sys.executable, str(Path(worker_exec.__file__).with_name("hexctl.py")),
+               "--dir", str(root), "worker-admit", "--receipt", launch["receipt"],
+               "--sha256", launch["sha256"]]
+    return subprocess.run(command, capture_output=True, timeout=10, check=False)
+
+
+def execute_dispatch(criterion, root):
+    """Exercise the real controller CLI and its native descendants."""
+    origin = root / "origin"
+    origin.mkdir()
+    (origin / "user.txt").write_text("original")
+    (origin / ".git").mkdir()
+    (origin / ".git/config").write_text("shared")
+    target = root / "target"
+    target.mkdir()
+    (target / ".hexaemeron").mkdir()
+    (target / ".hexaemeron/live").write_text("live")
+    (target / ".git").write_text("gitdir: " + str(origin / ".git"))
+    declaration = {"root": str(origin), "paths": ["user.txt"]}
+    observations = []
+    if criterion == "origin-drift-recovery":
+        code = ("import pathlib,sys\n"
+                f"p=pathlib.Path({str(origin / 'user.txt')!r})\n"
+                "try: p.write_text('worker')\n"
+                "except PermissionError: pass\n"
+                "else: raise SystemExit(9)\n"
+                "pathlib.Path(sys.argv[1]).write_text('captured')")
+        first = dispatch_cli(target, dispatch_request(target, code, origin=declaration))
+        require((origin / "user.txt").read_text() == "original", "origin-worker-write")
+        require(first["record"]["status"] == "ready", "origin-baseline-refused")
+        (origin / "user.txt").write_text("independent")
+        refusal = admit_cli(target, first)
+        require(refusal.returncode == 2 and b"origin-drift-preserved" in refusal.stderr,
+                "origin-drift-admitted")
+        require((origin / "user.txt").read_text() == "independent", "origin-drift-discarded")
+        fresh = dispatch_cli(target, dispatch_request(target, code, origin=declaration))
+        require(fresh["record"]["attribution"] == "unknown", "invented-attribution")
+        require(fresh["record"]["origin_before"] != first["record"]["origin_before"],
+                "origin-not-resnapshotted")
+        require(admit_cli(target, fresh).returncode == 0, "resnapshot-admission-failed")
+        observations.extend([first["record"], fresh["record"]])
+    else:
+        python = str(Path(sys.executable).resolve())
+        outside = [str(origin / "user.txt"), str(origin / ".git/config"),
+                   str(target / ".hexaemeron/live"), str(target / ".git")]
+        sentinel = os.open(origin / "user.txt", os.O_RDONLY)
+        try:
+            code = ("import os,pathlib,subprocess,sys,socket,json\n"
+                    "p=pathlib.Path('inside'); p.write_text('old\\n')\n"
+                    "patch='--- inside\\n+++ inside\\n@@ -1 +1 @@\\n-old\\n+new\\n'\n"
+                    "r=subprocess.run(['/bin/sh','-c','/usr/bin/patch inside'],input=patch,text=True,capture_output=True)\n"
+                    "assert r.returncode==0 and p.read_text()=='new\\n'\n"
+                    f"targets={outside!r}\n"
+                    "for name in targets:\n"
+                    " for op in ('read','write','link'):\n"
+                    "  try:\n"
+                    "   if op=='read': pathlib.Path(name).read_bytes()\n"
+                    "   elif op=='write': pathlib.Path(name).write_text('escape')\n"
+                    "   else: os.link(name,'hard-alias')\n"
+                    "  except PermissionError: pass\n"
+                    "  else: raise SystemExit(10)\n"
+                    " for tool in (['/bin/sh','-c','printf escaped >\"$1\"','sh',name],"
+                    " ['/usr/bin/patch',name]):\n"
+                    "  r=subprocess.run(tool,input=patch,text=True,capture_output=True)\n"
+                    "  assert r.returncode!=0\n"
+                    "os.symlink(targets[0],'alias')\n"
+                    "try: pathlib.Path('alias').write_text('escape')\n"
+                    "except PermissionError: pass\n"
+                    "else: raise SystemExit(11)\n"
+                    f"try: os.fstat({sentinel})\n"
+                    "except OSError: pass\n"
+                    "else: raise SystemExit(12)\n"
+                    "for argv in (['/usr/bin/sandbox-exec','-p','(version 1)(allow default)','/bin/sh','-c','true'],['/usr/bin/curl','--version']):\n"
+                    " try: subprocess.run(argv,check=True,capture_output=True)\n"
+                    " except (PermissionError,subprocess.CalledProcessError): pass\n"
+                    " else: raise SystemExit(13)\n"
+                    "for family in (socket.AF_INET,socket.AF_UNIX):\n"
+                    " try:\n"
+                    "  s=socket.socket(family,socket.SOCK_STREAM)\n"
+                    "  if family==socket.AF_INET: s.connect(('127.0.0.1',9))\n"
+                    "  else: s.bind('ipc.sock')\n"
+                    " except PermissionError: pass\n"
+                    " else: raise SystemExit(14)\n"
+                    "pathlib.Path(sys.argv[1]).write_text('private-result')")
+            launch = dispatch_cli(target, dispatch_request(target, code, origin=declaration), (sentinel,))
+        finally:
+            os.close(sentinel)
+        require(launch["record"]["status"] == "ready", "whole-dispatch-not-captured")
+        require(admit_cli(target, launch).returncode == 0, "whole-dispatch-not-admitted")
+        require((target / ".hexaemeron/reports/result.json").read_text() == "private-result",
+                "admitted-bytes-mismatch")
+        observations.append(launch["record"])
+        detached = root / "detached"
+        detached.mkdir()
+        child = ("import os,time,pathlib\nos.setsid()\npathlib.Path('ready').touch()\n"
+                 "time.sleep(.8)\np=pathlib.Path(os.environ['FIAT_OUTPUT_DIR'])/'result.json'\n"
+                 "p.write_text('late-change')\nuntil=time.monotonic()+4\n"
+                 "while time.monotonic()<until and not pathlib.Path('stop').exists(): time.sleep(.02)\n"
+                 "pathlib.Path('stopped').touch()")
+        code = ("import pathlib,subprocess,sys,time\npathlib.Path(sys.argv[1]).write_text('stable')\n"
+                f"subprocess.Popen([{python!r},'-I','-c',{child!r}],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\n"
+                "until=time.monotonic()+2\n"
+                "while not pathlib.Path('ready').exists() and time.monotonic()<until: time.sleep(.01)\n"
+                "assert pathlib.Path('ready').exists()")
+        launch = dispatch_cli(detached, dispatch_request(detached, code))
+        scratch = Path(launch["record"]["capture"]["scratch_root"])
+        try:
+            require(launch["record"]["status"] == "ready", "detached-not-captured")
+            time.sleep(1)
+            require((scratch / "output/result.json").read_text() == "late-change", "detached-not-observed")
+            require(admit_cli(detached, launch).returncode == 0, "private-snapshot-not-admitted")
+            require((detached / ".hexaemeron/reports/result.json").read_text() == "stable",
+                    "mutable-scratch-admitted")
+        finally:
+            (scratch / "stop").touch()
+            until = time.monotonic()+2
+            while not (scratch / "stopped").exists() and time.monotonic()<until:
+                time.sleep(.02)
+            require((scratch / "stopped").exists(), "detached-cleanup-ack-missing")
+        observations.append(launch["record"])
+    return observations
 
 
 def require(condition, code):
@@ -43,7 +194,9 @@ def execute(criterion, root):
         observations.append(capture.record)
         return capture
 
-    if criterion == "worker-deadline":
+    if criterion in ("whole-launch-dispatch", "origin-drift-recovery"):
+        observations = execute_dispatch(criterion, root)
+    elif criterion == "worker-deadline":
         child = ("import os,time,pathlib\nos.setsid()\nprint('ready',flush=True)\n"
                  "until=time.monotonic()+6\n"
                  "while time.monotonic()<until and not pathlib.Path('stop').exists(): time.sleep(.02)\n"
@@ -93,6 +246,13 @@ def execute(criterion, root):
     inventory = json.loads((Path(__file__).parent / "fixtures/issue508/criteria.json").read_text())
     names = next(item["specimens"] for item in inventory["criteria"] if item["id"] == criterion)
     expected = {
+        "whole-launch-dispatch": ["inside-shell-python-patch", "outside-shell-python-patch",
+                                  "symlink-escape", "live-git-and-controller-metadata",
+                                  "external-deputy-unavailable", "inherited-descriptor-closed",
+                                  "host-ipc-denied", "nested-policy-loosening-denied",
+                                  "detached-writer-private-snapshot"],
+        "origin-drift-recovery": ["denied-origin-write-unchanged", "independent-drift-preserved",
+                                  "no-invented-attribution", "resnapshot"],
         "worker-deadline": ["two-second-deadline", "ten-second-return-bound",
                             "timeout-admission-refused", "uncertain-cleanup-no-reuse"],
         "worker-output-cap": ["one-mib-stream", "first-stream-excess", "one-mib-artifact",

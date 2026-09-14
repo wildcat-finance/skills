@@ -4,7 +4,8 @@ Delivery status:
 
 - Step 1 preserves the receipted design and defines inert fixture shapes.
 - Step 2 adds the native worker supervisor described below.
-- Controller launch admission, carryover admission and command validation remain pending.
+- Step 3 adds controller launch and private report admission, preserving independent origin changes.
+- Carryover admission and command validation remain pending.
 
 The decision `adr/confine-the-worker-before-admitting-its-output` records the
 selected construction and rejected alternative.
@@ -22,11 +23,11 @@ identities, not portable execution instructions.
 
 [runbook.md](runbook.md) preserves the immutable original runbook named by
 `source-inventory.json`. [amended-runbook.md](amended-runbook.md) copies the
-current canonical runbook, including its eight appended amendments. Those
+current canonical runbook, including its nine appended amendments. Those
 amendments select the `unittest-json-v1` Elenchus adapter while retaining the
 `elenchus.unittest.v1` output schema, and name
 `test_confined_replacement_lifecycle.py` for Step 7. The eighth amendment adds the current Fiat version to Step 2's checkpoint
-compatibility set and names its documentation paths.
+compatibility set and names its documentation paths. The ninth permits Step 3's current admission-status updates and this exact amended-runbook copy.
 Read the amendments with
 the original step text; the preserved source inventory remains unchanged.
 Both runbooks record this delivery against its fixed starting commit and
