@@ -54,6 +54,10 @@ CONFORMING = (
     f"{PINNED}/plugins/hexaemeron/skills/fiat/SKILL.md) for the loop.\n"
 )
 PENDING = ("study-amendment-pending.json", "runbook-amendment-pending.json")
+# A tilde block quoting one backtick fence line. The controller's own reader
+# closes the block, so an amendment heading after it is found; the checker's
+# backtick toggle stays open, so it reads every later line as fenced.
+OPEN_TOGGLE = "\n~~~text\n```\n~~~\n"
 
 
 def hypomnema_module():
@@ -359,6 +363,116 @@ class PointerRuleReceiptTests(LinkGateCase):
         self.assertEqual((self.controller_bytes(), canonical.read_bytes()), before)
         self.assertEqual(self.leftovers(), [])
         conforming = receipted + self.runbook_amendment()
+        candidate = self.write("candidate.md", conforming)
+        self.run_ctl("amend", "runbook", "--artifact", candidate)
+        self.assertEqual(
+            self.state()["receipts"]["runbook"]["sha256"],
+            hashlib.sha256(conforming.encode()).hexdigest(),
+        )
+
+    def test_an_amendment_to_a_study_is_read_in_the_fence_state_its_prefix_leaves(self):
+        self.init()
+        original = Path(COMPLETE_STUDY).read_text(encoding="utf-8") + OPEN_TOGGLE
+        study = self.write("study.md", original)
+        self.run_ctl("done", "study", "--artifact", study)
+        runbook = self.write(
+            "runbook.md",
+            "# Runbook\n\n## Step 1: Core\n\n**Goal.** Core.\n\n"
+            "## Step 2: Finish\n\n**Goal.** Finish.\n",
+        )
+        steps = self.write("steps.json", json.dumps(["Core", "Finish"]))
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        canonical = Path(self.target) / "study.md"
+        checker = hypomnema_module()
+        committed = Path(self.target) / "docs" / "link-gate" / "study.md"
+        committed.parent.mkdir(parents=True)
+        # Between two appended fence lines the checker reads a link and a
+        # stable reference outside any fence, because the prefix left one open.
+        for body, code, target in (
+            ("See [the notes](../notes.md).", "H001", "../notes.md"),
+            ("The choice is `adr/no-such-decision`.", "H009", "adr/no-such-decision"),
+        ):
+            with self.subTest(code=code):
+                hostile = original + self.amendment(
+                    what="The fixture assumption was corrected.\n\n"
+                    f"```text\n{body}\n```\n"
+                )
+                line = hostile.splitlines().index(body) + 1
+                committed.write_text(hostile, encoding="utf-8")
+                self.assertIn(
+                    (code, line),
+                    [
+                        (finding.code, finding.line)
+                        for finding in checker.check(committed, set(), set())
+                    ],
+                )
+                candidate = self.write("candidate.md", hostile)
+                before = (self.controller_bytes(), canonical.read_bytes())
+                refused = self.run_ctl("amend", "study", "--artifact", candidate, expect=2)
+                stage = "pointer rule refused" if code == "H001" else "checker refused"
+                self.assertIn(
+                    f"study amendment to study.md line {line}: {stage} pointer {target}",
+                    refused.stderr,
+                )
+                self.assertEqual((self.controller_bytes(), canonical.read_bytes()), before)
+                self.assertEqual(self.leftovers(), [])
+        # Before any appended fence line the checker reads the same link as
+        # fenced, so the amendment receipts.
+        conforming = original + self.amendment(
+            why="The receipted baseline disproved it; see [the notes](../notes.md)."
+        )
+        committed.write_text(conforming, encoding="utf-8")
+        self.assertEqual(
+            [], [finding.code for finding in checker.check(committed, set(), set())]
+        )
+        candidate = self.write("candidate.md", conforming)
+        self.run_ctl("amend", "study", "--artifact", candidate)
+        self.assertEqual(
+            self.state()["receipts"]["study"]["sha256"],
+            hashlib.sha256(conforming.encode()).hexdigest(),
+        )
+
+    def test_an_amendment_to_a_runbook_is_read_in_the_fence_state_its_prefix_leaves(self):
+        self.init()
+        study = self.write("study.md", Path(COMPLETE_STUDY).read_text(encoding="utf-8"))
+        self.run_ctl("done", "study", "--artifact", study)
+        blocks = []
+        for number, title in enumerate(("Core", "Finish"), 1):
+            blocks.append(
+                f"## Step {number}: {title}\n\n"
+                f"**Goal.** Ship {title}.\n"
+                f"**Entry.** Step {number} is ready.\n"
+                "**Exit.** Run `fiat-v1.0.0`.\n"
+                f"**Files.** `step-{number}.md`.\n"
+                "**Tests.** Run `python3 -m unittest`.\n"
+                "**Disciplines.** none, fixture only.\n"
+            )
+        receipted = (
+            self.design_lock_block() + "\n# Runbook\n\n" + "\n".join(blocks) + OPEN_TOGGLE
+        )
+        runbook = self.write("runbook.md", receipted)
+        steps = self.write("steps.json", json.dumps(["Core", "Finish"]))
+        self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        canonical = Path(self.target) / "runbook.md"
+        body = "See [the notes](../notes.md)."
+        hostile = receipted + self.runbook_amendment(
+            what="Complete replacement Exit: Run `fiat-v2.0.0`.\n\n"
+            f"```text\n{body}\n```\n"
+        )
+        line = hostile.splitlines().index(body) + 1
+        candidate = self.write("candidate.md", hostile)
+        before = (self.controller_bytes(), canonical.read_bytes())
+        refused = self.run_ctl("amend", "runbook", "--artifact", candidate, expect=2)
+        self.assertIn(
+            f"runbook amendment to runbook.md line {line}: pointer rule refused "
+            "pointer ../notes.md:",
+            refused.stderr,
+        )
+        self.assertEqual((self.controller_bytes(), canonical.read_bytes()), before)
+        self.assertEqual(self.leftovers(), [])
+        conforming = receipted + self.runbook_amendment(
+            why="The target version changed; see [the notes](../notes.md)."
+        )
         candidate = self.write("candidate.md", conforming)
         self.run_ctl("amend", "runbook", "--artifact", candidate)
         self.assertEqual(

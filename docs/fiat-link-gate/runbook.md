@@ -342,3 +342,35 @@ Complete replacement Tests: Add `plugins/hexaemeron/tests/test_link_gate.py` rat
 **Steps touched.** Step 2
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-14
+
+**What changed.**
+
+Complete replacement Exit: `hexctl.py` loads the bundled `hypomnema.py` in-process from the plugin root, resolved with `realpath` and required to be a regular file, and uses its `LINK`, `RUNBOOK`, `suppressed`, `_external`, `_code_spans` and `_within`; a missing module or name refuses. A recognised pointer that is neither an absolute URL with a skipped scheme nor an in-page anchor refuses at every depth, a `/`-rooted path included. The bundled checker then runs as a bounded subprocess with fixed argv, no shell and `--format json`, over the captured bytes in a controlled temporary file under the run-state directory whose name no Hypomnema path rule selects, with `docs/decisions` in scope when it exists; any finding on the artefact refuses, and so do a timeout, an output overflow and JSON outside the closed shape. `done study` and `done runbook` check the whole artefact, and `amend study` and `amend runbook` check only the bytes the amendment appends. Each refusal exits 2 before any state, ledger or artefact write, names the artefact, line, pointer target and refusing stage in bounded printable text, and carries no raw child output. A conforming artefact receipts exactly as before, and no contract key, receipt field, ledger event field or packet field is added. The `**Study and runbook.**` phase note in `plugins/hexaemeron/skills/fiat/SKILL.md` states the rule after byte 23631, and `metadata.version` reads `6.57.1`; no byte from 18784 to 23112 changes, and the version line keeps its length. A decision draft at `docs/decisions/drafts/refuse-location-dependent-pointers-before-a-receipt-pins-a-digest.md` opens with `# Decision:` and records study decisions 12.1 and 12.2, with `declare-only` and `lint-in-place` as the rejected alternatives; it cites sources by commit-pinned URL or code-span path, so it passes the rule and survives numbering. `plugins/hexaemeron/skills/fiat/EVOLUTION.md` reads `fiat-v6.57.1` and gains exactly one generation row, which keeps revision `delegated-task-identity` and digest `a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1`, with the status, frontier text and held job byte-identical; `tests/test_evolution_contract.py` checks the `fiat-v6.56.1` row by version and the new row as the head. `CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS` gains `fiat-v6.57.1`, and Hexaemeron reads `1.6.39` at all six version sites, one above the `1.6.38` that `origin/main` carries at `d17990cb7f65aabbde83cc34030ad61dadaaface`. Every pin study section 3 lists is current: the coverage record; the agent-instruction manifest and its three `fiat-study-runbook-phase` fixtures, re-pinned through the prover's `prepare` and `apply`; `fiat-final-integration.json`; `evaluation-run.json`, re-tallied from its committed answers with the recorded model and date; the demonstration pair; and the three Horos artefacts. No evaluation answer, measurement or parity record is re-obtained. Prove it with:
+
+```bash
+python3 -m unittest plugins.hexaemeron.tests.test_link_gate -v
+python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition step:3
+python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json
+python3 scripts/promise_machine.py check
+python3 scripts/promise_machine.py sync --check
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests scripts docs
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests scripts docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/SKILL.md docs/decisions/drafts/refuse-location-dependent-pointers-before-a-receipt-pins-a-digest.md --max-defects 0
+python3 plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py plan --repo . --base 485c90d3ad545b696584197f83d942c705988216 --base-ref refs/heads/fiat/1086-gate-study-and-runbook-links-before-their-d --product "$(git rev-parse HEAD)" --report .hexaemeron/decision-plan-step-2.json
+for f in study.md runbook.md; do cmp ".hexaemeron/$f" "docs/fiat-link-gate/$f"; done
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+git diff --check
+git worktree add --detach tmp/fiat-1086-step-2-snapshot HEAD
+(cd tmp/fiat-1086-step-2-snapshot && python3 -m unittest discover -t . -s tests)
+(cd tmp/fiat-1086-step-2-snapshot && python3 plugins/hexaemeron/tests/run_tests.py --jobs 8)
+```
+
+**Why.** Command 10 of the Exit, the `decision_assignments.py plan` dry run, could not pass as written. It named `origin/main` as the base, and `origin/main` at `d17990cb7f65aabbde83cc34030ad61dadaaface` is not an ancestor of the step head, so the planner refused `object-ancestry`; its `tmp/` report path also breaks the planner's rule that a report sits at `.hexaemeron/<name>.json`, so it would refuse `report-path` even on a valid base. Measured on step head `a4456e0a6d7969312562484e3ac1c3617e9b3075`: the same plan against the run base `485c90d3ad545b696584197f83d942c705988216`, named by the run branch ref, with a `.hexaemeron/` report path, exits 0 `planned` and maps the draft to ADR-097. A step's dry run belongs against the base the step is built on; the numbering against the moving `main` stays the integration composer's job. Every other clause of the Exit is restated unchanged.
+
+**Steps touched.** Step 2
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.

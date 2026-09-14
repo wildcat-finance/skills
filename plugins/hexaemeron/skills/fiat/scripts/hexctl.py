@@ -7470,22 +7470,34 @@ def link_gate_module(subject: str):
     return module
 
 
-def _location_dependent_pointer(checker, text: str) -> tuple[int, str] | None:
+def _link_gate_fence_toggle(line: str) -> bool:
+    """Whether one line opens or closes a fence as the checker's `check()` reads it.
+
+    The checker exposes no fence reader, so this copies its toggle: a line whose
+    stripped text starts with three backticks opens or closes a fence, and a
+    `~~~` line does not, because the checker still resolves a pointer inside a
+    tilde block.
+    """
+    return line.lstrip().startswith("```")
+
+
+def _location_dependent_pointer(
+    checker, text: str, in_fence: bool = False
+) -> tuple[int, str] | None:
     """Return the first recognised pointer whose target depends on where it sits.
 
     Only an absolute URL with a scheme the checker skips, and an in-page
     anchor, read the same from every directory, so any other recognised
     Markdown link or `runbook:` pointer is refused, a `/`-rooted path
     included. Recognition is the loaded checker's own: its patterns, code
-    spans and allow pragma. It exposes no fence reader, so the toggle below
-    copies its `check()`: a line whose stripped text starts with three
-    backticks opens or closes a fence, and a `~~~` line does not, because the
-    checker still resolves a pointer inside a tilde block.
+    spans and allow pragma, with its fence toggle copied. `in_fence` is the
+    toggle's state before the first line: open when the bytes are an
+    amendment whose receipted prefix leaves a fence open, because the checker
+    reads the appended lines inside that fence when it lints the amended file.
     """
     lines = text.splitlines()
-    in_fence = False
     for number, line in enumerate(lines, start=1):
-        if line.lstrip().startswith("```"):
+        if _link_gate_fence_toggle(line):
             in_fence = not in_fence
             continue
         if in_fence:
@@ -7555,7 +7567,7 @@ def _link_gate_line(preceding: str, text: str, number: int) -> int:
 
 
 def _link_gate_checker_finding(
-    base_dir: str, data: bytes, subject: str
+    base_dir: str, data: bytes, subject: str, *, in_fence: bool = False
 ) -> dict | None:
     """Run the bundled checker over the captured bytes; return its first finding.
 
@@ -7564,7 +7576,11 @@ def _link_gate_checker_finding(
     from, so an ancestor directory called `decisions` or `runbooks` cannot
     select the record or alert-runbook rules either. `docs/decisions` is in
     scope when it exists, so a stable decision reference or superseding pointer
-    resolves; a finding on any other path does not count.
+    resolves; a finding on any other path does not count. When `in_fence` says
+    an amendment's receipted prefix leaves a fence open, the copy starts with
+    one fence line, so the checker reads the appended bytes inside that fence
+    as it does in the amended file, and each finding's line is counted from
+    the first appended byte again.
     """
     malformed = (
         f"{subject}: checker refused: the bundled Hypomnema checker returned "
@@ -7588,6 +7604,7 @@ def _link_gate_checker_finding(
     try:
         try:
             with os.fdopen(descriptor, "wb") as handle:
+                handle.write(b"```\n" if in_fence else b"")
                 handle.write(data)
                 handle.flush()
                 os.fsync(handle.fileno())
@@ -7640,7 +7657,13 @@ def _link_gate_checker_finding(
         die(malformed)
     if not own:
         return None
-    return min(own, key=lambda item: item["line"])
+    first = min(own, key=lambda item: item["line"])
+    if not in_fence:
+        return first
+    if first["line"] < 2:
+        # The opening fence line is the controller's own and carries nothing.
+        die(malformed)
+    return {**first, "line": first["line"] - 1}
 
 
 def refuse_location_dependent_pointers(
@@ -7651,14 +7674,16 @@ def refuse_location_dependent_pointers(
     `done study` and `done runbook` pass the whole captured artefact. An
     amendment passes only the bytes it appends, since its receipted prefix
     cannot change, with that prefix as `preceding` so a refusal names the line
-    of the full candidate. The pointer rule runs first and the bundled checker
-    second; each refusal exits 2 before any state, ledger or artefact write,
-    and none prints child output.
+    of the full candidate and the appended lines start in the fence state the
+    prefix leaves. The pointer rule runs first and the bundled checker second;
+    each refusal exits 2 before any state, ledger or artefact write, and none
+    prints child output.
     """
     text = decoded_source(data, subject)
     checker = link_gate_module(subject)
+    in_fence = sum(map(_link_gate_fence_toggle, preceding.splitlines())) % 2 == 1
     try:
-        found = _location_dependent_pointer(checker, text)
+        found = _location_dependent_pointer(checker, text, in_fence)
     except (Exception, SystemExit):
         die(
             f"{subject}: pointer rule refused: the bundled Hypomnema parser "
@@ -7677,7 +7702,7 @@ def refuse_location_dependent_pointers(
             "cite a commit-pinned absolute URL, an in-page anchor or a path in a "
             "code span"
         )
-    finding = _link_gate_checker_finding(base_dir, data, subject)
+    finding = _link_gate_checker_finding(base_dir, data, subject, in_fence=in_fence)
     if finding is None:
         return
     if finding["line"] > max(1, len(text.splitlines())):
