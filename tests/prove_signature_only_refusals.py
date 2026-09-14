@@ -32,19 +32,30 @@ This prover holds three specimens against it and requires the exact message
 Removing any one of the three refusals in ``hexctl.py`` makes its specimen
 report a different message, or none, and this prover exits non-zero.
 
-Boundaries. Every ``git`` call is a fixed argument list with no shell, a hard
-timeout and a hard output cap; nothing read from the object database is
-unbounded. The disposable repository declines to sign under the hostile signing
-configuration ``tests/hostile_signing_harness.py`` owns, and an empty sentinel
-is required as evidence that no signer was reached, so the specimens cannot
-acquire a contributor's real signature. No credential is read, and the
-environment handed to a child is a copy. ``--out`` must resolve inside this
-repository, and the report is staged beside its destination and renamed, so an
-interrupted run leaves no partial object.
+The GitHub branch runs only after ``git verify-commit`` fails, so it can be
+reached only under a keyring that cannot validate a GitHub web-flow key. A
+keyring that can is a precondition this prover cannot establish, not a removed
+guard: when ``git verify-commit`` accepts the web-flow specimen, or the
+harvested commit is signed with a key in ``GITHUB_SIGNING_KEYS``, the prover
+names that cause and exits 3 without writing a report.
+
+Boundaries. Every ``git`` call is a fixed argument list with no shell and a
+hard timeout. Standard output is read as it arrives and the child is killed
+once it passes the output cap, so nothing read from the object database is held
+beyond that cap; standard error is discarded, because no caller reads it. Every
+signature check pins the verifier programs ``hexctl.py`` pins. The disposable
+repository declines to sign under the hostile signing configuration
+``tests/hostile_signing_harness.py`` owns, and an empty sentinel is required as
+evidence that no signer was reached, so the specimens cannot acquire a
+contributor's real signature. No credential is read, and the environment
+handed to a child is a copy. ``--out`` must resolve inside this repository, and
+the report is staged beside its destination and renamed, so an interrupted run
+leaves no partial object.
 
 Exit 0 writes the closed ``protasis-design-report/v1`` object. Exit 1 is a
 specimen that was accepted or refused with something else, 2 a bad invocation,
-and 3 a precondition this prover could not establish.
+and 3 a precondition this prover could not establish, including a keyring that
+validates a GitHub web-flow key.
 """
 
 from pathlib import Path
@@ -54,9 +65,11 @@ import importlib.util
 import io
 import json
 import os
+import selectors
 import subprocess
 import sys
 import tempfile
+import time
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 HEXCTL = REPO_ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
@@ -103,25 +116,64 @@ def load(name: str, path: Path):
 
 
 def git(argv, *, cwd, environment=None, stdin=None):
-    """One fixed-argv git call, with no shell, a timeout and an output cap."""
+    """One fixed-argv git call, with no shell, a timeout and an output cap.
+
+    Standard output is read as it arrives and the child is killed once it
+    passes ``GIT_OUTPUT_MAX``, so the cap bounds memory as well as the result.
+    """
+    deadline = time.monotonic() + GIT_TIMEOUT
     try:
-        completed = subprocess.run(
+        child = subprocess.Popen(
             ["git", *argv],
             cwd=str(cwd),
             env=environment,
-            input=stdin,
+            stdin=subprocess.DEVNULL if stdin is None else subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=GIT_TIMEOUT,
-            check=False,
+            stderr=subprocess.DEVNULL,
         )
     except OSError as error:
         raise Unproven(f"git {argv[0]} could not start: {error}") from error
-    except subprocess.TimeoutExpired as error:
-        raise Unproven(f"git {argv[0]} timed out after {GIT_TIMEOUT}s") from error
-    if len(completed.stdout) > GIT_OUTPUT_MAX:
-        raise Unproven(f"git {argv[0]} exceeded the {GIT_OUTPUT_MAX}-byte output cap")
-    return completed.returncode, completed.stdout
+    output = bytearray()
+    selector = selectors.DefaultSelector()
+    try:
+        if stdin is not None:
+            # hash-object reads all of its input before it writes, and every
+            # input here is built from capped reads, so this write cannot wait
+            # on the child's output. A child that exits early reports its
+            # status below.
+            try:
+                child.stdin.write(stdin)
+            except OSError:
+                pass
+            finally:
+                child.stdin.close()
+        selector.register(child.stdout, selectors.EVENT_READ)
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise Unproven(f"git {argv[0]} timed out after {GIT_TIMEOUT}s")
+            if not selector.select(min(remaining, 0.1)) and child.poll() is None:
+                continue
+            chunk = os.read(child.stdout.fileno(), 65536)
+            if not chunk:
+                selector.unregister(child.stdout)
+                continue
+            output.extend(chunk)
+            if len(output) > GIT_OUTPUT_MAX:
+                raise Unproven(
+                    f"git {argv[0]} exceeded the {GIT_OUTPUT_MAX}-byte output cap"
+                )
+        try:
+            status = child.wait(timeout=max(0.0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired as error:
+            raise Unproven(f"git {argv[0]} timed out after {GIT_TIMEOUT}s") from error
+    finally:
+        selector.close()
+        if child.poll() is None:
+            child.kill()
+            child.wait()
+        child.stdout.close()
+    return status, bytes(output)
 
 
 def git_text(argv, *, cwd, environment=None, stdin=None):
@@ -132,19 +184,42 @@ def git_text(argv, *, cwd, environment=None, stdin=None):
     return output.decode("utf-8", "replace").strip()
 
 
-def locally_verified_commit():
+def keyring_accepts(hexctl, commit: str) -> bool:
+    """Whether ``git verify-commit`` accepts one commit under hexctl's pins."""
+    pinned = [
+        item
+        for setting in hexctl.SIGNATURE_VERIFIER_CONFIG
+        for item in ("-c", setting)
+    ]
+    status, _ = git(
+        ["--no-replace-objects", *pinned, "verify-commit", commit],
+        cwd=REPO_ROOT,
+    )
+    return status == 0
+
+
+def github_keyring(key: str, commit: str) -> Unproven:
+    """The precondition failure for a keyring that validates a GitHub key."""
+    return Unproven(
+        f"this keyring validates GitHub web-flow key {key}: git verify-commit "
+        f"accepts {commit}, so hexctl's GitHub-signed refusal cannot run here; "
+        "rerun under a GNUPGHOME that holds no GitHub signing key"
+    )
+
+
+def locally_verified_commit(hexctl):
     """One reachable commit whose signature this keyring validates."""
     listed = git_text(
         ["rev-list", f"--max-count={SIGNED_COMMIT_SEARCH}", "HEAD"],
         cwd=REPO_ROOT,
     )
     for commit in listed.split():
-        status, _ = git(
-            ["-c", "gpg.program=gpg", "verify-commit", commit],
-            cwd=REPO_ROOT,
-        )
-        if status == 0:
-            return commit
+        if not keyring_accepts(hexctl, commit):
+            continue
+        key = hexctl.signing_key(str(REPO_ROOT), commit).upper()
+        if key in hexctl.GITHUB_SIGNING_KEYS:
+            raise github_keyring(key, commit)
+        return commit
     raise Unproven(
         "no commit in the last "
         f"{SIGNED_COMMIT_SEARCH} is verified by this keyring, so the altered "
@@ -193,7 +268,7 @@ def disposable_repository(root: Path, harness):
     return repository, environment, files.sentinel
 
 
-def specimens(root: Path, harness):
+def specimens(root: Path, harness, hexctl):
     """The unsigned and altered empty-tree objects, in a disposable repository."""
     repository, environment, sentinel = disposable_repository(root, harness)
     tree = git_text(
@@ -217,7 +292,7 @@ def specimens(root: Path, harness):
     header, separator, _ = raw.partition(b"\n\n")
     if not separator:
         raise Unproven(f"specimen {unsigned} has no message separator")
-    signature = armoured_signature(locally_verified_commit())
+    signature = armoured_signature(locally_verified_commit(hexctl))
     altered_object = (
         b"\n".join(header.split(b"\n") + signature) + b"\n\naltered after signing\n"
     )
@@ -265,7 +340,7 @@ def prove(hexctl, harness) -> None:
     """Hold all three specimens against hexctl's signature refusal."""
     with tempfile.TemporaryDirectory(prefix="signature-specimens-") as raw_root:
         root = Path(raw_root)
-        repository, unsigned, altered = specimens(root, harness)
+        repository, unsigned, altered = specimens(root, harness, hexctl)
         base_dir = str(repository)
 
         label = "unsigned specimen"
@@ -301,6 +376,8 @@ def prove(hexctl, harness) -> None:
             f"{WEB_FLOW_COMMIT} reports signing key {key or 'none'}, "
             f"not {WEB_FLOW_KEY}"
         )
+    if keyring_accepts(hexctl, WEB_FLOW_COMMIT):
+        raise github_keyring(WEB_FLOW_KEY, WEB_FLOW_COMMIT)
     require(
         label,
         refusal(hexctl, str(REPO_ROOT), WEB_FLOW_COMMIT, label),

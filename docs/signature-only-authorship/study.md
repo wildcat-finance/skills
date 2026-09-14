@@ -907,3 +907,57 @@ writes its own design records at fresh paths instead.
 Issue #1514's answer, when it lands, belongs in its own record and not in this
 one. Which decisions earn a record and where each one lives belongs to Hypomnema, at
 `plugins/hexaemeron/skills/hypomnema/SKILL.md`.
+
+### Amendment -- 2026-09-14
+
+**What changed.** Three readings in sections 3 and 11 are corrected, and the
+selected design is bound to its standing decision record.
+
+The section 3 non-goal that the prior branch's 16 commits are merged rather than
+replayed no longer holds. Step 1 merges a local reconstruction of that branch.
+Its first six commits keep their hashes. Its last six are re-signed with their
+original trees, authors, author dates and messages, and with both provenance
+trailers added. Its four GitHub web-flow merges, for #1430, #1455, #1459 and
+#1481, are left out, because each has the tree of the step head it merged. The
+merge's tree is unchanged, `d9114b653772dd6ba09a81d7af8ccc1943f23042` is not an
+ancestor of the run branch, and the old-to-new id map is in the message of
+`928884056101bdc2b739c12bdbc2441b6647e30a`. The adopted records that cite
+`9a0a1bde`, `27a9622a`, `843d232d` and `155abea7` keep those ids as history, and
+the originals stay reachable through those four pull requests.
+
+The section 11 stop on a signature refusal that stops firing is read under a
+keyring that cannot validate GitHub's web-flow keys, which is the condition
+`hexctl.py`'s own refusal message sets. Since about 2026-09-12 this host's
+default keyring holds `B5690EEEBB952194` and `4AEE18F83AFDEB23`; there
+`git verify-commit` accepts `77bf7f15e2f857fd8fd3c2db8ad50c3f738a6883` and the
+web-flow refusal never runs. The run neither changes the gate nor edits the
+host's keyring. It proves the three refusals under a keyring holding only
+`3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A`, and it reads every receipted commit
+range for a GitHub signing key.
+
+The section 11 stop on a red `python3 scripts/run_checks.py`, and the section 3
+rule that both suites are green before a commit, are read against the base's own
+bad results, as the runbook amendment of 2026-09-09 records. The base
+`592390722f10df53658906623b15428dbfb88d8f` is red on its root and Hexaemeron
+suites, so the run stops on a bad result outside that set.
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | retain-declaration
+record | docs/decisions/drafts/accept-any-validly-signed-authorship.md
+```
+
+**Why.** Step 1 round 1 recorded three of these. S1-R1-01 showed the replayed
+commits and the four ids the adopted records cite outside the run branch's
+ancestry. S1-R1-03 showed the web-flow refusal skipped under this host's
+keyring. S1-R1-05 showed Hypomnema study mode exiting 1 with H008, because
+section 12 names the record in prose only. The implement receipt measured the
+red base again on 2026-09-14: the root runner's bad results are the same 30 ids
+at the base and at the Step 1 head. The selected design, its alternatives and
+its acceptance criteria are unchanged.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds. Step 6: entry holds; exit holds.
