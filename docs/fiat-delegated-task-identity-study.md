@@ -416,3 +416,13 @@ decisions earn a record and where each one lives.
 **Steps touched.** Step 1, Step 2 and Step 3.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-14
+
+**What changed.** Section 9's controls for `--task-handle` are corrected to match `task_handle_refusal` as built. It refuses a value longer than 200 bytes and any whitespace or non-printable character, lone surrogates included, and it does not use the `clean` convention. Comparison is exact equality. The length and character refusals name the expected handle and never echo the refused value; the equality refusal names both handles, the observed one having passed both checks. A handle checked against a directive with no delegate is refused before its value is read.
+
+**Why.** Step 1 audit round 2 and Step 2 audit round 1 recorded the section 9 wording as leads in `audit/rounds/fiat-363-bind-delegated-task-identity-to-step-and-rol.md`: the `clean` convention and "a bounded copy of the observed one". The reader was built stricter than that sentence, in commit `370866012205b6d0378e656ecc089b390b435db4` for S1-R1-01 and S1-R1-03. Step 3 refreshes this study's committed copy, so the correction lands before it.
+
+**Steps touched.** Step 3
+
+**Still holding.** Step 3: entry holds; exit holds.
