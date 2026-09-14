@@ -1661,6 +1661,122 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         )
 
 
+class RunAnchorRepositoryAdmissionTests(unittest.TestCase):
+    """S4-R7-01: what the restore may interpolate into `remote.origin.url`.
+
+    `_checkpoint_restore_from_archive` writes the destination's origin from
+    `receipts.run_anchor.repository`, and `validate_run_anchor_shape` is the
+    only gate between the archive's bytes and that write. Before this round
+    that gate was the bare `REPOSITORY_RE` pattern plus a lowercase rule,
+    while `target_repository_binding` -- the one function that ever mints a
+    repository, and the one that reads the written URL back -- additionally
+    refuses a `.` or `..` segment. These two cases hold the accepting
+    validator to the minting one.
+    """
+
+    # Owner/name forms a hostile archive can put in its anchor. The first is
+    # the honest shape; the six after it are the relative-segment family.
+    HONEST = "wildcat-finance/skills"
+    RELATIVE_SEGMENT = (
+        "./skills",
+        "../skills",
+        "wildcat-finance/.",
+        "wildcat-finance/..",
+        "../..",
+        "./.",
+    )
+    # Admitted, and each must survive the round trip unchanged.
+    ADMITTED = (
+        HONEST,
+        ".../skills",
+        ".git/skills",
+        "wildcat-finance/.git",
+        "wildcat-finance/skills.git",
+        "wildcat-finance.git/skills",
+        "wildcat-finance/skills.",
+        "wildcat-finance/skills.git.git",
+        "-upload-pack/skills",
+        "wildcat-finance/-o",
+    )
+
+    def anchor(self, repository):
+        module = hexctl_module()
+        return {
+            "schema": module.RUN_ANCHOR_SCHEMA,
+            "controller": {
+                "name": "hexctl",
+                "state_version": 1,
+                "version": "fiat-v5.53.1",
+            },
+            "initial_base_sha": "0" * 40,
+            "integration_branch": "main",
+            "repository": repository,
+            "run_branch": "fiat/861-anchor-admission",
+            "run_id": "fiat-" + ("0" * 64),
+            "task": dict(module.RUN_ANCHOR_TASK_NONE),
+        }
+
+    def test_run_anchor_repository_refuses_a_relative_path_segment(self):
+        module = hexctl_module()
+        self.assertEqual(
+            self.anchor(self.HONEST),
+            module.validate_run_anchor_shape(self.anchor(self.HONEST)),
+        )
+        for repository in self.RELATIVE_SEGMENT:
+            with self.subTest(repository=repository):
+                self.assertIsNotNone(
+                    module.REPOSITORY_RE.fullmatch(repository),
+                    "the bare pattern is what makes this case worth guarding",
+                )
+                with redirect_stderr(StringIO()) as captured:
+                    with self.assertRaises(SystemExit) as raised:
+                        module.validate_run_anchor_shape(self.anchor(repository))
+                self.assertEqual(1, raised.exception.code)
+                self.assertEqual(
+                    "hexctl: error: run anchor repository identity is malformed\n",
+                    captured.getvalue(),
+                )
+                self.assertNotIn(repository, captured.getvalue())
+
+    def test_every_repository_the_anchor_admits_survives_the_minting_validator(self):
+        """The property, not the six specimens: anything this gate admits must
+        read back out of the URL the restore builds as the same repository."""
+        module = hexctl_module()
+        root = tempfile.mkdtemp(prefix="fiat861-anchor-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        for index, repository in enumerate(self.ADMITTED + self.RELATIVE_SEGMENT):
+            with self.subTest(repository=repository):
+                try:
+                    with redirect_stderr(StringIO()):
+                        module.validate_run_anchor_shape(self.anchor(repository))
+                except SystemExit:
+                    continue
+                # exactly the interpolation `_checkpoint_restore_from_archive`
+                # performs when it records the origin remote
+                url = f"https://github.com/{repository}.git"
+                work = os.path.join(root, str(index))
+                subprocess.run(
+                    ["git", "init", "-q", work], check=True, capture_output=True
+                )
+                subprocess.run(
+                    ["git", "-C", work, "config", "remote.origin.url", url],
+                    check=True,
+                    capture_output=True,
+                )
+                with redirect_stderr(StringIO()) as captured:
+                    try:
+                        read_back = module.target_repository_binding(work)
+                    except SystemExit:
+                        read_back = f"refused: {captured.getvalue().strip()}"
+                self.assertEqual(
+                    repository,
+                    read_back,
+                    "the anchor gate admitted a repository the minting "
+                    "validator will not read back, so the restore writes an "
+                    "origin its own `verify` refuses",
+                )
+
+
 class SignedRunFixture(HexctlCase):
     """One real, really signed run, shared by every test that needs its archive.
 

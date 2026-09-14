@@ -13370,6 +13370,18 @@ def validate_run_anchor_shape(anchor) -> dict:
             isinstance(repository, str)
             and REPOSITORY_RE.fullmatch(repository) is not None
             and repository == repository.lower()
+            # S4-R7-01: `REPOSITORY_RE`'s segment class admits `.` and `..`,
+            # so this gate alone was weaker than `target_repository_binding`,
+            # the only function that ever mints a repository, which refuses a
+            # relative segment here for the reason `target_repository` states
+            # beside its own copy. No honest anchor can carry one. An archive
+            # can, and since Step 4 this gate decides what
+            # `_checkpoint_restore_from_archive` interpolates into
+            # `remote.origin.url`, so the accepting validator is held to the
+            # minting one rather than to the bare pattern.
+            and not any(
+                segment in (".", "..") for segment in repository.split("/")
+            )
         )
         or repository == RUN_ANCHOR_REPOSITORY_UNBOUND
     ):
