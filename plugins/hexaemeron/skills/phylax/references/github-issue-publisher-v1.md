@@ -278,10 +278,11 @@ header, response body, or raw error. Outcomes are `refused`, `published`,
 `create-indeterminate`, `created-but-unverified`, `receipt-failed`, and
 `cleanup-failed`. The client rejects non-integer diagnostic attempt counts,
 non-monotone lifecycle counts, and result-field combinations that no one-shot
-lifecycle can emit. If a terminal event cannot be retained after token exchange
-or the issue POST, the public diagnostic preserves the observed mint and POST
-attempt counts; a completed POST cannot appear as a zero-attempt refusal on
-that path.
+lifecycle can emit. Signer, token, and returned-issue failure codes require
+their respective attempt boundary to have been crossed. If a terminal event
+cannot be retained after token exchange or the issue POST, the public
+diagnostic preserves the observed mint and POST attempt counts; a completed
+POST cannot appear as a zero-attempt refusal on that path.
 
 ## Component conformance reports
 

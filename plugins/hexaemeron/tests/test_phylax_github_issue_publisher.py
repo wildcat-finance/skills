@@ -1833,6 +1833,56 @@ class ReceiptBoundaryTests(BoundaryTestCase):
                     ),
                 )
 
+    def test_client_joins_failure_codes_to_attempt_boundaries(self):
+        cases = (
+            ("GIP212", 0, 0, 0),
+            ("GIP311", 1, 0, 0),
+            ("GIP321", 1, 1, 0),
+        )
+        for code, signer_attempts, token_attempts, post_attempts in cases:
+            with self.subTest(code=code):
+                document = sample_result()
+                document.update(
+                    outcome="refused",
+                    issue_number=None,
+                    issue_url=None,
+                    counts={
+                        "signer_attempts": signer_attempts,
+                        "token_attempts": token_attempts,
+                        "post_attempts": post_attempts,
+                        "authenticated_readbacks": 0,
+                        "anonymous_readbacks": 0,
+                    },
+                    readback="not-run",
+                    code=code,
+                )
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.value",
+                    lambda document=document: parse_closed_result(
+                        canonical_json(document)
+                    ),
+                )
+
+        for code, mint_attempts, post_attempts in (
+            ("GIP311", 0, 0),
+            ("GIP321", 1, 0),
+        ):
+            with self.subTest(schema="diagnostic", code=code):
+                diagnostic = PublisherError(
+                    code,
+                    "transport.response",
+                    mint_attempts=mint_attempts,
+                    post_attempts=post_attempts,
+                ).diagnostic()
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.diagnostic",
+                    lambda diagnostic=diagnostic: parse_closed_result(
+                        canonical_json(diagnostic)
+                    ),
+                )
+
     def test_client_refuses_issue_number_outside_signed_64_bit_range(self):
         at_limit = sample_result()
         at_limit["issue_number"] = (1 << 63) - 1

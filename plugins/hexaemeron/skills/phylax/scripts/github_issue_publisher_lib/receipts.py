@@ -49,6 +49,23 @@ COUNT_FIELDS = (
     "authenticated_readbacks",
     "anonymous_readbacks",
 )
+SIGNER_FAILURE_CODES = frozenset({"GIP210", "GIP211", "GIP212", "GIP213"})
+TOKEN_FAILURE_CODES = frozenset(
+    {
+        "GIP300",
+        "GIP301",
+        "GIP302",
+        "GIP303",
+        "GIP304",
+        "GIP305",
+        "GIP306",
+        "GIP307",
+        "GIP309",
+        "GIP310",
+        "GIP311",
+    }
+)
+ISSUE_FAILURE_CODES = frozenset({"GIP320", "GIP321"})
 
 
 class ReceiptSink(Protocol):
@@ -89,6 +106,12 @@ def _result_semantics(
     authenticated = counts["authenticated_readbacks"]
     anonymous = counts["anonymous_readbacks"]
     if not (anonymous <= authenticated <= post <= token <= signer):
+        refuse("GIP400", "receipt.value")
+    if code in SIGNER_FAILURE_CODES and signer != 1:
+        refuse("GIP400", "receipt.value")
+    if code in TOKEN_FAILURE_CODES and token != 1:
+        refuse("GIP400", "receipt.value")
+    if code in ISSUE_FAILURE_CODES and post != 1:
         refuse("GIP400", "receipt.value")
     if issue_known != (post == 1 and readback in {"matched", "failed"}):
         refuse("GIP400", "receipt.value")
@@ -298,6 +321,14 @@ def parse_closed_result(raw: bytes) -> dict[str, object]:
             or type(document.get("post_attempts")) is not int
             or document["post_attempts"] not in (0, 1)
             or document["post_attempts"] > document["mint_attempts"]
+            or (
+                document["code"] in TOKEN_FAILURE_CODES
+                and document["mint_attempts"] != 1
+            )
+            or (
+                document["code"] in ISSUE_FAILURE_CODES
+                and document["post_attempts"] != 1
+            )
         ):
             refuse("GIP400", "receipt.diagnostic")
         return document
