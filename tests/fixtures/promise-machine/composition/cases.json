@@ -506,7 +506,7 @@
               },
               {
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "c1a5a892ebec753b075a86dc072a4f2b00e90ca5e008045d5249f499a51a390c"
               }
             ],
             "predicate-type": "https://wildcat.finance/predicate/example/v1",
@@ -751,7 +751,7 @@
               },
               {
                 "path": "plugins/hexaemeron/tests/test_hexctl.py",
-                "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e"
+                "sha256": "c1a5a892ebec753b075a86dc072a4f2b00e90ca5e008045d5249f499a51a390c"
               }
             ],
             "findings-digest": "sha256:synkrisis-findings",
