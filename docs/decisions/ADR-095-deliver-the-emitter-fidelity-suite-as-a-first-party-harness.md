@@ -1,4 +1,4 @@
-# Decision: Deliver the emitter-fidelity suite as a first-party harness
+# ADR-095: Deliver the emitter-fidelity suite as a first-party harness
 
 ## Status
 
