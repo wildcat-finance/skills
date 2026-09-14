@@ -21,8 +21,11 @@ The verifier only reads and always reports `live_isolation: not-established`.
 
 The template uses Darwin's `inetdCompatibility` with `Wait: false`: launchd
 accepts one connection and passes it on descriptor 0. The process serves one
-request and exits. Both resource-limit dictionaries fix 64 files, 8 processes,
-60 CPU seconds and no core dump. The server adds a 60-second socket timeout;
+request and exits. Both launchd resource-limit dictionaries fix 60 CPU seconds and no core dump.
+The service sets its own soft and hard limits to 64 files and 8 processes
+before constructing the runtime. The launchd `NumberOfFiles` and
+`NumberOfProcesses` keys also change host sysctls for a system daemon, so the
+kit omits them. The server adds a 60-second socket timeout;
 the runtime has its own 60-second lifecycle ceiling. UID or GID 499 already
 assigned to another identity is a deployment refusal, not permission to reuse
 that identity.
@@ -65,7 +68,10 @@ deployment record; the public output deliberately omits account and path text.
 On a failed predicate, leave publication stopped, repair the named deployment
 under separate authority and rerun the same check. For an uncertain create,
 reconcile its request digest before any new publication request. Do not retry
-from the client or delete a remote issue to hide uncertainty.
+from the client or delete a remote issue to hide uncertainty. The caller must
+retain its request and received terminal output: this kit has no persistent
+server receipt. A disconnect before the response arrives leaves publication
+unknown and requires GitHub reconciliation before another request.
 
 Rollback is an operator action: unload the service, revoke outstanding access
 as appropriate, restore a reviewed release and repeat deployment verification.

@@ -54,10 +54,8 @@ def daemon_document() -> dict[str, object]:
             "SockPathName": SOCKET_PATH, "SockPathMode": 0o660,
             "SockPathOwner": SERVICE_UID, "SockPathGroup": SERVICE_GID,
         }},
-        "SoftResourceLimits": {"NumberOfFiles": 64, "NumberOfProcesses": 8,
-                               "Core": 0, "CPU": 60},
-        "HardResourceLimits": {"NumberOfFiles": 64, "NumberOfProcesses": 8,
-                               "Core": 0, "CPU": 60},
+        "SoftResourceLimits": {"Core": 0, "CPU": 60},
+        "HardResourceLimits": {"Core": 0, "CPU": 60},
         "StandardErrorPath": "/dev/null",
     }
 
