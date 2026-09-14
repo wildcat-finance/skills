@@ -23,19 +23,25 @@ UNGOVERNED = {"fizz", "fizz-convert", "fizz-sync", "x-ray", "solidity-auditor"}
 
 AXES = ("baseline", "evolution", "generation", "epoch")
 FIAT_FRONTIER = (
-    "load_state validates the version-1 state container spine in deterministic "
-    "order before any command traverses it, with path-and-kind diagnostics shared "
-    "by verify and mutations; delegated task identities can still expose an "
-    "earlier issue when a collaboration handle is reused."
+    "every delegated next envelope carries a deterministic fiat-task-identity/v1 "
+    "handle naming the run's task, phase and role, and next --task-handle refuses "
+    "a stale, malformed or delegate-less handle before any packet is emitted; "
+    "closed audit history still ships in the tree as frozen prose, and an audit "
+    "round has no field for its evidence, which lands in Leads not pursued."
 )
 FIAT_NEXT_JOB = (
-    "Complete [skills#363](https://github.com/wildcat-finance/skills/issues/363): "
-    "bind every Fiat delegation task identity to the current issue or topic, step "
-    "number and role, refusing or replacing a stale reused handle. Accepted when a "
-    "task for issue N cannot retain issue M in its visible name, Surveyor, Mason, "
-    "Warden and Scribe expose current deterministic identities, resume and "
-    "post-compaction reconstruction preserve them, and an executable regression "
-    "rejects stale reuse."
+    "Complete "
+    "[skills#1212](https://github.com/wildcat-finance/skills/issues/1212): move "
+    "closed audit history off the tree, keep every moved file by SHA-256 with a "
+    "per-run index, split an Evidence field out of Leads not pursued, and make a "
+    "study name what it read. Accepted when audit/ on main holds MANIFEST.json, "
+    "the index/ directory and the open runs' logs only, every manifest entry "
+    "verifies at its locator commit and the three retargeted tests pass, "
+    "audit_synopsis.py --check . exits 0 and renders every index file "
+    "deterministically, one Fiat run completes with Warden records carrying "
+    "Evidence: that its receipts bind and its index omits, and a study written "
+    "after the change cites the index files it opened whole, each search with its "
+    "pattern, and the sources it fetched by digest."
 )
 PROTASIS_FRONTIER = (
     "Protasis checks the fixed mechanical shape of study items, risk registers, "
@@ -347,19 +353,36 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("every piece of prose the agent writes", latest["change"])
         self.assertIn("Next Fiat job stay unchanged", latest["change"])
 
+    def test_fiat_task_identity_frontier_holds_the_audit_history_successor(self):
+        ledger = (
+            PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.56.1")
+        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
+        self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
+        self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "fiat-v6.56.1")
+        self.assertEqual(latest["axis"], "evolution")
+        self.assertEqual(latest["revision"], "delegated-task-identity")
+        self.assertEqual(
+            latest["digest"],
+            "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
+        )
+        self.assertIn("skills#363", latest["evidence"])
+        self.assertIn("`next --task-handle` refuses", latest["change"])
+        self.assertIn("skills#1212", latest["change"])
+
     def test_fiat_state_shape_frontier_holds_the_task_identity_successor(self):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.56.1")
-        self.assertEqual(field(ledger, "Frontier status"), "open")
-        self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
-        self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
-        self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
-        latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.56.1")
+        # The rebind generation was the newest row until the task-identity
+        # evolution landed, and keeps its own coverage.
+        latest = by_version["fiat-v5.56.1"]
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(

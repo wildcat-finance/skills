@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23542852,
+    "bytes_blob": 23592507,
     "bytes_generated": 98
   },
   "entries": [
@@ -152,6 +152,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.synopsis.md"
+    },
+    {
+      "bytes": 47297,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-363-bind-delegated-task-identity-to-step-and-rol.synopsis.md"
     },
     {
       "bytes": 56306,
@@ -819,16 +826,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 68337,
+      "bytes": 69665,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 34168",
+      "evidence": "mean line length above 400 in a window at offset 34832",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 79476,
+      "bytes": 80506,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 77428",
+      "evidence": "mean line length above 400 in a window at offset 78458",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
