@@ -1,0 +1,775 @@
+{
+  "record_type": "appci-delivery-observation",
+  "recorded_at": "2026-09-14T05:30:15.298105+00:00",
+  "status": "held-before-production-release",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1484",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1357",
+  "producer": "Shoggoth via Codex",
+  "operator": "Dave Coleman (kethcode)",
+  "repair_reviewer": null,
+  "source_main": "564a189bb9cdc9394b3fd4f444531a261ada99b3",
+  "source_develop": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+  "repair_commit": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+  "repair_branch": "ci/1484-refresh-horos-boundary",
+  "repair_pr": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428",
+  "main_integration_commit": null,
+  "main_boundary_job": null,
+  "existing_prs": [
+    {
+      "number": 360,
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/360",
+      "state": "closed",
+      "merged": true,
+      "merged_at": "2026-08-19T00:26:24Z",
+      "merge_commit_sha": "b15b9e459648ba9be92f90e61eecdbda9875e3fc",
+      "head": "a2a2cebd39d99e495d2912532eca010ab743ba18",
+      "base": "develop",
+      "mergeable_state": "unknown"
+    },
+    {
+      "number": 426,
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/426",
+      "state": "closed",
+      "merged": true,
+      "merged_at": "2026-09-08T11:43:59Z",
+      "merge_commit_sha": "4799e59cf24cf973747972a4417e6e08f9fc14cf",
+      "head": "c33f6e9f9d3ae5257048f709850dae81f0742d35",
+      "base": "develop",
+      "mergeable_state": "unknown"
+    },
+    {
+      "number": 428,
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428",
+      "state": "open",
+      "merged": false,
+      "merged_at": null,
+      "merge_commit_sha": null,
+      "head": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "base": "main",
+      "mergeable_state": "blocked"
+    }
+  ],
+  "release_reviews": [
+    {
+      "reviewer": "0xMcsweeja",
+      "state": "COMMENTED",
+      "commit": "9b926cd364601722c16eb1fb315ba4c0bdb12854",
+      "submitted_at": "2026-09-09T03:38:52Z",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428#pullrequestreview-5149479265"
+    },
+    {
+      "reviewer": "kethcode",
+      "state": "DISMISSED",
+      "commit": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "submitted_at": "2026-09-09T14:11:12Z",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428#pullrequestreview-5155491551"
+    },
+    {
+      "reviewer": "allend13",
+      "state": "DISMISSED",
+      "commit": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "submitted_at": "2026-09-09T18:07:18Z",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428#pullrequestreview-5158099057"
+    }
+  ],
+  "classifier": {
+    "repository": "wildcat-finance/skills",
+    "commit": "12cbe2e6ed95decd6d9d355740f2dbd052956abe",
+    "files": [
+      {
+        "path": "plugins/horos/AGENTS.md",
+        "sha256": "d09b1ed548b1f22d73fc8dda3d46f49291f5571cefc75100f1875ef0bcbda20b",
+        "bytes": 2656
+      },
+      {
+        "path": "plugins/horos/PROMISE_MACHINE.md",
+        "sha256": "f996fb645c81a8f398a2384ed4d8da0e058a9c017ea37fbbee36e499c9ef2e15",
+        "bytes": 27732
+      },
+      {
+        "path": "plugins/horos/skills/horos/SKILL.md",
+        "sha256": "b03fb485073074df2e5ca4fa928e350cefd22a4ff86752808b1f0fa19c3f1634",
+        "bytes": 15297
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/horos.py",
+        "sha256": "66f9f90d3b0791674949b2004250e19a588e4d94243ed91ab2befca79fdf4a8a",
+        "bytes": 49053
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/__init__.py",
+        "sha256": "e89bb414eb3b197f9c6e6a6de607f3224623d16098f122d7e4aa5bdf42f329a3",
+        "bytes": 826
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/cpp/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/cpp/cpp.py",
+        "sha256": "422ab3f1ed9cd80c86a61e7f0944c6b8ccb00def971ac87770eb42085b261f3b",
+        "bytes": 19704
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/go/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/go/go.py",
+        "sha256": "4743037c402fa7d180c52163d87bdc78739107f62ad6756c131b8b6f433aa1c0",
+        "bytes": 11771
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/markdown/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/markdown/markdown.py",
+        "sha256": "dbebd235b8f67d286d863c5b8908f64d9017043349b08889a19560367afcbdcb",
+        "bytes": 17908
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/python/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/python/python.py",
+        "sha256": "d3a6869cb0a5e5245b2aca1105fc9118ac7650f64d1d947074cae21bd3be4164",
+        "bytes": 2056
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/solidity/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/solidity/solidity.py",
+        "sha256": "a1ffac350f5bfe109c2aafd70780e2f427dd51ada7c5ba560903a43b5213833b",
+        "bytes": 12194
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/typescript/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      {
+        "path": "plugins/horos/skills/horos/scripts/languages/typescript/typescript.py",
+        "sha256": "42f70d777d48cf58cfc3ad23b6a60446544a3f8eeeb269f77f6402b6d070da36",
+        "bytes": 17780
+      }
+    ],
+    "version": "12.3.3"
+  },
+  "artifacts": [
+    {
+      "revision": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "path": ".horos/boundary.json",
+      "bytes": 2759,
+      "sha256": "cc390cba35d46055cac67dddd9c7755aff76500bc5e2cbdcffd8069f559ccfff",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3/.horos/boundary.json"
+    },
+    {
+      "revision": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "path": ".horos/census.json",
+      "bytes": 2551,
+      "sha256": "896e6c87c563fe17e6c62a2e8c7ffbbe5a2a9ac1b2fa00822a86a626f4d417a4",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3/.horos/census.json"
+    },
+    {
+      "revision": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "path": ".horos/candidates.json",
+      "bytes": 24640,
+      "sha256": "841dfd67bbe048e37a21b45b37030962960012be1fdc7de9d176b99e89432b3b",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3/.horos/candidates.json"
+    },
+    {
+      "revision": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "path": ".github/workflows/horos.yml",
+      "bytes": 1057,
+      "sha256": "04dabb165f6d41f19ad317b863ab605f278ee7999e6627a7d52c90fe22bef49b",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3/.github/workflows/horos.yml"
+    },
+    {
+      "revision": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "path": ".gitattributes",
+      "bytes": 51,
+      "sha256": "b85d053b051c403bab7c65322d26e5fe35a3707257f3839bcfa54f3c395d13a0",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3/.gitattributes"
+    },
+    {
+      "revision": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "path": ".horos/boundary.json",
+      "bytes": 2759,
+      "sha256": "c4aae0471fb457416f0948e8dc9ffd42decdc4af6156b4e37043f21afee7ae6e",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/c58d5418c115e89f0a3e871b0f129a3dca033f6e/.horos/boundary.json"
+    },
+    {
+      "revision": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "path": ".horos/census.json",
+      "bytes": 2551,
+      "sha256": "2844ea46967671e0605b1112425f612e1440782562dfe2bb26da01db8535e16f",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/c58d5418c115e89f0a3e871b0f129a3dca033f6e/.horos/census.json"
+    },
+    {
+      "revision": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "path": ".horos/candidates.json",
+      "bytes": 24640,
+      "sha256": "841dfd67bbe048e37a21b45b37030962960012be1fdc7de9d176b99e89432b3b",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/c58d5418c115e89f0a3e871b0f129a3dca033f6e/.horos/candidates.json"
+    },
+    {
+      "revision": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "path": ".github/workflows/horos.yml",
+      "bytes": 1057,
+      "sha256": "04dabb165f6d41f19ad317b863ab605f278ee7999e6627a7d52c90fe22bef49b",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/c58d5418c115e89f0a3e871b0f129a3dca033f6e/.github/workflows/horos.yml"
+    },
+    {
+      "revision": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "path": ".gitattributes",
+      "bytes": 51,
+      "sha256": "b85d053b051c403bab7c65322d26e5fe35a3707257f3839bcfa54f3c395d13a0",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/blob/c58d5418c115e89f0a3e871b0f129a3dca033f6e/.gitattributes"
+    }
+  ],
+  "local_python": "Python 3.12.3",
+  "regeneration_commands": [
+    [
+      "python3",
+      "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+      "scan",
+      ".",
+      "--write"
+    ],
+    [
+      "python3",
+      "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+      "scan",
+      ".",
+      "--census",
+      "--write"
+    ]
+  ],
+  "checks": [
+    {
+      "name": "boundary-before",
+      "command": [
+        "python3",
+        "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+        "check",
+        "."
+      ],
+      "cwd": "/tmp/skills-1484-evidence/app",
+      "exit": 1,
+      "stdout": "drift: .horos/boundary.json#counts: field changed: {'bytes_binary': 2495808, 'bytes_generated': 9015991, 'bytes_lockfile': 1895407, 'files_skipped_unreadable': 0, 'files_walked': 1063} -> {'files_walked': 1064, 'files_skipped_unreadable': 0, 'bytes_lockfile': 1895407, 'bytes_generated': 9015991, 'bytes_binary': 2495808}\n1 path(s) drifted\n",
+      "stdout_sha256": "b907815217e42ed36c45566a5bced618a742ad9b5184de372658d1aee99f3333",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "boundary-after",
+      "command": [
+        "python3",
+        "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+        "check",
+        "."
+      ],
+      "cwd": "/tmp/skills-1484-evidence/app",
+      "exit": 0,
+      "stdout": "boundary matches the tree\n",
+      "stdout_sha256": "8a14681961efebd783036241429468ab27619ff0ec08d9b5ea7c3550f472bd6a",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "boundary-tampered-entry",
+      "command": [
+        "python3",
+        "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+        "check",
+        "."
+      ],
+      "cwd": "/tmp/skills-1484-evidence/app",
+      "exit": 1,
+      "stdout": "drift: package-lock.json: entry changed: {'bytes': 1895408, 'category': 'lockfile', 'evidence': 'lockfile name package-lock.json', 'grade': 'hard', 'path': 'package-lock.json'} -> {'path': 'package-lock.json', 'category': 'lockfile', 'bytes': 1895407, 'evidence': 'lockfile name package-lock.json', 'grade': 'hard'}\n1 path(s) drifted\n",
+      "stdout_sha256": "6290dcc301fa3e9a474b81656900771d4f4ad3dbd9330f8d87eba09bde985e48",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "boundary-added-tracked-file",
+      "command": [
+        "python3",
+        "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+        "check",
+        "."
+      ],
+      "cwd": "/tmp/skills-1484-evidence/app",
+      "exit": 1,
+      "stdout": "drift: .horos/boundary.json#counts: field changed: {'bytes_binary': 2495808, 'bytes_generated': 9015991, 'bytes_lockfile': 1895407, 'files_skipped_unreadable': 0, 'files_walked': 1064} -> {'files_walked': 1065, 'files_skipped_unreadable': 0, 'bytes_lockfile': 1895407, 'bytes_generated': 9015991, 'bytes_binary': 2495808}\n1 path(s) drifted\n",
+      "stdout_sha256": "fb42fd5a81895c49a86d1db5d0bdfe6bc0a322791d254af30a8201caa6bc74e1",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "boundary-final",
+      "command": [
+        "python3",
+        "/tmp/skills-1484-evidence/classifier/plugins/horos/skills/horos/scripts/horos.py",
+        "check",
+        "."
+      ],
+      "cwd": "/tmp/skills-1484-evidence/app",
+      "exit": 0,
+      "stdout": "boundary matches the tree\n",
+      "stdout_sha256": "8a14681961efebd783036241429468ab27619ff0ec08d9b5ea7c3550f472bd6a",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "rejection_mutations": {
+    "boundary-tampered-entry": "Temporarily changed the package-lock.json entry bytes from 1895407 to 1895408; restored the original boundary afterwards.",
+    "boundary-added-tracked-file": "Temporarily created and git-added .horos-boundary-1484-probe.txt; removed it from the index and worktree afterwards."
+  },
+  "preservation": {
+    "entries": 13,
+    "entry_bytes": 13407206,
+    "entries_unchanged": true,
+    "candidates": 117,
+    "candidates_unchanged": true,
+    "workflow_unchanged": true,
+    "marking_unchanged": true
+  },
+  "repair_checks": [
+    {
+      "name": "Vercel Preview Comments",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:16:02Z",
+      "completed_at": "2026-09-14T05:16:02Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/103866387689"
+    },
+    {
+      "name": "boundary",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:13:02Z",
+      "completed_at": "2026-09-14T05:13:11Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34808800495/job/103865847195"
+    },
+    {
+      "name": "commitlint",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:13:00Z",
+      "completed_at": "2026-09-14T05:14:06Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34808800496/job/103865840945"
+    }
+  ],
+  "release_checks": [
+    {
+      "name": "CodeQL",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:42Z",
+      "completed_at": "2026-09-14T05:27:45Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/103868468197"
+    },
+    {
+      "name": "Redirect rules",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-14T05:27:06Z",
+      "completed_at": "2026-09-14T05:27:17Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/103868369918"
+    },
+    {
+      "name": "Header rules",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-14T05:27:06Z",
+      "completed_at": "2026-09-14T05:27:17Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/103868368784"
+    },
+    {
+      "name": "boundary",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:09Z",
+      "completed_at": "2026-09-14T05:27:18Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34809688062/job/103868368559"
+    },
+    {
+      "name": "commitlint",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-14T05:27:10Z",
+      "completed_at": "2026-09-14T05:28:16Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34809688026/job/103868368519"
+    },
+    {
+      "name": "Pages changed",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-14T05:27:06Z",
+      "completed_at": "2026-09-14T05:27:16Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/103868367642"
+    },
+    {
+      "name": "Analyze (javascript-typescript)",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:08Z",
+      "completed_at": "2026-09-14T05:28:13Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34809686100/job/103868365242"
+    },
+    {
+      "name": "Analyze (actions)",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:08Z",
+      "completed_at": "2026-09-14T05:27:52Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34809686100/job/103868365109"
+    },
+    {
+      "name": "Vercel Preview Comments",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:05Z",
+      "completed_at": "2026-09-14T05:27:05Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/103868363066"
+    },
+    {
+      "name": "commitlint",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:05Z",
+      "completed_at": "2026-09-14T05:28:08Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34809685100/job/103868359714"
+    },
+    {
+      "name": "boundary",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:27:05Z",
+      "completed_at": "2026-09-14T05:27:14Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34809685094/job/103868359697"
+    },
+    {
+      "name": "boundary",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:13:02Z",
+      "completed_at": "2026-09-14T05:13:11Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34808800495/job/103865847195"
+    },
+    {
+      "name": "commitlint",
+      "head_sha": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T05:13:00Z",
+      "completed_at": "2026-09-14T05:14:06Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34808800496/job/103865840945"
+    }
+  ],
+  "release_statuses": [
+    {
+      "context": "Vercel",
+      "state": "pending",
+      "description": "Vercel is deploying your app",
+      "target_url": "https://vercel.com/the-wildcat-protocol/wildcat-app-v2/82WA8igvPg8bPQW4uzSFXUGF5jqP",
+      "updated_at": "2026-09-14T05:27:04Z"
+    },
+    {
+      "context": "security/snyk (wildcat-app)",
+      "state": "success",
+      "description": "No manifest changes detected in 1 project",
+      "target_url": "https://app.snyk.io/org/wildcat-app/pr-checks/5708388c-c52f-4371-b4ae-cf7b68cf099d",
+      "updated_at": "2026-09-14T05:27:10Z"
+    },
+    {
+      "context": "deploy/netlify",
+      "state": "failure",
+      "description": "Deploy Preview failed.",
+      "target_url": "https://app.netlify.com/projects/wildcatv2/deploys/6aa785a961df2800076868b2",
+      "updated_at": "2026-09-14T05:27:16Z"
+    },
+    {
+      "context": "code/snyk (wildcat-app)",
+      "state": "success",
+      "description": "No new Code Analysis issues found",
+      "target_url": "https://app.snyk.io/org/wildcat-app/project/cc332ee7-da3e-46ee-b9f6-a31a544cdd91/pr-check/62845020-798e-4d0b-a994-b84fa247c86a",
+      "updated_at": "2026-09-14T05:27:51Z"
+    }
+  ],
+  "release_required_contexts": [
+    "security/snyk (wildcat-app)",
+    "code/snyk (wildcat-app)"
+  ],
+  "main_rules": [
+    {
+      "type": "required_signatures",
+      "ruleset_source_type": "Organization",
+      "ruleset_source": "wildcat-finance",
+      "ruleset_id": 16257211
+    },
+    {
+      "type": "deletion",
+      "ruleset_source_type": "Organization",
+      "ruleset_source": "wildcat-finance",
+      "ruleset_id": 16257211
+    },
+    {
+      "type": "non_fast_forward",
+      "ruleset_source_type": "Organization",
+      "ruleset_source": "wildcat-finance",
+      "ruleset_id": 16257211
+    },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": false,
+        "required_reviewers": [],
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false,
+        "require_extra_approval_for_unattributed_changes": true,
+        "allowed_merge_methods": [
+          "merge",
+          "squash",
+          "rebase"
+        ]
+      },
+      "ruleset_source_type": "Organization",
+      "ruleset_source": "wildcat-finance",
+      "ruleset_id": 16257211
+    },
+    {
+      "type": "required_signatures",
+      "ruleset_source_type": "Organization",
+      "ruleset_source": "wildcat-finance",
+      "ruleset_id": 16257446
+    }
+  ],
+  "remaining": [
+    "GitHub reports REVIEW_REQUIRED and marks the September 9 release approvals DISMISSED. A new review must precede integration.",
+    "Release PR 428 remains open and blocked. Both required Snyk contexts pass on the repair head; non-required commitlint and Netlify failures remain recorded.",
+    "The main integration commit and exact-main boundary result are absent."
+  ],
+  "evidence_limits": [
+    "Local rejection checks cover stale entries and a tracked-file addition, not every classifier rule.",
+    "The earlier release approvals were dismissed; no replacement approval is claimed.",
+    "A green develop or PR check does not establish green main CI or completion of either issue.",
+    "Snyk Code passed a fresh September 14 analysis; the Open Source success reports no manifest changes, not a new full dependency scan."
+  ],
+  "historical_extractor": {
+    "source": "https://github.com/wildcat-finance/skills/issues/1357",
+    "declarations": 2239,
+    "covered": 2237,
+    "confessed_misses": 2,
+    "unconfessed_misses": 0,
+    "revalidated_in_this_repair": false
+  },
+  "current_develop": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+  "repair_delivery": {
+    "route": "signed fast-forward update to the existing release PR head",
+    "head_branch": "develop",
+    "before": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+    "after": "c58d5418c115e89f0a3e871b0f129a3dca033f6e",
+    "push_exit": 0,
+    "push_output": "To github.com:wildcat-finance/wildcat-app-v2.git\n   3e6cfec6..c58d5418  c58d5418c115e89f0a3e871b0f129a3dca033f6e -> develop\n"
+  },
+  "historical_release_reviews": [
+    {
+      "reviewer": "0xMcsweeja",
+      "state": "COMMENTED",
+      "commit": "9b926cd364601722c16eb1fb315ba4c0bdb12854",
+      "submitted_at": "2026-09-09T03:38:52Z",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428#pullrequestreview-5149479265"
+    },
+    {
+      "reviewer": "kethcode",
+      "state": "APPROVED",
+      "commit": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "submitted_at": "2026-09-09T14:11:12Z",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428#pullrequestreview-5155491551"
+    },
+    {
+      "reviewer": "allend13",
+      "state": "APPROVED",
+      "commit": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "submitted_at": "2026-09-09T18:07:18Z",
+      "url": "https://github.com/wildcat-finance/wildcat-app-v2/pull/428#pullrequestreview-5158099057"
+    }
+  ],
+  "release_review_decision": {
+    "reviewDecision": "REVIEW_REQUIRED",
+    "mergeStateStatus": "BLOCKED",
+    "mergeable": "MERGEABLE",
+    "isDraft": false
+  },
+  "historical_release_statuses": [
+    {
+      "context": "code/snyk (wildcat-app)",
+      "state": "error",
+      "description": "Code test limit reached",
+      "target_url": null,
+      "updated_at": "2026-09-09T07:41:18Z"
+    },
+    {
+      "context": "security/snyk (wildcat-app)",
+      "state": "success",
+      "description": "No manifest changes detected in 1 project",
+      "target_url": "https://app.snyk.io/org/wildcat-app/pr-checks/f87239f5-eb92-486f-b02d-faa7a210761c",
+      "updated_at": "2026-09-09T07:41:24Z"
+    },
+    {
+      "context": "deploy/netlify",
+      "state": "failure",
+      "description": "Deploy Preview failed.",
+      "target_url": "https://app.netlify.com/projects/wildcatv2/deploys/6aa10d9d2edf750008091ebe",
+      "updated_at": "2026-09-09T07:41:28Z"
+    },
+    {
+      "context": "Vercel",
+      "state": "success",
+      "description": "Deployment has completed",
+      "target_url": "https://vercel.com/the-wildcat-protocol/wildcat-app-v2/G1FkPjSSJ9U3F5LSyH5siBC7cHpy",
+      "updated_at": "2026-09-09T07:44:37Z"
+    }
+  ],
+  "historical_release_checks": [
+    {
+      "name": "Vercel Preview Comments",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-09T07:44:38Z",
+      "completed_at": "2026-09-09T07:44:38Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/102381415248"
+    },
+    {
+      "name": "CodeQL",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-09T07:41:51Z",
+      "completed_at": "2026-09-09T07:41:54Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/102380659441"
+    },
+    {
+      "name": "Redirect rules",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-09T07:41:18Z",
+      "completed_at": "2026-09-09T07:41:30Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/102380527517"
+    },
+    {
+      "name": "boundary",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-09T07:41:22Z",
+      "completed_at": "2026-09-09T07:41:31Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34325129236/job/102380527376"
+    },
+    {
+      "name": "commitlint",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-09T07:41:22Z",
+      "completed_at": "2026-09-09T07:42:29Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34325129233/job/102380527262"
+    },
+    {
+      "name": "Header rules",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-09T07:41:18Z",
+      "completed_at": "2026-09-09T07:41:30Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/102380526071"
+    },
+    {
+      "name": "Pages changed",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-09T07:41:18Z",
+      "completed_at": "2026-09-09T07:41:29Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/runs/102380524210"
+    },
+    {
+      "name": "Analyze (actions)",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-09T07:41:21Z",
+      "completed_at": "2026-09-09T07:42:01Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34325125762/job/102380519423"
+    },
+    {
+      "name": "Analyze (javascript-typescript)",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-09T07:41:21Z",
+      "completed_at": "2026-09-09T07:42:25Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34325125762/job/102380519125"
+    },
+    {
+      "name": "boundary",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-09T07:41:18Z",
+      "completed_at": "2026-09-09T07:41:27Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34325124944/job/102380512504"
+    },
+    {
+      "name": "commitlint",
+      "head_sha": "3e6cfec64cc883ffb1757a29f61b75e6bb82bcc3",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-09T07:41:18Z",
+      "completed_at": "2026-09-09T07:42:26Z",
+      "html_url": "https://github.com/wildcat-finance/wildcat-app-v2/actions/runs/34325124917/job/102380512267"
+    }
+  ],
+  "earlier_api_refusal": {
+    "operation": "Create a separate app-v2 repair PR",
+    "result": "HTTP 403 under the available kethcode token routes",
+    "disposition": "No separate repair PR is needed. The existing release PR was updated through authorized SSH access."
+  },
+  "operator_stop": {
+    "operator": "Dave Coleman",
+    "source": "User messages in this delivery session on 2026-09-14",
+    "instruction": "yeah, this is touching our production branches.  we may need to halt at that stopping point",
+    "status_comment_instruction": "go ahead and comment 1484 with the status when you're done",
+    "disposition": "No further app-v2 branch changes or release merge in this delivery. Finish the Skills evidence draft, comment on issue 1484, and leave the issue open."
+  }
+}
