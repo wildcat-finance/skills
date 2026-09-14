@@ -353,26 +353,48 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("every piece of prose the agent writes", latest["change"])
         self.assertIn("Next Fiat job stay unchanged", latest["change"])
 
-    def test_fiat_task_identity_frontier_holds_the_audit_history_successor(self):
+    def test_fiat_link_gate_generation_holds_the_audit_history_successor(self):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.56.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.57.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v6.56.1")
-        self.assertEqual(latest["axis"], "evolution")
+        self.assertEqual(latest["version"], "fiat-v6.57.1")
+        self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
             latest["digest"],
             "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
         )
-        self.assertIn("skills#363", latest["evidence"])
-        self.assertIn("`next --task-handle` refuses", latest["change"])
-        self.assertIn("skills#1212", latest["change"])
+        self.assertIn("skills#1086", latest["evidence"])
+        self.assertIn(
+            "`adr/refuse-location-dependent-pointers-before-a-receipt-pins-a-digest`",
+            latest["evidence"],
+        )
+        self.assertIn("checked over the bytes it appends", latest["change"])
+        self.assertIn("held target are unchanged", latest["change"])
+
+    def test_fiat_task_identity_frontier_holds_the_audit_history_successor(self):
+        ledger = (
+            PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        by_version = {row["version"]: row for row in history_rows(ledger)}
+        # The task-identity evolution was the newest row until the link-gate
+        # generation landed, and keeps its own coverage.
+        evolution = by_version["fiat-v6.56.1"]
+        self.assertEqual(evolution["axis"], "evolution")
+        self.assertEqual(evolution["revision"], "delegated-task-identity")
+        self.assertEqual(
+            evolution["digest"],
+            "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
+        )
+        self.assertIn("skills#363", evolution["evidence"])
+        self.assertIn("`next --task-handle` refuses", evolution["change"])
+        self.assertIn("skills#1212", evolution["change"])
 
     def test_fiat_state_shape_frontier_holds_the_task_identity_successor(self):
         ledger = (
