@@ -82,6 +82,10 @@ evidence cannot remain pending when you hand the study back. Run
 State assumptions before the content they support. No `TBD` sections: fill
 or cut. A bare `none` is not an answer for sections 8 to 12; state why. Where
 an ambiguity changes the design, return one literal question rather than
-guessing. Otherwise record the reading and reason. Write plainly. Do not
-receipt anything with the controller. Report both output paths, the selected
-candidate, the twelve-part completion count, and a five-line summary to Fiat.
+guessing. Otherwise record the reading and reason. Write plainly. Link a
+source only by an absolute URL, pinned to the starting commit for a
+repository file, or by an in-page anchor, and put a repository path in a
+code span: `done study` refuses any other Markdown link or `runbook:`
+pointer before it pins the digest. Do not receipt anything with the
+controller. Report both output paths, the selected candidate, the
+twelve-part completion count, and a five-line summary to Fiat.
