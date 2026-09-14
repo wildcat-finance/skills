@@ -172,6 +172,24 @@
       "kind": "suite",
       "script": "plugins/pandects/tests"
     },
+    "hexaemeron-forge-build": {
+      "title": "Hexaemeron harness forge build",
+      "argv": ["sh", "-c", "python3 fetch_protocol.py && python3 -m unittest discover -s ../tests -t ../tests -p 'test_harness_*.py' && forge build"],
+      "cwd": "plugins/hexaemeron/harness",
+      "kind": "build",
+      "requires_executable": "forge",
+      "group": "hexaemeron-forge",
+      "order": 1
+    },
+    "hexaemeron-forge-test": {
+      "title": "Hexaemeron harness forge test",
+      "argv": ["sh", "-c", "python3 fetch_protocol.py --check && forge test"],
+      "cwd": "plugins/hexaemeron/harness",
+      "kind": "suite",
+      "requires_executable": "forge",
+      "group": "hexaemeron-forge",
+      "order": 2
+    },
     "pandects-forge-build": {
       "title": "Pandects forge build",
       "argv": ["forge", "build"],
@@ -255,6 +273,10 @@
     }
   },
   "groups": {
+    "hexaemeron-forge": {
+      "title": "Hexaemeron harness Solidity build then test",
+      "ordered": ["hexaemeron-forge-build", "hexaemeron-forge-test"]
+    },
     "pandects-forge": {
       "title": "Pandects Solidity build then test",
       "ordered": ["pandects-forge-build", "pandects-forge-test"]
@@ -304,7 +326,7 @@
     "brevitas": {"title": "Brevitas plugin", "checks": ["brevitas-suite"]},
     "dokimasia": {"title": "Dokimasia plugin", "checks": ["dokimasia-suite"]},
     "hermes": {"title": "Hermes plugin", "checks": ["hermes-suite"]},
-    "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite"]},
+    "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite", "hexaemeron-forge-build", "hexaemeron-forge-test"]},
     "homologia": {"title": "Homologia plugin", "checks": ["homologia-suite"]},
     "horos": {"title": "Horos plugin", "checks": ["horos-suite"]},
     "janus": {"title": "Janus plugin", "checks": ["janus-suite"]},
