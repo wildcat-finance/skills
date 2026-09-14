@@ -33,15 +33,21 @@ with a scheme the bundled Hypomnema checker skips nor an in-page anchor, a
 overflow or malformed output refuses as well. The verdict reads the pointer, not
 the artefact's path, so identical bytes get one verdict at every depth.
 
-Three construction choices belong to the decision:
+Four construction choices belong to the decision:
 
 - The controller loads the bundled `hypomnema.py` in-process and calls its
   `LINK`, `RUNBOOK`, `suppressed`, `_external`, `_code_spans` and `_within`,
   rather than copying that parser or adding a Hypomnema mode. A missing module
   or name refuses the receipt. The module exposes no fence reader, so the rule
   copies the backtick fence toggle in its `check()`.
-- An amendment is checked over the bytes it appends, so a pointer an older
-  controller receipted cannot block a later amendment.
+- An amendment is checked over the bytes it appends, read in the fence state
+  the receipted prefix leaves, so a pointer an older controller receipted
+  cannot block a later amendment.
+- The in-process scan runs under a real-time alarm of the checker's 30-second
+  `GIT_TIMEOUT` and refuses when the alarm fires, because Hypomnema's `LINK`
+  pattern backtracks quadratically on a line dense in `[` and `_within` scans
+  every code span for each match. A process that cannot hold that alarm
+  refuses rather than scanning without a bound.
 - No contract key, receipt field, ledger event field or packet field is added.
   A refusal exits 2 before any state, ledger or artefact write.
 
@@ -85,6 +91,11 @@ directory is in the checker's scope.
 The receipts now depend on six names in the bundled `hypomnema.py`, so a
 Hypomnema change that renames one refuses every study and runbook receipt until
 the controller follows it. Each receipt also runs one checker subprocess.
+
+A line dense enough to hold the scan past 30 seconds refuses the receipt
+rather than stalling it. The bound needs `SIGALRM` on the main thread: called
+from another thread, on a platform without `setitimer`, or while another alarm
+or `SIGALRM` handler is set, every study and runbook receipt refuses.
 
 Bytes an older controller receipted are never checked again, and the rule
 makes no network call, so a commit-pinned URL to a missing path is accepted.
