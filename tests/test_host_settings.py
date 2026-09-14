@@ -27,6 +27,11 @@ class HostSettingsTests(unittest.TestCase):
         self.assertEqual(set(document), {"attribution"})
         self.assertIsInstance(document["attribution"], dict)
         self.assertEqual(set(document["attribution"]), {"commit", "pr", "sessionUrl"})
+        # The settings reference types `commit` and `pr` as strings. The type is
+        # shape and the text is a preference, so only the type is pinned: a
+        # nested value would carry keys that neither key-set check above reads.
+        self.assertIsInstance(document["attribution"]["commit"], str)
+        self.assertIsInstance(document["attribution"]["pr"], str)
 
     def test_session_url_is_off(self):
         document = json.loads(SETTINGS.read_text(encoding="utf-8"))
