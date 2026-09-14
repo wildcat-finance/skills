@@ -34,6 +34,7 @@ PYTHON_WORKFLOWS = {
     "adr-assignments.yml",
     "contributors.yml",
     "dead-code.yml",
+    "identity.yml",
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
@@ -44,6 +45,7 @@ PYTHON_WORKFLOWS = {
 PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {
     "adr-assignments.yml",
     "contributors.yml",
+    "identity.yml",
 }
 # Required gates carry no path filter, so they have no filter to inspect.
 UNFILTERED_GATES = {"plugins.yml", "repo.yml"}

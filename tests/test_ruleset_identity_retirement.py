@@ -92,9 +92,9 @@ class RulesetComparatorTests(unittest.TestCase):
 
 
 class RetiredSurfaceTests(unittest.TestCase):
-    def test_hosted_identity_workflow_and_checker_are_absent(self):
-        self.assertFalse((ROOT / ".github/workflows/identity.yml").exists())
-        self.assertFalse((ROOT / "scripts/check_commit_identity.py").exists())
+    def test_hosted_identity_workflow_and_checker_are_present(self):
+        self.assertTrue((ROOT / ".github/workflows/identity.yml").exists())
+        self.assertTrue((ROOT / "scripts/check_commit_identity.py").exists())
 
     def test_claude_attribution_override_is_absent(self):
         self.assertFalse((ROOT / ".claude/settings.json").exists())
@@ -110,9 +110,9 @@ class RetiredSurfaceTests(unittest.TestCase):
         ):
             self.assertIn(name, source)
 
-    def test_python_workflow_inventory_does_not_name_identity(self):
+    def test_python_workflow_inventory_names_identity(self):
         source = (ROOT / "tests/test_python_contract.py").read_text(encoding="utf-8")
-        self.assertNotIn('"identity.yml"', source)
+        self.assertIn('"identity.yml"', source)
 
 
 if __name__ == "__main__":
