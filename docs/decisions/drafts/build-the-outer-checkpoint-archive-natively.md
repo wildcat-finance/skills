@@ -123,8 +123,12 @@ The controller grows by one archive parser and one key-handling path, the
 join ADR-028 declined for the previous generation. The cost is accepted
 because the parser is a bounded reader of a format the controller itself
 wrote, the mutation it feeds is the already audited relocation transaction,
-and every refusal happens before that transaction. One controller means one
-compatibility set, one read boundary and one test harness.
+and every refusal decided from the archive or the destination alone happens
+before that transaction. Two do not. `identity-mismatch` and
+`identity-unavailable` are both recomputed from relocated state, so both
+follow the transaction and leave that state together with the relocation
+marker, which the existing retry rules resume or refuse. One controller means
+one compatibility set, one read boundary and one test harness.
 
 Two exports of one state are byte-identical, so a receiver compares digests
 rather than archives. The acceptance statement stays outside the archive:
