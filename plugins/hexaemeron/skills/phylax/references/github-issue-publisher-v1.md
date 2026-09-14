@@ -261,7 +261,8 @@ title and body. The runtime then reads that same issue once with the
 installation token and once without credentials. Both reads must match the
 number, URL, title, and body before the outcome is `published`. A mismatch or
 readback failure returns `created-but-unverified` and does not edit, delete, or
-retry the issue.
+retry the issue. Known issue numbers in terminal results and client parsing use
+the same positive signed 64-bit bound as readback routes.
 
 The total lifecycle ceiling is 60 seconds. Safety time and byte ceilings make
 no performance claim. On every post-admission terminal route, the runtime

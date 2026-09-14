@@ -15,6 +15,7 @@ EVENT_SCHEMA = "github-issue-publisher-event/v1"
 RESULT_SCHEMA = "github-issue-publication-result/v1"
 MAX_EVENTS = 16
 MAX_RESULT_BYTES = 4_096
+MAX_ISSUE_NUMBER = (1 << 63) - 1
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 CODE_RE = re.compile(r"GIP[0-9]{3}\Z")
 FIELD_RE = re.compile(r"[a-z][a-z0-9.-]{0,127}\Z")
@@ -234,6 +235,7 @@ def result_document(
         isinstance(issue_number, bool)
         or not isinstance(issue_number, int)
         or issue_number < 1
+        or issue_number > MAX_ISSUE_NUMBER
         or issue_url
         != f"https://github.com/wildcat-finance/skills/issues/{issue_number}"
     ):

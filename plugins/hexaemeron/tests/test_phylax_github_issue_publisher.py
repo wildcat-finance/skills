@@ -1833,6 +1833,30 @@ class ReceiptBoundaryTests(BoundaryTestCase):
                     ),
                 )
 
+    def test_client_refuses_issue_number_outside_signed_64_bit_range(self):
+        at_limit = sample_result()
+        at_limit["issue_number"] = (1 << 63) - 1
+        at_limit["issue_url"] = (
+            "https://github.com/wildcat-finance/skills/issues/"
+            f"{(1 << 63) - 1}"
+        )
+        self.assertEqual(
+            at_limit,
+            parse_closed_result(canonical_json(at_limit)),
+        )
+
+        above_limit = sample_result()
+        above_limit["issue_number"] = 1 << 63
+        above_limit["issue_url"] = (
+            "https://github.com/wildcat-finance/skills/issues/"
+            f"{1 << 63}"
+        )
+        self.assert_publisher_error(
+            "GIP400",
+            "receipt.value",
+            lambda: parse_closed_result(canonical_json(above_limit)),
+        )
+
     def test_returned_event_documents_cannot_mutate_retained_counts(self):
         events = RetainedEvents()
         counts = {

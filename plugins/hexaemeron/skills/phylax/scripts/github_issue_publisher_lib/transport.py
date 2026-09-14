@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 from .canonical import MAX_REQUEST_BYTES, canonical_json
 from .errors import PublisherError, refuse
+from .receipts import MAX_ISSUE_NUMBER
 
 
 GITHUB_API_HOST = "api.github.com"
@@ -26,7 +27,6 @@ MAX_REMOTE_HEADER_BYTES = 16_384
 MAX_REMOTE_MEMBERS = 256
 MAX_REMOTE_DEPTH = 8
 MAX_REMOTE_STRING_BYTES = 262_144
-MAX_ISSUE_NUMBER = (1 << 63) - 1
 TOKEN_TIMEOUT_SECONDS = 15.0
 CREATE_TIMEOUT_SECONDS = 20.0
 READBACK_TIMEOUT_SECONDS = 10.0
