@@ -50,10 +50,12 @@ import os
 import re
 import selectors
 import shutil
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 from pathlib import Path
@@ -7536,6 +7538,67 @@ def _link_gate_echo(value) -> str | None:
     return value
 
 
+class _LinkGateScanExpired(BaseException):
+    """The scan alarm fired; no `except Exception` on the scan path may absorb it."""
+
+
+def _link_gate_scan_expired(signum, frame) -> None:
+    raise _LinkGateScanExpired
+
+
+@contextlib.contextmanager
+def _link_gate_scan_bound(subject: str, seconds: int):
+    """Hold the in-process pointer scan to a real-time alarm, or refuse.
+
+    Hypomnema's `LINK` pattern backtracks quadratically on a line dense in `[`,
+    and `_within` scans every code span for each match, so the scan takes the
+    same bound as the checker subprocess. The interpreter runs a pending signal
+    handler inside a regular-expression match, which is what lets the alarm stop
+    one. Only the main thread can take the signal, and an alarm or handler that
+    another caller already holds is left untouched, so both cases refuse rather
+    than scan without a bound. The previous handler is restored and the timer
+    disarmed before this returns, including when the alarm fires as the scan
+    finishes.
+    """
+    unavailable = (
+        f"{subject}: pointer rule refused: the scan cannot be bounded in this "
+        "process"
+    )
+    if (
+        threading.current_thread() is not threading.main_thread()
+        or not hasattr(signal, "setitimer")
+        or not hasattr(signal, "getitimer")
+    ):
+        die(unavailable)
+    try:
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+    except (OSError, ValueError):
+        die(unavailable)
+    if previous_handler not in (signal.SIG_DFL, signal.SIG_IGN) or any(
+        value > 0 for value in previous_timer
+    ):
+        die(unavailable)
+    installed = False
+    try:
+        signal.signal(signal.SIGALRM, _link_gate_scan_expired)
+        installed = True
+        try:
+            signal.setitimer(signal.ITIMER_REAL, seconds)
+            yield
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+    finally:
+        while installed:
+            try:
+                # Changing a handler first runs any signal still pending, so an
+                # alarm that fired as the scan finished can land here once.
+                signal.signal(signal.SIGALRM, previous_handler)
+                installed = False
+            except _LinkGateScanExpired:
+                continue
+
+
 def _link_gate_subject(label: str, artifact) -> str:
     shown = _link_gate_echo(artifact)
     return label if shown is None else f"{label} {shown}"
@@ -7675,19 +7738,26 @@ def refuse_location_dependent_pointers(
     amendment passes only the bytes it appends, since its receipted prefix
     cannot change, with that prefix as `preceding` so a refusal names the line
     of the full candidate and the appended lines start in the fence state the
-    prefix leaves. The pointer rule runs first and the bundled checker second;
-    each refusal exits 2 before any state, ledger or artefact write, and none
-    prints child output.
+    prefix leaves. The pointer rule runs first, its scan held to `GIT_TIMEOUT`,
+    and the bundled checker second; each refusal exits 2 before any state,
+    ledger or artefact write, and none prints child output.
     """
     text = decoded_source(data, subject)
     checker = link_gate_module(subject)
     in_fence = sum(map(_link_gate_fence_toggle, preceding.splitlines())) % 2 == 1
     try:
-        found = _location_dependent_pointer(checker, text, in_fence)
-    except (Exception, SystemExit):
+        with _link_gate_scan_bound(subject, GIT_TIMEOUT):
+            try:
+                found = _location_dependent_pointer(checker, text, in_fence)
+            except (Exception, SystemExit):
+                die(
+                    f"{subject}: pointer rule refused: the bundled Hypomnema parser "
+                    "failed on these bytes"
+                )
+    except _LinkGateScanExpired:
         die(
-            f"{subject}: pointer rule refused: the bundled Hypomnema parser "
-            "failed on these bytes"
+            f"{subject}: pointer rule refused: the scan ran longer than "
+            f"{GIT_TIMEOUT} seconds"
         )
     if found is not None:
         number, target = found

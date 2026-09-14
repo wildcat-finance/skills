@@ -13,7 +13,9 @@ import json
 import os
 import random
 import shutil
+import signal
 import tempfile
+import threading
 import time
 import unittest
 from contextlib import chdir, nullcontext, redirect_stderr, redirect_stdout
@@ -674,6 +676,94 @@ class CheckerBoundaryTests(LinkGateCase):
                     stderr,
                 )
                 self.assertNotIn("ghp_CHILD_SECRET", stderr)
+
+
+class ScanBoundTests(LinkGateCase):
+    """The in-process scan takes the checker's timeout as its own bound."""
+
+    # Hypomnema's `LINK` backtracks on the first line and `_within` scans every
+    # span for each match on the second, so each is quadratic in its length.
+    QUADRATIC_LINES = (
+        ("link-openers", "[a](" * 20000),
+        ("quoted-links", "`[a](b)` " * 20000),
+    )
+
+    def test_a_quadratic_line_refuses_at_the_pointer_rule_bound(self):
+        self.init()
+        for label, line in self.QUADRATIC_LINES:
+            with self.subTest(shape=label):
+                study = self.write(".hexaemeron/study.md", f"# Study\n\n{line}\n")
+                module = hexctl_module()
+                before = self.controller_bytes()
+                handler = signal.getsignal(signal.SIGALRM)
+                timer = signal.getitimer(signal.ITIMER_REAL)
+                started = time.monotonic()
+                with mock.patch.object(module, "GIT_TIMEOUT", 1):
+                    code, _, stderr = run_in_process(
+                        module, self.target, "done", "study", "--artifact", study
+                    )
+                elapsed = time.monotonic() - started
+                self.assertEqual(code, 2, stderr)
+                self.assertIn(
+                    "study artefact .hexaemeron/study.md: pointer rule refused: the "
+                    "scan ran longer than 1 seconds",
+                    stderr,
+                )
+                self.assertLess(elapsed, 5.0)
+                self.assertEqual(self.controller_bytes(), before)
+                self.assertEqual(self.leftovers(), [])
+                self.assertEqual(signal.getsignal(signal.SIGALRM), handler)
+                self.assertEqual(signal.getitimer(signal.ITIMER_REAL), timer)
+
+    def test_a_scan_that_cannot_be_bounded_refuses(self):
+        module = hexctl_module()
+        base = tempfile.mkdtemp(prefix="link-gate-bound-")
+        self.addCleanup(shutil.rmtree, base, True)
+        data = CONFORMING.encode("utf-8")
+        refusal = (
+            "specimen: pointer rule refused: the scan cannot be bounded in this process"
+        )
+
+        def gate():
+            error = StringIO()
+            try:
+                with redirect_stderr(error):
+                    module.refuse_location_dependent_pointers(base, data, "specimen")
+            except SystemExit as exit:
+                return exit.code, error.getvalue()
+            return None, error.getvalue()
+
+        outcome = []
+        worker = threading.Thread(target=lambda: outcome.append(gate()))
+        worker.start()
+        worker.join(60)
+        self.assertFalse(worker.is_alive())
+        with self.subTest(case="worker-thread"):
+            self.assertEqual(outcome[0][0], 2)
+            self.assertIn(refusal, outcome[0][1])
+
+        # An alarm another caller holds is neither replaced nor disarmed.
+        fired = []
+
+        def held(signum, frame):
+            fired.append(signum)
+
+        previous = signal.signal(signal.SIGALRM, held)
+        try:
+            signal.setitimer(signal.ITIMER_REAL, 60)
+            code, error = gate()
+            remaining = signal.getitimer(signal.ITIMER_REAL)[0]
+            current = signal.getsignal(signal.SIGALRM)
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous)
+        with self.subTest(case="held-alarm"):
+            self.assertEqual(code, 2)
+            self.assertIn(refusal, error)
+            self.assertIs(current, held)
+            self.assertGreater(remaining, 0)
+            self.assertEqual(fired, [])
+        self.assertEqual(list((Path(base) / ".hexaemeron").glob("*")), [])
 
 
 class PointerRuleSourceTests(unittest.TestCase):

@@ -296,3 +296,18 @@ Guard convention: each new refusal test names its exact specimen, fails against 
 3. The Fiat generation row in `plugins/hexaemeron/skills/fiat/EVOLUTION.md` points at that record and does not restate it.
 
 This study cites the record by path, not by stable reference, because a single-file Hypomnema check indexes no decision records and would report H009. [Hypomnema](https://github.com/wildcat-finance/skills/blob/485c90d3ad545b696584197f83d942c705988216/plugins/hexaemeron/skills/hypomnema/SKILL.md) owns which decisions earn a record and where each one lives.
+
+### Amendment -- 2026-09-14
+
+**What changed.** Two construction points and two controls are corrected. The selected candidate and the design record are unchanged.
+
+1. Construction item 3 in section 4 now reads: `done study` and `done runbook` check the whole artefact, and `amend study` and `amend runbook` check the bytes the amendment appends, read in the fence state the receipted prefix leaves.
+2. The pointer rule's in-process scan gains a time bound. It refuses once it runs longer than the checker's 30-second `GIT_TIMEOUT`, naming the artefact and the pointer-rule stage, before any state, ledger or artefact write.
+3. In section 5, `parser-complexity` is checked as: the scan of an untrusted artefact refuses at that bound, and stays linear on a line holding tens of thousands of backticks and one pointer.
+4. In section 11, a pointer-rule timeout joins the causes that stop a receipt.
+
+**Why.** Step 2 audit round 1 recorded both in `audit/rounds/fiat-1086-gate-study-and-runbook-links-before-their-d.md`. S2-R1-03: Hypomnema's `LINK` pattern backtracks quadratically on a line dense in `[`, and `_within` scans every code span for each match, so the scan took 43.2 s for 20,000 `[a](` repeats and 8.79 s for 20,000 links quoted in code spans; section 5's linear-scan claim held only for a line with few pointers. S2-R1-01: appended amendment bytes were read as if no fence were open, while Hypomnema reads them in the fence state the prefix leaves; commit `9dabc5176724ca00d7ba4117e0e051c3938c17b2` fixed it. The runbook amendment of the same date already carries both into Step 2's Exit and Tests.
+
+**Steps touched.** Step 2
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
