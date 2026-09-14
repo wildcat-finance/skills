@@ -38,6 +38,10 @@ directories relative to the walked root, because a specimen documenting a
 fault is not a record and a preserved source carries its origin's links;
 naming either path directly still reads it.
 
+Directory walks also skip `.agents/skills/promise-machine/runtime`, whose
+generated copies retain links relative to their source files. Naming that
+runtime directory or one of its files directly still reads it.
+
 In Markdown, a `runbook:` keyword inside an inline code span is a quoted
 specimen rather than a live pointer, so H003 passes over it. The keyword's
 own position decides that: `runbook: ` followed by a backticked path is
@@ -1181,8 +1185,14 @@ def walk(paths: list[str], include_vendored: bool = False) -> list[Path]:
         root = Path(raw)
         if root.is_dir():
             suffixes = (".md", *COMMENT_MARKERS, *sorted(YAML_SUFFIXES))
-            found = (child for suffix in suffixes
-                     for child in root.rglob(f"*{suffix}"))
+            found = []
+            for directory, names, files in os.walk(root):
+                parent = Path(directory)
+                names[:] = [name for name in names
+                            if (parent / name).absolute().parts[-4:] != (
+                                ".agents", "skills", "promise-machine", "runtime")]
+                found.extend(parent / name for name in files
+                             if name.endswith(suffixes))
             for child in sorted(set(found)):
                 if not child.is_file():
                     continue
