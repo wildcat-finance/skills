@@ -2094,6 +2094,7 @@ def load_state(
     *,
     allow_pending_amendment: bool = False,
     allow_pending_resolution: bool = False,
+    allow_pending_replacement: bool = False,
 ) -> dict:
     path = state_path(base_dir)
     if not os.path.exists(path):
@@ -2123,6 +2124,8 @@ def load_state(
     except (ValueError, OSError) as exc:
         die(f"state file unreadable at {path}: {exc}", 1)
     state = validate_state_shape(state)
+    if state['receipts'].get('replacement_pending') and not allow_pending_replacement:
+        die('replacement transaction is pending; run replacement-resume before ordinary acceptance')
     amendments = pending_amendments(base_dir)
     resolution = load_version_resolution_pending(base_dir)
     if amendments and resolution is not None:
@@ -2162,6 +2165,8 @@ MUTATING = frozenset(
         "cmd_checkpoint_export",
         "cmd_carryover_export",
         "cmd_carryover_bind",
+        "cmd_replacement_begin",
+        "cmd_replacement_resume",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -17533,7 +17538,12 @@ def cmd_checkpoint_restore(args) -> None:
 
 
 def cmd_next(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
+    if state["receipts"].get("replacement_pending"):
+        print(json.dumps({"do": "resume" if state.get("halted") else "replacement-resume",
+                          "replacement_pending": state["receipts"]["replacement_pending"],
+                          "acceptance_available": False}))
+        return
     directive = _next_directive(state, args.dir)
     if directive["do"] == "merge-step":
         # While the stack is still coming down the run branch has to be where the
@@ -17727,7 +17737,7 @@ def clean(text: str) -> str:
 
 
 def cmd_status(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
     assignment = as_dict(state.get("receipts")).get(
         DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
     )
@@ -17782,6 +17792,8 @@ def cmd_status(args) -> None:
             node = node[part]
         print(json.dumps(node))
         return
+    if state["receipts"].get("replacement_pending"):
+        print("PENDING: replacement admission; inspect status --json, halt safely, or run replacement-resume")
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
@@ -17910,7 +17922,7 @@ def cmd_status(args) -> None:
 
 
 def cmd_halt(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
     if not args.reason:
         die("--reason is required")
     state["halted"] = {"reason": args.reason, "ts": now()}
@@ -17919,7 +17931,7 @@ def cmd_halt(args) -> None:
 
 
 def cmd_resume(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
     if not state.get("halted"):
         die("run is not halted")
     note = args.note or ""
@@ -18018,11 +18030,13 @@ def verify_run(
     *,
     allow_pending_amendment: bool = False,
     allow_pending_resolution: bool = False,
+    allow_pending_replacement: bool = False,
 ) -> int:
     state = load_state(
         base_dir,
         allow_pending_amendment=allow_pending_amendment,
         allow_pending_resolution=allow_pending_resolution,
+        allow_pending_replacement=allow_pending_replacement,
     )
     path = ledger_path(base_dir)
     if not os.path.exists(path):
@@ -18167,6 +18181,12 @@ def verify_run(
             backend.verify_receipts(sys.modules[__name__], base_dir, state)
         except (backend.Refusal, OSError, ValueError, KeyError, TypeError):
             die("carryover export receipt does not replay", 1)
+    if "replacement_admission" in state["receipts"]:
+        backend = replacement_backend()
+        try:
+            backend.verify_receipt(sys.modules[__name__], base_dir, state)
+        except (backend.Refusal, OSError, ValueError, KeyError, TypeError):
+            die("replacement admission receipt does not replay", 1)
     return count
 
 
@@ -18313,10 +18333,10 @@ beside it.
 
 
 def cmd_verify(args) -> None:
-    count = verify_run(args.dir)
+    count = verify_run(args.dir, allow_pending_replacement=True)
     reported = False
     if args.observations:
-        state = load_state(args.dir)
+        state = load_state(args.dir, allow_pending_replacement=True)
         observation_count, tail_bytes = verify_observation_bindings(args.dir, state)
         suffix = (
             f"; unbound tail: {tail_bytes} bytes" if tail_bytes else ""
@@ -18332,7 +18352,7 @@ def cmd_verify(args) -> None:
         # over an issue whose body had moved (S3-R2-02).
         reported = True
     if getattr(args, "check_filing_decision", False):
-        state = load_state(args.dir)
+        state = load_state(args.dir, allow_pending_replacement=True)
         divergences, uncomparable, skipped = filing_decision_divergence(
             args.dir, state
         )
@@ -18577,10 +18597,44 @@ def cmd_carryover_validate(args) -> None:
 
 # ---------------------------------------------------------------------- cli
 
+def replacement_backend():
+    source = Path(__file__).resolve().with_name('replacement.py')
+    spec = importlib.util.spec_from_file_location('fiat_replacement', source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def cmd_replacement_begin(args) -> None:
+    backend = replacement_backend()
+    try:
+        request = backend.packet.load(backend.packet.read_regular(args.request))
+        result = backend.begin(sys.modules[__name__], args.dir, request)
+    except (backend.Refusal, backend.worker.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die('replacement-begin refused: ' + (str(error) if isinstance(error, backend.Refusal) else 'invalid-input'))
+    print(json.dumps(result, sort_keys=True))
+
+
+def cmd_replacement_resume(args) -> None:
+    backend = replacement_backend()
+    try:
+        result = backend.resume(sys.modules[__name__], args.dir)
+    except (backend.Refusal, backend.worker.Refusal, backend.adapter.Refusal,
+            OSError, ValueError, KeyError, TypeError) as error:
+        die('replacement-resume refused: ' + (str(error) if isinstance(error, backend.Refusal) else 'invalid-input'))
+    print(json.dumps(result, sort_keys=True))
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hexctl", description=__doc__)
     p.add_argument("--dir", default=".", help="directory holding the state dir")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    sp = sub.add_parser('replacement-begin', help='bind a fresh run to a complete replacement request')
+    sp.add_argument('--request', required=True)
+    sp.set_defaults(fn=cmd_replacement_begin)
+    sp = sub.add_parser('replacement-resume', help='reconstruct, execute guards and recover pending admission')
+    sp.set_defaults(fn=cmd_replacement_resume)
 
     sp = sub.add_parser("carryover-export", help="export inert cumulative evidence at exhausted audit")
     sp.add_argument("--request", required=True)

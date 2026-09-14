@@ -468,7 +468,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "4ff91b713ac3e24227f2e719ef85414e20dd7e97c19ea6d4a1ef9a634f23b5bb",
+        "semantic_sha256": "24da531f38251936a13d6e3df5408ce049405f292f991c957a387386808b5f8c",
         "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
       "entry": null,
@@ -1527,6 +1527,19 @@
         "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
       },
       "promise_id": "vulgate-register-rewrite"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "182384e366fd4d473e70344cd1f83d8a5875fc25ec9c14eb11832031617402f5",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "fiat-replacement-admission"
     }
   ],
   "entry_count": 80,

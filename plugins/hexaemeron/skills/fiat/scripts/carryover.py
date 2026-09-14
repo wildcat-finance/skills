@@ -500,10 +500,23 @@ def publish(destination, data):
         os.close(parent)
 
 
+def proof_identity(value):
+    location=Path(value)
+    require(location.is_absolute() and os.path.realpath(location)==str(location),'proof-repository-path')
+    fd=os.open(location,os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW)
+    try:
+        info=os.fstat(fd)
+        return {'path':str(location),'device':info.st_dev,'inode':info.st_ino}
+    finally:os.close(fd)
+
+
 def export(controller, root, request):
     """Export and receipt exact cumulative data while the exhausted round stays open."""
-    closed(request,'archive manifest_sha256 fixed_ref previous out')
+    closed(request,'archive manifest_sha256 fixed_ref previous out'+
+           (' proof_repository' if 'proof_repository' in request else ''))
+    proof_binding=proof_identity(request['proof_repository']) if 'proof_repository' in request else None
     root = Path(root).resolve()
+    proof_root=Path(proof_binding['path']) if proof_binding else root
     controller.verify_run(str(root))
     state = controller.load_state(str(root)); step = controller.current_step(state)
     require(controller._next_directive(state).get('do')=='audit-verdict','not-exhausted')
@@ -515,7 +528,7 @@ def export(controller, root, request):
     if request['previous'] is not None:
         closed(request['previous'],'path sha256')
         prior_digest = sha(request['previous']['sha256'])
-        prior = validate(controller,root,read_regular(request['previous']['path']),prior_digest)
+        prior = validate(controller,proof_root,read_regular(request['previous']['path']),prior_digest)
         require(prior['issue']==issue_url,'prior-issue-mismatch')
         passes = prior['passes']
     remaining=remaining_pass_budget(passes)
@@ -532,7 +545,8 @@ def export(controller, root, request):
            'filename':filename(issue_url,sequence),'previous_sha256':prior_digest,
            'passes':passes,'files':cumulative(passes)}
     data=packet_bytes(value); packet_digest=digest(data)
-    validate(controller,root,data,packet_digest)
+    validate(controller,proof_root,data,packet_digest)
+    if proof_binding:require(proof_identity(proof_root)==proof_binding,'proof-repository-drift')
     require(Path(request['out']).name==value['filename'],'sequence-name')
     require(read_regular(controller.state_path(str(root)))==before_state and
             read_regular(controller.ledger_path(str(root)))==before_ledger,'controller-drift')
@@ -549,6 +563,7 @@ def export(controller, root, request):
              'occurrences':[o['identity'] for p in passes for r in p['rounds'] for o in r['occurrences']],
              'source_state_sha256':digest(before_state),'source_ledger_sha256':digest(before_ledger),
              'replacement_admission':'unavailable'}
+    if proof_binding:receipt['proof_repository']=proof_binding
     state['receipts']['carryover_exports']=[receipt]
     controller.commit(str(root),state,'carryover:export',receipt)
     return receipt
@@ -583,12 +598,18 @@ def verify_receipts(controller, root, state):
     events=[e['data'] for e in controller.ledger_entries(str(root)) if e['event']=='carryover:export']
     require(events==receipts,'export-receipt-ledger')
     receipt=receipts[0]
-    closed(receipt,'schema packet packet_sha256 issue attachment attachment_status sequence source_runs fixed_ref fixed_commit fixed_tree archive archive_sha256 occurrences source_state_sha256 source_ledger_sha256 replacement_admission')
+    closed(receipt,'schema packet packet_sha256 issue attachment attachment_status sequence source_runs fixed_ref fixed_commit fixed_tree archive archive_sha256 occurrences source_state_sha256 source_ledger_sha256 replacement_admission'+
+           (' proof_repository' if 'proof_repository' in receipt else ''))
     require(receipt['schema']=='fiat-carryover-export/v1' and
             receipt['replacement_admission']=='unavailable','export-receipt-shape')
     data=read_regular(receipt['packet'])
     require(digest(data)==sha(receipt['packet_sha256']),'export-packet-drift')
-    packet=validate(controller,root,data,receipt['packet_sha256'])
+    proof_root=root
+    if 'proof_repository' in receipt:
+        binding=receipt['proof_repository'];closed(binding,'path device inode')
+        require(proof_identity(binding['path'])==binding,'proof-repository-drift')
+        proof_root=Path(binding['path'])
+    packet=validate(controller,proof_root,data,receipt['packet_sha256'])
     last=packet['passes'][-1]
     manifest=load(unblob(last['archive']['manifest'],[MAX_BYTES]))
     expected={'schema':'fiat-carryover-export/v1','packet':receipt['packet'],
@@ -602,6 +623,7 @@ def verify_receipts(controller, root, state):
               'source_state_sha256':manifest['source']['state_sha256'],
               'source_ledger_sha256':manifest['source']['ledger_sha256'],
               'replacement_admission':'unavailable'}
+    if 'proof_repository' in receipt:expected['proof_repository']=receipt['proof_repository']
     require(receipt==expected,'export-receipt-binding')
     bindings=state['receipts'].get('carryover_attachments',[])
     events=[e['data'] for e in controller.ledger_entries(str(root)) if e['event']=='carryover:attachment']

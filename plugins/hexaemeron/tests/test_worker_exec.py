@@ -25,6 +25,83 @@ PYTHON = str(Path(sys.executable).resolve())
 
 
 @unittest.skipUnless(platform.system() == "Darwin", "native Darwin policy required")
+class ReadonlyInputTests(unittest.TestCase):
+    def test_input_setup_failures_close_every_owned_descriptor(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            before = len(os.listdir("/dev/fd"))
+            for _ in range(3):
+                with self.assertRaisesRegex(worker.Refusal, "unsafe-target-root"):
+                    worker.run_worker(root, [PYTHON, "-c", "pass"], input_root=root / "absent")
+                self.assertEqual(len(os.listdir("/dev/fd")), before)
+            source = root / "source"; source.mkdir(); (source / "value").write_text("input")
+            original = Path.write_text
+            def fail_policy(path, *args, **kwargs):
+                if path.name == "policy.sb":
+                    raise OSError("fixture policy write failure")
+                return original(path, *args, **kwargs)
+            with mock.patch.object(Path, "write_text", fail_policy):
+                with self.assertRaisesRegex(OSError, "fixture policy"):
+                    worker.run_worker(root, [PYTHON, "-c", "pass"], input_root=source)
+            self.assertEqual(len(os.listdir("/dev/fd")), before)
+
+    def test_native_input_refuses_mutations_aliases_and_descendants(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve(); source = root / "source"; source.mkdir()
+            (source / "value").write_bytes(b"original")
+            code = '''import pathlib,os,subprocess,sys,json
+p=pathlib.Path("input/value")
+assert p.read_bytes()==b"original"
+os.symlink("input/value","symbolic-alias")
+actions=[lambda:p.write_bytes(b"changed"),lambda:p.unlink(),
+         lambda:os.rename("input","moved"),lambda:os.link(p,"alias"),
+         lambda:pathlib.Path("symbolic-alias").write_bytes(b"alias"),
+         lambda:os.chmod("input",0o777)]
+denied=[]
+for action in actions:
+    try:action()
+    except PermissionError:denied.append(True)
+    else:denied.append(False)
+child=subprocess.run([sys.executable,"-c","from pathlib import Path; Path('input/value').write_bytes(b'child')"],capture_output=True)
+assert all(denied) and child.returncode!=0
+assert p.read_bytes()==b"original"
+print(json.dumps({"denied":denied,"child_refused":child.returncode!=0}))
+'''
+            captured = worker.run_worker(root, [PYTHON, "-c", code], input_root=source)
+            self.assertEqual(captured.record["status"], "captured", captured.record)
+            self.assertEqual(json.loads(captured.stdout)["denied"], [True] * 6)
+            self.assertEqual((source / "value").read_bytes(), b"original")
+            self.assertEqual(captured.record["input"]["owned_copy_bytes"], 16)
+
+    def test_source_change_during_output_snapshot_refuses_capture(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve(); source = root / "source"; source.mkdir()
+            (source / "value").write_text("before")
+            original = worker._snapshot
+            def change_after_snapshot(*args, **kwargs):
+                result = original(*args, **kwargs)
+                (source / "value").write_text("after")
+                return result
+            with mock.patch.object(worker, "_snapshot", change_after_snapshot):
+                captured = worker.run_worker(root, [PYTHON, "-c", "pass"], input_root=source)
+            self.assertEqual(captured.record["code"], "input-post-execution-drift")
+            self.assertIsNone(captured.record["snapshot"])
+
+    def test_input_budget_and_hardlink_refuse_before_worker_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve(); source = root / "source"; source.mkdir()
+            (source / "value").write_bytes(b"12345")
+            with mock.patch.object(worker, "INPUT_MAX_BYTES", 8), \
+                    mock.patch.object(worker, "_probe") as probe:
+                with self.assertRaisesRegex(worker.Refusal, "input-file-boundary"):
+                    worker.run_worker(root, [PYTHON, "-c", "pass"], input_root=source)
+                probe.assert_not_called()
+            os.link(source / "value", source / "alias")
+            with self.assertRaisesRegex(worker.Refusal, "input-file-boundary"):
+                worker.run_worker(root, [PYTHON, "-c", "pass"], input_root=source)
+
+
+@unittest.skipUnless(platform.system() == "Darwin", "native Darwin policy required")
 class ControllerLaunchTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

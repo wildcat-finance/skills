@@ -9,6 +9,7 @@ This module records observations; it writes no Fiat receipt or Git metadata.
 
 import argparse
 import base64
+from contextlib import ExitStack
 from dataclasses import dataclass
 import hashlib
 import json
@@ -35,6 +36,9 @@ MAX_DEPTH = 8
 MAX_RECEIPT = MAX_CAP * 2 + 262144
 CHUNK = 65536
 TOOLS = ("patch", "python", "shell")
+INPUT_MAX_BYTES = 256 * 1024 * 1024
+INPUT_FILE_BYTES = 64 * 1024 * 1024
+INPUT_FILES = 4096
 SANDBOX = Path("/usr/bin/sandbox-exec")
 
 
@@ -155,7 +159,7 @@ def runtime_dependencies(runtime):
     return list(libraries.values())
 
 
-def policy_text(scratch, runtime, inventory, dependencies=()):
+def policy_text(scratch, runtime, inventory, dependencies=(), readonly_input=None):
     """Build the native policy; no caller can append a rule or deputy."""
     literal = lambda path: "(literal " + json.dumps(str(path)) + ")"
     subtree = lambda path: "(subpath " + json.dumps(str(path)) + ")"
@@ -173,6 +177,8 @@ def policy_text(scratch, runtime, inventory, dependencies=()):
         '"kern.version" "kern.hostname" "hw.machine"))',
         "(allow file-read-metadata)", "(allow file-read-data (literal \"/\"))", "(allow file-read* " + " ".join(reads) + ")",
         "(allow file-write* " + subtree(scratch) + ")",
+        *( ["(deny file-write* " + subtree(readonly_input) + ")"]
+           if readonly_input is not None else [] ),
         '(allow file-write-data (literal "/dev/null"))', "",
     ])
 
@@ -370,8 +376,103 @@ def _capture(proc, output_fd, declared, cap, deadline):
     return bytes(buffers["stdout"]), bytes(buffers["stderr"]), code
 
 
+def _input_inventory(root_fd):
+    """Hash a finite regular tree through held directories without following links."""
+    rows = []; remaining = INPUT_MAX_BYTES // 2; entries = 0
+    def visit(directory, prefix, depth):
+        nonlocal remaining, entries
+        if depth > 64:
+            raise Refusal("input-depth")
+        for name in sorted(os.listdir(directory)):
+            entries += 1
+            if entries > INPUT_FILES * 2 or name in (".", ".."):
+                raise Refusal("input-entry-cap")
+            relative = prefix + name
+            info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+            if stat.S_ISDIR(info.st_mode):
+                child = _open_dir(name, directory)
+                try:
+                    held = os.fstat(child)
+                    if (held.st_dev, held.st_ino) != (info.st_dev, info.st_ino):
+                        raise Refusal("input-directory-drift")
+                    visit(child, relative + "/", depth + 1)
+                finally:
+                    os.close(child)
+                continue
+            if (not stat.S_ISREG(info.st_mode) or info.st_nlink != 1
+                    or info.st_size > min(INPUT_FILE_BYTES, remaining)
+                    or len(rows) >= INPUT_FILES):
+                raise Refusal("input-file-boundary")
+            fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                         dir_fd=directory)
+            try:
+                before = os.fstat(fd)
+                if _stamp(before) != _stamp(info):
+                    raise Refusal("input-file-drift")
+                checksum = hashlib.sha256(); size = 0
+                while chunk := os.read(fd, CHUNK):
+                    size += len(chunk)
+                    if size > min(INPUT_FILE_BYTES, remaining):
+                        raise Refusal("input-byte-cap")
+                    checksum.update(chunk)
+                if size != before.st_size or _stamp(os.fstat(fd)) != _stamp(before):
+                    raise Refusal("input-file-drift")
+            finally:
+                os.close(fd)
+            remaining -= size
+            rows.append({"path": relative, "bytes": size,
+                         "mode": stat.S_IMODE(info.st_mode), "sha256": checksum.hexdigest()})
+    visit(root_fd, "", 0)
+    return rows
+
+
+def _copy_input(source_fd, destination, rows):
+    destination.mkdir(mode=0o700)
+    for row in rows:
+        parts = PurePosixPath(row["path"]).parts
+        parent = os.dup(source_fd)
+        try:
+            for part in parts[:-1]:
+                child = _open_dir(part, parent); os.close(parent); parent = child
+            source = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+                             dir_fd=parent)
+            try:
+                before = os.fstat(source)
+                if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+                    raise Refusal("input-file-boundary")
+                target = destination / row["path"]
+                target.parent.mkdir(parents=True, exist_ok=True)
+                checksum = hashlib.sha256(); size = 0
+                with target.open("xb") as output:
+                    while chunk := os.read(source, CHUNK):
+                        size += len(chunk)
+                        if size > row["bytes"]:
+                            raise Refusal("input-file-drift")
+                        checksum.update(chunk); output.write(chunk)
+                    output.flush(); os.fsync(output.fileno())
+                target.chmod(row["mode"])
+                if (size != row["bytes"] or checksum.hexdigest() != row["sha256"]
+                        or _stamp(os.fstat(source)) != _stamp(before)):
+                    raise Refusal("input-file-drift")
+            finally:
+                os.close(source)
+        finally:
+            os.close(parent)
+
+
 def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
-               output_cap_bytes=DEFAULT_CAP, tools=TOOLS, report_operands=()):
+               output_cap_bytes=DEFAULT_CAP, tools=TOOLS, report_operands=(),
+               input_root=None):
+    with ExitStack() as descriptors:
+        return _run_worker(target_root, argv, outputs=outputs,
+                           deadline_seconds=deadline_seconds,
+                           output_cap_bytes=output_cap_bytes, tools=tools,
+                           report_operands=report_operands, input_root=input_root,
+                           descriptors=descriptors)
+
+
+def _run_worker(target_root, argv, *, outputs, deadline_seconds,
+                output_cap_bytes, tools, report_operands, input_root, descriptors):
     """Run the finite native backend, returning captured files or a refusal.
 
     Inputs are literal argv, declared output paths and a shared stream/artifact
@@ -421,9 +522,26 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
     (scratch / "tmp").mkdir(mode=0o700)
     output = scratch / "output"
     output.mkdir(mode=0o700)
-    output_fd = _open_dir(output)
-    scratch_fd = _open_dir(scratch)
-    policy = policy_text(scratch, runtime, inventory, dependencies)
+    def own(fd):
+        descriptors.callback(os.close, fd)
+        return fd
+    output_fd = own(_open_dir(output))
+    scratch_fd = own(_open_dir(scratch))
+    # Internal callers alone supply input_root; the public request schema does
+    # not expose it. Both owned copies share INPUT_MAX_BYTES.
+    input_fd = source_fd = None
+    input_rows = None
+    if input_root is not None:
+        source_root = _absolute_directory(input_root)
+        source_fd = own(_open_dir(source_root))
+        input_rows = _input_inventory(source_fd)
+        _copy_input(source_fd, scratch / "input", input_rows)
+        input_fd = own(_open_dir(scratch / "input"))
+        if (_input_inventory(input_fd) != input_rows
+                or _input_inventory(source_fd) != input_rows):
+            raise Refusal("input-copy-drift")
+    policy = policy_text(scratch, runtime, inventory, dependencies,
+                         scratch / "input" if input_root is not None else None)
     policy_path = private / "policy.sb"
     policy_path.write_text(policy)
     policy_path.chmod(0o400)
@@ -447,8 +565,24 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
               "outputs": list(declared), "snapshot": None,
               "artifacts": [], "artifact_bytes": 0, "stream_bytes": 0,
               "status": "refused", "code": None, "returncode": None}
+    if input_rows is not None:
+        record["input"] = {"inventory": input_rows, "sha256":
+                           hashlib.sha256(_json_bytes(input_rows)).hexdigest(),
+                           "owned_copy_bytes": sum(r["bytes"] for r in input_rows) * 2}
     stdout = stderr = b""
     proc = None
+    def check_input():
+        if input_rows is not None:
+            linked = os.stat("input", dir_fd=scratch_fd, follow_symlinks=False)
+            held = os.fstat(input_fd)
+            source_link = os.stat(source_root, follow_symlinks=False)
+            source_held = os.fstat(source_fd)
+            if ((linked.st_dev, linked.st_ino) != (held.st_dev, held.st_ino)
+                    or (source_link.st_dev, source_link.st_ino) !=
+                    (source_held.st_dev, source_held.st_ino)
+                    or _input_inventory(input_fd) != input_rows
+                    or _input_inventory(source_fd) != input_rows):
+                raise Refusal("input-post-execution-drift")
     try:
         _probe(policy_path, paths["python"], scratch, private, env, deadline)
         proc = subprocess.Popen(
@@ -466,6 +600,7 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
             raise Refusal("worker-unreaped")
         if proc.returncode != 0:
             raise Refusal("worker-exit")
+        check_input()
         root_info = os.stat("output", dir_fd=scratch_fd, follow_symlinks=False)
         held_info = os.fstat(output_fd)
         if (root_info.st_dev, root_info.st_ino) != (held_info.st_dev, held_info.st_ino):
@@ -478,6 +613,7 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
         if (after != found or (linked.st_dev, linked.st_ino) !=
                 (held_info.st_dev, held_info.st_ino)):
             raise Refusal("artifact-drift")
+        check_input()
         record.update(status="captured", code="captured", snapshot=snapshot,
                       artifacts=artifacts, artifact_bytes=artifact_bytes)
     except (Refusal, OSError, subprocess.SubprocessError) as exc:
@@ -494,8 +630,6 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
         if proc is not None:
             proc.stdout.close()
             proc.stderr.close()
-        os.close(output_fd)
-        os.close(scratch_fd)
     record["stream_bytes"] = len(stdout) + len(stderr)
     record["elapsed_seconds"] = time.monotonic() - started
     record["recovery"] = "Inspect this retired scratch; start a fresh launch after repair."
