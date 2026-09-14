@@ -17253,6 +17253,39 @@ def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bo
     return destination, descriptor, created
 
 
+def _checkpoint_restore_archive_read_member(
+    local: str, offset: int, length: int
+) -> bytes:
+    """One capsule member's bytes from this process's own captured copy.
+
+    S4-R5-01. `_checkpoint_inspect_read_slice` reads the same bytes and
+    refuses `trailing-data`, which is the right diagnosis where the inspector
+    uses it: there the read is testing the archive's own central directory
+    against the file it describes, and a short read is a fact about the
+    archive. Extraction reads the same captured copy after `git init`, with
+    every member already digested and accepted against that directory, so a
+    short read or an `OSError` there is a fact about this process's scratch
+    file instead -- the same distinction S4-R1-07 and S4-R3-02 already drew
+    for the two scratch directories this path creates, and the one the
+    `os.makedirs`, `os.open`, write and `fsync` failures beside this call
+    already draw. Diagnosing it as itself also keeps `trailing-data` out of
+    the set of section-4 classes reachable once the destination repository
+    exists, which study section 11 has to qualify class by class.
+
+    The message is a fixed literal carrying no path, member name or content,
+    so the `diagnostic-leak` rule holds exactly as it does for the refusals.
+    """
+    try:
+        with open(local, "rb") as handle:
+            handle.seek(offset)
+            data = handle.read(length)
+    except OSError:
+        die("checkpoint restore capsule member could not be read")
+    if len(data) != length:
+        die("checkpoint restore capsule member could not be read")
+    return data
+
+
 def _checkpoint_restore_archive_extract_capsule(
     local: str, physical: list[dict], destination: str, outer_sha256: str
 ) -> str:
@@ -17291,7 +17324,9 @@ def _checkpoint_restore_archive_extract_capsule(
             os.makedirs(parent, 0o700, exist_ok=True)
         except OSError:
             die("checkpoint restore capsule stage could not be created")
-        data = _checkpoint_inspect_read_slice(local, item["data_offset"], item["size"])
+        data = _checkpoint_restore_archive_read_member(
+            local, item["data_offset"], item["size"]
+        )
         try:
             descriptor = os.open(
                 target,

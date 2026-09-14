@@ -69,6 +69,7 @@ from the whole file until the step that owns it.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import importlib.util
 import inspect
@@ -785,6 +786,70 @@ def study_fixture_ids(study: str) -> set[str]:
     raise AssertionError("the study's risk register has no hostile-fixture-set line")
 
 
+def hexctl_tree() -> ast.Module:
+    """`hexctl.py` parsed, for the enumeration proofs that read structure."""
+    return ast.parse(Path(HEXCTL).read_text(encoding="utf-8"))
+
+
+def module_functions(tree: ast.Module) -> dict:
+    return {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+
+def called_names(node) -> set:
+    names = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            function = child.func
+            if isinstance(function, ast.Name):
+                names.add(function.id)
+            elif isinstance(function, ast.Attribute):
+                names.add(function.attr)
+    return names
+
+
+def refusal_literals(node) -> set:
+    """Every refusal class named by a literal reaching the two entry points.
+
+    A class forwarded as a variable is not counted, which bounds this to the
+    literals: the only such forward is `_checkpoint_archive_guarded` handing
+    its own parameter to `_checkpoint_archive_refuse`, and that parameter's
+    values are the literals its call sites already supply.
+    """
+    classes = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            function = child.func
+            name = (
+                function.id
+                if isinstance(function, ast.Name)
+                else getattr(function, "attr", None)
+            )
+            if name in ("_checkpoint_archive_refuse", "_checkpoint_archive_guarded"):
+                if child.args and isinstance(child.args[0], ast.Constant):
+                    classes.add(child.args[0].value)
+    return classes
+
+
+def manifest_closed_fields(tree: ast.Module) -> set:
+    """`checkpoint.json`'s top-level field set, as the inspector closes it."""
+    shape = module_functions(tree)["_checkpoint_inspect_manifest_shape"]
+    for child in ast.walk(shape):
+        if (
+            isinstance(child, ast.Call)
+            and getattr(child.func, "id", None) == "_checkpoint_inspect_closed"
+            and len(child.args) == 3
+            and isinstance(child.args[2], ast.Constant)
+            and child.args[2].value == "manifest"
+            and isinstance(child.args[1], ast.Set)
+        ):
+            return {element.value for element in child.args[1].elts}
+    raise AssertionError("the inspector closes no manifest field set")
+
+
 def load_metron():
     spec = importlib.util.spec_from_file_location("metron_budget_loader", METRON)
     module = importlib.util.module_from_spec(spec)
@@ -1279,6 +1344,186 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 entry = declared[fields.group("name")]
                 self.assertEqual(entry["unit"], fields.group("unit"))
                 self.assertEqual(entry["limit"], int(fields.group("limit")))
+
+    def test_refusal_classes_after_git_init_are_the_four_the_reference_qualifies(self):
+        """S4-R5-01: the post-`git init` class set, computed rather than read.
+
+        Study section 11 says any section-4 refusal class exits 1 before the
+        destination repository exists. Four classes cannot hold that clause,
+        and the qualification the reference owes has to name exactly those
+        four -- rounds 1 to 3 each enumerated them by reading the restore
+        path, and each enumeration was short: round 3 named three where there
+        were four, and round 4 named four where `trailing-data` made five.
+
+        So this computes the set instead. It takes every call `checkpoint
+        restore --archive` makes at or after its `git init`, closes over
+        every module function those calls can reach, and collects every
+        refusal class named by a literal anywhere in that closure. The
+        closure follows attribute calls by bare name as well as direct ones,
+        so it over-approximates: a class it does not report is unreachable
+        after `git init`, which is the direction this guard needs.
+
+        A fifth class appearing here is not necessarily a defect in the code.
+        It is a statement in the study that has stopped being true, and the
+        two have to be repaired together.
+        """
+        tree = hexctl_tree()
+        functions = module_functions(tree)
+        restore = functions["_checkpoint_restore_from_archive"]
+        git_init = min(
+            node.lineno
+            for node in ast.walk(restore)
+            if isinstance(node, ast.Constant) and node.value == "init"
+        )
+
+        seeds = set()
+        after = [
+            node
+            for node in ast.walk(restore)
+            if isinstance(node, ast.Call) and node.lineno >= git_init
+        ]
+        for call in after:
+            function = call.func
+            if isinstance(function, ast.Name):
+                seeds.add(function.id)
+            elif isinstance(function, ast.Attribute):
+                seeds.add(function.attr)
+            for argument in call.args:
+                seeds |= called_names(argument)
+
+        reached, pending = set(), list(seeds)
+        while pending:
+            name = pending.pop()
+            if name in reached or name not in functions:
+                continue
+            reached.add(name)
+            pending.extend(called_names(functions[name]))
+
+        classes = set()
+        for call in after:
+            classes |= refusal_literals(call)
+        for name in reached:
+            classes |= refusal_literals(functions[name])
+
+        self.assertEqual(
+            {
+                "manifest-mismatch",
+                "ref-disagreement",
+                "identity-mismatch",
+                "identity-unavailable",
+            },
+            classes,
+            "the set of refusal classes reachable once the destination "
+            "repository exists has changed, so study section 11's "
+            "qualification names the wrong classes",
+        )
+
+    def test_controller_constants_carry_the_study_enumerations(self):
+        """S4-R5-01: the study's closed lists, joined to the code that runs.
+
+        `test_archive_reference_names_every_refusal_class_and_fixture_id`
+        above holds the reference document to the study. Nothing held either
+        document to the controller, so a class, field, ceiling or pattern
+        could drift in `hexctl.py` alone and both documents would still agree
+        with each other. These are the same five enumerations, read from the
+        module and from the test module's own methods.
+        """
+        study = read(STUDY)
+        module = hexctl_module()
+
+        classes = set(module.CHECKPOINT_ARCHIVE_REFUSALS)
+        self.assertEqual(24, len(classes))
+        self.assertEqual(study_refusal_classes(study), classes)
+
+        methods = {
+            name
+            for name in dir(CheckpointArchiveInspectTests)
+            if name.startswith("test_hostile_")
+        }
+        self.assertEqual(35, len(methods))
+        self.assertEqual(
+            {"test_hostile_" + fixture.replace("-", "_")
+             for fixture in study_fixture_ids(study)},
+            methods,
+        )
+
+        fields = manifest_closed_fields(hexctl_tree())
+        self.assertEqual(13, len(fields))
+        self.assertEqual(set(EXPECTED_MANIFEST_FIELDS), fields)
+
+        self.assertEqual(
+            EXPECTED_CEILINGS,
+            (
+                module.CHECKPOINT_ARCHIVE_ENTRIES_MAX,
+                module.CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX // (1024 * 1024),
+                module.CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX // (1024 * 1024 * 1024),
+                module.CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX // (1024 * 1024),
+                module.CHECKPOINT_ARCHIVE_NAME_BYTES_MAX,
+                module.CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX,
+                module.CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX,
+            ),
+        )
+
+        patterns = module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS
+        self.assertEqual(6, len(patterns))
+        sources = [pattern.pattern.decode("ascii") for pattern in patterns]
+        self.assertEqual(list(EXPECTED_AMENDED_SECRET_SPANS[1:]), sources[2:])
+        self.assertEqual(ADDED_PATTERN_SPAN, sources[1])
+        # The amendment's own reason for dropping the OpenSSH header: the PEM
+        # pattern before it already matches that header.
+        self.assertIsNotNone(
+            patterns[0].search(SUBSUMED_PATTERN_SPAN.encode("ascii"))
+        )
+
+    def test_capsule_extraction_diagnoses_a_captured_copy_read_failure_as_itself(self):
+        """S4-R5-01: a short read of the scratch copy is not `trailing-data`.
+
+        Capsule extraction reads the inspector's captured copy after `git
+        init` has filled the destination. Every member it reads was digested
+        and accepted against the central directory before that, so a short
+        read or an `OSError` at this point is a fact about this process's own
+        scratch file and not about the archive's byte layout -- which is what
+        `trailing-data` asserts, and what the risk register defines it as.
+
+        The condition is driven directly rather than through the command,
+        because inducing it through `checkpoint restore --archive` means
+        changing the scratch copy inside the window between the inspector
+        returning and extraction reading, and that window has no command-line
+        surface. The bound is worth stating: this establishes the diagnosis
+        at the extraction site, not the residue an operator meeting it finds.
+        """
+        module = hexctl_module()
+        scratch = tempfile.mkdtemp(prefix="fiat861-r5-extract-")
+        self.addCleanup(shutil.rmtree, scratch, ignore_errors=True)
+        local = os.path.join(scratch, "captured.zip")
+        with open(local, "wb") as handle:
+            handle.write(b"short")
+        destination = os.path.join(scratch, "destination")
+        os.makedirs(destination, 0o700)
+        physical = [
+            {
+                "name": module.CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/MANIFEST.json",
+                "data_offset": 0,
+                "size": 4096,
+            }
+        ]
+
+        captured = StringIO()
+        with redirect_stderr(captured):
+            with self.assertRaises(SystemExit) as stopped:
+                module._checkpoint_restore_archive_extract_capsule(
+                    local, physical, destination, "0" * 64
+                )
+
+        self.assertEqual(
+            2,
+            stopped.exception.code,
+            "a failed read of this process's own captured copy exited as a "
+            "bounded archive refusal, which states something about the "
+            "archive that the inspector already accepted",
+        )
+        self.assertNotIn("trailing-data", captured.getvalue())
+        self.assertIn("capsule member could not be read", captured.getvalue())
 
 
 class SignedRunFixture(HexctlCase):
