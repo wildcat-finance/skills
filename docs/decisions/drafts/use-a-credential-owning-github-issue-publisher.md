@@ -101,9 +101,10 @@ LaunchDaemon installation. Repository tests can prove the component and
 deployment verifier. They cannot prove that a particular Mac applied those
 predicates. A live-isolation claim requires a separately observed host
 receipt; Step 1 establishes neither live deployment nor live isolation.
-Step 2 establishes those component paths only with injected signer, transport,
-filesystem, peer, and clock doubles. It makes no live GitHub call, reads no real
-PEM, and still establishes neither live deployment nor live isolation.
+Step 2 establishes those component paths with injected signer, transport,
+filesystem, peer, and clock doubles, plus a local socket-pair check of the
+macOS peer-credential ABI. It makes no live GitHub call, reads no real PEM, and
+still establishes neither live deployment nor live isolation.
 
 Root and administrators remain outside the promise. Sapheneia and Vulgate
 records remain checked records of judgement rather than semantic proof.

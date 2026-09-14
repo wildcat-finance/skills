@@ -197,10 +197,11 @@ first frame.
 
 Before connecting, the client requires that exact path to be a single-link
 Unix socket owned by the configured service UID and GID with mode `0660`. The
-server obtains the peer identity from the kernel. UID 0, the service UID, an
-invalid UID, or an invalid GID refuses before request admission. Filesystem
-group membership controls which other identities can connect; root and
-administrators remain outside the promise.
+server reads Darwin `LOCAL_PEERCRED` from the accepted socket and sets a
+60-second I/O timeout before peer admission or frame reading. UID 0, the
+service UID, an invalid UID, or an invalid GID refuses before request
+admission. Filesystem group membership controls which other identities can
+connect; root and administrators remain outside the promise.
 
 The client exposes one `publish(request)` operation. It imports neither the
 signer nor the HTTPS transport and accepts no PEM path, token, repository,
@@ -215,7 +216,8 @@ key path
 the bounded ASCII JWT signing input on stdin, inherits no environment,
 discards stderr, waits at most five seconds, and accepts only a 256-byte
 signature under a 4,096-byte output ceiling. It returns no raw subprocess
-error.
+error. The default runner retains at most 4,097 stdout bytes, then kills and
+reaps the child when output crosses the 4,096-byte ceiling.
 
 The App JWT fixes issuer `4764812`, issued-at time to 60 seconds before the
 service clock, and expiry to 540 seconds after it. The JWT remains inside the
@@ -230,7 +232,7 @@ and these routes:
 
 - `POST /app/installations/157591976/access_tokens`;
 - `POST /repos/wildcat-finance/skills/issues`; and
-- `GET /repos/wildcat-finance/skills/issues/{positive issue number}`.
+- `GET /repos/wildcat-finance/skills/issues/{positive signed 64-bit issue number}`.
 
 The token request body is exactly
 `{"permissions":{"issues":"write"},"repositories":["skills"]}`. The
@@ -242,7 +244,8 @@ inside service-owned authorization headers.
 Redirects refuse. Token exchange is capped at 15 seconds, create at 20 seconds,
 and each readback at 10 seconds. Each response has a 16 KiB header ceiling, an
 8 KiB body ceiling, closed JSON shape limits, and duplicate-name rejection.
-Every response closes on success and refusal.
+The live reader applies the header ceiling before the standard-library parser
+retains those bytes. Every response closes on success and refusal.
 
 ## Publication lifecycle and result
 
@@ -258,7 +261,8 @@ title and body. The runtime then reads that same issue once with the
 installation token and once without credentials. Both reads must match the
 number, URL, title, and body before the outcome is `published`. A mismatch or
 readback failure returns `created-but-unverified` and does not edit, delete, or
-retry the issue.
+retry the issue. Known issue numbers in terminal results and client parsing use
+the same positive signed 64-bit bound as readback routes.
 
 The total lifecycle ceiling is 60 seconds. Safety time and byte ceilings make
 no performance claim. On every post-admission terminal route, the runtime
@@ -272,7 +276,13 @@ adds request and final digests, canonical issue identity when known, readback
 state, cleanup state, and attempt counts. It contains no prose, credential,
 header, response body, or raw error. Outcomes are `refused`, `published`,
 `create-indeterminate`, `created-but-unverified`, `receipt-failed`, and
-`cleanup-failed`.
+`cleanup-failed`. The client rejects non-integer diagnostic attempt counts,
+non-monotone lifecycle counts, and result-field combinations that no one-shot
+lifecycle can emit. Signer, token, and returned-issue failure codes require
+their respective attempt boundary to have been crossed. If a terminal event
+cannot be retained after token exchange or the issue POST, the public
+diagnostic preserves the observed mint and POST attempt counts; a completed
+POST cannot appear as a zero-attempt refusal on that path.
 
 ## Component conformance reports
 
@@ -333,8 +343,9 @@ publication evidence.
 - `GIP160`: authority record; and
 - `GIP199`: unavailable, conformance, report, or internal operation.
 
-Public diagnostics contain only schema, outcome, code, and field. They do not
-copy a request value or exception message.
+Public diagnostics contain only schema, outcome, code, field, and bounded
+integer mint and POST attempt counts. They do not copy a request value or
+exception message.
 
 Step 2 adds these codes:
 

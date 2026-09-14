@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import struct
 from typing import Protocol
 
 from .canonical import MAX_REQUEST_BYTES, canonical_json
@@ -14,12 +15,22 @@ from .runtime import PublisherRuntime
 
 
 SOCKET_TIMEOUT_SECONDS = 60.0
+SOL_LOCAL = 0
+LOCAL_PEERCRED = 1
+XUCRED_VERSION = 0
+XUCRED_GROUPS = 16
+XUCRED_FORMAT = "@IIh2x16I"
+XUCRED_BYTES = struct.calcsize(XUCRED_FORMAT)
 
 
 class Connection(Protocol):
     def recv(self, size: int) -> bytes: ...
 
     def sendall(self, data: bytes) -> None: ...
+
+    def getsockopt(self, level: int, option: int, size: int) -> bytes: ...
+
+    def settimeout(self, timeout_seconds: float) -> None: ...
 
     def close(self) -> None: ...
 
@@ -40,12 +51,24 @@ PeerReader = Callable[[Connection], PeerIdentity]
 def default_peer_reader(connection: Connection) -> PeerIdentity:
     """Read the kernel-authenticated effective identity on macOS."""
 
-    getter = getattr(connection, "getpeereid", None)
+    getter = getattr(connection, "getsockopt", None)
     if not callable(getter):
         refuse("GIP221", "peer.identity")
     try:
-        uid, gid = getter()
-    except (OSError, TypeError, ValueError) as exc:
+        raw = getter(SOL_LOCAL, LOCAL_PEERCRED, XUCRED_BYTES)
+        if not isinstance(raw, bytes) or len(raw) != XUCRED_BYTES:
+            refuse("GIP221", "peer.identity")
+        version, uid, group_count, *groups = struct.unpack(XUCRED_FORMAT, raw)
+        if (
+            version != XUCRED_VERSION
+            or group_count < 1
+            or group_count > XUCRED_GROUPS
+        ):
+            refuse("GIP221", "peer.identity")
+        gid = groups[0]
+    except PublisherError:
+        raise
+    except (OSError, TypeError, ValueError, struct.error) as exc:
         raise PublisherError("GIP221", "peer.identity") from exc
     return PeerIdentity(uid=uid, gid=gid)
 
@@ -88,6 +111,13 @@ class PublisherServer:
     def serve_connection(self, connection: Connection) -> None:
         payload: bytes
         try:
+            setter = getattr(connection, "settimeout", None)
+            if not callable(setter):
+                refuse("GIP220", "socket.timeout")
+            try:
+                setter(SOCKET_TIMEOUT_SECONDS)
+            except (OSError, TypeError, ValueError) as exc:
+                raise PublisherError("GIP220", "socket.timeout") from exc
             admit_peer(
                 self._peer_reader(connection),
                 service_uid=self._service_uid,

@@ -15,6 +15,7 @@ EVENT_SCHEMA = "github-issue-publisher-event/v1"
 RESULT_SCHEMA = "github-issue-publication-result/v1"
 MAX_EVENTS = 16
 MAX_RESULT_BYTES = 4_096
+MAX_ISSUE_NUMBER = (1 << 63) - 1
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 CODE_RE = re.compile(r"GIP[0-9]{3}\Z")
 FIELD_RE = re.compile(r"[a-z][a-z0-9.-]{0,127}\Z")
@@ -48,6 +49,23 @@ COUNT_FIELDS = (
     "authenticated_readbacks",
     "anonymous_readbacks",
 )
+SIGNER_FAILURE_CODES = frozenset({"GIP210", "GIP211", "GIP212", "GIP213"})
+TOKEN_FAILURE_CODES = frozenset(
+    {
+        "GIP300",
+        "GIP301",
+        "GIP302",
+        "GIP303",
+        "GIP304",
+        "GIP305",
+        "GIP306",
+        "GIP307",
+        "GIP309",
+        "GIP310",
+        "GIP311",
+    }
+)
+ISSUE_FAILURE_CODES = frozenset({"GIP320", "GIP321"})
 
 
 class ReceiptSink(Protocol):
@@ -69,6 +87,92 @@ def _counts(values: Mapping[str, int]) -> dict[str, int]:
     ):
         refuse("GIP400", "receipt.counts")
     return {name: copied[name] for name in COUNT_FIELDS}
+
+
+def _result_semantics(
+    *,
+    outcome: str,
+    issue_known: bool,
+    counts: Mapping[str, int],
+    readback: str,
+    cleanup_complete: bool,
+    code: str,
+) -> None:
+    """Reject field combinations the publication lifecycle cannot emit."""
+
+    signer = counts["signer_attempts"]
+    token = counts["token_attempts"]
+    post = counts["post_attempts"]
+    authenticated = counts["authenticated_readbacks"]
+    anonymous = counts["anonymous_readbacks"]
+    if not (anonymous <= authenticated <= post <= token <= signer):
+        refuse("GIP400", "receipt.value")
+    if code in SIGNER_FAILURE_CODES and signer != 1:
+        refuse("GIP400", "receipt.value")
+    if code in TOKEN_FAILURE_CODES and token != 1:
+        refuse("GIP400", "receipt.value")
+    if code in ISSUE_FAILURE_CODES and post != 1:
+        refuse("GIP400", "receipt.value")
+    if issue_known != (post == 1 and readback in {"matched", "failed"}):
+        refuse("GIP400", "receipt.value")
+    if readback == "not-run" and (authenticated != 0 or anonymous != 0):
+        refuse("GIP400", "receipt.value")
+    if readback == "matched" and (authenticated != 1 or anonymous != 1):
+        refuse("GIP400", "receipt.value")
+    if readback == "failed" and not issue_known:
+        refuse("GIP400", "receipt.value")
+
+    if outcome == "published":
+        valid = issue_known and readback == "matched" and cleanup_complete and code == "GIP000"
+    elif outcome == "refused":
+        valid = (
+            post == 0
+            and not issue_known
+            and readback == "not-run"
+            and cleanup_complete
+            and code not in {"GIP000", "GIP501", "GIP402"}
+        )
+    elif outcome == "create-indeterminate":
+        valid = (
+            post == 1
+            and not issue_known
+            and readback == "not-run"
+            and (
+                (cleanup_complete and code not in {"GIP000", "GIP501", "GIP402"})
+                or (not cleanup_complete and code in {"GIP501", "GIP402"})
+            )
+        )
+    elif outcome == "created-but-unverified":
+        valid = (
+            post == 1
+            and issue_known
+            and readback == "failed"
+            and (
+                (cleanup_complete and code not in {"GIP000", "GIP501", "GIP402"})
+                or (not cleanup_complete and code in {"GIP501", "GIP402"})
+            )
+        )
+    elif outcome == "cleanup-failed":
+        valid = (
+            not cleanup_complete
+            and code == "GIP501"
+            and (
+                (not issue_known and post == 0 and readback == "not-run")
+                or (issue_known and post == 1 and readback == "matched")
+            )
+        )
+    else:
+        valid = (
+            outcome == "receipt-failed"
+            and not cleanup_complete
+            and code == "GIP402"
+            and (
+                (not issue_known and post == 0 and readback == "not-run")
+                or (issue_known and post == 1 and readback == "matched")
+            )
+        )
+    if not valid or (code == "GIP000") != (outcome == "published"):
+        refuse("GIP400", "receipt.value")
 
 
 class RetainedEvents:
@@ -154,10 +258,20 @@ def result_document(
         isinstance(issue_number, bool)
         or not isinstance(issue_number, int)
         or issue_number < 1
+        or issue_number > MAX_ISSUE_NUMBER
         or issue_url
         != f"https://github.com/wildcat-finance/skills/issues/{issue_number}"
     ):
         refuse("GIP400", "receipt.issue")
+    safe_counts = _counts(counts)
+    _result_semantics(
+        outcome=outcome,
+        issue_known=issue_number is not None,
+        counts=safe_counts,
+        readback=readback,
+        cleanup_complete=cleanup_complete,
+        code=code,
+    )
     return {
         "schema": RESULT_SCHEMA,
         "outcome": outcome,
@@ -166,7 +280,7 @@ def result_document(
         "correlation_sha256": correlation_sha256,
         "issue_number": issue_number,
         "issue_url": issue_url,
-        "counts": _counts(counts),
+        "counts": safe_counts,
         "readback": readback,
         "cleanup_complete": cleanup_complete,
         "code": code,
@@ -201,6 +315,20 @@ def parse_closed_result(raw: bytes) -> dict[str, object]:
             or not isinstance(document.get("field"), str)
             or FIELD_RE.fullmatch(document["field"]) is None
             or CODE_RE.fullmatch(str(document.get("code"))) is None
+            or document["code"] == "GIP000"
+            or type(document.get("mint_attempts")) is not int
+            or document["mint_attempts"] not in (0, 1)
+            or type(document.get("post_attempts")) is not int
+            or document["post_attempts"] not in (0, 1)
+            or document["post_attempts"] > document["mint_attempts"]
+            or (
+                document["code"] in TOKEN_FAILURE_CODES
+                and document["mint_attempts"] != 1
+            )
+            or (
+                document["code"] in ISSUE_FAILURE_CODES
+                and document["post_attempts"] != 1
+            )
         ):
             refuse("GIP400", "receipt.diagnostic")
         return document

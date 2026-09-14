@@ -59,7 +59,9 @@ class _Budget:
 
     def elapsed_ms(self) -> int:
         elapsed = max(0.0, self._now() - self._started)
-        return min(60_000, int(elapsed * 1_000))
+        if elapsed > TOTAL_TIMEOUT_SECONDS:
+            refuse("GIP330", "deadline.total")
+        return int(elapsed * 1_000)
 
 
 def _empty_counts() -> dict[str, int]:
@@ -70,6 +72,20 @@ def _empty_counts() -> dict[str, int]:
         "authenticated_readbacks": 0,
         "anonymous_readbacks": 0,
     }
+
+
+def _error_with_attempts(
+    error: PublisherError,
+    counts: dict[str, int],
+) -> PublisherError:
+    """Retain mutation-relevant counts when a result cannot be built."""
+
+    return PublisherError(
+        error.code,
+        error.field,
+        mint_attempts=counts["token_attempts"],
+        post_attempts=counts["post_attempts"],
+    )
 
 
 class PublisherRuntime:
@@ -173,8 +189,13 @@ class PublisherRuntime:
 
         try:
             self._emit(budget, correlation, stage, outcome, code, counts)
-        except BaseException:
+        except BaseException as exc:
             self._close_before_result()
+            if isinstance(exc, PublisherError):
+                raise _error_with_attempts(exc, counts) from exc
+            if isinstance(exc, Exception):
+                error = PublisherError("GIP500", "runtime.events")
+                raise _error_with_attempts(error, counts) from exc
             raise
 
     def publish(self, raw: bytes) -> dict[str, object]:
@@ -265,7 +286,6 @@ class PublisherRuntime:
                     transport=self._transport,
                     timeout_seconds=timeout,
                 )
-                budget.finish(started, CREATE_TIMEOUT_SECONDS)
             except PublisherError as exc:
                 outcome = "create-indeterminate"
                 code = exc.code
@@ -278,6 +298,7 @@ class PublisherRuntime:
                     counts,
                 )
             else:
+                budget.finish(started, CREATE_TIMEOUT_SECONDS)
                 self._emit(budget, correlation, "create", "confirmed", "GIP000", counts)
 
             if issue is not None:
@@ -407,7 +428,14 @@ class PublisherRuntime:
                 self._receipt_sink.close()
             except Exception:
                 pass
-            self._emit(budget, correlation, "receipt", "refused", "GIP402", counts)
+            self._emit_or_close(
+                budget,
+                correlation,
+                "receipt",
+                "refused",
+                "GIP402",
+                counts,
+            )
             document = result_document(
                 outcome=(
                     outcome

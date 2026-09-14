@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 from .canonical import MAX_REQUEST_BYTES, canonical_json
 from .errors import PublisherError, refuse
+from .receipts import MAX_ISSUE_NUMBER
 
 
 GITHUB_API_HOST = "api.github.com"
@@ -31,7 +32,7 @@ CREATE_TIMEOUT_SECONDS = 20.0
 READBACK_TIMEOUT_SECONDS = 10.0
 TOKEN_ROUTE = f"/app/installations/{INSTALLATION_ID}/access_tokens"
 ISSUES_ROUTE = f"/repos/{GITHUB_REPOSITORY}/issues"
-ISSUE_ROUTE_RE = re.compile(rf"{re.escape(ISSUES_ROUTE)}/([1-9][0-9]*)\Z")
+ISSUE_ROUTE_RE = re.compile(rf"{re.escape(ISSUES_ROUTE)}/([1-9][0-9]{{0,18}})\Z")
 JWT_RE = re.compile(r"[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\Z")
 TOKEN_RE = re.compile(r"[!-~]{16,4096}\Z")
 EXPIRES_AT_RE = re.compile(
@@ -78,6 +79,60 @@ class IssueRecord:
     body: str = field(repr=False)
 
 
+class _BoundedHeaderReader:
+    """Limit response-header bytes before the stdlib parser retains them."""
+
+    def __init__(self, stream: Any):
+        self._stream = stream
+        self._header_bytes = 0
+        self._counting = True
+        self._expect_status = True
+
+    def readline(self, size: int = -1) -> bytes:
+        if not self._counting:
+            line = self._stream.readline(size)
+            return line
+        if self._expect_status:
+            bounded_size = MAX_REMOTE_HEADER_BYTES + 1
+            if isinstance(size, int) and size >= 0:
+                bounded_size = min(size, bounded_size)
+            line = self._stream.readline(bounded_size)
+            if len(line) > MAX_REMOTE_HEADER_BYTES:
+                refuse("GIP302", "transport.headers")
+            self._expect_status = False
+            return line
+        remaining = MAX_REMOTE_HEADER_BYTES - self._header_bytes
+        bounded_size = remaining + 1
+        if isinstance(size, int) and size >= 0:
+            bounded_size = min(size, bounded_size)
+        line = self._stream.readline(bounded_size)
+        self._header_bytes += len(line)
+        if self._header_bytes > MAX_REMOTE_HEADER_BYTES:
+            refuse("GIP302", "transport.headers")
+        if line in (b"\r\n", b"\n", b""):
+            self._expect_status = True
+        return line
+
+    def stop_counting(self) -> None:
+        self._counting = False
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._stream, name)
+
+
+class _BoundedHTTPResponse(http.client.HTTPResponse):
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.fp = _BoundedHeaderReader(self.fp)
+
+    def begin(self) -> None:
+        reader = self.fp
+        try:
+            super().begin()
+        finally:
+            reader.stop_counting()
+
+
 class _LiveResponse:
     def __init__(
         self,
@@ -106,6 +161,7 @@ def _live_exchange(request: HTTPSRequest, context: ssl.SSLContext) -> HTTPSRespo
         timeout=request.timeout_seconds,
         context=context,
     )
+    connection.response_class = _BoundedHTTPResponse
     try:
         connection.request(
             request.method,
@@ -284,9 +340,13 @@ class PinnedGitHubTransport:
         timeout_seconds: float,
         max_response_bytes: int = MAX_REMOTE_RESPONSE_BYTES,
     ) -> dict[str, Any]:
+        issue_route = ISSUE_ROUTE_RE.fullmatch(path) if method == "GET" else None
         allowed = (
             (method == "POST" and path in {TOKEN_ROUTE, ISSUES_ROUTE})
-            or (method == "GET" and ISSUE_ROUTE_RE.fullmatch(path) is not None)
+            or (
+                issue_route is not None
+                and int(issue_route.group(1), 10) <= MAX_ISSUE_NUMBER
+            )
         )
         if not allowed:
             refuse("GIP300", "transport.destination")
@@ -395,7 +455,12 @@ def exchange_installation_token(
 def _issue(document: dict[str, Any], title: str, body: str) -> IssueRecord:
     number = document.get("number")
     url = document.get("html_url")
-    if isinstance(number, bool) or not isinstance(number, int) or number < 1:
+    if (
+        isinstance(number, bool)
+        or not isinstance(number, int)
+        or number < 1
+        or number > MAX_ISSUE_NUMBER
+    ):
         refuse("GIP320", "issue.number")
     expected_url = f"{GITHUB_WEB_ORIGIN}/{GITHUB_REPOSITORY}/issues/{number}"
     if url != expected_url:
