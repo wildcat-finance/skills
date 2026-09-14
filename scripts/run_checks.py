@@ -35,7 +35,10 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
-from commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
+if __package__:
+    from .commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
+else:
+    from commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
 
 MAP_SCHEMA = "wildcat.check-map.v1"
 PLAN_SCHEMA = "wildcat.check-plan.v1"
