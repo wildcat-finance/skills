@@ -1,4 +1,4 @@
-# Decision: Name each Fiat delegation by task, phase and role on the `next` envelope
+# ADR-096: Name each Fiat delegation by task, phase and role on the `next` envelope
 
 ## Status
 

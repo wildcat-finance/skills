@@ -1,0 +1,8 @@
+{
+  "target": "wildcat-v2-plasma-mainnet",
+  "generation": "V2",
+  "chain_id": 1,
+  "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+  "code_keccak256": "0x472b55e3bde3f78282cfd318f6de3638479fca77ba461e31e20c01ea297676cf",
+  "note": "the Plasma WildcatCopyOfChainalysisList claimed on chain 1, where the same address is the WildcatArchController; expected rejected on chain"
+}

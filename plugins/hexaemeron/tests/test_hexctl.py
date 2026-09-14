@@ -1312,15 +1312,31 @@ class TestStudyAmendments(HexctlCase):
 try:
     from .host_identity_cases import build_host_identity_cases
     from .replacement_object_cases import build_replacement_object_cases
+    from .study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from .routed_filing_decision_cases import build_routed_filing_decision_cases
 except ImportError:
     from host_identity_cases import build_host_identity_cases
     from replacement_object_cases import build_replacement_object_cases
+    from study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from routed_filing_decision_cases import build_routed_filing_decision_cases
 
 
 HostIdentityRefusalCases, FooterReappearanceCases = build_host_identity_cases(
     globals()
 )
 (ReplacementObjectCases,) = build_replacement_object_cases(globals())
+(StudyAmendmentRebindCases,) = build_study_amendment_rebind_cases(globals())
+
+
+class StudyAmendmentRebindTests(StudyAmendmentRebindCases, HexctlCase):
+    """A study amendment rebinds or displaces each effective runbook amendment."""
+
+
+(RoutedFilingDecisionCases,) = build_routed_filing_decision_cases(globals())
+
+
+class RoutedFilingDecisionTests(RoutedFilingDecisionCases, HexctlCase):
+    """What `init` does when the issue already decided against a run."""
 
 
 class TestCommitVerification(
