@@ -64,9 +64,19 @@ def snapshot_archive(source: Path, destination: Path, expected: str, size: int) 
         raise ValueError('archive snapshot differs from saved export')
 
 
-def digest(path: Path) -> str:
-    with path.open('rb') as handle:
-        return hashlib.file_digest(handle, 'sha256').hexdigest()
+def digest(path: Path, maximum: int = 1024 * 1024 * 1024) -> str:
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    result = hashlib.sha256()
+    total = 0
+    with os.fdopen(descriptor, 'rb') as handle:
+        if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+            raise ValueError('digest input must be a regular file')
+        while chunk := handle.read(min(1024 * 1024, maximum - total + 1)):
+            total += len(chunk)
+            if total > maximum:
+                raise ValueError('digest input exceeds byte limit')
+            result.update(chunk)
+    return result.hexdigest()
 
 
 def checked_integer(value: object) -> int:
@@ -168,14 +178,14 @@ def saved_measurements(export: dict, rss_text: str, *, system: str,
 
 
 def read_export(root: Path, archive: Path, expected: str) -> tuple[dict, str]:
-    """Require saved producer evidence for this exact externally named archive."""
+    """Bind producer evidence to the named path and size; the private copy checks bytes."""
     if not HEX.fullmatch(expected):
         raise ValueError('outer digest must be lowercase SHA-256')
     export = json.loads(read_bytes(root / '.hexaemeron/metron/step-4-export.json'))
     if export.get('outer_sha256') != expected or Path(export['archive']).resolve() != archive:
         raise ValueError('saved export belongs to another archive')
     size = checked_integer(export.get('bytes'))
-    if size > 1024 * 1024 * 1024 or size != archive.stat().st_size or digest(archive) != expected:
+    if size > 1024 * 1024 * 1024 or size != archive.stat().st_size:
         raise ValueError('archive differs from saved export')
     rss = read_bytes(root / '.hexaemeron/metron/step-4-export.time.txt').decode('utf-8')
     return export, rss

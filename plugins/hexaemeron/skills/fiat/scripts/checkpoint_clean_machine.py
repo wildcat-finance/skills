@@ -194,8 +194,9 @@ def demonstrate(archive: Path, expected: str, image: str, transcript: Path) -> d
             raise ValueError('derived image digest is invalid')
         inputs = scratch/'input';inputs.mkdir()
         measure.snapshot_archive(archive,inputs/'checkpoint.zip',expected,export['bytes'])
-        shutil.copyfile(archive.with_name('checkpoint.zip.sha256'),inputs/'checkpoint.zip.sha256')
-        shutil.copyfile(controller,inputs/'hexctl.py')
+        (inputs/'checkpoint.zip.sha256').write_bytes(measure.read_bytes(
+            archive.with_name('checkpoint.zip.sha256'),maximum=4096))
+        (inputs/'hexctl.py').write_bytes(measure.read_bytes(controller))
         if measure.digest(inputs/'checkpoint.zip') != expected or measure.digest(inputs/'hexctl.py') != controller_digest:
             raise ValueError('input copy changed')
         probe = 'import os, selectors, signal, subprocess, time\nOUTPUT_CAP=2097152\n'+inspect.getsource(measure.command)+'\n'+PROBE

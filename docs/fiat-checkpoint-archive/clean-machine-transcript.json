@@ -6,7 +6,7 @@
   "destination_was_empty": true,
   "hexctl_verify_exit": 0,
   "keyring": "empty-at-start",
-  "log_sha256": "48b64804b67b40c33eac47ad0a3ca28e7e791e6571d0b7e9fe206d286b0534b7",
+  "log_sha256": "438e99e0794ecad3b9e92e1ab267653dd8d4d5d85b7fe887dcd85447ea8d93f6",
   "manifest_sha256": "fe2ee098eb9a8129351a54b745d970374057efdb1d6ba4149fff491017963cc3",
   "measurement_scope": {
     "consumer": "one whole inspect/restore command inside the network-disabled Linux container",
@@ -18,8 +18,8 @@
     "checkpoint.archive.expanded_bytes": 111771408,
     "checkpoint.archive.export_peak_rss_bytes": 311836672,
     "checkpoint.archive.export_wall_ms": 4899,
-    "checkpoint.archive.inspect_wall_ms": 3845,
-    "checkpoint.archive.restore_wall_ms": 9569
+    "checkpoint.archive.inspect_wall_ms": 2665,
+    "checkpoint.archive.restore_wall_ms": 6946
   },
   "network": "none",
   "next": {

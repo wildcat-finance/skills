@@ -4733,6 +4733,30 @@ class CheckpointArchiveDemonstrationTests(unittest.TestCase):
             source.write_bytes(b'accepted' + b'excess')
             with self.assertRaises(ValueError):
                 module.snapshot_archive(source, target, expected, 8)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            fifo = root / 'checkpoint.zip'
+            os.mkfifo(fifo)
+            with self.assertRaisesRegex(ValueError, 'regular file'):
+                module.digest(fifo)
+            with self.assertRaisesRegex(ValueError, 'regular non-symlink file'):
+                module.read_bytes(fifo)
+            oversized = root / 'oversized-sidecar'
+            oversized.write_bytes(b'x' * 4097)
+            with self.assertRaisesRegex(ValueError, 'byte limit'):
+                module.digest(oversized, maximum=4096)
+            with self.assertRaisesRegex(ValueError, 'byte limit'):
+                module.read_bytes(oversized, maximum=4096)
+            records = root / '.hexaemeron/metron'
+            records.mkdir(parents=True)
+            empty_digest = hashlib.sha256(b'').hexdigest()
+            (records / 'step-4-export.json').write_text(json.dumps({
+                'schema': 'fiat-checkpoint-archive-export/v1',
+                'archive': str(fifo), 'outer_sha256': empty_digest, 'bytes': 0,
+                'timing_ms': {'export': 0}}))
+            (records / 'step-4-export.time.txt').write_text('1 maximum resident set size\n')
+            with self.assertRaisesRegex(ValueError, 'regular file'):
+                module.measure(fifo, empty_digest, root)
         timed = module.command([sys.executable, '-c', 'import time; time.sleep(20)'], timeout=1)
         self.assertEqual('timeout', timed['failure'])
         self.assertLess(timed['wall_ms'], 5000)
