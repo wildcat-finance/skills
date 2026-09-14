@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import importlib.util
 from pathlib import Path
 import re
@@ -108,6 +108,8 @@ class AdmissionResult:
     gate_versions: tuple[str, ...]
     mint_attempts: int = 0
     post_attempts: int = 0
+    final_title: str = field(default="", repr=False)
+    final_body: str = field(default="", repr=False)
 
     def document(self) -> dict[str, Any]:
         return {
@@ -651,4 +653,6 @@ def admit_request(
         queue=queue,
         labels=labels,
         gate_versions=gate_versions,
+        final_title=final.title,
+        final_body=final.body,
     )

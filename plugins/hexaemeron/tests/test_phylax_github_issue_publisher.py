@@ -6,14 +6,19 @@ import ast
 from copy import deepcopy
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
 import shutil
+import socket
+import ssl
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -52,6 +57,50 @@ from github_issue_publisher_lib import (  # noqa: E402
 import github_issue_publisher_lib.policy as publisher_policy  # noqa: E402
 from github_issue_publisher_lib.policy import default_imprimatur  # noqa: E402
 import github_issue_publisher as publisher_cli  # noqa: E402
+from github_issue_publisher_lib.client import PublisherClient  # noqa: E402
+from github_issue_publisher_lib.framing import (  # noqa: E402
+    MAX_RESULT_BYTES,
+    SOCKET_PATH,
+    FrameDecoder,
+    encode_frame,
+    read_closed_frame,
+    validate_socket_path,
+)
+from github_issue_publisher_lib.receipts import (  # noqa: E402
+    MemoryReceiptSink,
+    RetainedEvents,
+    parse_closed_result,
+    result_bytes,
+    result_document,
+)
+from github_issue_publisher_lib.runtime import PublisherRuntime  # noqa: E402
+import github_issue_publisher_lib.runtime as publisher_runtime  # noqa: E402
+from github_issue_publisher_lib.server import (  # noqa: E402
+    PeerIdentity,
+    PublisherServer,
+    admit_peer,
+    default_peer_reader,
+)
+from github_issue_publisher_lib.signer import (  # noqa: E402
+    MAX_SIGNATURE_BYTES,
+    OPENSSL_ARGUMENTS,
+    PEM_PATH,
+    RSA_SIGNATURE_BYTES,
+    SIGN_TIMEOUT_SECONDS,
+    OpenSSLSigner,
+)
+import github_issue_publisher_lib.signer as publisher_signer  # noqa: E402
+from github_issue_publisher_lib.transport import (  # noqa: E402
+    API_VERSION,
+    GITHUB_REPOSITORY,
+    ISSUES_ROUTE,
+    TOKEN_ROUTE,
+    HTTPSRequest,
+    PinnedGitHubTransport,
+    create_issue,
+    exchange_installation_token,
+)
+import github_issue_publisher_lib.transport as publisher_transport  # noqa: E402
 
 
 ROOT_FRAMEWORK_OPENING = (
@@ -184,6 +233,1700 @@ def valid_document(
 
 def encoded(document: dict[str, object]) -> bytes:
     return canonical_json(document)
+
+
+class FakeSigner:
+    def __init__(
+        self,
+        *,
+        signature: bytes = b"s" * RSA_SIGNATURE_BYTES,
+        error: Exception | None = None,
+        close_error: Exception | None = None,
+        on_sign=None,
+    ):
+        self.signature = signature
+        self.error = error
+        self.close_error = close_error
+        self.on_sign = on_sign
+        self.calls: list[tuple[bytes, float]] = []
+        self.closed = False
+
+    def sign(self, signing_input: bytes, *, timeout_seconds: float) -> bytes:
+        self.calls.append((bytes(signing_input), timeout_seconds))
+        if self.on_sign is not None:
+            self.on_sign()
+        if self.error is not None:
+            raise self.error
+        return self.signature
+
+    def close(self) -> None:
+        self.closed = True
+        if self.close_error is not None:
+            raise self.close_error
+
+
+class FakeResponse:
+    def __init__(
+        self,
+        status: int,
+        document: dict[str, object] | None = None,
+        *,
+        raw: bytes | None = None,
+        headers: tuple[tuple[str, str], ...] = (("Content-Type", "application/json"),),
+        chunk_bytes: int = 11,
+        close_error: Exception | None = None,
+    ):
+        self.status = status
+        self.headers = headers
+        self.raw = canonical_json(document) if raw is None else raw
+        self.chunk_bytes = chunk_bytes
+        self.close_error = close_error
+        self.offset = 0
+        self.closed = False
+
+    def read(self, size: int) -> bytes:
+        take = min(size, self.chunk_bytes)
+        chunk = self.raw[self.offset : self.offset + take]
+        self.offset += len(chunk)
+        return chunk
+
+    def close(self) -> None:
+        self.closed = True
+        if self.close_error is not None:
+            raise self.close_error
+
+
+class QueueExchange:
+    def __init__(self, *responses):
+        self.responses = list(responses)
+        self.requests: list[HTTPSRequest] = []
+        self.contexts: list[object] = []
+        self.delivered: list[FakeResponse] = []
+
+    def __call__(self, request: HTTPSRequest, context):
+        self.requests.append(request)
+        self.contexts.append(context)
+        if not self.responses:
+            raise AssertionError("unexpected request")
+        response = self.responses.pop(0)
+        if isinstance(response, BaseException):
+            raise response
+        self.delivered.append(response)
+        return response
+
+
+class FailingReceiptSink(MemoryReceiptSink):
+    def __init__(self, *, write_error: bool = False, close_error: bool = False):
+        super().__init__()
+        self.write_error = write_error
+        self.close_error = close_error
+
+    def write(self, payload: bytes) -> None:
+        if self.write_error:
+            raise OSError("receipt canary must stay private")
+        super().write(payload)
+
+    def close(self) -> None:
+        self.closed = True
+        if self.close_error:
+            raise OSError("receipt close canary must stay private")
+
+
+def token_document(token: str = "t" * 32) -> dict[str, object]:
+    return {
+        "token": token,
+        "expires_at": "2033-05-18T04:33:20Z",
+        "permissions": {"issues": "write"},
+        "repository_selection": "selected",
+        "repositories": [{"full_name": GITHUB_REPOSITORY}],
+    }
+
+
+def issue_document(
+    document: dict[str, object],
+    *,
+    number: int = 9250,
+    title: str | None = None,
+    body: str | None = None,
+    url: str | None = None,
+) -> dict[str, object]:
+    final = document["final_candidate"]
+    return {
+        "number": number,
+        "html_url": (
+            f"https://github.com/wildcat-finance/skills/issues/{number}"
+            if url is None
+            else url
+        ),
+        "title": final["title"] if title is None else title,
+        "body": final["body"] if body is None else body,
+    }
+
+
+def runtime_fixture(
+    *,
+    signer: FakeSigner | None = None,
+    sink: MemoryReceiptSink | None = None,
+    responses: list[object] | None = None,
+    document: dict[str, object] | None = None,
+    monotonic=lambda: 100.0,
+):
+    document = valid_document() if document is None else document
+    signer = FakeSigner() if signer is None else signer
+    sink = MemoryReceiptSink() if sink is None else sink
+    if responses is None:
+        issue = issue_document(document)
+        responses = [
+            FakeResponse(201, token_document()),
+            FakeResponse(201, issue),
+            FakeResponse(200, issue),
+            FakeResponse(200, issue),
+        ]
+    exchange = QueueExchange(*responses)
+    runtime = PublisherRuntime(
+        signer=signer,
+        transport=PinnedGitHubTransport(exchange),
+        receipt_sink=sink,
+        events=RetainedEvents(),
+        wall_clock=lambda: 2_000_000_000.0,
+        monotonic=monotonic,
+        imprimatur_runner=lambda _text: {"defects": 0},
+    )
+    return document, runtime, signer, sink, exchange
+
+
+class ChunkConnection:
+    def __init__(self, *chunks: bytes):
+        self.chunks = list(chunks)
+        self.sent = bytearray()
+        self.shutdowns: list[int] = []
+        self.timeouts: list[float] = []
+        self.closed = False
+
+    def recv(self, size: int) -> bytes:
+        if not self.chunks:
+            return b""
+        chunk = self.chunks.pop(0)
+        if len(chunk) > size:
+            self.chunks.insert(0, chunk[size:])
+            return chunk[:size]
+        return chunk
+
+    def sendall(self, data: bytes) -> None:
+        self.sent.extend(data)
+
+    def shutdown(self, how: int) -> None:
+        self.shutdowns.append(how)
+
+    def settimeout(self, timeout_seconds: float) -> None:
+        self.timeouts.append(timeout_seconds)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def socket_status(
+    *,
+    mode: int = stat.S_IFSOCK | 0o660,
+    uid: int = 501,
+    gid: int = 502,
+    links: int = 1,
+):
+    return SimpleNamespace(st_mode=mode, st_uid=uid, st_gid=gid, st_nlink=links)
+
+
+class BoundaryTestCase(unittest.TestCase):
+    def assert_publisher_error(
+        self,
+        code: str,
+        field: str,
+        operation,
+    ) -> PublisherError:
+        with self.assertRaises(PublisherError) as caught:
+            operation()
+        self.assertEqual(code, caught.exception.code)
+        self.assertEqual(field, caught.exception.field)
+        return caught.exception
+
+
+def sample_result() -> dict[str, object]:
+    return result_document(
+        outcome="published",
+        request_sha256="1" * 64,
+        final_sha256="2" * 64,
+        correlation_sha256="3" * 64,
+        issue_number=9250,
+        issue_url="https://github.com/wildcat-finance/skills/issues/9250",
+        counts={
+            "signer_attempts": 1,
+            "token_attempts": 1,
+            "post_attempts": 1,
+            "authenticated_readbacks": 1,
+            "anonymous_readbacks": 1,
+        },
+        readback="matched",
+        cleanup_complete=True,
+        code="GIP000",
+    )
+
+
+class FramingTests(BoundaryTestCase):
+    def test_fragmented_frame_round_trips(self):
+        payload = b"bounded-request"
+        framed = encode_frame(payload, max_bytes=64)
+        decoder = FrameDecoder(max_bytes=64)
+        for byte in framed:
+            decoder.feed(bytes([byte]))
+        self.assertEqual(payload, decoder.finish())
+
+        connection = ChunkConnection(*[bytes([byte]) for byte in framed], b"")
+        self.assertEqual(payload, read_closed_frame(connection, max_bytes=64))
+
+    def test_concatenated_and_trailing_frames_refuse(self):
+        first = encode_frame(b"first", max_bytes=32)
+        second = encode_frame(b"second", max_bytes=32)
+        for raw in (first + second, first + b"x"):
+            with self.subTest(raw=raw):
+                decoder = FrameDecoder(max_bytes=32)
+                self.assert_publisher_error(
+                    "GIP203", "frame.trailing", lambda: decoder.feed(raw)
+                )
+
+    def test_short_prefix_and_payload_refuse(self):
+        for raw in (b"\x00\x00", struct.pack(">I", 4) + b"abc"):
+            with self.subTest(raw=raw):
+                connection = ChunkConnection(raw, b"")
+                self.assert_publisher_error(
+                    "GIP202",
+                    "frame.short",
+                    lambda: read_closed_frame(connection, max_bytes=32),
+                )
+
+    def test_empty_and_oversized_frames_refuse(self):
+        for raw in (struct.pack(">I", 0), struct.pack(">I", 33)):
+            with self.subTest(raw=raw):
+                decoder = FrameDecoder(max_bytes=32)
+                self.assert_publisher_error(
+                    "GIP200", "frame.length", lambda: decoder.feed(raw)
+                )
+        self.assert_publisher_error(
+            "GIP200", "frame.length", lambda: encode_frame(b"", max_bytes=32)
+        )
+        self.assert_publisher_error(
+            "GIP200",
+            "frame.limit",
+            lambda: encode_frame(b"x", max_bytes=MAX_REQUEST_BYTES + 1),
+        )
+
+
+class SocketBoundaryTests(BoundaryTestCase):
+    def test_socket_path_type_owner_group_link_and_mode_are_fixed(self):
+        validate_socket_path(
+            SOCKET_PATH,
+            service_uid=501,
+            service_gid=502,
+            lstat=lambda _path: socket_status(),
+        )
+        self.assert_publisher_error(
+            "GIP220",
+            "socket.path",
+            lambda: validate_socket_path(
+                "/tmp/publisher.sock",
+                service_uid=501,
+                service_gid=502,
+                lstat=lambda _path: socket_status(),
+            ),
+        )
+        invalid = (
+            socket_status(mode=stat.S_IFREG | 0o660),
+            socket_status(uid=503),
+            socket_status(gid=503),
+            socket_status(mode=stat.S_IFSOCK | 0o666),
+            socket_status(links=2),
+        )
+        for status_value in invalid:
+            with self.subTest(status=status_value):
+                self.assert_publisher_error(
+                    "GIP220",
+                    "socket.identity",
+                    lambda status_value=status_value: validate_socket_path(
+                        SOCKET_PATH,
+                        service_uid=501,
+                        service_gid=502,
+                        lstat=lambda _path: status_value,
+                    ),
+                )
+        self.assert_publisher_error(
+            "GIP220",
+            "socket.identity",
+            lambda: validate_socket_path(
+                SOCKET_PATH,
+                service_uid=501,
+                service_gid=502,
+                lstat=lambda _path: SimpleNamespace(),
+            ),
+        )
+
+    def test_peer_policy_refuses_root_and_service_identity(self):
+        admit_peer(PeerIdentity(uid=501, gid=502), service_uid=600)
+        for peer in (
+            PeerIdentity(uid=0, gid=502),
+            PeerIdentity(uid=600, gid=502),
+            PeerIdentity(uid=501, gid=0),
+        ):
+            with self.subTest(peer=peer):
+                self.assert_publisher_error(
+                    "GIP221",
+                    "peer.policy",
+                    lambda peer=peer: admit_peer(peer, service_uid=600),
+                )
+
+    def test_default_peer_reader_uses_macos_local_peer_credentials(self):
+        class Connection:
+            calls: list[tuple[int, int, int]] = []
+
+            def getsockopt(self, level: int, option: int, size: int) -> bytes:
+                self.calls.append((level, option, size))
+                return struct.pack(
+                    "@IIh2x16I",
+                    0,
+                    501,
+                    2,
+                    502,
+                    503,
+                    *([0] * 14),
+                )
+
+        connection = Connection()
+        try:
+            observed: object = default_peer_reader(connection)
+        except PublisherError as exc:
+            observed = (exc.code, exc.field)
+        self.assertEqual(PeerIdentity(uid=501, gid=502), observed)
+        self.assertEqual([(0, 1, 76)], connection.calls)
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS LOCAL_PEERCRED only")
+    def test_default_peer_reader_matches_a_live_macos_socketpair(self):
+        left, right = socket.socketpair()
+        try:
+            try:
+                observed: object = default_peer_reader(left)
+            except PublisherError as exc:
+                observed = (exc.code, exc.field)
+            self.assertEqual(
+                PeerIdentity(uid=os.geteuid(), gid=os.getegid()),
+                observed,
+            )
+        finally:
+            left.close()
+            right.close()
+
+    def test_client_uses_one_fixed_socket_operation(self):
+        result = sample_result()
+        connection = ChunkConnection(
+            encode_frame(result_bytes(result), max_bytes=MAX_RESULT_BYTES),
+            b"",
+        )
+        connects: list[tuple[str, float]] = []
+
+        def connector(path: str, timeout_seconds: float):
+            connects.append((path, timeout_seconds))
+            return connection
+
+        client = PublisherClient(
+            service_uid=501,
+            service_gid=502,
+            connector=connector,
+            lstat=lambda _path: socket_status(),
+        )
+        request = b'{"schema":"test"}'
+        self.assertEqual(result, client.publish(request))
+        self.assertEqual([(SOCKET_PATH, 60.0)], connects)
+        self.assertEqual(
+            encode_frame(request, max_bytes=MAX_REQUEST_BYTES), bytes(connection.sent)
+        )
+        self.assertEqual([socket.SHUT_WR], connection.shutdowns)
+        self.assertTrue(connection.closed)
+
+    def test_client_imports_no_signer_transport_or_service_runtime(self):
+        source = (SCRIPT_DIR / "github_issue_publisher_lib/client.py").read_text(
+            encoding="utf-8"
+        )
+        tree = ast.parse(source)
+        imported = {
+            node.module
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.module is not None
+        }
+        self.assertFalse(imported & {"signer", "transport", "runtime", "server"})
+        client_class = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.ClassDef) and node.name == "PublisherClient"
+        )
+        public_methods = [
+            node.name
+            for node in client_class.body
+            if isinstance(node, ast.FunctionDef) and not node.name.startswith("_")
+        ]
+        self.assertEqual(["publish"], public_methods)
+        for forbidden in ("PEM_PATH", "TOKEN_ROUTE", "ISSUES_ROUTE", "http.client"):
+            self.assertNotIn(forbidden, source)
+
+    def test_server_refuses_peer_before_runtime_and_closes_connection(self):
+        class Runtime:
+            called = False
+
+            def publish(self, _request):
+                self.called = True
+                return sample_result()
+
+        runtime = Runtime()
+        connection = ChunkConnection(encode_frame(b"{}", max_bytes=32), b"")
+        server = PublisherServer(
+            runtime=runtime,
+            service_uid=600,
+            peer_reader=lambda _connection: PeerIdentity(uid=0, gid=502),
+        )
+        server.serve_connection(connection)
+        self.assertFalse(runtime.called)
+        self.assertTrue(connection.closed)
+        length = struct.unpack(">I", bytes(connection.sent[:4]))[0]
+        diagnostic = json.loads(bytes(connection.sent[4 : 4 + length]))
+        self.assertEqual("GIP221", diagnostic["code"])
+        self.assertEqual(0, diagnostic["post_attempts"])
+
+    def test_server_reads_one_closed_request_and_returns_one_closed_result(self):
+        result = sample_result()
+
+        class Runtime:
+            requests: list[bytes] = []
+
+            def publish(self, request):
+                self.requests.append(bytes(request))
+                return result
+
+        runtime = Runtime()
+        request = b'{"schema":"test"}'
+        framed = encode_frame(request, max_bytes=MAX_REQUEST_BYTES)
+        connection = ChunkConnection(framed[:2], framed[2:9], framed[9:], b"")
+        server = PublisherServer(
+            runtime=runtime,
+            service_uid=600,
+            peer_reader=lambda _connection: PeerIdentity(uid=501, gid=502),
+        )
+        server.serve_connection(connection)
+        self.assertEqual([request], runtime.requests)
+        self.assertTrue(connection.closed)
+        length = struct.unpack(">I", bytes(connection.sent[:4]))[0]
+        self.assertEqual(
+            result,
+            parse_closed_result(bytes(connection.sent[4 : 4 + length])),
+        )
+        self.assertEqual(4 + length, len(connection.sent))
+        self.assertEqual([60.0], connection.timeouts)
+
+
+class SignerBoundaryTests(BoundaryTestCase):
+    @classmethod
+    def _is_production_signer_command(cls, arguments: object) -> bool:
+        if not isinstance(arguments, (list, tuple)):
+            return False
+        return tuple(arguments) == OPENSSL_ARGUMENTS or PEM_PATH in arguments
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._real_popen = subprocess.Popen
+        cls._spawn_calls: list[
+            tuple[tuple[object, ...], dict[str, object]]
+        ] = []
+
+        def guarded_popen(*popen_args, **popen_kwargs):
+            arguments = (
+                popen_kwargs.get("args")
+                if "args" in popen_kwargs
+                else popen_args[0] if popen_args else None
+            )
+            if cls._is_production_signer_command(arguments):
+                raise AssertionError("test attempted the production signer command")
+            cls._spawn_calls.append((popen_args, popen_kwargs))
+            return cls._real_popen(*popen_args, **popen_kwargs)
+
+        cls._popen_guard = mock.patch.object(
+            publisher_signer.subprocess,
+            "Popen",
+            side_effect=guarded_popen,
+        )
+        cls._popen_guard.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._popen_guard.stop()
+        super().tearDownClass()
+
+    def setUp(self):
+        self._spawn_calls.clear()
+
+    def test_production_signer_spawn_guard_covers_executable_and_key(self):
+        self.assertTrue(self._is_production_signer_command(OPENSSL_ARGUMENTS))
+        self.assertTrue(
+            self._is_production_signer_command((sys.executable, PEM_PATH))
+        )
+        self.assertFalse(
+            self._is_production_signer_command((sys.executable, "-c", "pass"))
+        )
+
+    def test_signer_uses_fixed_arguments_stdin_timeout_and_output_limit(self):
+        observed: list[tuple[tuple[str, ...], bytes, float, int]] = []
+
+        def runner(arguments, signing_input, timeout_seconds, output_limit):
+            observed.append((arguments, signing_input, timeout_seconds, output_limit))
+            return b"s" * RSA_SIGNATURE_BYTES
+
+        signer = OpenSSLSigner(runner)
+        self.assertEqual(
+            b"s" * RSA_SIGNATURE_BYTES,
+            signer.sign(b"header.payload", timeout_seconds=SIGN_TIMEOUT_SECONDS),
+        )
+        self.assertEqual(
+            [
+                (
+                    OPENSSL_ARGUMENTS,
+                    b"header.payload",
+                    SIGN_TIMEOUT_SECONDS,
+                    MAX_SIGNATURE_BYTES,
+                )
+            ],
+            observed,
+        )
+        self.assertEqual("/usr/bin/openssl", OPENSSL_ARGUMENTS[0])
+        self.assertIn(PEM_PATH, OPENSSL_ARGUMENTS)
+
+    def test_default_signer_inherits_no_environment_and_hides_stderr(self):
+        canary = "STEP2_CREDENTIAL_CANARY"
+        program = (
+            "import os,sys;"
+            f"sys.exit(7) if {canary!r} in os.environ else "
+            f"sys.stdout.buffer.write(b's'*{RSA_SIGNATURE_BYTES})"
+        )
+        arguments = (sys.executable, "-c", program)
+        with (
+            mock.patch.dict(os.environ, {canary: "must-not-cross"}),
+            mock.patch.object(publisher_signer, "OPENSSL_ARGUMENTS", arguments),
+        ):
+            self.assertEqual(
+                b"s" * RSA_SIGNATURE_BYTES,
+                OpenSSLSigner().sign(b"header.payload", timeout_seconds=5.0),
+            )
+        self.assertEqual(1, len(self._spawn_calls))
+        popen_args, kwargs = self._spawn_calls[0]
+        self.assertEqual((list(arguments),), popen_args)
+        self.assertEqual({}, kwargs["env"])
+        self.assertEqual(subprocess.DEVNULL, kwargs["stderr"])
+        self.assertEqual(subprocess.PIPE, kwargs["stdout"])
+        self.assertEqual(subprocess.PIPE, kwargs["stdin"])
+        self.assertTrue(kwargs["close_fds"])
+        self.assertNotIn("shell", kwargs)
+        self.assertNotIn("must-not-cross", repr(self._spawn_calls))
+
+    def test_default_signer_stops_child_at_output_ceiling(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sentinel = Path(directory) / "crossed-output-limit"
+            program = (
+                "import os,pathlib,sys;"
+                "[os.write(1,b'x'*65536) for _ in range(16)];"
+                "pathlib.Path(sys.argv[1]).write_text('crossed')"
+            )
+            arguments = (sys.executable, "-c", program, str(sentinel))
+            with mock.patch.object(
+                publisher_signer,
+                "OPENSSL_ARGUMENTS",
+                arguments,
+            ):
+                self.assert_publisher_error(
+                    "GIP211",
+                    "signer.output",
+                    lambda: OpenSSLSigner().sign(
+                        b"header.payload", timeout_seconds=5.0
+                    ),
+                )
+            self.assertFalse(sentinel.exists())
+
+    def test_default_signer_kills_child_at_timeout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sentinel = Path(directory) / "crossed-timeout"
+            program = (
+                "import pathlib,sys,time;"
+                "time.sleep(1);"
+                "pathlib.Path(sys.argv[1]).write_text('crossed')"
+            )
+            arguments = (sys.executable, "-c", program, str(sentinel))
+            with mock.patch.object(
+                publisher_signer,
+                "OPENSSL_ARGUMENTS",
+                arguments,
+            ):
+                self.assert_publisher_error(
+                    "GIP211",
+                    "signer.unavailable",
+                    lambda: OpenSSLSigner().sign(
+                        b"header.payload", timeout_seconds=0.05
+                    ),
+                )
+            self.assertFalse(sentinel.exists())
+
+    def test_signer_refuses_timeout_overflow_nonzero_and_bad_signature(self):
+        self.assert_publisher_error(
+            "GIP210",
+            "signer.timeout",
+            lambda: OpenSSLSigner(lambda *_args: b"s" * RSA_SIGNATURE_BYTES).sign(
+                b"header.payload", timeout_seconds=SIGN_TIMEOUT_SECONDS + 0.001
+            ),
+        )
+        self.assert_publisher_error(
+            "GIP211",
+            "signer.output",
+            lambda: OpenSSLSigner(lambda *_args: b"s" * (MAX_SIGNATURE_BYTES + 1)).sign(
+                b"header.payload", timeout_seconds=5.0
+            ),
+        )
+        self.assert_publisher_error(
+            "GIP213",
+            "signer.signature",
+            lambda: OpenSSLSigner(lambda *_args: b"s" * (RSA_SIGNATURE_BYTES - 1)).sign(
+                b"header.payload", timeout_seconds=5.0
+            ),
+        )
+        arguments = (
+            sys.executable,
+            "-c",
+            "import os;os.write(1,b'private');raise SystemExit(7)",
+        )
+        with mock.patch.object(publisher_signer, "OPENSSL_ARGUMENTS", arguments):
+            self.assert_publisher_error(
+                "GIP212",
+                "signer.exit",
+                lambda: OpenSSLSigner().sign(b"header.payload", timeout_seconds=5.0),
+            )
+
+    def test_signer_refuses_nonfinite_timeout_before_the_runner(self):
+        calls: list[tuple[object, ...]] = []
+
+        def runner(*arguments):
+            calls.append(arguments)
+            return b"s" * RSA_SIGNATURE_BYTES
+
+        self.assert_publisher_error(
+            "GIP210",
+            "signer.timeout",
+            lambda: OpenSSLSigner(runner).sign(
+                b"header.payload", timeout_seconds=float("nan")
+            ),
+        )
+        self.assertEqual([], calls)
+
+    def test_signer_errors_are_sanitised(self):
+        canary = "signer-secret-canary"
+
+        def failed(*_args):
+            raise OSError(canary)
+
+        error = self.assert_publisher_error(
+            "GIP211",
+            "signer.unavailable",
+            lambda: OpenSSLSigner(failed).sign(
+                b"header.payload", timeout_seconds=5.0
+            ),
+        )
+        retained = str(error) + json.dumps(error.diagnostic(), sort_keys=True)
+        self.assertNotIn(canary, retained)
+
+
+class TransportBoundaryTests(BoundaryTestCase):
+    def token(self, response: FakeResponse):
+        exchange = QueueExchange(response)
+        transport = PinnedGitHubTransport(exchange)
+        return (
+            exchange_installation_token(
+                "header.payload.signature",
+                transport,
+                now=2_000_000_000,
+                timeout_seconds=15.0,
+            ),
+            exchange,
+        )
+
+    def test_token_exchange_is_exactly_narrowed(self):
+        response = FakeResponse(201, token_document())
+        grant, exchange = self.token(response)
+        self.assertEqual("t" * 32, grant.token)
+        self.assertEqual(2_000_003_600, grant.expires_at)
+        self.assertTrue(response.closed)
+        self.assertEqual(1, len(exchange.contexts))
+        self.assertIsInstance(exchange.contexts[0], ssl.SSLContext)
+        request = exchange.requests[0]
+        self.assertEqual("POST", request.method)
+        self.assertEqual(TOKEN_ROUTE, request.path)
+        self.assertEqual(
+            canonical_json(
+                {"permissions": {"issues": "write"}, "repositories": ["skills"]}
+            ),
+            request.body,
+        )
+        self.assertIn(("X-GitHub-Api-Version", API_VERSION), request.headers)
+        self.assertIn(("Authorization", "Bearer header.payload.signature"), request.headers)
+        self.assertNotIn("header.payload.signature", repr(request))
+
+    def test_token_response_refuses_missing_malformed_expired_or_wide_grants(self):
+        cases = []
+        missing = token_document()
+        del missing["token"]
+        cases.append((missing, "GIP310", "token.value"))
+        malformed = token_document(token="short")
+        cases.append((malformed, "GIP310", "token.value"))
+        malformed_expiry = token_document()
+        malformed_expiry["expires_at"] = "2033-05-18 04:33:20"
+        cases.append((malformed_expiry, "GIP310", "token.expiry"))
+        expired = token_document()
+        expired["expires_at"] = "2033-05-18T03:33:50Z"
+        cases.append((expired, "GIP310", "token.expiry"))
+        wide = token_document()
+        wide["permissions"] = {"issues": "write", "contents": "read"}
+        cases.append((wide, "GIP311", "token.scope"))
+        wrong_repository = token_document()
+        wrong_repository["repositories"] = [{"full_name": "wildcat-finance/other"}]
+        cases.append((wrong_repository, "GIP311", "token.repository"))
+        for document, code, field in cases:
+            with self.subTest(field=field):
+                response = FakeResponse(201, document)
+                self.assert_publisher_error(
+                    code, field, lambda response=response: self.token(response)
+                )
+                self.assertTrue(response.closed)
+
+    def test_transport_refuses_redirect_status_duplicate_and_oversized_response(self):
+        cases = (
+            (FakeResponse(302, {"message": "moved"}), "GIP304", "transport.redirect"),
+            (FakeResponse(403, {"message": "denied"}), "GIP305", "transport.status"),
+            (
+                FakeResponse(201, raw=b'{"token":"a","token":"b"}'),
+                "GIP303",
+                "transport.response.duplicate",
+            ),
+            (
+                FakeResponse(201, raw=b"not-json"),
+                "GIP307",
+                "transport.response",
+            ),
+            (
+                FakeResponse(201, raw=b"x" * (8_192 + 1), chunk_bytes=8_193),
+                "GIP306",
+                "transport.response.bytes",
+            ),
+        )
+        for response, code, field in cases:
+            with self.subTest(field=field):
+                exchange = QueueExchange(response)
+                transport = PinnedGitHubTransport(exchange)
+                self.assert_publisher_error(
+                    code,
+                    field,
+                    lambda transport=transport: transport.request(
+                        method="POST",
+                        path=TOKEN_ROUTE,
+                        headers=(("Accept", "application/json"),),
+                        body=b"{}",
+                        timeout_seconds=15.0,
+                    ),
+                )
+                self.assertTrue(response.closed)
+
+    def test_transport_refuses_bad_headers_and_closing_failure(self):
+        bad_header = FakeResponse(
+            201,
+            {"ok": True},
+            headers=(("X-Canary", "snowman-\N{SNOWMAN}"),),
+        )
+        transport = PinnedGitHubTransport(QueueExchange(bad_header))
+        self.assert_publisher_error(
+            "GIP302",
+            "transport.headers",
+            lambda: transport.request(
+                method="POST",
+                path=TOKEN_ROUTE,
+                headers=(("Accept", "application/json"),),
+                body=b"{}",
+                timeout_seconds=15.0,
+            ),
+        )
+
+        status_and_close_failure = FakeResponse(
+            403,
+            {"message": "denied"},
+            close_error=OSError("close canary"),
+        )
+        transport = PinnedGitHubTransport(QueueExchange(status_and_close_failure))
+        self.assert_publisher_error(
+            "GIP309",
+            "transport.response.close",
+            lambda: transport.request(
+                method="POST",
+                path=TOKEN_ROUTE,
+                headers=(("Accept", "application/json"),),
+                body=b"{}",
+                timeout_seconds=15.0,
+            ),
+        )
+        self.assertTrue(bad_header.closed)
+
+        close_failure = FakeResponse(
+            201, {"ok": True}, close_error=OSError("close canary")
+        )
+        transport = PinnedGitHubTransport(QueueExchange(close_failure))
+        self.assert_publisher_error(
+            "GIP309",
+            "transport.response.close",
+            lambda: transport.request(
+                method="POST",
+                path=TOKEN_ROUTE,
+                headers=(("Accept", "application/json"),),
+                body=b"{}",
+                timeout_seconds=15.0,
+            ),
+        )
+
+    def test_live_transport_caps_headers_while_the_socket_is_read(self):
+        read_sizes: list[int] = []
+        response_head = (
+            b"HTTP/1.1 201 Created\r\nX-Oversized: "
+            + b"x" * publisher_transport.MAX_REMOTE_HEADER_BYTES
+            + b"\r\n\r\n{}"
+        )
+
+        class Stream(io.BytesIO):
+            def readline(self, size: int = -1) -> bytes:
+                read_sizes.append(size)
+                if size > publisher_transport.MAX_REMOTE_HEADER_BYTES + 1:
+                    raise OSError("header read crossed the declared ceiling")
+                return super().readline(size)
+
+        class Socket:
+            def makefile(self, _mode: str) -> Stream:
+                return Stream(response_head)
+
+        class Connection:
+            response_class = publisher_transport.http.client.HTTPResponse
+            closed = False
+
+            def request(self, *_args, **_kwargs) -> None:
+                return None
+
+            def getresponse(self):
+                response = self.response_class(Socket(), method="POST")
+                response.begin()
+                return response
+
+            def close(self) -> None:
+                self.closed = True
+
+        connection = Connection()
+        with mock.patch.object(
+            publisher_transport.http.client,
+            "HTTPSConnection",
+            return_value=connection,
+        ):
+            self.assert_publisher_error(
+                "GIP302",
+                "transport.headers",
+                lambda: PinnedGitHubTransport().request(
+                    method="POST",
+                    path=TOKEN_ROUTE,
+                    headers=(("Accept", "application/json"),),
+                    body=b"{}",
+                    timeout_seconds=15.0,
+                ),
+            )
+        self.assertTrue(connection.closed)
+        self.assertLessEqual(
+            max(read_sizes),
+            publisher_transport.MAX_REMOTE_HEADER_BYTES + 1,
+        )
+
+    def test_transport_refuses_every_caller_selected_destination(self):
+        exchange = QueueExchange(FakeResponse(200, {"ok": True}))
+        transport = PinnedGitHubTransport(exchange)
+        for method, path in (
+            ("POST", "/repos/wildcat-finance/other/issues"),
+            (
+                "GET",
+                f"{ISSUES_ROUTE}/{1 << 63}",
+            ),
+        ):
+            with self.subTest(method=method, path=path):
+                self.assert_publisher_error(
+                    "GIP300",
+                    "transport.destination",
+                    lambda method=method, path=path: transport.request(
+                        method=method,
+                        path=path,
+                        headers=(("Accept", "application/json"),),
+                        body=b"{}",
+                        timeout_seconds=15.0,
+                    ),
+                )
+        self.assertEqual([], exchange.requests)
+
+    def test_transport_refuses_nonfinite_timeout(self):
+        exchange = QueueExchange(FakeResponse(201, {"ok": True}))
+        transport = PinnedGitHubTransport(exchange)
+        self.assert_publisher_error(
+            "GIP300",
+            "transport.timeout",
+            lambda: transport.request(
+                method="POST",
+                path=TOKEN_ROUTE,
+                headers=(("Accept", "application/json"),),
+                body=b"{}",
+                timeout_seconds=float("nan"),
+            ),
+        )
+        self.assertEqual([], exchange.requests)
+
+    def test_issue_post_mapping_and_returned_origin_are_exact(self):
+        document = valid_document()
+        response = FakeResponse(201, issue_document(document))
+        exchange = QueueExchange(response)
+        transport = PinnedGitHubTransport(exchange)
+        final = document["final_candidate"]
+        issue = create_issue(
+            "t" * 32,
+            title=final["title"],
+            body=final["body"],
+            labels=tuple(document["labels"]),
+            transport=transport,
+            timeout_seconds=20.0,
+        )
+        self.assertEqual(9250, issue.number)
+        request = exchange.requests[0]
+        self.assertEqual("POST", request.method)
+        self.assertEqual(ISSUES_ROUTE, request.path)
+        self.assertEqual(
+            canonical_json(
+                {
+                    "body": final["body"],
+                    "labels": document["labels"],
+                    "title": final["title"],
+                }
+            ),
+            request.body,
+        )
+        self.assertIn(("Authorization", "token " + "t" * 32), request.headers)
+        self.assertTrue(response.closed)
+
+        wrong = FakeResponse(
+            201,
+            issue_document(document, url="https://example.invalid/issues/9250"),
+        )
+        self.assert_publisher_error(
+            "GIP320",
+            "issue.origin",
+            lambda: create_issue(
+                "t" * 32,
+                title=final["title"],
+                body=final["body"],
+                labels=tuple(document["labels"]),
+                transport=PinnedGitHubTransport(QueueExchange(wrong)),
+                timeout_seconds=20.0,
+            ),
+        )
+
+
+class RuntimeBoundaryTests(BoundaryTestCase):
+    def test_admission_refuses_before_signer_or_transport(self):
+        _document, runtime, signer, sink, exchange = runtime_fixture()
+        self.assert_publisher_error(
+            "GIP120", "request", lambda: runtime.publish(b"{}")
+        )
+        self.assertEqual([], signer.calls)
+        self.assertEqual([], exchange.requests)
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+    def test_published_result_has_one_attempt_and_exact_correlated_events(self):
+        document, runtime, signer, sink, exchange = runtime_fixture()
+        result = runtime.publish(encoded(document))
+        self.assertEqual("published", result["outcome"])
+        self.assertEqual("matched", result["readback"])
+        self.assertEqual(
+            {
+                "signer_attempts": 1,
+                "token_attempts": 1,
+                "post_attempts": 1,
+                "authenticated_readbacks": 1,
+                "anonymous_readbacks": 1,
+            },
+            result["counts"],
+        )
+        self.assertEqual(1, len(signer.calls))
+        self.assertEqual(4, len(exchange.requests))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertEqual(result_bytes(result), sink.payload)
+        self.assertEqual(4, len(exchange.delivered))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertEqual(
+            [
+                "admission",
+                "signer",
+                "token",
+                "create",
+                "readback-authenticated",
+                "readback-anonymous",
+                "cleanup",
+                "receipt",
+            ],
+            [event["stage"] for event in runtime.events],
+        )
+        self.assertEqual(
+            {result["correlation_sha256"]},
+            {event["correlation_sha256"] for event in runtime.events},
+        )
+
+    def test_final_bytes_cannot_be_mutated_after_admission(self):
+        document = valid_document()
+        original = deepcopy(document["final_candidate"])
+
+        def mutate_source_document():
+            document["final_candidate"]["title"] = "framework-56: changed later"
+            document["final_candidate"]["body"] = "changed later"
+
+        signer = FakeSigner(on_sign=mutate_source_document)
+        _document, runtime, _signer, _sink, exchange = runtime_fixture(
+            signer=signer, document=document
+        )
+        result = runtime.publish(encoded(document))
+        self.assertEqual("published", result["outcome"])
+        posted = json.loads(exchange.requests[1].body)
+        self.assertEqual(original["title"], posted["title"])
+        self.assertEqual(original["body"], posted["body"])
+
+    def test_create_transport_failure_is_indeterminate_and_never_retried(self):
+        document = valid_document()
+        token_response = FakeResponse(201, token_document())
+        _document, runtime, _signer, sink, exchange = runtime_fixture(
+            document=document,
+            responses=[token_response, OSError("create outcome canary")],
+        )
+        result = runtime.publish(encoded(document))
+        self.assertEqual("create-indeterminate", result["outcome"])
+        self.assertEqual("GIP301", result["code"])
+        self.assertEqual(1, result["counts"]["post_attempts"])
+        self.assertEqual(2, len(exchange.requests))
+        self.assertIsNone(result["issue_number"])
+        self.assertIsNone(result["issue_url"])
+        self.assertEqual(result_bytes(result), sink.payload)
+        self.assertTrue(token_response.closed)
+        retained = result_bytes(result) + canonical_json(list(runtime.events))
+        self.assertNotIn(b"create outcome canary", retained)
+
+    def test_indeterminate_create_survives_cleanup_and_receipt_failure(self):
+        document = valid_document()
+        signer = FakeSigner(close_error=OSError("cleanup canary"))
+        token_response = FakeResponse(201, token_document())
+        _document, runtime, _signer, _sink, _exchange = runtime_fixture(
+            signer=signer,
+            sink=FailingReceiptSink(write_error=True),
+            document=document,
+            responses=[token_response, OSError("create canary")],
+        )
+        result = runtime.publish(encoded(document))
+        self.assertEqual("create-indeterminate", result["outcome"])
+        self.assertEqual("GIP402", result["code"])
+        self.assertFalse(result["cleanup_complete"])
+        self.assertEqual(1, result["counts"]["post_attempts"])
+
+    def test_unexpected_component_failure_is_sanitised_and_cleaned_up(self):
+        document = valid_document()
+        signer = FakeSigner(error=RuntimeError("component canary"))
+        _document, runtime, _signer, sink, exchange = runtime_fixture(
+            signer=signer, document=document
+        )
+        result = runtime.publish(encoded(document))
+        self.assertEqual("refused", result["outcome"])
+        self.assertEqual("GIP500", result["code"])
+        self.assertEqual(0, result["counts"]["post_attempts"])
+        self.assertEqual([], exchange.requests)
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+    def test_token_refusal_happens_before_issue_post(self):
+        document = valid_document()
+        wide = token_document()
+        wide["permissions"] = {"issues": "write", "contents": "read"}
+        response = FakeResponse(201, wide)
+        _document, runtime, _signer, sink, exchange = runtime_fixture(
+            document=document, responses=[response]
+        )
+        result = runtime.publish(encoded(document))
+        self.assertEqual("refused", result["outcome"])
+        self.assertEqual("GIP311", result["code"])
+        self.assertEqual(1, result["counts"]["signer_attempts"])
+        self.assertEqual(1, result["counts"]["token_attempts"])
+        self.assertEqual(0, result["counts"]["post_attempts"])
+        self.assertEqual(1, len(exchange.requests))
+        self.assertTrue(response.closed)
+        self.assertEqual(result_bytes(result), sink.payload)
+
+    def test_authenticated_and_anonymous_mismatch_never_publish(self):
+        document = valid_document()
+        issue = issue_document(document)
+        cases = (
+            (
+                [
+                    FakeResponse(201, token_document()),
+                    FakeResponse(201, issue),
+                    FakeResponse(200, issue_document(document, title="wrong")),
+                ],
+                1,
+                0,
+                "readback-authenticated",
+            ),
+            (
+                [
+                    FakeResponse(201, token_document()),
+                    FakeResponse(201, issue),
+                    FakeResponse(200, issue),
+                    FakeResponse(200, issue_document(document, body="wrong")),
+                ],
+                1,
+                1,
+                "readback-anonymous",
+            ),
+        )
+        for responses, authenticated, anonymous, failed_stage in cases:
+            with self.subTest(stage=failed_stage):
+                _document, runtime, _signer, _sink, exchange = runtime_fixture(
+                    document=document, responses=responses
+                )
+                result = runtime.publish(encoded(document))
+                self.assertEqual("created-but-unverified", result["outcome"])
+                self.assertEqual("failed", result["readback"])
+                self.assertEqual(
+                    authenticated, result["counts"]["authenticated_readbacks"]
+                )
+                self.assertEqual(anonymous, result["counts"]["anonymous_readbacks"])
+                self.assertEqual(failed_stage, runtime.events[-3]["stage"])
+                self.assertTrue(all(response.closed for response in responses))
+                self.assertEqual(len(responses), len(exchange.requests))
+
+    def test_receipt_and_cleanup_failures_are_terminal(self):
+        for sink in (
+            FailingReceiptSink(write_error=True),
+            FailingReceiptSink(close_error=True),
+        ):
+            with self.subTest(sink=sink):
+                document, runtime, signer, _sink, _exchange = runtime_fixture(sink=sink)
+                result = runtime.publish(encoded(document))
+                self.assertEqual("receipt-failed", result["outcome"])
+                self.assertEqual("GIP402", result["code"])
+                self.assertFalse(result["cleanup_complete"])
+                self.assertTrue(signer.closed)
+                self.assertEqual("receipt", runtime.events[-1]["stage"])
+                self.assertEqual("refused", runtime.events[-1]["outcome"])
+
+        signer = FakeSigner(close_error=OSError("cleanup canary"))
+        document, runtime, _signer, sink, _exchange = runtime_fixture(signer=signer)
+        result = runtime.publish(encoded(document))
+        self.assertEqual("cleanup-failed", result["outcome"])
+        self.assertEqual("GIP501", result["code"])
+        self.assertFalse(result["cleanup_complete"])
+        self.assertEqual(result_bytes(result), sink.payload)
+
+    def test_deadline_exact_boundaries_pass_and_overruns_refuse(self):
+        exact_stage = iter((0.0, 0.0, 5.0))
+        budget = publisher_runtime._Budget(lambda: next(exact_stage))
+        started, timeout = budget.begin(5.0)
+        self.assertEqual(5.0, timeout)
+        budget.finish(started, 5.0)
+
+        over_stage = iter((0.0, 0.0, 5.001))
+        budget = publisher_runtime._Budget(lambda: next(over_stage))
+        started, _timeout = budget.begin(5.0)
+        self.assert_publisher_error(
+            "GIP330", "deadline.stage", lambda: budget.finish(started, 5.0)
+        )
+
+        exact_total = iter((0.0, 50.0, 60.0))
+        budget = publisher_runtime._Budget(lambda: next(exact_total))
+        started, timeout = budget.begin(20.0)
+        self.assertEqual(10.0, timeout)
+        budget.finish(started, 20.0)
+
+        over_total = iter((0.0, 50.0, 60.001))
+        budget = publisher_runtime._Budget(lambda: next(over_total))
+        started, _timeout = budget.begin(20.0)
+        self.assert_publisher_error(
+            "GIP330", "deadline.stage", lambda: budget.finish(started, 20.0)
+        )
+
+    def test_create_stage_overrun_after_response_keeps_mutation_evidence(self):
+        class Clock:
+            value = 0.0
+
+            def __call__(self):
+                return self.value
+
+        class DelayedCreateResponse(FakeResponse):
+            def __init__(self, *args, clock, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.clock = clock
+
+            def close(self) -> None:
+                super().close()
+                self.clock.value = publisher_transport.CREATE_TIMEOUT_SECONDS + 0.001
+
+        clock = Clock()
+        document = valid_document()
+        issue = issue_document(document)
+        responses = [
+            FakeResponse(201, token_document()),
+            DelayedCreateResponse(201, issue, clock=clock),
+            FakeResponse(200, issue),
+            FakeResponse(200, issue),
+        ]
+        _document, runtime, signer, sink, exchange = runtime_fixture(
+            document=document,
+            responses=responses,
+            monotonic=clock,
+        )
+
+        try:
+            result = runtime.publish(encoded(document))
+        except PublisherError as exc:
+            result = None
+            observed = (
+                exc.diagnostic()["outcome"],
+                exc.code,
+                exc.mint_attempts,
+                exc.post_attempts,
+            )
+        else:
+            observed = (
+                result["outcome"],
+                result["code"],
+                result["counts"]["token_attempts"],
+                result["counts"]["post_attempts"],
+            )
+
+        self.assertEqual(("created-but-unverified", "GIP330", 1, 1), observed)
+        self.assertIsNotNone(result)
+        self.assertEqual(9250, result["issue_number"])
+        self.assertEqual("failed", result["readback"])
+        self.assertTrue(result["cleanup_complete"])
+        self.assertEqual(0, result["counts"]["authenticated_readbacks"])
+        self.assertEqual(0, result["counts"]["anonymous_readbacks"])
+        self.assertEqual(2, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertEqual(result_bytes(result), sink.payload)
+        self.assertEqual(
+            ["admission", "signer", "token", "create", "cleanup", "receipt"],
+            [event["stage"] for event in runtime.events],
+        )
+
+    def test_oversized_issue_number_cannot_overflow_terminal_result(self):
+        document = valid_document()
+        issue = issue_document(document, number=int("9" * 1_757))
+        self.assertLess(
+            len(canonical_json(issue)),
+            publisher_transport.MAX_REMOTE_RESPONSE_BYTES,
+        )
+        responses = [
+            FakeResponse(201, token_document()),
+            FakeResponse(201, issue),
+            FakeResponse(200, issue),
+            FakeResponse(200, issue),
+        ]
+        _document, runtime, signer, sink, exchange = runtime_fixture(
+            document=document,
+            responses=responses,
+        )
+
+        try:
+            result = runtime.publish(encoded(document))
+        except PublisherError as exc:
+            observed = (
+                "raised",
+                exc.code,
+                exc.field,
+                exc.mint_attempts,
+                exc.post_attempts,
+            )
+        else:
+            observed = (
+                "returned",
+                result["outcome"],
+                result["code"],
+                result["counts"]["token_attempts"],
+                result["counts"]["post_attempts"],
+            )
+
+        self.assertEqual(
+            ("returned", "create-indeterminate", "GIP320", 1, 1),
+            observed,
+        )
+        self.assertEqual(2, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertEqual(result_bytes(result), sink.payload)
+
+    def test_total_deadline_is_enforced_after_readback_during_cleanup(self):
+        class Clock:
+            value = 0.0
+
+            def __call__(self):
+                return self.value
+
+        class DelayedCloseSigner(FakeSigner):
+            def __init__(self, clock):
+                super().__init__()
+                self.clock = clock
+
+            def close(self) -> None:
+                self.clock.value = 60.001
+                super().close()
+
+        clock = Clock()
+        signer = DelayedCloseSigner(clock)
+        document, runtime, _signer, sink, exchange = runtime_fixture(
+            signer=signer,
+            monotonic=clock,
+        )
+        error = self.assert_publisher_error(
+            "GIP330",
+            "deadline.total",
+            lambda: runtime.publish(encoded(document)),
+        )
+        self.assertEqual(1, error.mint_attempts)
+        self.assertEqual(1, error.post_attempts)
+        self.assertEqual(4, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+    def test_nonfinite_clocks_refuse_without_reaching_the_signer(self):
+        document, runtime, signer, sink, exchange = runtime_fixture(
+            monotonic=lambda: float("nan")
+        )
+        self.assert_publisher_error(
+            "GIP330",
+            "deadline.clock",
+            lambda: runtime.publish(encoded(document)),
+        )
+        self.assertEqual([], signer.calls)
+        self.assertEqual([], exchange.requests)
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+        ticks = iter((100.0, float("nan")))
+        document, runtime, signer, sink, exchange = runtime_fixture(
+            monotonic=lambda: next(ticks)
+        )
+        self.assert_publisher_error(
+            "GIP330",
+            "deadline.clock",
+            lambda: runtime.publish(encoded(document)),
+        )
+        self.assertEqual([], signer.calls)
+        self.assertEqual([], exchange.requests)
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+        document, runtime, signer, sink, exchange = runtime_fixture()
+        runtime._wall_clock = lambda: float("nan")
+        result = runtime.publish(encoded(document))
+        self.assertEqual("refused", result["outcome"])
+        self.assertEqual("GIP330", result["code"])
+        self.assertEqual(0, result["counts"]["signer_attempts"])
+        self.assertEqual([], signer.calls)
+        self.assertEqual([], exchange.requests)
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+    def test_late_clock_failure_still_closes_every_component(self):
+        ticks = iter((100.0, 100.0, 100.0, float("nan"), float("nan")))
+        document, runtime, signer, sink, exchange = runtime_fixture(
+            monotonic=lambda: next(ticks)
+        )
+        self.assert_publisher_error(
+            "GIP330",
+            "deadline.clock",
+            lambda: runtime.publish(encoded(document)),
+        )
+        self.assertEqual(1, len(signer.calls))
+        self.assertEqual([], exchange.requests)
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+
+    def test_server_diagnostic_retains_attempts_after_terminal_event_failure(self):
+        class CleanupFailureEvents(RetainedEvents):
+            def emit(self, **values) -> None:
+                if values.get("stage") == "cleanup":
+                    raise PublisherError("GIP401", "events.value")
+                super().emit(**values)
+
+        document, runtime, signer, sink, exchange = runtime_fixture()
+        runtime._events = CleanupFailureEvents()
+        request = encoded(document)
+        connection = ChunkConnection(
+            encode_frame(request, max_bytes=MAX_REQUEST_BYTES),
+            b"",
+        )
+        server = PublisherServer(
+            runtime=runtime,
+            service_uid=600,
+            peer_reader=lambda _connection: PeerIdentity(uid=501, gid=502),
+        )
+        server.serve_connection(connection)
+
+        length = struct.unpack(">I", bytes(connection.sent[:4]))[0]
+        diagnostic = json.loads(bytes(connection.sent[4 : 4 + length]))
+        self.assertEqual("GIP401", diagnostic["code"])
+        self.assertEqual(1, diagnostic["mint_attempts"])
+        self.assertEqual(1, diagnostic["post_attempts"])
+        self.assertEqual(4, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertTrue(connection.closed)
+
+    def test_credential_canary_stays_out_of_public_surfaces_and_file_receipt(self):
+        canary = "ghs_STEP2_CANARY_0123456789abcdef"
+        document = valid_document()
+        issue = issue_document(document)
+        responses = [
+            FakeResponse(201, token_document(canary)),
+            FakeResponse(201, issue),
+            FakeResponse(200, issue),
+            FakeResponse(200, issue),
+        ]
+        _document, runtime, signer, sink, exchange = runtime_fixture(
+            document=document, responses=responses
+        )
+        result = runtime.publish(encoded(document))
+        with tempfile.TemporaryDirectory() as directory:
+            receipt_path = Path(directory) / "receipt.json"
+            receipt_path.write_bytes(sink.payload or b"")
+            retained = b"\n".join(
+                (
+                    result_bytes(result),
+                    canonical_json(list(runtime.events)),
+                    repr(signer.calls).encode("utf-8"),
+                    repr(exchange.requests).encode("utf-8"),
+                    receipt_path.read_bytes(),
+                )
+            )
+        self.assertNotIn(canary.encode("ascii"), retained)
+        self.assertTrue(all(response.closed for response in responses))
+
+
+class ReceiptBoundaryTests(BoundaryTestCase):
+    def test_client_refuses_request_controlled_diagnostic_field(self):
+        diagnostic = PublisherError(
+            "GIP220", "credential canary copied from request"
+        ).diagnostic()
+        self.assert_publisher_error(
+            "GIP400",
+            "receipt.diagnostic",
+            lambda: parse_closed_result(canonical_json(diagnostic)),
+        )
+
+    def test_client_refuses_non_integer_diagnostic_attempt_counts(self):
+        for field, value in (
+            ("mint_attempts", "REQUEST_CONTROLLED_CANARY"),
+            ("post_attempts", {"value": "REQUEST_CONTROLLED_CANARY"}),
+            ("mint_attempts", True),
+            ("post_attempts", 2),
+        ):
+            with self.subTest(field=field, value=value):
+                diagnostic = PublisherError("GIP220", "socket.path").diagnostic()
+                diagnostic[field] = value
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.diagnostic",
+                    lambda diagnostic=diagnostic: parse_closed_result(
+                        canonical_json(diagnostic)
+                    ),
+                )
+
+        diagnostic = PublisherError("GIP220", "socket.path").diagnostic()
+        diagnostic["code"] = "GIP000"
+        self.assert_publisher_error(
+            "GIP400",
+            "receipt.diagnostic",
+            lambda: parse_closed_result(canonical_json(diagnostic)),
+        )
+
+    def test_client_refuses_semantically_impossible_results(self):
+        cases: list[dict[str, object]] = []
+
+        published_without_publication = sample_result()
+        published_without_publication.update(
+            issue_number=None,
+            issue_url=None,
+            counts={
+                "signer_attempts": 0,
+                "token_attempts": 0,
+                "post_attempts": 0,
+                "authenticated_readbacks": 0,
+                "anonymous_readbacks": 0,
+            },
+            readback="not-run",
+            cleanup_complete=False,
+            code="GIP999",
+        )
+        cases.append(published_without_publication)
+
+        non_monotone_attempts = sample_result()
+        non_monotone_attempts["counts"]["token_attempts"] = 0
+        cases.append(non_monotone_attempts)
+
+        indeterminate_with_issue = sample_result()
+        indeterminate_with_issue.update(
+            outcome="create-indeterminate",
+            readback="not-run",
+            code="GIP301",
+        )
+        cases.append(indeterminate_with_issue)
+
+        matched_without_anonymous_readback = sample_result()
+        matched_without_anonymous_readback["counts"]["anonymous_readbacks"] = 0
+        cases.append(matched_without_anonymous_readback)
+
+        refused_with_cleanup_code = sample_result()
+        refused_with_cleanup_code.update(
+            outcome="refused",
+            issue_number=None,
+            issue_url=None,
+            counts={
+                "signer_attempts": 1,
+                "token_attempts": 0,
+                "post_attempts": 0,
+                "authenticated_readbacks": 0,
+                "anonymous_readbacks": 0,
+            },
+            readback="not-run",
+            code="GIP501",
+        )
+        cases.append(refused_with_cleanup_code)
+
+        for document in cases:
+            with self.subTest(outcome=document["outcome"]):
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.value",
+                    lambda document=document: parse_closed_result(
+                        canonical_json(document)
+                    ),
+                )
+
+    def test_client_joins_failure_codes_to_attempt_boundaries(self):
+        cases = (
+            ("GIP212", 0, 0, 0),
+            ("GIP311", 1, 0, 0),
+            ("GIP321", 1, 1, 0),
+        )
+        for code, signer_attempts, token_attempts, post_attempts in cases:
+            with self.subTest(code=code):
+                document = sample_result()
+                document.update(
+                    outcome="refused",
+                    issue_number=None,
+                    issue_url=None,
+                    counts={
+                        "signer_attempts": signer_attempts,
+                        "token_attempts": token_attempts,
+                        "post_attempts": post_attempts,
+                        "authenticated_readbacks": 0,
+                        "anonymous_readbacks": 0,
+                    },
+                    readback="not-run",
+                    code=code,
+                )
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.value",
+                    lambda document=document: parse_closed_result(
+                        canonical_json(document)
+                    ),
+                )
+
+        for code, mint_attempts, post_attempts in (
+            ("GIP311", 0, 0),
+            ("GIP321", 1, 0),
+        ):
+            with self.subTest(schema="diagnostic", code=code):
+                diagnostic = PublisherError(
+                    code,
+                    "transport.response",
+                    mint_attempts=mint_attempts,
+                    post_attempts=post_attempts,
+                ).diagnostic()
+                self.assert_publisher_error(
+                    "GIP400",
+                    "receipt.diagnostic",
+                    lambda diagnostic=diagnostic: parse_closed_result(
+                        canonical_json(diagnostic)
+                    ),
+                )
+
+    def test_client_refuses_issue_number_outside_signed_64_bit_range(self):
+        at_limit = sample_result()
+        at_limit["issue_number"] = (1 << 63) - 1
+        at_limit["issue_url"] = (
+            "https://github.com/wildcat-finance/skills/issues/"
+            f"{(1 << 63) - 1}"
+        )
+        self.assertEqual(
+            at_limit,
+            parse_closed_result(canonical_json(at_limit)),
+        )
+
+        above_limit = sample_result()
+        above_limit["issue_number"] = 1 << 63
+        above_limit["issue_url"] = (
+            "https://github.com/wildcat-finance/skills/issues/"
+            f"{1 << 63}"
+        )
+        self.assert_publisher_error(
+            "GIP400",
+            "receipt.value",
+            lambda: parse_closed_result(canonical_json(above_limit)),
+        )
+
+    def test_returned_event_documents_cannot_mutate_retained_counts(self):
+        events = RetainedEvents()
+        counts = {
+            "signer_attempts": 1,
+            "token_attempts": 0,
+            "post_attempts": 0,
+            "authenticated_readbacks": 0,
+            "anonymous_readbacks": 0,
+        }
+        events.emit(
+            correlation_sha256="a" * 64,
+            stage="signer",
+            outcome="accepted",
+            code="GIP000",
+            counts=counts,
+            elapsed_ms=1,
+        )
+        exposed = events.documents[0]
+        exposed["counts"]["post_attempts"] = 1
+        self.assertEqual(0, events.documents[0]["counts"]["post_attempts"])
 
 
 class AdmissionTests(unittest.TestCase):
@@ -862,6 +2605,7 @@ class AdmissionTests(unittest.TestCase):
             "ordered-admission-chain": (True, "boolean"),
             "request-work-bound": (MAX_JSON_MEMBERS, "count"),
             "request-byte-bound": (MAX_REQUEST_BYTES, "bytes"),
+            "signer-and-post-boundary": (True, "boolean"),
         }
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -1046,42 +2790,70 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual("GIP199", caught.exception.code)
         self.assertEqual("conformance.rejection-cases", caught.exception.field)
 
-    def test_step_one_surface_has_no_signer_or_transport_modules(self):
+    def test_step_two_surface_is_closed_and_cli_stays_conformance_only(self):
         package = SCRIPT_DIR / "github_issue_publisher_lib"
         self.assertEqual(
-            {"__init__.py", "canonical.py", "errors.py", "policy.py"},
+            {
+                "__init__.py",
+                "canonical.py",
+                "client.py",
+                "errors.py",
+                "framing.py",
+                "policy.py",
+                "receipts.py",
+                "runtime.py",
+                "server.py",
+                "signer.py",
+                "transport.py",
+            },
             {path.name for path in package.glob("*.py")},
         )
         cli_source = CLI.read_text(encoding="utf-8")
         self.assertNotIn("urllib", cli_source)
         self.assertNotIn("http.client", cli_source)
         self.assertNotIn("subprocess", cli_source)
-        forbidden_imports = {"http", "requests", "socket", "ssl", "subprocess", "urllib"}
-        forbidden_literals = {
-            "/access_tokens",
-            "api.github.com",
-            "begin private key",
-            "shoggoth-wildcat-labs.pem",
-        }
-        for path in (CLI, *sorted(package.glob("*.py"))):
-            with self.subTest(path=path.name):
-                source = path.read_text(encoding="utf-8")
-                tree = ast.parse(source)
-                imports = {
-                    alias.name.split(".", 1)[0]
-                    for node in ast.walk(tree)
-                    if isinstance(node, (ast.Import, ast.ImportFrom))
-                    for alias in (
-                        node.names
-                        if isinstance(node, ast.Import)
-                        else [ast.alias(name=node.module or "")]
-                    )
-                }
-                self.assertFalse(imports & forbidden_imports)
-                lowered = source.casefold()
-                self.assertFalse(
-                    {literal for literal in forbidden_literals if literal in lowered}
-                )
+        self.assertNotIn("BEGIN PRIVATE KEY", cli_source)
+
+    def test_runtime_conformance_keeps_issue_fixture_check_in_admission(self):
+        manifest = publisher_cli.read_bounded_file(str(FIXTURES / "manifest.json"))
+        files = publisher_cli._closed_manifest(manifest)
+        fixtures = publisher_cli._fixture_bytes(FIXTURES, files)
+        publisher_cli._verify_runtime_contract(fixtures)
+
+    def test_runtime_conformance_crosses_the_production_signer_adapter(self):
+        manifest = publisher_cli.read_bounded_file(str(FIXTURES / "manifest.json"))
+        files = publisher_cli._closed_manifest(manifest)
+        fixtures = publisher_cli._fixture_bytes(FIXTURES, files)
+        original = publisher_signer.OpenSSLSigner.sign
+        calls: list[bytes] = []
+
+        def observed(signer, signing_input, *, timeout_seconds):
+            calls.append(bytes(signing_input))
+            return original(
+                signer,
+                signing_input,
+                timeout_seconds=timeout_seconds,
+            )
+
+        with mock.patch.object(
+            publisher_signer.OpenSSLSigner,
+            "sign",
+            new=observed,
+        ):
+            publisher_cli._verify_runtime_contract(fixtures)
+        self.assertEqual(1, len(calls))
+
+    def test_runtime_conformance_pins_the_production_destination(self):
+        manifest = publisher_cli.read_bounded_file(str(FIXTURES / "manifest.json"))
+        files = publisher_cli._closed_manifest(manifest)
+        fixtures = publisher_cli._fixture_bytes(FIXTURES, files)
+        with (
+            mock.patch.object(publisher_cli, "GITHUB_API_HOST", "example.invalid"),
+            self.assertRaises(PublisherError) as caught,
+        ):
+            publisher_cli._verify_runtime_contract(fixtures)
+        self.assertEqual("GIP199", caught.exception.code)
+        self.assertEqual("conformance.runtime.constants", caught.exception.field)
 
 
 class ContractTests(unittest.TestCase):
@@ -1123,6 +2895,11 @@ class ContractTests(unittest.TestCase):
         self.assertIn("live_isolation: not-established", reference)
         self.assertIn("Admission is a necessary input", reference)
         self.assertIn("github-issue-publisher-admission-manifest/v1", reference)
+        self.assertIn("signer-and-post-boundary", reference)
+        self.assertIn("retains at most 4,097 stdout bytes", reference)
+        self.assertIn("create-indeterminate", reference)
+        self.assertIn("cannot appear as a zero-attempt refusal", reference)
+        self.assertIn("repository suite makes no live network call", reference)
         self.assertIn("version `0.3.0`", reference)
         self.assertNotIn("ADR-054", reference)
 
@@ -1141,6 +2918,8 @@ class ContractTests(unittest.TestCase):
             "Step 1 establishes neither live deployment nor live isolation",
             adr,
         )
+        self.assertIn("Step 2 establishes those component paths with injected", adr)
+        self.assertIn("macOS peer-credential ABI", adr)
         self.assertNotIn("ADR-054", adr)
 
 

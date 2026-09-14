@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-"""Credential-free Step 1 entrypoint for the bounded GitHub issue publisher.
+"""Offline conformance entrypoint for the bounded GitHub issue publisher.
 
-The only available operation checks the code-owned admission fixtures and
-emits one selected-candidate Protasis conformance report. Socket, signer,
-transport, and publication commands arrive only in their receipted later
-steps.
+The command uses injected signer and HTTPS doubles. It cannot read the live
+PEM, mint a live token, open a socket, or make a network request.
 """
 
 from __future__ import annotations
@@ -29,6 +27,31 @@ from github_issue_publisher_lib import (
     read_bounded_file,
     sha256_bytes,
 )
+from github_issue_publisher_lib.receipts import (  # noqa: E402
+    MemoryReceiptSink,
+    parse_closed_result,
+    result_bytes,
+)
+from github_issue_publisher_lib.runtime import PublisherRuntime  # noqa: E402
+from github_issue_publisher_lib.signer import (  # noqa: E402
+    APP_ID,
+    MAX_SIGNATURE_BYTES,
+    OPENSSL_ARGUMENTS,
+    PEM_PATH,
+    RSA_SIGNATURE_BYTES,
+    OpenSSLSigner,
+)
+from github_issue_publisher_lib.transport import (  # noqa: E402
+    API_VERSION,
+    GITHUB_API_HOST,
+    GITHUB_REPOSITORY,
+    HTTPS_PORT,
+    ISSUES_ROUTE,
+    INSTALLATION_ID,
+    TOKEN_ROUTE,
+    HTTPSRequest,
+    PinnedGitHubTransport,
+)
 
 
 MANIFEST_PATH = (
@@ -42,12 +65,14 @@ FIXTURE_NAMES = (
     "issue-855-title.txt",
     "queue-cases.json",
     "rejection-cases.json",
+    "runtime-cases.json",
     "valid-request.json",
 )
 CRITERIA = {
     "ordered-admission-chain": (True, "boolean"),
     "request-work-bound": (MAX_JSON_MEMBERS, "count"),
     "request-byte-bound": (MAX_REQUEST_BYTES, "bytes"),
+    "signer-and-post-boundary": (True, "boolean"),
 }
 CLI_PREFIX = "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py"
 CARRYOVER_ROW = "none | none | This publication carries no work into another issue."
@@ -513,6 +538,265 @@ def _verify_fixture_contract(fixtures: dict[str, bytes]) -> None:
         _refuse("conformance.issue-855")
 
 
+class _ConformanceSigner:
+    def __init__(self) -> None:
+        self.calls: list[tuple[bytes, float]] = []
+        self.runner_calls: list[tuple[tuple[str, ...], bytes, float, int]] = []
+        self.closed = False
+        self._signer = OpenSSLSigner(self._run)
+
+    def _run(
+        self,
+        arguments: tuple[str, ...],
+        signing_input: bytes,
+        timeout_seconds: float,
+        output_limit: int,
+    ) -> bytes:
+        self.runner_calls.append(
+            (arguments, bytes(signing_input), timeout_seconds, output_limit)
+        )
+        if arguments != OPENSSL_ARGUMENTS or output_limit != MAX_SIGNATURE_BYTES:
+            _refuse("conformance.runtime.signer")
+        return b"\xa5" * RSA_SIGNATURE_BYTES
+
+    def sign(self, signing_input: bytes, *, timeout_seconds: float) -> bytes:
+        self.calls.append((bytes(signing_input), timeout_seconds))
+        return self._signer.sign(
+            signing_input,
+            timeout_seconds=timeout_seconds,
+        )
+
+    def close(self) -> None:
+        self._signer.close()
+        self.closed = True
+
+
+class _ConformanceResponse:
+    def __init__(self, status: int, document: dict[str, object]):
+        self.status = status
+        self.headers = (("Content-Type", "application/json"),)
+        self._raw = canonical_json(document)
+        self._offset = 0
+        self.closed = False
+
+    def read(self, size: int) -> bytes:
+        take = min(size, 7)
+        chunk = self._raw[self._offset : self._offset + take]
+        self._offset += len(chunk)
+        return chunk
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _ConformanceExchange:
+    def __init__(
+        self,
+        *,
+        title: str,
+        body: str,
+        labels: list[str],
+        token: str,
+        expires_at: str,
+        issue_number: int,
+        issue_url: str,
+    ):
+        self._title = title
+        self._body = body
+        self._labels = labels
+        self._token = token
+        self._expires_at = expires_at
+        self._issue_number = issue_number
+        self._issue_url = issue_url
+        self.requests: list[HTTPSRequest] = []
+        self.responses: list[_ConformanceResponse] = []
+
+    @staticmethod
+    def _header(request: HTTPSRequest, name: str) -> str | None:
+        return next(
+            (value for key, value in request.headers if key.casefold() == name.casefold()),
+            None,
+        )
+
+    def _response(self, status: int, document: dict[str, object]) -> _ConformanceResponse:
+        response = _ConformanceResponse(status, document)
+        self.responses.append(response)
+        return response
+
+    def __call__(self, request: HTTPSRequest, _context: object) -> _ConformanceResponse:
+        self.requests.append(request)
+        call = len(self.requests)
+        if call == 1:
+            expected = canonical_json(
+                {"permissions": {"issues": "write"}, "repositories": ["skills"]}
+            )
+            if (
+                request.method != "POST"
+                or request.path != TOKEN_ROUTE
+                or request.body != expected
+                or self._header(request, "Authorization") is None
+                or self._header(request, "X-GitHub-Api-Version") != API_VERSION
+            ):
+                _refuse("conformance.runtime.token-request")
+            return self._response(
+                201,
+                {
+                    "token": self._token,
+                    "expires_at": self._expires_at,
+                    "permissions": {"issues": "write"},
+                    "repository_selection": "selected",
+                    "repositories": [{"full_name": GITHUB_REPOSITORY}],
+                },
+            )
+        issue = {
+            "number": self._issue_number,
+            "html_url": self._issue_url,
+            "title": self._title,
+            "body": self._body,
+        }
+        if call == 2:
+            expected = canonical_json(
+                {"body": self._body, "labels": self._labels, "title": self._title}
+            )
+            if (
+                request.method != "POST"
+                or request.path != ISSUES_ROUTE
+                or request.body != expected
+                or self._header(request, "Authorization") != f"token {self._token}"
+            ):
+                _refuse("conformance.runtime.issue-request")
+            return self._response(201, issue)
+        if call not in (3, 4) or request.method != "GET" or request.body:
+            _refuse("conformance.runtime.readback-request")
+        if request.path != f"{ISSUES_ROUTE}/{self._issue_number}":
+            _refuse("conformance.runtime.readback-request")
+        authorization = self._header(request, "Authorization")
+        if (call == 3 and authorization != f"token {self._token}") or (
+            call == 4 and authorization is not None
+        ):
+            _refuse("conformance.runtime.readback-request")
+        return self._response(200, issue)
+
+
+def _verify_runtime_contract(fixtures: dict[str, bytes]) -> None:
+    if (
+        APP_ID != "4764812"
+        or OPENSSL_ARGUMENTS
+        != (
+            "/usr/bin/openssl",
+            "dgst",
+            "-sha256",
+            "-sign",
+            "/var/db/wildcat-github-issue-publisher/shoggoth-wildcat-labs.pem",
+        )
+        or PEM_PATH
+        != "/var/db/wildcat-github-issue-publisher/shoggoth-wildcat-labs.pem"
+        or MAX_SIGNATURE_BYTES != 4_096
+        or RSA_SIGNATURE_BYTES != 256
+        or GITHUB_API_HOST != "api.github.com"
+        or HTTPS_PORT != 443
+        or GITHUB_REPOSITORY != "wildcat-finance/skills"
+        or INSTALLATION_ID != "157591976"
+        or API_VERSION != "2022-11-28"
+        or TOKEN_ROUTE != "/app/installations/157591976/access_tokens"
+        or ISSUES_ROUTE != "/repos/wildcat-finance/skills/issues"
+    ):
+        _refuse("conformance.runtime.constants")
+    cases = _canonical_fixture(
+        fixtures["runtime-cases.json"], "conformance.runtime-cases"
+    )
+    expected_fields = {
+        "schema",
+        "expected_stages",
+        "expires_at",
+        "issue_number",
+        "issue_url",
+    }
+    stages = cases.get("expected_stages")
+    if (
+        set(cases) != expected_fields
+        or cases.get("schema") != "github-issue-publisher-runtime-cases/v1"
+        or stages
+        != [
+            "admission",
+            "signer",
+            "token",
+            "create",
+            "readback-authenticated",
+            "readback-anonymous",
+            "cleanup",
+            "receipt",
+        ]
+        or cases.get("issue_number") != 9250
+        or cases.get("issue_url")
+        != "https://github.com/wildcat-finance/skills/issues/9250"
+        or cases.get("expires_at") != "2033-05-18T04:33:20Z"
+    ):
+        _refuse("conformance.runtime-cases")
+    request = _canonical_fixture(
+        fixtures["valid-request.json"], "conformance.valid-request"
+    )
+    final = request.get("final_candidate")
+    labels = request.get("labels")
+    if not isinstance(final, dict) or not isinstance(labels, list):
+        _refuse("conformance.runtime-cases")
+    title = final.get("title")
+    body = final.get("body")
+    if not isinstance(title, str) or not isinstance(body, str):
+        _refuse("conformance.runtime-cases")
+    canary = "ghs_" + sha256_bytes(fixtures["valid-request.json"])[:48]
+    signer = _ConformanceSigner()
+    exchange = _ConformanceExchange(
+        title=title,
+        body=body,
+        labels=labels,
+        token=canary,
+        expires_at=cases["expires_at"],
+        issue_number=cases["issue_number"],
+        issue_url=cases["issue_url"],
+    )
+    sink = MemoryReceiptSink()
+    runtime = PublisherRuntime(
+        signer=signer,
+        transport=PinnedGitHubTransport(exchange),
+        receipt_sink=sink,
+        wall_clock=lambda: 2_000_000_000.0,
+        monotonic=lambda: 100.0,
+    )
+    result = runtime.publish(fixtures["valid-request.json"][:-1])
+    if (
+        result.get("outcome") != "published"
+        or result.get("readback") != "matched"
+        or result.get("issue_number") != cases["issue_number"]
+        or result.get("issue_url") != cases["issue_url"]
+        or result.get("counts")
+        != {
+            "signer_attempts": 1,
+            "token_attempts": 1,
+            "post_attempts": 1,
+            "authenticated_readbacks": 1,
+            "anonymous_readbacks": 1,
+        }
+        or not signer.closed
+        or not sink.closed
+        or sink.payload != result_bytes(result)
+        or parse_closed_result(sink.payload) != result
+        or [event["stage"] for event in runtime.events] != stages
+        or len(exchange.requests) != 4
+        or len(signer.runner_calls) != 1
+        or any(not response.closed for response in exchange.responses)
+    ):
+        _refuse("conformance.runtime-result")
+    retained = (
+        result_bytes(result)
+        + canonical_json(list(runtime.events))
+        + repr(signer.calls).encode("utf-8")
+        + repr(exchange.requests).encode("utf-8")
+    )
+    if canary.encode("ascii") in retained:
+        _refuse("conformance.runtime-disclosure")
+
+
 def _report_path(candidate: str, criterion: str) -> str:
     return f".hexaemeron/design-reports/{candidate}-{criterion}.json"
 
@@ -619,6 +903,8 @@ def _conformance(argv: list[str]) -> int:
     files = _closed_manifest(manifest_raw)
     fixtures = _fixture_bytes(Path(manifest).parent, files)
     _verify_fixture_contract(fixtures)
+    if criterion == "signer-and-post-boundary":
+        _verify_runtime_contract(fixtures)
     value, unit = CRITERIA[criterion]
     command = (
         f"{CLI_PREFIX} conformance --manifest {manifest} "

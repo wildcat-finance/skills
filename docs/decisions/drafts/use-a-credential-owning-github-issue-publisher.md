@@ -45,6 +45,20 @@ POST. It retains the final title and body in memory from the final check through
 the POST. The client supplies no path that can be reopened. A confirmed create
 is never retried automatically.
 
+The component uses one length-prefixed request on a fixed Unix socket. The
+client checks socket type, owner, group, and mode; the server rejects root and
+its own service identity as callers. The signer fixes the executable,
+arguments, service-owned PEM path, stdin, output ceiling, and timeout. The
+HTTPS transport fixes TLS validation, GitHub host, installation, repository,
+API version, routes, methods, response ceilings, and redirect refusal.
+
+An uncertain POST returns `create-indeterminate` with the request digest and no
+retry. A confirmed create becomes `published` only after authenticated and
+anonymous reads match its number, canonical URL, title, and body. Otherwise it
+returns `created-but-unverified`. Fixed, content-free events and the terminal
+result retain attempt counts and cleanup state without prose, credentials,
+headers, response bodies, or raw errors.
+
 The client receives a content-free result. It never receives a JWT,
 installation token, PEM bytes, header, raw response, or general HTTP
 capability. The sourceable token-variable and token-only helper contracts are
@@ -87,6 +101,10 @@ LaunchDaemon installation. Repository tests can prove the component and
 deployment verifier. They cannot prove that a particular Mac applied those
 predicates. A live-isolation claim requires a separately observed host
 receipt; Step 1 establishes neither live deployment nor live isolation.
+Step 2 establishes those component paths with injected signer, transport,
+filesystem, peer, and clock doubles, plus a local socket-pair check of the
+macOS peer-credential ABI. It makes no live GitHub call, reads no real PEM, and
+still establishes neither live deployment nor live isolation.
 
 Root and administrators remain outside the promise. Sapheneia and Vulgate
 records remain checked records of judgement rather than semantic proof.
