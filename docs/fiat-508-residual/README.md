@@ -6,7 +6,7 @@ Delivery status:
 - Step 2 adds the native worker supervisor described below.
 - Step 3 adds controller launch and private report admission, preserving independent origin changes.
 - Step 4 adds cumulative packet export, evidence validation and detached attachment binding; see the [format and custody reference](../../plugins/hexaemeron/skills/fiat/references/carryover-packet.md).
-- Step 5 adds complete replacement reconstruction and executed current guard coverage. Its conformance reports pass; full-suite checks and the independent audit remain pending.
+- Step 5 adds complete replacement reconstruction and executed current guard coverage. Its conformance reports, implementation checks and independent audit passed.
 - Command validation and the joined lifecycle remain pending.
 
 The decision `adr/confine-the-worker-before-admitting-its-output` records the
