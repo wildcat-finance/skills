@@ -16855,6 +16855,7 @@ def _checkpoint_restore_relocate(
     ledger_prefix: bytes,
     inventory: list[dict],
     manifest_sha256: str,
+    deferred_marker: list[str] | None = None,
 ) -> dict:
     """Relocate one verified capsule into a fresh, separately restored Git tree.
 
@@ -16864,6 +16865,20 @@ def _checkpoint_restore_relocate(
     extracted its own capsule under `.git/`. Every name below that used to
     read `manifest_sha256` or `args.source` now reads the parameter a
     caller supplies instead; nothing else moved.
+
+    S4-R4-02: `deferred_marker` is the one exception to that, and it is
+    `None` for `--from`, which therefore retires the marker exactly where it
+    always did. A caller that still has a refusal to decide *after* this
+    transaction returns passes a list instead, and the marker path this
+    transaction would have retired is appended to it rather than retired.
+    The caller owns it from there: it must call
+    `_checkpoint_restore_retire_marker` with the same `origin`, `state` and
+    `digest` once its own checks pass, and must leave the marker in place
+    when they do not. That keeps a refusal decided from relocated state
+    inside the rule the reference already writes for this directory -- a
+    destination holding the relocation marker, which the existing retry
+    rules resume or refuse -- instead of active state with no marker beside
+    it, which no rule describes.
     """
     refs = _checkpoint_refs(origin, imported)
     if refs != manifest["boundary"]["refs"]:
@@ -16940,9 +16955,12 @@ def _checkpoint_restore_relocate(
         _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
-        _checkpoint_restore_retire_marker(
-            origin, imported, manifest_sha256, marker
-        )
+        if deferred_marker is None:
+            _checkpoint_restore_retire_marker(
+                origin, imported, manifest_sha256, marker
+            )
+        else:
+            deferred_marker.append(marker)
         return _checkpoint_restore_result(
             manifest=manifest,
             digest=manifest_sha256,
@@ -17097,9 +17115,12 @@ def _checkpoint_restore_relocate(
     _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
-    _checkpoint_restore_retire_marker(
-        origin, imported, manifest_sha256, marker
-    )
+    if deferred_marker is None:
+        _checkpoint_restore_retire_marker(
+            origin, imported, manifest_sha256, marker
+        )
+    else:
+        deferred_marker.append(marker)
     return _checkpoint_restore_result(
         manifest=manifest,
         digest=manifest_sha256,
@@ -17321,7 +17342,11 @@ def _checkpoint_restore_from_archive(
     relocation transaction then runs entirely unchanged. Identity is
     reminted from the relocated state last, because it is the one property
     the relocation transaction itself cannot corrupt but a hostile archive's
-    claimed `unavailable` could still misstate.
+    claimed `unavailable` could still misstate. The transaction runs
+    unchanged in every step it takes and in the order it takes them; the one
+    thing this caller moves is *when* its marker is retired, which S4-R4-02
+    defers past the identity check so a refusal there leaves the marker the
+    reference's residue rule names. `--from` is untouched by that.
     """
     destination, destination_descriptor, created_destination = (
         _checkpoint_restore_archive_destination(base_dir)
@@ -17446,6 +17471,18 @@ def _checkpoint_restore_from_archive(
         if computed_refs != manifest["refs"]:
             _checkpoint_archive_refuse("ref-disagreement")
 
+        # S4-R4-02: the identity check below is decided from the relocated
+        # state, so it can only run once this transaction has completed --
+        # and until round 4 it completed by retiring its own marker, leaving
+        # an `identity-mismatch` or `identity-unavailable` refusal holding
+        # active controller state with no marker beside it. That is a state
+        # the reference writes no rule for. Deferring the retirement to this
+        # caller puts both refusals back inside the rule it does write: the
+        # destination keeps the relocation marker, and the existing retry
+        # rules resume or refuse it. Nothing about the transaction's own
+        # ordering changes, and `--from`, which passes no list, retires the
+        # marker at the same point it always did.
+        deferred_marker: list[str] = []
         relocated = _checkpoint_restore_relocate(
             destination,
             capsule,
@@ -17454,6 +17491,7 @@ def _checkpoint_restore_from_archive(
             ledger_prefix,
             inventory,
             manifest["controller_capsule"]["manifest_sha256"],
+            deferred_marker=deferred_marker,
         )
 
         worktree = relocated["worktree"]
@@ -17486,6 +17524,21 @@ def _checkpoint_restore_from_archive(
         elif recomputed_status.get("status") == "bound":
             _checkpoint_archive_refuse("identity-mismatch")
 
+        # S4-R4-02: every refusal decided from relocated state is now behind
+        # us, so the transaction's marker is retired here instead of inside
+        # it. `_checkpoint_restore_retire_marker` re-derives the marker path
+        # from the same `origin`, state and digest and verifies the exact
+        # bytes it wrote before unlinking, so running it here checks the same
+        # things it checked in place. A kill in the window this opens leaves
+        # the marker, which is the residue the reference already describes.
+        for pending_marker in deferred_marker:
+            _checkpoint_restore_retire_marker(
+                destination,
+                imported,
+                manifest["controller_capsule"]["manifest_sha256"],
+                pending_marker,
+            )
+
         # S4-R1-03: the capsule has been relocated into active controller state
         # and re-verified from it, so the disposable root the glossary names has
         # nothing left to serve. Removing it here rather than in the `finally`
@@ -17493,15 +17546,19 @@ def _checkpoint_restore_from_archive(
         # and the relocation marker, for the existing retry rules to resume or
         # refuse.
         #
-        # S4-R3-04 bounds that to a *killed* restore. The `identity-mismatch`
-        # above is decided from the relocated state, so it refuses after the
-        # relocation transaction has completed and retired its own marker, and
-        # leaves the destination holding active controller state -- `verify`,
-        # `status` and `next` all succeed against it -- with this root beside it
-        # and no marker to pair with. The refusal says the archive's identity
-        # claim was wrong; it does not undo a transaction the existing code
-        # completed, and this function does not tear an operator-named
-        # destination down to make it look as though it had.
+        # S4-R3-04 bounds that to a *killed* restore, and S4-R4-02 settles
+        # what the two identity refusals above leave. Both are decided from
+        # the relocated state, so both refuse after the relocation
+        # transaction has completed, and the destination they leave holds
+        # active controller state -- `verify`, `status` and `next` all
+        # succeed against it -- with this root beside it. Since round 4 it
+        # also keeps the relocation marker, because the retirement is
+        # deferred to the loop below and never reached on a refusal. So the
+        # residue is the one the reference describes and the existing retry
+        # rules govern, rather than active state with nothing to pair with.
+        # The refusal still says only that the archive's identity claim was
+        # wrong: it does not undo a transaction the existing code completed,
+        # and this function tears no operator-named destination down.
         shutil.rmtree(restore_root, ignore_errors=True)
         with contextlib.suppress(OSError):
             os.rmdir(os.path.dirname(restore_root))

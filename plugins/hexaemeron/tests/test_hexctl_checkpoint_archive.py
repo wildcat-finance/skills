@@ -3979,6 +3979,177 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         self.assertNotIn("identity-mismatch", diagnosis)
         self.assertNotIn("Traceback", diagnosis)
 
+    def test_archive_restore_keeps_its_marker_when_identity_refuses(self):
+        """S4-R4-02: a refusal decided from relocated state keeps its marker.
+
+        `identity-mismatch` is recomputed from the relocated state, so it can
+        only fire once `_checkpoint_restore_relocate` has completed -- and
+        that transaction used to complete by retiring its own marker. The
+        refusal therefore left the destination holding active controller
+        state with no marker beside it, which is a residue the reference
+        describes nowhere: study section 11 and the risk register's
+        `interrupted-restore` row between them cover a destination without
+        active state, and a destination carrying the marker the existing
+        retry rules resume or refuse, and neither is this.
+
+        Both halves are asserted here, because the repair is a deferral and
+        a deferral that never fires would leak a marker into every successful
+        restore instead. So: the refusal keeps the marker, and the success
+        retires it.
+        """
+        module = hexctl_module()
+        marker_name = os.path.join(
+            module.STATE_DIR_NAME, module.CHECKPOINT_RESTORE_MARKER_FILE
+        )
+
+        archive = self.good_archive()
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        self.hostile_identity_internally_consistent(members, manifest)
+        specimen = self.write_specimen(
+            members, path=self.specimen_path("r4-identity-marker.zip")
+        )
+        refused = self.restore_destination("r4-identity-refused")
+        self.assert_restore_refuses(specimen, "identity-mismatch", destination=refused)
+        self.assertTrue(
+            os.path.isfile(os.path.join(refused, marker_name)),
+            "identity-mismatch left active controller state with no relocation "
+            "marker, so the existing retry rules have nothing to resume or "
+            "refuse and the residue matches no rule the reference writes",
+        )
+
+        completed = self.restore_destination("r4-identity-completed")
+        self.run_restore(archive, self.outer_sha256(archive), completed, expect=0)
+        self.assertFalse(
+            os.path.exists(os.path.join(completed, marker_name)),
+            "a completed restore left its relocation marker behind, so the "
+            "deferred retirement never ran",
+        )
+
+    def test_relocation_transaction_retires_in_place_for_its_native_caller(self):
+        """S4-R4-02: `--from` keeps the retirement point it always had.
+
+        `_checkpoint_restore_relocate` is shared with `checkpoint restore
+        --from`, which is audited and receipted in an earlier step. The
+        deferral above is opt-in precisely so that path is untouched: the
+        parameter defaults to `None`, and the native caller passes nothing,
+        so the `None` branch runs the same retirement at the same point.
+
+        This pins that arrangement rather than the behaviour it produces, and
+        the bound is worth stating: it establishes that the native caller has
+        not been switched onto the deferred path, not that a successful
+        `--from` restore retires its marker. Nothing in either suite asserts
+        that today -- every native marker assertion in
+        `test_hexctl_checkpoint.py` pins the marker *surviving* a refusal or
+        an interrupted run -- so this guard closes the regression that the
+        shared transaction newly makes possible and leaves that older gap
+        visible instead of implying a green suite covered it.
+        """
+        module = hexctl_module()
+        parameters = inspect.signature(
+            module._checkpoint_restore_relocate
+        ).parameters
+        # Asserted rather than subscripted: on a tree without the repair this
+        # name is absent, and a `KeyError` here would leave the test as an
+        # error rather than a failure. Elenchus reads any error as an
+        # infrastructure failure and returns `inconclusive` for the whole
+        # run, which is how round 3's first check was lost.
+        self.assertIn(
+            "deferred_marker",
+            parameters,
+            "the relocation transaction takes no deferral parameter, so a "
+            "refusal decided from relocated state cannot keep its marker",
+        )
+        self.assertIsNone(
+            parameters["deferred_marker"].default,
+            "the relocation transaction now defers by default; "
+            "`checkpoint restore --from` would stop retiring its own marker",
+        )
+
+        native = inspect.getsource(module.cmd_checkpoint_restore)
+        archive_branch, _, capsule_branch = native.partition(
+            "if source is None or manifest_sha256 is None:"
+        )
+        self.assertIn("_checkpoint_restore_relocate", capsule_branch)
+        self.assertNotIn(
+            "deferred_marker",
+            capsule_branch,
+            "the native `--from` caller now passes a deferral, which moves "
+            "marker retirement on a path audited and receipted in an earlier "
+            "step",
+        )
+        self.assertNotIn("_checkpoint_restore_relocate", archive_branch)
+
+    def test_archive_restore_keeps_its_marker_when_identity_cannot_be_minted(self):
+        """S4-R4-01: `identity-unavailable` is the fourth post-`git init` class.
+
+        Rounds 1 to 3 enumerated three refusal classes that can fire after the
+        destination repository exists: `ref-disagreement`, the capsule stage's
+        `manifest-mismatch`, and `identity-mismatch`. That enumeration was
+        incomplete. `_checkpoint_archive_identity` mints under
+        `_checkpoint_archive_guarded("identity-unavailable", mint)`, so any
+        failure inside the mint refuses with `identity-unavailable` rather
+        than `identity-mismatch`, from the same call site and therefore from
+        the same position: after the relocation transaction has completed.
+
+        The class is established here by observation rather than by reading,
+        because an enumeration that names three of four classes makes any
+        section 11 amendment wrong on the day it lands. The mint is failed at
+        `_checkpoint_identity_verify_observations`, which is reached only from
+        inside `mint`, and the archive is built before the patch so that
+        export's own identity member is minted normally.
+
+        It also pins that the S4-R4-02 deferral covers both identity classes,
+        not just the one that named it.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination("r4-identity-unavailable")
+        module = hexctl_module()
+        marker_name = os.path.join(
+            module.STATE_DIR_NAME, module.CHECKPOINT_RESTORE_MARKER_FILE
+        )
+
+        captured = StringIO()
+        code = None
+        with mock.patch.object(
+            module,
+            "_checkpoint_identity_verify_observations",
+            side_effect=OSError("the restored tree cannot answer an observation"),
+        ):
+            with redirect_stdout(StringIO()):
+                with redirect_stderr(captured):
+                    try:
+                        module._checkpoint_restore_from_archive(
+                            destination, str(archive), digest
+                        )
+                    except SystemExit as stopped:
+                        code = stopped.code
+                    except OSError as escaped:
+                        self.fail(
+                            "the mint failure escaped as an uncaught OSError "
+                            f"({escaped!r}) instead of one bounded refusal"
+                        )
+                    else:
+                        self.fail(
+                            "the restore completed where the mint failure "
+                            "should have refused"
+                        )
+
+        self.assertEqual(1, code)
+        self.assertEqual(
+            "identity-unavailable\n",
+            captured.getvalue(),
+            "the fourth post-`git init` refusal class is not the one the "
+            "reference's closed table names for a mint that cannot complete",
+        )
+        self.assertTrue(
+            os.path.isfile(os.path.join(destination, marker_name)),
+            "`identity-unavailable` left active controller state with no "
+            "relocation marker, so the S4-R4-02 deferral covers only one of "
+            "the two classes decided from relocated state",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
