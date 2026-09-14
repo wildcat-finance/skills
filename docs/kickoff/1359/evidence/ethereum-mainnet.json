@@ -1,0 +1,470 @@
+{
+  "schema": "wildcat.kickoff-targets.observations.v1",
+  "chain_id": 1,
+  "chain": "Ethereum mainnet",
+  "rpc": "https://ethereum-rpc.publicnode.com",
+  "tools": {
+    "cast": "1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)"
+  },
+  "observations": [
+    {
+      "label": "estate",
+      "block": {
+        "number": 25960042,
+        "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
+        "timestamp": 1789200599
+      },
+      "method": "cast block finalized; cast code --block N; cast call --block N"
+    },
+    {
+      "label": "v1-factory",
+      "block": {
+        "number": 25960074,
+        "hash": "0xe60835a79184f61e49da1109be50056619701e39945f8f75c9af72400b4bf7a2",
+        "timestamp": 1789200983
+      },
+      "method": "cast block finalized; cast code --block N; cast call --block N"
+    }
+  ],
+  "code": [
+    {
+      "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+      "block_number": 25960042,
+      "code_length": 1649,
+      "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9"
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "block_number": 25960042,
+      "code_length": 3364,
+      "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004"
+    },
+    {
+      "address": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+      "block_number": 25960042,
+      "code_length": 20255,
+      "code_keccak256": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 20254,
+        "init_code_keccak256": "0x45a5a3cf0a4aeee877f71602848425bac849ee5bf59a2761014c7d6ee00be94f"
+      }
+    },
+    {
+      "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+      "block_number": 25960042,
+      "code_length": 22165,
+      "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 22164,
+        "init_code_keccak256": "0x1e2fdf1700fe20e2e903b5c459c8b9db04798942ab7fe1ad49a88421dbd47a77"
+      }
+    },
+    {
+      "address": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+      "block_number": 25960042,
+      "code_length": 22165,
+      "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 22164,
+        "init_code_keccak256": "0xe283098ee6563da880b545b812e4eb94e24ee30498f2f109bbb6295c95dc3c4f"
+      }
+    },
+    {
+      "address": "0x93caaddc316f699f9249e93a689566cefc446c3c",
+      "block_number": 25960074,
+      "code_length": 16251,
+      "code_keccak256": "0x8e1eb2f3e38e1effddfd26b92802c0cb9aba828051fc0996696017a3cc414066",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 16250,
+        "init_code_keccak256": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371"
+      }
+    },
+    {
+      "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+      "block_number": 25960042,
+      "code_length": 23115,
+      "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 23114,
+        "init_code_keccak256": "0xc152ead6073d54f964e3c2fd317ec6c774e67465cf3e6fb9551badb88a09e43f"
+      }
+    },
+    {
+      "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+      "block_number": 25960042,
+      "code_length": 7615,
+      "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897"
+    },
+    {
+      "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+      "block_number": 25960042,
+      "code_length": 24385,
+      "code_keccak256": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a"
+    },
+    {
+      "address": "0xd0c690707b5642475f68a0487cea08e30a5719bd",
+      "block_number": 25960074,
+      "code_length": 23651,
+      "code_keccak256": "0x79fa042e1a64cf7f2b02b7074c16f324ee3ac1fab1da99be6066aee6bf0138b6",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 23650,
+        "init_code_keccak256": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93"
+      }
+    },
+    {
+      "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+      "block_number": 25960042,
+      "code_length": 16798,
+      "code_keccak256": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0"
+    },
+    {
+      "address": "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a",
+      "block_number": 25960042,
+      "code_length": 19188,
+      "code_keccak256": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e"
+    },
+    {
+      "address": "0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+      "block_number": 25960042,
+      "code_length": 17417,
+      "code_keccak256": "0x60a6478c59b7c6b95d7549d05b5801203ba70e79aa63e0e5fe1a91eccd4a431f"
+    },
+    {
+      "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+      "block_number": 25960042,
+      "code_length": 6354,
+      "code_keccak256": "0x820f5453768df9f33465663ad5ade3416a82b821d3f39383ec2d358fd13ad945"
+    },
+    {
+      "address": "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7",
+      "block_number": 25960042,
+      "code_length": 20104,
+      "code_keccak256": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5"
+    },
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "block_number": 25960042,
+      "code_length": 8724,
+      "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56"
+    }
+  ],
+  "hooks_factory": {
+    "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+    "block_number": 25960042,
+    "marketInitCodeHash": "0xc152ead6073d54f964e3c2fd317ec6c774e67465cf3e6fb9551badb88a09e43f",
+    "marketInitCodeStorage": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+    "archController": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+    "sanctionsSentinel": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+    "getHooksTemplatesCount": 3,
+    "getHooksTemplates": [
+      "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+      "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+      "0x731c775385d0efb2cac61074ba2d885d343a09cd"
+    ],
+    "templates": {
+      "0x4c62b4844c8371f321541e8d564a4b3896cecec7": {
+        "name": "OpenTermHooks",
+        "index": 0,
+        "enabled": true,
+        "exists": true,
+        "protocol_fee_bips": 500,
+        "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+        "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+        "origination_fee_amount": 0,
+        "market_count": 60,
+        "markets": [
+          "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+          "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+          "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+          "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+          "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+          "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef",
+          "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+          "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d",
+          "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25",
+          "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+          "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+          "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+          "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+          "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+          "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+          "0x44239265e4c63573070048fecd83a6b1e324412c",
+          "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+          "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+          "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+          "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed",
+          "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+          "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+          "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513",
+          "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+          "0x603b29847659618813f039c73379746585b78875",
+          "0x6053e88b1ac0dce4ccac47122cbecd6598365c70",
+          "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+          "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c",
+          "0x69e56f526637b430561e8293f3307765a046d750",
+          "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+          "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+          "0x7244b84918dbfb50e62320fc0e6031a449deea28",
+          "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+          "0x8c06d86596d671798a67e80dc44a281c8d822fd3",
+          "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+          "0x923237220cc79c6301c59851af3574d0a487c966",
+          "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+          "0x9e047d2e8970300f0461314e1b72abf7ef7792e9",
+          "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+          "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd",
+          "0xa8139699360b255c5c02d0616e75f20b92adf1c3",
+          "0xaa4677627d05775dafc410d7e3aff5702aae27f8",
+          "0xb3b823ec39f3edeb4354f76997031b3826b615c2",
+          "0xb3beb373d241378f5f1fd68ed865349257602476",
+          "0xbad1b632e90ce02af868f07c572adb067eb98353",
+          "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+          "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+          "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+          "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a",
+          "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+          "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+          "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+          "0xe79ca848ae0182fce1db61a968b89627c9a0c948",
+          "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+          "0xeafa12cc0905baabed8618584f0796f5d19da3c4",
+          "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b",
+          "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+          "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd",
+          "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505",
+          "0xf76a7887521a91b47c62060ba57549dec1dc88c7"
+        ]
+      },
+      "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36": {
+        "name": "FixedTermHooks",
+        "index": 1,
+        "enabled": true,
+        "exists": true,
+        "protocol_fee_bips": 500,
+        "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+        "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+        "origination_fee_amount": 0,
+        "market_count": 4,
+        "markets": [
+          "0x0b6c6d557109f9e793297d54ee3fbde2e315b070",
+          "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d",
+          "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+          "0xfe7cf5680d2e59500f3938c2539fda4754876f94"
+        ]
+      },
+      "0x731c775385d0efb2cac61074ba2d885d343a09cd": {
+        "name": "FixedTermHooks",
+        "index": 2,
+        "enabled": true,
+        "exists": true,
+        "protocol_fee_bips": 500,
+        "fee_recipient": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+        "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+        "origination_fee_amount": 0,
+        "market_count": 16,
+        "markets": [
+          "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+          "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+          "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3",
+          "0x262dd546703760adda0c06279508e04bd1f60dee",
+          "0x2d958e4b289b188a110367208689bb6b560586a3",
+          "0x3747a7d6c887348fe249fdff29145b25cf0311f9",
+          "0x55a365f3997b2f015001c53cf6a73335e593ad8a",
+          "0x5a516928be2005e9852e342f71bfcc52ca5bdace",
+          "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4",
+          "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7",
+          "0x7e496c5678b1722289d9c4a13c9aa53631ca7607",
+          "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+          "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+          "0x9aa7f58561812f01f1221e9718011aca78c28c17",
+          "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+          "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc"
+        ]
+      }
+    },
+    "v2_markets_total": 80,
+    "v2_markets_sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a"
+  },
+  "arch_controller": {
+    "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+    "block_number": 25960042,
+    "owner": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+    "getRegisteredBorrowersCount": 54,
+    "getRegisteredControllerFactoriesCount": 2,
+    "getRegisteredControllersCount": 4,
+    "getRegisteredMarketsCount": 87,
+    "getBlacklistedAssetsCount": 0,
+    "getRegisteredControllerFactories": [
+      "0xfd31007613c9f671df6a8d4234901324986bfd13",
+      "0xdd7dd3b5076cf89440d05585ff56d246386207be"
+    ],
+    "getRegisteredControllers": [
+      "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+      "0xc2321ed31a274595e087b5010d200b748eb600e4",
+      "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6",
+      "0xdd7dd3b5076cf89440d05585ff56d246386207be"
+    ],
+    "getRegisteredMarkets": [
+      "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+      "0x0b6c6d557109f9e793297d54ee3fbde2e315b070",
+      "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+      "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+      "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+      "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3",
+      "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+      "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef",
+      "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+      "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d",
+      "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25",
+      "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+      "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+      "0x262dd546703760adda0c06279508e04bd1f60dee",
+      "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+      "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+      "0x2d958e4b289b188a110367208689bb6b560586a3",
+      "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+      "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+      "0x3747a7d6c887348fe249fdff29145b25cf0311f9",
+      "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+      "0x44239265e4c63573070048fecd83a6b1e324412c",
+      "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+      "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+      "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+      "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+      "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed",
+      "0x55a365f3997b2f015001c53cf6a73335e593ad8a",
+      "0x5850afc80561932b0abb63dd13cdc129395323a3",
+      "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+      "0x5a516928be2005e9852e342f71bfcc52ca5bdace",
+      "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+      "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513",
+      "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+      "0x603b29847659618813f039c73379746585b78875",
+      "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+      "0x6053e88b1ac0dce4ccac47122cbecd6598365c70",
+      "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+      "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c",
+      "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+      "0x69e56f526637b430561e8293f3307765a046d750",
+      "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+      "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4",
+      "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7",
+      "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+      "0x7244b84918dbfb50e62320fc0e6031a449deea28",
+      "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+      "0x7e496c5678b1722289d9c4a13c9aa53631ca7607",
+      "0x8c06d86596d671798a67e80dc44a281c8d822fd3",
+      "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+      "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+      "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+      "0x923237220cc79c6301c59851af3574d0a487c966",
+      "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+      "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+      "0x9aa7f58561812f01f1221e9718011aca78c28c17",
+      "0x9e047d2e8970300f0461314e1b72abf7ef7792e9",
+      "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+      "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd",
+      "0xa8139699360b255c5c02d0616e75f20b92adf1c3",
+      "0xaa4677627d05775dafc410d7e3aff5702aae27f8",
+      "0xb3b823ec39f3edeb4354f76997031b3826b615c2",
+      "0xb3beb373d241378f5f1fd68ed865349257602476",
+      "0xbad1b632e90ce02af868f07c572adb067eb98353",
+      "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+      "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+      "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+      "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+      "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a",
+      "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+      "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d",
+      "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a",
+      "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+      "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+      "0xe79ca848ae0182fce1db61a968b89627c9a0c948",
+      "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+      "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+      "0xeafa12cc0905baabed8618584f0796f5d19da3c4",
+      "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b",
+      "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc",
+      "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+      "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd",
+      "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505",
+      "0xf76a7887521a91b47c62060ba57549dec1dc88c7",
+      "0xfe7cf5680d2e59500f3938c2539fda4754876f94"
+    ],
+    "registered_markets_sha256": "5a073d47686a971966098cf4d09189cc3048543ea6099751f52a70209cb171cc"
+  },
+  "v1_controller_factory": {
+    "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+    "block_number": 25960074,
+    "marketInitCodeHash": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93",
+    "controllerInitCodeHash": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371",
+    "marketInitCodeStorage": "0xd0c690707b5642475f68a0487cea08e30a5719bd",
+    "controllerInitCodeStorage": "0x93caaddc316f699f9249e93a689566cefc446c3c",
+    "archController": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+    "sentinel": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+    "getDeployedControllersCount": 3,
+    "getDeployedControllers": [
+      "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+      "0xc2321ed31a274595e087b5010d200b748eb600e4",
+      "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6"
+    ],
+    "v1_markets_derived": [
+      "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+      "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+      "0x5850afc80561932b0abb63dd13cdc129395323a3",
+      "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+      "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+      "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+      "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a"
+    ],
+    "v1_markets_note": "registered markets minus every market listed under a HooksFactory template at the estate block",
+    "v1_markets_sha256": "b96da6374d45b26ac157a81b6811dc48931714d8baac80adb027f89fa8027c42"
+  },
+  "anchors": {
+    "arch_controller_deployment": {
+      "block_number": 18686645,
+      "block_hash": "0xf875ac25e366bd6e03a94bd552c5a7be9469062e1ca9af4ca46bf4eda97f151a",
+      "timestamp": 1701374255,
+      "transaction": "0x185630a823edeb2261ae6fa92b62c1b3200facf2a54ad9356cccbf4630a75d2d",
+      "source": "sourcify deployment record; block hash from cast block"
+    },
+    "sentinel_deployment": {
+      "block_number": 18686645,
+      "transaction": "0x97a3126a109dc0fe11243775a952acc8d6d137b6e909de7dcd8910bbf798a519",
+      "source": "sourcify deployment record"
+    },
+    "v1_controller_factory_deployment": {
+      "block_number": 18687391,
+      "transaction": "0xbf0b59d6c3c9790f57b1876cd3ab4a1738f22751b1f80bdd72edff05972e8733",
+      "source": "sourcify deployment record"
+    },
+    "hooks_factory_deployment": {
+      "block_number": 21788182,
+      "block_hash": "0xa8c8592292a62b31242bdc1e973a8092288c0f6fbf22ddb536f1aa6f4e35a4d5",
+      "timestamp": 1738853567,
+      "transaction": "0xe1c92956c9ec365859a40f6ef8bb1ad4b59b469dca64fcadfef1f9a935ee82df",
+      "source": "cast receipt; deployTxHash from v2-protocol deployments/mainnet/factory-inventory.json at bea503c2"
+    },
+    "wrapper_factory_deployment": {
+      "block_number": 24750455,
+      "block_hash": "0xee783b648c000d7dc20db956b92cee90a1392f31ebb9c11de62a84fb99f11a72",
+      "timestamp": 1774633343,
+      "transaction": "0x2dad1799cd230517ffb1c0e8709d8b92ca458209429b0211643570c446a41ba6",
+      "source": "cast receipt; deployTxHash from factory-inventory.json"
+    },
+    "collateral_factory_start": {
+      "block_number": 23167811,
+      "block_hash": "0xed95ca4d131536c23b400b585ee8a5a993e26cf304075ba00d0bd24e3c49b6e5",
+      "timestamp": 1755518483,
+      "source": "wildcat-finance/subgraph networks.json startBlock; block hash from cast block"
+    }
+  }
+}
