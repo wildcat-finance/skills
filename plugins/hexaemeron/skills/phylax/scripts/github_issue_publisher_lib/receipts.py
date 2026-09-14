@@ -369,7 +369,7 @@ def parse_closed_result(raw: bytes) -> dict[str, object]:
 
 @dataclass
 class MemoryReceiptSink:
-    """Injected component-test sink; production deployment supplies the file sink."""
+    """In-memory sink used by component tests and the caller-delivered kit receipt."""
 
     payload: bytes | None = None
     closed: bool = False

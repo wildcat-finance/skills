@@ -2045,6 +2045,31 @@
       "path": "plugins/hexaemeron/tests/test_promise_cases.py",
       "selector": "test_protasis_study_subject_mismatch"
     },
+    "publisher-m": {
+      "claim": "Missing deployment identities and paths refuse the dependent publication transition.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_deployment_missing_identity_or_path_refuses"
+    },
+    "publisher-o": {
+      "claim": "The consequence-3 declaration retains judgement and live-deployment limits.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_publisher_promise_keeps_publication_and_component_distinct"
+    },
+    "publisher-p": {
+      "claim": "Positive evidence exercises the closed injected component cases without claiming live publication.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_positive_manifest_executes_every_study_risk"
+    },
+    "publisher-r": {
+      "claim": "Restoring the exact failed predicate permits a new metadata check.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_refusal_recovers_when_exact_predicate_is_restored"
+    },
+    "publisher-s": {
+      "claim": "A reviewed release digest cannot authorise a different deployed program.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_digest_mutation_is_a_subject_mismatch"
+    },
     "sapheneia-eval-m": {
       "claim": "Sapheneia records refusal when activation, state, an explicit stop instruction or a durable-record evidence inventory is missing.",
       "evidence_class": "recorded",
@@ -3723,6 +3748,22 @@
       },
       "group": "executable",
       "promise_id": "phylax-boundary-review",
+      "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "publisher-m",
+        "O": "publisher-o",
+        "P": "publisher-p",
+        "R": "publisher-r",
+        "S": "publisher-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "phylax-github-issue-publisher",
       "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     {
@@ -5568,6 +5609,37 @@
       "selector": "test_phylax_review_positive",
       "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
       "source": "plugins/hexaemeron/tests/test_promise_cases.py"
+    },
+    "phylax-github-issue-publisher": {
+      "bindings": {
+        "authority": "native_document.phylax_github_issue_publisher.authority",
+        "evidence_classes": "native_document.phylax_github_issue_publisher.evidence.classes",
+        "evidence_references": "native_document.phylax_github_issue_publisher.evidence.references",
+        "exception": "native_document.phylax_github_issue_publisher.exception_state",
+        "inspectable_evidence": "native_document.phylax_github_issue_publisher.independent_evidence",
+        "promise_id": "native_document.phylax_github_issue_publisher.promise",
+        "scope": "native_document.phylax_github_issue_publisher.target.scope",
+        "source_digest": "native_document.phylax_github_issue_publisher.source.sha256",
+        "subject": "native_document.phylax_github_issue_publisher.target.subject",
+        "transition": "native_document.phylax_github_issue_publisher.authorised_transition",
+        "unknowns": "native_document.phylax_github_issue_publisher.open_unknowns"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/phylax-github-issue-publisher.json",
+        "selector": "negative",
+        "sha256": "876f83b4793c190f242e2020779e1466eaa938138c21ab810f3000ad3ebf4aa9"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/phylax-github-issue-publisher.json",
+        "selector": "positive",
+        "sha256": "876f83b4793c190f242e2020779e1466eaa938138c21ab810f3000ad3ebf4aa9"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_positive_manifest_executes_every_study_risk",
+      "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8",
+      "source": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py"
     },
     "probitas-dossier-verification": {
       "bindings": {

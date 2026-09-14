@@ -3,10 +3,10 @@
 This reference defines the Phylax component that admits one agent-authored
 issue candidate before any GitHub App credential can be used. It is the
 standing interface identified by
-`adr/use-a-credential-owning-github-issue-publisher`. Steps 1 and 2 establish
-offline admission and the injected signer-to-GitHub component path. They do
-not establish a deployed service, live credential isolation, or a live GitHub
-publication.
+`adr/use-a-credential-owning-github-issue-publisher`. The component establishes offline admission and the injected signer-to-GitHub
+path, with a closed hostile manifest and a separate macOS deployment verifier.
+A deployed service, live credential isolation and live GitHub publication
+remain unestablished.
 
 ## Promise boundary
 
@@ -255,6 +255,11 @@ POST starts, any failure that prevents a confirmed result returns
 `create-indeterminate`; the runtime does not retry. An operator reconciles the
 request digest before any later action.
 
+The kit returns its terminal receipt to the caller and keeps no persistent
+server receipt. The caller must retain the request and received terminal output.
+A disconnect before the response arrives leaves the outcome unknown, even when
+the remote issue was created; reconcile against GitHub before any new request.
+
 A returned issue must have the canonical
 `https://github.com/wildcat-finance/skills/issues/{number}` URL and the exact
 title and body. The runtime then reads that same issue once with the
@@ -288,12 +293,12 @@ POST cannot appear as a zero-attempt refusal on that path.
 
 The code-owned manifest schema is
 `github-issue-publisher-admission-manifest/v1`. It contains exactly `schema`
-and `files`. `files` lists the seven component fixtures by basename and SHA-256
+and `files`. `files` lists the nine component fixtures by basename and SHA-256
 digest. Paths outside that fixed set, duplicate rows, extra fields, malformed
 digests, unsafe files, and changed fixture bytes refuse.
 
 The CLI accepts only the frozen `conformance` command for candidate
-`isolated-publisher`, one of the four component criteria, and that criterion's
+`isolated-publisher`, one of the five component criteria, and that criterion's
 exact report path below `.hexaemeron/design-reports/`. Before writing a report,
 it checks every fixture digest, admits the golden request and the allowed
 leading-metadata form with the pinned local Imprimatur runner, executes all four
@@ -375,3 +380,44 @@ Phylax Promise declaration, repository route, package generation, and
 component demonstration. Its result retains
 `live_isolation: not-established` until a privileged operator separately
 installs and verifies the service.
+
+## Complete offline conformance
+
+The digest-bound manifest pins every fixture. Its 32 ordered rows comprise one
+positive and 31 hostile cases, including every Study risk id. Changed, missing,
+duplicate, unknown or reordered rows refuse. The positive exercises the actual
+OpenSSL adapter with an injected runner, narrowed transport, exact POST and both
+readbacks. The #855 row proves zero signer and POST attempts. Terminal output
+contains case ids, counts, short state names and digests, never request prose or
+credentials. Duration is one observation, with no performance claim.
+
+The signer-confusion specimen rejects an authority subject mismatch; it does
+not verify delivery commits. The stale-receipt specimen rejects an obsolete
+gate version. Donor drift changes the pinned #855 source date. ADR collision
+runs Hypomnema's duplicate-number guard. Fiat independently owns current
+controller receipts, signed authorship, integration-base assignment and hosted
+checks; these specimens cannot replace those delivery gates.
+
+The three operator questions are answered directly: which case departed from
+its expected outcome, whether any #855 signer or POST attempt occurred, and
+whether the result concerns the component, kit or live host. A failure names a
+fixed `GIP199` field and exits non-zero. The result always retains
+`live_isolation: not-established`.
+
+## Deployment check
+
+The [macOS kit](../deployment/macos/README.md) fixes the identity, daemon,
+socket, working directory, program and key paths. `check-deployment` reads
+metadata and bounded public program files, requires the caller to be distinct
+from the service and outside the named administrator group, and checks owner,
+group, mode, link count, ACL absence, exact daemon content and a reviewed
+release digest. It never reads PEM bytes or installs, moves, changes, deletes,
+boots or publishes anything. Every named predicate has a hostile mutation test.
+
+A passed snapshot covers only the named paths and identities at read time.
+It cannot discover undeclared credential copies or helpers, prove interpreter
+library integrity, rule out later administrator changes, or establish live
+service-manager state. Operator custody and a separately recorded installation
+and lifecycle check remain necessary before publication. The verifier's safe
+predicates are evidence for that operator decision, never a claim of live
+isolation by themselves.

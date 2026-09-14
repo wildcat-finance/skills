@@ -166,6 +166,16 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
 PORTABLE_TEST_FILES = {
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/hostile-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-body.txt",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-source.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-title.txt",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/queue-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/rejection-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/runtime-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/valid-request.json",
     "plugins/alexandria/tests/test_release.py",
     "plugins/ariadne/tests/test_examples.py",
     "plugins/ariadne/tests/test_gates.py",

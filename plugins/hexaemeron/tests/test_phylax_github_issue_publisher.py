@@ -56,7 +56,7 @@ from github_issue_publisher_lib import (  # noqa: E402
 )
 import github_issue_publisher_lib.policy as publisher_policy  # noqa: E402
 from github_issue_publisher_lib.policy import default_imprimatur  # noqa: E402
-import github_issue_publisher as publisher_cli  # noqa: E402
+import github_issue_publisher_lib.conformance as publisher_cli  # noqa: E402
 from github_issue_publisher_lib.client import PublisherClient  # noqa: E402
 from github_issue_publisher_lib.framing import (  # noqa: E402
     MAX_RESULT_BYTES,
@@ -1243,6 +1243,19 @@ class TransportBoundaryTests(BoundaryTestCase):
 
 
 class RuntimeBoundaryTests(BoundaryTestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        real_popen = subprocess.Popen
+        def guarded(*args, **kwargs):
+            command = kwargs.get("args", args[0] if args else ())
+            if isinstance(command, (list, tuple)) and (tuple(command) == OPENSSL_ARGUMENTS or PEM_PATH in command):
+                raise AssertionError("production signer prohibited in runtime tests")
+            return real_popen(*args, **kwargs)
+        guard = mock.patch.object(subprocess, "Popen", side_effect=guarded)
+        guard.start()
+        cls.addClassCleanup(guard.stop)
+
     def test_admission_refuses_before_signer_or_transport(self):
         _document, runtime, signer, sink, exchange = runtime_fixture()
         self.assert_publisher_error(
@@ -2796,6 +2809,8 @@ class AdmissionTests(unittest.TestCase):
             {
                 "__init__.py",
                 "canonical.py",
+                "conformance.py",
+                "deployment.py",
                 "client.py",
                 "errors.py",
                 "framing.py",
