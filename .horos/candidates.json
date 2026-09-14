@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23182057,
+    "bytes_blob": 23185455,
     "bytes_generated": 98
   },
   "entries": [
@@ -273,7 +273,7 @@
       "path": "audit/rounds/fiat-503-imprimatur-1-read-comment-spans-in-source-fi.synopsis.md"
     },
     {
-      "bytes": 20405,
+      "bytes": 23803,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
