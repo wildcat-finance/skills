@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "b9005ac8b7ab18ed879821b4b57a010f0f1257a4c25f1b8fab244e1cd0235809"
+        "sha256": "43982bca8cb6c384fa68a17e8c60d491024368c72d56024daf4b9b41af2da807"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "e9eea5126deae1209932b64d0b2cc07c8945c277bcde0fcad29da433f84312dc"
+        "sha256": "e1fa7b21848f0a017f520cf963b8a1ad7729f0ab46bda53ee33da33cd51865c0"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "ab2d72ee515a153e4e9ce708cc0767ce5b7c6c58be834f1abb6d591c60c81a73"
+        "sha256": "6dba54249a1d290988ffde62184321229bae20a9b82c744aaf0729ebff0e2503"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "6046b98f40b224e57297f33f67b43ca956623338b6c2b1decc5572effc8d239f"
+      "sha256": "2b157ed3a3f080373c49aec58fa609da5cf3472537ab9615d2bb2478b3ddc339"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -2049,6 +2049,31 @@
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
       "path": "plugins/probitas/tests/test_statement.py",
       "selector": "test_stale_case_changes_only_the_mutated_input_digest"
+    },
+    "protasis-gate-m": {
+      "claim": "Changed module bindings, a replaced builder, conditional declarations and parser reassignment refuse during initial interface capture.",
+      "path": "plugins/hexaemeron/tests/test_gate_commands.py",
+      "selector": "test_parser_binding_mutations_refuse_initial_capture"
+    },
+    "protasis-gate-o": {
+      "claim": "One real unittest assertion uses the existing producer writer and Elenchus reader; raw elenchus.unittest.v1 bytes, the unittest-json-v1 adapter declaration and relative report source remain unchanged.",
+      "path": "plugins/hexaemeron/tests/test_gate_commands.py",
+      "selector": "test_source_owned_report_bytes_and_relative_declaration"
+    },
+    "protasis-gate-p": {
+      "claim": "Real initialization records the current gate contract; invalid runbook argv refuses without changing state, while valid input earns an interface-only receipt.",
+      "path": "plugins/hexaemeron/tests/test_gate_commands.py",
+      "selector": "test_current_init_and_refusal_precede_runbook_mutation"
+    },
+    "protasis-gate-r": {
+      "claim": "A CLI source edit with unchanged parser shape blocks verification and mutation; a fresh append-only runbook amendment restores verification.",
+      "path": "plugins/hexaemeron/tests/test_gate_commands.py",
+      "selector": "test_full_cli_source_drift_blocks_mutation_then_fresh_amendment"
+    },
+    "protasis-gate-s": {
+      "claim": "Standalone injected command fences before or after step fields remain subject to validation and refuse; the adapter does not execute them.",
+      "path": "plugins/hexaemeron/tests/test_gate_commands.py",
+      "selector": "test_standalone_injection_fences_remain_executable"
     },
     "protasis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -4144,6 +4169,22 @@
       "group": "executable",
       "promise_id": "fiat-replacement-admission",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "protasis-gate-m",
+        "O": "protasis-gate-o",
+        "P": "protasis-gate-p",
+        "R": "protasis-gate-r",
+        "S": "protasis-gate-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "protasis-gate-command-validation",
+      "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
     }
   ],
   "run_observation": {
@@ -4238,7 +4279,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "7280b565bba00244ed836203cb9352d8b26c5ff022bc5ff58d06f5c35be2dcc1"
+      "sha256": "ad05dc29d4858a476a2cd44a9bb4af823967f08bc6192dae299a51b9d670c422"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4970,12 +5011,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "0cf696480f18bcff0c900468f0ae189fccf4c8f496a6589bc61ec7a3cb5f8c5f"
+        "sha256": "00cdbc22eb900e222b85219e29a91170e86983fecd02a7f9bb6d71ad828d409d"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "0cf696480f18bcff0c900468f0ae189fccf4c8f496a6589bc61ec7a3cb5f8c5f"
+        "sha256": "00cdbc22eb900e222b85219e29a91170e86983fecd02a7f9bb6d71ad828d409d"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -5173,16 +5214,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "negative",
-        "sha256": "eb048c21c5fe672f6129f5985c6e48f264da0f5a8c7f4bf1c996a1c6c3621c3e"
+        "sha256": "328b5758e60a17674aa24fdef296f86417d6433bf653f82d26680b187130ccd7"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "positive",
-        "sha256": "eb048c21c5fe672f6129f5985c6e48f264da0f5a8c7f4bf1c996a1c6c3621c3e"
+        "sha256": "328b5758e60a17674aa24fdef296f86417d6433bf653f82d26680b187130ccd7"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
-      "sha256": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef",
+      "sha256": "2bc1f14d144f0d8b81289cadafef0a50f3af001ec2e8b753c2621563a025ca68",
       "source": "plugins/hexaemeron/tests/test_version_relations.py"
     },
     "hermes-baseline-promotion": {

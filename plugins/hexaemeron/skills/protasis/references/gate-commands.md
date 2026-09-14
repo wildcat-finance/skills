@@ -1,0 +1,57 @@
+# Runbook command validation
+
+The command validator checks declared arguments against registered source interfaces without executing the runbook commands or importing their target modules. Its result records interface validity, not test execution, command success or an audit verdict. Fiat owns the receipt that consumes this result.
+
+Run the optional check from the target repository, using its supported Python:
+
+```bash
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py runbook.md --gate-root . --format json
+```
+
+With `--gate-root`, one bounded no-follow document capture supplies both the runbook shape check and the command check. A refused interface adds `P008` to the normal findings output and makes the command exit nonzero. Combining `--study` with `--gate-root` refuses. Without `--gate-root`, Protasis retains its existing shape check. The CLI does not write a gate receipt. Fiat captures the result when it receipts a marked runbook or amendment.
+
+## Registered interfaces
+
+The registry names exact repository paths and parser-builder functions. It covers the checked runner, the Hexaemeron test runner, Brevitas, Protasis, Imprimatur, Phylax, Ephoros and Hypomnema. An unregistered executable or script refuses; the validator does not import a target to discover an interface.
+
+Each invocation must start with literal `python3` followed by a registered script path. Literal arguments pass to a local parser reconstructed from the script's argument declarations. The validator accepts a finite per-file loop in this form:
+
+```sh
+for file in first.md second.md; do python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$file"; done
+```
+
+The loop has a literal item list and exactly one whole, double-quoted `"$file"` operand. Each item produces a separate invocation. There is no general shell evaluator: substitutions, other variables, pipes, redirects, command chaining, glob expansion, backticks and unsupported loops refuse. A four-file invocation of Brevitas does not become valid because four one-file invocations would be valid. Command text containing `#` or `~` also refuses, including quoted occurrences; the grammar does not interpret comments or expand a home directory.
+
+The parser reads Python syntax as AST data. Each registration pins the module AST with only the designated builder's body omitted. The actual builder body must then supply a supported literal `ArgumentParser` construction and a direct prefix of `add_argument` declarations. Its terminal statement must return the parser or assign a direct `parse_args` call with no arguments or its declared `argv` parameter. Other terminal arguments, keyword arguments and dynamic statements refuse. Supported actions are `store`, `append`, `store_true` and `store_false`; other actions and dynamic declaration builders refuse. Before `add_argument`, `nargs` must be absent, `None`, `?`, `*`, `+`, or an exact integer from 0 through 128; booleans refuse. `argparse` still decides whether that bounded arity is valid for the declared action. Private test-worker flags do not enter the public interface.
+
+Built-in integer and floating-point conversion use the local built-in operations. The registered `positive_int` and `positive_jobs` converters use fixed local scalar behavior only after their reviewed AST digests match; `positive_jobs` also binds its range constant. A custom converter is not imported or executed. Extending the registry requires a reviewed source path, parser-builder shape and tests for supported and refused arguments. A changed converter body or range requires a new reviewed binding.
+
+## Source and report evidence
+
+The closed result schema is `protasis-gate-commands/v1`. It binds the complete captured runbook digest, captured `source_root` and full adapter digest. Each command retains its source text, UTF-8 byte offset and digest. Each expanded invocation records the original `argv`, the substituted `execution_argv`, the CLI path, full CLI digest, declaration digest and `interface-valid` result.
+
+The source-owned Elenchus declaration supplies the exact command, report format and report file. Its format is `unittest-json-v1`; the normalized Elenchus verdict and raw producer report remain separate artifacts. Exactly one whole `{report}` argument binds to the declared report path. Unbound or partial substitutions, unsupported formats and escaping report paths refuse. Constructing `execution_argv` does not run it or create its report.
+
+The latest complete replacement of a step's Exit or Tests field supplies its effective commands. Superseded commands retain their raw source, offset, digest and `superseded-source` status; their obsolete interfaces are not relabelled as currently valid. Commands outside those fields remain active. This selects effective source within the captured document without changing any earlier runbook bytes.
+
+The result retains `operation_ran:false`. That field states that the declared command did not execute; source parsing and interface checking cannot supply a test result. The full CLI and adapter bytes remain part of replay even when the visible argument declarations have not changed.
+
+After a checkpoint relocation, the receipt keeps its original `source_root` and absolute `execution_argv`. Replay checks that this historical operand still derives from the captured root and unchanged relative report declaration. It independently validates the report destination under the current root, including its path refusals. The stored operand grants no authority to execute at the historical root, and replay does not rewrite the receipt or relax full source matching. Fiat's checkpoint identity and ledger checks own relocation.
+
+## Fiat receipt and legacy boundaries
+
+Newly initialized runs record `contracts.gate_commands` with `protasis-gate-commands/v1` in both state and the immutable init event. A runbook or amendment receipt then carries the exact gate evidence in state and its ledger event. A changed marker or disagreement between stored and ledger evidence refuses verification.
+
+Legacy runs without that marker retain their earlier contract. They do not receive fabricated validation records, and inserting gate evidence into an unmarked run refuses. This distinction preserves historical receipt bytes without describing them as newly checked interfaces.
+
+Historical gate records retain the exact command text, offset and digest from each captured runbook prefix. Current-interface replay validates the latest effective result against the current CLI and adapter source. A stale source or changed command/report binding cannot silently reuse its prior result. The repair workflow must produce freshly validated evidence through the owning runbook amendment process while keeping prior records intact.
+
+Inspect the current boundary with plain `hexctl status` or `hexctl status --field gate_command_status`. The separate field reports `legacy`, `awaiting-runbook`, `current`, `stale-or-invalid` or `pending-amendment`; a pending amendment reports `validation:not-complete`. It is a derived observation, not a new state field or a full-status JSON mutation. Inspection does not clear a refusal or complete an interrupted amendment.
+
+## Bounds and refusals
+
+The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
+
+CLI source reads require bounded regular files through no-follow path components. Unavailable files, an observed identity change, unsupported parser syntax, malformed or unclosed command fences, unknown placeholders and argument errors refuse. Source observations do not establish atomic namespace protection or a security verdict about the command's behavior.
+
+A valid interface result authorizes only its use as the named gate evidence. The separate test runner, Elenchus, Warden and Fiat delivery gates still own their execution, failure, audit and receipt claims.
