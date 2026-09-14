@@ -341,3 +341,10 @@ gating and round caps, fixes evidence, task-issue comment publication, prose
 skill enforcement, halt/resume, ledger
 tamper detection, concurrent writer exclusion, crash recovery, and the
 Wildcat marketplace boundary.
+
+## CHECKED GITHUB APP ISSUES
+
+Phylax ships the [bounded publisher](skills/phylax/references/github-issue-publisher-v1.md)
+and [macOS deployment kit](skills/phylax/deployment/macos/README.md). Its 32
+injected conformance cases retain the exact #855 refusal and separate component
+success from live installation and isolation, which remain unestablished.

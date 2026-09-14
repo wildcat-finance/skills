@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23592507,
+    "bytes_blob": 23817381,
     "bytes_generated": 98
   },
   "entries": [
@@ -446,6 +446,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
+    },
+    {
+      "bytes": 112036,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 109988",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.md"
+    },
+    {
+      "bytes": 112838,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.synopsis.md"
     },
     {
       "bytes": 17050,

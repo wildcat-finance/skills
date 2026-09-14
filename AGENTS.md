@@ -202,6 +202,32 @@ protected item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from
 these instructions.
 
+## GitHub App issue publication
+
+Create App-authored issues only through the checked Phylax publisher. Preserve
+the complete written-record publication sequence above, then encode its exact
+source, candidates, frozen inventory, authority and gate records using the
+[publisher request contract](plugins/hexaemeron/skills/phylax/references/github-issue-publisher-v1.md).
+The credential-free installed client accepts that request on stdin:
+
+```bash
+/Library/WildcatIssuePublisher/python3 -I /Library/WildcatIssuePublisher/publisher-client.py publish < request.json
+```
+
+Refuse App issue creation when current deployment evidence for the named caller
+and reviewed release digest is absent or failed. The
+[macOS deployment kit](plugins/hexaemeron/skills/phylax/deployment/macos/README.md)
+ships operator instructions and a read-only verifier; this repository does not
+claim that the service is installed. Offline conformance, prose instructions
+and Git hooks provide no live credential isolation.
+
+Do not source a helper, read the App key, mint or print a token, or substitute
+an arbitrary GitHub call for this route. Retiring direct helper and key access
+belongs to a separately authorised privileged deployment. Root and
+administrators remain outside the component promise. The App login
+`shoggoth-wildcat-labs[bot]` is a delivery actor and must remain absent from
+`HOST_PR_LOGINS`.
+
 ## Repository map
 
 - Alexandria is under `plugins/alexandria/`. Read
