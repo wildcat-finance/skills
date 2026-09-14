@@ -938,17 +938,62 @@ class TimeCommandTests(TempFiles):
         outlives the run that started it."""
         pid_file = Path(self.tmp.name) / "grandchild.pid"
         proc, path = self.time(command=self.python(
-            "import os, sys, time; "
-            "child = os.fork() == 0; "
-            f"(open({str(pid_file)!r}, 'w').write(str(os.getpid())), time.sleep(30), "
-            "os._exit(0)) if child else "
-            "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+            "import os, sys, time\n"
+            "child_pid = os.fork()\n"
+            "if child_pid == 0:\n"
+            "    time.sleep(30)\n"
+            "    os._exit(0)\n"
+            # The parent owns the PID record: cleanup may kill its child before
+            # the child can write, or while the file is still empty.
+            f"with open({str(pid_file)!r}, 'w') as stream:\n"
+            "    stream.write(str(child_pid))\n"
+            "print('parent-done')\n"
+            "sys.stdout.flush()\n"
+            "os._exit(0)\n"
         ))
         self.assertEqual(proc.returncode, 0, proc.stderr)
         document = json.loads(path.read_text(encoding="utf-8"))
         self.assertLess(document["recorder"]["repetitions"][0]["wall_clock_ms"], 4000)
         pid = int(pid_file.read_text(encoding="utf-8"))
         self.assertTrue(self.wait_gone(pid, 5), f"grandchild {pid} survived the run")
+
+    def test_grandchild_cleanup_keeps_a_pid_when_its_write_is_delayed(self):
+        """Hold the PID file empty while the old fixture's parent exits.
+
+        The recorder may kill the grandchild as soon as its parent exits. Its
+        cleanup assertion must therefore consume a PID published by the parent,
+        even when writing that PID takes longer than the recorder's polling.
+        """
+        pid_file = str(Path(self.tmp.name) / "grandchild.pid")
+        prefix = (
+            "import builtins, os, time\n"
+            "fixture_parent = os.getpid()\n"
+            "real_open, real_exit = builtins.open, os._exit\n"
+            "class SlowPidFile:\n"
+            "    def __init__(self, stream): self.stream = stream\n"
+            "    def write(self, value):\n"
+            "        time.sleep(0.25)\n"
+            "        return self.stream.write(value)\n"
+            "    def __enter__(self): return self\n"
+            "    def __exit__(self, *args): self.stream.close()\n"
+            "    def __del__(self): self.stream.close()\n"
+            "def delayed_open(path, *args, **kwargs):\n"
+            "    stream = real_open(path, *args, **kwargs)\n"
+            f"    return SlowPidFile(stream) if path == {pid_file!r} else stream\n"
+            "def parent_exit(code):\n"
+            "    if os.getpid() == fixture_parent:\n"
+            "        deadline = time.monotonic() + 2\n"
+            f"        while not os.path.exists({pid_file!r}) and time.monotonic() < deadline:\n"
+            "            time.sleep(0.001)\n"
+            "    real_exit(code)\n"
+            "builtins.open, os._exit = delayed_open, parent_exit\n"
+        )
+        plain_python = self.python
+        self.python = lambda source: plain_python(prefix + source)
+        try:
+            self.test_a_grandchild_does_not_outlive_a_command_that_exits_zero()
+        finally:
+            self.python = plain_python
 
     def test_a_grandchild_that_leaves_the_process_group_is_refused(self):
         """A process group teardown cannot reach a grandchild that called `setsid`. It

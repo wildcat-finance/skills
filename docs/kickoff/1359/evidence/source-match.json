@@ -1,0 +1,1384 @@
+{
+  "schema": "wildcat.kickoff-targets.source-match.v1",
+  "observed_on": "2026-09-12",
+  "method": {
+    "blob_equality": "git blob SHA-1 of each source in a verification input compared with the blob SHA-1 the GitHub trees API reports for the same path at each commit; lib/ paths live in submodules and are compared through the submodule pins instead",
+    "solc_reproduction": "solc --standard-json over the recorded standard-input.json with outputSelection widened to evm.bytecode.object and evm.deployedBytecode.object; creation and deployed bytecode compared byte for byte with the recorded output.json",
+    "stored_init_code": "cast code at the observed block; a stored init code begins with one 0x00 byte and the rest is compared with the recorded creation bytecode; keccak256 of the rest is compared with the factory's marketInitCodeHash() where applicable",
+    "runtime_modulo_immutables": "on-chain runtime code compared with the recorded deployedBytecode; every differing byte must lie inside an immutableReferences range"
+  },
+  "tools": {
+    "cast": "1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+    "solc": [
+      {
+        "version": "0.8.25+commit.b61c2a91",
+        "build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d"
+      },
+      {
+        "version": "0.8.22+commit.4fc1097e",
+        "build": "solc-linux-amd64-v0.8.22+commit.4fc1097e",
+        "sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089"
+      }
+    ],
+    "gh": "GitHub REST API via gh"
+  },
+  "commits": {
+    "8dc8e449a0029927c70ad39efcf196315071f324": "2025-02-06T12:04:24Z add deployed addresses needed for mainnet v2 deploy",
+    "d1691193dc09d4186b4cc47a131280c62e5c5b76": "2026-03-16T18:20:08Z update deployments for mainnet",
+    "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": "2026-03-17 tag v2.0.0 (release v2.0 Protocol Release)",
+    "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": "2026-04-01 tag v2.1.0 (4626 Vault Wrapper)",
+    "2624204522e5e13817ecad3655411bb9fc35ab11": "2026-03-30T01:44:34Z branch mainnet head",
+    "f5a26146987926f4811b72a795d662813dedfe85": "2026-08-19T00:26:43Z branch main head",
+    "bea503c2736d47de7fd34130c64f10783dc35b39": "2026-09-05T08:19:14Z tag v2.5.4, branch release/v2.5 head",
+    "1bc514b1b0b903b1e94ca8046741fa8c9d367294": "2025-12-01T00:00:51Z branch plasma head",
+    "e1f77540fef65736374de6c847743d8ca2233fb4": "2025-12-01T00:00:01Z add plasma-mainnet deployments (branch plasma)"
+  },
+  "submodules_at_v2_0_0": {
+    "lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "lib/ethereum-access-token": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+    "lib/forge-std": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+    "lib/openzeppelin-contracts": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+    "lib/sol-utils": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+    "lib/solady": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+    "lib/solmate": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+    "lib/vulcan": "95d6be4c447a23400d876caff078abcf6a881a12"
+  },
+  "submodules_at_plasma_head": {
+    "lib/ds-test": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+    "lib/ethereum-access-token": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+    "lib/forge-std": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+    "lib/openzeppelin-contracts": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+    "lib/sol-utils": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+    "lib/solady": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+    "lib/solmate": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+    "lib/vulcan": "95d6be4c447a23400d876caff078abcf6a881a12"
+  },
+  "ethereum_mainnet_verification_inputs": [
+    {
+      "chain_id": 1,
+      "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "input_path": "deployments/mainnet/HooksFactory-0xdd7dd3b5076cf89440d05585ff56d246386207be/standard-input.json",
+      "input_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "input_blob_sha1": "34d238ea60b2f3205195f9d8cf942f3a46c08272",
+      "input": {
+        "bytes": 161751,
+        "blob_sha1": "34d238ea60b2f3205195f9d8cf942f3a46c08272",
+        "sha256": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309"
+      },
+      "output_path": "deployments/mainnet/HooksFactory-0xdd7dd3b5076cf89440d05585ff56d246386207be/output.json",
+      "output_blob_sha1": "0eeb618a73b196b458f99c3cb1039ddc04d1402d",
+      "output": {
+        "bytes": 168209,
+        "blob_sha1": "0eeb618a73b196b458f99c3cb1039ddc04d1402d",
+        "sha256": "fea058a27a5bea99ceb4032ad711b285247ade23ff56efca2361114e1e256598"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 50000,
+        "via_ir": true,
+        "bytecode_hash": "none",
+        "append_cbor": true
+      },
+      "sources": 21,
+      "sources_outside_tree": [
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_by_commit": {
+        "8dc8e449a0029927c70ad39efcf196315071f324": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "d1691193dc09d4186b4cc47a131280c62e5c5b76": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "2624204522e5e13817ecad3655411bb9fc35ab11": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "f5a26146987926f4811b72a795d662813dedfe85": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "bea503c2736d47de7fd34130c64f10783dc35b39": {
+          "equal": 0,
+          "of": 20,
+          "full": false
+        },
+        "1bc514b1b0b903b1e94ca8046741fa8c9d367294": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        },
+        "e1f77540fef65736374de6c847743d8ca2233fb4": {
+          "equal": 20,
+          "of": 20,
+          "full": true
+        }
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "solc_sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 1,
+      "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+      "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+      "input_path": "deployments/mainnet/WildcatMarket-0xac3216fa28f81b8fae150fb5626ca79c7a570daf/standard-input.json",
+      "input_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "input_blob_sha1": "0f86f94ad1165975a2812b3acfd0a333c5d0724f",
+      "input": {
+        "bytes": 224443,
+        "blob_sha1": "0f86f94ad1165975a2812b3acfd0a333c5d0724f",
+        "sha256": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346"
+      },
+      "output_path": "deployments/mainnet/WildcatMarket-0xac3216fa28f81b8fae150fb5626ca79c7a570daf/output.json",
+      "output_blob_sha1": "ef18536250430f3adbac855dbd4ef4fa68cddd5e",
+      "output": {
+        "bytes": 242841,
+        "blob_sha1": "ef18536250430f3adbac855dbd4ef4fa68cddd5e",
+        "sha256": "d1a748bff6dec5a52571e432288d967fe40b9787b98b223fe68a6b812d4b8281"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 50000,
+        "via_ir": true,
+        "bytecode_hash": "none",
+        "append_cbor": true
+      },
+      "sources": 35,
+      "sources_outside_tree": [
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_by_commit": {
+        "8dc8e449a0029927c70ad39efcf196315071f324": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "d1691193dc09d4186b4cc47a131280c62e5c5b76": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "2624204522e5e13817ecad3655411bb9fc35ab11": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "f5a26146987926f4811b72a795d662813dedfe85": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "bea503c2736d47de7fd34130c64f10783dc35b39": {
+          "equal": 0,
+          "of": 34,
+          "full": false
+        },
+        "1bc514b1b0b903b1e94ca8046741fa8c9d367294": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        },
+        "e1f77540fef65736374de6c847743d8ca2233fb4": {
+          "equal": 34,
+          "of": 34,
+          "full": true
+        }
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "solc_sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 1,
+      "address": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "input_path": "deployments/mainnet/FixedTermHooks-0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36/standard-input.json",
+      "input_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "input_blob_sha1": "813f522c2c4c8f311775b21abeda69f7fb8da7cd",
+      "input": {
+        "bytes": 141522,
+        "blob_sha1": "813f522c2c4c8f311775b21abeda69f7fb8da7cd",
+        "sha256": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33"
+      },
+      "output_path": "deployments/mainnet/FixedTermHooks-0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36/output.json",
+      "output_blob_sha1": "10a7e0622014c1da9648f21d5431916fbebee584",
+      "output": {
+        "bytes": 239683,
+        "blob_sha1": "10a7e0622014c1da9648f21d5431916fbebee584",
+        "sha256": "21edd3f4923108463c4e050f795c73e6725adb267c0daa118c2a77f19d3b9471"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 50000,
+        "via_ir": true,
+        "bytecode_hash": "none",
+        "append_cbor": true
+      },
+      "sources": 17,
+      "sources_outside_tree": [],
+      "blob_equality_by_commit": {
+        "8dc8e449a0029927c70ad39efcf196315071f324": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "d1691193dc09d4186b4cc47a131280c62e5c5b76": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "2624204522e5e13817ecad3655411bb9fc35ab11": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "f5a26146987926f4811b72a795d662813dedfe85": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "bea503c2736d47de7fd34130c64f10783dc35b39": {
+          "equal": 0,
+          "of": 17,
+          "full": false
+        },
+        "1bc514b1b0b903b1e94ca8046741fa8c9d367294": {
+          "equal": 16,
+          "of": 17,
+          "full": false
+        },
+        "e1f77540fef65736374de6c847743d8ca2233fb4": {
+          "equal": 16,
+          "of": 17,
+          "full": false
+        }
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "solc_sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 1,
+      "address": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+      "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "input_path": "deployments/mainnet/OpenTermHooks-0x4c62b4844c8371f321541e8d564a4b3896cecec7/standard-input.json",
+      "input_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "input_blob_sha1": "7ec48fb58293cb9cbb47767b0a0c06a90e3537ca",
+      "input": {
+        "bytes": 138286,
+        "blob_sha1": "7ec48fb58293cb9cbb47767b0a0c06a90e3537ca",
+        "sha256": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80"
+      },
+      "output_path": "deployments/mainnet/OpenTermHooks-0x4c62b4844c8371f321541e8d564a4b3896cecec7/output.json",
+      "output_blob_sha1": "af36b124f5f8745a39c1942c6c9e2ad1aef14a4a",
+      "output": {
+        "bytes": 224314,
+        "blob_sha1": "af36b124f5f8745a39c1942c6c9e2ad1aef14a4a",
+        "sha256": "c088b1af8882ea8dcefe352201683e751a168d8a910e9ff122ae3631f16aed2c"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 50000,
+        "via_ir": true,
+        "bytecode_hash": "none",
+        "append_cbor": true
+      },
+      "sources": 17,
+      "sources_outside_tree": [],
+      "blob_equality_by_commit": {
+        "8dc8e449a0029927c70ad39efcf196315071f324": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "d1691193dc09d4186b4cc47a131280c62e5c5b76": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "2624204522e5e13817ecad3655411bb9fc35ab11": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "f5a26146987926f4811b72a795d662813dedfe85": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "bea503c2736d47de7fd34130c64f10783dc35b39": {
+          "equal": 0,
+          "of": 17,
+          "full": false
+        },
+        "1bc514b1b0b903b1e94ca8046741fa8c9d367294": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        },
+        "e1f77540fef65736374de6c847743d8ca2233fb4": {
+          "equal": 17,
+          "of": 17,
+          "full": true
+        }
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "solc_sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 1,
+      "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+      "contract": "src/lens/MarketLens.sol:MarketLens",
+      "input_path": "deployments/mainnet/MarketLens-0xc672760757da93b5f3275dc97203d145806dae33/standard-input.json",
+      "input_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "input_blob_sha1": "9e77f86ba4860e6d0d370daa31126088d767f383",
+      "input": {
+        "bytes": 434585,
+        "blob_sha1": "9e77f86ba4860e6d0d370daa31126088d767f383",
+        "sha256": "82f2b4bfd732136094d7f60a9d6d7f1240d324e44251e60065dfc907d50986c3"
+      },
+      "output_path": "deployments/mainnet/MarketLens-0xc672760757da93b5f3275dc97203d145806dae33/output.json",
+      "output_blob_sha1": "74cbb794d49f833d2c94d9fd8a523ceaf35e0ac9",
+      "output": {
+        "bytes": 533750,
+        "blob_sha1": "74cbb794d49f833d2c94d9fd8a523ceaf35e0ac9",
+        "sha256": "8f7fa5eb36707c0df00c6a3e6fb115218ed2904951c5a8f9c8cdce53f5315a29"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 50000,
+        "via_ir": true,
+        "bytecode_hash": "none",
+        "append_cbor": true
+      },
+      "sources": 63,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/auth/Ownable.sol",
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_by_commit": {
+        "8dc8e449a0029927c70ad39efcf196315071f324": {
+          "equal": 60,
+          "of": 60,
+          "full": true
+        },
+        "d1691193dc09d4186b4cc47a131280c62e5c5b76": {
+          "equal": 60,
+          "of": 60,
+          "full": true
+        },
+        "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657": {
+          "equal": 60,
+          "of": 60,
+          "full": true
+        },
+        "c7be4039f8f383a9dda4e45f63331c17d63f9ed9": {
+          "equal": 60,
+          "of": 60,
+          "full": true
+        },
+        "2624204522e5e13817ecad3655411bb9fc35ab11": {
+          "equal": 60,
+          "of": 60,
+          "full": true
+        },
+        "f5a26146987926f4811b72a795d662813dedfe85": {
+          "equal": 60,
+          "of": 60,
+          "full": true
+        },
+        "bea503c2736d47de7fd34130c64f10783dc35b39": {
+          "equal": 0,
+          "of": 60,
+          "full": false
+        },
+        "1bc514b1b0b903b1e94ca8046741fa8c9d367294": {
+          "equal": 57,
+          "of": 60,
+          "full": false
+        },
+        "e1f77540fef65736374de6c847743d8ca2233fb4": {
+          "equal": 57,
+          "of": 60,
+          "full": false
+        }
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "solc_sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    }
+  ],
+  "ethereum_mainnet_third_template": {
+    "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+    "name_from_factory": "FixedTermHooks",
+    "template_index": 2,
+    "market_count": 16,
+    "stored_init_code_keccak256": "0x1e2fdf1700fe20e2e903b5c459c8b9db04798942ab7fe1ad49a88421dbd47a77",
+    "experiment": "compile deployments/mainnet/FixedTermHooks-0x7e49.../standard-input.json with src/access/FixedTermHooks.sol replaced by the plasma-branch blob 6c486910069ca36eea0731f23ae0ca0b35876bbc (MaximumLoanTerm = 730 days), solc 0.8.25+commit.b61c2a91, unchanged settings",
+    "result": "creation bytecode byte-identical to the stored init code; keccak256 equal",
+    "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+    "source_commit_date": "2025-09-26T16:27:44Z",
+    "source_commit_message": "MaximumLoanTerm = 730 days",
+    "diff_against_v2_0_0": "src/access/FixedTermHooks.sol line 66: `uint32 public constant MaximumLoanTerm = 365 days;` becomes `730 days`; no other source differs",
+    "absent_from": [
+      "deployments/mainnet/deployments.json",
+      "deployments/mainnet/*/ at every commit read",
+      "wildcat-docs contract-deployments.md at 636b1dcb",
+      "Sourcify chain 1"
+    ]
+  },
+  "ethereum_mainnet_runtime_modulo_immutables": [
+    {
+      "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+      "contract": "HooksFactory",
+      "immutable_slots": 22,
+      "immutable_bytes": 704,
+      "differing_bytes_outside_immutables": 0
+    },
+    {
+      "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+      "contract": "MarketLens",
+      "immutable_slots": 11,
+      "immutable_bytes": 352,
+      "differing_bytes_outside_immutables": 0
+    }
+  ],
+  "ethereum_mainnet_v1_sources": [
+    {
+      "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+      "contract": "WildcatMarketControllerFactory",
+      "sourcify_sources": 40,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/utils/LibBit.sol",
+        "lib/solady/src/utils/SafeTransferLib.sol"
+      ],
+      "commits_with_all_in_tree_blobs_equal": [
+        {
+          "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+          "date": "2023-11-30T16:38:32Z"
+        },
+        {
+          "commit": "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9",
+          "date": "2023-11-30T16:39:04Z"
+        },
+        {
+          "commit": "e9552f0e8a093e214dd69947dc689023df09ff20",
+          "date": "2023-11-30T21:07:46Z"
+        },
+        {
+          "commit": "e962bf37866483a3573016a3087331c5de9f0929",
+          "date": "2023-11-30T21:10:07Z"
+        },
+        {
+          "commit": "016d0658d6d442b8f42e3bb68f01fae43c150307",
+          "date": "2023-11-30T21:10:23Z"
+        }
+      ],
+      "best_partial_match": null,
+      "std_json_input": {
+        "source": "https://sourcify.dev/server/v2/contract/1/0xfd31007613c9f671df6a8d4234901324986bfd13?fields=stdJsonInput",
+        "canonical_form": "json.dumps(stdJsonInput, sort_keys=True, separators=(',', ':'))",
+        "bytes": 253234,
+        "blob_sha1": "30a0f53c1c76fdb775eaf6ea2f8ac4dda0fdf8c3",
+        "sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706"
+      }
+    },
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "contract": "WildcatArchController",
+      "sourcify_sources": 10,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/auth/Ownable.sol"
+      ],
+      "commits_with_all_in_tree_blobs_equal": [
+        {
+          "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+          "date": "2023-11-30T16:38:32Z"
+        },
+        {
+          "commit": "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9",
+          "date": "2023-11-30T16:39:04Z"
+        },
+        {
+          "commit": "e9552f0e8a093e214dd69947dc689023df09ff20",
+          "date": "2023-11-30T21:07:46Z"
+        },
+        {
+          "commit": "e962bf37866483a3573016a3087331c5de9f0929",
+          "date": "2023-11-30T21:10:07Z"
+        },
+        {
+          "commit": "016d0658d6d442b8f42e3bb68f01fae43c150307",
+          "date": "2023-11-30T21:10:23Z"
+        }
+      ],
+      "best_partial_match": null,
+      "std_json_input": {
+        "source": "https://sourcify.dev/server/v2/contract/1/0xfeb516d9d946dd487a9346f6fee11f40c6945ee4?fields=stdJsonInput",
+        "canonical_form": "json.dumps(stdJsonInput, sort_keys=True, separators=(',', ':'))",
+        "bytes": 61171,
+        "blob_sha1": "611f6a76e4670b7704a283beecee034482ff9925",
+        "sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db"
+      }
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "contract": "WildcatSanctionsSentinel",
+      "sourcify_sources": 7,
+      "sources_outside_tree": [
+        "lib/solady/src/utils/SafeTransferLib.sol"
+      ],
+      "commits_with_all_in_tree_blobs_equal": [
+        {
+          "commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+          "date": "2023-11-30T21:21:45Z"
+        },
+        {
+          "commit": "d46ecb80842c523b224d2d2e793db9750b611d0a",
+          "date": "2023-11-30T21:22:29Z"
+        },
+        {
+          "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+          "date": "2024-02-15T01:35:23Z"
+        }
+      ],
+      "best_partial_match": null,
+      "std_json_input": {
+        "source": "https://sourcify.dev/server/v2/contract/1/0x437e0551892c2c9b06d3ffd248fe60572e08cd1a?fields=stdJsonInput",
+        "canonical_form": "json.dumps(stdJsonInput, sort_keys=True, separators=(',', ':'))",
+        "bytes": 32620,
+        "blob_sha1": "9e7eaf45b9a07dcf8c68c206571f5ae279401eed",
+        "sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6"
+      }
+    },
+    {
+      "address": "0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+      "contract": "MarketLens (V1)",
+      "sourcify_sources": 50,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/auth/Ownable.sol",
+        "lib/solady/src/utils/LibBit.sol",
+        "lib/solady/src/utils/SafeTransferLib.sol"
+      ],
+      "commits_with_all_in_tree_blobs_equal": [],
+      "best_partial_match": {
+        "equal": 40,
+        "of": 46,
+        "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+        "date": "2024-02-15T01:35:23Z"
+      },
+      "std_json_input": null
+    }
+  ],
+  "ethereum_mainnet_v1_reproduction": [
+    {
+      "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+      "contract": "WildcatMarketControllerFactory",
+      "solc_build": "solc-linux-amd64-v0.8.22+commit.4fc1097e",
+      "solc_sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089",
+      "input": "Sourcify stdJsonInput",
+      "deployed_bytecode_equal_modulo_immutables": true,
+      "differing_bytes_all_inside_immutable_references": true
+    },
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "contract": "WildcatArchController",
+      "solc_build": "solc-linux-amd64-v0.8.22+commit.4fc1097e",
+      "solc_sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089",
+      "input": "Sourcify stdJsonInput",
+      "deployed_bytecode_equal": true,
+      "immutable_references": 0
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "contract": "WildcatSanctionsSentinel",
+      "solc_build": "solc-linux-amd64-v0.8.22+commit.4fc1097e",
+      "solc_sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089",
+      "input": "Sourcify stdJsonInput",
+      "deployed_bytecode_equal_modulo_immutables": true,
+      "differing_bytes_all_inside_immutable_references": true
+    }
+  ],
+  "ethereum_mainnet_later_deployments": [
+    {
+      "address": "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7",
+      "contract": "MarketLens (docs page)",
+      "sourcify_sources": 63,
+      "commits_with_all_in_tree_blobs_equal": [
+        "e1f77540fef65736374de6c847743d8ca2233fb4",
+        "1bc514b1b0b903b1e94ca8046741fa8c9d367294"
+      ],
+      "note": "60 of 60 in-tree sources equal at the plasma branch; 57 of 60 at v2.0.0 (MarketData.sol, HooksConfigData.sol, FixedTermHooks.sol differ)"
+    },
+    {
+      "address": "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a",
+      "contract": "Wildcat4626WrapperFactory",
+      "sourcify_sources": 16,
+      "commits_with_all_in_tree_blobs_equal": [
+        "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+        "2624204522e5e13817ecad3655411bb9fc35ab11",
+        "f5a26146987926f4811b72a795d662813dedfe85"
+      ],
+      "note": "9 of 9 in-tree sources equal at v2.1.0, the mainnet branch and main; the two vault files are absent from v2.0.0"
+    },
+    {
+      "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+      "contract": "WildcatFeeRecipient",
+      "sourcify_sources": 2,
+      "commits_with_all_in_tree_blobs_equal": [],
+      "note": "src/WildcatFeeRecipient.sol is in no v2-protocol tree read; its LibERC20.sol differs from every one; source repository not located"
+    }
+  ],
+  "plasma_mainnet_verification_inputs": [
+    {
+      "chain_id": 9745,
+      "address": "0x38056f7fe6396417b191bf7dc6a3aa04235f3f46",
+      "contract": "src/ChainalysisProxy.sol:ChainalysisProxy",
+      "input_path": "deployments/plasma-mainnet/ChainalysisProxy-0x38056f7fe6396417b191bf7dc6a3aa04235f3f46/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "1ea3793938303d33aa4a3072930fd0b601b24cfc",
+      "input": {
+        "bytes": 12757,
+        "blob_sha1": "1ea3793938303d33aa4a3072930fd0b601b24cfc",
+        "sha256": "349d40f8585204b14afa0fd4f88e8b182cc34089c29906c6ad527acb521992dd"
+      },
+      "output_path": "deployments/plasma-mainnet/ChainalysisProxy-0x38056f7fe6396417b191bf7dc6a3aa04235f3f46/output.json",
+      "output_blob_sha1": "27881db1a49874dd050fafbe8b17516713dfdb95",
+      "output": {
+        "bytes": 28770,
+        "blob_sha1": "27881db1a49874dd050fafbe8b17516713dfdb95",
+        "sha256": "ff5d5f2982f96ef5e9f0ef141a38a81b024f2616b55355b96c6f9ad5e27e5ec4"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 2,
+      "sources_outside_tree": [
+        "lib/solady/src/auth/Ownable.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 1,
+        "of": 1,
+        "full": true
+      },
+      "solc_reproduction": null
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x59010b706959c15977304c2553f3f4c697a73018",
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "input_path": "deployments/plasma-mainnet/FixedTermHooks-0x59010b706959c15977304c2553f3f4c697a73018/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "50d2d60c141ccf16b7bcee46287b3f7ec48d7d62",
+      "input": {
+        "bytes": 141520,
+        "blob_sha1": "50d2d60c141ccf16b7bcee46287b3f7ec48d7d62",
+        "sha256": "89410de34563e0e092747c8ea5b293c4127dfa47e4f0e1782f15ad61cfc7bc8a"
+      },
+      "output_path": "deployments/plasma-mainnet/FixedTermHooks-0x59010b706959c15977304c2553f3f4c697a73018/output.json",
+      "output_blob_sha1": "b24603d2ca449e393891736accc0a3dde9239907",
+      "output": {
+        "bytes": 227582,
+        "blob_sha1": "b24603d2ca449e393891736accc0a3dde9239907",
+        "sha256": "dfaf5574e3e5bf756c864d25f8b8791f00deec75beb71ea8f0fd50e834e7ca10"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 17,
+      "sources_outside_tree": [],
+      "blob_equality_plasma_branch": {
+        "equal": 17,
+        "of": 17,
+        "full": true
+      },
+      "solc_reproduction": null
+    },
+    {
+      "chain_id": 9745,
+      "address": "0xb46bae25ac6d23148531ed1853a8881fd842e517",
+      "contract": "src/HooksFactory.sol:HooksFactory",
+      "input_path": "deployments/plasma-mainnet/HooksFactory-0xb46bae25ac6d23148531ed1853a8881fd842e517/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "1bc7e7a9844107dc9e7db48cc8fb9db1e4fecf24",
+      "input": {
+        "bytes": 161749,
+        "blob_sha1": "1bc7e7a9844107dc9e7db48cc8fb9db1e4fecf24",
+        "sha256": "c47a6a2f3796dc3c0a06b97087e1e56d33d6aac5ba3b6d9d9b91ca157fec63e8"
+      },
+      "output_path": "deployments/plasma-mainnet/HooksFactory-0xb46bae25ac6d23148531ed1853a8881fd842e517/output.json",
+      "output_blob_sha1": "1d203009ee43c2541f6ec76a28a4f27693401f6e",
+      "output": {
+        "bytes": 157540,
+        "blob_sha1": "1d203009ee43c2541f6ec76a28a4f27693401f6e",
+        "sha256": "d4077b2c52ab5a9b40b3cdc5b8ad779bd21159b4944db16d7862694f7b3c6f20"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 21,
+      "sources_outside_tree": [
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 20,
+        "of": 20,
+        "full": true
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x7e5d6d9f9a2091dd781118514f5397a8107c81c5",
+      "contract": "src/lens/MarketLens.sol:MarketLens",
+      "input_path": "deployments/plasma-mainnet/MarketLens-0x7e5d6d9f9a2091dd781118514f5397a8107c81c5/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "dbf410287434bc7a94c3644545fd0dc21b4d68a5",
+      "input": {
+        "bytes": 434693,
+        "blob_sha1": "dbf410287434bc7a94c3644545fd0dc21b4d68a5",
+        "sha256": "2f901efebfad90931e848b3be3fe60eca0f5985d4e5b9a8f0a3942d4929d9daf"
+      },
+      "output_path": "deployments/plasma-mainnet/MarketLens-0x7e5d6d9f9a2091dd781118514f5397a8107c81c5/output.json",
+      "output_blob_sha1": "62f09a91c01e03224dd0cca49823d99b5c4d971e",
+      "output": {
+        "bytes": 523124,
+        "blob_sha1": "62f09a91c01e03224dd0cca49823d99b5c4d971e",
+        "sha256": "b53f6aaa54e65fa6657e49849b09fa08343ca9290f2d1cb1e05e83f23ea4ada5"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 63,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/auth/Ownable.sol",
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 60,
+        "of": 60,
+        "full": true
+      },
+      "solc_reproduction": null
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x792f1368f8b8f450c14875eb6ff0028dfc2629b4",
+      "contract": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "input_path": "deployments/plasma-mainnet/OpenAccessRoleProvider-0x792f1368f8b8f450c14875eb6ff0028dfc2629b4/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "fcb450da40a0e692f379657b30f013e2594ee1a7",
+      "input": {
+        "bytes": 1818,
+        "blob_sha1": "fcb450da40a0e692f379657b30f013e2594ee1a7",
+        "sha256": "2164105a0c7bed9be96570bcc40ecc390066cb796bfa7868684722803a1afd9c"
+      },
+      "output_path": "deployments/plasma-mainnet/OpenAccessRoleProvider-0x792f1368f8b8f450c14875eb6ff0028dfc2629b4/output.json",
+      "output_blob_sha1": "945a9620c4cb91e505fb413602a95e29945eba1b",
+      "output": {
+        "bytes": 9316,
+        "blob_sha1": "945a9620c4cb91e505fb413602a95e29945eba1b",
+        "sha256": "f683ef3dd9eafdcedea990886d7f94686ff3c6000355ba3ae8842078af8f33bc"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 1,
+      "sources_outside_tree": [],
+      "blob_equality_plasma_branch": {
+        "equal": 1,
+        "of": 1,
+        "full": true
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x40217f6e5891c8f1524744c0747e07d316a0c798",
+      "contract": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "input_path": "deployments/plasma-mainnet/OpenTermHooks-0x40217f6e5891c8f1524744c0747e07d316a0c798/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "8bf2b625b02a0bf91bc7fd513f6a360a72155aea",
+      "input": {
+        "bytes": 138284,
+        "blob_sha1": "8bf2b625b02a0bf91bc7fd513f6a360a72155aea",
+        "sha256": "4520947b015a6bafdb19dc761d8059e1a0672c40a47b0c66df1f656dee9220c6"
+      },
+      "output_path": "deployments/plasma-mainnet/OpenTermHooks-0x40217f6e5891c8f1524744c0747e07d316a0c798/output.json",
+      "output_blob_sha1": "8444380e787e55e56704b0f90b3c94bf61d10c77",
+      "output": {
+        "bytes": 213616,
+        "blob_sha1": "8444380e787e55e56704b0f90b3c94bf61d10c77",
+        "sha256": "7f88094482b4606ebcfa13e0faa0a326c72e1fddc1505fa0e843bd2ba83cc4c0"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 17,
+      "sources_outside_tree": [],
+      "blob_equality_plasma_branch": {
+        "equal": 17,
+        "of": 17,
+        "full": true
+      },
+      "solc_reproduction": null
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x931fe4a88e1c1f1a7402df6a40988f38503f1061",
+      "contract": "src/spherex-engine/SphereXEngine.sol:SphereXEngine",
+      "input_path": "deployments/plasma-mainnet/SphereXEngine-0x931fe4a88e1c1f1a7402df6a40988f38503f1061/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "84c201bc653969239318dd47a2732eafadc80c10",
+      "input": {
+        "bytes": 107182,
+        "blob_sha1": "84c201bc653969239318dd47a2732eafadc80c10",
+        "sha256": "2b329b5eb7964c135d1b4bad1dc9ea4fadcc62bc5b60ac0ec7e25197037445a0"
+      },
+      "output_path": "deployments/plasma-mainnet/SphereXEngine-0x931fe4a88e1c1f1a7402df6a40988f38503f1061/output.json",
+      "output_blob_sha1": "081b07ddfc2194f084a137cec50472168e9d42b6",
+      "output": {
+        "bytes": 116580,
+        "blob_sha1": "081b07ddfc2194f084a137cec50472168e9d42b6",
+        "sha256": "cb1e86abbb5306c90118ea59ab2e1da1e121b4275caea2035ff2e72fad768e7d"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 14,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/access/AccessControl.sol",
+        "lib/openzeppelin-contracts/contracts/access/AccessControlDefaultAdminRules.sol",
+        "lib/openzeppelin-contracts/contracts/access/IAccessControl.sol",
+        "lib/openzeppelin-contracts/contracts/access/IAccessControlDefaultAdminRules.sol",
+        "lib/openzeppelin-contracts/contracts/interfaces/IERC5313.sol",
+        "lib/openzeppelin-contracts/contracts/utils/Context.sol",
+        "lib/openzeppelin-contracts/contracts/utils/Strings.sol",
+        "lib/openzeppelin-contracts/contracts/utils/introspection/ERC165.sol",
+        "lib/openzeppelin-contracts/contracts/utils/introspection/IERC165.sol",
+        "lib/openzeppelin-contracts/contracts/utils/math/Math.sol",
+        "lib/openzeppelin-contracts/contracts/utils/math/SafeCast.sol",
+        "lib/openzeppelin-contracts/contracts/utils/math/SignedMath.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 2,
+        "of": 2,
+        "full": true
+      },
+      "solc_reproduction": null
+    },
+    {
+      "chain_id": 9745,
+      "address": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+      "contract": "src/WildcatArchController.sol:WildcatArchController",
+      "input_path": "deployments/plasma-mainnet/WildcatArchController-0xdb2e0de97d6d96aa56754635704a4273e0f348ae/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "fd0ebdacb17f55f7c26f223ab53923da54b01f41",
+      "input": {
+        "bytes": 60449,
+        "blob_sha1": "fd0ebdacb17f55f7c26f223ab53923da54b01f41",
+        "sha256": "c2433e38f86e8e8d39b3e9aeba5b87de8dc5083b3d689f50c5e122a372483a5e"
+      },
+      "output_path": "deployments/plasma-mainnet/WildcatArchController-0xdb2e0de97d6d96aa56754635704a4273e0f348ae/output.json",
+      "output_blob_sha1": "deaabe0c6c9ca51137e08a6411da05d185a83a67",
+      "output": {
+        "bytes": 110613,
+        "blob_sha1": "deaabe0c6c9ca51137e08a6411da05d185a83a67",
+        "sha256": "e781585434cbdea7b0769adc2a62c694793ffbfabe748a5988b0602c906d386c"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 10,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/auth/Ownable.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 8,
+        "of": 8,
+        "full": true
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 9745,
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "contract": "src/WildcatCopyOfChainalysisList.sol:WildcatCopyOfChainalysisList",
+      "input_path": "deployments/plasma-mainnet/WildcatCopyOfChainalysisList-0xfeb516d9d946dd487a9346f6fee11f40c6945ee4/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "4b7dd69b0e6ac774b922e72ef499b367e42087ea",
+      "input": {
+        "bytes": 38164,
+        "blob_sha1": "4b7dd69b0e6ac774b922e72ef499b367e42087ea",
+        "sha256": "fd2985e37810a8e4cb1e7ce36f42ae03dea888139a4a1f6554fdadee9f76a759"
+      },
+      "output_path": "deployments/plasma-mainnet/WildcatCopyOfChainalysisList-0xfeb516d9d946dd487a9346f6fee11f40c6945ee4/output.json",
+      "output_blob_sha1": "0e2fa2a435416b222c7c1ab20652cbf39a074384",
+      "output": {
+        "bytes": 36718,
+        "blob_sha1": "0e2fa2a435416b222c7c1ab20652cbf39a074384",
+        "sha256": "b78b0d05d5699ae60558ac129f464acd6044a2493307bb470dea973a62137e6c"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 5,
+      "sources_outside_tree": [
+        "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+        "lib/solady/src/auth/Ownable.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 3,
+        "of": 3,
+        "full": true
+      },
+      "solc_reproduction": null
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x74b253041be30b7698b5f69239c271ea8db57261",
+      "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+      "input_path": "deployments/plasma-mainnet/WildcatMarket-0x74b253041be30b7698b5f69239c271ea8db57261/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "5debb8be94d780f307a63a9913547c5a215afcf9",
+      "input": {
+        "bytes": 224441,
+        "blob_sha1": "5debb8be94d780f307a63a9913547c5a215afcf9",
+        "sha256": "53d73b9458c6c7eb15a90cecbfc402904897af70fdbc0f7bca3cea09f095908f"
+      },
+      "output_path": "deployments/plasma-mainnet/WildcatMarket-0x74b253041be30b7698b5f69239c271ea8db57261/output.json",
+      "output_blob_sha1": "1e74911d5a3d4e8277114ce4829e5f74f74e80d2",
+      "output": {
+        "bytes": 236886,
+        "blob_sha1": "1e74911d5a3d4e8277114ce4829e5f74f74e80d2",
+        "sha256": "b28ce715e2282b04bf02a94fa78988c33e8d5ac03585df4c0ed5d5b655702921"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 35,
+      "sources_outside_tree": [
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 34,
+        "of": 34,
+        "full": true
+      },
+      "solc_reproduction": {
+        "solc_build": "solc-linux-amd64-v0.8.25+commit.b61c2a91",
+        "creation_bytecode_equal": true,
+        "deployed_bytecode_equal": true
+      }
+    },
+    {
+      "chain_id": 9745,
+      "address": "0x37064895ba2c1e269eaf7ff32564818d08903f5b",
+      "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "input_path": "deployments/plasma-mainnet/WildcatSanctionsSentinel-0x37064895ba2c1e269eaf7ff32564818d08903f5b/standard-input.json",
+      "input_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "input_blob_sha1": "950632ba28496be6f3678bf8314d9251fe39fff8",
+      "input": {
+        "bytes": 33107,
+        "blob_sha1": "950632ba28496be6f3678bf8314d9251fe39fff8",
+        "sha256": "23a9bfb7a6214020ad56c0b71ae926eba48c8a72cf918c8dd71d90f7c0c35d2c"
+      },
+      "output_path": "deployments/plasma-mainnet/WildcatSanctionsSentinel-0x37064895ba2c1e269eaf7ff32564818d08903f5b/output.json",
+      "output_blob_sha1": "4500a1804ae49a851e83bcd3b291eb530b659009",
+      "output": {
+        "bytes": 38731,
+        "blob_sha1": "4500a1804ae49a851e83bcd3b291eb530b659009",
+        "sha256": "3ec0a28435e508451475beef52836c22711639dfb177c753c9a195c84e0cea03"
+      },
+      "compiler": {
+        "solc": "0.8.25+commit.b61c2a91",
+        "evm_version": "cancun",
+        "optimizer_runs": 200,
+        "via_ir": true,
+        "bytecode_hash": "none"
+      },
+      "sources": 9,
+      "sources_outside_tree": [
+        "lib/solady/src/utils/LibBit.sol"
+      ],
+      "blob_equality_plasma_branch": {
+        "equal": 8,
+        "of": 8,
+        "full": true
+      },
+      "solc_reproduction": null
+    }
+  ],
+  "plasma_mainnet_runtime_modulo_immutables": [
+    {
+      "address": "0xb46bae25ac6d23148531ed1853a8881fd842e517",
+      "contract": "HooksFactory",
+      "immutable_slots": 22,
+      "immutable_bytes": 704,
+      "differing_bytes_outside_immutables": 0
+    },
+    {
+      "address": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+      "contract": "WildcatArchController",
+      "immutable_slots": 0,
+      "differing_bytes": 0
+    },
+    {
+      "address": "0x792f1368f8b8f450c14875eb6ff0028dfc2629b4",
+      "contract": "OpenAccessRoleProvider",
+      "immutable_slots": 2,
+      "immutable_bytes": 64,
+      "differing_bytes_outside_immutables": 0
+    }
+  ],
+  "plasma_mainnet_stored_init_code": [
+    {
+      "address": "0x74b253041be30b7698b5f69239c271ea8db57261",
+      "contract": "WildcatMarket",
+      "stored_rest_equals_recorded_creation": true,
+      "keccak256_equals_factory_marketInitCodeHash": true
+    },
+    {
+      "address": "0x40217f6e5891c8f1524744c0747e07d316a0c798",
+      "contract": "OpenTermHooks",
+      "stored_rest_equals_recorded_creation": true
+    },
+    {
+      "address": "0x59010b706959c15977304c2553f3f4c697a73018",
+      "contract": "FixedTermHooks",
+      "stored_rest_equals_recorded_creation": true
+    }
+  ],
+  "emitter_census_at_v2_0_0": {
+    "assembly_log_sites": {
+      "src/libraries/MarketEvents.sol": {
+        "log1": 9,
+        "log2": 9,
+        "log3": 4,
+        "log4": 0
+      },
+      "src/spherex/SphereXProtectedEvents.sol": {
+        "log1": 5,
+        "log2": 0,
+        "log3": 0,
+        "log4": 0
+      }
+    },
+    "emit_statements_by_file": {
+      "src/access/BaseAccessControls.sol": 15,
+      "src/access/FixedTermHooks.sol": 5,
+      "src/access/MarketConstraintHooks.sol": 4,
+      "src/access/OpenTermHooks.sol": 2,
+      "src/HooksFactory.sol": 5,
+      "src/market/WildcatMarketBase.sol": 1,
+      "src/market/WildcatMarketConfig.sol": 1,
+      "src/market/WildcatMarketWithdrawals.sol": 1,
+      "src/WildcatArchController.sol": 10,
+      "src/WildcatSanctionsEscrow.sol": 1,
+      "src/WildcatSanctionsSentinel.sol": 4
+    },
+    "event_declarations_by_file": {
+      "src/access/BaseAccessControls.sol": 9,
+      "src/access/FixedTermHooks.sol": 2,
+      "src/access/MarketConstraintHooks.sol": 4,
+      "src/access/OpenTermHooks.sol": 1,
+      "src/IHooksFactory.sol": 5,
+      "src/interfaces/IERC20.sol": 2,
+      "src/interfaces/IMarketEventsAndErrors.sol": 23,
+      "src/interfaces/ISphereXProtectedRegisteredBase.sol": 2,
+      "src/interfaces/IWildcatArchController.sol": 15,
+      "src/interfaces/IWildcatSanctionsEscrow.sol": 1,
+      "src/interfaces/IWildcatSanctionsSentinel.sol": 3,
+      "src/spherex/SphereXConfig.sol": 5,
+      "src/spherex/SphereXProtectedRegisteredBase.sol": 2,
+      "src/WildcatArchController.sol": 10
+    },
+    "method": "grep -rnoE over src/ of the v2.0.0 tarball for log[0-4]( , emit , and event declarations; counts are text matches, not a semantic census",
+    "v1_assembly_log_sites_at_488b30d0": {
+      "src/libraries/MarketEvents.sol": 21,
+      "src/spherex/SphereXProtectedEvents.sol": 5
+    }
+  },
+  "upstream_candidates_observed": [
+    {
+      "venue": "Aave",
+      "generation": "v3",
+      "repository": "https://github.com/aave-dao/aave-v3-origin",
+      "default_branch": "main",
+      "head": "8305565ae342f1773c42cd2e4593f175fe5968a0",
+      "head_date": "2026-09-09T11:04:12Z",
+      "latest_tag": {
+        "name": "v3.7.0",
+        "commit": "cff15de6d1271b0c800fc001f4aea4c263e8a597"
+      },
+      "also": {
+        "repository": "https://github.com/aave/aave-v3-origin",
+        "head": "5c2eb37f39959dd491ba97fdc2af94bb4ee88f41",
+        "head_date": "2025-09-19T10:39:19Z"
+      }
+    },
+    {
+      "venue": "Aave",
+      "generation": "v4",
+      "repository": "https://github.com/aave/aave-v4",
+      "default_branch": "main",
+      "head": "4d86c2d391b039bf2d3909fb2299b69998d0b720",
+      "head_date": "2026-08-28T10:36:14Z",
+      "latest_tag": {
+        "name": "v0.5.11",
+        "commit": "cdacec509e4f848bff1a5556f503afa83eee3b79"
+      }
+    },
+    {
+      "venue": "Compound",
+      "generation": "v2",
+      "repository": "https://github.com/compound-finance/compound-protocol",
+      "default_branch": "master",
+      "head": "a3214f67b73310d547e00fc578e8355911c9d376",
+      "head_date": "2022-06-07T01:47:37Z",
+      "latest_tag": {
+        "name": "v2.31-rc1",
+        "commit": "9ea64ddd166a78b264ba8006f688880085eeed13"
+      }
+    },
+    {
+      "venue": "Compound",
+      "generation": "v3",
+      "repository": "https://github.com/compound-finance/comet",
+      "default_branch": "main",
+      "head": "f766f51583c23acc33b2a7824654ef2029a96804",
+      "head_date": "2026-06-23T21:24:14Z",
+      "latest_tag": null,
+      "note": "head equals the Alexandria pin COMET_COMMIT"
+    },
+    {
+      "venue": "Euler",
+      "generation": "v1",
+      "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+      "default_branch": "master",
+      "archived": true,
+      "head": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "head_date": "2024-05-24T14:49:54Z",
+      "latest_tag": {
+        "name": "solidified-audit",
+        "commit": "86f81180d4257376f4d4f66fbcbb7c9df64e18c2"
+      }
+    },
+    {
+      "venue": "Euler",
+      "generation": "v2",
+      "repository": "https://github.com/euler-xyz/euler-vault-kit",
+      "default_branch": "master",
+      "head": "bfb325a6e6ca09613d940b46f72ccfe017353933",
+      "head_date": "2026-09-01T11:48:48Z",
+      "latest_tag": {
+        "name": "yAudit-audit",
+        "commit": "7d2408dc1013b6f3149a5f08a69ded4dc99db7c8"
+      },
+      "also": {
+        "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+        "head": "838e5f72eaea25fab7d242760245244226096054",
+        "head_date": "2026-09-01T11:19:48Z",
+        "latest_tag": {
+          "name": "v1.0.1",
+          "commit": "a7d3c29ef7e4964736e47675e0588630d6afbfd7"
+        }
+      }
+    },
+    {
+      "venue": "Maple",
+      "generation": "v1",
+      "repository": "https://github.com/maple-labs/maple-core",
+      "default_branch": "main",
+      "head": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+      "head_date": "2021-05-18T15:02:13Z",
+      "latest_tag": {
+        "name": "v1.0.0",
+        "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c"
+      }
+    },
+    {
+      "venue": "Maple",
+      "generation": "v2",
+      "repository": "https://github.com/maple-labs/maple-core-v2",
+      "default_branch": "main",
+      "head": "f59f30c691fa0b831426d15832ee642f5ce38a42",
+      "head_date": "2025-11-27T14:19:22Z",
+      "latest_tag": {
+        "name": "2025-11",
+        "commit": "f59f30c691fa0b831426d15832ee642f5ce38a42"
+      }
+    },
+    {
+      "venue": "Centrifuge",
+      "generation": "Tinlake (legacy)",
+      "repository": "https://github.com/centrifuge/tinlake",
+      "default_branch": "main",
+      "head": "4584b0d0cc6f4c8e7600a45f72ae8dc7d6c906c7",
+      "head_date": "2022-12-29T19:27:42Z",
+      "latest_tag": {
+        "name": "v0.3.0",
+        "commit": "fc1f8e275a9d05d877e64f46810c107cde0808ce"
+      }
+    },
+    {
+      "venue": "Centrifuge",
+      "generation": "v2 (liquidity pools)",
+      "repository": "https://github.com/centrifuge/liquidity-pools",
+      "default_branch": "main",
+      "head": "e556c1a7a0ec7f6d700b47841eb586f5f4801406",
+      "head_date": "2025-01-13T14:52:48Z",
+      "latest_tag": {
+        "name": "release-v2.0",
+        "commit": "109ba1560a0aa80e906e462147ac295d31e75b73"
+      }
+    },
+    {
+      "venue": "Centrifuge",
+      "generation": "v3 (protocol)",
+      "repository": "https://github.com/centrifuge/protocol",
+      "default_branch": "main",
+      "head": "48f7dff6ec83b2f7c044d35139084fb501da5f9a",
+      "head_date": "2026-09-12T05:40:00Z",
+      "latest_tag": {
+        "name": "v3.2.0",
+        "commit": "87c358fa52bea91017fc3a848bc07db815eed91c"
+      },
+      "note": "v3.3.0-rc1 and -rc2 exist as pre-release tags"
+    },
+    {
+      "venue": "Clearpool",
+      "generation": "permissionless pools",
+      "repository": null,
+      "note": "no public contracts repository located under github.com/clearpool-finance; the organisation lists clearpool-payfi-vaults only (head a4ac27df697bc0bb399196df63bb1ed8d6d2297b, 2026-06-10T12:19:56Z)"
+    }
+  ]
+}

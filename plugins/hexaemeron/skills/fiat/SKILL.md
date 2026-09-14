@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.54.1"
+  version: "6.56.1"
 ---
 
 <p align="center">
@@ -182,12 +182,12 @@ the second.
    `--task-issue`, that override must start with `fiat/<issue>-`.
 
    With a GitHub task issue, `init` reads that issue's filing contract before it
-   creates any state, worktree or branch. `Fiat-Required: 0` refuses: the filer
-   decided the work is one independent pull request, so do it that way, point the
-   issue at that pull request, and close it there. A body that declares neither
-   the line nor a `carryover` block refuses too, naming what to add. Do not
-   reword the issue past the refusal to get a run: if the decision was wrong,
-   change it to `Fiat-Required: 1` and say why in the issue first.
+   creates any state, worktree or branch. On `Fiat-Required: 0` it prints one
+   directive and exits 0: the filer decided the work is one independent pull
+   request, so do it that way, point the issue at that pull request, and close
+   it there. A body that declares neither the line nor a `carryover` block
+   refuses, naming what to add. On `Fiat-Required: 1`, `init` refuses when the
+   decision moved inside the last fifteen minutes, and states what it observed.
 
 **Sync the base first.** A run inherits every mistake in the ref it was cut
 from, and a local checkout that has been sitting is the normal case rather than
@@ -305,8 +305,9 @@ state transition.
    invent an issue. A first `task_issue` record after initialization is refused
    because the stored branch might already be published; an exact repeat of the
    initial receipt is a no-op. `init` reads that issue's `Fiat-Required` line
-   and `carryover` block and refuses a `0` or a malformed contract before it
-   creates anything, so a refusal costs nothing but the read. A run naming no
+   and `carryover` block before it creates anything: a `0` routes to one pull
+   request, and a malformed contract or a decision that moved inside the window
+   refuses, so neither costs more than the reads. A run naming no
    issue, or a tracker that is not GitHub, records the nulls in the init
    receipt and warns; report that gap rather than treating it as a `1`.
 7. Nothing else.
@@ -526,10 +527,19 @@ do not enter the packet.
 
 A broken runbook verdict blocks the current step. A holding runbook amendment
 clears a broken study verdict only when it names the current step, carries at
-least one complete replacement field and records the current study digest. A
-later study amendment changes that digest, so an older repair no longer
-applies. Recovery remains another checked amendment or an explicit halt; state
-and ledger history are not edited to manufacture a holding result.
+least one complete replacement field and is bound to the current study digest.
+Each study amendment records one decision per distinct runbook amendment
+effective under the prior digest: retained when every unbuilt step the
+amendment touches reads entry holds and exit holds in the new verdicts, and
+displaced otherwise; a touched step already completed takes no verdict and
+counts as holding. The packet
+builders admit an amendment whose recorded study digest, followed through
+retained decisions in study-amendment order, reaches the current digest. A
+displaced amendment leaves the packet and its step stays blocked until a new
+runbook amendment bound to the current study digest is receipted; `verify`
+recomputes every recorded decision from the two receipt histories. Recovery
+remains another checked amendment or an explicit halt; state and ledger history
+are not edited to manufacture a holding result.
 
 **Implementation.** Build the candidate named by the checked design receipt;
 the design choice is not reopened inside a step. The step runs under the phase skills: `phylax` names
@@ -763,6 +773,21 @@ unavailable, execute the same
 packet in the main session. After compaction, rerun `next`: the receipted
 artefacts and state digest deterministically reconstruct the packet.
 
+A delegated envelope also carries `task_identity`, whose `handle` is
+`fiat-<task>-<phase>-<role>`: the run's task, `study` or `step-<n>`, and the
+delegate's role. The round is not in the handle, so a Warden keeps one handle
+across a step's rounds. Give each spawned delegate that handle as its visible
+name. The handle check is unconditional. Before continuing any existing agent
+handle, for any directive, round or reason, run
+`hexctl next --task-handle <observed>` with that handle. Exit 0 prints the same
+directive. Exit 2 prints no directive and writes no state, ledger entry or
+brief. Never continue a refused handle: spawn a fresh delegate under the
+`task_identity.handle` that `next` prints without `--task-handle`. A `delegate`
+refusal means the directive has no delegate and runs in this session. A brief
+file left at a `--brief-out` path by an earlier call is not the current
+directive's, so pass `--brief-out` and `--task-handle` in one call and hand a
+delegate only a brief path named by a `next` call that exited 0.
+
 ## Stop conditions
 
 Stop and ask the user when: `next` says `audit-verdict` or `blocked`; a push is rejected;
@@ -802,8 +827,10 @@ or state by hand.
 - Never file an in-run issue under a carryover-only title or body convention.
   The target repository's ordinary queue, label, opening, protected-inventory,
   and prose-publication rules apply unchanged.
-- Never start a run against an issue declaring `Fiat-Required: 0`, and never
-  edit that line to `1` yourself to get past the refusal.
+- Never start a run against an issue whose filed decision is `0`: `init` routes
+  it to one pull request, and that pull request is the work. The filed decision
+  belongs to whoever filed the issue. If it looks wrong, say so on the issue and
+  stop; do not alter an issue to change what `init` will do.
 - Never leave an outstanding item named in prose alone. Every one is filed as its
   own issue, pointed at the issue that already carries it, or refused with a
   stated reason, in the run pull request's `carryover` block.

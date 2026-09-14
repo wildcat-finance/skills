@@ -105,7 +105,7 @@ checker cannot emit and that nobody named.
 | Declared promises | 99 |
 | Coverage rows | 99 |
 | Selected repository scopes | 27 |
-| Selected repository checks | 35 |
+| Selected repository checks | 37 |
 
 ## Bound inputs
 
@@ -113,13 +113,13 @@ Each digest is checked byte for byte by the currency guard.
 
 - `PROMISE_MACHINE.md`, SHA-256 `ae019700f378a250fe08a3d6cb68c0553ee60a410cbb6035d3c9c3cd2866b34f`, 32144 bytes
 - `tests/promise_machine_obligations.json`, SHA-256 `384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f`, 9630 bytes
-- `tests/promise_machine_coverage.json`, SHA-256 `c4348146eafc576aec0cfc70b46796e6bb1715399b3e2c96e39b550dc39e245a`, 263767 bytes
+- `tests/promise_machine_coverage.json`, SHA-256 `298a1403c335d3309013639bf70bd8650ae6a66cc6d5bc05652632204a0fa739`, 264156 bytes
 - `tests/promise_machine_id_history.json`, SHA-256 `fb8ced627567f25de78bc16d5a790c292a8db0f0268105a262aee943a6816d9e`, 51722 bytes
-- `tests/fixtures/promise-machine/composition/cases.json`, SHA-256 `cbd091e4eb05241dfbdd85f414195099064dc17bf789945a54ee53119287bd02`, 26778 bytes
+- `tests/fixtures/promise-machine/composition/cases.json`, SHA-256 `a2df1c836f34fad4732373802380f434d7d8162f953b8795c424fefd39914e1c`, 26778 bytes
 - `tests/fixtures/promise-machine/history/cases.json`, SHA-256 `9051ac6c291330f527705177bffa70985657ec7f96707b7a9349d4e574cfc3f0`, 685 bytes
 - `tests/fixtures/promise-machine/upstream-provenance/cases.json`, SHA-256 `f60821b1edf450d47a581f12562c13e1931c2b09c960bce2fb8a0b1767c154cf`, 935 bytes
 - `docs/promise-machine/obligation-gates/evaluation-answers.json`, SHA-256 `3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855`, 1911 bytes
-- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `fa481e8b1e4d10cd3c52245c3efb72ad7b810cfa2a5e1e0cc688de01d41edb9c`, 3231 bytes
+- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `403de4bdb4082367a8dda13a9dd754e744e5995aae8864fe061b1c9ef3b77b3e`, 3231 bytes
 
 ## When a gate stops the line
 

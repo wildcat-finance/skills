@@ -30,7 +30,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
-        "sha256": "865ed1300655ade17a8e88cd48ab43d2019936a67815fff57008eb2594b1c5c6"
+        "sha256": "e5714268b231ec6d2d71de61297ae02f9a6c76ba7cda8bbabdf6039ac2054921"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
@@ -38,7 +38,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
-        "sha256": "f69c93edd160738a11a600f75a77fe697958cc97af664967eb9536b612686dea"
+        "sha256": "96fa198f571a182b916e369d302189a19e3b8ae9ea507c177e0c3908d240a135"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "1dde761049ce27ae2ca3781893bdb40e1a5c7a939e6586ee9add09cb00e64404"
+        "sha256": "b017ccdf98201d1cd9999452af7d18bcf095024e1af369651298dfa424ad43a1"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "6916f852263fe2379618d0d937da8a5e4efad105687c91ebf1ec0cdb841d147f"
+        "sha256": "e38b5706ce1ecfdf147eaf28f9afd38b5f233a9769fc82c8a482edfe3012b621"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "41a62a9524578c58b81ca1bbd23c9d0b3ea008c69f013149c4b18c3d043bfcbe"
+        "sha256": "b49178dc8214af8158d82386778414e68178e040c7c180ceb9270375c206863b"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,16 +109,26 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "ff4b6e69ea58d120172aa5b864bb5c4acf4a103bc8dab7df74be337018ad5956"
+      "sha256": "da405ba142e97d27def621753af5c683dda1e1646f6ae153834584533d58aeed"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "cecb3aa6b3b67b6534f716f6a42f38cc7356a13babf456baceb266be25a85135"
+      "sha256": "e4c396ce502e9c97f75d5d9be2ff885ef236b6aa91ea80da24eef5ccef323c53"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
       "sha256": "98de5696079ad66ea74bef77472c31f58251e11082ff5d214e18bf0b9f9df097"
+    },
+    "staged_reconciliation": {
+      "helper": {
+        "path": "scripts/agent_instruction_reconciliation.py",
+        "sha256": "84632d90863afe513293779d7dd1241bac2aa3c5e63e1303aaebf5bc1e953093"
+      },
+      "tests": {
+        "path": "tests/test_agent_instruction_reconciliation.py",
+        "sha256": "d3ff51761363afe4833167b8163efbf5021726aeb29d29d2607e53bf3b05dc3c"
+      }
     },
     "tests": {
       "path": "tests/test_agent_instruction.py",
@@ -149,7 +159,7 @@
   "composition": {
     "fixture": {
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "cbd091e4eb05241dfbdd85f414195099064dc17bf789945a54ee53119287bd02"
+      "sha256": "a2df1c836f34fad4732373802380f434d7d8162f953b8795c424fefd39914e1c"
     },
     "relations": [
       {
@@ -4187,7 +4197,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "8faac076c06f86e96156f0af52ca9beaef11dcc5a9e53bfd7e2e4af248a83f05"
+      "sha256": "07b9f436259ace0a6b6e7f9ad8535d77284d242ca095265b0d11a71cf804e944"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4890,16 +4900,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "c26a6a2322b3d564db05eb58d7a152468a9acd74f80ee0a79f6854d977efb2e5"
+        "sha256": "e775f86d0398e7cf36da3e08114115249560af99892d9f28d9bc6e5e07900e68"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "c26a6a2322b3d564db05eb58d7a152468a9acd74f80ee0a79f6854d977efb2e5"
+        "sha256": "e775f86d0398e7cf36da3e08114115249560af99892d9f28d9bc6e5e07900e68"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
-      "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e",
+      "sha256": "b90edd0e49ac92f335c34c9ecf661137eadd726fcfc1dc6b2b83dc40f852e0d2",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-local-retirement": {
@@ -4948,16 +4958,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "negative",
-        "sha256": "e560e147ea69b0e64ee6bccc03cfbc8668ca7851db0341f3d4a403105390ae97"
+        "sha256": "3f9db4c41696347b0537e8b9adad6716b355321f1f262a1bbbd17d45df7b0726"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "positive",
-        "sha256": "e560e147ea69b0e64ee6bccc03cfbc8668ca7851db0341f3d4a403105390ae97"
+        "sha256": "3f9db4c41696347b0537e8b9adad6716b355321f1f262a1bbbd17d45df7b0726"
       },
       "reader": "native-json-v1",
       "selector": "test_push_advances_steps_then_the_stack_integrates",
-      "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e",
+      "sha256": "b90edd0e49ac92f335c34c9ecf661137eadd726fcfc1dc6b2b83dc40f852e0d2",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -5006,16 +5016,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
-        "sha256": "fc4e7ccb3275acaa7ae3b6472a89aa58948a56ba5157514dfa13520542c23192"
+        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "fc4e7ccb3275acaa7ae3b6472a89aa58948a56ba5157514dfa13520542c23192"
+        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
       },
       "reader": "native-json-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
-      "sha256": "08d4e9e21ae395f8f52c9ab52b1cbfa9b48ce00105805d3e88f34ad251a7f501",
+      "sha256": "f3ad1c188e8d76f27167b665dbaa0ac85baf36c015c437521bc7cc123f70d561",
       "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {
@@ -5035,16 +5045,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "negative",
-        "sha256": "78a0a135e959c5a13fa9f46876d39d571de6f4fb10d4edbaffd1741b0b20c87a"
+        "sha256": "43b5d7983a9d27697d7a67ac9bd1293be0122079e7c0440f6d5c491bacb29a5a"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "positive",
-        "sha256": "78a0a135e959c5a13fa9f46876d39d571de6f4fb10d4edbaffd1741b0b20c87a"
+        "sha256": "43b5d7983a9d27697d7a67ac9bd1293be0122079e7c0440f6d5c491bacb29a5a"
       },
       "reader": "native-json-v1",
       "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
-      "sha256": "b745c9a23e9a0274103661200dc9aab5e63d9828680def4e56ab0ef2f26b0b8e",
+      "sha256": "b90edd0e49ac92f335c34c9ecf661137eadd726fcfc1dc6b2b83dc40f852e0d2",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-version-resolution": {
@@ -5064,16 +5074,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "negative",
-        "sha256": "eb048c21c5fe672f6129f5985c6e48f264da0f5a8c7f4bf1c996a1c6c3621c3e"
+        "sha256": "3cdfb92379fb6b5256d7614db4df7b031547921b20bc70e9addaf17696fe4639"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "positive",
-        "sha256": "eb048c21c5fe672f6129f5985c6e48f264da0f5a8c7f4bf1c996a1c6c3621c3e"
+        "sha256": "3cdfb92379fb6b5256d7614db4df7b031547921b20bc70e9addaf17696fe4639"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
-      "sha256": "becb6292d1edd8760d32f1fbba551bf080e0ca5873510110ae885a66cb0962ef",
+      "sha256": "02bef552c86d8e53b9a3cda14bf520b025a4530ea3172eb73e951a3653eccfc7",
       "source": "plugins/hexaemeron/tests/test_version_relations.py"
     },
     "hermes-baseline-promotion": {
@@ -5538,16 +5548,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "negative",
-        "sha256": "5ae866782c46170a792518db5e62e009fc9b9597178f3f851042681b8bdd317a"
+        "sha256": "8c377f6b89bead883ae3d66841e8213ce8dc9862ec7bf0ea125409faad91574f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "positive",
-        "sha256": "5ae866782c46170a792518db5e62e009fc9b9597178f3f851042681b8bdd317a"
+        "sha256": "8c377f6b89bead883ae3d66841e8213ce8dc9862ec7bf0ea125409faad91574f"
       },
       "reader": "native-json-v1",
       "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
-      "sha256": "fe26ecd200ed661b1d7314a9747ff093785ad4e47ed90e6472e2cd8624aba16e",
+      "sha256": "f1684c58fa887ce697a6c6416e0e9851a0d1b4a808ad24d51b0cdb2f8fa123fa",
       "source": "plugins/hexaemeron/tests/test_metron_check.py"
     },
     "pandects-search-record": {

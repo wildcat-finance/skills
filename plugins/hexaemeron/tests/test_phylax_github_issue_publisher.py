@@ -2919,10 +2919,14 @@ class ContractTests(unittest.TestCase):
         self.assertNotIn("ADR-054", reference)
 
     def test_adr_rejects_same_identity_and_file_watcher_routes(self):
-        adr = (
-            PLUGIN_ROOT.parents[1]
-            / "docs/decisions/drafts/use-a-credential-owning-github-issue-publisher.md"
-        ).read_text(encoding="utf-8")
+        decisions = PLUGIN_ROOT.parents[1] / "docs/decisions"
+        slug = "use-a-credential-owning-github-issue-publisher"
+        candidates = list(decisions.glob(f"ADR-[0-9][0-9][0-9]-{slug}.md"))
+        draft = decisions / "drafts" / f"{slug}.md"
+        if draft.is_file():
+            candidates.append(draft)
+        self.assertEqual(len(candidates), 1)
+        adr = candidates[0].read_text(encoding="utf-8")
         self.assertIn("adr/use-a-credential-owning-github-issue-publisher", adr)
         self.assertIn("selected `isolated-publisher` design", adr)
         self.assertIn("### Add checks to the shell helper", adr)

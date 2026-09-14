@@ -1,0 +1,37 @@
+test_law_edit_selects_law (__main__.Guard.test_law_edit_selects_law) ... FAIL
+test_horos_edit_selects_horos (__main__.Guard.test_horos_edit_selects_horos) ... FAIL
+
+======================================================================
+FAIL: test_law_edit_selects_law (__main__.Guard.test_law_edit_selects_law)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 24, in test_law_edit_selects_law
+    def test_law_edit_selects_law(self):self.expected_selection('promise-machine-router-selection')
+                                        ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 22, in expected_selection
+    self.assertEqual(observed['outcome'],'ready',observed)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'refused' != 'ready'
+- refused
++ ready
+ : {'outcome': 'refused', 'reason': 'PROMISE_MACHINE.md is off its manifest digest. This tool reconciles one edited source and refuses a tree that has drifted elsewhere. If a previous reconcile was interrupted, this is the artefact it had already rewritten: restore the bound tree with `git checkout -- tests/fixtures/agent-instruction-v1 tests/promise_machine_coverage.json` and run it again'}
+
+======================================================================
+FAIL: test_horos_edit_selects_horos (__main__.Guard.test_horos_edit_selects_horos)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 25, in test_horos_edit_selects_horos
+    def test_horos_edit_selects_horos(self):self.expected_selection('horos-boundary-check')
+                                            ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/Wildcat Skills-1513/tmp/fiat/fiat-1513-reconcile-reviewed-corpus-spans-after-law-e/.hexaemeron/scripts/record_behavioral_counterfactual.py", line 22, in expected_selection
+    self.assertEqual(observed['outcome'],'ready',observed)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'refused' != 'ready'
+- refused
++ ready
+ : {'outcome': 'refused', 'reason': 'plugins/horos/skills/horos/SKILL.md is off its manifest digest. This tool reconciles one edited source and refuses a tree that has drifted elsewhere. If a previous reconcile was interrupted, this is the artefact it had already rewritten: restore the bound tree with `git checkout -- tests/fixtures/agent-instruction-v1 tests/promise_machine_coverage.json` and run it again'}
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.159s
+
+FAILED (failures=2)

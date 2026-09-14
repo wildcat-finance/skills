@@ -1,4 +1,4 @@
-# Decision: Use a credential-owning GitHub issue publisher
+# ADR-097: Use a credential-owning GitHub issue publisher
 
 ## Status
 

@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -222,6 +223,34 @@ class RuntimeStagingTests(unittest.TestCase):
             write(outside, "%s/AGENTS.md" % self.target)
             status = self.module.stage_runtime(outside)
         self.assertEqual(status, "not a git work tree; mirror written but not staged")
+
+
+@unittest.skipIf(GIT is None, "git unavailable")
+class RuntimeWalkTests(unittest.TestCase):
+    def test_hypomnema_is_clean_after_sync_on_a_clean_source_tree(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in tracked(ROOT):
+                destination = root / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / name, destination, follow_symlinks=False)
+            git(root, "init", "-q")
+            git(root, "add", ".")
+            git(root, "-c", "core.hooksPath=/dev/null", "commit", "-qm", "source tree")
+            self.assertEqual(b"", git(root, "status", "--porcelain").stdout)
+            commands = [
+                ["scripts/portable_promise_machine.py", "sync"],
+                ["scripts/portable_promise_machine.py", "check"],
+                ["plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+                 "README.md", "AGENTS.md", ".agents", "plugins", "docs"],
+            ]
+            for command in commands:
+                result = subprocess.run(  # phylax: allow subprocess: fixed repository checker argv in an isolated test tree
+                    [sys.executable, *command], cwd=root, env=git_env(),
+                    capture_output=True, text=True, timeout=120,
+                )
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+            self.assertEqual("clean\n", result.stdout)
 
 
 class ImportClosureTests(unittest.TestCase):

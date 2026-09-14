@@ -7,9 +7,9 @@
 
 Hexaemeron carries an explicit, receipted delivery from study to one merged change while keeping every controller, worker, phase discipline, prose mask, and security tool inside its own authority.
 
-**Current frontier.** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
+**Current frontier.** every delegated next envelope carries a deterministic fiat-task-identity/v1 handle naming the run's task, phase and role, and next --task-handle refuses a stale, malformed or delegate-less handle before any packet is emitted; closed audit history still ships in the tree as frozen prose, and an audit round has no field for its evidence, which lands in Leads not pursued.
 
-**Next Fiat job.** Use /hexaemeron:fiat to complete skills#363 by binding every Fiat delegation task identity to the current issue or topic, step number and role, refusing or replacing a stale reused handle; accept it only when issue N cannot retain issue M in its visible name, all four workers expose current deterministic identities, resume and post-compaction reconstruction preserve them, and an executable regression rejects stale reuse. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to complete skills#1212 by moving closed audit history off the tree, keeping every moved file by SHA-256 with a per-run index, splitting an Evidence field out of Leads not pursued and making a study name what it read; accept it only when audit/ on main holds the manifest, the index and the open runs' logs only, every manifest entry verifies at its locator, audit_synopsis.py --check . exits 0 and renders every index deterministically, one Fiat run completes with Evidence records its receipts bind, and a study cites what it opened, searched and fetched. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 Let there be light.
@@ -324,9 +324,10 @@ The four workers isolate bulky phases without inheriting controller authority:
   returns the file count and skill identities.
 
 Fiat can do the same packet inline when isolated workers are unavailable. It
-alone receipts their results and chooses the next directive. The current open
-frontier is the visible identity of a reused worker handle: callers must reject
-one that still names an older issue, step, or role.
+alone receipts their results and chooses the next directive. Every delegated
+envelope names its worker's handle, and before continuing an existing worker
+the orchestrator runs `next --task-handle`, which refuses a handle that names
+an older issue, step or role.
 
 ## TESTS
 

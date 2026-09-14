@@ -1312,15 +1312,31 @@ class TestStudyAmendments(HexctlCase):
 try:
     from .host_identity_cases import build_host_identity_cases
     from .replacement_object_cases import build_replacement_object_cases
+    from .study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from .routed_filing_decision_cases import build_routed_filing_decision_cases
 except ImportError:
     from host_identity_cases import build_host_identity_cases
     from replacement_object_cases import build_replacement_object_cases
+    from study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from routed_filing_decision_cases import build_routed_filing_decision_cases
 
 
 HostIdentityRefusalCases, FooterReappearanceCases = build_host_identity_cases(
     globals()
 )
 (ReplacementObjectCases,) = build_replacement_object_cases(globals())
+(StudyAmendmentRebindCases,) = build_study_amendment_rebind_cases(globals())
+
+
+class StudyAmendmentRebindTests(StudyAmendmentRebindCases, HexctlCase):
+    """A study amendment rebinds or displaces each effective runbook amendment."""
+
+
+(RoutedFilingDecisionCases,) = build_routed_filing_decision_cases(globals())
+
+
+class RoutedFilingDecisionTests(RoutedFilingDecisionCases, HexctlCase):
+    """What `init` does when the issue already decided against a run."""
 
 
 class TestCommitVerification(
@@ -5848,3 +5864,84 @@ class WardenContinuityTests(HexctlCase):
         self.assertIn("cannot keep an agent", loop)
         self.assertIn("reads the suite documents in full", loop)
         self.assertIn("still pays for the full read", loop)
+
+
+class TestTaskIdentity(HexctlCase):
+    """Issue 363: `next` names the task a delegate runs as, and refuses a stale one.
+
+    Every role, the inline directive and each refusal class are held in
+    `test_task_identity`. These two are the cases the run's conformance cells
+    name, on a run bound to issue 320 as the observed failure's run was.
+    """
+
+    HANDLE = "fiat-320-step-2-mason"
+    ORIGIN = "https://github.com/wildcat-finance/example.git"
+
+    def issue_run_at_step_two(self):
+        self.git("remote", "add", "origin", self.ORIGIN)
+        self.to_steps(task_issue=self.ORIGIN[:-4] + "/issues/320")
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        self.finish_step(1)
+        return self.run_ctl("next").stdout
+
+    def test_stale_handle_from_another_issue_is_refused(self):
+        bare = self.issue_run_at_step_two()
+        packet = json.loads(bare)
+        self.assertEqual((packet["do"], packet["agent"]), ("implement", "mason"))
+        self.assertEqual(packet["task_identity"]["handle"], self.HANDLE)
+        stale = self.run_ctl("next", "--task-handle", "issue318_step2", expect=2)
+        self.assertEqual(stale.stdout, "")
+        self.assertEqual(
+            stale.stderr,
+            "hexctl: error: task handle refused (equality): expected "
+            f"{self.HANDLE}, observed issue318_step2\n",
+        )
+        current = self.run_ctl("next", "--task-handle", self.HANDLE)
+        self.assertEqual(current.stdout, bare)
+
+    def test_identity_is_identical_across_processes_and_after_reload(self):
+        first = self.issue_run_at_step_two()
+        self.assertEqual(self.run_ctl("next").stdout, first)
+        home = tempfile.TemporaryDirectory()
+        self.addCleanup(home.cleanup)
+        capsule, origin = (os.path.join(os.path.realpath(home.name), name)
+                           for name in ("capsule", "origin"))
+        exported = self.run_ctl("checkpoint", "export", "--out", capsule).stdout
+        with open(os.path.join(capsule, "MANIFEST.json"), encoding="utf-8") as handle:
+            refs = json.load(handle)["boundary"]["refs"]
+        commands = [["clone", "-q", self.dir, origin]]
+        commands += [["-C", origin, "branch", ref, f"origin/{ref}"] for ref in refs
+                     if ref != "main" and not re.fullmatch(r"[0-9a-f]{40}", ref)]
+        commands.append(["-C", origin, "remote", "set-url", "origin", self.ORIGIN])
+        for command in commands:
+            subprocess.run(["git", *command], check=True, capture_output=True)
+        env = dict(self.env, FAKE_GIT_REFS=json.dumps(self.fake_refs),
+                   FAKE_GIT_PARENTS=json.dumps(self.fake_parents),
+                   FAKE_GH_PRS=json.dumps(self.fake_prs))
+
+        def control(where, *args):
+            proc = subprocess.run([sys.executable, HEXCTL, "--dir", where, *args],
+                                  cwd=where, capture_output=True, text=True, env=env)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            return proc.stdout
+
+        control(origin, "checkpoint", "restore", "--from", capsule,
+                "--manifest-sha256", json.loads(exported)["manifest_sha256"])
+        crumb = os.path.join(origin, ".hexaemeron", "worktree")
+        with open(crumb, encoding="utf-8") as handle:
+            restored = handle.read().strip()
+        after = control(restored, "next")
+        # The identity is compared as emitted, before anything is put back:
+        # the substitution below would also rewrite a path or digest inside it.
+        identity = json.loads(after)["task_identity"]
+        self.assertEqual(identity, json.loads(first)["task_identity"])
+        self.assertEqual(identity["handle"], self.HANDLE)
+        # A restore moves the run, so its paths and state digest move with it.
+        # Put both back and every other byte holds.
+        was, now = (json.loads(out)["state_sha256"] for out in (first, after))
+        self.assertNotEqual(was, now)
+        self.assertEqual(
+            after.replace(restored, os.path.realpath(self.target)).replace(now, was),
+            first,
+        )
+        self.assertEqual(control(restored, "next", "--task-handle", self.HANDLE), after)
