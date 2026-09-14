@@ -269,6 +269,72 @@ class FiatSkillContractTests(unittest.TestCase):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
 
+    def test_task_identity_check_is_unconditional_before_any_continuation(self):
+        # Issue 363: an orchestrator continued a Mason under a handle left from
+        # another issue. `next --task-handle` refuses only a handle it is shown,
+        # so this section is what makes showing it unconditional, and neither a
+        # refused handle nor a brief an earlier call left behind reaches a
+        # delegate.
+        section = self.fiat.split("\n## Delegation and context\n", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        flat = " ".join(section.split())
+        required = (
+            "`fiat-<task>-<phase>-<role>`",
+            "The round is not in the handle, so a Warden keeps one handle across "
+            "a step's rounds.",
+            "The handle check is unconditional. Before continuing any existing "
+            "agent handle, for any directive, round or reason, run "
+            "`hexctl next --task-handle <observed>` with that handle.",
+            "Exit 2 prints no directive and writes no state, ledger entry or brief.",
+            "Never continue a refused handle: spawn a fresh delegate under the "
+            "`task_identity.handle` that `next` prints without `--task-handle`.",
+            "A brief file left at a `--brief-out` path by an earlier call is not "
+            "the current directive's, so pass `--brief-out` and `--task-handle` in "
+            "one call and hand a delegate only a brief path named by a `next` call "
+            "that exited 0.",
+        )
+        missing = [item for item in required if item not in flat]
+        self.assertEqual([], missing)
+
+    def test_task_identity_each_agent_names_the_handle_it_is_spawned_under(self):
+        # Each file names the handle the controller derives for its role, so the
+        # prose cannot keep a grammar `task_identity` has stopped emitting.
+        spawned = {
+            "surveyor": ("study", "`fiat-<task>-study-surveyor`", None),
+            "mason": ("implement", "`fiat-<task>-step-<n>-mason`", 3),
+            "warden": ("audit-round", "`fiat-<task>-step-<n>-warden`", 3),
+            "scribe": ("prose", "`fiat-<task>-step-<n>-scribe`", 3),
+        }
+        controller = hexctl_module()
+        state = {
+            "topic": "bind delegated task identity to step and role",
+            "receipts": {
+                controller.RUN_ANCHOR_RECEIPT: {
+                    "task": {"kind": "github-issue", "number": 363}
+                }
+            },
+        }
+        for role, (directive, handle, step) in spawned.items():
+            with self.subTest(role=role):
+                contract = " ".join(AGENTS[role].split())
+                self.assertIn(
+                    f"Fiat spawns you under the handle {handle}, the "
+                    f"`task_identity.handle` of the `{directive}` directive",
+                    contract,
+                )
+                self.assertIn("where `<task>` names the run's task issue or topic.", contract)
+                concrete = handle.strip("`").replace("<task>", "363").replace("<n>", "3")
+                derived = controller.task_identity(
+                    state, role, step=step, round=2 if role == "warden" else None
+                )
+                self.assertEqual(concrete, derived["handle"])
+        self.assertIn(
+            "The round is not in the handle, so a later round of one step may "
+            "continue the same Warden, and a round of another step never does.",
+            " ".join(AGENTS["warden"].split()),
+        )
+
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())
         audit = " ".join(self.audit_loop.split())
