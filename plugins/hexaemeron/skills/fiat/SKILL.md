@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.56.1"
+  version: "6.56.1"
 ---
 
 <p align="center">
@@ -772,6 +772,21 @@ step, risk register, or sorted prose diff from chat. If delegation is
 unavailable, execute the same
 packet in the main session. After compaction, rerun `next`: the receipted
 artefacts and state digest deterministically reconstruct the packet.
+
+A delegated envelope also carries `task_identity`, whose `handle` is
+`fiat-<task>-<phase>-<role>`: the run's task, `study` or `step-<n>`, and the
+delegate's role. The round is not in the handle, so a Warden keeps one handle
+across a step's rounds. Give each spawned delegate that handle as its visible
+name. The handle check is unconditional. Before continuing any existing agent
+handle, for any directive, round or reason, run
+`hexctl next --task-handle <observed>` with that handle. Exit 0 prints the same
+directive. Exit 2 prints no directive and writes no state, ledger entry or
+brief. Never continue a refused handle: spawn a fresh delegate under the
+`task_identity.handle` that `next` prints without `--task-handle`. A `delegate`
+refusal means the directive has no delegate and runs in this session. A brief
+file left at a `--brief-out` path by an earlier call is not the current
+directive's, so pass `--brief-out` and `--task-handle` in one call and hand a
+delegate only a brief path named by a `next` call that exited 0.
 
 ## Stop conditions
 
