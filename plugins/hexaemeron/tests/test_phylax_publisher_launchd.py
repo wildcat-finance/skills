@@ -46,3 +46,21 @@ class LaunchdLimitTests(unittest.TestCase):
         reference = (KIT.parents[1] / "references/github-issue-publisher-v1.md").read_text()
         self.assertIn("lists the nine component fixtures", reference)
         self.assertIn("one of the five component criteria", reference)
+
+    def test_kit_conformance_rejects_noncanonical_plist_bytes(self):
+        from github_issue_publisher_lib import conformance
+        from github_issue_publisher_lib.deployment import daemon_document
+        from github_issue_publisher_lib.errors import PublisherError
+        original = conformance.read_bounded_file
+        document = daemon_document()
+        document["inetdCompatibility"]["Wait"] = 0
+        integer_zero = plistlib.dumps(document)
+        canonical = plistlib.dumps(daemon_document())
+        duplicate_key = canonical.replace(b"<key>Wait</key>", b"<key>Wait</key><true/><key>Wait</key>")
+        for raw in (integer_zero, duplicate_key, canonical + b"\n"):
+            with self.subTest(raw=raw):
+                def read(path):
+                    return raw if Path(path).suffix == ".plist" else original(path)
+                with mock.patch.object(conformance, "read_bounded_file", side_effect=read):
+                    with self.assertRaises(PublisherError):
+                        conformance.verify_public_surfaces()
