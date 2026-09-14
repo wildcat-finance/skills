@@ -35,6 +35,11 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
+if __package__:
+    from .commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
+else:
+    from commit_gate_activation import SNAPSHOT_ENV, activation_complaint, nobody_commits_here
+
 MAP_SCHEMA = "wildcat.check-map.v1"
 PLAN_SCHEMA = "wildcat.check-plan.v1"
 RUN_SCHEMA = "wildcat.check-run.v1"
@@ -2210,7 +2215,7 @@ def run_check(
         try:
             proc = subprocess.Popen(
                 launcher,
-                env=_child_env(marker),
+                env=_child_env(marker, snapshot),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=False,
@@ -2328,10 +2333,11 @@ def run_check(
         scheduler.release(granted)
 
 
-def _child_env(marker: str) -> dict[str, str]:
+def _child_env(marker: str, snapshot: Path) -> dict[str, str]:
     env = _git_env()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env[CONTAINMENT_ENV] = marker
+    env[SNAPSHOT_ENV] = str(snapshot.resolve())
     return env
 
 
@@ -2885,6 +2891,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     attempts: list[dict[str, Any]] = []
     try:
+        if nobody_commits_here(root, os.environ) is None:
+            configured = git(root, "config", "--get", "core.hooksPath", check=False)
+            complaint = activation_complaint(root, configured)
+            if complaint is not None:
+                raise PlanError("commit-gate-not-activated", complaint)
         return _run_attempts(args, root, check_map, selection, checks, capacity, plan, attempts)
     except PlanError as exc:
         # Every refusal leaves by the declared route.  Git capture around the

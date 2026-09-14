@@ -386,10 +386,15 @@ staged tree it passed on. `.githooks/pre-commit` then refuses any commit whose
 staged tree is not the one that record names. Run in the checkout itself,
 `python3 -m unittest discover -s tests` fails where `core.hooksPath` is unset
 or points anywhere else, and names the command above in the failure; that is
-how a fresh clone finds out the gate is off. The checked runner above executes
-the suite from a snapshot carrying a git directory of its own, and a hosted
-runner reports on the runner's own checkout, so the assertion is skipped in
-both and neither says whether your clone is activated.
+how a fresh clone finds out the gate is off.
+
+The checked runner verifies activation in the source checkout before creating
+its disposable snapshot, including when no checks are selected. `--plan` only
+plans and does not check activation. Inside a snapshot,
+`WILDCAT_CHECK_SNAPSHOT_ROOT` names the exact directory whose activation case
+is skipped. The separate `WILDCAT_CHECK_CONTAINMENT` token tracks descendants
+for cleanup and never skips that case. Hosted GitHub Actions jobs still check
+the shipped hook bytes rather than a contributor's local configuration.
 `FIAT_SKIP_PRECOMMIT=1` admits one commit without a recorded green.
 
 ## Reading boundary

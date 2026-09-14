@@ -415,6 +415,7 @@
     {"path": "scripts", "scope": "root"},
     {"path": "scripts/agent_instruction_reconciliation.py", "scope": "promise-machine"},
     {"path": "scripts/prove_agent_instruction_reconciliation.py", "scope": "promise-machine"},
+    {"path": "scripts/commit_gate_activation.py", "scope": "hexaemeron"},
     {"path": "scripts/demonstrations.py", "scope": "root"},
     {"path": "scripts/dead_code.py", "scope": "dead-code"},
     {"path": "scripts/suite_redundancy.py", "scope": "suite-redundancy"},
