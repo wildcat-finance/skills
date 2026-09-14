@@ -1,0 +1,46 @@
+{
+  "base_image_digest": "sha256:a7fb1e634c4a578f9e0bd6327f11a3cde11b7a9395f48e24360c0988bcc5c2bc",
+  "capsule_manifest_sha256": "68a8660c07bd5410c9ed400154a9a99c61a53fea563ffe7ca7cde5990f46b5ab",
+  "controller_sha256": "c87e0c455c50ff094b9607e17d9722f7ea8e506fe2159155d3b65e90d40a7c4f",
+  "derived_image_digest": "sha256:40d607ef9880dc20c614c1fcd73ac5cf4f40ca37846fc8cca094645493f9e220",
+  "destination_was_empty": true,
+  "hexctl_verify_exit": 0,
+  "keyring": "empty-at-start",
+  "log_sha256": "48b64804b67b40c33eac47ad0a3ca28e7e791e6571d0b7e9fe206d286b0534b7",
+  "manifest_sha256": "fe2ee098eb9a8129351a54b745d970374057efdb1d6ba4149fff491017963cc3",
+  "measurement_scope": {
+    "consumer": "one whole inspect/restore command inside the network-disabled Linux container",
+    "export": "saved controller timing_ms.export interval; peak RSS covers whole producer command",
+    "producer_platform": "darwin"
+  },
+  "measurements": {
+    "checkpoint.archive.bytes": 111860548,
+    "checkpoint.archive.expanded_bytes": 111771408,
+    "checkpoint.archive.export_peak_rss_bytes": 311836672,
+    "checkpoint.archive.export_wall_ms": 4899,
+    "checkpoint.archive.inspect_wall_ms": 3845,
+    "checkpoint.archive.restore_wall_ms": 9569
+  },
+  "network": "none",
+  "next": {
+    "branch": "fiat/861-outer-checkpoint-archive-export-and-restore-step-5-demonstrate-on-a-clean-machine-m",
+    "branch_from": "fiat/861-outer-checkpoint-archive-export-and-restore-step-4-build-checkpoint-restore-archive",
+    "do": "implement",
+    "merge_now": false,
+    "pr_base": "fiat/861-outer-checkpoint-archive-export-and-restore-step-4-build-checkpoint-restore-archive",
+    "run_branch": "fiat/861-outer-checkpoint-archive-export-and-restore",
+    "step": 5,
+    "title": "Demonstrate on a clean machine, measure the budgets, rewrite the procedure and record the generation"
+  },
+  "next_matches_manifest": true,
+  "outer_sha256": "a0a20df6a688cb5aeaf0da5a1d6943af4b3e81edbce7c9aff53771073a4bbf18",
+  "runtime": {
+    "bundle_sha256": "6ff3962842cb03ac5f65814568f9873a9700f94a887b6ac61c9170634ed54bb1",
+    "bundled_controller_sha256": "b5f8bc5eeadc71cbc82978f6e5d7965a7f4fd46386fc3066ab347e8b9c2f69f6",
+    "controller_overlay_verified": true,
+    "runtime_commit": "485a6c81ce24669e557148e0292f22add510d96b"
+  },
+  "schema": "fiat-checkpoint-restore-transcript/v1",
+  "snapshot_id": "3a6f368512c0424f9c76c668c7b347c97621d17a854319b4b69ff8bd5777f9e7",
+  "snapshot_id_matches": true
+}

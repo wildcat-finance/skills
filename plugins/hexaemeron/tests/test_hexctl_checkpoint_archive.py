@@ -4647,5 +4647,102 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         )
 
 
+
+class CheckpointArchiveDemonstrationTests(unittest.TestCase):
+    def helper(self, name):
+        script = Path(__file__).resolve().parents[1] / 'skills/fiat/scripts' / (name + '.py')
+        spec = importlib.util.spec_from_file_location(name, script)
+        module = importlib.util.module_from_spec(spec)
+        if name == 'checkpoint_clean_machine':
+            with mock.patch.dict(sys.modules, {'checkpoint_measure': self.helper('checkpoint_measure')}):
+                spec.loader.exec_module(module)
+        else:
+            spec.loader.exec_module(module)
+        return module
+
+    def test_clean_machine_script_assembles_the_transcript_schema_from_a_recorded_log(self):
+        module = self.helper('checkpoint_clean_machine')
+        root = Path(__file__).resolve().parents[3]
+        folder = root / 'docs/fiat-checkpoint-archive'
+        transcript = json.loads((folder / 'clean-machine-transcript.json').read_text())
+        log = (folder / 'clean-machine-transcript.log').read_text()
+        measurements = transcript['measurements']
+        export = {'schema': 'fiat-checkpoint-archive-export/v1',
+                  'outer_sha256': transcript['outer_sha256'],
+                  'bytes': measurements['checkpoint.archive.bytes'],
+                  'timing_ms': {'export': measurements['checkpoint.archive.export_wall_ms']}}
+        kwargs = dict(expected=transcript['outer_sha256'],
+                      controller_sha256=transcript['controller_sha256'],
+                      base_digest=transcript['base_image_digest'],
+                      derived_digest=transcript['derived_image_digest'], network='none',
+                      export=export, producer_platform='darwin',
+                      rss_text=str(measurements['checkpoint.archive.export_peak_rss_bytes']) + ' maximum resident set size\n')
+        self.assertEqual(transcript, module.assemble_transcript(log, **kwargs))
+        events = [json.loads(line) for line in log.splitlines()]
+        for index, field, value in (
+            (0, 'keyring_empty', False), (0, 'input_files', ['hexctl.py']),
+            (5, 'destination_was_empty', False), (5, 'controller_overlay_verified', False),
+            (6, 'exit', 1), (7, 'exit', True), (8, 'json_object', False),
+        ):
+            changed = json.loads(json.dumps(events)); changed[index][field] = value
+            with self.subTest(index=index, field=field), self.assertRaises(ValueError):
+                module.assemble_transcript('\n'.join(map(json.dumps, changed)), **kwargs)
+        for index, field, value in ((9, 'step', 999), (10, 'snapshot_id', '0' * 64)):
+            changed = json.loads(json.dumps(events)); changed[index]['result'][field] = value
+            with self.subTest(index=index), self.assertRaises(ValueError):
+                module.assemble_transcript('\n'.join(map(json.dumps, changed)), **kwargs)
+        with self.assertRaises(ValueError):
+            module.assemble_transcript('\n'.join(log.splitlines()[:-1]), **kwargs)
+        with self.assertRaises(ValueError):
+            module.assemble_transcript(log, **{**kwargs, 'network': 'bridge'})
+
+    def test_checkpoint_measure_reads_the_saved_export_result_and_writes_six_integers(self):
+        module = self.helper('checkpoint_measure')
+        export = {'schema': 'fiat-checkpoint-archive-export/v1', 'timing_ms': {'export': 4899}, 'bytes': 111860548}
+        result = module.saved_measurements(export, '311836672 maximum resident set size\n',
+            system='darwin', inspect_ms=4771, restore_ms=11723, expanded_bytes=111771408)
+        self.assertEqual(set(module.NAMES), set(result))
+        self.assertTrue(all(type(value) is int and value >= 0 for value in result.values()))
+        self.assertEqual(311836672, result['checkpoint.archive.export_peak_rss_bytes'])
+        linux = module.saved_measurements(export, ' Maximum resident set size (kbytes): 1024\n',
+            system='linux', inspect_ms=1, restore_ms=2, expanded_bytes=3)
+        self.assertEqual(1048576, linux['checkpoint.archive.export_peak_rss_bytes'])
+        for text in ('', '1 maximum resident set size\n2 maximum resident set size\n'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                module.saved_measurements(export, text, system='darwin', inspect_ms=1,
+                    restore_ms=2, expanded_bytes=3)
+        with self.assertRaises(ValueError):
+            module.saved_measurements(export, '1 maximum resident set size\n',system='darwin',
+                inspect_ms=True,restore_ms=2,expanded_bytes=3)
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / 'measurement.json'
+            module.write_json(path, {'measurements': result})
+            self.assertEqual({'measurements': result}, json.loads(path.read_text()))
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / 'source.zip'
+            target = Path(directory) / 'private.zip'
+            source.write_bytes(b'accepted')
+            expected = hashlib.sha256(b'accepted').hexdigest()
+            module.snapshot_archive(source, target, expected, 8)
+            source.write_bytes(b'replaced')
+            self.assertEqual(b'accepted', target.read_bytes())
+            target.unlink()
+            with self.assertRaises(ValueError):
+                module.snapshot_archive(source, target, expected, 8)
+            target.unlink()
+            source.write_bytes(b'accepted' + b'excess')
+            with self.assertRaises(ValueError):
+                module.snapshot_archive(source, target, expected, 8)
+        timed = module.command([sys.executable, '-c', 'import time; time.sleep(20)'], timeout=1)
+        self.assertEqual('timeout', timed['failure'])
+        self.assertLess(timed['wall_ms'], 5000)
+        with self.assertRaises(module.CommandFailure) as failed:
+            module.require_success(timed)
+        self.assertEqual('timeout', failed.exception.record['failure'])
+        closed = module.command([sys.executable, '-c',
+            'import os,time; os.close(1); os.close(2); time.sleep(20)'], timeout=1)
+        self.assertEqual('timeout', closed['failure'])
+        self.assertLess(closed['wall_ms'], 5000)
+
 if __name__ == "__main__":
     unittest.main()

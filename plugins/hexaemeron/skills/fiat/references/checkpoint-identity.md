@@ -183,6 +183,7 @@ sha256(
 The hashed canonical identity has no trailing newline. The wrapper and display
 newline are outside it.
 
+The native carrier contract is [checkpoint-archive.md](checkpoint-archive.md).
 Carrier filename, compression, file order, timestamp, permission, proposed
 archive digest, native capsule-manifest digest and current branch tips do not
 enter `identity`. Absolute paths and source text do not appear in the result.

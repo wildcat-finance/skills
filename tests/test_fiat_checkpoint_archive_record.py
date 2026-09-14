@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import json
+import hashlib
 import unittest
 
 
@@ -220,6 +222,35 @@ class FiatCheckpointArchiveRecord(unittest.TestCase):
                     )
 
         self.assertEqual([], dead_relative_links(path, text), f"dead relative links in {path.name}")
+
+
+    def test_transcript_is_committed_and_binds_the_step_4_archive_digest(self):
+        folder = ROOT / 'docs/fiat-checkpoint-archive'
+        record = json.loads(read(folder / 'clean-machine-transcript.json'))
+        self.assertEqual('fiat-checkpoint-restore-transcript/v1', record['schema'])
+        self.assertEqual('a0a20df6a688cb5aeaf0da5a1d6943af4b3e81edbce7c9aff53771073a4bbf18', record['outer_sha256'])
+        self.assertEqual('485a6c81ce24669e557148e0292f22add510d96b', record['runtime']['runtime_commit'])
+        self.assertEqual('3a6f368512c0424f9c76c668c7b347c97621d17a854319b4b69ff8bd5777f9e7', record['snapshot_id'])
+        self.assertEqual('none', record['network'])
+        self.assertEqual('empty-at-start', record['keyring'])
+        self.assertEqual(0, record['hexctl_verify_exit'])
+        for field in ('destination_was_empty', 'next_matches_manifest', 'snapshot_id_matches'):
+            self.assertIs(True, record[field])
+        self.assertEqual(6, len(record['measurements']))
+        for name in ('base_image_digest', 'derived_image_digest'):
+            self.assertRegex(record[name], r'^sha256:[0-9a-f]{64}$')
+        log = (folder / 'clean-machine-transcript.log').read_bytes()
+        self.assertEqual(hashlib.sha256(log).hexdigest(), record['log_sha256'])
+
+    def test_push_discipline_names_the_three_commands_and_no_comment_link(self):
+        text = read(ROOT / 'plugins/hexaemeron/skills/fiat/references/push-discipline.md')
+        section = text.split('## Step checkpoint', 1)[1].split('\n## ', 1)[0]
+        for command in ('checkpoint archive', 'checkpoint inspect --archive', 'checkpoint restore --archive'):
+            self.assertIn(command, section)
+        self.assertNotIn('issuecomment-5435028801', text)
+        for field in ('absolute archive path', 'outer', 'manifest SHA-256', '`snapshot_id`',
+                      'step', 'loop', 'full head SHA', 'expected next directive'):
+            self.assertIn(field, section)
 
 
 if __name__ == "__main__":
