@@ -12,10 +12,12 @@ paragraph, the second paragraph of ADR-058's Decision. Neither
 [ADR-058](../ADR-058-require-base-owned-identity-and-human-review.md) is
 edited, and each remains evidence of the policy it set. ADR-058's requirement
 for one approving review is not withdrawn.
-[ADR-052](../ADR-052-separate-governed-authorship-from-publication.md) is not
-withdrawn either: authorship and publication stay separate records, and its
-refusal of a runtime host in those roles is the ban this record withdraws. The
-record takes its number at integration.
+[ADR-052](../ADR-052-separate-governed-authorship-from-publication.md) stays
+in force except for its runtime-host clauses: authorship and publication are
+still recorded separately, while its sentence "A runtime host is accepted in
+none of those roles" and Fiat's rejection of a known runtime host as author or
+committer are part of the ban this record withdraws. The record takes its
+number at integration.
 
 ## Context
 
@@ -77,11 +79,16 @@ co-author as accepted.
 Salvage the first run's branch rather than rebuild it, as the Creator decided
 on 2026-09-09. Against its merge base
 `3cc0ad7f521985e46cf29f364a20e19fa99b64dd` the branch changed 73 files. This
-run adopts 30 at the branch's bytes and reworks 43: 10 regenerated, 22
-reverted to the bytes of `59239072` and 11 rewritten, as section 4 of
-`docs/signature-only-authorship/study.md` lists. The branch contradicted the
-Creator's answers in two places: it deleted the identity checker, and it
-rewrote the contributor-ranking promise and cut the parity check behind it.
+run adopts 30 and reworks 43: 10 regenerated, 22 reverted to the bytes of
+`59239072` and 11 rewritten, as section 4 of
+`docs/signature-only-authorship/study.md` lists. At this revision 26 of the 30
+adopted files keep the branch's bytes. In `AGENTS.md`, `README.md` and
+`plugins/hexaemeron/AGENTS.md`, Step 1's merge combined the branch's changes
+with those `main` made after that merge base, and this revision changed the
+assertions `tests/test_evolution_contract.py` makes on the latest Fiat history
+row. The branch contradicted the Creator's answers in two places: it deleted
+the identity checker, and it rewrote the contributor-ranking promise and cut
+the parity check behind it.
 
 Step 1 merged a local reconstruction of that branch, not `d9114b65` itself.
 The first six commits keep their hashes. The last six carried neither
