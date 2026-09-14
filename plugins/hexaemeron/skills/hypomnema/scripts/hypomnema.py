@@ -114,6 +114,7 @@ DESIGN_EVIDENCE_SCHEMA = "protasis-design-evidence/v1"
 MAX_STUDY_BYTES = 2 * 1024 * 1024
 MAX_DESIGN_BYTES = 2 * 1024 * 1024
 MAX_RECORD_BYTES = 2 * 1024 * 1024
+MAX_RECORD_DIRECTORY_ENTRIES = 4096
 MAX_JSON_DEPTH = 64
 MAX_PORTABLE_PATH_BYTES = 4096
 MAX_CANDIDATES = 4
@@ -260,6 +261,135 @@ def _read_repo_file(
             os.close(file_descriptor)
         for descriptor in reversed(descriptors):
             os.close(descriptor)
+
+
+def _stable_adr_candidates(
+    root: Path,
+    slug: str,
+) -> tuple[list[Path] | None, str | None]:
+    """Inspect only the one draft slot and fixed three-digit final namespace."""
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    descriptors: list[int] = []
+    try:
+        current = os.open(root, directory_flags)
+        descriptors.append(current)
+        try:
+            current = os.open("docs", directory_flags, dir_fd=current)
+            descriptors.append(current)
+            current = os.open("decisions", directory_flags, dir_fd=current)
+            descriptors.append(current)
+        except FileNotFoundError:
+            return [], None
+        except OSError:
+            return None, "has an unavailable or unsafe decision-directory component"
+
+        try:
+            with os.scandir(current) as entries:
+                final_entries = set()
+                for entry in entries:
+                    if len(final_entries) >= MAX_RECORD_DIRECTORY_ENTRIES:
+                        return None, "canonical final namespace exceeds its entry limit"
+                    final_entries.add(entry.name)
+        except OSError:
+            return None, "cannot inspect the canonical final namespace"
+        candidates: list[Path] = []
+
+        try:
+            drafts = os.open("drafts", directory_flags, dir_fd=current)
+        except FileNotFoundError:
+            drafts = None
+        except OSError:
+            return None, "has an unavailable or unsafe draft-directory component"
+        if drafts is not None:
+            descriptors.append(drafts)
+            draft_name = f"{slug}.md"
+            try:
+                with os.scandir(drafts) as entries:
+                    draft_entries = set()
+                    for entry in entries:
+                        if len(draft_entries) >= MAX_RECORD_DIRECTORY_ENTRIES:
+                            return None, "canonical draft namespace exceeds its entry limit"
+                        draft_entries.add(entry.name)
+            except OSError:
+                return None, "cannot inspect the canonical draft namespace"
+            if draft_name not in draft_entries:
+                draft_name = ""
+        if drafts is not None and draft_name:
+            try:
+                found = os.stat(draft_name, dir_fd=drafts, follow_symlinks=False)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                return None, "has an unreadable canonical draft candidate"
+            else:
+                if stat.S_ISLNK(found.st_mode) or not stat.S_ISREG(found.st_mode):
+                    return None, "has a canonical draft that is not an ordinary non-symlink file"
+                if found.st_size > MAX_RECORD_BYTES:
+                    return None, f"has a canonical draft exceeding the {MAX_RECORD_BYTES}-byte input limit"
+                candidates.append(Path("docs/decisions/drafts") / draft_name)
+
+        for number in range(1000):
+            final_name = f"ADR-{number:03d}-{slug}.md"
+            if final_name not in final_entries:
+                continue
+            try:
+                found = os.stat(final_name, dir_fd=current, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            except OSError:
+                return None, "has an unreadable canonical final candidate"
+            if stat.S_ISLNK(found.st_mode) or not stat.S_ISREG(found.st_mode):
+                return None, "has a canonical final that is not an ordinary non-symlink file"
+            if found.st_size > MAX_RECORD_BYTES:
+                return None, f"has a canonical final exceeding the {MAX_RECORD_BYTES}-byte input limit"
+            candidates.append(Path("docs/decisions") / final_name)
+        return candidates, None
+    except OSError:
+        return None, "cannot be inspected below the supplied repository root"
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
+def _read_stable_adr(
+    root: Path,
+    selector: str,
+) -> tuple[bytes | None, Path | None, str | None]:
+    """Resolve one stable identity to exactly one bounded canonical ADR file."""
+    slug = selector[len(STABLE_PREFIX):]
+    try:
+        encoded = slug.encode("ascii")
+    except UnicodeEncodeError:
+        return None, None, "is not a lowercase ASCII kebab-case stable ADR selector"
+    if (
+        not slug
+        or len(encoded) > MAX_SLUG_BYTES
+        or STABLE_SLUG.fullmatch(slug) is None
+    ):
+        return None, None, "is not a lowercase ASCII kebab-case stable ADR selector"
+
+    candidates, error = _stable_adr_candidates(root, slug)
+    if candidates is None:
+        return None, None, error
+    if not candidates:
+        return None, None, "names no canonical draft or numbered final"
+    if len(candidates) != 1:
+        return None, None, "names more than one canonical draft or numbered final"
+
+    data, relative, error = _read_repo_file(root, candidates[0], MAX_RECORD_BYTES)
+    if data is None:
+        return None, relative, error
+    checked, checked_error = _stable_adr_candidates(root, slug)
+    if checked is None:
+        return None, relative, checked_error
+    if checked != candidates:
+        return None, relative, "candidate set changed while being read"
+    return data, relative, None
 
 
 def _json_depth_within_limit(data: bytes) -> bool:
@@ -488,6 +618,17 @@ def check_design_bridge(
         )]
 
     record = bridge["record"]
+    if record.startswith(STABLE_PREFIX):
+        record_data, record_relative, error = _read_stable_adr(root, record)
+        if record_data is None:
+            return [Finding(
+                root / study_relative,
+                int(bridge["record_line"]),
+                "H008",
+                f"record `{record}` {error}",
+            )]
+        return []
+
     record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
     record_line = int(bridge["record_line"])
     if record_data is None:

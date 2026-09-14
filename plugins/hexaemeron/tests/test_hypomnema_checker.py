@@ -745,6 +745,182 @@ class DesignBridge(unittest.TestCase):
     def test_a_valid_governed_ledger_bridge_is_clean(self):
         self.assertEqual([], design_bridge_findings("studies/valid-ledger.md"))
 
+    def test_a_unique_stable_draft_bridge_is_clean(self):
+        selector = "adr/stable-bridge"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=selector),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_a_unique_stable_numbered_final_bridge_is_clean(self):
+        selector = "adr/stable-bridge"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=selector),
+                record="docs/decisions/ADR-042-stable-bridge.md",
+            )
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_a_dangling_stable_selector_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "no canonical"
+            )
+
+    def test_malformed_and_oversized_stable_selectors_refuse(self):
+        selectors = (
+            "adr/Stable-bridge",
+            "adr/stable_bridge",
+            "adr/stable/bridge",
+            "adr/" + "a" * (hypomnema.MAX_SLUG_BYTES + 1),
+        )
+        for selector in selectors:
+            with self.subTest(selector=selector), tempfile.TemporaryDirectory() as base:
+                root = write_design_bridge_tree(base, bridge_block(record=selector))
+                self.assert_h008(design_bridge_findings("study.md", root=root))
+
+    def test_a_direct_draft_path_remains_refused(self):
+        record = "docs/decisions/drafts/stable-bridge.md"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record=record), record=record
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "established"
+            )
+
+    def test_a_stable_draft_and_final_duplicate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            (root / "docs/decisions/ADR-042-stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "more than one"
+            )
+
+    def test_multiple_stable_numbered_finals_refuse(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/ADR-042-stable-bridge.md",
+            )
+            (root / "docs/decisions/ADR-043-stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "more than one"
+            )
+
+    def test_noncanonical_stable_near_matches_do_not_resolve(self):
+        near_matches = (
+            "docs/decisions/ADR-42-stable-bridge.md",
+            "docs/decisions/ADR-0042-stable-bridge.md",
+            "docs/decisions/drafts/Stable-bridge.md",
+            "docs/other/ADR-042-stable-bridge.md",
+        )
+        for record in near_matches:
+            with self.subTest(record=record), tempfile.TemporaryDirectory() as base:
+                root = write_design_bridge_tree(
+                    base, bridge_block(record="adr/stable-bridge"), record=record
+                )
+                self.assert_h008(
+                    design_bridge_findings("study.md", root=root), "no canonical"
+                )
+
+    def test_a_symlinked_stable_candidate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            target = root / "real.md"
+            target.write_text("record\n", encoding="utf-8")
+            link = root / "docs/decisions/drafts/stable-bridge.md"
+            link.parent.mkdir(parents=True)
+            link.symlink_to(target)
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "ordinary"
+            )
+
+    def test_a_symlinked_stable_directory_component_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            outside = root / "outside-drafts"
+            outside.mkdir()
+            (outside / "stable-bridge.md").write_text(
+                "standing record\n", encoding="utf-8"
+            )
+            drafts = root / "docs/decisions/drafts"
+            drafts.parent.mkdir(parents=True)
+            drafts.symlink_to(outside, target_is_directory=True)
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "unsafe"
+            )
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "requires a POSIX FIFO")
+    def test_a_special_stable_candidate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base, bridge_block(record="adr/stable-bridge")
+            )
+            fifo = root / "docs/decisions/drafts/stable-bridge.md"
+            fifo.parent.mkdir(parents=True)
+            os.mkfifo(fifo)
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "ordinary"
+            )
+
+    def test_an_oversized_stable_candidate_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            (root / "docs/decisions/drafts/stable-bridge.md").write_bytes(
+                b"x" * (hypomnema.MAX_RECORD_BYTES + 1)
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root), "input limit"
+            )
+
+    def test_an_unstable_stable_candidate_read_refuses(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record="adr/stable-bridge"),
+                record="docs/decisions/drafts/stable-bridge.md",
+            )
+            original = hypomnema._stat_identity
+            calls = 0
+
+            def changed(value):
+                nonlocal calls
+                calls += 1
+                identity = original(value)
+                if calls == 11:
+                    return identity[:-1] + (identity[-1] + 1,)
+                return identity
+
+            with mock.patch.object(hypomnema, "_stat_identity", side_effect=changed):
+                self.assert_h008(
+                    design_bridge_findings("study.md", root=root), "changed"
+                )
+
     def test_the_explicit_cli_mode_emits_one_clean_json_result(self):
         output = io.StringIO()
         with mock.patch("sys.stdout", output):

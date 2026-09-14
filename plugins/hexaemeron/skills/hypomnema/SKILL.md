@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.7.0"
+  version: "5.8.0"
 ---
 
 <p align="center">
@@ -41,10 +41,10 @@ Its version, held frontier, next job, and maturity state live in
 
 **Current state.** The ordinary walk checks recognised record and runbook
 pointers and shapes, including stable `adr/<slug>` identities. An explicit study
-mode now binds one selected Protasis candidate to exactly one ADR or
-governed-skill ledger through a closed design bridge. It refuses a duplicate the
-study declares; it does not discover the same decision standing in a second
-established home when the study declares one.
+mode binds one selected Protasis candidate to exactly one numbered ADR, governed
+skill ledger, or stable selector resolving to one canonical ADR draft or final.
+It refuses a duplicate the study declares; it does not discover the same
+decision standing in a second established home when the study declares one.
 
 ## Match what is already there
 
@@ -253,14 +253,19 @@ Hypomnema bounds those arrays and consumes only the schema, closed candidate
 set and selected-candidate membership needed for this join.
 
 The target is an ordinary non-symlink file read stably below the supplied root.
-It is either an ADR-numbered Markdown file below a `decisions` directory or an
-`EVOLUTION.md` beside a `SKILL.md` whose governed name matches its directory
-under a plugin skills tree. H008 also refuses absent, repeated, malformed or
-unclosed blocks, a selection mismatch, absolute, escaping, backslash or
-control-bearing paths, a wrong or dangling home, oversized inputs, duplicate
-JSON keys, excessive JSON depth, special files and a file that changes while
-it is read. The ordinary walk never infers a bridge, so historical studies and
-H000 through H007 retain their existing scope.
+A direct path is either an ADR-numbered Markdown file below a `decisions`
+directory or an `EVOLUTION.md` beside a `SKILL.md` whose governed name matches
+its directory under a plugin skills tree. The third form is exactly
+`adr/<slug>`, with a lowercase ASCII kebab-case slug no longer than 96 bytes.
+It resolves only one exact `docs/decisions/drafts/<slug>.md` or one exact
+`docs/decisions/ADR-NNN-<slug>.md`, where `NNN` has three ASCII digits. Zero or
+multiple candidates refuse; a direct draft path remains outside an established
+bridge home. H008 also refuses absent, repeated, malformed or unclosed blocks,
+a selection mismatch, absolute, escaping, backslash or control-bearing paths,
+a wrong or dangling home, unsafe components, oversized inputs, duplicate JSON
+keys, excessive JSON depth, special files and a file or candidate set that
+changes while it is read. The ordinary walk never infers a bridge, so historical
+studies and H000 through H007 retain their existing scope.
 
 The YAML H003 pass reads generic `runbook:` keys outside comments and block
 scalars, resolves relative Markdown targets from the YAML file's directory and
@@ -352,10 +357,10 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-pointer-gate
 
-- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run.
+- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run, including a stable bridge selector that does not resolve to exactly one canonical ADR draft or final.
 - Evidence: The exact lint version, mode, arguments, selected paths, design-evidence and repository-root identities where supplied, structured findings and zero exit status.
 - Evidence classes: checked
-- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; Protasis owns full design-record validity, ADR shape and the versioning contract own record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
+- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home. For a stable selector, that home is the fixed canonical draft and three-digit final namespace at check time. Protasis owns full design-record validity, ADR shape and the versioning contract own record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
 - Authorises: Passing the mechanical record and runbook-shape gate for the exact paths and checker version recorded.
 - Consequence: 1
 - Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a malformed or duplicate stable identity, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, or a claim about documents excluded from the run.

@@ -50,6 +50,11 @@ line-numbered diagnostics, and can compare a compressed draft with its source. A
 marked evidence exception keeps an irreducible finding intact when the evidence
 itself needs more than five lines.
 
+A canonical Fiat audit ledger first passes Fiat's synopsis checker, then uses
+explicit mode `fiat-audit-record`. That mode suppresses only the generic minimum
+heading and table cardinalities owned by the audit schema; Brevitas keeps every
+other rule active and does not validate the Fiat record itself.
+
 ## What it ships
 
 - the standard-library [`brevitas.py`](./skills/brevitas/scripts/brevitas.py) linter;

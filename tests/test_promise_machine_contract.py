@@ -553,6 +553,19 @@ class PromiseInventoryTests(unittest.TestCase):
 
 
 class PromiseStructureTests(unittest.TestCase):
+    def test_brevitas_fiat_audit_record_mode_stays_inside_structure_promise(self):
+        text = (
+            ROOT / "plugins" / "brevitas" / "skills" / "brevitas" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        contract = text.split("### brevitas-structure-check", 1)[1].split(
+            "\n### ", 1
+        )[0]
+        self.assertIn("`--mode fiat-audit-record`", text)
+        self.assertIn("`audit_synopsis.py --check .`", text)
+        self.assertIn("suppresses only B010 and B011", contract)
+        self.assertIn("does not parse or establish the audit schema", contract)
+        self.assertNotIn("### brevitas-fiat-audit-record", text)
+
     def test_standalone_contract_population_is_complete(self):
         expected = {
             "plugins/alexandria/skills/alexandria/SKILL.md": {
@@ -689,7 +702,11 @@ class PromiseStructureTests(unittest.TestCase):
             },
             "metron": {"metron-budget-verdict", "metron-change-decision"},
             "phylax": {"phylax-mechanical-gate", "phylax-boundary-review"},
-            "protasis": {"protasis-study-readiness", "protasis-runbook-readiness"},
+            "protasis": {
+                "protasis-known-failure-inventory",
+                "protasis-study-readiness",
+                "protasis-runbook-readiness",
+            },
             "vulgate": {"vulgate-register-rewrite"},
         }
         for skill, promise_ids in expected.items():
