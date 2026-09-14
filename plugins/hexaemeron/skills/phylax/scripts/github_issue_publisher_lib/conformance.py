@@ -1303,7 +1303,7 @@ def verify_public_surfaces():
                 if any(word in node.value for word in ("BEGIN PRIVATE KEY", ".pem", "--token", "--url", "--header")):
                     _refuse("conformance.public-surface")
     import plistlib
-    daemon = plistlib.loads(read_bounded_file(kit / "finance.wildcat.issue-publisher.plist"))
+    daemon = read_bounded_file(kit / "finance.wildcat.issue-publisher.plist")
     from .deployment import daemon_document
-    if daemon != daemon_document():
+    if daemon != plistlib.dumps(daemon_document(), sort_keys=True):
         _refuse("conformance.deployment-kit")

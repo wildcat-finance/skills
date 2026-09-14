@@ -10,10 +10,6 @@
 		<integer>60</integer>
 		<key>Core</key>
 		<integer>0</integer>
-		<key>NumberOfFiles</key>
-		<integer>64</integer>
-		<key>NumberOfProcesses</key>
-		<integer>8</integer>
 	</dict>
 	<key>Label</key>
 	<string>finance.wildcat.issue-publisher</string>
@@ -43,10 +39,6 @@
 		<integer>60</integer>
 		<key>Core</key>
 		<integer>0</integer>
-		<key>NumberOfFiles</key>
-		<integer>64</integer>
-		<key>NumberOfProcesses</key>
-		<integer>8</integer>
 	</dict>
 	<key>StandardErrorPath</key>
 	<string>/dev/null</string>

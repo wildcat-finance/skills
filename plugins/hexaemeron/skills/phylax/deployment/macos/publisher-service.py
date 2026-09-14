@@ -1,6 +1,7 @@
 """launchd inetd entrypoint; consumes only the accepted descriptor zero."""
 import os
 import pwd
+import resource
 import socket
 import sys
 
@@ -18,6 +19,9 @@ def main():
     service = pwd.getpwnam("_wildcatpublisher")
     if os.geteuid() != service.pw_uid or service.pw_uid == 0:
         return 2
+    # launchd file/process limits also change system-wide sysctls.
+    resource.setrlimit(resource.RLIMIT_NOFILE, (64, 64))
+    resource.setrlimit(resource.RLIMIT_NPROC, (8, 8))
     connection = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM, fileno=0)
     runtime = PublisherRuntime(signer=OpenSSLSigner(),
         transport=PinnedGitHubTransport(), receipt_sink=MemoryReceiptSink())

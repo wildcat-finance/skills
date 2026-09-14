@@ -255,6 +255,11 @@ POST starts, any failure that prevents a confirmed result returns
 `create-indeterminate`; the runtime does not retry. An operator reconciles the
 request digest before any later action.
 
+The kit returns its terminal receipt to the caller and keeps no persistent
+server receipt. The caller must retain the request and received terminal output.
+A disconnect before the response arrives leaves the outcome unknown, even when
+the remote issue was created; reconcile against GitHub before any new request.
+
 A returned issue must have the canonical
 `https://github.com/wildcat-finance/skills/issues/{number}` URL and the exact
 title and body. The runtime then reads that same issue once with the
@@ -288,12 +293,12 @@ POST cannot appear as a zero-attempt refusal on that path.
 
 The code-owned manifest schema is
 `github-issue-publisher-admission-manifest/v1`. It contains exactly `schema`
-and `files`. `files` lists the seven component fixtures by basename and SHA-256
+and `files`. `files` lists the nine component fixtures by basename and SHA-256
 digest. Paths outside that fixed set, duplicate rows, extra fields, malformed
 digests, unsafe files, and changed fixture bytes refuse.
 
 The CLI accepts only the frozen `conformance` command for candidate
-`isolated-publisher`, one of the four component criteria, and that criterion's
+`isolated-publisher`, one of the five component criteria, and that criterion's
 exact report path below `.hexaemeron/design-reports/`. Before writing a report,
 it checks every fixture digest, admits the golden request and the allowed
 leading-metadata form with the pinned local Imprimatur runner, executes all four
