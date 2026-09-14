@@ -29,7 +29,16 @@ PLAN_FORMAT = "alexandria-interval-plan/v1"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 
+# Every class this collector knows how to request. A plan declares the ordered
+# subset it collects; a class it omits is a named coverage gap, never a journal
+# of zero records pretending to be one.
 EVIDENCE_CLASSES = ("boundary-blocks", "logs", "traces")
+# The fourth journal every tree carries: the opening reads that bind the
+# interval's first block and its implementation epochs. A plan does not declare
+# it, because it is not a shard class; the collector reads it after the last
+# shard commits, under a virtual shard index one past the plan's last.
+OPENING_CLASS = "epoch-evidence"
+JOURNAL_CLASSES = EVIDENCE_CLASSES + (OPENING_CLASS,)
 FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 
 # Operator bounds.  A shard is a request's block range, so its width is what a
@@ -119,8 +128,7 @@ def validate_plan(plan) -> None:
             raise AlexandriaError(f"interval plan {field} is not a name")
     if not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
         raise AlexandriaError("interval plan proxy is not a lowercase address")
-    if list(plan["evidence_classes"]) != list(EVIDENCE_CLASSES):
-        raise AlexandriaError("interval plan evidence classes do not match this collector")
+    validate_evidence_classes(plan["evidence_classes"])
 
     interval = plan["interval"]
     if not isinstance(interval, dict) or set(interval) != {"end", "start"}:
@@ -171,8 +179,48 @@ def validate_plan(plan) -> None:
         raise AlexandriaError("interval plan finality block hash is not a 32-byte hash")
 
 
-def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> None:
-    """Check one closed `alexandria-interval-checkpoint/v1` document."""
+def validate_evidence_classes(value) -> tuple:
+    """Check a plan's declared classes: a non-empty subset of the known ones.
+
+    The plan's order is the order the collector requests them in and the order
+    the receipts count them in.  A class the plan omits is never requested and
+    has no journal; the release names it as a gap.
+    """
+    if not isinstance(value, list) or not value:
+        raise AlexandriaError(
+            "interval plan evidence classes must name at least one of "
+            + ", ".join(EVIDENCE_CLASSES)
+        )
+    if len(value) > len(EVIDENCE_CLASSES):
+        raise AlexandriaError("interval plan evidence classes name more classes than exist")
+    seen = []
+    for name in value:
+        if not isinstance(name, str):
+            raise AlexandriaError("interval plan evidence class is not a name")
+        if name not in EVIDENCE_CLASSES:
+            raise AlexandriaError(
+                f"interval plan evidence class {name[:64]!r} is not one of "
+                + ", ".join(EVIDENCE_CLASSES)
+            )
+        if name in seen:
+            raise AlexandriaError(f"interval plan evidence class {name!r} is declared twice")
+        seen.append(name)
+    return tuple(seen)
+
+
+def journal_classes(declared) -> tuple:
+    """The journals a staging tree holds: the declared classes, then the opening reads."""
+    return tuple(validate_evidence_classes(list(declared))) + (OPENING_CLASS,)
+
+
+def validate_checkpoint(
+    checkpoint, expected_digest: str, shard_count: int, classes=EVIDENCE_CLASSES,
+) -> None:
+    """Check one closed `alexandria-interval-checkpoint/v1` document.
+
+    `classes` is the plan's declared evidence classes; the checkpoint's offsets
+    cover exactly those, so a plan that omits a class carries no journal for it.
+    """
     required = {
         "format", "history", "last_accepted", "next_shard", "offsets",
         "plan_sha256", "records",
@@ -190,11 +238,23 @@ def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> N
     if checkpoint["next_shard"] > shard_count:
         raise AlexandriaError("interval checkpoint names a shard outside its plan")
     offsets = checkpoint["offsets"]
-    if not isinstance(offsets, dict) or set(offsets) != set(EVIDENCE_CLASSES):
-        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class")
+    if not isinstance(offsets, dict) or set(offsets) != set(classes):
+        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class the plan declares")
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
+    # The opening reads are made after the last shard commits and nowhere
+    # else, so a checkpoint standing below the plan's last shard cannot have
+    # committed one; an offset that says otherwise is a checkpoint this
+    # collector did not write.
+    if (
+        OPENING_CLASS in offsets
+        and offsets[OPENING_CLASS] > 0
+        and checkpoint["next_shard"] != shard_count
+    ):
+        raise AlexandriaError(
+            "interval checkpoint commits opening reads while a shard is still uncollected"
+        )
     history = checkpoint["history"]
     if not isinstance(history, list) or len(history) > MAX_HISTORY:
         raise AlexandriaError(
@@ -221,15 +281,23 @@ def validate_checkpoint(checkpoint, expected_digest: str, shard_count: int) -> N
         if not isinstance(entry["records"], int) or isinstance(entry["records"], bool) or entry["records"] < 0:
             raise AlexandriaError("interval checkpoint history record count is not a count")
         entry_offsets = entry["offsets"]
-        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(EVIDENCE_CLASSES):
+        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(classes):
             raise AlexandriaError(
-                "interval checkpoint history offsets do not cover every evidence class"
+                "interval checkpoint history offsets do not cover every evidence class the plan declares"
             )
         for name, value in entry_offsets.items():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise AlexandriaError(
                     f"interval checkpoint history offset for {name} is not a byte count"
                 )
+        if (
+            OPENING_CLASS in entry_offsets
+            and entry_offsets[OPENING_CLASS] > 0
+            and shard != shard_count - 1
+        ):
+            raise AlexandriaError(
+                "interval checkpoint history commits opening reads under a shard that is not the plan's last"
+            )
 
     accepted = checkpoint["last_accepted"]
     if accepted is None:
@@ -305,6 +373,10 @@ class Staging:
         self.plan = plan
         self.digest = plan_digest(plan)
         self.shard_count = len(plan["shards"])
+        # The journals this tree holds: the classes the plan declares, then the
+        # opening reads, which every plan owes and no plan declares.
+        self.declared = validate_evidence_classes(plan["evidence_classes"])
+        self.classes = journal_classes(self.declared)
         self.root = resolve_root(root)
         self.journals = self.root / JOURNAL_DIRECTORY
         try:
@@ -323,7 +395,7 @@ class Staging:
     # -- journals ---------------------------------------------------------
 
     def _journal_path(self, name: str) -> Path:
-        if name not in EVIDENCE_CLASSES:
+        if name not in JOURNAL_CLASSES:
             raise AlexandriaError(f"unknown evidence class {name!r}")
         return self.journals / f"{name}.jsonl"
 
@@ -349,11 +421,26 @@ class Staging:
         return self._handles[name]
 
     def record(self, shard: int, name: str, request: bytes, response: bytes) -> None:
-        """Append one preserved exchange to its class journal."""
-        if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
-            raise AlexandriaError("staged shard index is outside the plan")
-        if name not in EVIDENCE_CLASSES:
+        """Append one preserved exchange to its class journal.
+
+        A shard class is staged under its shard's index. The opening reads are
+        staged under the virtual index one past the plan's last shard, and
+        only there: an opening read filed under a real shard, or a shard
+        record filed under the virtual index, is refused.
+        """
+        if name not in JOURNAL_CLASSES:
             raise AlexandriaError(f"unknown evidence class {name!r}")
+        if name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
+        if not isinstance(shard, int) or isinstance(shard, bool):
+            raise AlexandriaError("staged shard index is outside the plan")
+        if name == OPENING_CLASS:
+            if shard != self.shard_count:
+                raise AlexandriaError(
+                    "opening reads are staged under the virtual shard index one past the plan's last"
+                )
+        elif not 0 <= shard < self.shard_count:
+            raise AlexandriaError("staged shard index is outside the plan")
         for label, data in (("request", request), ("response", response)):
             if not isinstance(data, bytes):
                 raise AlexandriaError(f"staged {label} must be bytes")
@@ -373,8 +460,27 @@ class Staging:
         self._sizes[name] += len(data)
         self._records += 1
 
+    def last_accepted(self):
+        """The boundary the checkpoint stands on, or None before the first commit."""
+        if not self._resumed:
+            raise AlexandriaError("resume must establish the record baseline before it is read")
+        if not self._history:
+            return None
+        entry = self._history[-1]
+        return {
+            "block_hash": entry["block_hash"],
+            "block_number": entry["block_number"],
+            "shard": entry["shard"],
+        }
+
     def commit(self, shard: int, block_number: int, block_hash: str) -> dict:
-        """Fsync every open journal, then replace the checkpoint atomically."""
+        """Fsync every open journal, then replace the checkpoint atomically.
+
+        Committing the last shard again, with the same boundary, is how the
+        opening phase checkpoints: the next-shard index stays one past the
+        plan's last and the `epoch-evidence` offset says how many opening
+        reads are committed.
+        """
         if not self._resumed:
             raise AlexandriaError("resume must establish the record baseline before a commit")
         if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
@@ -382,7 +488,7 @@ class Staging:
         if not isinstance(block_hash, str) or HASH_RE.fullmatch(block_hash) is None:
             raise AlexandriaError("committed block hash is not a 32-byte hash")
         offsets = {}
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             handle = self._handles.get(name)
             if handle is None:
                 path = self._journal_path(name)
@@ -410,7 +516,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": self._records,
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -420,7 +526,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            for name in EVIDENCE_CLASSES:
+            for name in self.classes:
                 path = self._journal_path(name)
                 if path.is_file():
                     _truncate(path, 0)
@@ -432,8 +538,8 @@ class Staging:
             raise AlexandriaError("interval checkpoint is not a regular file")
         data = _read_control(self.checkpoint_path, "interval checkpoint")
         checkpoint = load_bytes(data, "interval checkpoint")
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
-        for name in EVIDENCE_CLASSES:
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        for name in self.classes:
             path = self._journal_path(name)
             offset = checkpoint["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -461,19 +567,28 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
+            return {
+                "history": [], "last_accepted": None, "next_shard": 0,
+                "offsets": {name: 0 for name in self.classes}, "records": 0,
+            }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
         checkpoint = load_bytes(
             _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
         )
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
         return {
             "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
             "next_shard": checkpoint["next_shard"],
+            "offsets": dict(checkpoint["offsets"]),
             "records": checkpoint["records"],
         }
+
+    def journal_bytes(self, name: str) -> int:
+        """The bytes one class journal holds on disk, committed or not; zero when absent."""
+        path = self._journal_path(name)
+        return path.stat().st_size if path.is_file() else 0
 
     def rewind_to(self, shard: int) -> dict:
         """Drop every record above one remembered boundary and continue from it.
@@ -492,7 +607,7 @@ class Staging:
             )
         entry = matches[0]
         self.close()
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             path = self._journal_path(name)
             offset = entry["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -514,7 +629,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": entry["records"],
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -523,7 +638,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         self.close()
-        for name in EVIDENCE_CLASSES:
+        for name in self.classes:
             path = self._journal_path(name)
             if path.is_file():
                 _truncate(path, 0)
@@ -734,13 +849,27 @@ def _implementation(slot_reads, block: int) -> str:
         raise AlexandriaError(
             f"block {block} opens an epoch with no implementation slot read of its own"
         )
+    return implementation_from_word(word, block)
+
+
+def slot_word_address(word, block: int) -> str:
+    """The address a slot word carries, refusing anything but a left-padded one.
+
+    The zero address passes here and is refused by `implementation_from_word`,
+    so a caller can name which of the two refusals it met.
+    """
     if not isinstance(word, str) or WORD_RE.fullmatch(word.lower()) is None:
         raise AlexandriaError(f"implementation slot read at block {block} is not a 32-byte word")
     if word[2:26].strip("0") != "":
         raise AlexandriaError(
             f"implementation slot read at block {block} is not a left-padded address"
         )
-    implementation = "0x" + word[-40:].lower()
+    return "0x" + word[-40:].lower()
+
+
+def implementation_from_word(word, block: int) -> str:
+    """The implementation an EIP-1967 slot word names at one block."""
+    implementation = slot_word_address(word, block)
     if implementation == ZERO_ADDRESS:
         raise AlexandriaError(f"implementation slot read at block {block} is the zero address")
     return implementation
@@ -775,6 +904,11 @@ def _runtime_code(code_reads, implementation: str) -> bytes:
     value = code_reads.get(implementation)
     if value is None:
         raise AlexandriaError(f"implementation {implementation} has no runtime code read")
+    return runtime_code(value, implementation)
+
+
+def runtime_code(value, implementation: str) -> bytes:
+    """The bytes one `eth_getCode` answer carries, refusing an empty or non-hex one."""
     if not isinstance(value, str) or not value.startswith("0x") or len(value) % 2:
         raise AlexandriaError(f"implementation {implementation} runtime code is not hexadecimal")
     body = value[2:]
@@ -821,8 +955,137 @@ def _quantity(value, label: str) -> int:
 
 RECONCILIATION_STATUSES = ("agreed", "disputed", "unreconciled")
 SHARD_STATUSES = ("complete", "partial", "failed")
-DISPUTE_KINDS = ("boundary-hash", "log-identity", "transaction-order")
+# The shard kinds, then the three opening-read kinds a second provider is
+# asked about: the first block's hash, each slot word and each code digest.
+DISPUTE_KINDS = (
+    "boundary-hash", "log-identity", "transaction-order",
+    "first-block-hash", "slot-word", "code-digest",
+)
 MAX_DISPUTES = 1_024
+
+
+# -- the opening reads --------------------------------------------------------
+#
+# After the last shard commits, the collector reads what binds the interval's
+# start and its epochs. The reads are planned from the staged logs in a fixed
+# order, so a resumed run and a reconciler can replay the committed journal
+# against the same plan and tell exactly which read comes next.
+
+OPENING_READ_KINDS = (
+    "first-block-header", "implementation-slot", "epoch-boundary-header",
+    "implementation-code",
+)
+
+
+def upgrade_logs(records, proxy: str) -> list[dict]:
+    """The proxy's `Upgraded(address)` logs among staged log records, in block order.
+
+    Every other log is ignored. A matching log is shape-checked before it is
+    believed, and two in one block or out of order refuse, because the epoch
+    table cannot say which implementation reigned between them.
+    """
+    proxy = _address(proxy, "upgrade log proxy")
+    if not isinstance(records, (list, tuple)):
+        raise AlexandriaError("staged log records are not a list")
+    selected = []
+    for record in records:
+        if not isinstance(record, dict):
+            raise AlexandriaError("a staged log record is not an object")
+        address = record.get("address")
+        topics = record.get("topics")
+        if not isinstance(address, str) or address.lower() != proxy:
+            continue
+        if not isinstance(topics, list) or not topics or not isinstance(topics[0], str):
+            continue
+        if topics[0].lower() != UPGRADED_TOPIC:
+            continue
+        selected.append(record)
+    if len(selected) > MAX_EPOCHS:
+        raise AlexandriaError(f"more than {MAX_EPOCHS} upgrade logs were staged")
+    upgrades = []
+    previous = None
+    for position, log in enumerate(selected):
+        block, opening, announced, announced_hash = _upgrade_log(log, proxy, position)
+        if previous is not None and block <= previous:
+            raise AlexandriaError("upgrade logs are not in ascending block order")
+        previous = block
+        upgrades.append({
+            "announced": announced,
+            "block": block,
+            "block_hash": announced_hash,
+            "opening": opening,
+            # The record as the provider returned it, so `discover_epochs` can
+            # be handed the preserved log rather than a restatement of it.
+            "record": log,
+        })
+    return upgrades
+
+
+def opening_boundaries(start: int, end: int, upgrades) -> list[int]:
+    """The blocks that open an epoch: the interval's start, then each upgrade block."""
+    boundaries = [start]
+    for upgrade in upgrades:
+        block = upgrade["block"]
+        if not start <= block <= end:
+            raise AlexandriaError(
+                f"upgrade log at block {block} falls outside the declared interval"
+            )
+        if block != start:
+            boundaries.append(block)
+    return boundaries
+
+
+def opening_prefix(plan, upgrades) -> list[dict]:
+    """The opening reads that need no answer first, in plan order.
+
+    The first block's header, the slot at the first block and at each upgrade
+    block, then the header at each upgrade block and at the block before it.
+    The code reads follow once the slots have named the implementations.
+    """
+    start = _decimal(plan["interval"]["start"], "interval start")
+    end = _decimal(plan["interval"]["end"], "interval end")
+    proxy = plan["proxy"]
+    boundaries = opening_boundaries(start, end, upgrades)
+    reads = [_header_read("first-block-header", start)]
+    for block in boundaries:
+        reads.append({
+            "block": block,
+            "kind": "implementation-slot",
+            "method": "eth_getStorageAt",
+            "params": [proxy, IMPLEMENTATION_SLOT, hex(block)],
+        })
+    for block in boundaries[1:]:
+        reads.append(_header_read("epoch-boundary-header", block))
+        reads.append(_header_read("epoch-boundary-header", block - 1))
+    return reads
+
+
+def opening_code_reads(boundaries, implementations) -> list[dict]:
+    """One `eth_getCode` per epoch, for its implementation at the block it opens."""
+    reads = []
+    for block in boundaries:
+        implementation = implementations.get(block)
+        if implementation is None:
+            raise AlexandriaError(
+                f"block {block} opens an epoch with no implementation slot read of its own"
+            )
+        reads.append({
+            "address": implementation,
+            "block": block,
+            "kind": "implementation-code",
+            "method": "eth_getCode",
+            "params": [implementation, hex(block)],
+        })
+    return reads
+
+
+def _header_read(kind: str, block: int) -> dict:
+    return {
+        "block": block,
+        "kind": kind,
+        "method": "eth_getBlockByNumber",
+        "params": [hex(block), False],
+    }
 
 
 def log_identity(record) -> str:
@@ -851,8 +1114,12 @@ def log_identity(record) -> str:
     return "|".join(fields)
 
 
-def validate_shard_coverage(shards, plan_shards) -> None:
-    """Check one shard-status table against the plan it claims to cover."""
+def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> None:
+    """Check one shard-status table against the plan it claims to cover.
+
+    `classes` is the plan's declared evidence classes: every shard counts
+    exactly those, so an omitted class is absent rather than counted as zero.
+    """
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
@@ -869,8 +1136,8 @@ def validate_shard_coverage(shards, plan_shards) -> None:
         if not isinstance(entry["end_hash"], str) or HASH_RE.fullmatch(entry["end_hash"]) is None:
             raise AlexandriaError("a shard entry end hash is not a 32-byte hash")
         counts = entry["record_counts"]
-        if not isinstance(counts, dict) or set(counts) != set(EVIDENCE_CLASSES):
-            raise AlexandriaError("a shard entry does not count every evidence class")
+        if not isinstance(counts, dict) or set(counts) != set(classes):
+            raise AlexandriaError("a shard entry does not count every evidence class the plan declares")
         for value in counts.values():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise AlexandriaError("a shard entry record count is not a count")
@@ -1005,10 +1272,21 @@ def read_regular(path: Path, label: str, maximum: int) -> bytes:
 __all__ = [
     "CHECKPOINT_FORMAT",
     "IMPLEMENTATION_SLOT",
+    "JOURNAL_CLASSES",
     "MAX_EPOCHS",
+    "OPENING_CLASS",
+    "OPENING_READ_KINDS",
     "UPGRADED_TOPIC",
     "EVIDENCE_CLASSES",
     "FINALITY_POLICIES",
+    "implementation_from_word",
+    "journal_classes",
+    "opening_boundaries",
+    "opening_code_reads",
+    "opening_prefix",
+    "runtime_code",
+    "slot_word_address",
+    "upgrade_logs",
     "MAX_HISTORY",
     "MAX_SHARDS",
     "MAX_SHARD_WIDTH",
@@ -1027,6 +1305,7 @@ __all__ = [
     "log_identity",
     "validate_checkpoint",
     "validate_epochs",
+    "validate_evidence_classes",
     "validate_reconciliation",
     "validate_shard_coverage",
     "validate_plan",

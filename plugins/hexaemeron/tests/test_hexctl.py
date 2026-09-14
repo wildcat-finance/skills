@@ -1359,15 +1359,31 @@ class TestStudyAmendments(HexctlCase):
 try:
     from .host_identity_cases import build_host_identity_cases
     from .replacement_object_cases import build_replacement_object_cases
+    from .study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from .routed_filing_decision_cases import build_routed_filing_decision_cases
 except ImportError:
     from host_identity_cases import build_host_identity_cases
     from replacement_object_cases import build_replacement_object_cases
+    from study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from routed_filing_decision_cases import build_routed_filing_decision_cases
 
 
 HostIdentityRefusalCases, FooterReappearanceCases = build_host_identity_cases(
     globals()
 )
 (ReplacementObjectCases,) = build_replacement_object_cases(globals())
+(StudyAmendmentRebindCases,) = build_study_amendment_rebind_cases(globals())
+
+
+class StudyAmendmentRebindTests(StudyAmendmentRebindCases, HexctlCase):
+    """A study amendment rebinds or displaces each effective runbook amendment."""
+
+
+(RoutedFilingDecisionCases,) = build_routed_filing_decision_cases(globals())
+
+
+class RoutedFilingDecisionTests(RoutedFilingDecisionCases, HexctlCase):
+    """What `init` does when the issue already decided against a run."""
 
 
 class TestCommitVerification(
@@ -3949,6 +3965,45 @@ class TestControls(HexctlCase):
         self.init()
         proc = self.run_ctl("reset", expect=2)
         self.assertIn("refusing to reset an incomplete run", proc.stderr)
+        self.assertIn("hexctl halt --reason", proc.stderr)
+        self.assertEqual(self.next_json()["do"], "study")
+
+    def test_reset_retires_a_halted_run_and_records_the_retirement(self):
+        """A run started in error is halted, then cleared; nothing outside the
+        controller has to remove state by hand (skills#1411)."""
+        self.init()
+        self.run_ctl("halt", "--reason", "started against Fiat-Required: 0")
+        proc = self.run_ctl("reset")
+        self.assertIn("archived verified halted run", proc.stdout)
+        self.assertIn("stopped in phase 'study'", proc.stdout)
+        self.assertIn("started against Fiat-Required: 0", proc.stdout)
+
+        root = os.path.join(self.dir, ".hexaemeron")
+        self.assertFalse(os.path.exists(os.path.join(root, "state.json")))
+        archives = os.listdir(os.path.join(root, "archive"))
+        self.assertEqual(len(archives), 1)
+        self.assertIn("halted-", archives[0])
+        archived = os.path.join(root, "archive", archives[0])
+        with open(os.path.join(archived, "ledger.jsonl"), encoding="utf-8") as fh:
+            entries = [json.loads(line) for line in fh if line.strip()]
+        self.assertEqual([e["event"] for e in entries[-2:]], ["halt", "retire"])
+        with open(os.path.join(archived, "state.json"), encoding="utf-8") as fh:
+            halted = json.load(fh)["halted"]
+        self.assertEqual(entries[-1]["data"], {
+            "phase": "study",
+            "reason": "started against Fiat-Required: 0",
+            "halted_ts": halted["ts"],
+        })
+
+        self.init("next topic")
+        self.assertEqual(self.next_json()["do"], "study")
+
+    def test_reset_still_refuses_a_run_whose_halt_was_resumed(self):
+        self.init()
+        self.run_ctl("halt", "--reason", "second thoughts")
+        self.run_ctl("resume", "--note", "carrying on")
+        proc = self.run_ctl("reset", expect=2)
+        self.assertIn("refusing to reset an incomplete run", proc.stderr)
         self.assertEqual(self.next_json()["do"], "study")
 
     def test_config_get_set_roundtrip(self):
@@ -5526,6 +5581,22 @@ class ResumeAndRetirementTests(HexctlCase):
         archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
         self.assertEqual(len(archives), 1)
 
+    def test_a_halted_run_retires_its_clean_tree_into_the_origin_archive(self):
+        self.init()
+        self.run_ctl("halt", "--reason", "cut from an unsynced base")
+        self.assertTrue(os.path.isdir(self.retired))
+        self.run_ctl("reset")
+        self.assertFalse(os.path.isdir(self.retired))
+        archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
+        self.assertEqual(len(archives), 1)
+        self.assertIn("halted-", archives[0])
+        archived = os.path.join(self.dir, ".hexaemeron", "archive", archives[0])
+        for name in ("state.json", "ledger.jsonl"):
+            self.assertTrue(os.path.exists(os.path.join(archived, name)), name)
+        with open(os.path.join(self.dir, ".hexaemeron", "worktree"),
+                  encoding="utf-8") as handle:
+            self.assertEqual(handle.read().strip(), "")
+
     def test_a_retired_run_drops_out_of_the_breadcrumb(self):
         self.land_a_run()
         self.integrate_run()
@@ -5905,164 +5976,17 @@ class RewrittenStackRefusal(unittest.TestCase):
         self.assertIsNone(message)
 
 
-class WardenContinuityTests(HexctlCase):
-    """The audit-round brief says which Warden a round belongs to."""
+try:
+    from .task_continuity_cases import build_task_continuity_cases
+except ImportError:
+    from task_continuity_cases import build_task_continuity_cases
 
-    PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    WARDEN_DOC = os.path.join(PLUGIN, "agents", "warden.md")
-    LOOP_DOC = os.path.join(
-        PLUGIN, "skills", "fiat", "references", "audit-loop.md"
-    )
+WardenContinuityCases, TaskIdentityCases = build_task_continuity_cases(globals())
 
-    WAIVED = '"waived: prose-only repo"'
 
-    def to_ready_audit(self, titles=("Scaffold", "Core")):
-        self.to_steps(titles=titles)
-        self.run_ctl("record", "security_suite", self.WAIVED)
+class WardenContinuityTests(WardenContinuityCases, HexctlCase):
+    """Retain one reviewer identity across the step's audit rounds."""
 
-    def audit_brief(self):
-        directive = self.next_json()
-        self.assertEqual(directive["do"], "audit-round")
-        return directive["brief"]
 
-    def another_round(self):
-        self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
-
-    def close_step(self, number):
-        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
-        self.run_ctl("done", "audit", "--fixes-ref", "deadbeef")
-        self.run_ctl(
-            "done", "prose", "--files", "3",
-            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
-        )
-        self.run_ctl(
-            "done", "push",
-            "--pr-url",
-            f"https://github.com/wildcat-finance/example/pull/{number}",
-            "--head-commit", self.fake_sha(f"head{number}"),
-            "--pr-base", self.step_base(number),
-        )
-
-    def test_a_steps_first_round_starts_a_new_warden(self):
-        self.to_ready_audit()
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(1),
-            "--commit", "abc1",
-        )
-        brief = self.audit_brief()
-        self.assertEqual(brief["warden_continuity"], "new")
-        self.assertEqual(brief["step"], 1)
-        self.assertEqual(brief["round"], 1)
-
-    def test_later_rounds_of_one_step_continue_the_same_warden(self):
-        self.to_ready_audit()
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(1),
-            "--commit", "abc1",
-        )
-        self.another_round()
-        second = self.audit_brief()
-        self.assertEqual(second["round"], 2)
-        self.assertEqual(second["warden_continuity"], "same-agent")
-        self.another_round()
-        third = self.audit_brief()
-        self.assertEqual(third["round"], 3)
-        self.assertEqual(third["warden_continuity"], "same-agent")
-        self.assertEqual(third["step"], 1)
-
-    def test_a_new_step_starts_its_own_warden(self):
-        self.to_ready_audit()
-        self.finish_step(1)
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(2),
-            "--commit", "abc2",
-        )
-        brief = self.audit_brief()
-        self.assertEqual(brief["step"], 2)
-        self.assertEqual(brief["round"], 1)
-        self.assertEqual(brief["warden_continuity"], "new")
-
-    def test_four_steps_of_three_rounds_start_exactly_four_wardens(self):
-        titles = ("Scaffold", "Core", "Wire", "Polish")
-        self.to_ready_audit(titles=titles)
-        observed = []
-        for number in range(1, len(titles) + 1):
-            self.run_ctl(
-                "done", "implement", "--branch", self.step_branch(number),
-                "--commit", f"abc{number}",
-            )
-            observed.append(self.audit_brief())
-            self.another_round()
-            observed.append(self.audit_brief())
-            self.another_round()
-            observed.append(self.audit_brief())
-            self.close_step(number)
-        self.assertEqual(len(observed), 3 * len(titles))
-        fresh = [item for item in observed if item["warden_continuity"] == "new"]
-        self.assertEqual(len(fresh), len(titles))
-        self.assertEqual(
-            [item["step"] for item in fresh], list(range(1, len(titles) + 1))
-        )
-        self.assertEqual([item["round"] for item in fresh], [1] * len(titles))
-        for item in observed:
-            if item["round"] > 1:
-                self.assertEqual(item["warden_continuity"], "same-agent")
-
-    def test_the_field_never_claims_a_document_was_read(self):
-        self.to_ready_audit()
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(1),
-            "--commit", "abc1",
-        )
-        self.another_round()
-        brief = self.audit_brief()
-        self.assertEqual(brief["warden_continuity"], "same-agent")
-        self.assertNotIn("read", json.dumps(brief).lower())
-
-    @staticmethod
-    def flowed(path):
-        """The document as one line, so a wrapped sentence still matches."""
-        with open(path, encoding="utf-8") as handle:
-            return " ".join(handle.read().split())
-
-    def test_the_controller_reads_only_its_own_declared_check_ids(self):
-        """A check id from anywhere but a controller constant is not a name."""
-        controller = hexctl_module()
-        self.write(
-            "tests/check-map-v1.json",
-            json.dumps(
-                {
-                    "schema": "wildcat.check-map.v1",
-                    "checks": {
-                        "root-suite": {"argv": ["python3", "-m", "unittest"]},
-                        "hexaemeron-suite": {"argv": ["python3", "runner.py"]},
-                        "dead-code-suite": {"argv": ["python3", "dead.py"]},
-                    },
-                },
-                indent=2,
-            )
-            + "\n",
-        )
-        for check in controller.CHECK_MAP_KNOWN_CHECKS:
-            with self.subTest(check=check):
-                declared = controller.repository_check_command(
-                    self.target, check=check
-                )
-                self.assertEqual(check, declared["check"])
-                self.assertEqual("tests/check-map-v1.json", declared["source"])
-                self.assertEqual(".", declared["cwd"])
-        self.assertNotIn("dead-code-suite", controller.CHECK_MAP_KNOWN_CHECKS)
-        self.assertIsNone(
-            controller.repository_check_command(
-                self.target, check="dead-code-suite"
-            )
-        )
-
-    def test_both_documents_keep_the_unreadable_host_fallback(self):
-        warden = self.flowed(self.WARDEN_DOC)
-        loop = self.flowed(self.LOOP_DOC)
-        self.assertIn("warden_continuity", warden)
-        self.assertIn("does not mean the suite documents are", warden)
-        self.assertIn("cannot keep an agent", loop)
-        self.assertIn("reads the suite documents in full", loop)
-        self.assertIn("still pays for the full read", loop)
+class TestTaskIdentity(TaskIdentityCases, HexctlCase):
+    """Bind delegated task identity across processes and checkpoint restore."""

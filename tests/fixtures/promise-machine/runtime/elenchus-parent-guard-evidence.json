@@ -1,0 +1,139 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "adapter_output": {
+        "elenchus_parent_guard_evidence": {
+          "binding": {
+            "promise_id": "elenchus-parent-guard-evidence",
+            "scope": "structural binding for elenchus-parent-guard-evidence",
+            "subject": "runtime source plugins/hexaemeron/tests/test_elenchus_checker.py#test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+              "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492"
+            }
+          ],
+          "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+          "transition": {
+            "action": "structurally bind elenchus-parent-guard-evidence without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+            "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "elenchus-parent-guard-evidence",
+        "scope": "structural binding for elenchus-parent-guard-evidence",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_elenchus_checker.py#test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup",
+        "transition": {
+          "action": "structurally bind elenchus-parent-guard-evidence without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    },
+    "positive": {
+      "adapter_output": {
+        "elenchus_parent_guard_evidence": {
+          "binding": {
+            "promise_id": "elenchus-parent-guard-evidence",
+            "scope": "structural binding for elenchus-parent-guard-evidence",
+            "subject": "runtime source plugins/hexaemeron/tests/test_elenchus_checker.py#test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup"
+          },
+          "classes": [
+            "checked"
+          ],
+          "exception": {
+            "status": "none"
+          },
+          "references": [
+            {
+              "evidence_class": "checked",
+              "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+              "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492"
+            }
+          ],
+          "source_digest": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492",
+          "transition": {
+            "action": "structurally bind elenchus-parent-guard-evidence without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "unresolved": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ]
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+            "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "elenchus-parent-guard-evidence",
+        "scope": "structural binding for elenchus-parent-guard-evidence",
+        "source_digest": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492",
+        "subject": "runtime source plugins/hexaemeron/tests/test_elenchus_checker.py#test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup",
+        "transition": {
+          "action": "structurally bind elenchus-parent-guard-evidence without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-python-result-adapter/v1"
+    }
+  }
+}

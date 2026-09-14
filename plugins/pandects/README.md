@@ -1,6 +1,6 @@
 ![Pandects](./assets/characters/pandects.png)
 
-# Pandects
+# PANDECTS
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Pandects supplies executable credit laws, each paired with a deliberately broken
 **Next Fiat job.** Use /hexaemeron:fiat to widen the search-record runner to the Echidna and Medusa campaigns, so every engine result ships as a record carrying its engine, configuration, sequence length and corpus digest, with a seed where the engine exposes one and a stated absence where it does not. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Pandects when a credit protocol needs economic properties a fuzz engine can
 actually execute. Every law includes its scope, executable component, broken
@@ -23,7 +23,7 @@ Pandects is a law catalogue, not a whole-protocol audit. Structured campaign
 records currently cover Foundry; Echidna and Medusa results still survive only
 as audit prose.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Pandects states economic properties a credit system should preserve. Fizz or
 another fuzz engine can search those properties, Janus can apply relevant laws
@@ -46,14 +46,14 @@ subset in a local harness, and the harness dies with the engagement.
 
 This is the corpus that survives it.
 
-## How it works
+## HOW IT WORKS
 
 The catalogue holds ten laws across conservation, accrual and withdrawal
 claims. Nine are exact. The path-independence law carries a bound derived from
 the rounding performed by linear accrual, and its tests assert the figures on
 both the sound reference and the compounding specimen.
 
-## What it ships
+## WHAT IT SHIPS
 
 - one-state and transition laws written against economic observables rather
   than protocol-specific function names;
@@ -64,7 +64,7 @@ both the sound reference and the compounding specimen.
 - a checker, catalogue renderer, search record and tests that keep each law's
   six required parts together.
 
-## Day to day
+## DAY TO DAY
 
 **Security and audit.** A credit protocol arrives and its economic invariants
 have to be settled before a fuzz campaign can mean anything. Pandects supplies
@@ -75,7 +75,7 @@ it names.
 applicable laws against the build and inspect the quantities behind any verdict
 that moved.
 
-## What a law is
+## WHAT A LAW IS
 
 Six parts, and the checker refuses anything with fewer:
 
@@ -102,7 +102,7 @@ queue, a borrow past the reserve, a repayment of more than is owed. Under that
 setting a revert carries no verdict, so a law using `require` to mean
 "violated" reports nothing and is counted as silence.
 
-## What is in the catalogue
+## WHAT IS IN THE CATALOGUE
 
 Ten laws in three families. Each says what it means, where it means it, and
 which contract it is proven to catch.
@@ -124,7 +124,7 @@ one while the rest hold, which is what makes a specimen per law possible at all.
 `test/Corpus.t.sol` and `test/Pairs.t.sol` assert that diagonal, so a law
 broader than its statement fails the suite rather than passing review.
 
-## Two shapes, because the facts have two shapes
+## TWO SHAPES, BECAUSE THE FACTS HAVE TWO SHAPES
 
 Conservation is a fact about one state: the sums agree or they do not, and no
 history is needed to say which. So a `Law` reads one target and judges what it
@@ -143,7 +143,7 @@ it means. Handed one it cannot judge, it follows one rule: a pair that spans
 real time is a state of the world, so hold and say why; a pair nobody could
 have meant is a mistake by whoever built it, so refuse and say why.
 
-## The one tolerance
+## THE ONE TOLERANCE
 
 Nine of the ten laws are exact. `path-independent` is not, and its bound is
 derived rather than chosen: linear accrual on principal truncates once per
@@ -156,7 +156,7 @@ specimen lands two hundred and forty-nine away.
 `test/counterexamples/Accrual.t.sol` asserts all four figures, so the bound can
 be checked rather than believed.
 
-## Run it
+## RUN IT
 
 From this directory, `plugins/pandects`:
 
@@ -172,7 +172,7 @@ missing any of its six parts, naming the part. `run` searches and writes down
 how. `forge test` runs the corpus: both diagonals, the counterexamples, the
 adapters, and a campaign over the sound reference.
 
-## Pointing it at your own protocol
+## POINTING IT AT YOUR OWN PROTOCOL
 
 The specimen harnesses prove the laws catch what they claim to. `adapters/` is
 the other direction: the laws, and your address.
@@ -218,7 +218,7 @@ your own system from the same start.
 settings and leave the target empty, because the target is the only part that
 is yours.
 
-## Saying how it was searched
+## SAYING HOW IT WAS SEARCHED
 
 A campaign result without its settings is an anecdote. `run` searches and
 writes down what it did:
@@ -242,8 +242,8 @@ present and empty, so a campaign under either of those is not recorded by this
 command at all. Write it down where the run is reported. That gap is the corpus's
 held frontier, stated at the top of this file. It is shaped as an
 `ariadne` command entry, so a result drops into a release statement without
-translation -- shaped as, not built by: the two plugins share no code and a
-test pins the shape from this side.
+translation -- shaped as, not built by: Pandects and Ariadne share no code and
+a test pins the shape from this side.
 
 Two things are absent rather than empty, and both are one rule. An engine that
 did not run has no entry, because a reader counting entries is counting
@@ -257,7 +257,7 @@ The corpus digest covers the catalogue, the law components and the specimens,
 with comments stripped and string literals kept. It moves when a law moves and
 holds still when somebody improves a docstring.
 
-## Running an engine over it
+## RUNNING AN ENGINE OVER IT
 
 `src/campaigns/Specimens.sol` carries one harness per specimen, each declaring
 both `echidna_` and `property_` prefixes because Echidna looks for the first
@@ -283,7 +283,7 @@ is worth on its own.
 
 Exit codes: 0 success, 1 a check failed, 2 usage or validation error.
 
-## What a law may read
+## WHAT A LAW MAY READ
 
 `ICreditObservables`: the asset, total assets held, total debt, total lender
 claims, reserved and borrowable assets, accrued fees, and the time the
@@ -293,7 +293,8 @@ adapter is the only place a protocol's own names appear.
 A system with a withdrawal queue also implements
 `IWithdrawalQueueObservables`, which adds the claim count, each claim's owed and
 paid amounts, and the bound through which the system declares claims payable.
-It is a separate interface rather than three more members on the core, because
+It is a separate interface rather than three further functions on the core,
+because
 a system with no queue would have to implement all three and mean none of them,
 and an observable that means nothing is worse than an absent one: it reports
 zero, and zero reads like an answer. The three laws that need it say so in their
@@ -304,7 +305,7 @@ A property written against one protocol's function names is a property about one
 codebase. The corpus exists because the same economic facts hold across
 codebases that share nothing else.
 
-## The demo, end to end
+## THE DEMO, END TO END
 
 From a clean checkout, in `plugins/pandects`. Nothing here reaches the network
 and there is no dependency to fetch.
@@ -350,7 +351,7 @@ None of those three is a yes or a no, which is what an applicability contract is
 for, and the third is the argument for pointing a corpus at a real design rather
 than only at contracts written to break it.
 
-## The documents
+## THE DOCUMENTS
 
 - [The catalogue](./docs/catalogue.md), rendered for a reader. A test fails if
   it and `catalogue/pandects.json` stop naming the same laws.
@@ -360,13 +361,13 @@ than only at contracts written to break it.
   may read, the two shapes, what a pair law does with a pair it cannot judge,
   and what a revert means.
 
-## Dependencies
+## DEPENDENCIES
 
 None. Foundry's invariant runner works on a bare contract, so there is no
 `lib/`, no submodule, and nothing to fetch at build or test time. The catalogue
 checker is standard-library Python on 3.9 through 3.13.
 
-## What this is not
+## WHAT THIS IS NOT
 
 Not a fuzzer, not a harness generator, and not a generic assertion library.
 Echidna, Medusa and Foundry search; this says what to look for.
@@ -377,6 +378,6 @@ it stays useful where no public law describes the protocol.
 The corpus never says a protocol is safe. It says a law held under a search
 that is described.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](./LICENSE).

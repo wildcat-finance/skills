@@ -1950,6 +1950,10 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual("inoculate", directive["do"])
         self.assertEqual("mason", directive["agent"])
         self.assertEqual(
+            hexctl_module().task_identity(self.state(), "mason", step=1),
+            directive["task_identity"],
+        )
+        self.assertEqual(
             {
                 "study_sha256",
                 "runbook_sha256",

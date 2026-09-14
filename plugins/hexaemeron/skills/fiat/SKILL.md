@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.53.1"
+  version: "6.57.1"
 ---
 
 <p align="center">
@@ -109,7 +109,10 @@ of their own.
   removes the tree when git can remove it without force. A tree holding work is
   kept and named instead. Nothing is ever forced. Retirement is not inside
   `done integrate`, because `status` and `verify` still have to read the run
-  after it reports done. The self-ignored `.hexaemeron/` archive is controller
+  after it reports done. A run that was halted and will not resume is retired
+  the same way: `reset` accepts a recorded halt, appends one `retire` ledger
+  entry naming the phase and the halt reason, and archives under a
+  `halted-` name. A run that is merely incomplete is still refused. The self-ignored `.hexaemeron/` archive is controller
   evidence, not product content; do not stage, commit, or push it.
 
 Mutating commands hold a kernel lock for their whole run. Separate runs get
@@ -179,12 +182,12 @@ the second.
    `--task-issue`, that override must start with `fiat/<issue>-`.
 
    With a GitHub task issue, `init` reads that issue's filing contract before it
-   creates any state, worktree or branch. `Fiat-Required: 0` refuses: the filer
-   decided the work is one independent pull request, so do it that way, point the
-   issue at that pull request, and close it there. A body that declares neither
-   the line nor a `carryover` block refuses too, naming what to add. Do not
-   reword the issue past the refusal to get a run: if the decision was wrong,
-   change it to `Fiat-Required: 1` and say why in the issue first.
+   creates any state, worktree or branch. On `Fiat-Required: 0` it prints one
+   directive and exits 0: the filer decided the work is one independent pull
+   request, so do it that way, point the issue at that pull request, and close
+   it there. A body that declares neither the line nor a `carryover` block
+   refuses, naming what to add. On `Fiat-Required: 1`, `init` refuses when the
+   decision moved inside the last fifteen minutes, and states what it observed.
 
 **Sync the base first.** A run inherits every mistake in the ref it was cut
 from, and a local checkout that has been sitting is the normal case rather than
@@ -302,8 +305,9 @@ state transition.
    invent an issue. A first `task_issue` record after initialization is refused
    because the stored branch might already be published; an exact repeat of the
    initial receipt is a no-op. `init` reads that issue's `Fiat-Required` line
-   and `carryover` block and refuses a `0` or a malformed contract before it
-   creates anything, so a refusal costs nothing but the read. A run naming no
+   and `carryover` block before it creates anything: a `0` routes to one pull
+   request, and a malformed contract or a decision that moved inside the window
+   refuses, so neither costs more than the reads. A run naming no
    issue, or a tracker that is not GitHub, records the nulls in the init
    receipt and warns; report that gap rather than treating it as a `1`.
 7. Nothing else.
@@ -428,11 +432,21 @@ Scribe packets carry the same anchor, exact commit, projection, and an explicit
 null resolution until a later transition has produced one.
 
 After the step stack closes, `done resolve-versions` reads the remote base and
-run refs twice around bounded exact-object reads. It accepts only generation
+run refs twice around bounded exact-object reads. By default it accepts only generation
 drift under the anchored frontier tuple. The candidate must extend the exact
 base history by one matching generation row per declared target and carry the
 same version in each sibling `SKILL.md`. A base advance requires the existing
 signed `[product, base]` sync and complete path revalidation before the check.
+After explicit operator approval, `done resolve-versions
+--accept-evolution-base <full-sha> --recovery-authority <operator> --reason
+<reason>` can recover across an evolution advance. The version-2 receipt binds
+that declaration to the exact base and candidate commits and retains the
+original runbook anchor. The checker replays the original history prefix,
+refuses an epoch change, and requires the candidate to preserve the current
+base frontier and add exactly one generation. A moved base or candidate needs
+a fresh declaration and revalidation; the declaration cannot be reused for another
+composition. Authority is an operator declaration, not authenticated identity.
+
 The all-target `fiat-version-resolution/v1` receipt is append-only, keeps at
 most eight observations, and uses a subject-labelled pending record across the
 ledger and state write windows. It observes product bytes and never changes
@@ -546,10 +560,19 @@ do not enter the packet.
 
 A broken runbook verdict blocks the current step. A holding runbook amendment
 clears a broken study verdict only when it names the current step, carries at
-least one complete replacement field and records the current study digest. A
-later study amendment changes that digest, so an older repair no longer
-applies. Recovery remains another checked amendment or an explicit halt; state
-and ledger history are not edited to manufacture a holding result.
+least one complete replacement field and is bound to the current study digest.
+Each study amendment records one decision per distinct runbook amendment
+effective under the prior digest: retained when every unbuilt step the
+amendment touches reads entry holds and exit holds in the new verdicts, and
+displaced otherwise; a touched step already completed takes no verdict and
+counts as holding. The packet
+builders admit an amendment whose recorded study digest, followed through
+retained decisions in study-amendment order, reaches the current digest. A
+displaced amendment leaves the packet and its step stays blocked until a new
+runbook amendment bound to the current study digest is receipted; `verify`
+recomputes every recorded decision from the two receipt histories. Recovery
+remains another checked amendment or an explicit halt; state and ledger history
+are not edited to manufacture a holding result.
 
 **Inoculation.** A capture-aware Step begins before product editing. `next`
 delegates Mason the exact study and runbook digests, immutable capture, assigned
@@ -767,6 +790,14 @@ owner/repository#number`. Fill the exact integration URL and status, then rerun
 that whole order immediately before posting. The receipt refuses a skills list
 missing either configured id.
 
+Any issue the run files follows the target repository's ordinary issue
+publication contract; carryover and phase-of-origin create no exception. In
+`wildcat-finance/skills`, that means one of the four canonical queue titles
+with its exact queue label and required body opening, followed by exactly one
+`Fiat-Required` line and one fenced `carryover` block. Run the root publication
+order over the complete candidate, then `hexctl issue-check` with its exact
+title, body, and labels before filing and with its issue URL after filing.
+
 **Push.** Stage and commit every intended final change with a valid local
 signature and the two exact provenance trailers. Authorship follows the
 contributing actor. A human contributor keeps their own Git author and valid
@@ -909,8 +940,13 @@ it, and `none` says why the item earns neither. Compare against what is already
 open before filing a second copy, and never file one merely to fill a row. A run
 that leaves nothing writes the single row `none | none | <why nothing is
 carried>`. `done integrate` refuses a section that answers in prose alone, so
-integration does not proceed on leftovers nothing was decided about. Then wait
-for its gates,
+integration does not proceed on leftovers nothing was decided about.
+For every `filed` row that points into `wildcat-finance/skills`, integration
+reads the remote issue and refuses unless its title, queue label, framework
+opening where applicable, `Fiat-Required` line, and `carryover` block pass the
+same publication contract. `duplicate` remains a pointer to a possibly legacy
+issue and does not make that claim.
+Then wait for its gates,
 merge it without bypassing them, require GitHub to report `verified: true` and
 `reason: valid` for every pushed commit and merge SHA, delete the run branch and the step branches
 where policy allows, and verify or close any recorded task issue. GitHub only
@@ -938,11 +974,30 @@ unavailable, execute the same
 packet in the main session. After compaction, rerun `next`: the receipted
 artefacts and state digest deterministically reconstruct the packet.
 
+A delegated envelope also carries `task_identity`, whose `handle` is
+`fiat-<task>-<phase>-<role>`: the run's task, `study` or `step-<n>`, and the
+delegate's role. The round is not in the handle, so a Warden keeps one handle
+across a step's rounds. Give each spawned delegate that handle as its visible
+name. The handle check is unconditional. Before continuing any existing agent
+handle, for any directive, round or reason, run
+`hexctl next --task-handle <observed>` with that handle. Exit 0 prints the same
+directive. Exit 2 prints no directive and writes no state, ledger entry or
+brief. Never continue a refused handle: spawn a fresh delegate under the
+`task_identity.handle` that `next` prints without `--task-handle`. A `delegate`
+refusal means the directive has no delegate and runs in this session. A brief
+file left at a `--brief-out` path by an earlier call is not the current
+directive's, so pass `--brief-out` and `--task-handle` in one call and hand a
+delegate only a brief path named by a `next` call that exited 0.
+
 ## Stop conditions
 
 Stop and ask the user when: `next` says `audit-verdict` or `blocked`; a push is rejected;
 the security suite cannot be resolved for a Solidity repo; or `verify` fails.
-Use `hexctl halt --reason ...` so the stop itself is on the ledger.
+Use `hexctl halt --reason ...` so the stop itself is on the ledger. When the
+user decides a halted run will not continue, run `hexctl reset` against it:
+the retirement is receipted, the evidence is archived, and the tree is removed
+when git can remove it without force. Do not remove a run's worktree, branch
+or state by hand.
 
 ## Hard rules
 
@@ -977,8 +1032,13 @@ Use `hexctl halt --reason ...` so the stop itself is on the ledger.
 - Never create a GitHub issue merely to satisfy this workflow, including to fill
   a `carryover` row. A row whose item earns no issue takes the `none`
   disposition and states why.
-- Never start a run against an issue declaring `Fiat-Required: 0`, and never
-  edit that line to `1` yourself to get past the refusal.
+- Never file an in-run issue under a carryover-only title or body convention.
+  The target repository's ordinary queue, label, opening, protected-inventory,
+  and prose-publication rules apply unchanged.
+- Never start a run against an issue whose filed decision is `0`: `init` routes
+  it to one pull request, and that pull request is the work. The filed decision
+  belongs to whoever filed the issue. If it looks wrong, say so on the issue and
+  stop; do not alter an issue to change what `init` will do.
 - Never leave an outstanding item named in prose alone. Every one is filed as its
   own issue, pointed at the issue that already carries it, or refused with a
   stated reason, in the run pull request's `carryover` block.
@@ -1114,19 +1174,19 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ### fiat-local-retirement
 
-- Promise: A successful `hexctl reset` establishes that the active run was complete, its state and append-only ledger verified, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, its fixed `.hexaemeron/checkpoints/` store remained outside that archive, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
-- Evidence: Zero-exit `verify_run`, terminal `phase: done`, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive, checkpoints and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
+- Promise: A successful `hexctl reset` establishes that the active run was complete or carried a recorded halt, its state and append-only ledger verified, a halted run's retirement appended to that ledger with its phase and reason, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, its fixed `.hexaemeron/checkpoints/` store remained outside that archive, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
+- Evidence: Zero-exit `verify_run`, terminal `phase: done` or a recorded `halted` reason with the appended `retire` entry, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive, checkpoints and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
 - Evidence classes: checked, recorded
 - Boundary: Retirement preserves and clears local controller evidence without opening or validating checkpoint archives; it does not strengthen any delivery receipt, publish an archive, prove that no external process copied it, or prevent an explicit forced Git add from overriding the self-ignore.
 - Authorises: Archiving a final verified run locally after its handoff data has been captured, leaving the fixed checkpoint store in place, clearing its active controller state, and retiring only a clean run worktree before the final report.
 - Consequence: 2
-- Refuses: An incomplete run, failed controller verification, an archive destination outside the local state root, or forced removal of a worktree whose Git status is not clean.
-- Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.
+- Refuses: An incomplete run without a recorded halt, failed controller verification, an archive destination outside the local state root, or forced removal of a worktree whose Git status is not clean.
+- Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, or record the stop with `hexctl halt --reason ...`, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.
 - Exceptions: none
 
 ### fiat-version-resolution
 
-- Promise: A successful `hexctl done resolve-versions` establishes that every target declared by one receipted `version-relations` block satisfied `next-generation-after-integration-base` against one stable exact integration base and candidate head, and that Fiat recorded the all-target result once under `fiat-version-resolution/v1`.
+- Promise: A successful `hexctl done resolve-versions` establishes that every target declared by one receipted `version-relations` block satisfied `next-generation-after-integration-base` against one stable exact integration base and candidate head, and that Fiat recorded the all-target result once under `fiat-version-resolution/v1`, or under `fiat-version-resolution/v2` with an explicit operator declaration for one exact evolution recovery.
 - Evidence: The exact runbook and relation digests, starting-commit compatibility anchor, stable remote base and run-ref rereads, bounded native Git objects, exact anchor/base/head ledger histories, matching final generation rows and `SKILL.md` metadata, active signed `[product, base]` sync, replayed `fiat-sync-resolution-guard/v1` evidence and complete green target-path revalidation when the base advanced, append-only history, subject-labelled pending record, `done:version-resolution` ledger event, focused collision, drift, race, cap and interruption tests, and zero command exit.
 - Evidence classes: checked, recorded
 - Boundary: The receipt establishes one closed relation over the named exact objects. It does not reserve a label, establish source-level compatibility, prove the checks sufficient, prevent GitHub moving the base later, authorise an evolution or epoch change, or edit the product tree.
@@ -1151,11 +1211,11 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-final-integration
 
 - Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, every whole-side or superseded-intersection risk path was explicitly acknowledged, and the computed product/base overlap received bounded green composition checks. Version 1 requires exact individual coverage. Version 2 requires exact individual coverage outside every selected source-registered prefix and exact manifest, blob, digest and Git-tree evidence for each complete final aggregate. When the run assigned decisions, its active exact mapping and immutable report replayed and no superseded assignment remained in active ancestry. A relation-bearing run replayed its newest exact resolution from the actual `[base, candidate]` merge parents without a later base move. Every primary author the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
-- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, the replayed `fiat-sync-resolution-guard/v1` whole-side, superseded-intersection and acknowledged path arrays, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries the active `fiat-version-resolution/v1` receipt when declared, actual integration parents with the base first and candidate second, exact-object relation replay and post-merge base-tip read, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each primary author, the parsed `carryover` rows of the run pull request's `## Carried forward` section with its exact digest, final controller state and verified ledger.
+- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, the replayed `fiat-sync-resolution-guard/v1` whole-side, superseded-intersection and acknowledged path arrays, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries the active `fiat-version-resolution/v1` receipt when declared, actual integration parents with the base first and candidate second, exact-object relation replay and post-merge base-tip read, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each primary author, the parsed `carryover` rows of the run pull request's `## Carried forward` section with its exact digest, the checked remote publication records for every new `filed` issue in `wildcat-finance/skills`, final controller state and verified ledger.
 - Evidence classes: checked, recorded
-- Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. A sync-path acknowledgement records inspection, not semantic correctness. The revalidation receipt establishes only the named checks over the computed and declared integration surface. A `carryover` row establishes that its item was disposed of, not that the disposition was right: a referenced issue is never opened, and a stated reason is never judged. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded primary author by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor, and it does not treat the separately recorded committer as an author.
+- Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. A sync-path acknowledgement records inspection, not semantic correctness. The revalidation receipt establishes only the named checks over the computed and declared integration surface. A `carryover` row establishes that its item was disposed of, not that the disposition was right: a newly `filed` Skills issue is opened only to replay its publication shape, a `duplicate` is not opened, and a stated reason is never judged. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded primary author by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor, and it does not treat the separately recorded committer as an author.
 - Authorises: Publication of the complete run to the named base and a final report limited to the merged artefacts and recorded evidence.
 - Consequence: 3
-- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync or decision-assignment receipt, a missing or non-replaying sync resolution guard, a missing, stale or non-replaying active decision assignment, a superseded assignment in active ancestry, missing, extra, duplicate or unsorted path acknowledgements, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded primary author carried by nothing, a `## Carried forward` section holding no `carryover` block or a row that disposes of its item in neither a filed issue, an existing issue nor a stated reason, or integration without explicit delivery authority.
+- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync or decision-assignment receipt, a missing or non-replaying sync resolution guard, a missing, stale or non-replaying active decision assignment, a superseded assignment in active ancestry, missing, extra, duplicate or unsorted path acknowledgements, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded primary author carried by nothing, a `## Carried forward` section holding no `carryover` block or a row that disposes of its item in neither a filed issue, an existing issue nor a stated reason, a new `filed` Skills issue whose remote title, labels, opening or body contract does not replay, or integration without explicit delivery authority.
 - Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, inspect and acknowledge the exact sync-risk paths the controller names, rerun its integration-sensitive checks, receipt that revalidation, then resolve declared versions without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, inspect every old-composition/base-advance intersection path, rerun bounded revalidation and supersede the exact active sync with a reason; the old sync and version-resolution receipts remain in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none

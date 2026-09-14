@@ -1,0 +1,9 @@
+{
+  "candidate": "opening-reads-in-collect",
+  "command": "python3 plugins/alexandria/scripts/usdc_interval.py collect --plan plugins/alexandria/examples/usdc-interval-live-v0/plan.json --staging plugins/alexandria/examples/usdc-interval-live-v0/staging && python3 plugins/alexandria/scripts/usdc_interval.py reconcile --plan plugins/alexandria/examples/usdc-interval-live-v0/plan.json --staging plugins/alexandria/examples/usdc-interval-live-v0/staging --provider-class \"public relay endpoint, archive logs and state, no trace methods\"",
+  "criterion": "live-interval-reconciled",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "lazarus_exact_replay": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-exact-replay without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-exact-replay",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-exact-replay",
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "lazarus-exact-replay",
+        "scope": "structural binding for lazarus-exact-replay",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "transition": {
+          "action": "structurally bind lazarus-exact-replay without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "lazarus_exact_replay": {
+          "authorised_transition": {
+            "action": "structurally bind lazarus-exact-replay without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/lazarus/tests/test_aave_v4.py",
+                "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "lazarus-exact-replay",
+          "source": {
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          "target": {
+            "scope": "structural binding for lazarus-exact-replay",
+            "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/lazarus/tests/test_aave_v4.py",
+            "sha256": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "lazarus-exact-replay",
+        "scope": "structural binding for lazarus-exact-replay",
+        "source_digest": "00374b1f00e113d39bbf239e2b11940c86913290d879a37c1d990fdfa53476cf",
+        "subject": "runtime source plugins/lazarus/tests/test_aave_v4.py#test_fixture_verifies_with_expected_evidence_and_provenance",
+        "transition": {
+          "action": "structurally bind lazarus-exact-replay without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

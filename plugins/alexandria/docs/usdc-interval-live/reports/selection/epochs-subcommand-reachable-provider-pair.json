@@ -1,0 +1,9 @@
+{
+  "candidate": "epochs-subcommand",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "reachable-provider-pair",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

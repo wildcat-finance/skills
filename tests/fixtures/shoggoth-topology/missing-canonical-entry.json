@@ -1,0 +1,22 @@
+{
+  "schema": "shoggoth-topology-specimen/v1",
+  "description": "A canonical entry skill carries its ledger but no SKILL.md. The directory is governed, so a missing entry document is a refusal rather than a skill counted without a front door.",
+  "phase_host": "quarry",
+  "phase_host_entry": "chisel",
+  "plugins": [
+    {
+      "id": "quarry",
+      "skills": [
+        {"name": "chisel", "ledger": true, "entry": true},
+        {"name": "granite", "ledger": true, "entry": true}
+      ]
+    },
+    {
+      "id": "lantern",
+      "skills": [
+        {"name": "lantern", "ledger": true, "entry": false}
+      ]
+    }
+  ],
+  "refusal": "missing-skill-md"
+}

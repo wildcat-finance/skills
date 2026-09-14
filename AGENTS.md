@@ -96,10 +96,17 @@ so a reader knows which queue a thing came from without opening it.
 - `framework-N`, labelled `observation`. Something a run noticed about the
   system as a whole. Its body opens by stating that Protasis decides which
   skill or skills it upgrades, because the filer is the wrong party to guess.
+  `N` has to be a number no other issue holds, open or closed: the shorthand is
+  how this repository cites these issues in prose, and it is far from the issue
+  number, so a second claim on one number makes the citation ambiguous.
+  `issue-check` reads the titles already filed and refuses a duplicate. Nothing
+  allocates `N`, so pick the lowest free number and let the check settle it.
 
 `{skill}` is the skill's own governed name rather than its plugin's, so Lemma's
-is `lemma`. The reasoning, the alternatives and the two questions still open are
-in [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md).
+is `lemma`. The reasoning and the alternatives are in
+[ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md), which
+left who assigns `N` to #370. That issue closed without answering it, and the
+uniqueness half is now checked rather than assigned.
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.
 
@@ -114,8 +121,10 @@ reasoning, the alternatives and what the checks deliberately do not read.
 the work needs a run and `Fiat-Required: 0` when one independent pull request
 will do. Not everything earns a study, a runbook and an audit loop per step; a
 wonky regular expression does not. A `0` names the pull request that answers it
-before the issue closes. `hexctl init` reads the line and refuses to start a run
-against a `0` before it creates any state, worktree or branch.
+before the issue closes. `hexctl init` reads the line before it creates any
+state, worktree or branch: on a `0` it prints one directive naming that pull
+request route and exits 0, and on a `1` it refuses a decision that moved inside
+the last fifteen minutes.
 
 The issue also carries a label matching that line: `fiat-run-needed` for `1`,
 `only-pr-needed` for `0`. The filer sets it the same way `held-job`, `wish` and
@@ -141,16 +150,19 @@ kebab-case and used once. A filing that carries nothing writes the single row
 run-level pull request body under `## Carried forward`, and `hexctl done
 integrate` refuses without it.
 
-Check a candidate body before filing it:
+Check the complete candidate title, body, and labels before filing it:
 
 ```bash
-python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check --body <path>
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check \
+  --body <path> --title '<exact title>' --label '<label>'
 ```
 
-It exits 1 on findings and reports both questions at once. `--issue <url>` reads
-an already-filed issue instead. The check reads shape, never judgement: it does
-not open a referenced issue, and a disposition nobody should have accepted still
-counts as an answer.
+Repeat `--label` for every label; omit it only when the complete candidate has
+none. The command exits 1 on findings and reports the queue and both body
+questions at once. `--issue <url>` reads an already-filed issue's title, body,
+and labels instead. The check reads shape, never judgement: it does not open a
+referenced issue, and a disposition nobody should have accepted still counts as
+an answer.
 
 Closing a delivered issue belongs to whoever merges its pull request. The
 Atlas draws from open issues alone, so one whose delivery has merged keeps
@@ -170,9 +182,11 @@ message.
 3. run Imprimatur and clear every reported defect without dropping protected content;
 4. apply Vulgate to the surface only and compare its content with the source;
 5. re-run Imprimatur on the exact publishable bytes; and
-6. for an issue body, run `hexctl issue-check --body` on those exact bytes and
-   clear every finding. The decision line and the `carryover` block are
-   protected content, so a wording pass may not drop or reword either.
+6. for an issue, run `hexctl issue-check --body <path> --title '<exact title>'`
+   with every label supplied through repeated `--label` flags, and clear every
+   finding. The title prefix, queue label, required opening, decision line and
+   `carryover` block are protected content, so a wording pass may not drop or
+   reword them.
 
 The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
 `framework-N`. Keep every queue-specific body rule from the section above.
@@ -187,6 +201,32 @@ Do not publish after a failed check, changed prefix or body opening, missing
 protected item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from
 these instructions.
+
+## GitHub App issue publication
+
+Create App-authored issues only through the checked Phylax publisher. Preserve
+the complete written-record publication sequence above, then encode its exact
+source, candidates, frozen inventory, authority and gate records using the
+[publisher request contract](plugins/hexaemeron/skills/phylax/references/github-issue-publisher-v1.md).
+The credential-free installed client accepts that request on stdin:
+
+```bash
+/Library/WildcatIssuePublisher/python3 -I /Library/WildcatIssuePublisher/publisher-client.py publish < request.json
+```
+
+Refuse App issue creation when current deployment evidence for the named caller
+and reviewed release digest is absent or failed. The
+[macOS deployment kit](plugins/hexaemeron/skills/phylax/deployment/macos/README.md)
+ships operator instructions and a read-only verifier; this repository does not
+claim that the service is installed. Offline conformance, prose instructions
+and Git hooks provide no live credential isolation.
+
+Do not source a helper, read the App key, mint or print a token, or substitute
+an arbitrary GitHub call for this route. Retiring direct helper and key access
+belongs to a separately authorised privileged deployment. Root and
+administrators remain outside the component promise. The App login
+`shoggoth-wildcat-labs[bot]` is a delivery actor and must remain absent from
+`HOST_PR_LOGINS`.
 
 ## Repository map
 
@@ -330,6 +370,33 @@ Validate every changed skill directory against the Agent Skills frontmatter
 rules. Keep `SKILL.md` names equal to their parent directory names and keep
 descriptions precise enough to select the skill without reading its body.
 
+### Commit gate
+
+The gate is tracked in `.githooks/` and does nothing until a clone turns it
+on. Git cannot install a hook on clone, so this command is the whole of the
+activation. Run it once per clone from the top of a working tree; the value
+stays relative, so every linked worktree resolves it to its own tracked copy:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`.githooks/greenlight` runs the suite and, on exit zero alone, records the
+staged tree it passed on. `.githooks/pre-commit` then refuses any commit whose
+staged tree is not the one that record names. Run in the checkout itself,
+`python3 -m unittest discover -s tests` fails where `core.hooksPath` is unset
+or points anywhere else, and names the command above in the failure; that is
+how a fresh clone finds out the gate is off.
+
+The checked runner verifies activation in the source checkout before creating
+its disposable snapshot, including when no checks are selected. `--plan` only
+plans and does not check activation. Inside a snapshot,
+`WILDCAT_CHECK_SNAPSHOT_ROOT` names the exact directory whose activation case
+is skipped. The separate `WILDCAT_CHECK_CONTAINMENT` token tracks descendants
+for cleanup and never skips that case. Hosted GitHub Actions jobs still check
+the shipped hook bytes rather than a contributor's local configuration.
+`FIAT_SKIP_PRECOMMIT=1` admits one commit without a recorded green.
+
 ## Reading boundary
 
 Before reading this repository broadly, consult `.horos/boundary.json`.
@@ -346,3 +413,18 @@ boundary is regenerated:
 ```bash
 python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
 ```
+
+`.horos/census.json` is the second generated artefact and moves for a
+different reason. The boundary lists classified sinks, so an ordinary source
+edit leaves it alone; the census counts bytes per filetype across every
+tracked file, so any change to any tracked file moves it. The root suite holds
+it to a fresh scan the same way, and a different flag rewrites it:
+
+```bash
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+```
+
+Run that before recording a green rather than after, and stage what it writes
+alongside the change. Every merge to `main` rewrites the census as well, so a
+branch left open across another merge conflicts on the byte counts: take
+`main`'s copy, run the command again, and stage the result.

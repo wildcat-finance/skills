@@ -1,6 +1,6 @@
 ![Sapheneia](./assets/characters/sapheneia.png)
 
-# Sapheneia
+# SAPHENEIA
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Sapheneia keeps actions, boundaries, state, evidence, unknowns, and next steps v
 **Next Fiat job.** Use /hexaemeron:fiat to build and publish a held cross-model corpus covering debugging, explanation, destructive-action and long-running task turns, then reconcile the ten rules against its results. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Sapheneia when an AuDHD reader needs the action, boundary, current state,
 evidence, unknowns, and next step kept visible throughout an agent session. A
@@ -25,7 +25,7 @@ It does not diagnose the reader, change another skill's facts, or turn on
 session shaping merely because one durable record was edited. The ten rules
 have not yet been tested against a published held cross-model task corpus.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Sapheneia shapes the collective's interaction layer and every record its
 agents write down, whether that is an audit record, a GitHub issue, an issue
@@ -60,7 +60,7 @@ operation does not activate the session contract.
 The ten ranked rules and the complete activation contract live in
 [`skills/sapheneia/SKILL.md`](skills/sapheneia/SKILL.md).
 
-#### Day to day
+#### DAY TO DAY
 
 **Developers.** A coding task spans several turns and the current step keeps
 falling out of view. Sapheneia keeps one step active, states what changed and
@@ -69,7 +69,7 @@ what was verified, and ends with one next action.
 **Security and audit.** A finding mixes observed behaviour, inference and an
 untested assumption. Sapheneia labels each one and keeps the risk-bearing
 qualification attached to the decision it changes.
-## How it works
+## HOW IT WORKS
 
 The session contract sits upstream of whatever the agent is producing. It applies to
 commentary, progress updates, questions, errors and final replies for the rest
@@ -88,7 +88,7 @@ assumptions and unknowns stay separate; and unfinished work ends with one next
 action. Imprimatur remains the prose lint, and a voice mask remains responsible
 for register.
 
-## What it ships
+## WHAT IT SHIPS
 
 - one canonical [`SKILL.md`](./skills/sapheneia/SKILL.md) shared by Codex, Claude Code and portable agents;
 - an agent-facing runtime contract that makes the agent itself the subject;

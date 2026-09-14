@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.8.0"
+  version: "5.10.0"
 ---
 
 <p align="center">
@@ -40,11 +40,12 @@ Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
 **Current state.** The ordinary walk checks recognised record and runbook
-pointers and shapes, including stable `adr/<slug>` identities. An explicit study
-mode binds one selected Protasis candidate to exactly one numbered ADR, governed
-skill ledger, or stable selector resolving to one canonical ADR draft or final.
-It refuses a duplicate the study declares; it does not discover the same
-decision standing in a second established home when the study declares one.
+pointers and shapes, including stable `adr/<slug>` identities. An explicit
+study mode binds one selected Protasis candidate through a closed design bridge
+to exactly one numbered ADR, shape-valid numberless draft, or governed-skill
+ledger. A stable selector resolves to one canonical ADR draft or final. It refuses a duplicate the study declares; it does not discover the
+same decision standing in a second established home when the study declares
+one.
 
 ## Match what is already there
 
@@ -127,12 +128,18 @@ format, and fixed ceilings.
 Every Git command disables replacement objects, inherited `GIT_*` repointing,
 prompts, lazy fetches, and user or system configuration. A shallow repository,
 wrong object type, moved base ref, unrelated product, inherited record drift,
-draft already present in the base, new numbered record in the product, hostile
+changed, removed or relocated inherited draft, new numbered record in the product, hostile
 path or slug, duplicate identity or number, oversized input, exhausted
 three-digit namespace, dirty or wrong worktree, report drift, or partial
 mutation refuses with one bounded code. Plan and replay change no repository
 tree. Apply validates every source and destination before its first rename and
 restores every source if an I/O operation fails.
+
+A draft already present in the base participates in the same sorted assignment
+only when its path, mode and blob remain exact in the unnumbered product.
+Changed or missing inherited drafts refuse with `inherited-draft-drift`.
+This permits repairing a base that shipped a draft without permitting an
+assignment to rewrite that inherited decision.
 
 The alternatives section is the part that pays. A record saying only what was
 chosen tells a reader nothing they cannot get from the code; the value is in
@@ -205,7 +212,8 @@ source comment's record reference resolves, whether each Markdown file below a
 `runbooks` directory carries the three runbook answers, whether each
 `adr/<slug>` identity is valid and uniquely placed, and whether a caller-named
 study binds its declared decision to the selected candidate in an already
-checked Protasis design-evidence record and to one established standing record.
+checked Protasis design-evidence record and to one established standing record,
+including the numberless draft used before integration assigns an ADR number.
 Run the ordinary walk over the documents a step touched, and require exit 0.
 
 ```bash
@@ -253,19 +261,18 @@ Hypomnema bounds those arrays and consumes only the schema, closed candidate
 set and selected-candidate membership needed for this join.
 
 The target is an ordinary non-symlink file read stably below the supplied root.
-A direct path is either an ADR-numbered Markdown file below a `decisions`
-directory or an `EVOLUTION.md` beside a `SKILL.md` whose governed name matches
-its directory under a plugin skills tree. The third form is exactly
-`adr/<slug>`, with a lowercase ASCII kebab-case slug no longer than 96 bytes.
-It resolves only one exact `docs/decisions/drafts/<slug>.md` or one exact
-`docs/decisions/ADR-NNN-<slug>.md`, where `NNN` has three ASCII digits. Zero or
-multiple candidates refuse; a direct draft path remains outside an established
-bridge home. H008 also refuses absent, repeated, malformed or unclosed blocks,
-a selection mismatch, absolute, escaping, backslash or control-bearing paths,
-a wrong or dangling home, unsafe components, oversized inputs, duplicate JSON
-keys, excessive JSON depth, special files and a file or candidate set that
-changes while it is read. The ordinary walk never infers a bridge, so historical
-studies and H000 through H007 retain their existing scope.
+It is an ADR-numbered Markdown file below a `decisions` directory, a directly
+nested `docs/decisions/drafts/<slug>.md` carrying the valid stable slug, draft
+heading, five record sections and dated status, or an `EVOLUTION.md` beside a
+`SKILL.md` whose governed name matches its directory under a plugin skills
+tree. A stable `adr/<slug>` selector resolves only one exact canonical draft or
+three-digit numbered final; zero, duplicate, unsafe or changing candidates
+refuse. H008 also refuses absent, repeated, malformed or unclosed blocks, a
+selection mismatch, absolute, escaping, backslash or control-bearing paths, a
+wrong, malformed or dangling home, oversized inputs, duplicate JSON keys,
+excessive JSON depth, special files and a file that changes while it is read.
+The ordinary walk never infers a bridge, so historical studies and H000 through
+H007 retain their existing scope.
 
 The YAML H003 pass reads generic `runbook:` keys outside comments and block
 scalars, resolves relative Markdown targets from the YAML file's directory and
@@ -357,13 +364,13 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-pointer-gate
 
-- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run, including a stable bridge selector that does not resolve to exactly one canonical ADR draft or final.
+- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run. A stable bridge selector must resolve to exactly one canonical ADR draft or final. A draft named by study mode is directly under `docs/decisions/drafts/` and has a valid stable slug, draft heading, five record sections and dated status.
 - Evidence: The exact lint version, mode, arguments, selected paths, design-evidence and repository-root identities where supplied, structured findings and zero exit status.
 - Evidence classes: checked
-- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home. For a stable selector, that home is the fixed canonical draft and three-digit final namespace at check time. Protasis owns full design-record validity, ADR shape and the versioning contract own record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
+- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; a stable selector binds one exact canonical draft or final, and for a declared draft it also proves the mechanical draft path, heading, section and dated-status shape. Protasis owns full design-record validity, numbered-ADR shape and the versioning contract own their record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
 - Authorises: Passing the mechanical record and runbook-shape gate for the exact paths and checker version recorded.
 - Consequence: 1
-- Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a malformed or duplicate stable identity, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, or a claim about documents excluded from the run.
+- Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a malformed or duplicate stable identity, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, a declared draft outside its exact home or without its required mechanical shape, or a claim about documents excluded from the run.
 - Recovery: Restore or correct the target, mark supersession accurately, add the missing runbook or answer, repair the one closed bridge or its selected record, and rerun the same bounded lint mode.
 - Exceptions: none
 

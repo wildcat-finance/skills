@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 # The model proxy's receipt path refuses symlinked components by design.
@@ -88,10 +90,72 @@ CONTRACT = "promise-machine/v1"
 # measures 23,160,342 bytes, 88.3% of the 25 MiB the CLI allows. That one is the
 # CLI's own default and cannot be raised here, so it, and not the file count,
 # is what a nineteenth plugin has to answer for.
-MAX_FILES = 1_200
+#
+# The cap moves a third time without a nineteenth plugin. The roster is still
+# eighteen; what grew is content inside the plugins already there, and this
+# delivery met it as 1,206 files while integrating a base that had advanced 478
+# commits underneath it. The earlier reasoning covers this case as written: the
+# pressure is repository-wide, no per-plugin trim closes it, and shipped package
+# content is not trimmed to hold a file count. What that reasoning predicted has
+# also moved closer. The payload now measures 23,991,363 bytes, 91.5% of the
+# 25 MiB the CLI allows, against 88.3% when the last paragraph was written. The
+# byte cap is the CLI's own default, cannot be raised here, and is the one a
+# nineteenth plugin still has to answer for.
+#
+# A fourth raise, again without a nineteenth plugin, and again during an
+# integration that composed a completed delivery with a base that had advanced
+# 109 commits underneath it. This one measured 1,323 files, of which 36 are one
+# delivery's committed design record: a Protasis candidate matrix and the 33
+# reports and resolver its cells name. Those are evidence a reader reruns, they
+# live under `docs/` like every other shipped document, and the reasoning above
+# holds unchanged: the pressure is repository-wide, no per-plugin trim closes
+# it, and shipped package content is not trimmed to hold a file count.
+#
+# The byte cap is now the live constraint rather than the predicted one. The
+# payload measures 24,956,643 bytes, 95.2% of the 25 MiB the CLI allows,
+# against 91.5% one paragraph above and 88.3% the paragraph before that. It
+# cannot be raised here. Filed as framework-109.
+#
+# The margin is now gone. This delivery measures 26,272,101 bytes across 1,377
+# files, 57,701 over the ceiling and the first measurement above it. What it
+# added is the surface the obligation gate recomputes: the runtime specimens,
+# their fixtures, and the plugin test modules the bindings name as their
+# source. The payload carries the coverage manifest, so its own checker
+# validates those bindings and cannot do it without them.
+#
+# MAX_BYTES stays where it is and this assertion stays red. It mirrors the
+# CLI's own default, so raising it would buy the package nothing and would only
+# stop the test saying something true about the artefact. Deleting shipped
+# content to buy margin is what framework-109 refuses. The red assertion is the
+# signal that filing asked for: skills#1467 predicted that the next delivery to
+# add shipped documents might be the one to close it, and this is that
+# delivery.
+#
+# A fifth raise of the file cap, again without a nineteenth plugin, and again
+# during an integration that composed a completed delivery with a base that had
+# advanced 24 commits underneath it. This one measures 1,415 files, 38 above the
+# paragraph above, of which the delivery's own share is a third preserved audit
+# corpus: its policies, its three sources, its release directory and its
+# projections, plus the design reports a Protasis matrix's cells name. Those are
+# evidence a reader reruns, they ship like every other preserved specimen, and
+# the reasoning above holds unchanged: the pressure is repository-wide, no
+# per-plugin trim closes it, and shipped package content is not trimmed to hold
+# a file count.
+#
+# MAX_BYTES still stays where it is and that assertion stays red. The payload
+# now measures 26,408,839 bytes, 100.7% of the 25 MiB the CLI allows, against
+# 26,272,101 one paragraph above. Nothing here buys margin against it, and
+# framework-109 owns it.
+# Issue #1538 adopts the reviewed decorative-portrait omission and reference
+# repair, retaining the original byte cap and reserving five MiB below it.
+# Every generated manifest must satisfy that margin as well as the cap.
+MAX_FILES = 1_500
 MAX_BYTES = 25 * 1024 * 1024
+MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "assets/characters/*.{png,webp}",
+    "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
@@ -102,6 +166,22 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
 PORTABLE_TEST_FILES = {
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/hostile-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-body.txt",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-source.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-title.txt",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/queue-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/rejection-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/runtime-cases.json",
+    "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/valid-request.json",
+    "plugins/alexandria/tests/test_release.py",
+    "plugins/ariadne/tests/test_examples.py",
+    "plugins/ariadne/tests/test_gates.py",
+    "plugins/berean/tests/test_corpus.py",
+    "plugins/berean/tests/test_examples.py",
+    "plugins/berean/tests/test_promote.py",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
@@ -114,11 +194,27 @@ PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
+    "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+    "plugins/hexaemeron/tests/test_hexctl.py",
+    "plugins/hexaemeron/tests/test_run_observation_binding.py",
+    "plugins/lazarus/tests/test_capture.py",
+    "plugins/lazarus/tests/test_verifier.py",
+    "plugins/lemma/tests/test_markdown.py",
+    "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+    "plugins/synkrisis/tests/test_cohort.py",
+    "plugins/synkrisis/tests/test_verify.py",
 }
 
 
 def load_manifest():
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def load_generator():
+    spec = importlib.util.spec_from_file_location("portable_package_test", GENERATOR)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 class SkillsShPackageTests(unittest.TestCase):
@@ -129,6 +225,11 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(manifest["file_count"], len(manifest["files"]))
         self.assertLess(manifest["file_count"], MAX_FILES)
         self.assertLess(manifest["total_bytes"], MAX_BYTES)
+        self.assertGreaterEqual(MAX_BYTES - manifest["total_bytes"], MIN_HEADROOM)
+        self.assertEqual(manifest["byte_budget"], {
+            "cap": MAX_BYTES, "minimum_headroom": MIN_HEADROOM,
+            "headroom": MAX_BYTES - manifest["total_bytes"],
+        })
         self.assertEqual(
             {entry["pattern"] for entry in manifest["omissions"]},
             EXPECTED_OMISSIONS,
@@ -160,7 +261,35 @@ class SkillsShPackageTests(unittest.TestCase):
                 else:
                     source = ROOT / row["source"]
                     self.assertTrue(source.is_file())
-                    self.assertEqual(data, source.read_bytes())
+                    original = source.read_bytes()
+                    if "transform" in row:
+                        self.assertEqual(row["source_bytes"], len(original))
+                        self.assertEqual(row["source_sha256"], hashlib.sha256(original).hexdigest())
+                    if row.get("transform") == "replay-unchanged-evaluation-prompts/v1":
+                        self.assertEqual(row["path"], "docs/promise-machine/obligation-gates/evaluation-run.json")
+                        source_run, derived_run = json.loads(original), json.loads(data)
+                        self.assertNotEqual(source_run["tree_sha256"], derived_run["tree_sha256"])
+                        source_run.pop("tree_sha256")
+                        derived_run.pop("tree_sha256")
+                        self.assertEqual(source_run, derived_run)
+                    elif "transform" in row:
+                        self.assertEqual(row["transform"], "remove-decorative-portrait-images/v1")
+                        cursor = 0
+                        pieces = []
+                        omitted = {item["path"] for item in manifest["omitted_files"]}
+                        for span in row["removed_images"]:
+                            self.assertGreaterEqual(span["start"], cursor)
+                            self.assertGreater(span["end"], span["start"])
+                            self.assertLessEqual(span["end"], len(original))
+                            self.assertIn(span["target"], omitted)
+                            image = original[span["start"]:span["end"]]
+                            self.assertTrue(image.startswith((b"![", b"<img")))
+                            pieces.append(original[cursor:span["start"]])
+                            cursor = span["end"]
+                        pieces.append(original[cursor:])
+                        self.assertEqual(data, b"".join(pieces))
+                    else:
+                        self.assertEqual(data, original)
                 self.assertEqual(row["bytes"], len(data))
                 self.assertEqual(row["sha256"], hashlib.sha256(data).hexdigest())
             total += row["bytes"]
@@ -183,6 +312,99 @@ class SkillsShPackageTests(unittest.TestCase):
             ).read_bytes(),
             (PACKAGE / "SKILL.md").read_bytes(),
         )
+
+    def test_portrait_omission_inventory_preserves_every_source(self):
+        manifest = load_manifest()
+        self.assertIn("omitted_files", manifest)
+        rows = manifest["omitted_files"]
+        self.assertTrue(rows)
+        self.assertEqual(len(rows), len({row["path"] for row in rows}))
+        packaged = {row["path"] for row in manifest["files"]}
+        for row in rows:
+            with self.subTest(path=row["path"]):
+                self.assertNotIn(row["path"], packaged)
+                self.assertFalse((RUNTIME / row["path"]).exists())
+                original = (ROOT / row["path"]).read_bytes()
+                self.assertEqual(row["bytes"], len(original))
+                self.assertEqual(row["sha256"], hashlib.sha256(original).hexdigest())
+        self.assertIn("plugins/anamnesis/assets/characters/anamnesis.webp", {row["path"] for row in rows})
+        for document in RUNTIME.rglob("*.md"):
+            text = document.read_text(encoding="utf-8")
+            images = re.findall(r'!\[[^\]]*\]\(([^)]+)\)|<img\b[^>]*\bsrc=[\"\x27]([^\"\x27]+)', text)
+            for markdown, html in images:
+                target = (document.parent / (markdown or html)).resolve()
+                self.assertNotIn(target, {(RUNTIME / row["path"]).resolve() for row in rows})
+
+    def test_portrait_class_does_not_capture_other_assets(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "decorative_portrait"))
+        for path in ("assets/characters/new.png", "plugins/future/assets/characters/new.webp"):
+            self.assertTrue(generator.decorative_portrait(Path(path)), path)
+        for path in ("assets/diagram.png", "plugins/future/examples/characters/new.png", "plugins/future/assets/characters/nested/new.png", "plugins/future/assets/characters/proof.json", "plugins/future/assets/characters/code.py", "plugins/future/assets/characters/new.svg"):
+            self.assertFalse(generator.decorative_portrait(Path(path)), path)
+
+    def test_only_inline_images_of_omitted_portraits_are_transformed(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "transform_portrait_images"))
+        path = Path("plugins/example/skills/example/SKILL.md")
+        omitted = {"plugins/example/assets/characters/face.png", "plugins/example/assets/characters/face.webp"}
+        images = (b'![Face](../../assets/characters/face.png)', b'<img alt="a > b" width="1200" src="../../assets/characters/face.webp">')
+        untouched = b'[law](../../PROMISE_MACHINE.md)\n[portrait](../../assets/characters/face.png)\n![diagram](../../assets/diagram.png)\n<img src="https://example.org/face.png">\n<img data-src="../../assets/characters/face.png" src="../../assets/diagram.png">\n'
+        untouched += b'<img alt="example src=\'../../assets/characters/face.png\'" src="../../assets/diagram.png">\n'
+        original = b"before\n" + images[0] + b"\nbetween\n" + images[1] + b"\nafter\n" + untouched
+        transformed, spans = generator.transform_portrait_images(path, original, omitted)
+        self.assertEqual(transformed, b"before\n\nbetween\n\nafter\n" + untouched)
+        self.assertEqual([original[span["start"]:span["end"]] for span in spans], list(images))
+        self.assertEqual(generator.transform_portrait_images(Path("specimen.json"), original, omitted), (original, []))
+
+    def test_runtime_refuses_the_first_byte_inside_reserved_headroom(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "require_byte_headroom"))
+        self.assertEqual(generator.MAX_RUNTIME_BYTES, MAX_BYTES)
+        self.assertEqual(generator.MIN_BYTE_HEADROOM, MIN_HEADROOM)
+        generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM)
+        with self.assertRaisesRegex(generator.PackageError, "headroom"):
+            generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM + 1)
+
+    def test_complete_package_reserves_headroom_for_manifest_and_outer_files(self):
+        total = sum(path.stat().st_size for path in GENERATED.rglob("*") if path.is_file())
+        self.assertGreater(total, load_manifest()["total_bytes"])
+        self.assertGreaterEqual(MAX_BYTES - total, MIN_HEADROOM)
+        generator = load_generator()
+        at_boundary = {"probe.txt": b"x" * (MAX_BYTES - MIN_HEADROOM)}
+        with mock.patch.object(generator, "expected_files", return_value=(at_boundary, b"{}\n")):
+            with self.assertRaisesRegex(generator.PackageError, "headroom"):
+                generator._package_bytes(ROOT, "a" * 40)
+
+    def test_isolated_runtime_evaluation_accepts_derived_record(self):
+        completed = subprocess.run(  # phylax: allow subprocess: fixed isolated runtime checker argv
+            [sys.executable, str(RUNTIME / "scripts/promise_machine.py"),
+             "check", "--root", str(RUNTIME), "--only", "evaluation", "--json"],
+            cwd=GENERATED, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        report = json.loads(completed.stdout)
+        self.assertEqual(report["findings"], [])
+        self.assertEqual(report["counts"]["evaluation_cases"], 11)
+        self.assertEqual(report["counts"]["evaluation_outcomes"], 55)
+        row = next(row for row in load_manifest()["files"]
+                   if row["path"] == "docs/promise-machine/obligation-gates/evaluation-run.json")
+        self.assertEqual(row["generated_by"], "tests/promise_evaluation_driver.py")
+        self.assertIs(row["new_model_observation"], False)
+        self.assertEqual(len(row["unchanged_prompts"]), 11)
+        self.assertEqual(len({p["case"] for p in row["unchanged_prompts"]}), 11)
+
+    def test_packaging_refuses_replay_when_a_model_prompt_changes(self):
+        generator = load_generator()
+        self.assertTrue(hasattr(generator, "derive_portable_evaluation"))
+        payload = {row["path"]: (RUNTIME / row["path"]).read_bytes()
+                   for row in load_manifest()["files"]}
+        path = "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+        original = payload[path]
+        payload[path] = original.replace(b"- Promise: A completed", b"- Promise: An altered", 1)
+        self.assertNotEqual(original, payload[path])
+        with self.assertRaisesRegex(generator.PackageError, "prompts changed"):
+            generator.derive_portable_evaluation(ROOT, payload)
 
     def test_runtime_contracts_reach_every_copied_canonical_skill(self):
         plugins = RUNTIME / "plugins"
@@ -234,8 +456,22 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-                if plugin.name != "hexaemeron":
-                    self.assertFalse((plugin / "tests").exists())
+                # Runtime bindings name a plugin's own test module as the
+                # source they recompute, so the payload carries exactly those
+                # and nothing else.  Banning the directory outright would drop
+                # the surface the portable checker verifies against; leaving it
+                # unchecked would let an unreviewed test file ride along.
+                present = {
+                    path.relative_to(RUNTIME).as_posix()
+                    for path in (plugin / "tests").rglob("*")
+                    if path.is_file() or path.is_symlink()
+                }
+                declared = {
+                    name
+                    for name in PORTABLE_TEST_FILES
+                    if name.startswith(f"plugins/{plugin.name}/tests/")
+                }
+                self.assertEqual(present, declared)
         portable_tests = RUNTIME / "plugins/hexaemeron/tests"
         self.assertEqual(
             {
@@ -243,7 +479,11 @@ class SkillsShPackageTests(unittest.TestCase):
                 for path in portable_tests.rglob("*")
                 if path.is_file() or path.is_symlink()
             },
-            PORTABLE_TEST_FILES,
+            {
+                name
+                for name in PORTABLE_TEST_FILES
+                if name.startswith("plugins/hexaemeron/tests/")
+            },
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())

@@ -1,6 +1,6 @@
 ![Lemma](./assets/characters/lemma.png)
 
-# Lemma
+# LEMMA
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Lemma turns Solidity compiler input or Markdown trees into validated, source-lin
 **Next Fiat job.** Use /hexaemeron:fiat to make callable-surface ABI validation cover return types and state mutability as well as names and input types, with any divergence rejecting the output. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Lemma to prepare Solidity compiler input or a Markdown tree for a
 downstream search, retrieval, or evaluation system. Each JSONL chunk retains
@@ -23,7 +23,7 @@ Lemma stops after source preparation. It does not embed, index, retrieve,
 answer, or grade. Its Solidity callable-surface validation does not yet
 independently check ABI return types or state mutability.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Lemma is a preparation step, not a retrieval system. Berean can use a pinned
 document corpus built from its source-linked output, but Lemma does not embed,
@@ -49,7 +49,7 @@ The plugin and its canonical skill are both named `lemma`, giving the qualified
 name `lemma:lemma` (`/lemma:lemma` in Claude Code). The repeated name keeps
 discovery and invocation consistent with the rest of the marketplace.
 
-## What it ships
+## WHAT IT SHIPS
 
 - a Solidity chunker driven by the compiler AST;
 - a Markdown chunker that splits on rendered heading structure;
@@ -61,13 +61,13 @@ output.
 
 Its one skill is `lemma`, giving the qualified name `lemma:lemma`.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** A documentation or verified-contract corpus needs source-linked
 JSONL before it can enter a retrieval system. Lemma creates that file and
 rejects chunks that fail its schema checks.
 
-## Solidity
+## SOLIDITY
 
 Pass one or more solc standard JSON input files:
 
@@ -83,7 +83,7 @@ python3 chunkers/solidity.py \
 Use `--solc solc` to call a local compiler. Add `--expect-solc 0.8.25` when the
 build must refuse another compiler version.
 
-## Markdown
+## MARKDOWN
 
 Pass a document root and, for GitBook documentation, its `SUMMARY.md`:
 
@@ -103,7 +103,7 @@ the corpus.
 Both commands validate their output before writing it. A non-zero exit means no
 JSONL file should be used.
 
-## The record beside the chunks
+## THE RECORD BESIDE THE CHUNKS
 
 Both chunkers take two more flags:
 
@@ -135,7 +135,7 @@ Every chunk in `chunks.jsonl` also carries the source ref and the build
 identifier, stamped by the pipeline above the chunker rather than by the
 chunker itself.
 
-## From a corpus to a dataset statement
+## FROM A CORPUS TO A DATASET STATEMENT
 
 Each chunker prints the flags Ariadne's `capture-dataset` needs for the corpus
 it just wrote: the release directory, the producer and its governed version,
@@ -213,7 +213,7 @@ selection was made under, because an interval with no gaps reads as complete.
 Lemma writes no statement and signs nothing. It records what produced a corpus
 and stops there.
 
-## Output
+## OUTPUT
 
 [`schema.py`](schema.py) defines the shared `Chunk` type. The main text fields
 are:
@@ -227,7 +227,7 @@ are:
 Build provenance is applied with `schema.stamp()` from the pipeline above
 the chunker, which is why `chunk()` leaves those fields unset.
 
-## Checks
+## CHECKS
 
 Run the standard-library tests from `plugins/lemma`:
 
@@ -245,6 +245,6 @@ python3 tests/test_solidity.py --solc ./solc-container
 [`INVARIANTS.md`](INVARIANTS.md) records the guarantees, known limitations,
 and reproducible baseline. `baseline/regenerate` rebuilds that baseline.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

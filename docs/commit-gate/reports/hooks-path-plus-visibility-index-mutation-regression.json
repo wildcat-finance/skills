@@ -1,0 +1,9 @@
+{
+  "candidate": "hooks-path-plus-visibility",
+  "command": "python3 -m unittest tests.test_commit_gate.HookIndexMutationTests -v",
+  "criterion": "index-mutation-regression",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

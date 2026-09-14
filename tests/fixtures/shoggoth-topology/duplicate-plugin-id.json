@@ -1,0 +1,27 @@
+{
+  "schema": "shoggoth-topology-specimen/v1",
+  "description": "The same plugin id is declared twice in each manifest. A reader that kept the last entry would silently undercount, so the id is refused instead.",
+  "phase_host": "quarry",
+  "phase_host_entry": "chisel",
+  "plugins": [
+    {
+      "id": "quarry",
+      "skills": [
+        {"name": "chisel", "ledger": true, "entry": true}
+      ]
+    },
+    {
+      "id": "lantern",
+      "skills": [
+        {"name": "lantern", "ledger": true, "entry": true}
+      ]
+    },
+    {
+      "id": "lantern",
+      "skills": [
+        {"name": "lantern", "ledger": true, "entry": true}
+      ]
+    }
+  ],
+  "refusal": "duplicate-plugin-id"
+}

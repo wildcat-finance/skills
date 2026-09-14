@@ -12,7 +12,7 @@ though the reason exists and was checked. This settles the part a parser can.
   H006  a source comment citing a record that does not exist
   H007  an alert runbook missing one of its three required answers
   H008  an explicit study design bridge that does not bind one selected design
-        to one established standing-record home
+        to one established numbered ADR, numberless draft, or skill-ledger home
   H009  a stable decision identity is malformed, misplaced, or duplicated
   H010  a stable decision reference names no draft or final record
 
@@ -37,6 +37,10 @@ and Consequences. Directory walks skip `fixtures` and `specimens`
 directories relative to the walked root, because a specimen documenting a
 fault is not a record and a preserved source carries its origin's links;
 naming either path directly still reads it.
+
+Directory walks also skip `.agents/skills/promise-machine/runtime`, whose
+generated copies retain links relative to their source files. Naming that
+runtime directory or one of its files directly still reads it.
 
 In Markdown, a `runbook:` keyword inside an inline code span is a quoted
 specimen rather than a live pointer, so H003 passes over it. The keyword's
@@ -627,9 +631,8 @@ def check_design_bridge(
                 "H008",
                 f"record `{record}` {error}",
             )]
-        return []
-
-    record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
+    else:
+        record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
     record_line = int(bridge["record_line"])
     if record_data is None:
         return [Finding(
@@ -643,6 +646,33 @@ def check_design_bridge(
         RECORD_NAME.fullmatch(record_relative.name) is not None
         and "decisions" in record_relative.parts[:-1]
     )
+    is_draft = (
+        len(record_relative.parts) == 4
+        and record_relative.parts[:3] == ("docs", "decisions", "drafts")
+        and record_relative.suffix == ".md"
+    )
+    if is_draft:
+        try:
+            record_lines = record_data.decode("utf-8").splitlines()
+        except UnicodeDecodeError:
+            return [Finding(
+                root / study_relative,
+                record_line,
+                "H008",
+                f"draft record `{record}` is not UTF-8 text",
+            )]
+        draft_findings = (
+            _stable_record_findings(record_relative, record_lines)
+            + _record_findings(record_relative, record_lines)
+        )
+        if draft_findings:
+            return [Finding(
+                root / study_relative,
+                record_line,
+                "H008",
+                f"draft record `{record}` is malformed: "
+                f"{draft_findings[0].message}",
+            )]
     is_ledger = record_relative.name == "EVOLUTION.md"
     if is_ledger:
         skill_relative = record_relative.parent / "SKILL.md"
@@ -663,12 +693,12 @@ def check_design_bridge(
                 f"record `{record}` is not a governed skill ledger"
                 + (f": {skill_error}" if skill_error else ""),
             )]
-    if not is_adr and not is_ledger:
+    if not is_adr and not is_draft and not is_ledger:
         return [Finding(
             root / study_relative,
             record_line,
             "H008",
-            f"record `{record}` is outside an established ADR or governed-skill-ledger home",
+            f"record `{record}` is outside an established ADR, numberless draft, or governed-skill-ledger home",
         )]
     return []
 
@@ -1295,8 +1325,14 @@ def walk(paths: list[str], include_vendored: bool = False) -> list[Path]:
         root = Path(raw)
         if root.is_dir():
             suffixes = (".md", *COMMENT_MARKERS, *sorted(YAML_SUFFIXES))
-            found = (child for suffix in suffixes
-                     for child in root.rglob(f"*{suffix}"))
+            found = []
+            for directory, names, files in os.walk(root):
+                parent = Path(directory)
+                names[:] = [name for name in names
+                            if (parent / name).absolute().parts[-4:] != (
+                                ".agents", "skills", "promise-machine", "runtime")]
+                found.extend(parent / name for name in files
+                             if name.endswith(suffixes))
             for child in sorted(set(found)):
                 if not child.is_file():
                     continue

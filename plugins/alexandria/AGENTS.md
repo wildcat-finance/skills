@@ -1,7 +1,7 @@
 # Alexandria runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -84,18 +84,29 @@ local tool.
 - `scripts/compound_v3_phase0.py registry` reads one local Comet checkout at
   the fixed commit and writes the canonical 28-market registry. `build` and
   `check` consume local files only; `check` is read-only.
-- `scripts/usdc_interval.py collect` is the interval collector's one network
-  path. It reads the HTTPS endpoint from `ALEXANDRIA_COMPOUND_RPC_URL`, never
-  records the endpoint, headers or credentials, follows no redirect, bounds
-  every response and the whole run, writes a checkpoint only after fsync, and
-  leaves a receipt for every refusal. `reconcile` opens the same boundary
-  against a second provider. `build` and `check` reach no network: `build`
-  writes one release through the existing `ingest`, and `check` changes no file.
+- `scripts/usdc_interval.py collect` and `reconcile` are the interval
+  collector's two network paths. Each reads the HTTPS endpoint from
+  `ALEXANDRIA_COMPOUND_RPC_URL` and never records the endpoint, headers or
+  credentials. Every request carries exactly two headers, `Content-Type` and a
+  constant `User-Agent` of the form `alexandria-usdc-interval/<package
+  version>` built at import from the plugin manifest: no header value comes
+  from the environment, so no request can carry a credential and a provider
+  requiring one is out of scope. Both follow no redirect, bound every response
+  and the whole run, and leave a receipt for every refusal naming the provider
+  class the plan declared and never an endpoint. `collect` writes a checkpoint
+  only after fsync and closes with the opening reads that bind the interval's
+  first block, the epoch boundaries and each implementation's runtime code.
+  `build` and `check` reach no network: `build` writes one release through the
+  existing `ingest`, and `check` changes no file.
 - `examples/usdc-interval-v0/demo.py build --output <directory>` runs the whole
-  collector path against checked-in synthetic fixtures, removes a partial
-  output after failure and opens no socket. `verify` changes no file.
-- `scripts/compound_v3_phase0.py capture` is the one explicit network path. It
-  reads the HTTPS endpoint from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed
+  collector path against checked-in synthetic fixtures, and
+  `examples/usdc-interval-live-v0/demo.py build --output <directory>` rebuilds
+  the preserved live Ethereum mainnet interval from its committed staging tree.
+  Both remove a partial output after failure and open no socket; `verify`
+  changes no file in either.
+- `scripts/compound_v3_phase0.py capture` is the third and last explicit network
+  path, beside `collect` and `reconcile` above. It reads the HTTPS endpoint
+  from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed
   bounded corpus through a sibling temporary directory and never records the
   endpoint, headers or credentials.
 

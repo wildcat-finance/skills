@@ -1,6 +1,6 @@
 ![Tabularium](./assets/characters/tabularium.png)
 
-# Tabularium
+# TABULARIUM
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Tabularium maps preserved venue-native records into reproducible, venue-qualifie
 **Next Fiat job.** Use /hexaemeron:fiat to ship Compound v3 Phase 1 from Alexandria raw evidence with a new canonical and coverage schema version, supply, withdraw, base-transfer and absorb mappings, a mined borrower-to-borrower transfer witness, hostile fixtures and a byte-identical offline Ethereum USDC specimen. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Tabularium when preserved lending records need a reproducible,
 venue-qualified event interpretation. Each output row keeps its source selector,
@@ -23,7 +23,7 @@ Aave v4, Euler v1, and Euler v2 releases ship, along with one non-canonical
 Compound v3 Phase 0 execution witness. The canonical Compound adapter and
 Ethereum USDC interval specimen remain Phase 1 work.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Alexandria is the upstream archive and narrow-view provider. Tabularium owns the
 next transition: interpreting supported venue records into a canonical or
@@ -68,7 +68,7 @@ Three rules hold the release together:
    maps the preserved source again and requires the bytes, order and source
    selectors to agree.
 
-## How it works
+## HOW IT WORKS
 
 The first release captures an Aave v4 credit window from Ethereum consensus
 logs: 282 borrow and 218 repay logs across blocks 25855441 to 25870892, mapped
@@ -98,7 +98,7 @@ input. The worked release is unsigned and its block boundary is what the hosted
 indexer reported, so a clean run establishes internal consistency rather than
 publisher authenticity or an independent chain proof.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the standard-library [`tabularium.py`](./scripts/tabularium.py)
   builder and offline verifier;
@@ -119,7 +119,7 @@ publisher authenticity or an independent chain proof.
   ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every
   review round and fix.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** A hosted indexer is still answering for a venue whose front end
 has gone. Preserve the response and its capture boundary, then publish a
@@ -135,7 +135,7 @@ record without erasing the difference between them. The common family makes
 the rows searchable; the venue-qualified action and native record keep the
 economic meaning attached.
 
-## Run it
+## RUN IT
 
 From this directory, `plugins/tabularium`:
 
@@ -168,7 +168,7 @@ parent traversal, symlinks, aliased files, unsupported versions, malformed
 JSON, count drift, duplicate selectors, reordered rows and canonical bytes
 that do not match a fresh source rebuild.
 
-## The checked-in releases
+## THE CHECKED-IN RELEASES
 
 [`examples/aave-v4-v0`](examples/aave-v4-v0/README.md) contains the
 unchanged source and capture manifest, the 511-row ledger, its coverage
@@ -206,7 +206,7 @@ activity falls outside the two captured topics and is neither preserved nor
 counted. A repay log's last three data words were zero throughout and are
 never named.
 
-## What it never proves
+## WHAT IT NEVER PROVES
 
 Each boundary is what its hosted indexer or public RPC reported. The Euler v1
 release retains its log's block hash; the Euler V2 API rows omit block hashes
@@ -221,7 +221,7 @@ No address-to-person inference and no counterparty score enter the ledger.
 Those are different claims, with different evidence, and do not belong inside
 an event record.
 
-## Adding a venue or correcting a release
+## ADDING A VENUE OR CORRECTING A RELEASE
 
 [`docs/adding-an-adapter.md`](docs/adding-an-adapter.md) sets out the source
 validation, mapping, provenance, coverage and fixture work a new venue needs.
@@ -235,7 +235,7 @@ harvest specification owns raw collection; this document explains why logs
 alone miss or misclassify debt transitions, what Phase 0 now proves and what
 the Phase 1 canonical mapping still needs.
 
-## Tests
+## TESTS
 
 From the repository root:
 
@@ -248,7 +248,7 @@ Run the tests with the exact interpreter in the suite
 implementation uses only the standard library, and the tests make no network
 request.
 
-## Reading further
+## READING FURTHER
 
 - [`examples/aave-v4-v0/DATA-DICTIONARY.md`](examples/aave-v4-v0/DATA-DICTIONARY.md)
   -- every canonical field and the limits of its meaning.
@@ -269,6 +269,6 @@ request.
 - [`audit/AUDIT.md`](audit/AUDIT.md) -- every audit round and the fixes it
   required.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

@@ -1,0 +1,17 @@
+{
+  "budget_ms": 120000,
+  "candidate": "opening-reads-in-collect",
+  "collect_exit": 0,
+  "collect_ms": 2856,
+  "compared": 106,
+  "criterion": "live-interval-reconciled",
+  "disputed": [],
+  "elapsed_ms": 5370,
+  "matched": 106,
+  "provider_class": "public relay endpoint, archive logs and state, no trace methods",
+  "reconcile_exit": 0,
+  "reconcile_ms": 2514,
+  "reconciliation": "agreed",
+  "schema": "alexandria-live-interval-measurement/v1",
+  "within_budget": true
+}

@@ -1,0 +1,140 @@
+{
+  "observed_at": "2026-09-12T18:39:18.961030+00:00",
+  "reviewer": "shoggoth",
+  "source_revision": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+  "preserved": [
+    "argv",
+    "models",
+    "model_blobs_sha256",
+    "vocabulary_sha256",
+    "timeouts",
+    "context",
+    "answer_contract"
+  ],
+  "profiles": [
+    {
+      "profile": "gptoss-120b-ollama-0.32.15",
+      "prior_record_sha256": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd",
+      "changed": {
+        "version_sha256": {
+          "before": "3b37fd9b7249225689f549d3cf50bd59c8fefc191106b135239a51858b7a4b1b",
+          "after": "8a4493ac56d1b28e2c67ffb518f8380a979f1e97f9d54a91fb1a289023365665"
+        },
+        "runtime_executable_sha256": {
+          "before": "eee609f0a6da58b978d453e0385fd0e3496e6cf319c639875669b51cb4277d2d",
+          "after": "75b6b83ab9c06712c7097807c91d2bb86a3ef3dd143d59359a5fbb3314970c0a"
+        }
+      },
+      "commands": [
+        {
+          "argv": [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+            "--version"
+          ],
+          "exit": 0,
+          "stdout": "gptoss-120b-ollama-0.32.15-version.stdout.txt",
+          "stdout_sha256": "8a4493ac56d1b28e2c67ffb518f8380a979f1e97f9d54a91fb1a289023365665",
+          "stderr": "gptoss-120b-ollama-0.32.15-version.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+            "show",
+            "--modelfile",
+            "gpt-oss:120b"
+          ],
+          "exit": 0,
+          "stdout": "gptoss-120b-ollama-0.32.15-identity.stdout.txt",
+          "stdout_sha256": "7b482a3a59ee8c71ed38ffd87d2bc6f79672b041b40592d5fa2433197174f61b",
+          "stderr": "gptoss-120b-ollama-0.32.15-identity.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "profile": "qwen35-aeon-27b-q4-k-m",
+      "prior_record_sha256": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363",
+      "changed": {
+        "version_sha256": {
+          "before": "3b37fd9b7249225689f549d3cf50bd59c8fefc191106b135239a51858b7a4b1b",
+          "after": "8a4493ac56d1b28e2c67ffb518f8380a979f1e97f9d54a91fb1a289023365665"
+        },
+        "acquisition_sha256": {
+          "before": "38ece538df784a85c74a53f0bf0456c5939c2c6f0c2a2538ce98911cef99af8b",
+          "after": "d7aecacbd76dee767a7c09c4dfb89f0042ea3d3a970898706828850c383ed91d"
+        },
+        "runtime_executable_sha256": {
+          "before": "eee609f0a6da58b978d453e0385fd0e3496e6cf319c639875669b51cb4277d2d",
+          "after": "75b6b83ab9c06712c7097807c91d2bb86a3ef3dd143d59359a5fbb3314970c0a"
+        }
+      },
+      "commands": [
+        {
+          "argv": [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+            "--version"
+          ],
+          "exit": 0,
+          "stdout": "qwen35-aeon-27b-q4-k-m-version.stdout.txt",
+          "stdout_sha256": "8a4493ac56d1b28e2c67ffb518f8380a979f1e97f9d54a91fb1a289023365665",
+          "stderr": "qwen35-aeon-27b-q4-k-m-version.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+            "show",
+            "--modelfile",
+            "qwen3.8-27b-aeon:q4_k_m"
+          ],
+          "exit": 0,
+          "stdout": "qwen35-aeon-27b-q4-k-m-identity.stdout.txt",
+          "stdout_sha256": "d7aecacbd76dee767a7c09c4dfb89f0042ea3d3a970898706828850c383ed91d",
+          "stderr": "qwen35-aeon-27b-q4-k-m-identity.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "profile": "gptoss-120b-mxfp4",
+      "prior_record_sha256": "5fd5875cc9b745bd3b88a542cd5e405ada90fc36eed35b0942a2d952619ff363",
+      "changed": {
+        "version_sha256": {
+          "before": "3b37fd9b7249225689f549d3cf50bd59c8fefc191106b135239a51858b7a4b1b",
+          "after": "8a4493ac56d1b28e2c67ffb518f8380a979f1e97f9d54a91fb1a289023365665"
+        },
+        "runtime_executable_sha256": {
+          "before": "eee609f0a6da58b978d453e0385fd0e3496e6cf319c639875669b51cb4277d2d",
+          "after": "75b6b83ab9c06712c7097807c91d2bb86a3ef3dd143d59359a5fbb3314970c0a"
+        }
+      },
+      "commands": [
+        {
+          "argv": [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+            "--version"
+          ],
+          "exit": 0,
+          "stdout": "gptoss-120b-mxfp4-version.stdout.txt",
+          "stdout_sha256": "8a4493ac56d1b28e2c67ffb518f8380a979f1e97f9d54a91fb1a289023365665",
+          "stderr": "gptoss-120b-mxfp4-version.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "argv": [
+            "/Applications/Ollama.app/Contents/Resources/ollama",
+            "show",
+            "--modelfile",
+            "gpt-oss:120b"
+          ],
+          "exit": 0,
+          "stdout": "gptoss-120b-mxfp4-identity.stdout.txt",
+          "stdout_sha256": "7b482a3a59ee8c71ed38ffd87d2bc6f79672b041b40592d5fa2433197174f61b",
+          "stderr": "gptoss-120b-mxfp4-identity.stderr.txt",
+          "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    }
+  ]
+}

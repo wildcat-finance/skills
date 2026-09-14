@@ -1,0 +1,237 @@
+#!/bin/sh
+# Refuse a commit whose staged tree is not the tree the suite passed on.
+#
+# Activate this directory once per clone:
+#
+#     git config core.hooksPath .githooks
+#
+# Record a green after the suite passes:  .githooks/greenlight
+# Skip the gate for one deliberate commit: FIAT_SKIP_PRECOMMIT=1 git commit
+#
+# The gate never runs the suite. It compares the staged tree against the tree
+# identity greenlight recorded, which is why it costs milliseconds. The record
+# is a convenience rather than proof that the suite ran: anyone who can write
+# the git directory can write it. See
+# docs/decisions/draft-activate-the-commit-gate-from-a-tracked-hooks-directory.md
+#
+# One line goes to standard error on a refusal, naming which cause applies, so
+# "why was my commit refused" is answered where it is asked. Git's own stderr
+# from every command below is suppressed so that line stays the only one.
+# When locating the repository is what failed, the line carries the first line
+# git wrote about it, stripped of control characters and cut at 256 characters,
+# because git knows that cause and this script does not: a directory that is no
+# repository and a repository git refuses to trust each say so there. The
+# write-tree refusal names its command and carries nothing git wrote.
+
+set -u
+
+if [ "${FIAT_SKIP_PRECOMMIT:-0}" = "1" ]; then
+    exit 0
+fi
+
+# Git carries the caller's one-shot configuration into this hook in two
+# variables, and either one makes the git calls below start a process nobody
+# here named. Measured rather than assumed: `core.fsmonitor` supplied through
+# GIT_CONFIG_PARAMETERS, and again through GIT_CONFIG_COUNT with
+# GIT_CONFIG_KEY_0 and GIT_CONFIG_VALUE_0, ran its command during the hook's
+# own `git write-tree` on git 2.50.1. Dropping GIT_CONFIG_COUNT is what
+# disables the indexed pairs; they are inert without it.
+#
+# GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM reach the same end one indirection
+# further out, so they are handled rather than left alone. A file either of
+# them names can carry `core.fsmonitor` itself, and on git 2.50.1 that command
+# ran during this hook's own `git write-tree` exactly as the in-band forms did.
+# Unsetting them would be worse than leaving them: git then falls back to
+# `$HOME/.gitconfig` and `/etc/gitconfig`, and a `core.fsmonitor` in
+# `$HOME/.gitconfig` still ran. They are pointed at nothing instead, which is
+# git's documented way to skip a configuration level outright, so the gate's
+# own git calls read no global and no system configuration at all. The
+# repository's own config is untouched, because that is the repository being
+# gated rather than something an inherited variable can move. The trade is a
+# clone that needs `safe.directory` from global config: `git rev-parse
+# --git-dir` then fails here, which refuses the commit with git's own line
+# about dubious ownership on it, which is the direction this gate is meant to
+# fail.
+#
+# Which repository "the repository's own config" means is the last thing an
+# inherited variable can move. GIT_DIR reaches this hook two ways. Git sets it
+# itself for a commit in a linked worktree, naming that worktree's own git
+# directory, and not for a commit in a plain checkout; a caller can leave it
+# behind in either -- a hook, `git bisect run`, a rebase `exec` line -- and
+# both scripts here are executable files any of them can start. Inherited from
+# a caller, every git call below reads that repository's configuration, and
+# its `core.fsmonitor` ran during this hook's own `git write-tree`, measured
+# on git 2.50.1. So the six variables that select a repository are dropped:
+# GIT_DIR, GIT_WORK_TREE, GIT_COMMON_DIR, GIT_OBJECT_DIRECTORY,
+# GIT_ALTERNATE_OBJECT_DIRECTORIES and GIT_NAMESPACE. Nothing here changes
+# directory afterwards, on purpose: git runs a hook from the root of the
+# working tree (githooks(5)), so discovery from where this script stands finds
+# the repository being committed to -- through the `.git` file in a linked
+# worktree, which names the directory git had set -- and the record and
+# configuration it reads are that repository's. The trade is a work tree with
+# no `.git` of its own, driven through `--git-dir`, `--work-tree` or those
+# variables. Discovery finds nothing in that work tree, so it climbs. Outside
+# any repository it finds nothing at all and the rev-parse branch below refuses
+# with git's own line. Inside one it finds the enclosing repository -- its
+# configuration, its object store and its record, for a commit into a different
+# repository entirely. Below its root the prefix check refuses that; at its root
+# the prefix is empty and the index check after it refuses instead. Both refuse
+# before any record is located, and the bypass token recovers from all three.
+#
+# The index git exports is kept, and must be. Git runs this hook for one
+# particular commit and names that commit's index in GIT_INDEX_FILE -- `git
+# commit -a` builds a temporary one, and a plain commit names `.git/index`
+# relative to the working tree, which is the other reason not to change
+# directory -- so a hook that reached for `$GIT_DIR/index` instead would check
+# a tree that is not the tree being committed. GIT_PREFIX stays with it. What
+# the regression in tests/test_commit_gate.py holds is the other half: pointed
+# at another repository's index, the gate reads it and leaves its staged state
+# alone. Kept is not trusted: the index check below refuses one that is not in
+# the git directory discovery answers.
+#
+# CDPATH is not git's and moves that index check all the same. `cd` searches it
+# for an operand whose first component is neither `.` nor `..`, and `.git` is
+# what git answers for both sides of the check in a plain checkout. Measured on
+# git 2.50.1 with CDPATH naming a directory that holds a `.git`: `commit -a` and
+# `commit -a --amend` were refused on the index cause with that index inside the
+# git directory all along, because those are the two shapes git gives an
+# absolute GIT_INDEX_FILE while `--git-dir` stays relative, so only one side of
+# the comparison moved. A commit in a linked worktree gets an absolute index
+# too, and an absolute `--git-dir` beside it, so CDPATH moves neither side
+# there. It opens nothing, because `cd` prints the directory CDPATH found and a
+# two-line answer never equals a one-line one, so the crossing at either depth
+# stays refused. It is dropped for the false refusal.
+unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY \
+    GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE \
+    GIT_CONFIG_PARAMETERS GIT_CONFIG_COUNT \
+    CDPATH
+
+# Every git call this gate makes goes through here, and nothing else does.
+gate_git() {
+    GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null git "$@"
+}
+
+fix='run .githooks/greenlight on the staged tree, or commit with FIAT_SKIP_PRECOMMIT=1'
+
+# Git runs a hook from the root of the working tree (githooks(5)), so an empty
+# prefix is the ordinary case, and a commit from a subdirectory is not the
+# exception: git runs the hook from the root and reports the subdirectory in
+# GIT_PREFIX, leaving `--show-prefix` empty. Measured on git 2.50.1 for a plain
+# commit, a commit from a subdirectory, `commit -a` from a subdirectory, and
+# both of those in a linked worktree: every one answers empty and is admitted.
+#
+# A non-empty answer says the working tree git found does not have its root
+# here, and two things reach that. Discovery climbing out of a work tree with no
+# `.git` of its own into a repository enclosing it, where every answer after
+# this one would be the enclosing repository's -- its configuration on the
+# command that reads an index, its object store behind `git write-tree`, and its
+# green record admitting a commit into a different repository. Or this script
+# started by hand from a subdirectory, which git never does. The line below
+# names what git answered and what this gate then did, and claims neither cause
+# over the other, because from here they are the same answer.
+#
+# Refused before a record is located and before an index is read. A failure
+# instead of an answer is not this cause: the rev-parse branch below owns it and
+# carries git's own line. The prefix is directory names, so it is stripped and
+# bounded for the reason the stale-record path gives.
+if prefix="$(gate_git rev-parse --show-prefix 2>/dev/null)" && [ -n "$prefix" ]; then
+    shown_prefix="$(printf '%s' "$prefix" | tr -d '[:cntrl:]' | cut -c1-64)"
+    printf 'pre-commit: refused, git rev-parse --show-prefix answered %s, so this is not the root of the working tree git found and no green record is read from here; %s\n' "$shown_prefix" "$fix" >&2
+    exit 1
+fi
+
+if ! git_dir="$(gate_git rev-parse --git-dir 2>/dev/null)"; then
+    # The decision is taken; what follows only says why. Git's account comes
+    # from a second run of the same command, because reading its standard
+    # error into a variable while its standard output still reaches the one
+    # above needs either that or a file, and this gate writes nothing. The
+    # line is stripped and bounded for the reason the stale-record path gives.
+    cause="$(gate_git rev-parse --git-dir 2>&1 >/dev/null | head -n 1 | tr -d '[:cntrl:]' | cut -c1-256)"
+    [ -n "$cause" ] || cause='nothing on standard error'
+    printf 'pre-commit: refused, git rev-parse --git-dir failed, so the green record cannot be located; git said: %s; %s\n' "$cause" "$fix" >&2
+    exit 1
+fi
+
+# The index git names is kept rather than dropped, so an inherited environment
+# can still aim it elsewhere. Git names the index for the commit in hand and
+# puts it in the git directory discovery answers: measured on git 2.50.1,
+# `.git/index` for a plain commit, a commit from a subdirectory and
+# `commit --amend`, the absolute `.git/index.lock` for `commit -a` from a
+# subdirectory, and an absolute index under `<common>/worktrees/<name>` for a
+# linked worktree nested inside its own main checkout and for a subdirectory of
+# that worktree. A commit reached through a symlinked path answers the same. The
+# two agree in all seven.
+#
+# They differ where a second git directory's work tree is this repository's own
+# root. Git runs the hook from that root, so the prefix above is empty and the
+# check before this one never fires, while GIT_INDEX_FILE still names the other
+# repository's index. Measured on the same git: the enclosing repository's
+# `core.fsmonitor` ran during this gate's own `git write-tree`, and its
+# `LAST_GREEN` naming the staged tree admitted a commit into a repository it
+# does not hold and that held no record of its own. Refused here, before a
+# record is located and before an index is read.
+#
+# Both sides are resolved with `pwd -P`, because either can be relative -- git
+# answers `.git` for both in a plain checkout -- and because a path reached
+# through a symlink would otherwise compare unequal to the same directory
+# reached directly. A side that will not resolve is refused rather than assumed
+# equal. The value is inherited, so it is stripped and bounded for the reason
+# the stale-record path gives, at 256 characters rather than 64 because it is a
+# path and the shorter bound cuts one mid-directory.
+#
+# Unset, or set and empty, is not this cause: the check is skipped and the gate
+# proceeds, which is the hand-run case and is deliberate. What git reads then
+# differs between the two, measured on git 2.50.1. Unset, it reads the index of
+# the repository discovery answers, which is the repository this gate compares
+# against. Set and empty, it reads no index at all -- `write-tree` answers the
+# empty tree 4b825dc6 and `ls-files` nothing -- so the comparison below sees a
+# tree no record of a populated repository names, and refuses. Neither value
+# admits a tree the record does not name. The trade is a commit whose index git
+# placed outside the git directory: no shape measured above does that, one built
+# by hand is refused, and the bypass token admits it.
+if [ -n "${GIT_INDEX_FILE:-}" ]; then
+    case "$GIT_INDEX_FILE" in
+        */*) index_dir="${GIT_INDEX_FILE%/*}" ;;
+        *) index_dir='.' ;;
+    esac
+    [ -n "$index_dir" ] || index_dir='/'
+    index_home="$(cd -- "$index_dir" 2>/dev/null && pwd -P)" || index_home=''
+    git_home="$(cd -- "$git_dir" 2>/dev/null && pwd -P)" || git_home=''
+    if [ -z "$index_home" ] || [ -z "$git_home" ] || [ "$index_home" != "$git_home" ]; then
+        shown_index="$(printf '%s' "$GIT_INDEX_FILE" | tr -d '[:cntrl:]' | cut -c1-256)"
+        printf 'pre-commit: refused, GIT_INDEX_FILE names %s, which is not in the git directory git rev-parse --git-dir answers, so the green record read here would be another repository'"'"'s; %s\n' "$shown_index" "$fix" >&2
+        exit 1
+    fi
+fi
+
+# --git-dir, not --git-common-dir: a linked worktree keeps its own record, so
+# one worktree's green cannot authorise another worktree's commit.
+record="$git_dir/LAST_GREEN"
+
+if ! staged="$(gate_git write-tree 2>/dev/null)"; then
+    printf 'pre-commit: refused, git write-tree failed, so the staged tree is unknown; %s\n' "$fix" >&2
+    exit 1
+fi
+
+if [ ! -e "$record" ]; then
+    printf 'pre-commit: refused, no green record at %s; %s\n' "$record" "$fix" >&2
+    exit 1
+fi
+
+if [ ! -f "$record" ] || [ ! -r "$record" ] || ! recorded="$(cat "$record" 2>/dev/null)"; then
+    printf 'pre-commit: refused, the green record at %s cannot be read; %s\n' "$record" "$fix" >&2
+    exit 1
+fi
+
+if [ "$recorded" != "$staged" ]; then
+    # The record is a file anyone who can write the git directory can write, so
+    # its bytes are not fit to print raw. Control characters would let a record
+    # erase the line with a carriage return and draw a friendlier one, and an
+    # embedded newline would split this refusal across two lines when the
+    # contract is one. Stripped and bounded, on the refusal path only.
+    shown="$(printf '%s' "$recorded" | tr -d '[:cntrl:]' | cut -c1-64)"
+    printf 'pre-commit: refused, the green record names tree %s, not the staged tree %s; %s\n' "$shown" "$staged" "$fix" >&2
+    exit 1
+fi
+
+exit 0

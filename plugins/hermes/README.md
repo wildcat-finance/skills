@@ -1,6 +1,6 @@
 ![Hermes](./assets/characters/hermes.png)
 
-# Hermes
+# HERMES
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Hermes measures one named Solidity gas optimisation class at a time and rejects 
 **Next Fiat job.** Use /hexaemeron:fiat to widen the Hermes optimisation classes against the pinned rule corpus until every rule with a source-level candidate can be selected, starting with the reduction in storage writes that STO-09's neighbour STO-12 needs and no class names. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Hermes for a proposed Solidity gas change, one optimisation class at a
 time. It seals a baseline, measures the candidate, reruns behaviour tests, and
@@ -23,7 +23,7 @@ It is not a general performance tool or a security audit. Its 12 current
 classes can select 62 of the 120 rules in the pinned corpus; the other 58 rules
 do not yet have a selectable candidate class.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Hermes alone owns Solidity gas optimisation. Metron measures performance in
 every other unit. Pandects supplies economic laws that a candidate may need to
@@ -39,7 +39,7 @@ inferred relation between named events, never a measurement.
 The canonical workflow and complete gate contract live in
 [`skills/hermes/SKILL.md`](skills/hermes/SKILL.md).
 
-## How it works
+## HOW IT WORKS
 
 Gas changes are easy to praise and surprisingly easy to get wrong. Hermes takes one optimisation class at a time through a fail-closed Foundry run:
 
@@ -52,14 +52,14 @@ Gas changes are easy to praise and surprisingly easy to get wrong. Hermes takes 
 
 A candidate only clears Hermes when every gate clears. The run leaves behind `result.json`, command logs, gas comparisons, the Solidity diff, storage layouts and method maps, so the number and the safety case can be reviewed together.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the executable [`hermes.py`](./skills/hermes/scripts/hermes.py) harness;
 - a catalogue of [12 optimisation classes](./skills/hermes/references/optimisation-catalogue.md);
 - Codex metadata for explicit or automatic invocation; and
 - a test suite covering accepted runs and representative failures across Gates 2 to 6.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** A gas change shaves a few hundred units off a hot path and nobody can say whether behaviour moved with it. Run Hermes on that one optimisation class and the review arrives with the snapshot diff, both fuzz passes, the storage layout comparison and a `result.json`, rather than a number and an assurance.
 

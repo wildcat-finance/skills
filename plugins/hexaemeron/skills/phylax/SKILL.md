@@ -6,11 +6,11 @@ description: >-
   holds, the dependencies it pulls, and the model output it acts on. Use when a
   step accepts data from outside the process, runs a subprocess, fetches a URL,
   reads a credential, adds a dependency, or feeds an agent. It also owns the
-  bounded job-scoped model proxy component proof. Do not use it to review
+  bounded job-scoped model proxy and GitHub issue publisher component proofs. Do not use it to review
   Solidity, which belongs to solidity-auditor and x-ray, and do not use it to
   diagnose a failure that has already happened, which belongs to elenchus.
 metadata:
-  version: "1.5.0"
+  version: "1.6.0"
 ---
 
 <p align="center">
@@ -48,6 +48,19 @@ It also ships a synthetic job-scoped model proxy component: closed policy,
 framing, provider, lifecycle, receipt, operator-disclosure, and hostile-
 conformance boundaries. That component is a generation change on the same
 mature frontier, not evidence of a live provider or end-to-end launch.
+
+## Publish one checked GitHub issue
+
+The [publisher reference](references/github-issue-publisher-v1.md) defines one
+App issue route. Its offline conformance runs one positive and 31 hostile
+cases, including the exact #855 refusal. Every component uses injected signer
+and HTTPS dependencies. The [macOS kit](deployment/macos/README.md) supplies
+fixed service paths and a read-only deployment verifier. Its output retains
+`live_isolation: not-established`; installation requires separate authority.
+
+```bash
+python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json
+```
 
 ## Name the boundaries before choosing controls
 
@@ -453,4 +466,16 @@ dependency needs, or the approval a widened trust boundary is waiting on.
 - Consequence: 2
 - Refuses: An unnamed boundary, unvalidated external data, data-built shell strings, unsafe host or path handling, exposed credentials, unreviewed dependency drift or model output used directly as authority.
 - Recovery: Name the missing boundary, add and exercise its control, review the affected dependency or data path and repeat the boundary review.
+- Exceptions: none
+
+### phylax-github-issue-publisher
+
+- Promise: One successful publisher lifecycle establishes that the exact admitted issue bytes crossed the ordered record checks and both local Imprimatur runs before credential use, one narrowed App issue POST, authenticated and anonymous exact readback, and observed component cleanup.
+- Evidence: The digest-bound request, recorded explicit user authority, ordered judgement records, publisher-executed Imprimatur results, attempt counts, exact remote issue identity, both readbacks, terminal receipt, and separate current deployment predicates for the named caller and reviewed release digest.
+- Evidence classes: checked, recorded
+- Boundary: Sapheneia and Vulgate retain their judgement limit. Offline conformance establishes component behaviour on its closed specimens only; it establishes neither live deployment nor live isolation. Root, administrators, undeclared credential copies, interpreter dependencies and host compromise remain outside the promise.
+- Authorises: One issue creation in wildcat-finance/skills through a separately authorised and verified service deployment, only for the exact admitted candidate and recorded user request.
+- Consequence: 3
+- Refuses: Missing or stale deployment evidence, a wrong subject or release digest, a readable named key path, same service and caller UID, an exposed helper, a failed record or Imprimatur check, a widened destination, an uncertain create retry, unmatched readback, failed receipt or cleanup, or a component result presented as live isolation.
+- Recovery: Inspect the safe predicate or terminal code, restore the exact reviewed deployment or candidate, rerun the named checks, and reconcile an indeterminate create by its request digest before any separately authorised action.
 - Exceptions: none

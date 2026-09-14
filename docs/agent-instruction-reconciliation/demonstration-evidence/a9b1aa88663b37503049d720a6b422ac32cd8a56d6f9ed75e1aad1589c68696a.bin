@@ -1,0 +1,30 @@
+from pathlib import Path
+import contextlib,io,json,sys,unittest
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT));sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+from tests.emit_run_observation_report import result_payload
+OUT=ROOT/'.hexaemeron/demo-build'/('boundary-attempt-'+sys.argv[1])
+OUT.mkdir()
+implementation={p:(ROOT/p).read_bytes() for p in ['scripts/agent_instruction_reconciliation.py','scripts/prove_agent_instruction_reconciliation.py']}
+observed={}
+class Result(unittest.TextTestResult):
+ def addSuccess(self,test):
+  observed[test._testMethodName]='passed';super().addSuccess(test)
+ def addFailure(self,test,err):
+  observed[test._testMethodName]='failed';super().addFailure(test,err)
+ def addError(self,test,err):
+  observed[test._testMethodName]='error';super().addError(test,err)
+stdout=io.StringIO();stderr=io.StringIO()
+with contextlib.redirect_stdout(stdout),contextlib.redirect_stderr(stderr):
+ suite=unittest.defaultTestLoader.loadTestsFromName('tests.test_agent_instruction_reconciliation.ReconciliationTests')
+ result=unittest.TextTestRunner(stream=stderr,verbosity=2,resultclass=Result).run(suite)
+(OUT/'stdout').write_text(stdout.getvalue());(OUT/'stderr').write_text(stderr.getvalue())
+(OUT/'report.json').write_bytes(a.encoded(result_payload(result)))
+(OUT/'observations.json').write_bytes(a.encoded({'schema':'agent-instruction-reconciliation-boundary-observations/v1','tests':observed}))
+(OUT/'test-source.py').write_bytes((ROOT/'tests/test_agent_instruction_reconciliation.py').read_bytes())
+for path,body in implementation.items():
+ assert (ROOT/path).read_bytes()==body
+ (OUT/Path(path).name).write_bytes(body)
+print(json.dumps(result_payload(result)),flush=True)
+raise SystemExit(0 if result.wasSuccessful() else 1)

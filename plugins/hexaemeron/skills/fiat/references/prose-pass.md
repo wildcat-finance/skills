@@ -21,6 +21,9 @@ bundled in this plugin, so no external install is involved.
   `done integrate` refuses the run without it, and prose alone no longer
   satisfies it; the shape and its reasoning are in
   [push-discipline.md](push-discipline.md).
+- Every GitHub issue the run proposes to file, whether it came from carryover,
+  an audit lead, a refused boundary, or another phase. Keep its exact candidate
+  title, body, and complete label set together until the remote readback passes.
 
 ## Order
 
@@ -43,6 +46,35 @@ bundled in this plugin, so no external install is involved.
    verbatim, and the spelling convention stays consistent.
 4. **Re-lint.** The mask can reintroduce a marker; run the lint once more
    and settle any new hits.
+
+## Issues filed during the run
+
+An in-run issue is not a separate filing dialect. In
+`wildcat-finance/skills`, choose exactly one of the four root queues and keep
+its title and queue label paired:
+
+- `{skill}-next: <summary>` with `held-job`;
+- `{skill}-N: <summary>` with `wish`;
+- `{skill}-wish: <summary>` with no queue label; or
+- `framework-N: <summary>` with `observation`, opening the body with the exact
+  framework sentence required by the root `AGENTS.md`.
+
+Freeze the queue-specific prefix, required body opening, and protected evidence
+inventory. Apply `sapheneia-durable-record-shape`, run Imprimatur, apply Vulgate
+to the surface only, compare the protected inventory, and rerun Imprimatur on
+the exact publishable bytes. Then check the complete candidate, not only its
+body:
+
+```text
+hexctl issue-check --body <path> --title '<exact title>' \
+  --label '<label>' [--label '<label>' ...]
+```
+
+Omit `--label` only when the complete candidate really has no labels. Publish
+those exact bytes and labels, then run `hexctl issue-check --issue <url>` so the
+remote title, body, and labels are the evidence. Do not add `wish` to a
+`{skill}-wish` issue. Every queue still requires exactly one `Fiat-Required`
+line and one fenced `carryover` block.
 
 ## Task-issue closing comment
 

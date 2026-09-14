@@ -1,18 +1,18 @@
 ![Anamnesis, keeper of the recalled record](./assets/characters/anamnesis.webp)
 
-# Anamnesis
+# ANAMNESIS
 
 <!-- marketplace-context:start -->
 ## In one line
 
 Anamnesis keeps audit findings and the changes that answered them as a source-bound corpus, admitted against an explicit rights basis and released as read-only projections.
 
-**Current frontier.** The whole seed path ships. Two fresh builds of the pilot agree on the release id, the file set and every component byte; the Elenchus view has no field a verdict could occupy; the Synkrisis view carries its cohort, denominators, policy, exclusions and unknowns; and restricted material reaches neither adapter.
+**Current frontier.** The curation policy's declared mapper is resolved through a registry keyed by name and version: an unresolved name refuses before any record is written, every assertion records the entry that read the source, and three corpora ship, the third preserving the pilot's same 41 findings read from their synopsis rendering under a second registered implementation.
 
-**Next Fiat job.** Use /hexaemeron:fiat to decide what the corpus preserves beyond the pilot. The seed release holds 41 findings from three skills chosen by hand, the curation scope is a resolver-side constant rather than a declared policy field, and whether those are the right records to have preserved is unanswered. Accepted when the release policy declares its own scope and a corpus built under a different declared scope rebuilds to its own release id, or when a decision record states that a hand-picked seed is the permanent shape and names what governs additions. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to admit a corpus whose findings a party other than this repository produced, under a per-source mapper declaration so one corpus can hold both formats. Every source admitted so far was produced here, and the mapper is declared once for the whole curation policy, so one corpus cannot hold a second producer's format beside an existing one. Accepted when the mapper is declared per admitted source rather than once per policy, one corpus admits two sources in different formats under an explicit rights basis for each, and each assertion names the implementation that read its own source. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Character
+## CHARACTER
 
 <details>
 <summary>Keeper of the recalled record</summary>
@@ -51,7 +51,7 @@ Anamnesis therefore reads neither as judge nor oracle, but as the custodian of s
 
 </details>
 
-## Why it exists
+## WHY IT EXISTS
 
 An audit finding and the change that answered it are usually recorded once, in
 one report, and then left where they fell. Hundreds of rounds later nobody can
@@ -64,7 +64,7 @@ preserves the producer's own bytes and identifiers unchanged, and curates a
 graph in which submissions, adjudicated findings, occurrences, remediation
 attempts and verifications stay separate records joined by many-to-many edges.
 
-## What it is careful about
+## WHAT IT IS CAREFUL ABOUT
 
 A corpus is easy to build and easy to make useless. Three things break one:
 
@@ -78,7 +78,7 @@ A corpus is easy to build and easy to make useless. Three things break one:
 
 Every release rebuilds to the same digest from the same inputs, or refuses.
 
-## Where it stops
+## WHERE IT STOPS
 
 Anamnesis does not produce audit rounds, decide whether a finding was real,
 prove a fix correct, or compare runs. Warden produces a round's record.
@@ -91,7 +91,7 @@ It does not train a model, rank auditors, estimate how common a weakness is
 beyond the records it holds, or treat public visibility as permission to
 redistribute.
 
-## Using it
+## USING IT
 
 ```bash
 python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit \
@@ -103,9 +103,18 @@ The design behind the member is in [docs/study.md](docs/study.md), the build
 order in [docs/runbook.md](docs/runbook.md), and the decisions that were
 expensive to reverse in [docs/decisions/](docs/decisions/).
 
-This version implements source admission. Curation and release are declared
-boundaries that refuse by name and say which runbook step owes them.
+<!-- front-door:status skill="anamnesis" version="anamnesis-v5.1.0" -->
+This version admits sources, curates them into a finding graph, builds and
+verifies a release, and reads that release back through the Elenchus and
+Synkrisis projections. Each corpus declares in its policy what it preserves,
+which sources it admits and which mapper reads them; that mapper is resolved
+through a registry before any record is written, and three corpora ship: the
+Warden seed pilot, the capture estate's own findings, and the pilot's same
+three records read from their synopsis rendering under a second registered
+mapper. Whether one corpus can hold a second producer's findings beside a
+format it already reads is the question its
+[ledger](skills/anamnesis/EVOLUTION.md) now holds open.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

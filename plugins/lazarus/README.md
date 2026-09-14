@@ -1,37 +1,39 @@
 ![Lazarus](./assets/characters/lazarus.png)
 
-# Lazarus
+# LAZARUS
 
 <!-- marketplace-context:start -->
 ## In one line
 
 Lazarus captures the finite historical Ethereum state and exact RPC evidence one application test needs, proves the state-backed part, and replays only recorded requests.
 
-**Current frontier.** Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
+**Current frontier.** Receipt witnesses reconstruct receiptsRoot offline for full ordered receipt sets: scoped witnesses prove one consensus receipt payload and its log projection, while empty witnesses are accepted only at Ethereum's empty trie root and prove zero relations; transaction hashes and unrelated RPC results remain recorded evidence.
 
-**Next Fiat job.** Use /hexaemeron:fiat to accept an empty ordered receipt witness only when the verified header carries Ethereum's empty trie root, derive zero receipt-trie-proved relations without a target receipt or filtered-log request, and preserve the shipped non-empty Aave v4 relation plus every legacy format. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** None -- mature.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Lazarus when a test depends on historical Ethereum state or RPC behaviour
 that may no longer be available. It captures a finite fixed-block fixture,
 verifies the supported proof relations offline, and replays only the exact
 requests the fixture contains.
 
-The current release can reconstruct a declared receipt trie for represented
-receipt payloads and log projections. Empty blocks have no receipt witness,
-and recorded transaction hashes, calls, traces, or provider statements do not
-become proved merely because they are in the fixture.
+The current release reconstructs a declared receipt trie for a full ordered
+receipt set. A scoped witness proves one receipt payload and log projection. An
+empty witness is accepted only for Ethereum's empty trie root and proves zero
+relations. Recorded transaction hashes, calls, traces, or provider statements
+do not become proved merely because they are in the fixture.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Lazarus preserves one test's finite chain boundary. Alexandria preserves wider
 lending-data captures, while Berean may consume fixed-block reads in a grounded
 agent release. Ariadne can bind a verified Lazarus preservation release to its
 state-fixture evidence. Those hand-offs preserve Lazarus's evidence classes:
 the scoped consensus receipt and log projection can be receipt-trie proved,
-while transaction hashes, calls, traces and unrelated RPC fields cannot.
+while an empty witness proves only the empty root and zero relations.
+Transaction hashes, calls, traces and unrelated RPC fields cannot be promoted.
 
 Synkrisis is meant for comparison across validated run-observation records,
 not for comparing Lazarus fixtures or strengthening their evidence classes.
@@ -56,15 +58,17 @@ keys, verifies component digests, recomputes the header hash, traverses
 EIP-1186 proofs, reconstructs a declared receipt trie, checks captured code and
 serves exact requests over loopback.
 
-## How it works
+## HOW IT WORKS
 
 Capture fixes a block, records exact JSON-RPC requests and responses, and binds
 the fixture to a deterministic manifest. Account and storage claims must pass
 EIP-1186 trie-proof checks against the captured header; contract code must match
 the proved code hash. A plan-v3 receipt witness can reconstruct `receiptsRoot`
-from every ordered consensus receipt and prove its target receipt payload plus
-the declared filtered-log projection. Transaction hashes, calls, traces and all
-other RPC result fields remain recorded evidence.
+from every ordered consensus receipt. A scoped witness proves its target
+receipt payload plus the declared filtered-log projection; an empty witness is
+accepted only at the empty root and derives no target or log relation.
+Transaction hashes, calls, traces and all other RPC result fields remain
+recorded evidence.
 
 Replay verifies the fixture before opening a loopback server. An uncaptured
 request returns a stable `-32070` error describing the missing plan entry, and
@@ -73,7 +77,7 @@ original recorded-RPC fixture and separately demonstrate the receipt-root
 relation, mutation rejection and deterministic release rebuilding without a
 network.
 
-## What it ships
+## WHAT IT SHIPS
 
 - finite, bounded capture from one fixed historical block;
 - canonical JSON and JSONL formats with versioned, digest-pinned schemas;
@@ -83,7 +87,7 @@ network.
 - fixed Aave v4 v0 and v1 demonstrations, including a preservation release
   for each evidence boundary.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** An old integration test depends on an archive endpoint that is
 slow, costly or gone. Capture the exact historical state and responses the test
@@ -94,15 +98,17 @@ for anything the plan omitted.
 hash or storage value. Run `verify` to check the trie path against the named
 header and keep ordinary RPC evidence outside that proof boundary.
 
-## Evidence boundary
+## EVIDENCE BOUNDARY
 
 - **Proof-backed state** is checked through an EIP-1186 proof against the
   captured header's `stateRoot`. Captured code is checked against the proved
   `codeHash`.
 - **Receipt-trie-proved relations** reconstruct the captured header's
-  `receiptsRoot` from the full ordered consensus receipt sequence, then prove
-  one scoped target receipt payload and its declared consensus-log projection.
-  Transaction hashes are not part of this proof.
+  `receiptsRoot` from the full ordered consensus receipt sequence. A scoped
+  witness proves one target receipt payload and its declared consensus-log
+  projection. An empty witness is accepted only at Ethereum's empty trie root
+  and reports zero proved relations. Transaction hashes are not part of this
+  proof.
 - **Header-bound data** is internally consistent with the named header. That
   does not prove on its own that the header belongs to Ethereum's canonical
   chain.
@@ -119,7 +125,7 @@ The [study](./docs/study.md) records the prior-art research and selected exact
 request cassette design. The [runbook](./docs/runbook.md) divides the prototype
 into six reviewable steps.
 
-## Capture and offline commands
+## CAPTURE AND OFFLINE COMMANDS
 
 The implemented entrypoints are:
 
@@ -160,7 +166,7 @@ python3 scripts/lazarus.py verify examples/multi-provider-anchor-v0
 The result reports `chain-anchor-records: 2`; both canonical-chain and provider
 independence claims remain false.
 
-## Aave v4 demonstration
+## AAVE V4 DEMONSTRATION
 
 [`examples/aave-v4-spoke-v0`](./examples/aave-v4-spoke-v0) is a checked-in Ethereum
 mainnet fixture for a Aave v4 market at block `0x18ac22c`. It carries a
@@ -193,7 +199,18 @@ neither `receiptsRoot` nor either proved relation. See the
 [receipt inclusion proof guide](./docs/receipt-inclusion-proofs.md) for the
 operator boundary and exact verification commands.
 
-## Tests
+## EMPTY-BLOCK DEMONSTRATION
+
+The checked-in Ethereum genesis fixture carries an exclusive empty witness.
+Its demonstration verifies the fixture, statement and release with network
+connections denied, reports the canonical empty trie root and zero relations,
+and rejects root, shape, count, component-digest and release mutations:
+
+```bash
+python3 plugins/lazarus/tests/fixtures/ethereum-genesis-empty-receipts-v1/demo.py
+```
+
+## TESTS
 
 From the repository root:
 

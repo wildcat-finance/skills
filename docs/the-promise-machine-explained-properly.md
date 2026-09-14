@@ -1,4 +1,4 @@
-# The Promise Machine, explained properly
+# THE PROMISE MACHINE, EXPLAINED PROPERLY
 
 This is the non-specialist guide to how **Wildcat Labs Skills, the Shoggoth,**
 fits together. The repository is its installable distribution; the Promise
@@ -9,7 +9,7 @@ the internal vocabulary only when it becomes useful.
 The normative rules live in [`PROMISE_MACHINE.md`](../PROMISE_MACHINE.md).
 Where this guide and that contract differ, the contract wins.
 
-## Start with an ordinary failure
+## START WITH AN ORDINARY FAILURE
 
 Imagine that a protocol test which used to pass against an archive RPC now
 fails. The team wants to know whether the contract changed, the SDK changed,
@@ -37,7 +37,7 @@ proved.” “This regression test passes” does not become “the protocol is 
 
 That preservation of meaning is the Promise Machine.
 
-## What a promise contains
+## WHAT A PROMISE CONTAINS
 
 A promise is not a prediction and it is not a claim that an agent is generally
 reliable. It is the contract for one operation.
@@ -59,7 +59,7 @@ Every first-party promise answers the same questions:
 The stable promise id lets another tool refer to this exact contract without
 copying or paraphrasing it.
 
-## Evidence words have narrow meanings
+## EVIDENCE WORDS HAVE NARROW MEANINGS
 
 The evidence classes describe relations. They are not a league table.
 
@@ -79,7 +79,7 @@ without being proved. A storage value can be proved against a named state root
 without proving that the provider chose the canonical block. A security tool
 can check a bounded property without proving that a contract has no bugs.
 
-## Consequence changes the gate
+## CONSEQUENCE CHANGES THE GATE
 
 The contract uses four consequence levels for the transition after a result:
 
@@ -97,7 +97,7 @@ A level-3 action cannot rest only on model judgement, chat memory, or an
 unchecked receipt. This is why a repository change that looks finished can
 still stop before publication.
 
-## Composition keeps the caveats
+## COMPOSITION KEEPS THE CAVEATS
 
 Skills are designed to hand work to siblings, but composition is where
 overclaiming often happens. The consumer must carry forward the producer,
@@ -122,7 +122,7 @@ Some current examples:
 A consumer may add evidence under a separate identity.
 It may not rename the old evidence into something stronger.
 
-## Refusal should be local and useful
+## REFUSAL SHOULD BE LOCAL AND USEFUL
 
 When evidence is missing, stale, malformed, or about the wrong subject, the
 dependent transition stops. The whole system should not become unusable.
@@ -139,40 +139,44 @@ Inspection, diagnosis, repair, rerun, rollback, and safe exit remain available
 unless the promise explains why one of them cannot exist. A checker must never
 delete or rewrite the failing source merely to make its own report pass.
 
-## What the repository checks
+## WHAT THE REPOSITORY CHECKS
 
 The Promise Machine's structural checks discover the governed skill universe
 from manifests and canonical skill paths. They reject missing declarations,
 duplicate identities, uncovered skills, divergent installation copies, and
 unbound vendored instructions. They also check the shapes of the Promise
 Machine's own operations for run observations, contributor ranking, router
-selection, and first-party licensing.
+selection, first-party licensing, and the bounded agent-instruction prototype
+whose public contract is
+[`agent-instruction-language-v1.md`](agent-instruction-language-v1.md).
 
 This is a wiring and contract check. Behavioural evidence still comes from the
 named domain tests, broken specimens, proof checks, measurements, and manual
 demonstrations. Green wiring cannot prove a false domain claim true.
 
-## The specialists
+## THE SPECIALISTS
 
-The current distribution has 16 plugins and 25 governed first-party skills.
-They are easier to understand as parts of a few R&D paths than as one long
-alphabetical list.
+The current distribution has <!-- front-door:count key="plugins" -->18 plugins
+and <!-- front-door:count key="governed" -->27 governed first-party skills;
+both numbers are derived from the tree when this page is checked. They are
+easier to understand as parts of a few R&D paths than as one long alphabetical
+list.
 
-### Preparing and preserving evidence
+### PREPARING AND PRESERVING EVIDENCE
 
 - **Horos** bounds initial repository reading.
 - **Lemma** prepares source-linked document or Solidity chunks.
 - **Lazarus** preserves finite historical Ethereum state and exact RPC traffic.
 - **Ariadne** binds release digests to evidence statements.
 
-### Building and comparing checkable releases
+### BUILDING AND COMPARING CHECKABLE RELEASES
 
 - **Berean** evaluates protocol-agent releases against pinned documents and
   block-bound chain reads.
 - **Synkrisis** compares declared observations from several runs under one
   comparison policy and bounded rule catalogue.
 
-### Protocol behaviour and contract safety
+### PROTOCOL BEHAVIOUR AND CONTRACT SAFETY
 
 - **Janus** checks host-specific hook-effect boundaries.
 - **Pandects** supplies executable credit laws with broken specimens.
@@ -183,14 +187,14 @@ alphabetical list.
   Convert**, and **Fizz Sync** skills cover audit preparation, contract review,
   and stateful fuzz harnesses.
 
-### Lending records and dossiers
+### LENDING RECORDS AND DOSSIERS
 
 - **Alexandria** preserves raw lending inputs.
 - **Tabularium** maps supported venue records into reproducible events.
 - **Probitas** assembles a declared-address dossier without making the lending
   decision.
 
-### Delivery, engineering, and communication
+### DELIVERY, ENGINEERING, AND COMMUNICATION
 
 - **Fiat** controls the full repository delivery.
 - **Protasis**, **Phylax**, **Ephoros**, **Metron**, **Elenchus**, and
@@ -205,7 +209,7 @@ The root [`README.md`](../README.md) gives examples and current gaps for these
 groups. [`FUTUREPROOFING.md`](../FUTUREPROOFING.md) separates shipped behaviour
 from plausible final forms member by member.
 
-## Hexaemeron and Fiat
+## HEXAEMERON AND FIAT
 
 Hexaemeron is the delivery plugin. Fiat is its controller. Fiat is not an
 always-on mode and the word “deliver” is not enough to activate it. A person
@@ -237,19 +241,19 @@ is unavailable.
 the controller vocabulary. The exact controller contract remains the Fiat
 `SKILL.md`.
 
-## The router
+## THE ROUTER
 
 Portable agents discover one host-neutral `promise-machine` router. The router
 first determines whether it is in a full checkout or an isolated installed
 copy, loads the shared contract and plugin runtime, and then selects the
 narrowest canonical skill that owns the request.
 
-The router does no domain work. If two skills appear to match, it must read the
+The router does no domain work. Where two of them appear to match, it reads the
 boundary that separates them. If the repository defines no owner, it stops at
 inspection and reports the uncovered boundary instead of inventing a general
 capability.
 
-## What “done” means
+## WHAT “DONE” MEANS
 
 For a single operation, done means the named promise passed and the result
 contains its evidence, boundary, and recovery information.
@@ -265,7 +269,7 @@ finite checked operation, a hostile or broken specimen, a visible frontier,
 and a reason to keep maintaining it. Where those are missing, the public prose
 should say so.
 
-## Current source boundary
+## CURRENT SOURCE BOUNDARY
 
 This guide describes the repository snapshot dated 31 August 2026. Counts,
 frontiers, and examples can change. The canonical current sources are:

@@ -17,6 +17,7 @@ import unittest
 PLUGIN_ROOT = Path(__file__).resolve(strict=True).parents[1]
 SCRIPT = PLUGIN_ROOT / "skills/anamnesis/scripts/anamnesis.py"
 PILOT = PLUGIN_ROOT / "specimens/pilot/policy.json"
+PILOT_CURATION = PLUGIN_ROOT / "specimens/pilot/curation-policy.json"
 
 
 def load():
@@ -216,23 +217,39 @@ class Paths(Harness):
 
 
 class PilotScope(Harness):
-    """The 25-to-50 range scopes the seed pilot, not admission in general."""
+    """The record bounds are the pilot's declared scope, not admission in general.
+
+    The bounds are read from the pilot's curation policy, so this suite holds
+    the code to whatever the policy declares rather than to a number of its own.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.curation = anamnesis.load_curation_policy(str(PILOT_CURATION))
+        self.bounds = self.curation["scope"]["records"]
+        self.admitted = self.admit()["sources"]
 
     def scope_refusal(self, count):
         with self.assertRaises(anamnesis.Refusal) as caught:
-            anamnesis.seed_scope(count)
+            anamnesis.check_scope(self.curation, self.admitted, count)
         return caught.exception
 
-    def test_fewer_than_25_records_is_outside_the_seed_scope(self):
-        self.assertEqual(self.scope_refusal(10).code, "A073")
+    def test_fewer_records_than_the_declared_minimum_is_outside_the_scope(self):
+        refusal = self.scope_refusal(self.bounds["minimum"] - 1)
+        self.assertEqual(refusal.code, "A073")
+        self.assertIn(
+            f"{self.bounds['minimum']} to {self.bounds['maximum']}", refusal.message,
+            "the refusal names the declared bounds")
 
-    def test_more_than_50_records_is_outside_the_seed_scope(self):
-        self.assertEqual(self.scope_refusal(60).code, "A073")
+    def test_more_records_than_the_declared_maximum_is_outside_the_scope(self):
+        self.assertEqual(self.scope_refusal(self.bounds["maximum"] + 1).code, "A073")
 
-    def test_the_pilot_itself_is_inside_the_seed_scope(self):
-        anamnesis.seed_scope(len(self.policy["records"]))
+    def test_the_pilot_itself_is_inside_the_declared_scope(self):
+        count = len(self.policy["records"])
+        self.assertTrue(self.bounds["minimum"] <= count <= self.bounds["maximum"])
+        anamnesis.check_scope(self.curation, self.admitted, count)
 
-    def test_admission_alone_does_not_enforce_the_pilot_range(self):
+    def test_admission_alone_does_not_enforce_the_declared_bounds(self):
         """A corpus is not required to be pilot-sized to be admitted."""
         self.policy["records"] = self.policy["records"][:10]
         result = self.admit()

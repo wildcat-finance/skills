@@ -1,4 +1,4 @@
-# Homologia
+# HOMOLOGIA
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -10,7 +10,7 @@ Homologia admits one pinned pair and its evidence-classed expected integers into
 **Next Fiat job.** Use /hexaemeron:fiat to execute one pinned mirror over checked vectors through the adapter protocol, without judging its answers. The child boundary must use fixed argv with no shell, a minimal environment, bounded JSONL input and integer-only output, a timeout, atomic refusal and a recorded runtime identity and answer digest. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Homologia is the planned home for checking whether one pinned contract
 calculation and one pinned off-chain mirror return the same integers over a
@@ -23,7 +23,7 @@ tolerances, paths, caps and expected-answer provenance. It writes one canonical
 checked-inputs record with source digests. Mirror execution, comparison,
 divergence specimens and verdicts still refuse rather than inventing a result.
 
-## Check inputs
+## CHECK INPUTS
 
 From the repository root:
 
@@ -38,7 +38,7 @@ names the manifest and output digests plus the vector-set and vector counts.
 The checked record is not a verdict and says nothing about correctness or
 agreement.
 
-## Intended boundary
+## INTENDED BOUNDARY
 
 A protocol's arithmetic gets written twice. Once in Solidity, in unsigned
 256-bit integers with an explicit rounding direction and a ray or wad scale.
@@ -60,7 +60,7 @@ the verdict it weakens.
 Such a verdict would say only that the pair agreed over the supplied vectors.
 It would never say either side was correct.
 
-## Contracts
+## CONTRACTS
 
 - [skills/homologia/SKILL.md](skills/homologia/SKILL.md), the canonical instructions.
 - [skills/homologia/EVOLUTION.md](skills/homologia/EVOLUTION.md), the version and frontier ledger.
@@ -70,6 +70,6 @@ It would never say either side was correct.
 - [docs/schema-compatibility.md](docs/schema-compatibility.md), the closed version-1 shapes, caps and refusal codes.
 - [examples/wad-interest-v0/checked-inputs.json](examples/wad-interest-v0/checked-inputs.json), the deterministic committed example.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

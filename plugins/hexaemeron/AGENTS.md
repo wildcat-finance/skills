@@ -5,7 +5,7 @@
 # Hexaemeron runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
+> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** every delegated next envelope carries a deterministic fiat-task-identity/v1 handle naming the run's task, phase and role, and next --task-handle refuses a stale, malformed or delegate-less handle before any packet is emitted; closed audit history still ships in the tree as frozen prose, and an audit round has no field for its evidence, which lands in Leads not pursued.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -44,15 +44,22 @@ Hexaemeron skill matches a task.
 Before selecting `fizz`, `fizz-convert`, `fizz-sync`, `x-ray` or
 `solidity-auditor`, read its declaration in [PROMISES.md](PROMISES.md) and
 recompute the SHA-256 of the exact canonical `SKILL.md`. The path and digest
-must match before the Wildcat promise is available. A mismatch blocks the
-overlay and requires review of the upstream change; it never authorises an
-edit to the vendored instruction.
+must match the recorded local path and digest before the Wildcat promise is
+available. The declaration also names the immutable upstream repository,
+commit, path, digest, and whether the local bytes are identical or modified.
+Publisher authentication remains unknown. A mismatch blocks the overlay and
+requires review of the affected local or upstream bytes; it never authorises
+an edit to the instruction.
 
 From this distribution repository, check the complete binding with:
 
 ```bash
 python3 scripts/promise_machine.py check --only contracts,overlays
 ```
+
+When upstream bytes are affected, run the separate bounded verifier with one
+explicit `--path` for each changed vendored instruction. The normal Promise
+Machine core does not fetch or execute that evidence command.
 
 A standalone installation without the repository checker performs the same
 local path and digest comparison before it relies on an overlay. The overlay

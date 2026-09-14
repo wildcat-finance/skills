@@ -1,6 +1,6 @@
 ![Ariadne](./assets/characters/ariadne.png)
 
-# Ariadne
+# ARIADNE
 
 <!-- marketplace-context:start -->
 ## In one line
@@ -12,7 +12,7 @@ Ariadne writes and checks the evidence statement that joins a released artefact 
 **Next Fiat job.** None -- mature.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Ariadne when you are about to release an artefact and need a durable answer
 to “which evidence supports these exact bytes?” It writes an inspectable
@@ -23,7 +23,7 @@ It works for Solidity, dataset, historical-state, and grounded-agent releases.
 It does not run the producer, authenticate the publisher, verify a signature,
 or turn a recorded result into a claim that the artefact is safe or correct.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Ariadne receives artefacts and evidence produced elsewhere. Lazarus can supply
 a verified state-fixture release, Alexandria or Tabularium can supply data
@@ -61,7 +61,7 @@ rather than the only one; a dataset release and a chain-state fixture each have
 their own predicate beside it, and a grounded-agent release gets one rather than a
 tool of its own.
 
-## How it works
+## HOW IT WORKS
 
 A release publishes a claim. The compiler that produced the bytecode, the test run, the fuzz campaign, the audit and its scope, the deployment: all of it sits somewhere else, joined to the claim by a URL and a promise. Those links do not establish that the audit covered the released commit, that the build produced the deployed bytecode, or that the fuzz run used the settings the report describes. Ariadne writes the join down as a statement whose subject is a digest, so the binding survives the assembly.
 
@@ -77,7 +77,7 @@ The statement is [in-toto's](https://github.com/in-toto/attestation) and the env
 
 Five of those belong to an artefact-neutral core and run for any predicate, including a type the build has never seen. The other two come from the predicate, and a type without them is reported as unchecked rather than clean.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the executable [`ariadne.py`](./scripts/ariadne.py) capture, verifier and replay, standard library only;
 - the [Solidity release predicate](./docs/solidity-release.md) and [its published schema](./schemas/solidity-release-v1.json), tied together by a test so the two cannot drift;
@@ -93,13 +93,13 @@ Five of those belong to an artefact-neutral core and run for any predicate, incl
 - a drift-checked offline test suite and an audit log
   ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** A release goes out, and six months later somebody asks which commit the deployed bytecode came from and whether the audit covered it. `capture` reads that out of the build you already ran, and the statement answers from its own contents rather than from a changelog nobody updated.
 
 **Security and audit.** An attestation arrives with a release. `verify` says which gates hold, which went unchecked and why, and states plainly that it checked no signature. `replay` re-runs the deterministic half and compares the artefacts, so the recorded digests are something you can test rather than something you accept.
 
-## What is in it
+## WHAT IS IN IT
 
 **The core.** Digest sets and their matching rules, in-toto Statement v1, the
 DSSE envelope with its pre-authentication encoding, the predicate registry, and
@@ -132,7 +132,7 @@ attestations: two over a real build, one over a fixed Lazarus fixture and one
 over a fixed Berean release. All four verify. A tampered copy of each ships
 beside them and does not.
 
-## The path, end to end
+## THE PATH, END TO END
 
 From this directory, `plugins/ariadne`. Capture a release from a build, verify
 it, and see a tampered copy refused:
@@ -165,7 +165,7 @@ commands in a statement are somebody else's data. The second re-runs the build
 and compares the artefacts against the recorded digest. It rebuilds inside the
 fixture, so work on a copy if you want the fixture left alone.
 
-## The subcommands
+## THE SUBCOMMANDS
 
 ```bash
 python3 scripts/ariadne.py predicates
@@ -209,7 +209,7 @@ state-fixture/v2 hand-off. Its statement records the fixture's
 receipt-trie re-verification, and leaves transaction-hash attribution in the
 recorded-RPC class.
 
-## Where it stops
+## WHERE IT STOPS
 
 The registry holds five predicates, reached through four local capture paths.
 Grounded-agent capture binds a bounded local `berean-release/v1` tree; it does
@@ -221,7 +221,7 @@ as a GitHub Action. Each is a deliberate boundary: the first needs a node, the
 second needs key custody this tool declines, and the third needs a workflow that
 owns neither.
 
-## Keys
+## KEYS
 
 Ariadne holds none. `cosign attest` signs the envelope and
 `cosign verify-attestation` checks the signature. Ariadne reads and writes the
@@ -229,7 +229,7 @@ envelope, reports whether signatures are present, and states every time that it
 did not check them. An unsigned statement is a supported state and gets labelled
 unsigned rather than treated as broken.
 
-## Tests
+## TESTS
 
 ```bash
 python3 -m unittest discover -s tests -t .
@@ -237,6 +237,6 @@ python3 -m unittest discover -s tests -t .
 
 No test touches a network and none needs a Solidity toolchain.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](./LICENSE).

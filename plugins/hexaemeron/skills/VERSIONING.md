@@ -60,6 +60,50 @@ including its final newline:
   next job to `None -- mature`, record the evidence, and stop. Do not suggest,
   start, or resume another Fiat frontier run for that skill.
 
+## Declared inputs
+
+`Next Fiat job` states what to build and what accepts it. A ledger may also
+state what that job needs before it can start. The declaration is one optional
+fenced block, info string `declared-inputs`, placed after the last frontier
+header bullet and before the `## History` heading. A ledger carries at most one.
+
+```declared-inputs
+archive-rpc | endpoint | absent | An archive JSON-RPC endpoint for the capture window.
+```
+
+Every row is four pipe-separated fields, `id | kind | availability | note`.
+
+- **id** is kebab-case, unique within the block, and at most 64 bytes.
+- **kind** is one of `credential`, `endpoint`, `person`, `corpus`, `tool`.
+- **availability** is one of `available`, `absent`, `unknown`.
+- **note** is at most 200 bytes.
+
+A block holds at most 16 rows and at most 4096 bytes. No field may be empty, a
+row carrying a fifth field is refused, and a row that opens with a hyphen, a
+pipe or a backtick is refused whatever it goes on to say. That last rule guards
+a split between two readers of the same file: a reader that searches the whole
+document finds a fenced line spelled like a header bullet, while a reader that
+walks unfenced lines only skips it, so the two disagree about a field's value.
+The placement rule above and the row rule together hold that shut, and an
+unclosed block is refused before its missing fence can swallow `## History`.
+
+`tests/test_evolution_contract.py` checks every governed ledger against these
+rules, so a malformed block on a mature ledger nothing ranks is still caught.
+
+The block adds no `- Name: value` line. It therefore sits outside the
+four-field canonical frontier line above, and no existing ledger's recorded
+digest moves. The cost is stated rather than hidden: a ledger's own history
+cannot detect a declaration that changed, and detecting that belongs to
+whatever reads the declaration.
+
+The closed `kind` and `availability` vocabularies and the 16-row cap are
+extendable by an ordinary change to this file. Widening them earns no decision
+record of its own.
+
+A declaration is a claim the ledger's owner makes, checked for shape and never
+for truth. Nothing here verifies that a declared input exists, or reaches out
+to see whether a declared endpoint answers or a declared person is available.
+
 ## What every frontier run owes
 
 Before a frontier job is recorded as done, cold-read and reconcile all mutable

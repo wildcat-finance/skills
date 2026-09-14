@@ -1,0 +1,21 @@
+```declared-inputs
+an-over-long-over-long-over-long-over-long-over-long-over-long-identifier | tool | available | An id past the sixty-four byte cap.
+over-long-note | corpus | unknown | A note that runs past the two hundred byte cap this contract sets on the fourth field, padded here so the specimen crosses that bound plainly rather than by one character, and keeps crossing it after any later rewording of the surrounding rows.
+padded-input-01 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-02 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-03 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-04 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-05 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-06 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-07 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-08 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-09 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-10 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-11 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-12 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-13 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-14 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-15 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-16 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+padded-input-17 | endpoint | absent | A padded note that helps this specimen cross the four thousand and ninety-six byte cap the contract sets on a whole block, without any single row crossing a per-field cap of its own here.
+```

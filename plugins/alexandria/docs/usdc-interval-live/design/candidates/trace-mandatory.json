@@ -1,0 +1,11 @@
+{
+  "id": "trace-mandatory",
+  "summary": "Keep the three evidence classes fixed and add the opening reads to collect; the live run then needs a primary that serves trace_filter, which no provider reachable from this session without a credential does.",
+  "start_hash_from_collector_read": true,
+  "code_read_journaled": true,
+  "code_rechecked_offline": true,
+  "reachable_provider_pair": false,
+  "resume_safe_after_kill": true,
+  "network_commands": ["collect", "reconcile"],
+  "new_release_components": ["epoch-evidence", "implementation-code"]
+}

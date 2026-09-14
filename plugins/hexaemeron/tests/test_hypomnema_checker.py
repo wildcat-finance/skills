@@ -5,6 +5,7 @@ reads as though the reason exists and was checked.
 """
 
 import importlib.util
+import contextlib
 import io
 import json
 import os
@@ -497,6 +498,31 @@ class Suppression(unittest.TestCase):
 
 
 class OverTheMarketplace(unittest.TestCase):
+    def test_generated_runtime_is_skipped_but_direct_inputs_are_checked(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = Path(base)
+            runtime = root / ".agents/skills/promise-machine/runtime"
+            runtime.mkdir(parents=True)
+            copy = runtime / "record.md"
+            copy.write_text("[missing](absent.md)\n", encoding="utf-8")
+            source = runtime.parent / "SKILL.md"
+            source.write_text("[missing](absent.md)\n", encoding="utf-8")
+            unrelated = root / "runtime/record.md"
+            unrelated.parent.mkdir()
+            unrelated.write_text("[missing](absent.md)\n", encoding="utf-8")
+            for parent in (root, root / ".agents", runtime.parent):
+                for vendored in (False, True):
+                    with self.subTest(parent=parent, include_vendored=vendored):
+                        paths = hypomnema.walk([str(parent)], vendored)
+                        self.assertNotIn(copy, paths)
+                        self.assertIn(source, paths)
+            self.assertIn(unrelated, hypomnema.walk([str(root)]))
+            with contextlib.chdir(runtime.parent):
+                self.assertEqual([Path("SKILL.md")], hypomnema.walk(["."]))
+            for explicit in (runtime, copy):
+                self.assertEqual([copy], hypomnema.walk([str(explicit)]))
+                self.assertEqual(["H001"], [f.code for f in hypomnema.check(copy)])
+
     def test_the_vendored_suite_is_skipped_by_default(self):
         marketplace = ROOT.parents[1]
         paths = hypomnema.walk([str(marketplace / "plugins" / "hexaemeron" / "skills")])
@@ -753,6 +779,11 @@ class DesignBridge(unittest.TestCase):
                 bridge_block(record=selector),
                 record="docs/decisions/drafts/stable-bridge.md",
             )
+            self.assert_h008(design_bridge_findings("study.md", root=root), "draft record")
+            (root / "docs/decisions/drafts/stable-bridge.md").write_text(
+                COMPLETE_RECORD.replace("# ADR-051: A complete specimen", "# Decision: Stable bridge"),
+                encoding="utf-8",
+            )
             self.assertEqual([], design_bridge_findings("study.md", root=root))
 
     def test_a_unique_stable_numbered_final_bridge_is_clean(self):
@@ -786,14 +817,14 @@ class DesignBridge(unittest.TestCase):
                 root = write_design_bridge_tree(base, bridge_block(record=selector))
                 self.assert_h008(design_bridge_findings("study.md", root=root))
 
-    def test_a_direct_draft_path_remains_refused(self):
+    def test_a_malformed_direct_draft_path_refuses(self):
         record = "docs/decisions/drafts/stable-bridge.md"
         with tempfile.TemporaryDirectory() as base:
             root = write_design_bridge_tree(
                 base, bridge_block(record=record), record=record
             )
             self.assert_h008(
-                design_bridge_findings("study.md", root=root), "established"
+                design_bridge_findings("study.md", root=root), "draft record"
             )
 
     def test_a_stable_draft_and_final_duplicate_refuses(self):
@@ -920,6 +951,70 @@ class DesignBridge(unittest.TestCase):
                 self.assert_h008(
                     design_bridge_findings("study.md", root=root), "changed"
                 )
+
+    def test_a_valid_numberless_draft_bridge_is_clean(self):
+        record = "docs/decisions/drafts/keep-the-draft-home.md"
+        source = COMPLETE_RECORD.replace(
+            "# ADR-051: A complete specimen",
+            "# Decision: Keep the draft home",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            (root / record).write_text(source, encoding="utf-8")
+            self.assertEqual([], design_bridge_findings("study.md", root=root))
+
+    def test_a_malformed_numberless_draft_bridge_refuses(self):
+        record = "docs/decisions/drafts/missing-record-shape.md"
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root),
+                "draft record",
+            )
+
+    def test_a_draft_with_an_invalid_stable_identity_refuses(self):
+        record = "docs/decisions/drafts/not_a_stable_slug.md"
+        source = COMPLETE_RECORD.replace(
+            "# ADR-051: A complete specimen",
+            "# Decision: Keep the draft home",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            (root / record).write_text(source, encoding="utf-8")
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root),
+                "invalid stable decision slug",
+            )
+
+    def test_a_nested_numberless_draft_bridge_refuses(self):
+        record = "docs/decisions/drafts/nested/not-direct.md"
+        source = COMPLETE_RECORD.replace(
+            "# ADR-051: A complete specimen",
+            "# Decision: Keep the draft home",
+        )
+        with tempfile.TemporaryDirectory() as base:
+            root = write_design_bridge_tree(
+                base,
+                bridge_block(record=record),
+                record=record,
+            )
+            (root / record).write_text(source, encoding="utf-8")
+            self.assert_h008(
+                design_bridge_findings("study.md", root=root),
+                "outside an established",
+            )
 
     def test_the_explicit_cli_mode_emits_one_clean_json_result(self):
         output = io.StringIO()

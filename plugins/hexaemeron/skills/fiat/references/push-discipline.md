@@ -719,14 +719,25 @@ an existing issue, the line count and the digest of the body, so the ledger hold
 what the run published rather than a promise that it did.
 
 The row is shape, not judgement. A `duplicate` pointing at a real issue about
-something else passes, the referenced issue is never opened, and a `none` reason
+something else passes and that legacy issue is not opened. A `none` reason
 nobody should have accepted still counts as an answer. The reviewer owns whether
-the disposition was right; the receipt owns whether one was made.
+the disposition was right; the receipt owns whether one was made. A `filed`
+reference into `wildcat-finance/skills` makes a newer claim: this run created
+that issue, so integration opens it and checks its complete publication contract.
 
-The same two decisions govern any issue this run files, and
+Every issue this run files uses the same root convention as an issue filed by
+any other route. Its title is exactly one of `{skill}-next: <summary>`,
+`{skill}-N: <summary>`, `{skill}-wish: <summary>`, or
+`framework-N: <summary>`. Those queues carry `held-job`, `wish`, no queue
+label, and `observation`, respectively. A framework observation opens with the
+exact sentence fixed in root `AGENTS.md`. The body also carries the same two
+decisions, and
 [ADR-067](../../../../../docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md)
 holds the reasoning. Check a candidate body with
-`hexctl issue-check --body <path>` before publishing it.
+`hexctl issue-check --body <path> --title '<exact title>' --label '<label>'`
+(repeating `--label` for the complete set) before publishing it, then check the
+remote issue with `hexctl issue-check --issue <url>`. The publication order and
+protected inventory are fixed in [prose-pass.md](prose-pass.md).
 
 Every primary author the push receipts recorded also has to remain attributable
 from the merge. Either the commit that carried it is still an ancestor of the

@@ -10,7 +10,7 @@ decision record names: the roster block in `README.md`, the harness table in
 `scripts/build_contributor_guide.py` draws into
 `docs/pdf/how-to-help-shoggoth.pdf`.
 
-Three properties are load-bearing, and each has a case in
+Three properties define the contract, and each has a case in
 `tests/test_harness_manifest.py` that fails without it.
 
 **The surfaces are derived, never authored.** Every harness name, class and
@@ -24,10 +24,10 @@ carries. The builder holds no harness name at all: it calls the four `pdf_*`
 functions below at draw time, so the PDF cannot drift from the manifest
 without the manifest moving first.
 
-**Rendering is deterministic.** Nothing here reads a clock, a random source, an
-environment variable or the surfaces it is about to overwrite. Two renders of
-one manifest produce identical bytes, which is what makes `--check` a drift
-test rather than a diff of two build times.
+**Rendering is deterministic.** Public surface bytes depend on roster content,
+not the manifest's observation host, date or base ref. Nothing on the render
+path reads a clock, a random source or an environment variable. Observation
+age is enforced separately by `--check-freshness`.
 
 **The PDF is compared as text, not as bytes.** A PDF carries a creation
 timestamp, so two builds of the same page never match byte for byte.
@@ -36,13 +36,10 @@ strings it shows, so `--check` answers whether the page says what the manifest
 says and stays silent about when it was built.
 
 `--check` needs no PDF library: it reads the finished file with `zlib` from the
-standard library. `--write` rebuilds the PDF by running
-`scripts/build_contributor_guide.py`, which does need `reportlab`, and reports
-the failure rather than leaving a stale page behind. The committed PDF's exact
-byte count is recorded in `.horos/boundary.json`, and two boundary cases go red
-when it moves, so a rebuild under a different `reportlab` is a tree-wide change
-rather than a private one. `build_contributor_guide.py` prints the version it
-built with for that reason.
+standard library. Write mode runs `scripts/build_contributor_guide.py` only
+when roster content has changed. The committed PDF's exact byte count is
+recorded in `.horos/boundary.json`, so a content rebuild under a different
+`reportlab` remains a tree-wide change rather than a private one.
 """
 
 from __future__ import annotations
@@ -68,6 +65,7 @@ PDF_PATH = ROOT / "docs/pdf/how-to-help-shoggoth.pdf"
 
 BEGIN_MARKER = "<!-- harness-roster:begin -->"
 END_MARKER = "<!-- harness-roster:end -->"
+FRESHNESS_BUDGET_DAYS = 30
 
 MANUAL_ROUTE = "manual route"
 UNSUPPORTED = "unsupported"
@@ -269,6 +267,7 @@ def load_manifest(path=None):
         raise RenderError(f"manifest refused: {error}") from error
     refuse_unrecorded_shape(document)
     refuse_unpublished_class(document)
+    recorded(document)
     return document
 
 
@@ -329,10 +328,10 @@ def refuse_unrecorded_shape(document):
     `recorded` was added for, and `20260904` passes the calendar and fails the
     pattern, which is this. Both gates are kept.
 
-    An unpatterned `recorded.host` defeated the harness page's drift check.
-    `pdf_label` is the one PDF expectation carrying no bounding guard, on the
-    reading that its tail is a fixed-width date so no differently built label
-    could contain it. That reading holds only while the host carries no comma.
+    Before observation metadata left the surfaces, an unpatterned
+    `recorded.host` defeated the harness page's drift check. The label then had
+    no bounding guard because its tail was a fixed-width date, which was safe
+    only while the host carried no comma.
     Driven on a real page built from host `darwin, 2026-09-04 extra` on
     `2026-09-05`: a manifest recording host `darwin` on `2026-09-04` renders a
     label that is a strict prefix of the drawn one, `pdf_drift` returns `[]`,
@@ -700,11 +699,9 @@ def recorded(document):
     The date is checked as a calendar date here rather than only as a shape.
     `probe_harnesses.manifest_document` matches it against
     `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` and no more, so an operator `--date` of
-    `2026-13-45` or `2026-02-31` reaches a written manifest; this is the last
-    gate before that string is published in the README, the guide table and the
-    PDF's roster card at once, which is where an unreadable date does its
-    damage. Refusing here leaves the probe's own contract alone: a date the
-    renderer will not publish is a manifest defect, not a rendering one.
+    `2026-13-45` or `2026-02-31` reaches a written manifest. `load_manifest`
+    calls this before either content comparison or freshness arithmetic, so an
+    unreadable date cannot become a clean content check or an unhandled age.
     """
     block = document["recorded"]
     date = block["date"]
@@ -730,13 +727,12 @@ def _yes_no(value):
     return "yes" if value else "no"
 
 
-def _provenance(document, surface):
-    host, date, base_ref = recorded(document)
+def _provenance(surface):
     return (
         f"<!-- Generated by scripts/render_harness_roster.py from "
-        f"docs/harness-classification.json, recorded on {host} on {date} against "
-        f"{base_ref}. Change the roster in scripts/probe_harnesses.py, re-run the "
-        f"probe, then re-run the renderer. Nothing between these markers is "
+        f"docs/harness-classification.json. Change the roster in "
+        f"scripts/probe_harnesses.py, re-run the probe, then re-run the renderer. "
+        f"Nothing between these markers is "
         f"edited by hand, and {surface} names no harness from the probed roster "
         f"outside them. Codex and Claude Code are named outside them on purpose: "
         f"they are not in the roster and no probe reads them. -->"
@@ -763,14 +759,13 @@ def _answered(document):
 
 def readme_block(document):
     """The generated body of the README roster block."""
-    host, date, _ = recorded(document)
     manual = names_in_class(document, MANUAL_ROUTE)
     unsupported = names_in_class(document, UNSUPPORTED)
     lines = [
-        _provenance(document, "the README"),
+        _provenance("the README"),
         "",
-        "No local harness holds a checked one-click Atlas launcher. A probe on "
-        f"{host} recorded every harness below on {date} and {_answered(document)}, "
+        "No local harness holds a checked one-click Atlas launcher. The probe "
+        f"recorded every harness below and {_answered(document)}, "
         "so the roster states what it found rather than what anybody hoped for:",
         "",
     ]
@@ -790,9 +785,8 @@ def readme_block(document):
 
 def guide_block(document):
     """The generated body of the guide's harness table."""
-    host, date, base_ref = recorded(document)
     lines = [
-        _provenance(document, "the guide"),
+        _provenance("the guide"),
         "",
         "| Harness | Class | Client found here | Version | Authenticated here |",
         "| --- | --- | --- | --- | --- |",
@@ -805,7 +799,8 @@ def guide_block(document):
         )
     lines.extend([
         "",
-        f"Recorded on {host} on {date}, against `{base_ref}`. A row cannot reach "
+        "The canonical manifest keeps the observation host, date and base ref. "
+        "A row cannot reach "
         "`Atlas launcher` or `tested local route` without a client run somebody "
         "got an answer from, so every row below carries the exact reason it "
         "stopped where it did:",
@@ -825,8 +820,7 @@ def guide_block(document):
 
 def pdf_label(document):
     """The harness page's roster card label, before the page uppercases it."""
-    host, date, _ = recorded(document)
-    return f"{PDF_LABEL_STEM}{host}, {date}"
+    return f"{PDF_LABEL_STEM}roster"
 
 
 def pdf_roster_line(document):
@@ -1081,12 +1075,10 @@ def write(
 ):
     """Regenerate all three surfaces from one manifest, and report every write.
 
-    All three come from the same document, `manifest` included: `build_pdf`
-    passes it to the builder rather than letting the builder read the
-    repository's own. The PDF is always rebuilt and so is always written. The
-    two Markdown surfaces are written only where the rendered text differs from
-    what is already there, so a no-op render leaves their modification times
-    alone.
+    All three come from the same document, `manifest` included. The PDF builder
+    runs only when the existing harness page disagrees with roster content.
+    Markdown files are written only when their generated regions differ, so a
+    metadata-only manifest change leaves every public surface untouched.
 
     Every credential sweep runs before any surface is written. Sweeping each
     body as its turn came round meant the refusal was only as early as the
@@ -1132,8 +1124,16 @@ def write(
         (path, text, rendered_surface(text, body, path))
         for path, text, body in pending
     ]
-    build_pdf(builder=builder, target=pdf, python=python, manifest=manifest)
-    written = [PDF_PATH if pdf is None else Path(pdf)]
+    pdf_target = PDF_PATH if pdf is None else Path(pdf)
+    try:
+        shown = harness_page_text(pdf_target)
+        pdf_matches = not pdf_drift(document, shown)
+    except RenderError:
+        pdf_matches = False
+    written = []
+    if not pdf_matches:
+        build_pdf(builder=builder, target=pdf_target, python=python, manifest=manifest)
+        written.append(pdf_target)
     for path, text, rendered in pending:
         if rendered != text:
             path.write_text(rendered, encoding="utf-8")
@@ -1164,6 +1164,17 @@ def check(*, manifest=None, readme=None, guide=None, pdf=None):
     return document, drift
 
 
+def check_freshness(*, manifest=None, today=None):
+    """Return the manifest and any calendar age outside the declared budget."""
+    document = load_manifest(manifest)
+    _, recorded_date, _ = recorded(document)
+    observed = datetime.date.fromisoformat(recorded_date)
+    current = datetime.date.today() if today is None else today
+    age = (current - observed).days
+    problems = [] if 0 <= age <= FRESHNESS_BUDGET_DAYS else [age]
+    return document, problems
+
+
 def _checked_path(raw, option):
     """One operator-supplied path, checked before it is opened or run."""
     if raw is None:
@@ -1178,10 +1189,16 @@ def _checked_path(raw, option):
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Render the harness roster's three surfaces.")
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--check",
         action="store_true",
         help="report drift and exit non-zero instead of writing anything",
+    )
+    mode.add_argument(
+        "--check-freshness",
+        action="store_true",
+        help="fail when the manifest observation is future-dated or over 30 days old",
     )
     parser.add_argument("--manifest", metavar="PATH", help="the manifest to render from")
     parser.add_argument("--readme", metavar="PATH", help="the README surface")
@@ -1213,6 +1230,33 @@ def main(argv=None):
                 )
                 return 1
             print(f"three surfaces match {len(harnesses(document))} recorded harnesses")
+            return 0
+        if arguments.check_freshness:
+            current = datetime.date.today()
+            document, problems = check_freshness(
+                manifest=surfaces["manifest"], today=current
+            )
+            _, recorded_date, _ = recorded(document)
+            if problems:
+                age = problems[0]
+                if age < 0:
+                    print(
+                        "render_harness_roster: manifest observation date "
+                        f"{recorded_date} is {-age} day(s) in the future",
+                        file=sys.stderr,
+                    )
+                else:
+                    print(
+                        "render_harness_roster: manifest observation age "
+                        f"{age} days exceeds the {FRESHNESS_BUDGET_DAYS}-day budget",
+                        file=sys.stderr,
+                    )
+                return 1
+            age = (current - datetime.date.fromisoformat(recorded_date)).days
+            print(
+                f"manifest observation age {age} days is within the "
+                f"{FRESHNESS_BUDGET_DAYS}-day budget"
+            )
             return 0
         document, changed = write(
             python=_checked_path(arguments.python, "--python"), **surfaces

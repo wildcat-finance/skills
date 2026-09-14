@@ -1,0 +1,80 @@
+[
+  {
+    "bytes": 2566,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/replay.json",
+    "sha256": "88f5b272d8e8cbe3fb0442f2a1eb30cd634ba14b7260f36a1a165b0e2fa161a9",
+    "source": ".hexaemeron/step-2-evaluation-replay/replay.json"
+  },
+  {
+    "bytes": 3231,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/original-evaluation-run.json",
+    "sha256": "de58b85acf3181d21592f666bcf5a98946d5a1c1248f83a8e38e9fa542a23fe9",
+    "source": ".hexaemeron/step-2-evaluation-replay/baseline/docs/promise-machine/obligation-gates/evaluation-run.json"
+  },
+  {
+    "bytes": 2903,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/replay-script.py.txt",
+    "sha256": "b6e9a1633da4805a76e7665acd902f236cb15a3931354966db079d9a8d68282f",
+    "source": ".hexaemeron/scripts/replay_step2_evaluation.py"
+  },
+  {
+    "bytes": 28754,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/original-obligation-demonstration-run.json",
+    "sha256": "bf2fcfc1a033dae5ac9b9d954164440e31a25e9b2b704d303ddf511de6bd582d",
+    "source": ".hexaemeron/step-2-obligation-rebind/original-run.json"
+  },
+  {
+    "bytes": 13917,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/original-obligation-demonstration-evidence.md.txt",
+    "sha256": "71fb012b72f232850ae0a686f3d02683b1af6c415c61901f0147f7aa5912f263",
+    "source": ".hexaemeron/step-2-obligation-rebind/original-evidence.md.txt"
+  },
+  {
+    "bytes": 1309,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/obligation-input-rebind.json",
+    "sha256": "f9df6f491df309884c759767d6459c5ac2cba2a126298ee6d2f953ca0874c559",
+    "source": ".hexaemeron/step-2-obligation-rebind/rebind.json"
+  },
+  {
+    "bytes": 2552,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/obligation-rebind-script.py.txt",
+    "sha256": "a9a0f2e2b89029a74f4b8a63a93c7ecc14a8140c747ebf16495140789cfeaed8",
+    "source": ".hexaemeron/scripts/rebind_obligation_demo_inputs.py"
+  },
+  {
+    "bytes": 2566,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/replay-after-exchange.json",
+    "sha256": "534e7642d9830e8880ad4bae6dd8f86ad9013f6084d8ccfddf1fa24000e7f081",
+    "source": ".hexaemeron/step-2-evaluation-replay-after-exchange/replay.json"
+  },
+  {
+    "bytes": 2918,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/replay-after-exchange-script.py.txt",
+    "sha256": "cff175d899fb3e1da70f4d4b2a0f21be00de9e2a7960b868d1018c0e79b9cc45",
+    "source": ".hexaemeron/scripts/replay_step2_evaluation_after_exchange.py"
+  },
+  {
+    "bytes": 28754,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/before-exchange-obligation-demonstration-run.json",
+    "sha256": "e54bcbcfdf736ada1635c53767397c6f66ab35fea5f7d81eb21d0d262330fe24",
+    "source": ".hexaemeron/step-2-obligation-rebind-after-exchange/original-run.json"
+  },
+  {
+    "bytes": 13917,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/before-exchange-obligation-demonstration-evidence.md.txt",
+    "sha256": "9b7eb6d8153ac502bf07be45451e3978fcc7bf76754066f1e0a8f08af760f09a",
+    "source": ".hexaemeron/step-2-obligation-rebind-after-exchange/original-evidence.md.txt"
+  },
+  {
+    "bytes": 1309,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/obligation-input-rebind-after-exchange.json",
+    "sha256": "6d956e342eb84b6dec85e30c06a1b51e3e74c88f4ebe692622fb5c4fd7b916e6",
+    "source": ".hexaemeron/step-2-obligation-rebind-after-exchange/rebind.json"
+  },
+  {
+    "bytes": 2596,
+    "copy": "docs/agent-instruction-reconciliation/evaluation-replay/obligation-rebind-after-exchange-script.py.txt",
+    "sha256": "40c6bc22ce24d15a51c9da8da5d3380499d15ccc86e0b7043116ce73dde26dfb",
+    "source": ".hexaemeron/scripts/rebind_obligation_demo_after_exchange.py"
+  }
+]

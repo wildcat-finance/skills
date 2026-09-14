@@ -1,0 +1,441 @@
+{
+  "candidates": [
+    {
+      "id": "editorial-only",
+      "summary": "Rewrite the public prose and derive its counts, adding no governed demonstration record."
+    },
+    {
+      "id": "central-registry",
+      "summary": "Keep every skill's demonstration state in one repository-wide registry file."
+    },
+    {
+      "id": "evolution-embedded",
+      "summary": "Add demonstration state to each skill's existing behaviour-frontier ledger."
+    },
+    {
+      "id": "per-skill-demo-ledger",
+      "summary": "Give each governed skill a separate demonstration ledger beside its EVOLUTION.md, with discovery as the only registry."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "complete-ledger-coverage",
+      "kind": "gate",
+      "owner": "promise-machine",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "demo-state-is-discovered",
+      "kind": "gate",
+      "owner": "kronos",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "update-owner-hops",
+      "kind": "metric",
+      "owner": "maintainer",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "global-registry-files",
+      "kind": "metric",
+      "owner": "horos",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "preserves-evolution-digests",
+      "kind": "gate",
+      "owner": "versioning-contract",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "stale-claim-blocked",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "derived-count-agreement",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "public-demo-set-runs",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "front-door-contract-met",
+      "kind": "gate",
+      "owner": "hypomnema",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "editorial-only",
+      "criterion": "complete-ledger-coverage",
+      "report": {
+        "path": "reports/editorial-only-complete-ledger-coverage.json",
+        "sha256": "973a1af7591e12362bdc57792def4dc00f323f42c5498da5331cc5294943380d"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "editorial-only",
+      "criterion": "demo-state-is-discovered",
+      "report": {
+        "path": "reports/editorial-only-demo-state-is-discovered.json",
+        "sha256": "98a5a423eb14d94d993cfd20b2d5b6146d5b6d68f032c970012e02b62cd9da2e"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "editorial-only",
+      "criterion": "update-owner-hops",
+      "report": {
+        "path": "reports/editorial-only-update-owner-hops.json",
+        "sha256": "3d7c6629896ac6a7fbf0d8a95c749ce518d1c812503a8dbf615c4c56811a2b35"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "editorial-only",
+      "criterion": "global-registry-files",
+      "report": {
+        "path": "reports/editorial-only-global-registry-files.json",
+        "sha256": "8d009d7e42623512104ca087cc81345712df5e5e0a7a6f79a57d524862faa42d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "editorial-only",
+      "criterion": "preserves-evolution-digests",
+      "report": {
+        "path": "reports/editorial-only-preserves-evolution-digests.json",
+        "sha256": "9404f049e3d991175e8b3a0dc4410e0389a13ccd02e237675d1ef4d472366f68"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "editorial-only",
+      "criterion": "stale-claim-blocked",
+      "report": {
+        "path": "reports/editorial-only-stale-claim-blocked.json",
+        "sha256": "eb3a4741fab7ab6ad9b0185d7146877c089cbe4372fbcd9a2fb3ddb2e3591458"
+      },
+      "state": "fail"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "editorial-only",
+      "criterion": "derived-count-agreement",
+      "report": "reports/editorial-only-derived-count-agreement.json",
+      "resolver": "python3 -m unittest tests.test_shoggoth_topology",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "editorial-only",
+      "criterion": "public-demo-set-runs",
+      "report": "reports/editorial-only-public-demo-set-runs.json",
+      "resolver": "python3 scripts/demonstrations.py run --public-set --report .hexaemeron/reports/public-set.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "editorial-only",
+      "criterion": "front-door-contract-met",
+      "report": "reports/editorial-only-front-door-contract-met.json",
+      "resolver": "python3 scripts/check_public_front_door.py --root .",
+      "state": "pending"
+    },
+    {
+      "candidate": "central-registry",
+      "criterion": "complete-ledger-coverage",
+      "report": {
+        "path": "reports/central-registry-complete-ledger-coverage.json",
+        "sha256": "e251cde5c8e0186af884a7f7067b65ff35026d5c9a8f386ee490e041b271ceed"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "central-registry",
+      "criterion": "demo-state-is-discovered",
+      "report": {
+        "path": "reports/central-registry-demo-state-is-discovered.json",
+        "sha256": "68aad32c10f5ef54c16072d90758550b3d1069e1cedb5a8d0658153d43bde7d0"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "central-registry",
+      "criterion": "update-owner-hops",
+      "report": {
+        "path": "reports/central-registry-update-owner-hops.json",
+        "sha256": "959cf332168d86c8d941dacf5ca856c69ea05b7ed763f68b91db91685ae60fee"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "central-registry",
+      "criterion": "global-registry-files",
+      "report": {
+        "path": "reports/central-registry-global-registry-files.json",
+        "sha256": "75535d71f05dd4a976941b253bfd895c1870d1b9b3b9a99904c9e183e0d1a290"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "central-registry",
+      "criterion": "preserves-evolution-digests",
+      "report": {
+        "path": "reports/central-registry-preserves-evolution-digests.json",
+        "sha256": "12d7d3cb64320ae3b49513533795afe4ad6a4ef3f2d3d6abcf6621f809ccb9cb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "central-registry",
+      "criterion": "stale-claim-blocked",
+      "report": {
+        "path": "reports/central-registry-stale-claim-blocked.json",
+        "sha256": "0f0c0c606d721ae9ff9ea7fa25c6635efcf0d33270dfc0bc630956c87f951754"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "central-registry",
+      "criterion": "derived-count-agreement",
+      "report": "reports/central-registry-derived-count-agreement.json",
+      "resolver": "python3 -m unittest tests.test_shoggoth_topology",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "central-registry",
+      "criterion": "public-demo-set-runs",
+      "report": "reports/central-registry-public-demo-set-runs.json",
+      "resolver": "python3 scripts/demonstrations.py run --public-set --report .hexaemeron/reports/public-set.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "central-registry",
+      "criterion": "front-door-contract-met",
+      "report": "reports/central-registry-front-door-contract-met.json",
+      "resolver": "python3 scripts/check_public_front_door.py --root .",
+      "state": "pending"
+    },
+    {
+      "candidate": "evolution-embedded",
+      "criterion": "complete-ledger-coverage",
+      "report": {
+        "path": "reports/evolution-embedded-complete-ledger-coverage.json",
+        "sha256": "52aa4fee5abf69f322352f246a1d92858faac6f8593ec20c33f3c57a353107d6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "evolution-embedded",
+      "criterion": "demo-state-is-discovered",
+      "report": {
+        "path": "reports/evolution-embedded-demo-state-is-discovered.json",
+        "sha256": "5a54eeaec060f178b9320ecb3cb09a45d3c8178098d810b7406bcea0874c1dbb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "evolution-embedded",
+      "criterion": "update-owner-hops",
+      "report": {
+        "path": "reports/evolution-embedded-update-owner-hops.json",
+        "sha256": "98080002388381e310d2599e798819e294bc9fa04e66a515147d3df80ae48b7e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "evolution-embedded",
+      "criterion": "global-registry-files",
+      "report": {
+        "path": "reports/evolution-embedded-global-registry-files.json",
+        "sha256": "d58f526f1e9b2babd1a7f7d3f547fee19e3fa9c347ea42fef8343b2ab33d1352"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "evolution-embedded",
+      "criterion": "preserves-evolution-digests",
+      "report": {
+        "path": "reports/evolution-embedded-preserves-evolution-digests.json",
+        "sha256": "c21bf56a65fa81170451005bc94a6535021f999fe3ab07779f47979637b86efd"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "evolution-embedded",
+      "criterion": "stale-claim-blocked",
+      "report": {
+        "path": "reports/evolution-embedded-stale-claim-blocked.json",
+        "sha256": "34eb7be3b17537f32a6e781ef75986668759c2510891adf41588fe76aa95ed3b"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "evolution-embedded",
+      "criterion": "derived-count-agreement",
+      "report": "reports/evolution-embedded-derived-count-agreement.json",
+      "resolver": "python3 -m unittest tests.test_shoggoth_topology",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "evolution-embedded",
+      "criterion": "public-demo-set-runs",
+      "report": "reports/evolution-embedded-public-demo-set-runs.json",
+      "resolver": "python3 scripts/demonstrations.py run --public-set --report .hexaemeron/reports/public-set.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "evolution-embedded",
+      "criterion": "front-door-contract-met",
+      "report": "reports/evolution-embedded-front-door-contract-met.json",
+      "resolver": "python3 scripts/check_public_front_door.py --root .",
+      "state": "pending"
+    },
+    {
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "complete-ledger-coverage",
+      "report": {
+        "path": "reports/per-skill-demo-ledger-complete-ledger-coverage.json",
+        "sha256": "048203b7013bfc2dde9560aa82f19eee56f582bddc38365ceb57e744226ae217"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "demo-state-is-discovered",
+      "report": {
+        "path": "reports/per-skill-demo-ledger-demo-state-is-discovered.json",
+        "sha256": "b83adc6fcb80a8d178b7347b1422b96b3c4cbff6d1d57d97dfab3c8a9e2350f6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "update-owner-hops",
+      "report": {
+        "path": "reports/per-skill-demo-ledger-update-owner-hops.json",
+        "sha256": "ac54ab31a5e6047338da7d6e93e4cf28d5e65ae03a594270d22eb9082b7d2132"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "global-registry-files",
+      "report": {
+        "path": "reports/per-skill-demo-ledger-global-registry-files.json",
+        "sha256": "8c57137c1c5d2caa201fb61680d426224f7e83260d0142c26c0a976bdf9f56da"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "preserves-evolution-digests",
+      "report": {
+        "path": "reports/per-skill-demo-ledger-preserves-evolution-digests.json",
+        "sha256": "54d3c42a74a6886d57f46393a8cea490dd0096a1dabdd1f148859cfdb65b3958"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "stale-claim-blocked",
+      "report": {
+        "path": "reports/per-skill-demo-ledger-stale-claim-blocked.json",
+        "sha256": "fdaf4cf228d55ab7ff1046c68e3643dc1788d90c813b3555fb86b2a349681d31"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "derived-count-agreement",
+      "report": "reports/per-skill-demo-ledger-derived-count-agreement.json",
+      "resolver": "python3 -m unittest tests.test_shoggoth_topology",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "public-demo-set-runs",
+      "report": "reports/per-skill-demo-ledger-public-demo-set-runs.json",
+      "resolver": "python3 scripts/demonstrations.py run --public-set --report .hexaemeron/reports/public-set.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "per-skill-demo-ledger",
+      "criterion": "front-door-contract-met",
+      "report": "reports/per-skill-demo-ledger-front-door-contract-met.json",
+      "resolver": "python3 scripts/check_public_front_door.py --root .",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "per-skill-demo-ledger",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

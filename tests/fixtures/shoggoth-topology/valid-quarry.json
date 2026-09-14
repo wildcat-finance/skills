@@ -1,0 +1,37 @@
+{
+  "schema": "shoggoth-topology-specimen/v1",
+  "description": "A well-formed tree with its own arbitrary ids. Its counts are exact literals because the tree is frozen here; nothing about it is compared with the live repository.",
+  "phase_host": "quarry",
+  "phase_host_entry": "chisel",
+  "plugins": [
+    {
+      "id": "quarry",
+      "skills": [
+        {"name": "chisel", "ledger": true, "entry": true},
+        {"name": "granite", "ledger": true, "entry": true},
+        {"name": "basalt", "ledger": true, "entry": true},
+        {"name": "slate", "ledger": true, "entry": true},
+        {"name": "rubble", "ledger": false, "entry": true}
+      ]
+    },
+    {
+      "id": "lantern",
+      "skills": [
+        {"name": "lantern", "ledger": true, "entry": true}
+      ]
+    },
+    {
+      "id": "thicket",
+      "skills": [
+        {"name": "thicket", "ledger": true, "entry": true}
+      ]
+    }
+  ],
+  "expect": {
+    "plugins": 3,
+    "governed": 6,
+    "canonical": 3,
+    "phase": 3,
+    "phase_ids": ["basalt", "granite", "slate"]
+  }
+}

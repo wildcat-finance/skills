@@ -1,7 +1,7 @@
 # Lazarus implementation runbook
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Lazarus.** Lazarus captures the finite fixed-block Ethereum state and RPC evidence an application test needs, verifies the proof-backed part and replays only exact recorded requests. Use Alexandria for a lending-data archive, Tabularium for event interpretation and Ariadne to bind a released fixture to its evidence. **Current frontier:** Receipt witnesses reconstruct receiptsRoot offline and prove one scoped receipt payload plus its consensus-log projection; transaction hashes and unrelated RPC results remain recorded evidence, while empty blocks still have no receipt-witness representation.
+> **Marketplace context: Lazarus.** Lazarus captures the finite fixed-block Ethereum state and RPC evidence an application test needs, verifies the proof-backed part and replays only exact recorded requests. Use Alexandria for a lending-data archive, Tabularium for event interpretation and Ariadne to bind a released fixture to its evidence. **Current frontier:** Receipt witnesses reconstruct receiptsRoot offline for full ordered receipt sets: scoped witnesses prove one consensus receipt payload and its log projection, while empty witnesses are accepted only at Ethereum's empty trie root and prove zero relations; transaction hashes and unrelated RPC results remain recorded evidence.
 <!-- marketplace-context:end -->
 
 This runbook builds the proof-checked, exact-request historical Ethereum

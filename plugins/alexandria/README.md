@@ -1,18 +1,18 @@
 ![Alexandria](./assets/characters/alexandria.png)
 
-# Alexandria
+# ALEXANDRIA
 
 <!-- marketplace-context:start -->
 ## In one line
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+**Current frontier.** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 
-**Next Fiat job.** Use /hexaemeron:fiat to run the Ethereum USDC collector against two live providers, read the interval's first block so a finalized scope binds both boundary hashes, and preserve the implementation code each epoch names so its code hash can be rechecked offline. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to attribute an implementation epoch by transaction position as well as by block, so a proxy log emitted earlier in an upgrade block is not credited to the implementation that replaced the one which produced it. Accepted when the epoch table carries the boundary transaction and log index beside its block number, `discover_epochs` refuses a preserved log it cannot place against that boundary, `check` re-derives the same attribution offline from the release alone, and an executable case over an upgrade block carrying a proxy log before the upgrade fails without the change. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
-## Start here
+## START HERE
 
 Use Alexandria when lending data may disappear, change shape, or need to be
 checked later. It keeps the original source bytes, records exactly what was and
@@ -22,13 +22,14 @@ Today it can ingest and verify releases, produce unsigned evidence statements,
 derive Aave v4 and Clearpool views, build a disposable address index, verify
 one Compound v3 Phase 0 execution witness, and collect a declared Ethereum USDC
 Comet block interval in bounded shards that resumes after a kill, rewinds after
-a reorg, reconciles against a second provider and verifies offline.
+a reorg, reconciles against a second provider and verifies offline. That
+collector has run against two live providers, and the interval it preserved is
+checked in.
 
-It has not run that collector against a live provider. It covers one market of
-the 28 at the registry pin, never reads an interval's first block, preserves no
-implementation code, and makes no credit decision.
+It covers one market of the 28 at the registry pin, preserves no trace unless a
+plan declares the class and a provider serves it, and makes no credit decision.
 
-## Place in the collective
+## PLACE IN THE COLLECTIVE
 
 Alexandria is the preservation end of the credit-data path. Tabularium consumes
 its raw releases and makes venue-qualified credit events; Probitas may use those
@@ -50,7 +51,7 @@ each capture to explicit scope and coverage, derives a narrow Tabularium credit
 view and supplies that view to Probitas through a disposable index. Alexandria
 is an archive and data source, not a lending venue or underwriting system.
 
-## How it works
+## HOW IT WORKS
 
 Raw GraphQL responses and archive logs do not need one payload schema. Each
 release stores the original bytes under their SHA-256, names the source, chain,
@@ -70,7 +71,7 @@ logical digest and exact release-backed contents before returning rows. The
 explicit Probitas route keeps both venue and archive provenance and leaves all
 unharvested registry venues visible as gaps.
 
-## What it ships
+## WHAT IT SHIPS
 
 - the standard-library [`alexandria.py`](./scripts/alexandria.py)
   ingest, verify, statement, derive, index and query command;
@@ -79,12 +80,16 @@ unharvested registry venues visible as gaps.
 - registered Aave v4 and Clearpool mappings with exact source and context
   selectors;
 - the offline [`credit-history-v0`](./examples/credit-history-v0/README.md)
-  path through Probitas's five gates; and
+  path through Probitas's five gates;
 - a checked-in [Compound v3 Phase 0 raw release](./examples/compound-v3-phase0-v0/README.md),
   separate explicit network capture command and pinned
-  [production harvest specification](./docs/compound-v3-harvest.md).
+  [production harvest specification](./docs/compound-v3-harvest.md);
+- the resumable [Ethereum USDC interval collector](./docs/usdc-interval-collector.md)
+  with its [offline demonstration](./examples/usdc-interval-v0/README.md); and
+- a preserved [live Ethereum mainnet interval](./examples/usdc-interval-live-v0/README.md)
+  that rebuilds to its release identifier with no network.
 
-## Day to day
+## DAY TO DAY
 
 **Developers.** Preserve a protocol response now, with its gaps and usage
 restrictions, then rebuild the same release after the endpoint is gone.
@@ -96,7 +101,7 @@ selector stays unsupported.
 **Finance.** Query a counterparty address across the archived venues without
 letting an unharvested venue read as clean history.
 
-## Complete prototype
+## COMPLETE PROTOTYPE
 
 Alexandria can ingest raw releases, derive verified credit views, rebuild an
 address index and query it:
@@ -169,7 +174,7 @@ Its expected receipts bind 522 derived events, 31 observations, an 11-event
 Clearpool address query and 11 Probitas records. Aave v4 remains partial for
 that query because the mapping declares 25 unsupported native records.
 
-## Compound v3 Phase 0
+## COMPOUND V3 PHASE 0
 
 The checked-in [`compound-v3-phase0-v0`](examples/compound-v3-phase0-v0/README.md)
 release pins all 28 production Comet deployments from ten chains at Compound
@@ -203,7 +208,27 @@ python3 scripts/compound_v3_phase0.py capture \
 This is a fixed method proof from one RPC provider, not an interval harvester,
 independent finality evidence or a canonical Compound event release.
 
-## Architecture
+## THE LIVE USDC INTERVAL
+
+The interval collector has been run against two live providers over Ethereum
+mainnet blocks 25,903,935 to 25,905,934: four shards of 500 all `complete`, 93
+proxy logs, two code-hash-bound implementation epochs, and a second transport
+that agreed over 106 comparisons with none disputed. Both boundary hashes are
+bound into every evidence scope under a `finalized` boundary, and each
+implementation's runtime code ships as its own component so `check` can re-hash
+it offline.
+
+The whole capture is checked in and rebuilds with no network:
+
+```bash
+python3 examples/usdc-interval-live-v0/demo.py build --output "$(mktemp -d)/live"
+python3 examples/usdc-interval-live-v0/demo.py verify <that directory>
+```
+
+The providers appear only as non-secret classes. No endpoint, hostname or
+credential is preserved anywhere in the capture.
+
+## ARCHITECTURE
 
 The design separates:
 
@@ -216,7 +241,7 @@ A digest match will prove only that local bytes agree with the manifest. It
 will not prove who published them, that a hosted source was complete or that
 its reported block was canonical.
 
-## Design record
+## DESIGN RECORD
 
 - [`docs/study.md`](docs/study.md) records the research, selected construction
   and risk register.
@@ -229,13 +254,19 @@ its reported block was canonical.
 - [`docs/address-index.md`](docs/address-index.md) defines index rebuilding,
   queries, false-empty refusal and the Probitas bridge.
 - [`docs/usdc-interval-collector.md`](docs/usdc-interval-collector.md) covers
-  the resumable Ethereum USDC interval collector: its shard plan, its finality
-  policy, its epoch binding, its reconciliation boundary and what its release
-  does not establish.
+  the resumable Ethereum USDC interval collector: its shard plan, its opening
+  reads, its finality classes, its epoch binding, its reconciliation boundary,
+  the live interval it has collected and what its release does not establish.
+- [`docs/usdc-interval-study.md`](docs/usdc-interval-study.md) and
+  [`docs/usdc-interval-runbook.md`](docs/usdc-interval-runbook.md) record the
+  collector's own study and delivery steps, and
+  [`docs/usdc-interval-live-study.md`](docs/usdc-interval-live-study.md) and
+  [`docs/usdc-interval-live-runbook.md`](docs/usdc-interval-live-runbook.md)
+  record the live-boundaries run that followed.
 - [`docs/compound-v3-harvest.md`](docs/compound-v3-harvest.md) pins Compound's
   official registry and specifies production capture, revision, checkpoint,
   reconciliation and acceptance rules. Phase 0 proves the required methods;
-  the interval harvester remains a plan.
+  the interval collector now covers one of the 28 markets that document pins.
 - [`docs/compound-v3-phase0-study.md`](../../docs/compound-v3-phase0-study.md)
   records the method study, and
   [`docs/compound-v3-phase0-runbook.md`](../../docs/compound-v3-phase0-runbook.md)
@@ -253,7 +284,7 @@ its reported block was canonical.
 - [`examples/README.md`](examples/README.md) states the offline demonstration
   boundary.
 
-## Tests
+## TESTS
 
 From the repository root:
 
@@ -264,10 +295,12 @@ python3 plugins/alexandria/tests/run_tests.py \
 
 Alexandria's own implementation uses Python's standard library. Verifying a
 `proof-backed-state` capture loads the sibling Lazarus verifier from the same
-checkout with Lazarus's pinned packages. The six core Alexandria commands,
-Compound build/check commands and checked-in demonstrations reach no network.
-Only the explicit Compound `capture` command performs network I/O.
+checkout with Lazarus's pinned packages. The six core Alexandria commands, the
+Compound and interval `build` and `check` commands and the checked-in
+demonstrations reach no network. Three commands perform network I/O: the
+explicit Compound `capture`, and the interval collector's `collect` and
+`reconcile`.
 
-## Licence
+## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).

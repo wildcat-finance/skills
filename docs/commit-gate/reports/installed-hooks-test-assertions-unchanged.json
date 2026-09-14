@@ -1,0 +1,9 @@
+{
+  "candidate": "installed-hooks",
+  "command": "python3 .hexaemeron/design/evaluate_commit_gate.py --candidate installed-hooks --criterion test-assertions-unchanged",
+  "criterion": "test-assertions-unchanged",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

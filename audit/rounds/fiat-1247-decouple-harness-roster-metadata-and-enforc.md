@@ -1,0 +1,63 @@
+## Step 1, round 1 -- 2026-09-05T16:18:51Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: metadata-content-coupling=reviewed; stale-manifest=reviewed; no-op-pdf-build=reviewed; manifest-validation=reviewed; roster-drift=reviewed; check-graph=reviewed; clock-boundary=reviewed; generated-surface-atomicity=reviewed
+
+Not checked: the waived Pashov Solidity suite, because this step changes no Solidity; the product renderer, freshness boundary, check graph and generated surfaces, which steps 2 and 3 own; semantic duplicate-home discovery outside the one declared design bridge, which remains Hypomnema's recorded open frontier; behavior outside the exact signed commit and selected repository checks
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the draft bridge reuses the ordinary stable-path and record-shape parsers after one bounded stable read, and focused cases cover a valid draft plus malformed, invalid-slug and nested drafts while the existing numbered-ADR, governed-ledger, duplicate, symlink, special-file, oversized, unstable and path-confinement cases remain green. Study mode still does not discover an undeclared second home; that is the unchanged `duplicate-home-discovery` frontier rather than a regression in this generation repair. The agent-instruction prover accepts a live design record only when its candidate ids are an exact duplicate-free set match for its four closed candidates; it intentionally consumes no other design semantics, because those ids only close an argparse choice and all unrelated, malformed, empty or oversized records return the same closed fallback. The Promise Machine inventory binds the final Hypomnema, prover and prover-test bytes. The exact delta plan passed all nine selected checks, including 2,343 Hexaemeron tests and 1,332 root tests, and the three non-Solidity mechanical lints exited zero over the changed surface. No audit fix was required.
+
+## Step 2, round 1 -- 2026-09-05T17:02:43Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: metadata-content-coupling=reviewed; stale-manifest=reviewed; no-op-pdf-build=reviewed; manifest-validation=reviewed; roster-drift=reviewed; check-graph=reviewed; clock-boundary=reviewed; generated-surface-atomicity=reviewed
+
+Not checked: the waived Pashov Solidity suite, because this step changes no Solidity; wall-clock correction beyond the local calendar date supplied by Python; PDF content outside the harness page; behavior outside signed commits `aa59c1a5b21253315b047697ceb49cd927722402` and `efeaa952a3d446bd591f788280b335f426b76e62`
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | low | `scripts/render_harness_roster.py:1235` | The freshness command read the local date once for the verdict and again for its success message. A run crossing midnight could accept age 30, then print age 31 as within the 30-day budget. | fixed in `efeaa952a3d446bd591f788280b335f426b76e62`; `tests/test_harness_manifest.py:2101` supplies two dates and requires one read |
+
+Leads not pursued: the renderer still validates every manifest field before either command, sweeps generated text before writes, and keeps the fixed-argv PDF build ahead of Markdown replacements. A matching harness page skips ReportLab, while content that reaches that page still takes the existing build-failure guard. The content command ignores all three `recorded` values; the freshness command reads only the validated date and gives ages zero through 30 one green meaning. The docs scope owns both commands. The refreshed Elenchus report records 1,337 of 1,337 tests passed, and the exact committed delta plan passed all 32 selected checks after the fix.
+
+## Step 2, round 2 -- 2026-09-05T17:07:06Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: metadata-content-coupling=reviewed; stale-manifest=reviewed; no-op-pdf-build=reviewed; manifest-validation=reviewed; roster-drift=reviewed; check-graph=reviewed; clock-boundary=reviewed; generated-surface-atomicity=reviewed
+
+Not checked: the waived Pashov Solidity suite, because this step changes no Solidity; wall-clock correction beyond the local calendar date supplied by Python; PDF content outside the harness page; behavior outside signed commits `aa59c1a5b21253315b047697ceb49cd927722402` and `efeaa952a3d446bd591f788280b335f426b76e62`
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 2 rechecked the complete risk register after `efeaa952a3d446bd591f788280b335f426b76e62`. The success message and verdict now share one calendar snapshot, and the two-date regression would fail if a second read returned. The 1,337-test repository suite, refreshed Elenchus report, 32-check delta plan, and Phylax, Ephoros, and Hypomnema lints are green. No further source-bound lead warrants another round.
+
+## Step 3, round 1 -- 2026-09-05T17:29:44Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: metadata-content-coupling=reviewed; stale-manifest=reviewed; no-op-pdf-build=reviewed; manifest-validation=reviewed; roster-drift=reviewed; check-graph=reviewed; clock-boundary=reviewed; generated-surface-atomicity=reviewed
+
+Not checked: the waived Pashov Solidity suite, because this step changes no Solidity; a new live harness probe, which the demonstration explicitly does not claim; freshness after the recorded 5 September 2026 observation; behavior outside signed commits `f8c00a9ad753cbc5a40f2d4460b9d5324c3bd2bf` and `98d686797e87615ab627a1a1e86ce814d77721b3`
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the demonstration uses fixed local commands and temporary copies, publishes no physical host path or credential, and binds its claims to the code commit and local calendar date it observed. Its three recorded hashes still match the committed README, guide, and PDF. Metadata-only write mode names no written path; the staged 31-day date leaves content green and freshness red; the harness rename reddens both Markdown regions and the PDF expectation. The first committed run exposed the expected Horos tracked-file count change, and `98d686797e87615ab627a1a1e86ce814d77721b3` refreshed that exact count before the implementation receipt. The refreshed Elenchus report records 1,337 of 1,337 tests passed, and the exact delta plan passed all 32 selected checks. No audit fix was required.

@@ -70,6 +70,95 @@ class VersionRelationTests(HexctlCase):
         self.git("commit", "-m", message)
         return self.git("rev-parse", "HEAD").stdout.strip()
 
+    def _evolved_candidate(self, epoch=3):
+        module, origin, anchor = self._capture_chain_anchor()
+        old = self.chain_ledger("fiat", (2,)).split("## History\n\n")[1]
+        if epoch != 3:
+            old += old.replace("v1.2.3", f"v1.2.{epoch}").replace("| baseline |", "| epoch |")
+        evolved = self.chain_ledger(
+            "fiat", (2, 3), evolution=2, epoch=epoch, revision="new-frontier",
+            frontier="The next held frontier.", job="Complete the next job.",
+        )
+        header, rows = evolved.split("## History\n\n")
+        rows = rows.replace("| baseline |", "| evolution |")
+        base_text = header.replace(f"v2.3.{epoch}", f"v2.2.{epoch}") + "## History\n\n" + old + rows.splitlines(True)[0]
+        self.write(self.ledger_path("fiat"), base_text)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (2, 2, epoch)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "evolution on base")
+        base = self.git("rev-parse", "HEAD").stdout.strip()
+        self.write(self.ledger_path("fiat"), header + "## History\n\n" + old + rows)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (2, 3, epoch)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "candidate after evolution")
+        head = self.git("rev-parse", "HEAD").stdout.strip()
+        return module, origin, base, head, anchor
+
+    def test_evolution_recovery_keeps_original_anchor_and_current_frontier(self):
+        module, origin, base, head, anchor = self._evolved_candidate()
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(self.dir, origin, base, head, anchor)
+        result = module.resolve_version_relation_target(
+            self.dir, origin, base, head, anchor, allow_evolution=True,
+        )
+        self.assertEqual(result["anchor_version"], "fiat-v1.2.3")
+        self.assertEqual(result["base_version"], "fiat-v2.2.3")
+        self.assertEqual(result["resolved_version"], "fiat-v2.3.3")
+
+    def test_evolution_recovery_does_not_admit_epoch_changes(self):
+        module, origin, base, head, anchor = self._evolved_candidate(epoch=4)
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(
+                self.dir, origin, base, head, anchor, allow_evolution=True,
+            )
+
+    def test_evolution_recovery_declaration_is_exact_and_bounded(self):
+        module = hexctl_module()
+        base, head = "a" * 40, "b" * 40
+        declaration = {"base_commit": base, "head_commit": head,
+                       "authority": "maintainer", "reason": "Approved evolution recovery"}
+        self.assertEqual(module.validate_evolution_recovery(declaration, base, head), declaration)
+        mutations = [dict(declaration, base_commit="c" * 40),
+                     dict(declaration, head_commit="c" * 40),
+                     dict(declaration, authority=""), dict(declaration, reason=" "),
+                     dict(declaration, reason="x" * 2049), dict(declaration, authority="x\ny"),
+                     dict(declaration, waived_checks=True)]
+        for value in mutations:
+            with self.subTest(value=value), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                module.validate_evolution_recovery(value, base, head)
+
+    def test_evolution_recovery_receipt_round_trip_keeps_operator_and_original_anchor(self):
+        module, origin, base, head, anchor = self._evolved_candidate()
+        relations = {"schema": SCHEMA, "source_sha256": "a" * 64,
+                     "anchor_commit": origin, "targets": [anchor]}
+        declaration = {"base_commit": base, "head_commit": head,
+                       "authority": "maintainer", "reason": "Approved evolution recovery"}
+        state = {"phase": "integrate", "base": "main", "run_branch": "fiat/test",
+                 "receipts": {"runbook": {"sha256": "b" * 64}},
+                 "integrate": {"sync": {"commit": head, "base_head": base}}}
+        with contextlib.ExitStack() as stack:
+            for name, result in (("receipted_source", "runbook"),
+                                 ("receipted_version_relations", relations),
+                                 ("final_product_head", origin)):
+                stack.enter_context(mock.patch.object(module, name, return_value=result))
+            sync_check = stack.enter_context(mock.patch.object(module, "_require_resolution_sync"))
+            stack.enter_context(mock.patch.object(module, "remote_branch_tip", side_effect=[base, head, head, base] * 2))
+            receipt = module.build_version_resolution(self.dir, state, evolution_recovery=declaration)
+            self.assertEqual(receipt["schema"], "fiat-version-resolution/v2")
+            self.assertEqual(receipt["evolution_recovery"], declaration)
+            self.assertEqual(receipt["targets"][0]["anchor_version"], anchor["anchor_version"])
+            state["integrate"]["version_resolutions"] = [receipt]
+            replay = module.build_version_resolution(self.dir, state)
+            self.assertEqual(module._resolution_without_timestamp(receipt), module._resolution_without_timestamp(replay))
+            self.assertEqual(sync_check.call_count, 2)
+        module.validate_version_resolution_shape(receipt, "test")
+        self.assertEqual(module.version_resolution_event(receipt)["schema"], receipt["schema"])
+        for altered in (dict(receipt, schema="fiat-version-resolution/v1"),
+                        dict(receipt, head_commit="c" * 40)):
+            with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                module.validate_version_resolution_shape(altered, "test")
+
     def test_resolution_accepts_zero_compatible_generation_drift(self):
         module, anchor_commit, anchor = self._capture_chain_anchor()
         head_commit = self._commit_chain((2, 3), "candidate generation")
@@ -2908,6 +2997,14 @@ class VersionRelationTests(HexctlCase):
             "merge_now": False,
             "state_sha256": hexctl_module().state_fingerprint(state),
             "agent": "mason",
+            "task_identity": {
+                "schema": "fiat-task-identity/v1",
+                "handle": "fiat-test-topic-step-1-mason",
+                "task": "test-topic",
+                "step": 1,
+                "round": None,
+                "role": "mason",
+            },
             "brief": {
                 "runbook_step": {
                     "markdown": step_markdown,

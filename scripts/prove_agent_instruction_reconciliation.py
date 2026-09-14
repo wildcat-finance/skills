@@ -235,7 +235,16 @@ def candidate_choices(root: Path) -> tuple[str, ...]:
         ids = tuple(str(entry["id"]) for entry in record["candidates"])
     except (OSError, ValueError, KeyError, TypeError):
         return FALLBACK_CANDIDATES
-    return ids or FALLBACK_CANDIDATES
+    # A repository self-test can run inside an unrelated Fiat worktree, whose
+    # controller owns a valid design record for a different decision. Only the
+    # exact closed set this prover understands may replace its fallback.
+    if (
+        len(ids) != len(FALLBACK_CANDIDATES)
+        or len(set(ids)) != len(ids)
+        or set(ids) != set(FALLBACK_CANDIDATES)
+    ):
+        return FALLBACK_CANDIDATES
+    return ids
 
 
 def bound_digests(manifest: dict[str, Any]) -> tuple[tuple[str, str], ...]:
@@ -1208,6 +1217,21 @@ def build_parser() -> argparse.ArgumentParser:
     # what it moved, so it takes neither --candidate nor --report.
     reconcile_parser = subparsers.add_parser(RECONCILE)
     reconcile_parser.add_argument("--root", default=".")
+    for name in ("prepare", "apply", "recover", "demonstrate"):
+        staged = subparsers.add_parser(name)
+        staged.add_argument("--root", default=".")
+        if name == "prepare":
+            staged.add_argument("--baseline", required=True)
+            staged.add_argument("--source", required=True)
+            staged.add_argument("--stage", required=True)
+        elif name == "apply":
+            staged.add_argument("--stage", required=True)
+            staged.add_argument("--plan-sha256", required=True)
+            staged.add_argument("--check-only", action="store_true")
+        elif name == "recover":
+            staged.add_argument("--journal-sha256", required=True)
+        else:
+            staged.add_argument("--verify", required=True)
     return parser
 
 
@@ -1217,6 +1241,10 @@ def main(argv: list[str] | None = None) -> int:
     if arguments.command is None:
         parser.print_help()
         return 0
+
+    if arguments.command in {"prepare", "apply", "recover", "demonstrate"}:
+        import agent_instruction_reconciliation as staged
+        return staged.run_command(arguments)
 
     root = Path(arguments.root).resolve()
     if arguments.command == RECONCILE:

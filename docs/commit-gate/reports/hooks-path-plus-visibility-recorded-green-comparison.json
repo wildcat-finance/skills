@@ -1,0 +1,9 @@
+{
+  "candidate": "hooks-path-plus-visibility",
+  "command": "python3 .hexaemeron/design/evaluate_commit_gate.py --candidate hooks-path-plus-visibility --criterion recorded-green-comparison",
+  "criterion": "recorded-green-comparison",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
