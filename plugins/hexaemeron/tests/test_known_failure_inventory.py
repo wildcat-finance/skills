@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -111,6 +112,7 @@ def load_checker(test: unittest.TestCase):
     test.assertIsNotNone(spec)
     test.assertIsNotNone(spec.loader)
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -170,7 +172,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
             shutil.copyfile(REPOSITORY_ROOT / source_path, source_target)
         return first_source
 
-    def _findings(
+    def _load(
         self,
         value: dict | None = None,
         *,
@@ -190,12 +192,15 @@ class KnownFailureInventoryTests(unittest.TestCase):
             runbook_path = root / "runbook.md"
             study_path.write_text(study, encoding="utf-8")
             runbook_path.write_text(runbook, encoding="utf-8")
-            return self.checker.check(
+            return self.checker.load_checked_inventory(
                 study_path,
                 runbook_path,
                 repository,
                 expected_ids=expected_ids,
             )
+
+    def _findings(self, *args, **kwargs):
+        return list(self._load(*args, **kwargs).findings)
 
     def _codes(self, *args, **kwargs):
         return [finding.code for finding in self._findings(*args, **kwargs)]
@@ -203,6 +208,177 @@ class KnownFailureInventoryTests(unittest.TestCase):
     def test_kf_453_01_closed_inventory_is_source_bound(self):
         found = self._findings()
         self.assertEqual([finding.as_dict() for finding in found], [])
+
+    def test_loader_distinguishes_absence_refusal_and_clean_capture(self):
+        absent = self._load(
+            study="# Study without an inventory\n",
+            runbook=NO_FINDINGS_RUNBOOK,
+            expected_ids=None,
+        )
+        self.assertEqual("absent", absent.status)
+        self.assertIsNone(absent.capture)
+        self.assertEqual((), absent.findings)
+
+        expected_but_absent = self._load(
+            study="# Study without an inventory\n",
+            runbook=NO_FINDINGS_RUNBOOK,
+            expected_ids=sorted(EXPECTED_IDS),
+        )
+        self.assertEqual("refused", expected_but_absent.status)
+        self.assertIsNone(expected_but_absent.capture)
+        self.assertEqual(
+            ["K006"],
+            [finding.code for finding in expected_but_absent.findings],
+        )
+
+        attempted = (
+            "# Study\n\n```known-failure-inventory\n"
+            '{"schema":"protasis-known-failure-inventory/v1"}\n'
+        )
+        refused = self._load(
+            study=attempted,
+            runbook=NO_FINDINGS_RUNBOOK,
+            expected_ids=None,
+        )
+        self.assertEqual("refused", refused.status)
+        self.assertIsNone(refused.capture)
+        self.assertTrue(refused.findings)
+        self.assertIn(
+            refused.findings[0].code,
+            {f"K{index:03d}" for index in range(13)},
+        )
+
+        partial_assignment = self._load(
+            study="# Study without an inventory\n",
+            runbook=NO_FINDINGS_RUNBOOK + "\nKnown-failure assignment: malformed\n",
+            expected_ids=None,
+        )
+        self.assertEqual("refused", partial_assignment.status)
+        self.assertTrue(partial_assignment.findings)
+
+        inventory_in_runbook = self._load(
+            study="# Study without an inventory\n",
+            runbook=NO_FINDINGS_RUNBOOK + "\n```known-failure-inventory\n{}\n```\n",
+            expected_ids=None,
+        )
+        self.assertEqual("refused", inventory_in_runbook.status)
+        self.assertTrue(inventory_in_runbook.findings)
+
+        assignment_in_study = self._load(
+            study="# Study\n\nKnown-failure assignment: `kf-misplaced` -> Step 1\n",
+            runbook=NO_FINDINGS_RUNBOOK,
+            expected_ids=None,
+        )
+        self.assertEqual("refused", assignment_in_study.status)
+        self.assertTrue(assignment_in_study.findings)
+
+        clean = self._load()
+        self.assertEqual("clean", clean.status)
+        self.assertIsNotNone(clean.capture)
+        self.assertEqual((), clean.findings)
+
+    def test_cli_refuses_absent_surfaces_with_nonempty_expected_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            study_path = root / "study.md"
+            runbook_path = root / "runbook.md"
+            study_path.write_text("# Study without an inventory\n", encoding="utf-8")
+            runbook_path.write_text(NO_FINDINGS_RUNBOOK, encoding="utf-8")
+            command = [
+                "python3",
+                str(SCRIPT),
+                str(study_path),
+                str(runbook_path),
+                "--repository",
+                str(REPOSITORY_ROOT),
+                "--format",
+                "json",
+            ]
+            for finding_id in sorted(EXPECTED_IDS):
+                command.extend(("--expected-id", finding_id))
+
+            completed = subprocess.run(
+                command,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+        self.assertEqual(1, completed.returncode, completed.stdout + completed.stderr)
+        report = json.loads(completed.stdout)
+        self.assertEqual("refused", report["status"])
+        self.assertFalse(report["clean"])
+        self.assertEqual(1, report["finding_count"])
+        self.assertEqual(["K006"], [finding["code"] for finding in report["findings"]])
+
+    def test_clean_capture_is_closed_canonical_and_assignment_ordered(self):
+        value = inventory_object()
+        value["findings"][0]["failure"] += " — café"
+        runbook = RUNBOOK.replace(
+            "Known-failure assignment: `kf-453-03` -> Step 3\n"
+            "Known-failure assignment: `kf-453-04` -> Step 3\n"
+            "Known-failure assignment: `kf-453-05` -> Step 3",
+            "Known-failure assignment: `kf-453-05` -> Step 3\n"
+            "Known-failure assignment: `kf-453-04` -> Step 3\n"
+            "Known-failure assignment: `kf-453-03` -> Step 3",
+        ).replace(
+            "Known-failure assignment: `kf-453-06` -> Step 4\n"
+            "Known-failure assignment: `kf-453-07` -> Step 4",
+            "Known-failure assignment: `kf-453-07` -> Step 4\n"
+            "Known-failure assignment: `kf-453-06` -> Step 4",
+        )
+        study = study_text(encoded(value))
+        result = self._load(value, study=study, runbook=runbook)
+
+        self.assertEqual("clean", result.status)
+        capture = result.capture
+        self.assertIsNotNone(capture)
+        self.assertEqual(
+            {
+                "schema",
+                "study_sha256",
+                "runbook_sha256",
+                "inventory_sha256",
+                "source_views",
+                "findings",
+                "no_known_findings",
+                "assignments",
+            },
+            set(capture),
+        )
+        self.assertEqual(
+            "protasis-known-failure-inventory-capture/v1", capture["schema"]
+        )
+        self.assertEqual(
+            hashlib.sha256(study.encode("utf-8")).hexdigest(),
+            capture["study_sha256"],
+        )
+        self.assertEqual(
+            hashlib.sha256(runbook.encode("utf-8")).hexdigest(),
+            capture["runbook_sha256"],
+        )
+        canonical = json.dumps(value, sort_keys=True, separators=(",", ":"))
+        self.assertEqual(
+            hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+            capture["inventory_sha256"],
+        )
+        self.assertEqual(value["source_views"], capture["source_views"])
+        self.assertEqual(value["findings"], capture["findings"])
+        self.assertEqual(value["no_known_findings"], capture["no_known_findings"])
+        self.assertEqual(
+            [
+                {"finding_id": finding_id, "step": step}
+                for step, finding_ids in (
+                    (1, ["kf-453-01"]),
+                    (2, ["kf-453-02"]),
+                    (3, ["kf-453-03", "kf-453-04", "kf-453-05"]),
+                    (4, ["kf-453-06", "kf-453-07"]),
+                )
+                for finding_id in finding_ids
+            ],
+            capture["assignments"],
+        )
 
     def test_committed_study_fixture_and_exact_checker_command_have_parity(self):
         study = COMMITTED_STUDY.read_text(encoding="utf-8")
@@ -230,6 +406,31 @@ class KnownFailureInventoryTests(unittest.TestCase):
             timeout=30,
         )
         self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
+
+        projected = subprocess.run(
+            [*command, "--format", "json"],
+            cwd=REPOSITORY_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        self.assertEqual(0, projected.returncode, projected.stdout + projected.stderr)
+        report = json.loads(projected.stdout)
+        self.assertEqual("protasis-known-failure-inventory-check/v1", report["schema"])
+        self.assertEqual("clean", report["status"])
+        self.assertTrue(report["clean"])
+        self.assertEqual(0, report["finding_count"])
+        self.assertEqual([], report["findings"])
+        self.assertEqual(
+            self.checker.load_checked_inventory(
+                COMMITTED_STUDY,
+                COMMITTED_RUNBOOK,
+                REPOSITORY_ROOT,
+                expected_ids=sorted(EXPECTED_IDS),
+            ).capture,
+            report["capture"],
+        )
 
     def test_exactly_one_closed_inventory_fence_is_required(self):
         body = encoded(inventory_object())
@@ -738,9 +939,9 @@ class KnownFailureInventoryTests(unittest.TestCase):
             self.checker._amendment_exit_scopes(lines, fenced)
         )
         self.assertIsNone(amendment_error)
-        self.assertEqual(9, final_generation)
+        self.assertEqual(11, final_generation)
         self.assertEqual(
-            [0, 0, 7, 7, 7, 7, 7, 7, 7],
+            [0, 0, 7, 7, 7, 7, 7, 7, 7, 7, 7],
             [
                 sum(
                     self.checker.KNOWN_FAILURE_ASSIGNMENT.fullmatch(lines[index])
@@ -748,7 +949,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
                     for index, scoped_generation in generations.items()
                     if scoped_generation == generation
                 )
-                for generation in range(1, 10)
+                for generation in range(1, 12)
             ],
         )
         steps, assigned, error = self.checker._runbook_contract(runbook)

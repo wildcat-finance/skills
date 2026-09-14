@@ -8,8 +8,10 @@ command appends a ledger entry, so `verify` can prove the run history was not
 edited after the fact.
 
 Phase order is fixed. Globally: study -> runbook -> steps -> integrate -> done.
-Within each step: implement -> audit -> prose -> push. Step branches chain off
-one another and their pull requests stack; nothing merges while the steps run.
+Within a source-bound step: inoculate -> implement -> audit -> prose -> push.
+Steps whose receipted runbook predates the inventory capture retain the earlier
+implement-first path. Step branches chain off one another and their pull
+requests stack; nothing merges while the steps run.
 The integrate phase merges the stack into the run branch in step order, then
 merges the run branch into the recorded base exactly once and closes any
 recorded task issue.
@@ -109,7 +111,7 @@ STATUS_BLOCK_END = "<!-- status:end -->"
 
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
-STEP_PHASES = ["issue", "implement", "audit", "prose", "push"]
+STEP_PHASES = ["issue", "inoculate", "implement", "audit", "prose", "push"]
 GLOBAL_PHASES = ["study", "runbook", "steps", "integrate", "done"]
 
 # Decorative only: the day each phase maps to in the plugin's naming conceit.
@@ -117,6 +119,7 @@ DAY = {
     "study": 1,
     "runbook": 2,
     "issue": 3,
+    "inoculate": 3,
     "implement": 4,
     "audit": 5,
     "prose": 6,
@@ -491,6 +494,80 @@ DESIGN_LOCK_KEYS = frozenset({"schema", "sha256", "candidate"})
 DESIGN_CONTRACT_KEYS = frozenset({"design_evidence"})
 DESIGN_TRANSITIONS_MAX = 502
 DESIGN_CONSUMED_MAX = 128
+KNOWN_FAILURE_INVENTORY_SCHEMA = "protasis-known-failure-inventory/v1"
+KNOWN_FAILURE_CAPTURE_SCHEMA = "protasis-known-failure-inventory-capture/v1"
+KNOWN_FAILURE_CAPTURE_KEYS = frozenset(
+    {
+        "schema",
+        "study_sha256",
+        "runbook_sha256",
+        "inventory_sha256",
+        "source_views",
+        "findings",
+        "no_known_findings",
+        "assignments",
+    }
+)
+KNOWN_FAILURE_SOURCE_VIEW_KEYS = frozenset(
+    {"id", "path", "source_sha256", "view_sha256"}
+)
+KNOWN_FAILURE_FINDING_KEYS = frozenset(
+    {
+        "id",
+        "source_ref",
+        "failure",
+        "guard_paths",
+        "test_command",
+        "report_format",
+        "report_file",
+        "expected_guard_verdict",
+        "green_command",
+        "consuming_step",
+    }
+)
+KNOWN_FAILURE_NO_FINDINGS_KEYS = frozenset(
+    {"source_views", "consuming_step", "surveyor_assertion"}
+)
+KNOWN_FAILURE_NO_FINDINGS_VIEW_KEYS = frozenset(
+    {"id", "source_sha256", "view_sha256"}
+)
+KNOWN_FAILURE_ASSIGNMENT_KEYS = frozenset({"finding_id", "step"})
+KNOWN_FAILURE_ID_RE = re.compile(r"^kf-[a-z0-9]+(?:-[a-z0-9]+)*$")
+KNOWN_FAILURE_MAX_FINDINGS = 128
+KNOWN_FAILURE_MAX_SOURCE_VIEWS = 128
+KNOWN_FAILURE_MAX_GUARD_PATHS = 4096
+INOCULATION_RECEIPT_SCHEMA = "fiat-known-failure-inoculation/v1"
+INOCULATION_RECEIPT_KEYS = frozenset(
+    {
+        "schema",
+        "step",
+        "study_sha256",
+        "runbook_sha256",
+        "inventory_sha256",
+        "step_parent",
+        "assigned_ids",
+        "source_views",
+        "no_known_findings",
+        "guard_manifests",
+    }
+)
+INOCULATION_MANIFEST_REFERENCE_KEYS = frozenset(
+    {"finding_id", "path", "sha256"}
+)
+NO_KNOWN_FINDINGS_SCHEMA = "fiat-no-known-findings/v1"
+NO_KNOWN_FINDINGS_KEYS = frozenset(
+    {
+        "schema",
+        "study_sha256",
+        "inventory_sha256",
+        "source_views",
+        "consuming_step",
+        "assertion",
+    }
+)
+NO_KNOWN_FINDINGS_ASSERTION = "no-known-findings-for-step"
+NO_KNOWN_FINDINGS_FILE = "no-known-findings.json"
+NO_KNOWN_FINDINGS_BYTES_MAX = 64 * 1024
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
 VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
 VERSION_RESOLUTIONS_MAX = 8
@@ -6396,6 +6473,765 @@ def _append_design_transition(state: dict, transition: dict | None) -> None:
     design["transitions"].append(transition)
 
 
+_KNOWN_FAILURE_INVENTORY_MODULE = None
+
+
+def _known_failure_inventory_module():
+    """Load Protasis's one public inventory operation from this plugin."""
+    global _KNOWN_FAILURE_INVENTORY_MODULE
+    if _KNOWN_FAILURE_INVENTORY_MODULE is not None:
+        return _KNOWN_FAILURE_INVENTORY_MODULE
+    root = plugin_root()
+    relative = "skills/protasis/scripts/known_failure_inventory.py"
+    source = os.path.join(root, *relative.split("/"))
+    source_bytes = _read_stable_controller_file(
+        root,
+        relative,
+        "Protasis known-failure inventory loader",
+        limit=SOURCE_BYTES_MAX,
+    )
+    module_name = "_hexaemeron_fiat_known_failure_inventory"
+    specification = importlib.util.spec_from_file_location(module_name, source)
+    if specification is None or specification.loader is None:
+        die("Protasis known-failure inventory loader cannot be resolved", 1)
+    module = importlib.util.module_from_spec(specification)
+    # dataclasses resolves annotations through the importing module while its
+    # decorator runs, so publish this private trusted name for that interval.
+    sys.modules[module_name] = module
+    try:
+        code = compile(source_bytes, source, "exec", dont_inherit=True)
+        # phylax: allow execute the stably read plugin-contained Protasis loader bytes without reopening the file
+        exec(code, module.__dict__)
+    except (Exception, SystemExit):
+        sys.modules.pop(module_name, None)
+        die("Protasis known-failure inventory loader failed to initialise", 1)
+    operation = getattr(module, "load_checked_inventory", None)
+    if not callable(operation):
+        sys.modules.pop(module_name, None)
+        die("Protasis known-failure inventory loader has no public operation", 1)
+    _KNOWN_FAILURE_INVENTORY_MODULE = module
+    return module
+
+
+def _known_failure_portable_path(value) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    parts = value.split("/")
+    return bool(
+        encoded
+        and len(encoded) <= 1024
+        and not os.path.isabs(value)
+        and "\\" not in value
+        and all(part not in ("", ".", "..") for part in parts)
+        and not _contains_nonprinting_character(value)
+    )
+
+
+def _known_failure_text(value, *, limit: int = 4096) -> bool:
+    if not isinstance(value, str) or not value or _contains_nonprinting_character(value):
+        return False
+    try:
+        return len(value.encode("utf-8")) <= limit
+    except UnicodeEncodeError:
+        return False
+
+
+def _validate_known_failure_capture(value, label: str = "known-failure capture") -> dict:
+    """Validate the closed loader result without reparsing its source."""
+    if not isinstance(value, dict) or set(value) != KNOWN_FAILURE_CAPTURE_KEYS:
+        die(f"{label} has an unsupported field set", 1)
+    if value.get("schema") != KNOWN_FAILURE_CAPTURE_SCHEMA:
+        die(f"{label} has an unsupported schema", 1)
+    for name in ("study_sha256", "runbook_sha256", "inventory_sha256"):
+        digest = value.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            die(f"{label} has an invalid {name}", 1)
+
+    source_views = value.get("source_views")
+    if (
+        not isinstance(source_views, list)
+        or not source_views
+        or len(source_views) > KNOWN_FAILURE_MAX_SOURCE_VIEWS
+    ):
+        die(f"{label} has an invalid source_views list", 1)
+    source_ids = set()
+    for index, source_view in enumerate(source_views):
+        if (
+            not isinstance(source_view, dict)
+            or set(source_view) != KNOWN_FAILURE_SOURCE_VIEW_KEYS
+        ):
+            die(f"{label} source_views[{index}] has an unsupported field set", 1)
+        source_id = source_view.get("id")
+        if (
+            not _known_failure_text(source_id, limit=256)
+            or source_id in source_ids
+            or not _known_failure_portable_path(source_view.get("path"))
+        ):
+            die(f"{label} source_views[{index}] has an invalid identity", 1)
+        source_ids.add(source_id)
+        for name in ("source_sha256", "view_sha256"):
+            digest = source_view.get(name)
+            if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                die(f"{label} source_views[{index}] has an invalid {name}", 1)
+
+    findings = value.get("findings")
+    if not isinstance(findings, list) or len(findings) > KNOWN_FAILURE_MAX_FINDINGS:
+        die(f"{label} has an invalid findings list", 1)
+    finding_ids = set()
+    guard_paths_total = 0
+    expected_assignments = []
+    for index, finding in enumerate(findings):
+        if not isinstance(finding, dict) or set(finding) != KNOWN_FAILURE_FINDING_KEYS:
+            die(f"{label} findings[{index}] has an unsupported field set", 1)
+        finding_id = finding.get("id")
+        step_number = finding.get("consuming_step")
+        if (
+            not isinstance(finding_id, str)
+            or KNOWN_FAILURE_ID_RE.fullmatch(finding_id) is None
+            or finding_id in finding_ids
+            or isinstance(step_number, bool)
+            or not isinstance(step_number, int)
+            or step_number <= 0
+        ):
+            die(f"{label} findings[{index}] has an invalid identity", 1)
+        finding_ids.add(finding_id)
+        for name in (
+            "source_ref",
+            "failure",
+            "test_command",
+            "report_format",
+            "report_file",
+            "green_command",
+        ):
+            if not _known_failure_text(finding.get(name)):
+                die(f"{label} findings[{index}] has an invalid {name}", 1)
+        if finding.get("expected_guard_verdict") != "guarded":
+            die(f"{label} findings[{index}] has an unsupported guard verdict", 1)
+        guard_paths = finding.get("guard_paths")
+        if (
+            not isinstance(guard_paths, list)
+            or not guard_paths
+            or any(not _known_failure_portable_path(path) for path in guard_paths)
+            or len(set(guard_paths)) != len(guard_paths)
+        ):
+            die(f"{label} findings[{index}] has invalid guard_paths", 1)
+        guard_paths_total += len(guard_paths)
+        if guard_paths_total > KNOWN_FAILURE_MAX_GUARD_PATHS:
+            die(f"{label} exceeds the guard path ceiling", 1)
+        expected_assignments.append({"finding_id": finding_id, "step": step_number})
+
+    assignments = value.get("assignments")
+    if not isinstance(assignments, list):
+        die(f"{label} has an invalid assignments list", 1)
+    for index, assignment in enumerate(assignments):
+        if not isinstance(assignment, dict) or set(assignment) != KNOWN_FAILURE_ASSIGNMENT_KEYS:
+            die(f"{label} assignments[{index}] has an unsupported field set", 1)
+    expected_assignments.sort(key=lambda item: (item["step"], item["finding_id"]))
+    if assignments != expected_assignments:
+        die(f"{label} assignments are incomplete, duplicated, or unordered", 1)
+
+    no_known_findings = value.get("no_known_findings")
+    if findings:
+        if no_known_findings is not None:
+            die(f"{label} combines findings with a no-known-findings claim", 1)
+    else:
+        if (
+            not isinstance(no_known_findings, dict)
+            or set(no_known_findings) != KNOWN_FAILURE_NO_FINDINGS_KEYS
+        ):
+            die(f"{label} has no closed no-known-findings claim", 1)
+        claim_views = no_known_findings.get("source_views")
+        checked_views = [
+            {
+                "id": item["id"],
+                "source_sha256": item["source_sha256"],
+                "view_sha256": item["view_sha256"],
+            }
+            for item in source_views
+        ]
+        if (
+            not isinstance(claim_views, list)
+            or any(
+                not isinstance(item, dict)
+                or set(item) != KNOWN_FAILURE_NO_FINDINGS_VIEW_KEYS
+                for item in claim_views
+            )
+            or claim_views != checked_views
+            or no_known_findings.get("surveyor_assertion") != "no-known-findings"
+            or isinstance(no_known_findings.get("consuming_step"), bool)
+            or not isinstance(no_known_findings.get("consuming_step"), int)
+            or no_known_findings["consuming_step"] <= 0
+        ):
+            die(f"{label} has a stale or incomplete no-known-findings claim", 1)
+
+    inventory = {
+        "schema": KNOWN_FAILURE_INVENTORY_SCHEMA,
+        "source_views": source_views,
+        "findings": findings,
+        "no_known_findings": no_known_findings,
+    }
+    actual_inventory = hashlib.sha256(canonical(inventory).encode("utf-8")).hexdigest()
+    if actual_inventory != value["inventory_sha256"]:
+        die(f"{label} inventory_sha256 does not match its closed inventory", 1)
+    return value
+
+
+def _load_checked_inventory(
+    base_dir: str,
+    study_path: str,
+    runbook_path: str,
+):
+    """Call the sole Protasis ingestion operation and close its result."""
+    module = _known_failure_inventory_module()
+    try:
+        result = module.load_checked_inventory(
+            Path(study_path), Path(runbook_path), Path(base_dir)
+        )
+    except (Exception, SystemExit):
+        die("Protasis known-failure inventory loader failed", 1)
+    status = getattr(result, "status", None)
+    capture = getattr(result, "capture", None)
+    findings = getattr(result, "findings", None)
+    if status == "absent" and capture is None and findings == ():
+        return None
+    if status == "refused" and capture is None and isinstance(findings, tuple) and findings:
+        first = findings[0]
+        code = getattr(first, "code", None)
+        message = getattr(first, "message", None)
+        if (
+            isinstance(code, str)
+            and re.fullmatch(r"K0(?:0[0-9]|1[0-2])", code)
+            and _known_failure_text(message)
+        ):
+            die(f"Protasis known-failure inventory refused: {code} {message}")
+        die("Protasis known-failure inventory refused")
+    if status != "clean" or findings != ():
+        die("Protasis known-failure inventory loader returned an unsupported result", 1)
+    return _validate_known_failure_capture(capture)
+
+
+def _require_amendment_digest_chain(
+    receipt: dict,
+    initial_sha256: str,
+    current_sha256: str,
+    subject: str,
+) -> None:
+    """Require append-only amendment receipts to explain a source digest move."""
+    history = receipt.get("amendments")
+    if history is None:
+        if initial_sha256 != current_sha256:
+            die(f"receipted known-failure capture has a stale {subject} digest", 1)
+        return
+    if not isinstance(history, list) or not history:
+        die(f"{subject} receipt amendments history must be a non-empty array", 1)
+    cursor = initial_sha256
+    for index, raw in enumerate(history, 1):
+        item = as_dict(raw)
+        next_sha256 = item.get("new_sha256")
+        if (
+            item.get("prior_sha256") != cursor
+            or not isinstance(next_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", next_sha256) is None
+        ):
+            die(
+                f"{subject} amendment {index} does not continue the "
+                "known-failure capture digest chain",
+                1,
+            )
+        cursor = next_sha256
+    if cursor != current_sha256:
+        die(
+            f"{subject} amendment digest chain does not reach the current receipt",
+            1,
+        )
+
+
+def _known_failure_semantics(capture: dict) -> dict:
+    """Return the captured contract without its mutable source byte digests."""
+    return {
+        key: value
+        for key, value in capture.items()
+        if key not in {"study_sha256", "runbook_sha256"}
+    }
+
+
+def _require_matching_known_failure_semantics(
+    stored: dict, current: dict, subject: str, *, code: int = 1
+) -> None:
+    """Keep an append-only source amendment outside the captured contract."""
+    if _known_failure_semantics(current) != _known_failure_semantics(stored):
+        die(
+            f"known-failure inventory semantics changed across a {subject} amendment",
+            code,
+        )
+
+
+def _require_capture_aware_amendment_candidate(
+    base_dir: str,
+    state: dict,
+    subject: str,
+    candidate: bytes,
+) -> None:
+    """Check the exact candidate bytes before opening a durable transaction."""
+    runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    has_capture = "known_failure_inventory" in runbook_receipt
+    stored = None
+    if has_capture:
+        stored = _validate_known_failure_capture(
+            runbook_receipt.get("known_failure_inventory"),
+            "receipted known-failure capture",
+        )
+    if subject not in {"study", "runbook"}:
+        die(f"unsupported capture-aware amendment subject: {subject}", 1)
+
+    counterpart_name = "runbook" if subject == "study" else "study"
+    counterpart = receipted_source(base_dir, state, counterpart_name)
+    if counterpart is None:
+        die(
+            "capture-aware amendment has no receipted counterpart source",
+            1,
+        )
+
+    root = state_root(base_dir)
+    os.makedirs(root, exist_ok=True)
+    descriptor, candidate_path = tempfile.mkstemp(
+        prefix=f"amended-{subject}-inventory-",
+        suffix=".md",
+        dir=root,
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(candidate)
+            handle.flush()
+            os.fsync(handle.fileno())
+        study_path = candidate_path if subject == "study" else counterpart["path"]
+        runbook_path = candidate_path if subject == "runbook" else counterpart["path"]
+        current = _load_checked_inventory(base_dir, study_path, runbook_path)
+    finally:
+        try:
+            os.unlink(candidate_path)
+        except FileNotFoundError:
+            pass
+
+    if not has_capture:
+        if current is not None:
+            die(
+                f"{subject} amendment cannot retrofit a known-failure capture "
+                "onto a pre-capture run"
+            )
+        return
+    if current is None:
+        die(
+            f"{subject} amendment removes the receipted known-failure inventory"
+        )
+    candidate_sha256 = hashlib.sha256(candidate).hexdigest()
+    expected_study_sha256 = (
+        candidate_sha256 if subject == "study" else counterpart["sha256"]
+    )
+    expected_runbook_sha256 = (
+        candidate_sha256 if subject == "runbook" else counterpart["sha256"]
+    )
+    if (
+        current["study_sha256"] != expected_study_sha256
+        or current["runbook_sha256"] != expected_runbook_sha256
+    ):
+        die(
+            f"checked {subject} amendment has stale source digests"
+        )
+    _require_matching_known_failure_semantics(stored, current, subject, code=2)
+
+
+def receipted_known_failure_inventory(
+    base_dir: str,
+    state: dict,
+    *,
+    study: dict | None = None,
+    runbook: dict | None = None,
+) -> dict | None:
+    """Revalidate one captured inventory; absence preserves the legacy path."""
+    receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    if "known_failure_inventory" not in receipt:
+        return None
+    stored = receipt["known_failure_inventory"]
+    stored = _validate_known_failure_capture(stored, "receipted known-failure capture")
+    study = study or receipted_source(base_dir, state, "study")
+    runbook = runbook or receipted_source(base_dir, state, "runbook")
+    if study is None or runbook is None:
+        die("receipted known-failure capture has no source artefacts", 1)
+    _require_amendment_digest_chain(
+        as_dict(study.get("receipt")),
+        stored["study_sha256"],
+        study["sha256"],
+        "study",
+    )
+    _require_amendment_digest_chain(
+        as_dict(runbook.get("receipt")),
+        stored["runbook_sha256"],
+        runbook["sha256"],
+        "runbook",
+    )
+    current = _load_checked_inventory(base_dir, study["path"], runbook["path"])
+    if current is None:
+        die("receipted known-failure capture no longer matches its checked sources", 1)
+    if (
+        current["study_sha256"] != study["sha256"]
+        or current["runbook_sha256"] != runbook["sha256"]
+    ):
+        die("checked known-failure capture has stale source digests", 1)
+    _require_matching_known_failure_semantics(stored, current, "source")
+    return current
+
+
+def _assigned_findings(capture: dict, step_number: int) -> list[dict]:
+    return [
+        finding
+        for finding in capture["findings"]
+        if finding["consuming_step"] == step_number
+    ]
+
+
+def _assigned_ids(capture: dict, step_number: int) -> list[str]:
+    return sorted(finding["id"] for finding in _assigned_findings(capture, step_number))
+
+
+def _open_inoculation_step(
+    base_dir: str, state: dict, step: dict, *, step_parent: str | None = None
+) -> None:
+    parent = step_pr_base(state, step)
+    observed = step_parent or resolved_commit(
+        base_dir, parent, f"step {step['n']} inoculation parent"
+    )
+    observed = require_full_sha(observed, f"step {step['n']} inoculation parent")
+    step["status"] = "open"
+    step["phase"] = "inoculate"
+    step["inoculation_parent"] = observed
+
+
+def _inoculation_parent(base_dir: str, state: dict, step: dict) -> str:
+    recorded = require_full_sha(
+        step.get("inoculation_parent"), f"step {step['n']} inoculation parent"
+    )
+    current = resolved_commit(
+        base_dir,
+        step_pr_base(state, step),
+        f"step {step['n']} inoculation parent",
+    )
+    if current != recorded:
+        die(
+            f"step {step['n']} inoculation parent changed: expected "
+            f"{recorded}, got {current}; restore the exact parent before retrying"
+        )
+    return recorded
+
+
+def _inoculation_evidence_relative(step_number: int) -> str:
+    if isinstance(step_number, bool) or not isinstance(step_number, int) or step_number <= 0:
+        die("inoculation step number is invalid", 1)
+    return f"{STATE_DIR_NAME}/steps/{step_number}/inoculation"
+
+
+def _read_stable_controller_file(
+    base_dir: str, relative: str, label: str, *, limit: int
+) -> bytes:
+    """Read one controller-local leaf through stable no-follow descriptors."""
+    if not _known_failure_portable_path(relative):
+        die(f"{label} path is not a safe relative path")
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    non_blocking = getattr(os, "O_NONBLOCK", 0)
+    if not no_follow or not directory_only or not non_blocking:
+        die(f"platform cannot safely read {label}", 1)
+    root = os.path.realpath(base_dir)
+    directory_flags = os.O_RDONLY | no_follow | directory_only | getattr(os, "O_CLOEXEC", 0)
+    file_flags = os.O_RDONLY | no_follow | non_blocking | getattr(os, "O_CLOEXEC", 0)
+    descriptors = []
+    directory_edges = []
+    file_descriptor = None
+    try:
+        root_descriptor = os.open(root, directory_flags)
+        descriptors.append(root_descriptor)
+        root_identity = os.fstat(root_descriptor)
+        directory_descriptor = root_descriptor
+        for component in relative.split("/")[:-1]:
+            parent_descriptor = directory_descriptor
+            next_descriptor = os.open(
+                component, directory_flags, dir_fd=parent_descriptor
+            )
+            if not stat.S_ISDIR(os.fstat(next_descriptor).st_mode):
+                raise OSError("non-directory component")
+            descriptors.append(next_descriptor)
+            directory_edges.append(
+                (parent_descriptor, component, next_descriptor)
+            )
+            directory_descriptor = next_descriptor
+        leaf = relative.split("/")[-1]
+        file_descriptor = os.open(leaf, file_flags, dir_fd=directory_descriptor)
+        before = os.fstat(file_descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise OSError("not a single-link regular file")
+        chunks = []
+        remaining = limit + 1
+        while remaining:
+            chunk = os.read(file_descriptor, min(65_536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        after = os.fstat(file_descriptor)
+        named = os.stat(leaf, dir_fd=directory_descriptor, follow_symlinks=False)
+        named_root = os.stat(root, follow_symlinks=False)
+        if (
+            not stat.S_ISDIR(named_root.st_mode)
+            or (named_root.st_dev, named_root.st_ino)
+            != (root_identity.st_dev, root_identity.st_ino)
+        ):
+            raise OSError("controller root changed during read")
+        for parent_descriptor, component, child_descriptor in directory_edges:
+            named_directory = os.stat(
+                component,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+            opened_directory = os.fstat(child_descriptor)
+            if (
+                not stat.S_ISDIR(named_directory.st_mode)
+                or (named_directory.st_dev, named_directory.st_ino)
+                != (opened_directory.st_dev, opened_directory.st_ino)
+            ):
+                raise OSError("directory component changed during read")
+        identity = (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        )
+        if (
+            len(data) > limit
+            or len(data) != after.st_size
+            or identity
+            != (
+                after.st_dev,
+                after.st_ino,
+                after.st_size,
+                after.st_mtime_ns,
+                after.st_ctime_ns,
+            )
+            or identity
+            != (
+                named.st_dev,
+                named.st_ino,
+                named.st_size,
+                named.st_mtime_ns,
+                named.st_ctime_ns,
+            )
+        ):
+            raise OSError("changed during read")
+    except OSError:
+        die(f"{label} is not one stable bounded regular file")
+    finally:
+        if file_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(file_descriptor)
+        for descriptor in reversed(descriptors):
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+    return data
+
+
+def _strict_json_document(data: bytes, label: str):
+    try:
+        return json.loads(
+            data.decode("utf-8", "strict"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError):
+        die(f"{label} is not strict UTF-8 JSON")
+
+
+def _expected_no_known_findings_record(capture: dict, step: dict) -> dict:
+    return {
+        "schema": NO_KNOWN_FINDINGS_SCHEMA,
+        "study_sha256": capture["study_sha256"],
+        "inventory_sha256": capture["inventory_sha256"],
+        "source_views": [
+            {
+                "id": source_view["id"],
+                "source_sha256": source_view["source_sha256"],
+                "view_sha256": source_view["view_sha256"],
+            }
+            for source_view in capture["source_views"]
+        ],
+        "consuming_step": step["n"],
+        "assertion": NO_KNOWN_FINDINGS_ASSERTION,
+    }
+
+
+def _no_known_findings_record(base_dir: str, capture: dict, step: dict) -> dict:
+    relative = os.path.join(
+        _inoculation_evidence_relative(step["n"]), NO_KNOWN_FINDINGS_FILE
+    ).replace(os.sep, "/")
+    data = _read_stable_controller_file(
+        base_dir,
+        relative,
+        "no-known-findings record",
+        limit=NO_KNOWN_FINDINGS_BYTES_MAX,
+    )
+    record = _strict_json_document(data, "no-known-findings record")
+    expected = _expected_no_known_findings_record(capture, step)
+    if (
+        not isinstance(record, dict)
+        or set(record) != NO_KNOWN_FINDINGS_KEYS
+        or record != expected
+    ):
+        die("no-known-findings record does not match the checked inventory and step")
+    return record
+
+
+def _receipted_known_failure_source_digest(
+    state: dict, subject: str, digest: str
+) -> bool:
+    """Return whether one digest is on the source's captured amendment chain."""
+    runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    stored = _validate_known_failure_capture(
+        runbook_receipt.get("known_failure_inventory"),
+        "receipted known-failure capture",
+    )
+    cursor = stored[f"{subject}_sha256"]
+    seen = digest == cursor
+    source_receipt = as_dict(as_dict(state.get("receipts")).get(subject))
+    history = source_receipt.get("amendments")
+    if history is not None and (not isinstance(history, list) or not history):
+        die(f"{subject} receipt amendments history must be a non-empty array", 1)
+    for index, raw in enumerate(history or [], 1):
+        item = as_dict(raw)
+        next_sha256 = item.get("new_sha256")
+        if (
+            item.get("prior_sha256") != cursor
+            or not isinstance(next_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", next_sha256) is None
+        ):
+            die(f"{subject} amendment {index} has a broken digest chain", 1)
+        cursor = next_sha256
+        seen = seen or digest == cursor
+    if cursor != source_receipt.get("sha256"):
+        die(f"{subject} amendment digest chain does not reach its receipt", 1)
+    return seen
+
+
+def _validate_inoculation_receipt(
+    receipt,
+    capture: dict,
+    step: dict,
+    step_parent: str,
+    *,
+    state: dict | None = None,
+) -> dict:
+    label = f"step {step['n']} inoculation receipt"
+    if not isinstance(receipt, dict) or set(receipt) != INOCULATION_RECEIPT_KEYS:
+        die(f"{label} has an unsupported field set", 1)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    source_digests_match = (
+        receipt.get("study_sha256") == capture["study_sha256"]
+        and receipt.get("runbook_sha256") == capture["runbook_sha256"]
+    )
+    if not source_digests_match and state is not None:
+        source_digests_match = _receipted_known_failure_source_digest(
+            state, "study", receipt.get("study_sha256")
+        ) and _receipted_known_failure_source_digest(
+            state, "runbook", receipt.get("runbook_sha256")
+        )
+    if (
+        receipt.get("schema") != INOCULATION_RECEIPT_SCHEMA
+        or receipt.get("step") != step["n"]
+        or not source_digests_match
+        or receipt.get("inventory_sha256") != capture["inventory_sha256"]
+        or receipt.get("step_parent") != step_parent
+        or receipt.get("assigned_ids") != assigned_ids
+        or receipt.get("source_views") != capture["source_views"]
+    ):
+        die(f"{label} does not match its capture, step, or parent", 1)
+    manifests = receipt.get("guard_manifests")
+    if not isinstance(manifests, list):
+        die(f"{label} has no guard_manifests list", 1)
+    identities = []
+    prefix = _inoculation_evidence_relative(step["n"]) + "/"
+    for index, manifest in enumerate(manifests):
+        if (
+            not isinstance(manifest, dict)
+            or set(manifest) != INOCULATION_MANIFEST_REFERENCE_KEYS
+        ):
+            die(f"{label} guard_manifests[{index}] has an unsupported field set", 1)
+        finding_id = manifest.get("finding_id")
+        path = manifest.get("path")
+        digest = manifest.get("sha256")
+        if (
+            finding_id not in assigned_ids
+            or not _known_failure_portable_path(path)
+            or not path.startswith(prefix)
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            die(f"{label} guard_manifests[{index}] is malformed", 1)
+        identities.append((finding_id, path))
+    if identities != sorted(set(identities)):
+        die(f"{label} guard_manifests are duplicated or unordered", 1)
+    completed = sorted(item[0] for item in identities)
+    if assigned_ids:
+        if completed != assigned_ids or receipt.get("no_known_findings") is not None:
+            die(f"{label} does not cover the complete assigned id set", 1)
+    else:
+        receipt_capture = dict(capture)
+        receipt_capture["study_sha256"] = receipt.get("study_sha256")
+    if not assigned_ids and (
+        manifests
+        or receipt.get("no_known_findings")
+        != _expected_no_known_findings_record(receipt_capture, step)
+    ):
+        die(f"{label} has no checked no-known-findings record", 1)
+    return receipt
+
+
+def inoculation_status(state: dict, capture: dict) -> dict:
+    step = current_step(state)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    receipt = as_dict(as_dict(step.get("receipts")).get("inoculate"))
+    completed_ids = sorted(
+        item.get("finding_id")
+        for item in (receipt.get("guard_manifests") or [])
+        if isinstance(item, dict) and item.get("finding_id") in assigned_ids
+    )
+    return {
+        "inventory_sha256": capture["inventory_sha256"],
+        "assigned_count": len(assigned_ids),
+        "completed_ids": completed_ids,
+        "remaining_ids": sorted(set(assigned_ids) - set(completed_ids)),
+    }
+
+
+def _refuse_inoculate_options(args) -> None:
+    allowed = {"cmd", "dir", "fn", "phase"}
+    supplied = []
+    for name, value in vars(args).items():
+        if name in allowed or name.startswith("_"):
+            continue
+        if value is not None and value is not False and value != []:
+            supplied.append("--" + name.replace("_", "-"))
+    if supplied:
+        die(
+            "done inoculate accepts no phase-specific options; remove "
+            + ", ".join(sorted(supplied))
+        )
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
@@ -6494,6 +7330,33 @@ def done_runbook(args, state: dict) -> None:
             "runbook Step headings must exactly match steps-file titles, "
             "numbers, and order; edit the runbook or steps file, then retry"
         )
+    study_source = receipted_source(args.dir, state, "study")
+    if study_source is None:
+        die("runbook receipt requires one receipted study source", 1)
+    inventory_capture = _load_checked_inventory(
+        args.dir, study_source["path"], artifact_path
+    )
+    digest = hashlib.sha256(artifact_bytes).hexdigest()
+    if inventory_capture is not None:
+        if (
+            inventory_capture["study_sha256"] != study_source["sha256"]
+            or inventory_capture["runbook_sha256"] != digest
+        ):
+            die("known-failure capture source digests changed during runbook receipt")
+        invalid_steps = sorted(
+            {
+                assignment["step"]
+                for assignment in inventory_capture["assignments"]
+                if assignment["step"] > len(titles)
+            }
+        )
+        no_findings_step = as_dict(
+            inventory_capture.get("no_known_findings")
+        ).get("consuming_step")
+        if invalid_steps or (
+            no_findings_step is not None and no_findings_step > len(titles)
+        ):
+            die("known-failure capture names a Step outside the runbook topology", 1)
     if design_evidence_required(state):
         design_transition = _prepare_design_transition(args.dir, state, "step:1")
     state["steps"] = [
@@ -6507,17 +7370,22 @@ def done_runbook(args, state: dict) -> None:
         }
         for i, title in enumerate(titles)
     ]
-    state["steps"][0]["status"] = "open"
-    state["steps"][0]["phase"] = "implement"
+    if inventory_capture is None:
+        state["steps"][0]["status"] = "open"
+        state["steps"][0]["phase"] = "implement"
+    else:
+        _open_inoculation_step(args.dir, state, state["steps"][0])
     state["current_step"] = 1
     state["phase"] = "steps"
     receipt = {"artifact": artifact, "steps": titles}
-    digest = hashlib.sha256(artifact_bytes).hexdigest()
     state["receipts"]["runbook"] = {
         "artifact": artifact,
         "sha256": digest,
         "step_count": len(titles),
     }
+    if inventory_capture is not None:
+        state["receipts"]["runbook"]["known_failure_inventory"] = inventory_capture
+        receipt["known_failure_inventory"] = inventory_capture
     if design_lock is not None:
         state["receipts"]["runbook"]["design_lock"] = design_lock
         receipt["design_lock"] = design_lock
@@ -6529,7 +7397,49 @@ def done_runbook(args, state: dict) -> None:
         receipt["version_relations"] = version_relations
     receipt["sha256"] = digest
     commit(args.dir, state, "done:runbook", receipt)
-    print(f"runbook receipted; {len(titles)} steps registered; step 1 -> implement")
+    phase = "inoculate" if inventory_capture is not None else "implement"
+    print(f"runbook receipted; {len(titles)} steps registered; step 1 -> {phase}")
+
+
+def done_inoculate(args, state: dict) -> None:
+    """Receipt the pre-edit boundary for one capture-aware Step."""
+    _refuse_inoculate_options(args)
+    step = require_step_phase(state, "inoculate")
+    capture = receipted_known_failure_inventory(args.dir, state)
+    if capture is None:
+        die("pre-contract runbook receipts have no inoculation transition")
+    step_parent = _inoculation_parent(args.dir, state, step)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    if assigned_ids:
+        # Step 3 adds report retention and constructs the complete non-empty
+        # manifest-reference set. Until then an id declaration is deliberately
+        # not evidence, and the phase cannot authorise product editing.
+        die(
+            f"step {step['n']} has {len(assigned_ids)} assigned known finding(s), "
+            "but guard_manifests is empty; retain and validate the complete "
+            "guard evidence set before retrying"
+        )
+    no_known_findings = _no_known_findings_record(args.dir, capture, step)
+    receipt = {
+        "schema": INOCULATION_RECEIPT_SCHEMA,
+        "step": step["n"],
+        "study_sha256": capture["study_sha256"],
+        "runbook_sha256": capture["runbook_sha256"],
+        "inventory_sha256": capture["inventory_sha256"],
+        "step_parent": step_parent,
+        "assigned_ids": [],
+        "source_views": capture["source_views"],
+        "no_known_findings": no_known_findings,
+        "guard_manifests": [],
+    }
+    _validate_inoculation_receipt(receipt, capture, step, step_parent)
+    step["receipts"]["inoculate"] = receipt
+    step["phase"] = "implement"
+    commit(args.dir, state, "done:inoculate", receipt)
+    print(
+        f"step {step['n']} no-known-findings record receipted; "
+        "phase -> implement"
+    )
 
 
 def done_implement(args, state: dict) -> None:
@@ -6540,9 +7450,25 @@ def done_implement(args, state: dict) -> None:
     require_no_amendment_block(state)
     if state.get("halted"):
         die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
+    capture = receipted_known_failure_inventory(args.dir, state)
     if state["phase"] != "steps" or step["phase"] not in ("issue", "implement"):
+        if capture is not None and step.get("phase") == "inoculate":
+            die(
+                f"step {step['n']} cannot implement before a valid "
+                "inoculation receipt"
+            )
         require_step_phase(state, "implement")
     legacy_phase = step["phase"] == "issue"
+    inoculation_parent = None
+    if capture is not None:
+        inoculation_parent = _inoculation_parent(args.dir, state, step)
+        _validate_inoculation_receipt(
+            as_dict(step.get("receipts")).get("inoculate"),
+            capture,
+            step,
+            inoculation_parent,
+            state=state,
+        )
     if not args.branch or not args.commit:
         die("--branch and --commit are required")
     if run_branch_of(state):
@@ -6552,7 +7478,11 @@ def done_implement(args, state: dict) -> None:
                 f"--branch must be '{expected}', chained off "
                 f"'{step_pr_base(state, step)}'; got '{args.branch}'"
             )
-    range_base = step_pr_base(state, step) if run_branch_of(state) else state["base"]
+    range_base = (
+        inoculation_parent
+        if inoculation_parent is not None
+        else step_pr_base(state, step) if run_branch_of(state) else state["base"]
+    )
     branch_tip = resolved_commit(
         args.dir, args.branch, f"step {step['n']} implementation branch"
     )
@@ -7272,10 +8202,18 @@ def done_push(args, state: dict) -> None:
     step["phase"] = "done"
     if remaining:
         nxt = remaining[0]
-        nxt["status"] = "open"
-        nxt["phase"] = "implement"
+        capture = receipted_known_failure_inventory(args.dir, state)
+        if capture is None:
+            nxt["status"] = "open"
+            nxt["phase"] = "implement"
+            next_phase = "implement"
+        else:
+            _open_inoculation_step(
+                args.dir, state, nxt, step_parent=supplied_head
+            )
+            next_phase = "inoculate"
         state["current_step"] = nxt["n"]
-        tail = f"step {nxt['n']} -> implement"
+        tail = f"step {nxt['n']} -> {next_phase}"
     else:
         state["current_step"] = None
         if stacked:
@@ -10413,6 +11351,7 @@ def done_integrate(args, state: dict) -> None:
 DONE_HANDLERS = {
     "study": done_study,
     "runbook": done_runbook,
+    "inoculate": done_inoculate,
     "implement": done_implement,
     "audit": done_audit,
     "prose": done_prose,
@@ -11115,6 +12054,9 @@ def _recover_study_amendment(
             or history[-1] != amendment
         ):
             die("pending study amendment disagrees with the committed receipt", 1)
+        _require_capture_aware_amendment_candidate(
+            base_dir, state, "study", canonical
+        )
         verify_run(base_dir, allow_pending_amendment=True)
         clear_study_amendment_pending(base_dir)
         print(f"study amendment recovered: committed {new}")
@@ -11138,6 +12080,9 @@ def _recover_study_amendment(
     recovered = _study_amendment_record(state, prior, canonical)
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
+    _require_capture_aware_amendment_candidate(
+        base_dir, state, "study", canonical
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -11194,6 +12139,9 @@ def cmd_amend_study(args) -> None:
 
     _check_amended_study(args.dir, candidate)
     amendment = _study_amendment_record(state, expected, candidate)
+    _require_capture_aware_amendment_candidate(
+        args.dir, state, "study", candidate
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -11259,6 +12207,9 @@ def _recover_runbook_amendment(
             or history[-1] != amendment
         ):
             die("pending runbook amendment disagrees with the committed receipt", 1)
+        _require_capture_aware_amendment_candidate(
+            base_dir, state, "runbook", canonical
+        )
         verify_run(base_dir, allow_pending_amendment=True)
         clear_amendment_pending(base_dir, "runbook")
         print(f"runbook amendment recovered: committed {new}")
@@ -11282,6 +12233,9 @@ def _recover_runbook_amendment(
     _check_amended_runbook(base_dir, canonical)
     if recovered != amendment:
         die("pending runbook amendment metadata does not match candidate bytes", 1)
+    _require_capture_aware_amendment_candidate(
+        base_dir, state, "runbook", canonical
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("runbook receipt amendments history must be an array", 1)
@@ -11339,6 +12293,9 @@ def cmd_amend_runbook(args) -> None:
 
     amendment = _runbook_amendment_record(state, expected, candidate)
     _check_amended_runbook(args.dir, candidate)
+    _require_capture_aware_amendment_candidate(
+        args.dir, state, "runbook", candidate
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("runbook receipt amendments history must be an array", 1)
@@ -13425,7 +14382,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         }
         return packet
 
-    if action not in ("implement", "audit-round", "prose"):
+    if action not in ("inoculate", "implement", "audit-round", "prose"):
         return packet
 
     if not run_branch_of(state):
@@ -13443,7 +14400,66 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
     step = current_step(state)
     plan = branch_plan(state, step)
     root_plugin = plugin_root()
+    if action == "inoculate":
+        capture = receipted_known_failure_inventory(
+            root, state, study=study, runbook=runbook
+        )
+        if capture is None:
+            die("inoculate directive has no receipted known-failure capture", 1)
+        assigned = _assigned_findings(capture, step["n"])
+        allowed_guard_paths = sorted(
+            {
+                path
+                for finding in assigned
+                for path in finding["guard_paths"]
+            }
+        )
+        packet["agent"] = "mason"
+        packet["brief"] = {
+            "study_sha256": study["sha256"],
+            "runbook_sha256": runbook["sha256"],
+            "inventory_sha256": capture["inventory_sha256"],
+            "known_failure_inventory": capture,
+            "consuming_step": step["n"],
+            "assigned_findings": assigned,
+            "allowed_guard_paths": allowed_guard_paths,
+            "reporter_contracts": [
+                {
+                    "finding_id": finding["id"],
+                    "test_command": finding["test_command"],
+                    "report_format": finding["report_format"],
+                    "report_file": finding["report_file"],
+                    "green_command": finding["green_command"],
+                }
+                for finding in assigned
+            ],
+            "branch": plan["branch"],
+            "branch_from": plan["branch_from"],
+            "step_parent": _inoculation_parent(root, state, step),
+            "evidence_directory": scoped_path(
+                root,
+                _inoculation_evidence_relative(step["n"]),
+                "inoculation evidence directory",
+            ),
+            "plugin_root": root_plugin,
+        }
+        if design_evidence is not None:
+            packet["brief"]["design_evidence"] = design_evidence
+        return packet
     if action == "implement":
+        step_parent = None
+        capture = receipted_known_failure_inventory(
+            root, state, study=study, runbook=runbook
+        )
+        if capture is not None:
+            step_parent = _inoculation_parent(root, state, step)
+            _validate_inoculation_receipt(
+                as_dict(step.get("receipts")).get("inoculate"),
+                capture,
+                step,
+                step_parent,
+                state=state,
+            )
         packet["agent"] = "mason"
         packet["brief"] = {
             "runbook_step": source_runbook_step(
@@ -13456,6 +14472,8 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "branch_from": plan["branch_from"],
             "plugin_root": root_plugin,
         }
+        if step_parent is not None:
+            packet["brief"]["step_parent"] = step_parent
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
@@ -16544,8 +17562,37 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
         }
     if step["phase"] == "issue":
         return {**base, "do": "implement", "legacy_issue_phase_skipped": True}
+    if step["phase"] == "inoculate":
+        capture = _validate_known_failure_capture(
+            as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+                "known_failure_inventory"
+            ),
+            "receipted known-failure capture",
+        )
+        status = inoculation_status(state, capture)
+        return {
+            **base,
+            "do": "inoculate",
+            **branch_plan(state, step),
+            "step_parent": require_full_sha(
+                step.get("inoculation_parent"),
+                f"step {step['n']} inoculation parent",
+            ),
+            **status,
+            "then": "hexctl done inoculate",
+        }
     if step["phase"] in ("implement", "push"):
-        return {**base, "do": step["phase"], **branch_plan(state, step)}
+        directive = {**base, "do": step["phase"], **branch_plan(state, step)}
+        if (
+            step["phase"] == "implement"
+            and "known_failure_inventory"
+            in as_dict(as_dict(state.get("receipts")).get("runbook"))
+        ):
+            directive["step_parent"] = require_full_sha(
+                step.get("inoculation_parent"),
+                f"step {step['n']} inoculation parent",
+            )
+        return directive
     return {**base, "do": step["phase"]}
 
 
@@ -16580,11 +17627,13 @@ def cmd_status(args) -> None:
             assignment = replayed
     version_relations = None
     resolution_state = None
+    receipted_sources = {}
     for name in ("study", "runbook"):
         receipt = as_dict(as_dict(state.get("receipts")).get(name))
         if receipt.get("sha256") is None:
             continue
         source = receipted_source(args.dir, state, name)
+        receipted_sources[name] = source
         if name == "runbook":
             _receipted_runbook_amendments(source)
             version_relations = receipted_version_relations(
@@ -16592,12 +17641,39 @@ def cmd_status(args) -> None:
             )
             if version_relations is not None:
                 resolution_state = version_resolution_status(args.dir, state)
+    known_failure_capture = None
+    if "runbook" in receipted_sources:
+        known_failure_capture = receipted_known_failure_inventory(
+            args.dir,
+            state,
+            study=receipted_sources.get("study"),
+            runbook=receipted_sources["runbook"],
+        )
+    known_failure_state = None
+    if (
+        known_failure_capture is not None
+        and state.get("phase") == "steps"
+        and state.get("current_step") is not None
+    ):
+        step = current_step(state)
+        step_parent = _inoculation_parent(args.dir, state, step)
+        if step.get("phase") != "inoculate":
+            _validate_inoculation_receipt(
+                as_dict(step.get("receipts")).get("inoculate"),
+                known_failure_capture,
+                step,
+                step_parent,
+                state=state,
+            )
+        known_failure_state = inoculation_status(state, known_failure_capture)
     field = getattr(args, "field", None)
     if args.json or field is not None:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
         if resolution_state is not None:
             payload["version_resolution_status"] = resolution_state
+        if known_failure_state is not None:
+            payload.update(known_failure_state)
         if field is None:
             print(json.dumps(payload, indent=2))
             return
@@ -16667,6 +17743,14 @@ def cmd_status(args) -> None:
             f"product {assignment['product']}; candidate "
             f"{assignment['candidate']}; {len(assignment['mappings'])} "
             f"mapping(s); report {assignment['report_sha256']}"
+        )
+    if known_failure_state is not None:
+        print(
+            "known failures: inventory "
+            f"{known_failure_state['inventory_sha256']}; "
+            f"{known_failure_state['assigned_count']} assigned; "
+            f"{len(known_failure_state['completed_ids'])} completed; "
+            f"{len(known_failure_state['remaining_ids'])} remaining"
         )
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
@@ -16862,6 +17946,7 @@ def verify_run(
     last_state = None
     study_event = None
     runbook_event = None
+    inoculation_events = []
     design_transition_events = []
     resolution_events = []
     initial_entry = None
@@ -16891,6 +17976,8 @@ def verify_run(
                 runbook_event = entry.get("data")
             if entry.get("event") == "done:study":
                 study_event = entry.get("data")
+            if entry.get("event") == "done:inoculate":
+                inoculation_events.append(entry.get("data"))
             event_data = entry.get("data")
             if isinstance(event_data, dict) and "design_transition" in event_data:
                 design_transition_events.append(event_data.get("design_transition"))
@@ -16918,6 +18005,7 @@ def verify_run(
     )
     runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     version_relations = None
+    known_failure_capture = None
     if runbook_receipt.get("sha256") is not None:
         runbook = receipted_source(base_dir, state, "runbook")
         _receipted_runbook_amendments(runbook)
@@ -16929,6 +18017,69 @@ def verify_run(
             die("done:runbook ledger event has an unreceipted version anchor", 1)
         if version_relations is not None and event_relations != version_relations:
             die("done:runbook ledger event does not match the version anchor", 1)
+        known_failure_capture = receipted_known_failure_inventory(
+            base_dir, state, study=receipted_source(base_dir, state, "study"), runbook=runbook
+        )
+        runbook_event_receipt = as_dict(runbook_event)
+        event_has_capture = "known_failure_inventory" in runbook_event_receipt
+        event_capture = runbook_event_receipt.get("known_failure_inventory")
+        state_has_capture = "known_failure_inventory" in runbook_receipt
+        if not state_has_capture:
+            if event_has_capture:
+                die(
+                    "done:runbook ledger event has an unreceipted "
+                    "known-failure capture",
+                    1,
+                )
+        elif event_capture != _validate_known_failure_capture(
+            runbook_receipt.get("known_failure_inventory"),
+            "initial receipted known-failure capture",
+        ):
+            die(
+                "done:runbook ledger event does not match the initial "
+                "known-failure capture",
+                1,
+            )
+    expected_inoculation_events = []
+    if known_failure_capture is not None:
+        for step in state.get("steps", []):
+            phase = step.get("phase")
+            status = step.get("status")
+            step_receipts = as_dict(step.get("receipts"))
+            if status == "pending":
+                if "inoculation_parent" in step or "inoculate" in step_receipts:
+                    die("pending Step carries premature inoculation state", 1)
+                continue
+            parent = require_full_sha(
+                step.get("inoculation_parent"),
+                f"step {step.get('n')} inoculation parent",
+            )
+            inoculation_receipt = step_receipts.get("inoculate")
+            if phase == "inoculate":
+                if "inoculate" in step_receipts:
+                    die("open inoculation Step already carries its phase receipt", 1)
+                continue
+            _validate_inoculation_receipt(
+                inoculation_receipt,
+                known_failure_capture,
+                step,
+                parent,
+                state=state,
+            )
+            expected_inoculation_events.append(inoculation_receipt)
+    else:
+        for step in state.get("steps", []):
+            if (
+                "inoculation_parent" in step
+                or "inoculate" in as_dict(step.get("receipts"))
+                or step.get("phase") == "inoculate"
+            ):
+                die("legacy Step carries invented inoculation state", 1)
+    if inoculation_events != expected_inoculation_events:
+        die(
+            "inoculation receipt state does not match its controller ledger events",
+            1,
+        )
     integrate_state = as_dict(state.get("integrate"))
     bootstrap_assignment = as_dict(state.get("receipts")).get(
         DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY

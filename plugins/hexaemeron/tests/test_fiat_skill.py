@@ -238,10 +238,6 @@ class FiatSkillContractTests(unittest.TestCase):
                 "`topic`, `target_dir`, `base_ref`, `output_path`, "
                 "`design_output_path`, and `plugin_root`"
             ),
-            "mason": (
-                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
-                "and `plugin_root`"
-            ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
                 "`audit_log_path`, `step`, `round`, `warden_continuity`, "
@@ -254,6 +250,67 @@ class FiatSkillContractTests(unittest.TestCase):
             with self.subTest(role=role):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
+
+        mason = " ".join(AGENTS["mason"].split())
+        implementation = (
+            "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+            "and `plugin_root`"
+        )
+        self.assertIn(
+            f"An `implement` directive gives you one `brief` object with "
+            f"{implementation}",
+            mason,
+        )
+        self.assertIn(
+            "A capture-aware implementation brief also carries exactly one "
+            "`step_parent`; a pre-capture brief omits it",
+            mason,
+        )
+        self.assertIn(
+            "cut the branch from that immutable commit, not by resolving "
+            "`branch_from` again",
+            mason,
+        )
+        for field in (
+            "study_sha256",
+            "runbook_sha256",
+            "inventory_sha256",
+            "known_failure_inventory",
+            "consuming_step",
+            "assigned_findings",
+            "allowed_guard_paths",
+            "reporter_contracts",
+            "branch",
+            "branch_from",
+            "step_parent",
+            "evidence_directory",
+            "plugin_root",
+        ):
+            self.assertIn(f"`{field}`", mason)
+
+    def test_inoculation_contract_is_source_bound_outside_the_loop_table(self):
+        loop = self.fiat.split("## The loop", 1)[1].split("## ", 1)[0]
+        inoculation = self.fiat.split("**Inoculation.**", 1)[1].split(
+            "**Implementation.**", 1
+        )[0]
+        fiat = " ".join(self.fiat.split())
+        mason = " ".join(AGENTS["mason"].split())
+
+        self.assertNotIn("| `inoculate` |", loop)
+        self.assertIn("`load_checked_inventory` operation is the sole ingestion path", self.fiat)
+        self.assertIn("`done inoculate`; it takes no phase-specific options", inoculation)
+        self.assertIn("fiat-known-failure-inoculation/v1", inoculation)
+        self.assertIn("fiat-no-known-findings/v1", inoculation)
+        self.assertIn("no-known-findings-for-step", inoculation)
+        self.assertIn("Only a valid inoculation receipt opens `implement`", inoculation)
+        self.assertIn(
+            "full `step_parent` commit from its inoculation receipt",
+            fiat,
+        )
+        self.assertIn("do not resolve the symbolic ref again", fiat)
+        self.assertIn("`guard_manifests` remains empty", mason)
+        self.assertIn("Step 3 owns that evidence boundary", mason)
+        self.assertIn("do not edit a product path", mason)
 
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())

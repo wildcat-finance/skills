@@ -258,9 +258,28 @@ A non-empty finding set requires `no_known_findings: null`. An empty set needs
 a non-null claim that repeats every checked source id and both digests, names
 one real consuming step, and carries the exact Surveyor assertion
 `no-known-findings`. An empty array alone never establishes readiness. The
-checker reports K000 through K012 and writes no controller state or ledger.
-It establishes structure and current bytes, not that Surveyor found every
-failure or that any guard has run.
+public `load_checked_inventory(study, runbook, repository, expected_ids=None)`
+operation returns one frozen `InventoryLoadResult`. Its `status` is exactly
+`absent`, `refused`, or `clean`. `absent` carries neither a capture nor
+findings and is available only when the stable study has no inventory marker
+and the stable runbook has no assignment marker. Any attempted, partial, or
+malformed marker stays on the existing K000 through K012 refusal path.
+`refused` carries a non-empty tuple of those findings and no capture. `clean`
+carries no findings and one JSON-compatible capture with exactly `schema`,
+`study_sha256`, `runbook_sha256`, `inventory_sha256`, `source_views`,
+`findings`, `no_known_findings`, and `assignments`.
+
+The clean schema is `protasis-known-failure-inventory-capture/v1`. Study and
+runbook digests cover their exact stable bytes. The inventory digest covers
+the accepted parsed object encoded by Fiat's canonical JSON form: sorted
+object keys and compact separators. Source views, findings, and the no-known
+claim are the complete parsed inventory values. Each assignment has exactly
+`finding_id` and `step`, ordered by Step and then finding id. The operation
+revalidates every input before returning the capture. The compatibility
+`check` operation and command-line checker are projections of this result;
+they never reread or reparse a clean inventory. The checker writes no
+controller state or ledger. It establishes structure and current bytes, not
+that Surveyor found every failure or that any guard has run.
 
 ### Design evidence and progressive gates
 
