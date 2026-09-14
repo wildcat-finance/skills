@@ -329,6 +329,50 @@ class HexctlCheckpointTests(HexctlCase):
             expected_mode = 0o700 if record[1] == "directory" else 0o600
             self.assertEqual(expected_mode, record[2], record[0])
 
+    def test_restore_refuses_invented_known_failure_evidence(self):
+        """A pre-capture capsule cannot acquire recovery evidence in transit."""
+        self.to_post_push()
+        capsule, _, _ = self.export("capsule")
+        manifest_path = capsule / "MANIFEST.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        self.assertNotIn("known_failures", manifest)
+
+        controller = hexctl_module()
+        manifest["known_failures"] = {
+            "schema": controller.RECOVERY_PROJECTION_SCHEMA,
+            "step": 1,
+            "phase": "push",
+            "study_sha256": "1" * 64,
+            "runbook_sha256": "2" * 64,
+            "inventory_sha256": "3" * 64,
+            "step_parent": "4" * 40,
+            "assigned_ids": [],
+            "completed_ids": [],
+            "remaining_ids": [],
+            "guard_manifests": [],
+            "final_green": {
+                "completed_ids": [],
+                "remaining_ids": [],
+                "manifests": [],
+                "suites": [],
+            },
+            "no_known_findings": None,
+        }
+        payload = (
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        manifest_path.write_bytes(payload)
+        origin, _ = self.fresh_origin_for(capsule)
+
+        result = self.restore_into(
+            origin,
+            capsule,
+            hashlib.sha256(payload).hexdigest(),
+            expect=2,
+        )
+        self.assertIn("invents known-failure recovery evidence", result.stderr)
+
     def test_export_is_deterministic_at_both_boundaries(self):
         self.to_post_push()
         before = self.state_ledger_bytes()

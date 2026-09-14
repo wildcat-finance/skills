@@ -60,18 +60,42 @@ filesystem path.
 
 The top-level object is closed to these fields:
 
-| field | value |
-| --- | --- |
-| `schema` | `fiat-controller-checkpoint/v1` |
-| `controller` | controller name, state schema version and Fiat version |
-| `boundary` | `kind`, the semantic `next` object and the exact local ref-to-commit map |
-| `source` | exact state and ledger SHA-256 values, semantic state fingerprint, ledger entry count and tail hash |
-| `resources` | controller file count, byte count and every enforced ceiling |
-| `files` | sorted `controller/<relative-path>` records containing `path`, `bytes` and `sha256` |
+- `schema` is `fiat-controller-checkpoint/v1`.
+- `controller` holds the controller name, the state schema version and the
+  Fiat version.
+- `boundary` holds `kind`, the semantic `next` object and the exact local
+  ref-to-commit map.
+- `source` holds the exact state and ledger SHA-256 values, the semantic state
+  fingerprint, the ledger entry count and its tail hash.
+- `resources` holds the controller file count, byte count and every enforced
+  ceiling.
+- `files` holds sorted `controller/<relative-path>` records, each carrying
+  `path`, `bytes` and `sha256`.
+- `known_failures` holds the captured Step's `fiat-known-failure-recovery/v1`
+  projection, and is present only when that Step has a receipted known-failure
+  capture.
 
 The manifest digest identifies exact manifest bytes. It is not the semantic
 checkpoint identity, service acceptance or outer archive identity owned by
 the remaining Wave Delta work.
+
+## Known-failure recovery
+
+A run whose open Step carries a receipted known-failure capture exports one
+more field, so the capsule moves the step parent, the assigned, completed and
+remaining ids, the guard and final-green manifest digests and the explicit
+no-known-findings claim rather than leaving them to be re-derived. Export
+refuses at its boundary while any assigned id still lacks fixed-tree
+final-green evidence, because the boundary it accepts is a completed step and a
+red guard commit is not one.
+
+The field is absent for a run with no capture, which is what every capsule
+written before this contract looks like. A capsule that carries the field when
+its captured Step has no capture refuses. Restore has no Git evidence yet, so
+it checks the join it can: the projection is revalidated against the captured
+state's stored capture digests, its step, phase and step parent must equal the
+captured Step's, and every manifest digest it names must be the digest of a
+`controller/` file the capsule actually carries.
 
 ## Read boundary
 
@@ -80,11 +104,9 @@ dot, parent, slash, backslash and control-character components refuse. The
 source tree may contain at most 4,096 regular files and 4,096 directories, with
 these byte ceilings:
 
-| resource | ceiling |
-| --- | ---: |
-| one controller file | 64 MiB |
-| all controller files | 256 MiB |
-| `MANIFEST.json` | 1 MiB |
+- one controller file: 64 MiB.
+- all controller files together: 256 MiB.
+- `MANIFEST.json`: 1 MiB.
 
 Each directory and file is opened without following symlinks. A regular file
 must have one link. Devices, sockets, FIFOs, symlinks and hard-linked files

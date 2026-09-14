@@ -145,7 +145,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.52.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.53.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -153,20 +153,28 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.52.1")
+        self.assertEqual(latest["version"], "fiat-v5.53.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#890", latest["evidence"])
-        self.assertIn("done runbook", latest["change"])
-        self.assertIn("exactly match", latest["change"])
-        self.assertIn("without a traceback", latest["change"])
+        self.assertIn("skills#453", latest["evidence"])
+        self.assertIn("fiat-known-failure-recovery/v1", latest["change"])
+        self.assertIn("fiat-final-green-manifest/v1", latest["change"])
+        self.assertIn("red guard commit stays", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
         # Generations displaced from newest keep their own coverage: each is
         # still a transition the held frontier had to survive.
+        step_headings = by_version["fiat-v5.52.1"]
+        self.assertEqual(step_headings["axis"], "generation")
+        self.assertEqual(step_headings["revision"], "state-shape-validation")
+        self.assertIn("skills#890", step_headings["evidence"])
+        self.assertIn("done runbook", step_headings["change"])
+        self.assertIn("exactly match", step_headings["change"])
+        self.assertIn("without a traceback", step_headings["change"])
+        self.assertIn("held target stay unchanged", step_headings["change"])
         retarget = by_version["fiat-v5.51.1"]
         self.assertEqual(retarget["axis"], "generation")
         self.assertEqual(retarget["revision"], "state-shape-validation")

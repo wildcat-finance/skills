@@ -453,6 +453,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.50.1",
         "fiat-v5.51.1",
         "fiat-v5.52.1",
+        "fiat-v5.53.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -670,6 +671,60 @@ NO_KNOWN_BOUNDARY_KEYS = frozenset(
 NO_KNOWN_LEDGER_ENTRY_KEYS = frozenset(
     {"ts", "event", "data", "prev", "state", "hash"}
 )
+RECOVERY_PROJECTION_SCHEMA = "fiat-known-failure-recovery/v1"
+RECOVERY_PROJECTION_KEYS = frozenset(
+    {
+        "schema",
+        "step",
+        "phase",
+        "study_sha256",
+        "runbook_sha256",
+        "inventory_sha256",
+        "step_parent",
+        "assigned_ids",
+        "completed_ids",
+        "remaining_ids",
+        "guard_manifests",
+        "final_green",
+        "no_known_findings",
+    }
+)
+RECOVERY_FINAL_GREEN_KEYS = frozenset(
+    {"completed_ids", "remaining_ids", "manifests", "suites"}
+)
+RECOVERY_SUITE_KEYS = frozenset({"check", "argv", "cwd", "exit"})
+RECOVERY_PHASES_AFTER_INOCULATE = frozenset(
+    {"implement", "audit", "prose", "push"}
+)
+RECOVERY_PHASES_AFTER_IMPLEMENT = frozenset({"audit", "prose", "push"})
+FINAL_GREEN_MANIFEST_SCHEMA = "fiat-final-green-manifest/v1"
+FINAL_GREEN_MANIFEST_KEYS = frozenset(
+    {
+        "schema",
+        "finding_id",
+        "consuming_step",
+        "controller_run_id",
+        "worktree_identity",
+        "capture",
+        "final_commit",
+        "green_command",
+        "green_argv",
+        "report_format",
+        "report_file",
+        "retained_report",
+        "runner_exit",
+        "counters",
+        "admission",
+    }
+)
+FINAL_GREEN_ADMISSION = "final-green"
+FINAL_GREEN_DIRECTORY = "final-green"
+FINAL_GREEN_REPORT_FORMATS = frozenset({"unittest-json-v1"})
+FINAL_GREEN_REPORT_FLAG = "--report"
+FINAL_GREEN_INTERPRETERS = frozenset({"python3"})
+FINAL_GREEN_SUITE_CHECKS = ("root-suite", "hexaemeron-suite")
+FINAL_GREEN_RUNNER_TIMEOUT = 5400
+FINAL_GREEN_RECEIPT_KEYS = frozenset({"final_commit", "manifests", "suites"})
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
 VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
 VERSION_RESOLUTIONS_MAX = 8
@@ -10621,6 +10676,1057 @@ def _validate_receipted_guard_evidence(
     return discovered
 
 
+def _recovery_manifest_path(step_number: int, kind: str, finding_id: str) -> str:
+    """Derive the one controller-owned path a manifest reference may name."""
+    if kind == "guard":
+        root = _inoculation_evidence_relative(step_number)
+    elif kind == "final-green":
+        root = _final_green_evidence_relative(step_number)
+    else:
+        die("recovery manifest kind is invalid", 1)
+    return f"{root}/{GUARD_MANIFEST_DIRECTORY}/{finding_id}.json"
+
+
+def _final_green_evidence_relative(step_number: int) -> str:
+    if (
+        isinstance(step_number, bool)
+        or not isinstance(step_number, int)
+        or step_number <= 0
+    ):
+        die("final-green step number is invalid", 1)
+    return f"{STATE_DIR_NAME}/steps/{step_number}/{FINAL_GREEN_DIRECTORY}"
+
+
+def _final_green_components(step: dict, directory: str) -> list[str]:
+    if directory not in {GUARD_REPORT_DIRECTORY, GUARD_MANIFEST_DIRECTORY}:
+        die("final-green evidence directory is invalid", 1)
+    return [
+        STATE_DIR_NAME,
+        "steps",
+        str(step["n"]),
+        FINAL_GREEN_DIRECTORY,
+        directory,
+    ]
+
+
+def _final_green_report_relative(step: dict, finding_id: str) -> str:
+    return (
+        _final_green_evidence_relative(step["n"])
+        + f"/{GUARD_REPORT_DIRECTORY}/{finding_id}.report"
+    )
+
+
+def _final_green_manifest_relative(step: dict, finding_id: str) -> str:
+    return _recovery_manifest_path(step["n"], "final-green", finding_id)
+
+
+def _recovery_digest(value, label: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise ValueError(f"recovery projection has an invalid {label}")
+    return value
+
+
+def _recovery_commit(value, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", value) is None
+    ):
+        raise ValueError(f"recovery projection has an invalid {label}")
+    return value
+
+
+def _recovery_id_list(value, label: str) -> list[str]:
+    if type(value) is not list or len(value) > KNOWN_FAILURE_MAX_FINDINGS:
+        raise ValueError(f"recovery projection {label} is not a bounded array")
+    for item in value:
+        if not isinstance(item, str) or KNOWN_FAILURE_ID_RE.match(item) is None:
+            raise ValueError(
+                f"recovery projection {label} holds an invalid finding id"
+            )
+    if value != sorted(set(value)):
+        raise ValueError(f"recovery projection {label} is not uniquely sorted")
+    return list(value)
+
+
+def _recovery_manifest_references(
+    value,
+    *,
+    step_number: int,
+    kind: str,
+    assigned_ids: list[str],
+    completed_ids: list[str],
+) -> list[dict]:
+    """Validate one closed manifest-reference array against derived paths."""
+    if type(value) is not list or len(value) > KNOWN_FAILURE_MAX_FINDINGS:
+        raise ValueError(
+            f"recovery projection {kind} manifests are not a bounded array"
+        )
+    identifiers = []
+    for row in value:
+        if type(row) is not dict or set(row) != INOCULATION_MANIFEST_REFERENCE_KEYS:
+            raise ValueError(
+                f"recovery projection {kind} manifest has an unsupported field set"
+            )
+        finding_id = row.get("finding_id")
+        if finding_id not in assigned_ids:
+            raise ValueError(
+                f"recovery projection {kind} manifest names an unassigned finding"
+            )
+        if row.get("path") != _recovery_manifest_path(step_number, kind, finding_id):
+            raise ValueError(
+                f"recovery projection {kind} manifest is not at its "
+                "controller-derived path"
+            )
+        _recovery_digest(row.get("sha256"), f"{kind} manifest digest")
+        identifiers.append(finding_id)
+    if identifiers != sorted(set(identifiers)):
+        raise ValueError(
+            f"recovery projection {kind} manifests are not uniquely sorted"
+        )
+    if identifiers != completed_ids:
+        raise ValueError(
+            f"recovery projection {kind} manifests do not match its completed ids"
+        )
+    return list(value)
+
+
+def _recovery_suite_rows(value) -> list[dict]:
+    """Validate the declared suite evidence bound beside final-green ids."""
+    if type(value) is not list or len(value) > len(FINAL_GREEN_SUITE_CHECKS):
+        raise ValueError("recovery projection suite evidence is not a bounded array")
+    checks = []
+    for row in value:
+        if type(row) is not dict or set(row) != RECOVERY_SUITE_KEYS:
+            raise ValueError(
+                "recovery projection suite evidence has an unsupported field set"
+            )
+        check = row.get("check")
+        if check not in FINAL_GREEN_SUITE_CHECKS:
+            raise ValueError(
+                "recovery projection suite evidence names an undeclared check"
+            )
+        argv = row.get("argv")
+        if (
+            type(argv) is not list
+            or not argv
+            or len(argv) > GUARD_COMMAND_ARGUMENTS_MAX
+            or any(
+                not isinstance(item, str)
+                or not item
+                or _contains_nonprinting_character(item)
+                for item in argv
+            )
+        ):
+            raise ValueError("recovery projection suite evidence has an invalid argv")
+        cwd = row.get("cwd")
+        if not isinstance(cwd, str) or not cwd or _contains_nonprinting_character(cwd):
+            raise ValueError(
+                "recovery projection suite evidence has an invalid working directory"
+            )
+        if type(row.get("exit")) is not int or row["exit"] != 0:
+            raise ValueError("recovery projection suite evidence did not exit zero")
+        checks.append(check)
+    if checks != sorted(set(checks)):
+        raise ValueError("recovery projection suite evidence is not uniquely sorted")
+    return list(value)
+
+
+def _recovery_no_known_findings(claim, document: dict, step_number: int) -> dict:
+    if type(claim) is not dict or set(claim) != NO_KNOWN_FINDINGS_KEYS:
+        raise ValueError("recovery projection has no bound no-known-findings claim")
+    # The claim's study digest is the prefix it was written against, and a
+    # later holding amendment moves the current tip without rewriting the
+    # receipt. The inventory digest is what an amendment may not move
+    # silently, so that is the join checked here; the receipt's own
+    # amendment chain is where the study tip is reconciled.
+    _recovery_digest(claim.get("study_sha256"), "no-known-findings study_sha256")
+    if (
+        claim.get("schema") != NO_KNOWN_FINDINGS_SCHEMA
+        or claim.get("assertion") != NO_KNOWN_FINDINGS_ASSERTION
+        or claim.get("consuming_step") != step_number
+        or claim.get("inventory_sha256") != document["inventory_sha256"]
+    ):
+        raise ValueError(
+            "recovery projection no-known-findings claim is not source-bound"
+        )
+    views = claim.get("source_views")
+    if (
+        type(views) is not list
+        or not views
+        or len(views) > KNOWN_FAILURE_MAX_SOURCE_VIEWS
+    ):
+        raise ValueError(
+            "recovery projection no-known-findings claim has no checked views"
+        )
+    identifiers = []
+    for view in views:
+        if type(view) is not dict or set(view) != KNOWN_FAILURE_NO_FINDINGS_VIEW_KEYS:
+            raise ValueError(
+                "recovery projection no-known-findings view has an unsupported "
+                "field set"
+            )
+        if not _known_failure_text(view.get("id"), limit=256):
+            raise ValueError(
+                "recovery projection no-known-findings view has an invalid id"
+            )
+        for name in ("source_sha256", "view_sha256"):
+            _recovery_digest(view.get(name), f"no-known-findings view {name}")
+        identifiers.append(view["id"])
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("recovery projection no-known-findings views are duplicated")
+    return claim
+
+
+def validate_known_failure_recovery(
+    document,
+    *,
+    capture: dict | None = None,
+    require_phase_completeness: bool = True,
+) -> dict:
+    """Validate one closed known-failure recovery projection.
+
+    This is the single reconstruction contract behind `status`, `next`,
+    `verify`, checkpoint export and restore, and a post-compaction
+    delegation packet, so the same missing, reordered, stale or foreign
+    evidence is refused by name wherever a reader rebuilds the step. It stays
+    a ValueError API because the historical Step 4 guards exercise it as a
+    pure validator; every controller boundary turns its failures into a
+    bounded refusal.
+
+    `require_phase_completeness` is false only for an observer that must not
+    refuse. `status` is what somebody runs to find out what is wrong, so it
+    reports an incomplete join and every receipt still refuses it.
+    """
+    if type(document) is not dict or set(document) != RECOVERY_PROJECTION_KEYS:
+        raise ValueError("recovery projection has an unsupported field set")
+    if document.get("schema") != RECOVERY_PROJECTION_SCHEMA:
+        raise ValueError("recovery projection has an unsupported schema")
+    step_number = document.get("step")
+    if (
+        isinstance(step_number, bool)
+        or type(step_number) is not int
+        or step_number <= 0
+    ):
+        raise ValueError("recovery projection has an invalid step number")
+    if document.get("phase") not in STEP_PHASES:
+        raise ValueError("recovery projection has an unsupported step phase")
+    phase = document["phase"]
+    for name in ("study_sha256", "runbook_sha256", "inventory_sha256"):
+        _recovery_digest(document.get(name), name)
+    _recovery_commit(document.get("step_parent"), "step_parent")
+    if capture is not None:
+        for name in ("study_sha256", "runbook_sha256", "inventory_sha256"):
+            if document[name] != capture.get(name):
+                raise ValueError(
+                    f"recovery projection does not bind its receipted {name}"
+                )
+    assigned_ids = _recovery_id_list(document.get("assigned_ids"), "assigned_ids")
+    completed_ids = _recovery_id_list(document.get("completed_ids"), "completed_ids")
+    remaining_ids = _recovery_id_list(document.get("remaining_ids"), "remaining_ids")
+    if set(completed_ids) - set(assigned_ids):
+        raise ValueError("recovery projection completed_ids leave the assigned set")
+    if remaining_ids != sorted(set(assigned_ids) - set(completed_ids)):
+        raise ValueError("recovery projection remaining_ids are not its open remainder")
+    _recovery_manifest_references(
+        document.get("guard_manifests"),
+        step_number=step_number,
+        kind="guard",
+        assigned_ids=assigned_ids,
+        completed_ids=completed_ids,
+    )
+    if (
+        require_phase_completeness
+        and phase in RECOVERY_PHASES_AFTER_INOCULATE
+        and remaining_ids
+    ):
+        raise ValueError(
+            "recovery projection has incomplete guard evidence for an opened "
+            "implementation"
+        )
+    final_green = document.get("final_green")
+    if type(final_green) is not dict or set(final_green) != RECOVERY_FINAL_GREEN_KEYS:
+        raise ValueError("recovery projection final_green has an unsupported field set")
+    green_completed = _recovery_id_list(
+        final_green.get("completed_ids"), "final_green completed_ids"
+    )
+    green_remaining = _recovery_id_list(
+        final_green.get("remaining_ids"), "final_green remaining_ids"
+    )
+    if set(green_completed) - set(completed_ids):
+        raise ValueError(
+            "recovery projection final-green evidence covers an unguarded finding"
+        )
+    if green_remaining != sorted(set(assigned_ids) - set(green_completed)):
+        raise ValueError(
+            "recovery projection final_green remaining_ids are not its open remainder"
+        )
+    _recovery_manifest_references(
+        final_green.get("manifests"),
+        step_number=step_number,
+        kind="final-green",
+        assigned_ids=assigned_ids,
+        completed_ids=green_completed,
+    )
+    suites = _recovery_suite_rows(final_green.get("suites"))
+    if require_phase_completeness and phase in RECOVERY_PHASES_AFTER_IMPLEMENT:
+        if green_remaining:
+            raise ValueError(
+                "recovery projection has incomplete final-green evidence for a "
+                "step past implementation"
+            )
+        if [row["check"] for row in suites] != sorted(FINAL_GREEN_SUITE_CHECKS):
+            raise ValueError(
+                "recovery projection has incomplete suite evidence for a step "
+                "past implementation"
+            )
+    claim = document.get("no_known_findings")
+    if assigned_ids:
+        if claim is not None:
+            raise ValueError("an assigned step cannot carry a no-known-findings claim")
+    elif claim is not None:
+        _recovery_no_known_findings(claim, document, step_number)
+    elif require_phase_completeness and phase in RECOVERY_PHASES_AFTER_INOCULATE:
+        # An open `inoculate` Step is the one place the claim may be absent:
+        # producing it is what the phase is for. Every later phase owes it,
+        # because an empty successful run is not an explicit emptiness claim.
+        raise ValueError("recovery projection has no bound no-known-findings claim")
+    return document
+
+
+def final_green_admission_counters(
+    report_format: str, raw_report: bytes, runner_exit
+) -> dict:
+    """Admit one fixed-tree runner result as this step's final-green evidence.
+
+    This is Fiat's own admission rather than an Elenchus verdict. The four
+    Elenchus verdicts all describe an unfixed parent tree, and none of them
+    says that a fixed tree came back green. Like the guard counterpart it
+    stays a ValueError API so the historical Step 4 guard can exercise it
+    without a controller.
+    """
+    if report_format not in FINAL_GREEN_REPORT_FORMATS:
+        raise ValueError("unsupported final-green report format")
+    if not isinstance(raw_report, bytes) or len(raw_report) > GUARD_REPORT_BYTES_MAX:
+        raise ValueError("final-green report bytes are invalid or oversized")
+    if type(runner_exit) is not int or runner_exit != 0:
+        raise ValueError("the final-green runner did not exit zero")
+    raw = _guard_json_document(raw_report, "unittest final-green report")
+    keys = {
+        "schema",
+        "complete",
+        "testsRun",
+        "failures",
+        "errors",
+        "skipped",
+        "expectedFailures",
+        "unexpectedSuccesses",
+    }
+    if type(raw) is not dict or set(raw) != keys:
+        raise ValueError("unittest final-green report has an unsupported field set")
+    if raw.get("schema") != "elenchus.unittest.v1" or raw.get("complete") is not True:
+        raise ValueError(
+            "unittest final-green report has an unsupported schema or state"
+        )
+    executed = _guard_exact_nonnegative_integer(raw.get("testsRun"), "testsRun")
+    rejected = [
+        _guard_exact_nonnegative_integer(raw.get(name), name)
+        for name in (
+            "failures",
+            "errors",
+            "skipped",
+            "expectedFailures",
+            "unexpectedSuccesses",
+        )
+    ]
+    if executed < 1 or any(rejected):
+        raise ValueError(
+            "the final-green report is not a positive assertion-free complete run"
+        )
+    return {
+        "complete": True,
+        "executed": executed,
+        "assertion_failures": 0,
+        "errors": 0,
+        "skipped": 0,
+    }
+
+
+def build_final_green_manifest(
+    *,
+    finding_id: str,
+    consuming_step: int,
+    controller_run_id: str,
+    worktree_identity: dict,
+    capture: dict,
+    final_commit: str,
+    green_command: str,
+    green_argv: list[str],
+    report_format: str,
+    report_file: str,
+    retained_report: dict,
+    runner_exit: int,
+    counters: dict,
+) -> dict:
+    """Construct the closed final-green manifest a Step receipt binds."""
+    return {
+        "schema": FINAL_GREEN_MANIFEST_SCHEMA,
+        "finding_id": finding_id,
+        "consuming_step": consuming_step,
+        "controller_run_id": controller_run_id,
+        "worktree_identity": worktree_identity,
+        "capture": capture,
+        "final_commit": final_commit,
+        "green_command": green_command,
+        "green_argv": green_argv,
+        "report_format": report_format,
+        "report_file": report_file,
+        "retained_report": retained_report,
+        "runner_exit": runner_exit,
+        "counters": counters,
+        "admission": FINAL_GREEN_ADMISSION,
+    }
+
+
+def _final_green_argv(command: str) -> tuple[list[str], str]:
+    """Split one declared green command and locate the report it names.
+
+    A green command names its own report, so unlike a guard command it
+    carries no `{report}` placeholder for Fiat to fill. The contract is
+    exactly one `--report <repository-relative-path>` pair; a second flag, a
+    missing value, an absolute or escaping path, or a placeholder refuses
+    rather than letting the controller guess where the runner wrote.
+    """
+    if (
+        not isinstance(command, str)
+        or not command
+        or len(command.encode("utf-8")) > GUARD_COMMAND_BYTES_MAX
+        or _contains_nonprinting_character(command)
+    ):
+        raise ValueError("green command is invalid or oversized")
+    try:
+        argv = shlex.split(command, posix=True)
+    except ValueError as exc:
+        raise ValueError("green command cannot be parsed") from exc
+    if (
+        not argv
+        or len(argv) > GUARD_COMMAND_ARGUMENTS_MAX
+        or any(not item or _contains_nonprinting_character(item) for item in argv)
+        or GUARD_REPORT_PLACEHOLDER in argv
+    ):
+        raise ValueError("green argv is invalid, oversized or templated")
+    if argv.count(FINAL_GREEN_REPORT_FLAG) != 1:
+        raise ValueError("green command does not name exactly one report path")
+    index = argv.index(FINAL_GREEN_REPORT_FLAG)
+    if index + 1 >= len(argv):
+        raise ValueError("green command has no report path after its flag")
+    report_file = argv[index + 1]
+    if not _known_failure_portable_path(report_file):
+        raise ValueError("green report path is not a safe relative path")
+    return argv, report_file
+
+
+def _final_green_executable(argv: list[str]) -> list[str]:
+    """Resolve a declared command's interpreter without any PATH lookup.
+
+    A caller-supplied `PATH` is an injection channel, and this controller
+    already runs the interpreter the repository pins. Substituting
+    `sys.executable` for the declared bare name removes the lookup rather
+    than trying to make it safe; anything but a supported bare interpreter
+    refuses.
+    """
+    if type(argv) is not list or not argv or argv[0] not in FINAL_GREEN_INTERPRETERS:
+        raise ValueError(
+            "a declared fixed-tree command must start with a supported interpreter"
+        )
+    return [sys.executable, *argv[1:]]
+
+
+def _final_green_run(
+    base_dir: str, argv: list[str], cwd: str, label: str
+) -> int:
+    """Run one declared fixed-tree command with no shell and a closed child."""
+    directory = scoped_path(base_dir, cwd, f"{label} working directory")
+    if not os.path.isdir(directory):
+        die(f"{label} working directory is not present")
+    environment = {
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_NO_LAZY_FETCH": "1",
+        "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_TERMINAL_PROMPT": "0",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.defpath,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONUTF8": "1",
+        "TZ": "UTC",
+    }
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=directory,
+            capture_output=True,
+            check=False,
+            env=environment,
+            timeout=FINAL_GREEN_RUNNER_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        die(
+            f"{label} did not finish inside its "
+            f"{FINAL_GREEN_RUNNER_TIMEOUT}-second budget"
+        )
+    except OSError:
+        die(f"{label} could not be started")
+    return completed.returncode
+
+
+def _final_green_suite_evidence(base_dir: str, step: dict) -> list[dict]:
+    """Run each declared repository suite and bind its successful exit.
+
+    Discovery is fail-open the way the audit-round directive's already is: a
+    repository that declares neither suite in its check map binds no suite
+    row, and a clean receipt then says nothing about a suite nobody
+    declared. It is not fail-open on the answer -- a declared suite that
+    cannot be run, or comes back non-zero, refuses before the receipt. A
+    capture-aware run that means to reach audit therefore owes those
+    declarations, because the strict read past implementation demands both.
+    """
+    del step
+    rows = []
+    for check in sorted(FINAL_GREEN_SUITE_CHECKS):
+        declared = repository_check_command(base_dir, check=check)
+        if declared is None:
+            continue
+        try:
+            executable = _final_green_executable(declared["argv"])
+        except ValueError as exc:
+            die(f"the declared {check} command is invalid: {exc}")
+        code = _final_green_run(
+            base_dir, executable, declared["cwd"], f"the declared {check}"
+        )
+        if code != 0:
+            die(f"the declared {check} exited {code}; the fixed tree is not green")
+        rows.append(
+            {
+                "check": check,
+                "argv": list(declared["argv"]),
+                "cwd": declared["cwd"],
+                "exit": 0,
+            }
+        )
+    try:
+        return _recovery_suite_rows(rows)
+    except ValueError as exc:
+        die(f"declared suite evidence is not admissible: {exc}")
+
+
+def _final_green_manifest_documents(
+    base_dir: str, state: dict, capture: dict, step: dict
+) -> list[dict]:
+    """Read the published final-green pairs for this step's assigned ids.
+
+    The manifest is published last with no replacement and binds the exact
+    retained report digest, so a manifest name is the completion point and a
+    report-only leaf is simply an id still owing evidence. Nothing here
+    compares the recorded worktree identity with the current one: a restored
+    capsule is a different physical directory, and refusing to read its
+    completed evidence would defeat the recovery this step exists for.
+    """
+    assigned = {
+        finding["id"]: finding for finding in _assigned_findings(capture, step["n"])
+    }
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _final_green_components(step, GUARD_MANIFEST_DIRECTORY),
+        "final-green manifest directory",
+        create=False,
+        missing_ok=True,
+    )
+    if manifest_directory is None:
+        return []
+    documents = []
+    try:
+        try:
+            names = os.listdir(manifest_directory)
+        except OSError:
+            die("final-green manifest directory cannot be listed stably")
+        expected = {f"{finding_id}.json" for finding_id in assigned}
+        foreign = sorted(
+            name
+            for name in names
+            if not name.startswith(".stage-") and name not in expected
+        )
+        if foreign:
+            die("final-green manifest directory contains a foreign leaf")
+        for finding_id in sorted(assigned):
+            name = f"{finding_id}.json"
+            first = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"final-green manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+                missing_ok=True,
+            )
+            if first is None:
+                continue
+            manifest_bytes, manifest_identity = first
+            if stat.S_IMODE(manifest_identity[2]) != 0o600:
+                die(f"final-green manifest {finding_id} does not retain mode 0600")
+            manifest = _guard_json_document(
+                manifest_bytes, f"final-green manifest {finding_id}"
+            )
+            if (
+                type(manifest) is not dict
+                or _guard_json_depth(manifest) > GUARD_MANIFEST_DEPTH_MAX
+            ):
+                die(f"final-green manifest {finding_id} is not one bounded object")
+            if _guard_canonical_manifest(manifest) != manifest_bytes:
+                die(f"final-green manifest {finding_id} is not canonical JSON")
+            report_directory = _guard_open_directory(
+                base_dir,
+                _final_green_components(step, GUARD_REPORT_DIRECTORY),
+                "final-green report directory",
+                create=False,
+            )
+            try:
+                report = _guard_read_leaf(
+                    report_directory,
+                    f"{finding_id}.report",
+                    f"final-green report {finding_id}",
+                    limit=GUARD_REPORT_BYTES_MAX,
+                )
+            finally:
+                os.close(report_directory)
+            assert report is not None
+            report_bytes, report_identity = report
+            if stat.S_IMODE(report_identity[2]) != 0o600:
+                die(f"final-green report {finding_id} does not retain mode 0600")
+            second = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"final-green manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+            )
+            if second != (manifest_bytes, manifest_identity):
+                die(
+                    f"final-green manifest {finding_id} changed during pair "
+                    "discovery"
+                )
+            documents.append(
+                {
+                    "finding": assigned[finding_id],
+                    "manifest": manifest,
+                    "manifest_bytes": manifest_bytes,
+                    "report_bytes": report_bytes,
+                }
+            )
+    except ValueError as exc:
+        die(str(exc))
+    finally:
+        os.close(manifest_directory)
+    return documents
+
+
+def _validate_published_final_green(
+    document: dict, *, state: dict, step: dict, final_commit: str | None
+) -> dict:
+    """Hold one published final-green pair to its writer's own contract."""
+    finding = document["finding"]
+    label = f"final-green manifest for {finding['id']}"
+    manifest = document["manifest"]
+    if type(manifest) is not dict or set(manifest) != FINAL_GREEN_MANIFEST_KEYS:
+        die(f"{label} has an unsupported field set")
+    worktree = manifest.get("worktree_identity")
+    if type(worktree) is not dict or set(worktree) != GUARD_WORKTREE_IDENTITY_KEYS:
+        die(f"{label} has an invalid worktree identity")
+    if any(
+        type(worktree.get(key)) is not int or worktree[key] < 0 for key in worktree
+    ):
+        die(f"{label} has an invalid worktree identity")
+    retained_report = manifest.get("retained_report")
+    if (
+        type(retained_report) is not dict
+        or set(retained_report) != GUARD_RETAINED_REPORT_KEYS
+    ):
+        die(f"{label} has an invalid retained report reference")
+    raw_report = document["report_bytes"]
+    if retained_report != {
+        "path": _final_green_report_relative(step, finding["id"]),
+        "bytes": len(raw_report),
+        "sha256": hashlib.sha256(raw_report).hexdigest(),
+    }:
+        die(f"{label} does not bind its exact retained report bytes")
+    recorded_commit = manifest.get("final_commit")
+    try:
+        _recovery_commit(recorded_commit, "final_commit")
+        argv, report_file = _final_green_argv(finding["green_command"])
+        counters = final_green_admission_counters(
+            finding["report_format"], raw_report, manifest.get("runner_exit")
+        )
+    except ValueError as exc:
+        die(f"{label} is not admissible: {exc}")
+    if final_commit is not None and recorded_commit != final_commit:
+        die(f"{label} was produced on another commit")
+    if manifest != build_final_green_manifest(
+        finding_id=finding["id"],
+        consuming_step=step["n"],
+        controller_run_id=controller_run_id(state),
+        worktree_identity=manifest["worktree_identity"],
+        capture=_guard_initial_capture(state),
+        final_commit=recorded_commit,
+        green_command=finding["green_command"],
+        green_argv=argv,
+        report_format=finding["report_format"],
+        report_file=report_file,
+        retained_report=retained_report,
+        runner_exit=0,
+        counters=counters,
+    ):
+        die(f"{label} does not match its immutable context")
+    return manifest
+
+
+def _retain_final_green(
+    base_dir: str,
+    state: dict,
+    step: dict,
+    finding: dict,
+    final_commit: str,
+    worktree_identity: dict,
+) -> dict:
+    """Run one assigned id's declared green command and publish its pair."""
+    try:
+        argv, report_file = _final_green_argv(finding["green_command"])
+        executable = _final_green_executable(argv)
+    except ValueError as exc:
+        die(f"the green command for {finding['id']} is invalid: {exc}")
+    target = scoped_path(base_dir, report_file, "final-green report path")
+    if os.path.lexists(target):
+        die(
+            f"the declared green report path for {finding['id']} is occupied; "
+            "remove it so the fixed-tree run writes a fresh report"
+        )
+    started_ns = time.time_ns()
+    runner_exit = _final_green_run(
+        base_dir, executable, ".", f"the green command for {finding['id']}"
+    )
+    raw_report = _read_stable_controller_file(
+        base_dir,
+        report_file,
+        f"the final-green report for {finding['id']}",
+        limit=GUARD_REPORT_BYTES_MAX,
+    )
+    try:
+        if os.stat(target).st_mtime_ns < started_ns:
+            die(f"the final-green report for {finding['id']} is stale")
+    except OSError:
+        die(f"the final-green report for {finding['id']} cannot be inspected")
+    try:
+        counters = final_green_admission_counters(
+            finding["report_format"], raw_report, runner_exit
+        )
+    except ValueError as exc:
+        die(f"final-green evidence for {finding['id']} is not admissible: {exc}")
+    retained_report = {
+        "path": _final_green_report_relative(step, finding["id"]),
+        "bytes": len(raw_report),
+        "sha256": hashlib.sha256(raw_report).hexdigest(),
+    }
+    manifest = build_final_green_manifest(
+        finding_id=finding["id"],
+        consuming_step=step["n"],
+        controller_run_id=controller_run_id(state),
+        worktree_identity=worktree_identity,
+        capture=_guard_initial_capture(state),
+        final_commit=final_commit,
+        green_command=finding["green_command"],
+        green_argv=argv,
+        report_format=finding["report_format"],
+        report_file=report_file,
+        retained_report=retained_report,
+        runner_exit=runner_exit,
+        counters=counters,
+    )
+    manifest_bytes = _guard_canonical_manifest(manifest)
+    report_directory = _guard_open_directory(
+        base_dir,
+        _final_green_components(step, GUARD_REPORT_DIRECTORY),
+        "final-green report directory",
+        create=True,
+    )
+    try:
+        # A report leaf carries no authority until the manifest published
+        # after it names this digest, so an orphan from an interrupted
+        # attempt is replaced rather than turned into an operator chore.
+        existing = _guard_read_leaf(
+            report_directory,
+            f"{finding['id']}.report",
+            f"final-green report {finding['id']}",
+            limit=GUARD_REPORT_BYTES_MAX,
+            missing_ok=True,
+        )
+        label = f"final-green report {finding['id']}"
+        if existing is None:
+            _guard_publish_leaf(
+                report_directory,
+                f"{finding['id']}.report",
+                raw_report,
+                label,
+                limit=GUARD_REPORT_BYTES_MAX,
+            )
+        elif existing[0] != raw_report:
+            _no_known_replace_leaf(
+                report_directory,
+                f"{finding['id']}.report",
+                existing,
+                raw_report,
+                label,
+            )
+    finally:
+        os.close(report_directory)
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _final_green_components(step, GUARD_MANIFEST_DIRECTORY),
+        "final-green manifest directory",
+        create=True,
+    )
+    try:
+        _guard_publish_leaf(
+            manifest_directory,
+            f"{finding['id']}.json",
+            manifest_bytes,
+            f"final-green manifest {finding['id']}",
+            limit=GUARD_MANIFEST_BYTES_MAX,
+        )
+    finally:
+        os.close(manifest_directory)
+    return {
+        "finding_id": finding["id"],
+        "path": _final_green_manifest_relative(step, finding["id"]),
+        "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+    }
+
+
+def establish_final_green(
+    base_dir: str, state: dict, capture: dict, step: dict, final_commit: str
+) -> dict:
+    """Produce and bind this step's complete fixed-tree final-green evidence.
+
+    Discovery runs first, so an interrupted attempt resumes on the exact
+    published pairs instead of sampling a second execution for an id that
+    already has admissible evidence on this commit.
+    """
+    assigned = _assigned_findings(capture, step["n"])
+    worktree_identity = _guard_worktree_identity(base_dir, state)
+    published = {
+        document["finding"]["id"]: document
+        for document in _final_green_manifest_documents(
+            base_dir, state, capture, step
+        )
+    }
+    references = []
+    for finding in sorted(assigned, key=lambda item: item["id"]):
+        document = published.get(finding["id"])
+        if document is not None:
+            _validate_published_final_green(
+                document, state=state, step=step, final_commit=final_commit
+            )
+            references.append(
+                {
+                    "finding_id": finding["id"],
+                    "path": _final_green_manifest_relative(step, finding["id"]),
+                    "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+                }
+            )
+            continue
+        references.append(
+            _retain_final_green(
+                base_dir, state, step, finding, final_commit, worktree_identity
+            )
+        )
+    references.sort(key=lambda item: item["finding_id"])
+    suites = _final_green_suite_evidence(base_dir, step)
+    final = _final_green_manifest_documents(base_dir, state, capture, step)
+    for document in final:
+        _validate_published_final_green(
+            document, state=state, step=step, final_commit=final_commit
+        )
+    if sorted(document["finding"]["id"] for document in final) != sorted(
+        finding["id"] for finding in assigned
+    ):
+        die("final-green evidence is not complete for every assigned id")
+    return {
+        "final_commit": final_commit,
+        "manifests": references,
+        "suites": suites,
+    }
+
+
+def known_failure_recovery(
+    base_dir: str,
+    state: dict,
+    capture: dict,
+    step: dict,
+    *,
+    guard_state: dict | None = None,
+    strict: bool = True,
+) -> dict:
+    """Rebuild and validate this step's recovery projection from evidence.
+
+    `strict` is false only for a lock-free observer, which reports an
+    incomplete join rather than refusing to say anything at all.
+    """
+    assigned_ids = _assigned_ids(capture, step["n"])
+    step_parent = _inoculation_parent(base_dir, state, step)
+    if guard_state is None:
+        guard_state = _discover_guard_evidence(
+            base_dir, state, capture, step, recheck_state=False
+        )
+    guard_manifests = [
+        {
+            "finding_id": document["finding"]["id"],
+            "path": _guard_manifest_relative(step, document["finding"]["id"]),
+            "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+        }
+        for document in guard_state.get("documents") or []
+    ]
+    guard_manifests.sort(key=lambda item: item["finding_id"])
+    completed_ids = [item["finding_id"] for item in guard_manifests]
+    receipt = as_dict(as_dict(step.get("receipts")).get("implement"))
+    recorded = as_dict(receipt.get("final_green"))
+    final_commit = recorded.get("final_commit")
+    green_manifests = []
+    if assigned_ids:
+        for document in _final_green_manifest_documents(
+            base_dir, state, capture, step
+        ):
+            _validate_published_final_green(
+                document, state=state, step=step, final_commit=final_commit
+            )
+            green_manifests.append(
+                {
+                    "finding_id": document["finding"]["id"],
+                    "path": _final_green_manifest_relative(
+                        step, document["finding"]["id"]
+                    ),
+                    "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+                }
+            )
+    green_manifests.sort(key=lambda item: item["finding_id"])
+    green_completed = [item["finding_id"] for item in green_manifests]
+    suites = sorted(
+        (dict(row) for row in (recorded.get("suites") or []) if type(row) is dict),
+        key=lambda row: str(row.get("check")),
+    )
+    claim = None
+    if not assigned_ids:
+        claim = as_dict(as_dict(step.get("receipts")).get("inoculate")).get(
+            "no_known_findings"
+        )
+    projection = {
+        "schema": RECOVERY_PROJECTION_SCHEMA,
+        "step": step["n"],
+        "phase": step["phase"],
+        "study_sha256": capture["study_sha256"],
+        "runbook_sha256": capture["runbook_sha256"],
+        "inventory_sha256": capture["inventory_sha256"],
+        "step_parent": step_parent,
+        "assigned_ids": assigned_ids,
+        "completed_ids": completed_ids,
+        "remaining_ids": sorted(set(assigned_ids) - set(completed_ids)),
+        "guard_manifests": guard_manifests,
+        "final_green": {
+            "completed_ids": green_completed,
+            "remaining_ids": sorted(set(assigned_ids) - set(green_completed)),
+            "manifests": green_manifests,
+            "suites": suites,
+        },
+        "no_known_findings": claim,
+    }
+    try:
+        return validate_known_failure_recovery(
+            projection,
+            capture={
+                name: capture[name]
+                for name in ("study_sha256", "runbook_sha256", "inventory_sha256")
+            },
+            require_phase_completeness=strict,
+        )
+    except ValueError as exc:
+        die(f"known-failure recovery cannot be reconstructed: {exc}")
+
+
+def require_final_green_admission(base_dir: str, state: dict, action: str) -> dict | None:
+    """Refuse a post-implementation transition without fixed-tree evidence.
+
+    A red guard commit is contained inside its open step. Once the step is
+    past `implement`, the same projection every reader rebuilds has to carry
+    one final-green manifest per assigned id and both declared suite exits,
+    so audit, prose, push, step completion and a checkpoint boundary all
+    refuse through one contract rather than five approximations. A run with
+    no receipted capture keeps its recorded implementation-first path.
+    """
+    if state.get("phase") != "steps" or state.get("current_step") is None:
+        return None
+    step = current_step(state)
+    if step.get("phase") in ("pending", "issue", "inoculate", "implement"):
+        return None
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return None
+    recovery = known_failure_recovery(base_dir, state, capture, step)
+    remaining = recovery["final_green"]["remaining_ids"]
+    if remaining:
+        die(
+            f"{action} cannot proceed while step {step['n']} has "
+            f"{len(remaining)} finding(s) without fixed-tree final-green evidence"
+        )
+    return recovery
+
+
+def require_receipted_final_green(
+    base_dir: str, state: dict, step: dict, action: str
+) -> None:
+    """Refuse a later transition unless one Step's receipt bound final green.
+
+    This reads only the receipt, because by the time the stack is coming down
+    the current step has moved on and the completed evidence belongs to a
+    step that is no longer open. A run with no receipted capture keeps its
+    recorded implementation-first path.
+    """
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return
+    receipt = as_dict(as_dict(step.get("receipts")).get("implement"))
+    if not receipt:
+        die(f"{action} needs step {step['n']}'s implementation receipt first")
+    recorded = receipt.get("final_green")
+    if type(recorded) is not dict or set(recorded) != FINAL_GREEN_RECEIPT_KEYS:
+        die(
+            f"{action} refuses step {step['n']}: its implementation receipt "
+            "binds no closed final-green evidence"
+        )
+    assigned_ids = _assigned_ids(capture, step["n"])
+    try:
+        _recovery_commit(recorded.get("final_commit"), "final_commit")
+        _recovery_manifest_references(
+            recorded.get("manifests"),
+            step_number=step["n"],
+            kind="final-green",
+            assigned_ids=assigned_ids,
+            completed_ids=assigned_ids,
+        )
+        suites = _recovery_suite_rows(recorded.get("suites"))
+    except ValueError as exc:
+        die(f"{action} refuses step {step['n']}: {exc}")
+    if [row["check"] for row in suites] != sorted(FINAL_GREEN_SUITE_CHECKS):
+        die(
+            f"{action} refuses step {step['n']}: its receipt binds incomplete "
+            "suite evidence"
+        )
+
+
 def inoculation_status(
     state: dict, capture: dict, base_dir: str | None = None
 ) -> dict:
@@ -11488,25 +12594,35 @@ def done_implement(args, state: dict) -> None:
     verified_commits = verify_local_range(
         args.dir, range_base, args.commit, f"step {step['n']} implementation"
     )
+    final_green = None
+    if capture is not None:
+        # The red guard commit is inside this range, so the receipt cannot be
+        # the end of the step on the strength of the range alone. Every
+        # assigned id runs its declared command again on this exact commit and
+        # both declared repository suites have to come back clean before the
+        # step may leave `implement`.
+        final_green = establish_final_green(
+            args.dir, state, capture, step, supplied_head
+        )
     step["receipts"]["implement"] = {
         "branch": args.branch,
         "commit": args.commit,
         "tests": args.tests,
         "verified_commits": verified_commits,
     }
+    if final_green is not None:
+        step["receipts"]["implement"]["final_green"] = final_green
     step["phase"] = "audit"
-    commit(
-        args.dir,
-        state,
-        "done:implement",
-        {
-            "step": step["n"],
-            "branch": args.branch,
-            "commit": args.commit,
-            "verified_commits": verified_commits,
-            "legacy_issue_phase_skipped": legacy_phase,
-        },
-    )
+    event = {
+        "step": step["n"],
+        "branch": args.branch,
+        "commit": args.commit,
+        "verified_commits": verified_commits,
+        "legacy_issue_phase_skipped": legacy_phase,
+    }
+    if final_green is not None:
+        event["final_green"] = final_green
+    commit(args.dir, state, "done:implement", event)
     print(f"step {step['n']} implementation receipted; phase -> audit")
 
 
@@ -11871,6 +12987,7 @@ def validated_audit_record(
 def cmd_audit_round(args) -> None:
     state = load_state(args.dir)
     step = require_step_phase(state, "audit")
+    require_final_green_admission(args.dir, state, "an audit round")
     if args.audit_filter is None:
         die(
             "audit-round requires --audit-filter sapheneia:sapheneia; "
@@ -11973,6 +13090,7 @@ def cmd_audit_round(args) -> None:
 
 def done_audit(args, state: dict) -> None:
     step = require_step_phase(state, "audit")
+    require_final_green_admission(args.dir, state, "closing the audit")
     if "security_suite" not in state["receipts"]:
         die("no security_suite receipt; the audit phase never legitimately ran")
     rounds = step["audit"]["rounds"]
@@ -12045,6 +13163,7 @@ def done_audit(args, state: dict) -> None:
 
 def done_prose(args, state: dict) -> None:
     step = require_step_phase(state, "prose")
+    require_final_green_admission(args.dir, state, "the prose receipt")
     if args.files is None or args.files < 0:
         die("--files must be a non-negative integer")
     applied = {s for s in (args.skills or "").split(",") if s}
@@ -12068,6 +13187,7 @@ def done_prose(args, state: dict) -> None:
 
 def done_push(args, state: dict) -> None:
     step = require_step_phase(state, "push")
+    require_final_green_admission(args.dir, state, "the push receipt")
     if not args.pr_url:
         die("--pr-url is required")
     if not args.head_commit:
@@ -14599,6 +15719,7 @@ def done_merge_step(args, state: dict) -> None:
     refuse_unreceipted_run_branch_movement(args.dir, state, args.merge_commit)
     refuse_rewritten_stack(args.dir, state, args.step)
     step = state["steps"][args.step - 1]
+    require_receipted_final_green(args.dir, state, step, "merging a step")
     push_receipt = as_dict(step["receipts"].get("push"))
     # A step whose pull request merged before integrate was adopted at push,
     # with its merge already reachable from the base it targeted and already
@@ -18513,6 +19634,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         }
         if step_parent is not None:
             packet["brief"]["step_parent"] = step_parent
+        if capture is not None:
+            packet["brief"]["known_failure_recovery"] = known_failure_recovery(
+                root, state, capture, step
+            )
         if guard_commit is not None:
             guard_commit = require_full_sha(guard_commit, "receipted guard commit")
             supplied_guard_commit = directive.get("guard_commit")
@@ -18525,6 +19650,9 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         return packet
 
     if action == "audit-round":
+        audit_recovery = require_final_green_admission(
+            root, state, "a Warden audit packet"
+        )
         audit = as_dict(as_dict(state.get("config")).get("audit"))
         log = configured_audit_log(state)
         suffix = audit.get("stacked_suffix")
@@ -18562,6 +19690,8 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
                 version_relations=version_relations,
             ),
         }
+        if audit_recovery is not None:
+            packet["brief"]["known_failure_recovery"] = audit_recovery
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
@@ -19901,6 +21031,7 @@ def _checkpoint_manifest(
     directive: dict,
     refs: dict[str, str],
     inventory: list[dict],
+    known_failures: dict | None = None,
 ) -> tuple[dict, bytes, str]:
     controller_root = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
     state_bytes = _checkpoint_read_staged(
@@ -19955,10 +21086,90 @@ def _checkpoint_manifest(
         },
         "files": inventory,
     }
+    if known_failures is not None:
+        # Present exactly when the captured state's open Step has a receipted
+        # capture. A pre-capture run's capsule keeps the shape it always had,
+        # so a legacy capsule stays readable without invented evidence.
+        manifest["known_failures"] = known_failures
     payload = canonical(manifest).encode("utf-8") + b"\n"
     if len(payload) > CHECKPOINT_MANIFEST_BYTES_MAX:
         die("checkpoint manifest exceeds the byte ceiling")
     return manifest, payload, hashlib.sha256(payload).hexdigest()
+
+
+def _checkpoint_known_failures(base_dir: str, state: dict) -> dict | None:
+    """Return the recovery projection a capsule carries, when one applies."""
+    if state.get("phase") != "steps" or state.get("current_step") is None:
+        return None
+    step = current_step(state)
+    if step.get("phase") == "pending":
+        return None
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return None
+    return known_failure_recovery(base_dir, state, capture, step)
+
+
+def _checkpoint_verify_known_failures(
+    manifest: dict, captured_state: dict, inventory: list[dict]
+) -> None:
+    """Revalidate a capsule's recovery projection against its own bytes.
+
+    Restore has no Git evidence yet, so the join it can check is the one
+    that matters here: the projection agrees with the captured state, and
+    every manifest digest it names is the digest of a file the capsule
+    actually carries.
+    """
+    projection = manifest.get("known_failures")
+    runbook_receipt = as_dict(as_dict(captured_state.get("receipts")).get("runbook"))
+    step = None
+    if (
+        captured_state.get("phase") == "steps"
+        and captured_state.get("current_step") is not None
+    ):
+        step = captured_state["steps"][captured_state["current_step"] - 1]
+    expects = (
+        step is not None
+        and step.get("phase") != "pending"
+        and "known_failure_inventory" in runbook_receipt
+    )
+    if not expects:
+        if projection is not None:
+            die("checkpoint manifest invents known-failure recovery evidence")
+        return
+    if projection is None:
+        die("checkpoint manifest omits its known-failure recovery evidence")
+    stored = _validate_known_failure_capture(
+        runbook_receipt.get("known_failure_inventory"),
+        "captured known-failure capture",
+    )
+    try:
+        validate_known_failure_recovery(
+            projection,
+            capture={
+                name: stored[name]
+                for name in ("study_sha256", "runbook_sha256", "inventory_sha256")
+            },
+        )
+    except ValueError as exc:
+        die(f"checkpoint known-failure recovery evidence is invalid: {exc}")
+    if projection["step"] != step.get("n") or projection["phase"] != step.get("phase"):
+        die("checkpoint known-failure recovery evidence names another step")
+    if projection["step_parent"] != step.get("inoculation_parent"):
+        die("checkpoint known-failure recovery evidence names another step parent")
+    digests = {item["path"]: item["sha256"] for item in inventory}
+    references = list(projection["guard_manifests"]) + list(
+        projection["final_green"]["manifests"]
+    )
+    for reference in references:
+        recorded = CHECKPOINT_CONTROLLER_DIR + "/" + reference["path"].removeprefix(
+            STATE_DIR_NAME + "/"
+        )
+        if digests.get(recorded) != reference["sha256"]:
+            die(
+                "checkpoint known-failure recovery evidence does not match the "
+                "capsule's own manifest bytes"
+            )
 
 
 def _checkpoint_write_manifest(stage: str, payload: bytes) -> None:
@@ -20042,6 +21253,7 @@ def cmd_checkpoint_export(args) -> None:
     state = load_state(base_dir)
     ledger = ledger_entries(base_dir)
     boundary, directive = _checkpoint_boundary(state, ledger)
+    require_final_green_admission(base_dir, state, "a checkpoint hand-off")
     if os.path.lexists(state_path(base_dir) + ".tmp"):
         die("checkpoint export refuses a pending controller transaction")
     destination, parent, parent_descriptor = _checkpoint_destination(
@@ -20113,7 +21325,13 @@ def cmd_checkpoint_export(args) -> None:
             ):
                 die("checkpoint private stage changed during capture")
             manifest, manifest_bytes, manifest_digest = _checkpoint_manifest(
-                stage, state, boundary, directive, refs, inventory
+                stage,
+                state,
+                boundary,
+                directive,
+                refs,
+                inventory,
+                _checkpoint_known_failures(base_dir, state),
             )
             if _checkpoint_snapshot(state_root(base_dir), None) != inventory:
                 die("checkpoint source changed before publication")
@@ -20318,11 +21536,17 @@ def _checkpoint_restore_capsule(
     if hashlib.sha256(manifest_bytes).hexdigest() != expected_digest:
         die("checkpoint manifest digest does not match --manifest-sha256")
     manifest = _checkpoint_json(manifest_bytes, "manifest")
-    manifest = _checkpoint_closed_object(
-        manifest,
-        {"schema", "controller", "boundary", "source", "resources", "files"},
-        "manifest",
-    )
+    manifest_fields = {
+        "schema",
+        "controller",
+        "boundary",
+        "source",
+        "resources",
+        "files",
+    }
+    if isinstance(manifest, dict) and "known_failures" in manifest:
+        manifest_fields = manifest_fields | {"known_failures"}
+    manifest = _checkpoint_closed_object(manifest, manifest_fields, "manifest")
     if (
         manifest.get("schema") != CHECKPOINT_SCHEMA
         or canonical(manifest).encode("utf-8") + b"\n" != manifest_bytes
@@ -20435,6 +21659,8 @@ def _checkpoint_restore_capsule(
         }
     ):
         die("checkpoint source identities do not match controller bytes")
+
+    _checkpoint_verify_known_failures(manifest, state, inventory)
 
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
@@ -21467,22 +22693,35 @@ that does not keep one simply has no discoverable suite here.
 
 CHECK_MAP_SCHEMA = "wildcat.check-map.v1"
 CHECK_MAP_ROOT_CHECK = "root-suite"
+CHECK_MAP_KNOWN_CHECKS = frozenset({CHECK_MAP_ROOT_CHECK, *FINAL_GREEN_SUITE_CHECKS})
+"""The closed set of check ids this controller will read from the map.
+
+The map declares many more, and a check id arriving from anywhere other than
+this controller's own constants is not a name to look up.
+"""
+
 CHECK_MAP_BYTES_MAX = 1024 * 1024
 
 
-def repository_check_command(base_dir: str | None) -> dict | None:
-    """The repository's own declared suite, when one is discoverable.
+def repository_check_command(
+    base_dir: str | None, *, check: str = CHECK_MAP_ROOT_CHECK
+) -> dict | None:
+    """One declared repository check, when the run worktree declares it.
 
-    Reads the check map in the run worktree and returns its root check for
+    Reads the check map in the run worktree and returns the named check for
     the audit-round directive to carry beside the log path and the lint
     flags, so a round that owes the repository's suite hears about it from
     the directive rather than from memory (issue 1067). Discovery is
     informational and fail-open: no map, an oversized or unreadable file, a
-    foreign schema, or a root check without a usable argv all return None
+    foreign schema, or a check without a usable argv all return None
     without refusing the directive. Carriage does not assert the command
-    ran; the round's own record still owes that evidence.
+    ran; the round's own record still owes that evidence. Final-green suite
+    evidence is the one caller that refuses when a declaration is absent,
+    because there the missing command is the evidence it owes.
     """
     if base_dir is None:
+        return None
+    if check not in CHECK_MAP_KNOWN_CHECKS:
         return None
     path = os.path.join(base_dir, CHECK_MAP_RELPATH)
     try:
@@ -21502,20 +22741,20 @@ def repository_check_command(base_dir: str | None) -> dict | None:
     checks = document.get("checks")
     if not isinstance(checks, dict):
         return None
-    check = checks.get(CHECK_MAP_ROOT_CHECK)
-    if not isinstance(check, dict):
+    declared = checks.get(check)
+    if not isinstance(declared, dict):
         return None
-    argv = check.get("argv")
+    argv = declared.get("argv")
     if not isinstance(argv, list) or not argv:
         return None
     if not all(isinstance(part, str) and part for part in argv):
         return None
-    cwd = check.get("cwd", ".")
+    cwd = declared.get("cwd", ".")
     if not isinstance(cwd, str) or not cwd:
         return None
     return {
         "source": CHECK_MAP_RELPATH,
-        "check": CHECK_MAP_ROOT_CHECK,
+        "check": check,
         "argv": list(argv),
         "cwd": cwd,
     }
@@ -21637,9 +22876,11 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
             **status,
             "retain_work": retain_work,
             "then": "hexctl done inoculate",
+            **_next_recovery_field(base_dir, state, step),
         }
     if step["phase"] in ("implement", "push"):
         directive = {**base, "do": step["phase"], **branch_plan(state, step)}
+        directive.update(_next_recovery_field(base_dir, state, step))
         if (
             step["phase"] == "implement"
             and "known_failure_inventory"
@@ -21670,7 +22911,36 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
                         guard_commit, "receipted guard commit"
                     )
         return directive
-    return {**base, "do": step["phase"]}
+    return {
+        **base,
+        "do": step["phase"],
+        **_next_recovery_field(base_dir, state, step),
+    }
+
+
+def _next_recovery_field(base_dir: str | None, state: dict, step: dict) -> dict:
+    """Carry the recovery projection on every source-bound step directive.
+
+    A delegate that lost its context after a compaction rebuilds the step
+    from the directive it is handed, so the remaining ids, phase, step
+    parent and evidence digests travel with the directive rather than
+    waiting to be asked for. A run with no receipted capture carries
+    nothing, which is what a pre-capture directive has always looked like.
+    """
+    if base_dir is None or step.get("phase") == "pending":
+        return {}
+    if "known_failure_inventory" not in as_dict(
+        as_dict(state.get("receipts")).get("runbook")
+    ):
+        return {}
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return {}
+    return {
+        "known_failure_recovery": known_failure_recovery(
+            base_dir, state, capture, step, strict=False
+        )
+    }
 
 
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
@@ -21727,10 +22997,12 @@ def cmd_status(args) -> None:
             runbook=receipted_sources["runbook"],
         )
     known_failure_state = None
+    known_failure_recovery_state = None
     if (
         known_failure_capture is not None
         and state.get("phase") == "steps"
         and state.get("current_step") is not None
+        and current_step(state).get("phase") != "pending"
     ):
         step = current_step(state)
         step_parent = _inoculation_parent(args.dir, state, step)
@@ -21758,6 +23030,9 @@ def cmd_status(args) -> None:
             known_failure_state = inoculation_status(
                 state, known_failure_capture, args.dir
             )
+        known_failure_recovery_state = known_failure_recovery(
+            args.dir, state, known_failure_capture, step, strict=False
+        )
     field = getattr(args, "field", None)
     if args.json or field is not None:
         payload = dict(state)
@@ -21766,6 +23041,8 @@ def cmd_status(args) -> None:
             payload["version_resolution_status"] = resolution_state
         if known_failure_state is not None:
             payload.update(known_failure_state)
+        if known_failure_recovery_state is not None:
+            payload["known_failure_recovery"] = known_failure_recovery_state
         if field is None:
             print(json.dumps(payload, indent=2))
             return
@@ -21843,6 +23120,20 @@ def cmd_status(args) -> None:
             f"{known_failure_state['assigned_count']} assigned; "
             f"{len(known_failure_state['completed_ids'])} completed; "
             f"{len(known_failure_state['remaining_ids'])} remaining"
+        )
+    if known_failure_recovery_state is not None:
+        recovery_green = known_failure_recovery_state["final_green"]
+        print(
+            "known failures: recovery "
+            f"{known_failure_recovery_state['schema']}; step "
+            f"{known_failure_recovery_state['step']} parent "
+            f"{known_failure_recovery_state['step_parent'][:12]}; "
+            f"{len(known_failure_recovery_state['guard_manifests'])} guard "
+            f"manifest(s); {len(recovery_green['manifests'])} final-green "
+            f"manifest(s); {len(recovery_green['remaining_ids'])} awaiting "
+            f"final green; {len(recovery_green['suites'])} suite exit(s); "
+            "no-findings claim "
+            f"{'bound' if known_failure_recovery_state['no_known_findings'] else 'absent'}"
         )
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
@@ -22159,12 +23450,14 @@ def verify_run(
                 state=state,
             )
             expected_inoculation_events.append(inoculation_receipt)
+            _verify_step_final_green(base_dir, state, known_failure_capture, step)
     else:
         for step in state.get("steps", []):
             if (
                 "inoculation_parent" in step
                 or "inoculate" in as_dict(step.get("receipts"))
                 or step.get("phase") == "inoculate"
+                or "final_green" in as_dict(as_dict(step.get("receipts")).get("implement"))
             ):
                 die("legacy Step carries invented inoculation state", 1)
     if inoculation_events != expected_inoculation_events:
@@ -22235,6 +23528,100 @@ def verify_run(
         if step["status"] != "open" or step["phase"] not in STEP_PHASES:
             die("state inconsistent: current step is not open", 1)
     return count
+
+
+def _verify_step_final_green(
+    base_dir: str, state: dict, capture: dict, step: dict
+) -> None:
+    """Replay one Step's final-green receipt and name the first broken join.
+
+    Verification names the join rather than the field: an operator reading
+    this wants to know which of the receipt, the manifest bytes and the
+    published pair disagreed, not that something somewhere did not match.
+    """
+    receipt = as_dict(as_dict(step.get("receipts")).get("implement"))
+    recorded = receipt.get("final_green")
+    if step.get("phase") == "implement":
+        if recorded is not None:
+            die(
+                f"step {step.get('n')} carries final-green evidence before its "
+                "implementation receipt",
+                1,
+            )
+        return
+    if not receipt:
+        return
+    if type(recorded) is not dict or set(recorded) != FINAL_GREEN_RECEIPT_KEYS:
+        die(
+            f"step {step.get('n')} implementation receipt binds no closed "
+            "final-green evidence",
+            1,
+        )
+    assigned_ids = _assigned_ids(capture, step["n"])
+    try:
+        _recovery_commit(recorded.get("final_commit"), "final_commit")
+        references = _recovery_manifest_references(
+            recorded.get("manifests"),
+            step_number=step["n"],
+            kind="final-green",
+            assigned_ids=assigned_ids,
+            completed_ids=assigned_ids,
+        )
+        suites = _recovery_suite_rows(recorded.get("suites"))
+    except ValueError as exc:
+        die(f"step {step.get('n')} final-green receipt is invalid: {exc}", 1)
+    if recorded["final_commit"] != receipt.get("commit"):
+        die(
+            f"step {step.get('n')} final-green evidence names a commit its "
+            "implementation receipt does not",
+            1,
+        )
+    if [row["check"] for row in suites] != sorted(FINAL_GREEN_SUITE_CHECKS):
+        die(
+            f"step {step.get('n')} final-green receipt binds incomplete suite "
+            "evidence",
+            1,
+        )
+    if step.get("n") != state.get("current_step"):
+        # Only the open Step still has its evidence directory to replay. A
+        # merged Step's receipt stays checkable; its published leaves are not
+        # re-derived, and saying so is cheaper than pretending otherwise.
+        return
+    published = {
+        document["finding"]["id"]: document
+        for document in _final_green_manifest_documents(
+            base_dir, state, capture, step
+        )
+    }
+    for reference in references:
+        document = published.get(reference["finding_id"])
+        if document is None:
+            die(
+                f"step {step.get('n')} final-green manifest "
+                f"{reference['finding_id']} is missing from its evidence "
+                "directory",
+                1,
+            )
+        _validate_published_final_green(
+            document,
+            state=state,
+            step=step,
+            final_commit=recorded["final_commit"],
+        )
+        if hashlib.sha256(document["manifest_bytes"]).hexdigest() != reference[
+            "sha256"
+        ]:
+            die(
+                f"step {step.get('n')} final-green manifest "
+                f"{reference['finding_id']} does not match its receipted digest",
+                1,
+            )
+    if sorted(published) != assigned_ids:
+        die(
+            f"step {step.get('n')} final-green evidence directory does not "
+            "match its assigned id set",
+            1,
+        )
 
 
 def cmd_verify(args) -> None:

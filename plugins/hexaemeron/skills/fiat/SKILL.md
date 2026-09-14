@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.52.1"
+  version: "5.53.1"
 ---
 
 <p align="center">
@@ -671,11 +671,48 @@ clean projections' `inventory_sha256`, `source_views`, `findings`,
 seven-finding assignment, records only bounded bootstrap identity and results,
 and fabricates no capture, manifest reference or inoculation receipt.
 
-This phase adds no checkpoint export or restore, `verify` replay,
-cross-worktree or post-compaction reconstruction, final-green manifest, final
-suite evidence, or gate that withholds Warden until final green. Step 4 owns
-those additions. Ordinary Warden audit still begins only after implementation;
-a partial retain, red guard or inoculation receipt is not audit admission.
+Recovery and completion are one projection. `status --json`, `next`, `verify`,
+a checkpoint capsule and every delegated brief rebuild the same closed
+`fiat-known-failure-recovery/v1` object: schema, step, phase, the study,
+runbook and inventory digests, the step parent, the assigned, completed and
+remaining ids, one uniquely sorted three-field reference per guard and
+final-green manifest at its controller-derived path, the declared suite exits,
+and the explicit no-known-findings claim or null. A missing, reordered,
+duplicated, stale or foreign reference refuses by name and changes no byte. An
+observer reports an incomplete join and every receipt refuses it, because
+`status` is what somebody runs to find out what is wrong.
+
+`done implement` closes the red interval. For a capture-aware Step it runs each
+assigned finding's declared `green_command` on the exact implementation head,
+admits only a complete positive run with no assertion failure, error, skip,
+expected failure or unexpected success beside a zero runner exit, retains the
+raw report and publishes one canonical `fiat-final-green-manifest/v1` per id
+holding exactly `schema`, `finding_id`, `consuming_step`, `controller_run_id`,
+`worktree_identity`, `capture`, `final_commit`, `green_command`, `green_argv`,
+`report_format`, `report_file`, `retained_report`, `runner_exit`, `counters`
+and `admission`. That admission is Fiat's own, because none of Elenchus's four
+verdicts says a fixed tree came back green. The report is published first and
+the manifest last with no replacement, so the manifest is the completion point
+and a report-only leaf is an id still owing evidence; a later pass discovers
+the published pair instead of sampling a second execution. A green command
+names its own report through exactly one `--report` pair, and its interpreter
+resolves to the running one rather than through a caller's `PATH`.
+
+The same receipt binds each repository suite the run worktree's check map
+declares under `root-suite` and `hexaemeron-suite`, with its exact argv,
+working directory and zero exit. Discovery is fail-open and the answer is not:
+a declared suite that cannot be run or comes back non-zero refuses before the
+receipt, and a repository declaring neither binds no suite row, which a strict
+read past implementation then refuses. A recorded exit is what the controller
+observed, not a claim about what the suite covers.
+
+Audit, prose, push, step completion and a checkpoint hand-off each refuse while
+an assigned id lacks that evidence, so a red guard commit reaches none of them.
+A capsule carries the projection exactly when its captured Step has a capture,
+and restore checks it against the captured state and the capsule's own manifest
+digests. Legacy states stay readable: a run with no receipted capture carries
+no projection, no suite row and no final-green field, and verification refuses
+one that appears.
 
 **Implementation.** Build the candidate named by the checked design receipt;
 the design choice is not reopened inside a step. The step runs under the phase skills: `phylax` names
