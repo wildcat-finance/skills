@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21648186,
+    "bytes_blob": 21702825,
     "bytes_generated": 98
   },
   "entries": [
@@ -420,6 +420,13 @@
       "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
     },
     {
+      "bytes": 29963,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.synopsis.md"
+    },
+    {
       "bytes": 17050,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -488,6 +495,13 @@
       "evidence": "mean line length above 400 in a window at offset 39524",
       "grade": "candidate",
       "path": "docs/commit-gate/runbook.md"
+    },
+    {
+      "bytes": 24683,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 24683 bytes",
+      "grade": "candidate",
+      "path": "docs/main-root-suite-recovery/parity-attempt-1.json"
     },
     {
       "bytes": 59394,
@@ -827,9 +841,9 @@
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
     },
     {
-      "bytes": 24566,
+      "bytes": 24559,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 24566 bytes",
+      "evidence": "no newline in the first 4096 bytes of 24559 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }
