@@ -559,6 +559,30 @@ def _exclusive(directory, name, data):
         os.close(fd)
 
 
+def _controller_directories(root, root_fd, metadata, receipts, reports):
+    """Check namespace links against held descriptors; record all parent inodes.
+
+    Rechecks detect observed renames, not atomic namespace stability. Writes
+    use the held directories; a rename after a pre-check can leave partial
+    output there, so callers recheck before reporting successful admission.
+    """
+    def identity(info):
+        return [info.st_dev, info.st_ino]
+    try:
+        links = ((None, root, root_fd), (root_fd, ".hexaemeron", metadata),
+                 (metadata, "worker-launches", receipts), (metadata, "reports", reports))
+        identities = []
+        for parent, name, held in links:
+            linked = os.stat(name, dir_fd=parent, follow_symlinks=False)
+            actual = os.fstat(held)
+            if not stat.S_ISDIR(linked.st_mode) or identity(linked) != identity(actual):
+                raise Refusal("controller-directory-drift")
+            identities.append(identity(actual))
+        return identities
+    except OSError as exc:
+        raise Refusal("controller-directory-drift") from exc
+
+
 def _origin_snapshot(origin):
     """Hash only the explicitly declared regular files; never write origin."""
     root = _absolute_directory(origin["root"])
@@ -637,10 +661,12 @@ def controller_launch(root, request, controller_source):
     controller_identity = _identity(Path(controller_source).resolve())
     before = _origin_snapshot(request["origin"])
     root_fd = _open_dir(root)
-    receipts = reports_fd = None
+    metadata = receipts = reports_fd = None
     try:
-        receipts = _directory_at(root_fd, (".hexaemeron", "worker-launches"), create=True)
-        reports_fd = _directory_at(root_fd, (".hexaemeron", "reports"), create=True)
+        metadata = _directory_at(root_fd, (".hexaemeron",), create=True)
+        receipts = _directory_at(metadata, ("worker-launches",), create=True)
+        reports_fd = _directory_at(metadata, ("reports",), create=True)
+        directories = _controller_directories(root, root_fd, metadata, receipts, reports_fd)
         for destination in destinations:
             try:
                 os.stat(Path(destination).name, dir_fd=reports_fd, follow_symlinks=False)
@@ -659,6 +685,7 @@ def controller_launch(root, request, controller_source):
         record = {"schema": "fiat-worker-launch/v1", "request": request,
                   "request_sha256": _digest(_json_bytes(request)),
                   "controller": controller_identity,
+                  "controller_directories": directories,
                   "root_identity": [os.fstat(root_fd).st_dev, os.fstat(root_fd).st_ino],
                   "capture": capture.record, "destinations": destinations,
                   "streams": {name: {"base64": base64.b64encode(data).decode("ascii"),
@@ -673,8 +700,11 @@ def controller_launch(root, request, controller_source):
                   "recovery": "Preserve origin changes; start a fresh launch to resnapshot."}
         data = _json_bytes(record)
         name = uuid.uuid4().hex + ".json"
+        if _controller_directories(root, root_fd, metadata, receipts, reports_fd) != directories:
+            raise Refusal("controller-directory-drift")
         _exclusive(receipts, name, data)
         os.fsync(receipts)
+        _controller_directories(root, root_fd, metadata, receipts, reports_fd)
         return {"receipt": str(root / ".hexaemeron/worker-launches" / name),
                 "sha256": _digest(data), "record": record}
     finally:
@@ -682,6 +712,8 @@ def controller_launch(root, request, controller_source):
             os.close(receipts)
         if reports_fd is not None:
             os.close(reports_fd)
+        if metadata is not None:
+            os.close(metadata)
         os.close(root_fd)
 
 
@@ -694,13 +726,17 @@ def controller_admit(root, receipt, digest, controller_source):
             or path.suffix != ".json"):
         raise Refusal("invalid-launch-receipt-path")
     root_fd = _open_dir(root)
-    receipts = reports = snapshot_fd = None
+    metadata = receipts = reports = snapshot_fd = None
     try:
-        receipts = _directory_at(root_fd, (".hexaemeron", "worker-launches"))
+        metadata = _directory_at(root_fd, (".hexaemeron",))
+        receipts = _directory_at(metadata, ("worker-launches",))
+        reports = _directory_at(metadata, ("reports",))
         data, _ = _read_regular(receipts, path.name, MAX_RECEIPT)
         if _digest(data) != digest:
             raise Refusal("launch-receipt-mismatch")
         record = json.loads(data)
+        if _controller_directories(root, root_fd, metadata, receipts, reports) != record["controller_directories"]:
+            raise Refusal("controller-directory-drift")
         request = record["request"]
         outputs, operands, destinations = _launch_request(root, request)
         if (record["schema"] != "fiat-worker-launch/v1" or record["status"] != "ready"
@@ -762,18 +798,21 @@ def controller_admit(root, receipt, digest, controller_source):
             contents.append((Path(by_output[artifact["path"]]).name, content))
         # Claim once before publication. Any partial publication remains visible
         # and requires operator inspection; retry never overwrites its files.
+        _controller_directories(root, root_fd, metadata, receipts, reports)
         _exclusive(receipts, path.stem + ".admission.json", _json_bytes({"receipt_sha256": digest,
                    "status": "promotion-started", "destinations": destinations}))
-        reports = _directory_at(root_fd, (".hexaemeron", "reports"))
         for name, content in contents:
+            _controller_directories(root, root_fd, metadata, receipts, reports)
             _exclusive(reports, name, content)
+            _controller_directories(root, root_fd, metadata, receipts, reports)
         os.fsync(reports)
         _exclusive(receipts, path.stem + ".complete.json", _json_bytes({"receipt_sha256": digest,
-                   "status": "admitted", "destinations": destinations}))
+                   "status": "reports-written", "destinations": destinations}))
         os.fsync(receipts)
+        _controller_directories(root, root_fd, metadata, receipts, reports)
         return {"status": "admitted", "receipt_sha256": digest, "destinations": destinations}
     finally:
-        for fd in (receipts, reports, snapshot_fd, root_fd):
+        for fd in (receipts, reports, snapshot_fd, metadata, root_fd):
             if fd is not None:
                 os.close(fd)
 

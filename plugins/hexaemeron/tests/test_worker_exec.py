@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import platform
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -133,6 +134,44 @@ class ControllerLaunchTests(unittest.TestCase):
         refused = worker.controller_launch(fresh, request, self.controller)
         self.assertEqual(refused["record"]["status"], "refused")
         self.assertEqual(refused["record"]["capture"]["code"], "output-cap")
+
+    def test_real_controller_directory_substitution_refuses_before_promotion(self):
+        for relative in (".hexaemeron/reports", ".hexaemeron/worker-launches", ".hexaemeron"):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                request = self.proofs.dispatch_request(root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')")
+                launch = worker.controller_launch(root, request, self.controller)
+                directory = root / relative
+                retired = root / "retired-directory"
+                directory.rename(retired)
+                shutil.copytree(retired, directory)
+                sentinel = directory / "independent.txt"
+                sentinel.write_text("preserve")
+                with self.assertRaisesRegex(worker.Refusal, "controller-directory-drift"):
+                    worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
+                self.assertEqual(sentinel.read_text(), "preserve")
+                self.assertFalse((root / ".hexaemeron/reports/result.json").exists())
+
+    def test_directory_rename_during_promotion_refuses_and_preserves_partial_evidence(self):
+        launch = self.launch()
+        original = worker._exclusive
+        retired = self.root / "retired-controller"
+        def replace_directory(directory, name, data):
+            if name == "result.json":
+                (self.root / ".hexaemeron").rename(retired)
+                (self.root / ".hexaemeron/reports").mkdir(parents=True)
+                (self.root / ".hexaemeron/reports/independent.txt").write_text("preserve")
+            return original(directory, name, data)
+        with mock.patch.object(worker, "_exclusive", side_effect=replace_directory):
+            with self.assertRaisesRegex(worker.Refusal, "controller-directory-drift"):
+                worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual((self.root / ".hexaemeron/reports/independent.txt").read_text(), "preserve")
+        self.assertFalse((self.root / ".hexaemeron/reports/result.json").exists())
+        # This interleaving occurs after the pre-check. The held descriptor
+        # preserves the old directory; the post-check must refuse completion.
+        self.assertEqual((retired / "reports/result.json").read_text(), "immutable")
+        self.assertFalse(list((retired / "worker-launches").glob("*.complete.json")))
 
 
 class RequestTests(unittest.TestCase):

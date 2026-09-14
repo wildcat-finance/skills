@@ -110,6 +110,15 @@ each destination exclusively. Existing files are preserved; an interrupted
 multi-file promotion may leave a visible partial result and its start marker.
 Inspect it before preparing a new request; replay never overwrites it.
 
+The receipt also binds the device and inode of the root, `.hexaemeron`,
+`worker-launches` and `reports` directories. Admission keeps their descriptors
+open and checks the namespace links around writes. These checks detect
+observed substitutions; they do not make concurrent renames atomic. A rename
+after a pre-check can leave partial output in the held, moved directory. The
+post-check refuses completion and preserves the independent replacement
+directory. The final marker records `reports-written`; only a successful
+subsequent link check permits the command to return `admitted`.
+
 Origin drift refuses admission without rollback or attribution to the worker.
 Preserve independent edits and start a fresh launch to resnapshot the declared
 paths. The snapshot covers only that inventory. Worker streams remain bounded,
