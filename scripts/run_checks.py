@@ -2814,6 +2814,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="run_checks.py",
         description="Select and run the repository checks that the changed scope owns.",
+        epilog=(
+            "Exit codes: 0 green (or a valid --plan), 1 failed checks, "
+            "2 refused, 3 unstable source, 4 nothing-selected. "
+            "A clean committed tree needs --base REF, --scope ID or --full "
+            "to select checks; --plan only inspects the selection."
+        ),
     )
     parser.add_argument("--scope", action="append", default=[], help="a declared scope id; repeatable")
     parser.add_argument("--base", default=None, help="compare committed history against this ref")
@@ -2999,7 +3005,7 @@ def _run_attempts(
                     checks=[],
                     attempts=attempts,
                 )
-                exit_code = 0
+                exit_code = 4
             if args.report:
                 try:
                     persist_run_report(root, args.report, run)

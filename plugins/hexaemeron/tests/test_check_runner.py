@@ -737,7 +737,7 @@ class ReportTests(unittest.TestCase):
             proc = helper.run_cli(
                 root, "--format", "json", "--report", "out/nothing-selected.json"
             )
-            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(proc.returncode, 4, proc.stdout + proc.stderr)
             emitted = json.loads(proc.stdout)
             self.assertEqual(emitted["outcome"], "nothing-selected")
             target = root / "out" / "nothing-selected.json"
@@ -1153,6 +1153,36 @@ class TemporaryRepositoryMixin:
             text=True,
             shell=False,
         )
+
+
+class EmptySelectionTests(TemporaryRepositoryMixin, unittest.TestCase):
+    def test_clean_committed_tree_cannot_return_a_passing_run(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "print('executed probe')"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            (root / "src" / "kept.txt").write_text("changed\n")
+            self.git(root, "commit", "--quiet", "-am", "change")
+            for output_format in ("human", "json"):
+                with self.subTest(output_format=output_format):
+                    proc = self.run_cli(root, "--format", output_format)
+                    self.assertEqual(proc.returncode, 4, proc.stdout + proc.stderr)
+                    self.assertIn("nothing-selected", proc.stdout)
+                    if output_format == "json":
+                        self.assertEqual(json.loads(proc.stdout)["checks"], [])
+            plan = self.run_cli(root, "--plan", "--format", "json")
+            self.assertEqual(plan.returncode, 0, plan.stdout + plan.stderr)
+            self.assertEqual(json.loads(plan.stdout)["selected_checks"], [])
+            for selection in (("--base", "HEAD~1"), ("--scope", "one"), ("--full",)):
+                with self.subTest(selection=selection):
+                    proc = self.run_cli(root, *selection, "--format", "json")
+                    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                    report = json.loads(proc.stdout)
+                    self.assertEqual(report["outcome"], "green")
+                    self.assertEqual(len(report["checks"]), 1)
 
 
 class DiffCaptureTests(TemporaryRepositoryMixin, unittest.TestCase):
