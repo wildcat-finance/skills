@@ -1525,6 +1525,141 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertNotIn("trailing-data", captured.getvalue())
         self.assertIn("capsule member could not be read", captured.getvalue())
 
+    def test_source_verification_does_not_echo_the_producers_own_path(self):
+        """S4-R6-01: a receipt outside `.hexaemeron/` printed the producer's path.
+
+        `_checkpoint_restore_verify_source` derives one sanitised, portable
+        relative path from the receipt and then, for an artefact outside the
+        controller directory, handed the whole state to `receipted_source`.
+        That reader re-reads the receipt's own `artifact` field rather than
+        the derived path, and that field is still the producer's: for a run
+        whose receipt recorded an absolute path it resolves outside the
+        restored worktree every time, so `scoped_path` refuses it by printing
+        the path it was handed. The refusal therefore carried the producer's
+        home directory, account name and project name to stderr, out of a
+        command whose whole purpose is to keep the archive's bytes inside its
+        stage, and after `git init` has already filled the destination.
+
+        Driven directly, for the reason the sibling above states: the value
+        reaching this reader is the relocated state's, and there is no
+        command-line surface that supplies one receipt path without supplying
+        a whole archive built around it.
+
+        The bound is worth stating: this establishes what the refusal prints,
+        not that any particular archive reaches this branch.
+        """
+        module = hexctl_module()
+        origin = "/Users/victim/secret-client-engagement"
+        branch = "fiat/861-source-leak"
+        producer_worktree = os.path.join(
+            origin, *module.WORKTREE_HOME, branch.replace("/", "-")
+        )
+        artifact = os.path.join(producer_worktree, "docs", "study.md")
+        state = {
+            "run_branch": branch,
+            "config": {"git": {"origin": origin, "worktree": producer_worktree}},
+            "receipts": {
+                "study": {
+                    "sha256": hashlib.sha256(b"study bytes").hexdigest(),
+                    "artifact": artifact,
+                }
+            },
+        }
+        scratch = tempfile.mkdtemp(prefix="fiat861-r6-source-")
+        self.addCleanup(shutil.rmtree, scratch, ignore_errors=True)
+        destination = os.path.join(scratch, "worktree")
+        stage = os.path.join(scratch, "stage")
+        os.makedirs(destination, 0o700)
+        os.makedirs(stage, 0o700)
+
+        captured = StringIO()
+        with redirect_stderr(captured):
+            with self.assertRaises(SystemExit) as stopped:
+                module._checkpoint_restore_verify_source(
+                    destination, stage, state, "study"
+                )
+
+        diagnosis = captured.getvalue()
+        self.assertEqual(2, stopped.exception.code)
+        self.assertNotIn(
+            origin,
+            diagnosis,
+            "the refusal carried the producer's home directory and project "
+            "name to stderr, which is the source-path leak the register's "
+            "`diagnostic-leak` row refuses",
+        )
+        self.assertNotIn(
+            artifact,
+            diagnosis,
+            "the refusal echoed the receipt's own archive-supplied path",
+        )
+        self.assertNotIn("escapes target directory", diagnosis)
+
+    def test_every_checkpoint_call_to_the_path_echoing_reader_is_sanitised(self):
+        """S4-R6-01: the containment exists; pin that every call site uses it.
+
+        `receipted_source` refuses through `scoped_path`, which prints the path
+        it was handed. The module already states the remedy: the docstring of
+        `_checkpoint_identity_sanitized` is "Run a legacy verifier without
+        letting its path-bearing errors escape", and the identity route wraps
+        this exact reader in it. The restore route called the same reader on
+        the same archive-derived state and did not, which is the leak the
+        sibling above drives.
+
+        The repair removed that call rather than wrapping it, because reading
+        the receipt's own pre-relocation path in the restored worktree could
+        never have succeeded. This pins the resulting property structurally,
+        so a later call site added without the containment is caught here
+        rather than by the next enumeration: every `receipted_source` call
+        inside a checkpoint function is lexically inside a
+        `_checkpoint_identity_sanitized` call.
+
+        The bound: this reads call sites, not reachability, so it says nothing
+        about which of them an archive can drive.
+        """
+        module = hexctl_module()
+        tree = ast.parse(
+            pathlib.Path(inspect.getsourcefile(module)).read_text(encoding="utf-8")
+        )
+        parents = {}
+        for node in ast.walk(tree):
+            for child in ast.iter_child_nodes(node):
+                parents[child] = node
+
+        def sanitised(node):
+            while node in parents:
+                node = parents[node]
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "_checkpoint_identity_sanitized"
+                ):
+                    return True
+            return False
+
+        unsanitised = []
+        for owner in tree.body:
+            if not isinstance(owner, ast.FunctionDef):
+                continue
+            if not owner.name.startswith("_checkpoint_"):
+                continue
+            for sub in ast.walk(owner):
+                if (
+                    isinstance(sub, ast.Call)
+                    and isinstance(sub.func, ast.Name)
+                    and sub.func.id == "receipted_source"
+                    and not sanitised(sub)
+                ):
+                    unsanitised.append(f"{owner.name}:{sub.lineno}")
+
+        self.assertEqual(
+            [],
+            unsanitised,
+            "a checkpoint reader calls `receipted_source` without the "
+            "containment `_checkpoint_identity_sanitized` exists for, so its "
+            "refusal prints the receipt's own path",
+        )
+
 
 class SignedRunFixture(HexctlCase):
     """One real, really signed run, shared by every test that needs its archive.

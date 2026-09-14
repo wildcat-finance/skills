@@ -16608,7 +16608,21 @@ def _checkpoint_restore_verify_source(
     artifact, expected = source_receipt
     prefix = STATE_DIR_NAME + "/"
     if not artifact.startswith(prefix):
-        receipted_source(worktree, state, name)
+        # S4-R6-01: `receipted_source` re-reads the receipt's own `artifact`
+        # field rather than the relocated path this reader just derived, and
+        # that field is still the producer's. An absolute one therefore
+        # resolves outside the restored worktree every time, and `scoped_path`
+        # refuses it by printing the path it was handed -- carrying the
+        # producer's home directory, account name and project out of a command
+        # whose refusals are one bounded line. Read the relocated location
+        # instead and diagnose a mismatch as this reader's own, exactly as the
+        # staged branch below already does. The sanitised relative path is the
+        # one `_checkpoint_restore_source_receipt` has already proved portable.
+        data = _checkpoint_read_staged(
+            os.path.join(worktree, *artifact.split("/")), SOURCE_BYTES_MAX
+        )
+        if hashlib.sha256(data).hexdigest() != expected:
+            die(f"checkpoint {name} artefact does not match its receipt")
         return
     relative = artifact[len(prefix):]
     data = _checkpoint_read_staged(
