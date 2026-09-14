@@ -1156,17 +1156,25 @@ class TransportBoundaryTests(BoundaryTestCase):
     def test_transport_refuses_every_caller_selected_destination(self):
         exchange = QueueExchange(FakeResponse(200, {"ok": True}))
         transport = PinnedGitHubTransport(exchange)
-        self.assert_publisher_error(
-            "GIP300",
-            "transport.destination",
-            lambda: transport.request(
-                method="POST",
-                path="/repos/wildcat-finance/other/issues",
-                headers=(("Accept", "application/json"),),
-                body=b"{}",
-                timeout_seconds=15.0,
+        for method, path in (
+            ("POST", "/repos/wildcat-finance/other/issues"),
+            (
+                "GET",
+                f"{ISSUES_ROUTE}/{1 << 63}",
             ),
-        )
+        ):
+            with self.subTest(method=method, path=path):
+                self.assert_publisher_error(
+                    "GIP300",
+                    "transport.destination",
+                    lambda method=method, path=path: transport.request(
+                        method=method,
+                        path=path,
+                        headers=(("Accept", "application/json"),),
+                        body=b"{}",
+                        timeout_seconds=15.0,
+                    ),
+                )
         self.assertEqual([], exchange.requests)
 
     def test_transport_refuses_nonfinite_timeout(self):
@@ -1527,6 +1535,53 @@ class RuntimeBoundaryTests(BoundaryTestCase):
             ["admission", "signer", "token", "create", "cleanup", "receipt"],
             [event["stage"] for event in runtime.events],
         )
+
+    def test_oversized_issue_number_cannot_overflow_terminal_result(self):
+        document = valid_document()
+        issue = issue_document(document, number=int("9" * 1_757))
+        self.assertLess(
+            len(canonical_json(issue)),
+            publisher_transport.MAX_REMOTE_RESPONSE_BYTES,
+        )
+        responses = [
+            FakeResponse(201, token_document()),
+            FakeResponse(201, issue),
+            FakeResponse(200, issue),
+            FakeResponse(200, issue),
+        ]
+        _document, runtime, signer, sink, exchange = runtime_fixture(
+            document=document,
+            responses=responses,
+        )
+
+        try:
+            result = runtime.publish(encoded(document))
+        except PublisherError as exc:
+            observed = (
+                "raised",
+                exc.code,
+                exc.field,
+                exc.mint_attempts,
+                exc.post_attempts,
+            )
+        else:
+            observed = (
+                "returned",
+                result["outcome"],
+                result["code"],
+                result["counts"]["token_attempts"],
+                result["counts"]["post_attempts"],
+            )
+
+        self.assertEqual(
+            ("returned", "create-indeterminate", "GIP320", 1, 1),
+            observed,
+        )
+        self.assertEqual(2, len(exchange.requests))
+        self.assertTrue(all(response.closed for response in exchange.delivered))
+        self.assertTrue(signer.closed)
+        self.assertTrue(sink.closed)
+        self.assertEqual(result_bytes(result), sink.payload)
 
     def test_total_deadline_is_enforced_after_readback_during_cleanup(self):
         class Clock:

@@ -232,7 +232,7 @@ and these routes:
 
 - `POST /app/installations/157591976/access_tokens`;
 - `POST /repos/wildcat-finance/skills/issues`; and
-- `GET /repos/wildcat-finance/skills/issues/{positive issue number}`.
+- `GET /repos/wildcat-finance/skills/issues/{positive signed 64-bit issue number}`.
 
 The token request body is exactly
 `{"permissions":{"issues":"write"},"repositories":["skills"]}`. The

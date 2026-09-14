@@ -26,12 +26,13 @@ MAX_REMOTE_HEADER_BYTES = 16_384
 MAX_REMOTE_MEMBERS = 256
 MAX_REMOTE_DEPTH = 8
 MAX_REMOTE_STRING_BYTES = 262_144
+MAX_ISSUE_NUMBER = (1 << 63) - 1
 TOKEN_TIMEOUT_SECONDS = 15.0
 CREATE_TIMEOUT_SECONDS = 20.0
 READBACK_TIMEOUT_SECONDS = 10.0
 TOKEN_ROUTE = f"/app/installations/{INSTALLATION_ID}/access_tokens"
 ISSUES_ROUTE = f"/repos/{GITHUB_REPOSITORY}/issues"
-ISSUE_ROUTE_RE = re.compile(rf"{re.escape(ISSUES_ROUTE)}/([1-9][0-9]*)\Z")
+ISSUE_ROUTE_RE = re.compile(rf"{re.escape(ISSUES_ROUTE)}/([1-9][0-9]{{0,18}})\Z")
 JWT_RE = re.compile(r"[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\Z")
 TOKEN_RE = re.compile(r"[!-~]{16,4096}\Z")
 EXPIRES_AT_RE = re.compile(
@@ -339,9 +340,13 @@ class PinnedGitHubTransport:
         timeout_seconds: float,
         max_response_bytes: int = MAX_REMOTE_RESPONSE_BYTES,
     ) -> dict[str, Any]:
+        issue_route = ISSUE_ROUTE_RE.fullmatch(path) if method == "GET" else None
         allowed = (
             (method == "POST" and path in {TOKEN_ROUTE, ISSUES_ROUTE})
-            or (method == "GET" and ISSUE_ROUTE_RE.fullmatch(path) is not None)
+            or (
+                issue_route is not None
+                and int(issue_route.group(1), 10) <= MAX_ISSUE_NUMBER
+            )
         )
         if not allowed:
             refuse("GIP300", "transport.destination")
@@ -450,7 +455,12 @@ def exchange_installation_token(
 def _issue(document: dict[str, Any], title: str, body: str) -> IssueRecord:
     number = document.get("number")
     url = document.get("html_url")
-    if isinstance(number, bool) or not isinstance(number, int) or number < 1:
+    if (
+        isinstance(number, bool)
+        or not isinstance(number, int)
+        or number < 1
+        or number > MAX_ISSUE_NUMBER
+    ):
         refuse("GIP320", "issue.number")
     expected_url = f"{GITHUB_WEB_ORIGIN}/{GITHUB_REPOSITORY}/issues/{number}"
     if url != expected_url:
