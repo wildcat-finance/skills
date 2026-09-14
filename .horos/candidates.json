@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23594066,
+    "bytes_blob": 23616483,
     "bytes_generated": 98
   },
   "entries": [
@@ -19,6 +19,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
+    },
+    {
+      "bytes": 22417,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1086-gate-study-and-runbook-links-before-their-d.synopsis.md"
     },
     {
       "bytes": 199627,
