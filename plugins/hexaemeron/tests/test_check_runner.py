@@ -1117,6 +1117,7 @@ class TemporaryRepositoryMixin:
             ("user.name", "Fixture"),
             ("commit.gpgsign", "false"),
             ("tag.gpgsign", "false"),
+            ("core.hooksPath", ".githooks"),
         ):
             subprocess.run(
                 ["git", "config", key, value], cwd=str(root), check=True, shell=False
@@ -3204,3 +3205,116 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
                 (root / "out").glob(".*.partial")
             )
             self.assertEqual(leftovers, [])
+
+
+class CheckoutActivationPreflightTests(TemporaryRepositoryMixin, unittest.TestCase):
+    """Check the source checkout before disposable checks can hide its config."""
+
+    def test_containment_does_not_hide_an_unactivated_source_checkout(self):
+        import tempfile
+        from unittest import mock
+
+        for configured in (None, ".git/hooks", "/another/tree/.githooks"):
+            with self.subTest(configured=configured), tempfile.TemporaryDirectory() as tmp:
+                root = self.make_repo(tmp)
+                if configured is None:
+                    subprocess.run(["git", "config", "--unset-all", "core.hooksPath"],
+                                   cwd=root, capture_output=True, check=False)
+                else:
+                    self.git(root, "config", "core.hooksPath", configured)
+                self.write_map(root, [sys.executable, "-c", "print('probe-ran')"])
+                self.git(root, "add", "-A")
+                self.git(root, "commit", "--quiet", "-m", "base")
+                environment = dict(os.environ)
+                environment.pop("GITHUB_ACTIONS", None)
+                environment.pop("WILDCAT_CHECK_SNAPSHOT_ROOT", None)
+                environment["WILDCAT_CHECK_CONTAINMENT"] = "outer-attempt"
+                with mock.patch.dict(os.environ, environment, clear=True):
+                    proc = self.run_cli(root, "--scope", "one", "--format", "json")
+                self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+                payload = json.loads(proc.stdout)
+                self.assertEqual(payload["code"], "commit-gate-not-activated")
+                self.assertIn("git config core.hooksPath .githooks", payload["message"])
+                self.assertNotIn("probe-ran", proc.stdout)
+
+    def test_containment_alone_does_not_skip_the_checkout_case(self):
+        from unittest import mock
+        from tests import test_commit_gate
+
+        case = test_commit_gate.ActivationTests("test_this_checkout_has_the_gate_activated")
+        result = unittest.TestResult()
+        with (
+            mock.patch.dict(os.environ, {"WILDCAT_CHECK_CONTAINMENT": "outer-attempt"}, clear=True),
+            mock.patch.object(test_commit_gate, "configured_hooks_path", return_value="/another/tree/.githooks"),
+        ):
+            case.run(result)
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.skipped, [])
+        self.assertEqual(result.errors, [])
+
+
+    def test_snapshot_declaration_applies_only_to_its_named_directory(self):
+        from unittest import mock
+        from tests import test_commit_gate
+
+        for marker, skipped in ((str(REPO_ROOT.resolve()), True), ("/another/snapshot", False)):
+            with self.subTest(marker=marker):
+                case = test_commit_gate.ActivationTests("test_this_checkout_has_the_gate_activated")
+                result = unittest.TestResult()
+                with (
+                    mock.patch.dict(os.environ, {"WILDCAT_CHECK_SNAPSHOT_ROOT": marker}, clear=True),
+                    mock.patch.object(test_commit_gate, "configured_hooks_path", return_value=None),
+                ):
+                    case.run(result)
+                self.assertEqual(len(result.skipped), int(skipped))
+                self.assertEqual(len(result.failures), int(not skipped))
+                self.assertEqual(result.errors, [])
+
+    def test_an_activated_checkout_checks_inside_a_separately_named_snapshot(self):
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            probe = (
+                "import json, os; from pathlib import Path; "
+                "print(json.dumps({'root': str(Path.cwd().resolve()), "
+                "'snapshot': os.environ.get('WILDCAT_CHECK_SNAPSHOT_ROOT'), "
+                "'containment': os.environ.get('WILDCAT_CHECK_CONTAINMENT')}))"
+            )
+            self.write_map(root, [sys.executable, "-c", probe])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            environment = dict(os.environ)
+            environment.pop("GITHUB_ACTIONS", None)
+            environment["WILDCAT_CHECK_SNAPSHOT_ROOT"] = "/another/snapshot"
+            environment["WILDCAT_CHECK_CONTAINMENT"] = "outer-attempt"
+            with mock.patch.dict(os.environ, environment, clear=True):
+                proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            record = json.loads(proc.stdout)
+            observed = json.loads(record["checks"][0]["output"]["head"])
+            self.assertEqual(observed["snapshot"], observed["root"])
+            self.assertNotEqual(observed["root"], str(root.resolve()))
+            self.assertTrue(observed["containment"])
+            self.assertNotEqual(observed["containment"], "outer-attempt")
+
+    def test_no_selected_checks_still_refuses_an_unactivated_checkout(self):
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, [sys.executable, "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            self.git(root, "config", "--unset", "core.hooksPath")
+            environment = dict(os.environ)
+            environment.pop("GITHUB_ACTIONS", None)
+            environment.pop("WILDCAT_CHECK_SNAPSHOT_ROOT", None)
+            with mock.patch.dict(os.environ, environment, clear=True):
+                planned = self.run_cli(root, "--plan", "--format", "json")
+                checked = self.run_cli(root, "--format", "json")
+            self.assertEqual(planned.returncode, 0, planned.stderr)
+            self.assertEqual(checked.returncode, 2, checked.stdout + checked.stderr)
+            self.assertEqual(json.loads(checked.stdout)["code"], "commit-gate-not-activated")
