@@ -5,6 +5,7 @@ reads as though the reason exists and was checked.
 """
 
 import importlib.util
+import contextlib
 import io
 import json
 import os
@@ -497,6 +498,31 @@ class Suppression(unittest.TestCase):
 
 
 class OverTheMarketplace(unittest.TestCase):
+    def test_generated_runtime_is_skipped_but_direct_inputs_are_checked(self):
+        with tempfile.TemporaryDirectory() as base:
+            root = Path(base)
+            runtime = root / ".agents/skills/promise-machine/runtime"
+            runtime.mkdir(parents=True)
+            copy = runtime / "record.md"
+            copy.write_text("[missing](absent.md)\n", encoding="utf-8")
+            source = runtime.parent / "SKILL.md"
+            source.write_text("[missing](absent.md)\n", encoding="utf-8")
+            unrelated = root / "runtime/record.md"
+            unrelated.parent.mkdir()
+            unrelated.write_text("[missing](absent.md)\n", encoding="utf-8")
+            for parent in (root, root / ".agents", runtime.parent):
+                for vendored in (False, True):
+                    with self.subTest(parent=parent, include_vendored=vendored):
+                        paths = hypomnema.walk([str(parent)], vendored)
+                        self.assertNotIn(copy, paths)
+                        self.assertIn(source, paths)
+            self.assertIn(unrelated, hypomnema.walk([str(root)]))
+            with contextlib.chdir(runtime.parent):
+                self.assertEqual([Path("SKILL.md")], hypomnema.walk(["."]))
+            for explicit in (runtime, copy):
+                self.assertEqual([copy], hypomnema.walk([str(explicit)]))
+                self.assertEqual(["H001"], [f.code for f in hypomnema.check(copy)])
+
     def test_the_vendored_suite_is_skipped_by_default(self):
         marketplace = ROOT.parents[1]
         paths = hypomnema.walk([str(marketplace / "plugins" / "hexaemeron" / "skills")])
