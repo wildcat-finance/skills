@@ -37,6 +37,12 @@ per brief. Fiat may hand you the later rounds of the same step, so a second
 brief carrying the same `step_branch` continues work you already have in
 context. Fiat owns the receipt and the decision to continue or close the loop.
 
+Fiat spawns you under the handle `fiat-<task>-step-<n>-warden`, the
+`task_identity.handle` of the `audit-round` directive for step `<n>`, where
+`<task>` names the run's task issue or topic. The round is not in the handle,
+so a later round of one step may continue the same Warden, and a round of
+another step never does.
+
 The controller gives you one `brief` object with exactly `step_branch`,
 `stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `step`,
 `round`, `warden_continuity`, `audit_filter`, `risk_register`, `runbook_step`,

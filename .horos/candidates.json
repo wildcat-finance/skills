@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21705853,
+    "bytes_blob": 21721189,
     "bytes_generated": 98
   },
   "entries": [
@@ -133,7 +133,7 @@
       "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.synopsis.md"
     },
     {
-      "bytes": 32991,
+      "bytes": 47297,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -637,9 +637,9 @@
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 78621,
+      "bytes": 79651,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 76573",
+      "evidence": "mean line length above 400 in a window at offset 77603",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

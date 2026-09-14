@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "1dde761049ce27ae2ca3781893bdb40e1a5c7a939e6586ee9add09cb00e64404"
+        "sha256": "00a6227009e171dc10f0f224e9bc648894b6b465db4a234dd27c8868480772e9"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "6916f852263fe2379618d0d937da8a5e4efad105687c91ebf1ec0cdb841d147f"
+        "sha256": "f050bd9a11014bf659f1b8f4047dae5a3db5aa01b46c98ac65f4e051bdd79fe3"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "41a62a9524578c58b81ca1bbd23c9d0b3ea008c69f013149c4b18c3d043bfcbe"
+        "sha256": "129ca68395a333eef65164c7f368c13697a49a1396784eb93c8792071032ceab"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "ff4b6e69ea58d120172aa5b864bb5c4acf4a103bc8dab7df74be337018ad5956"
+      "sha256": "402085fa93e81152b90bd4d0cb8e7b19a3f40f3b7b24b13fe92c34166f743c99"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -4965,16 +4965,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
-        "sha256": "fc4e7ccb3275acaa7ae3b6472a89aa58948a56ba5157514dfa13520542c23192"
+        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "fc4e7ccb3275acaa7ae3b6472a89aa58948a56ba5157514dfa13520542c23192"
+        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
       },
       "reader": "native-json-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
-      "sha256": "08d4e9e21ae395f8f52c9ab52b1cbfa9b48ce00105805d3e88f34ad251a7f501",
+      "sha256": "f3ad1c188e8d76f27167b665dbaa0ac85baf36c015c437521bc7cc123f70d561",
       "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {

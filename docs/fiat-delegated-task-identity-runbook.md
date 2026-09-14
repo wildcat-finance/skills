@@ -348,3 +348,36 @@ git diff --check
 **Steps touched.** Step 3
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-14
+
+**What changed.**
+
+Complete replacement Files: Change `plugins/hexaemeron/skills/fiat/SKILL.md`, `plugins/hexaemeron/agents/surveyor.md`, `plugins/hexaemeron/agents/mason.md`, `plugins/hexaemeron/agents/warden.md`, `plugins/hexaemeron/agents/scribe.md`, `plugins/hexaemeron/tests/test_fiat_skill.py`, `tests/promise_machine_coverage.json`, `docs/promise-machine/obligation-gates/evaluation-run.json`, `docs/promise-machine/obligation-gates/demonstration-run.json`, `docs/promise-machine/obligation-gates/demonstration-evidence.md`, `tests/fixtures/agent-instruction-v1/manifest.json`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`, `tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`, `tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json`, `tests/fixtures/agent-instruction-v1/evidence/measurement.json`, `tests/fixtures/agent-instruction-v1/evidence/parity.json`, `.horos/boundary.json`, `.horos/candidates.json` and `.horos/census.json`. Create one unnumbered decision record draft under `docs/decisions/drafts/` for study decisions 12.1 and 12.2. Refresh `docs/fiat-delegated-task-identity-study.md` and `docs/fiat-delegated-task-identity-runbook.md` from `.hexaemeron/study.md` and `.hexaemeron/runbook.md` when an amendment has moved either.
+
+Complete replacement Exit: Fiat `SKILL.md` states that the orchestrator runs the handle check before continuing any existing handle, unconditionally, and the four agent files name the identity they are spawned under. The three `step:3` conformance reports, `stale-handle-regression-guarded`, `resume-identity-reproducible` and `next-wall-clock-bound` (the last the median of five `next` runs, at most 1000 ms), were produced by `.hexaemeron/resolve_conformance.py` before Step 2's push opened this step, which consumed their digests. They stay byte-identical, and the resolver is not rerun for them. Every digest the `hexctl.py` edit moved is re-pinned in this step: `tests/promise_machine_coverage.json`, the evaluation run record recomputed from its committed answers rather than a fresh model run, both demonstration records, and the Horos boundary and census. The decision record draft states the handle grammar, including the `topic-` prefix for a digits-only topic slug, and the envelope-level placement with its accepted signal gap. Every fixture that pins `plugins/hexaemeron/skills/fiat/SKILL.md` or `plugins/hexaemeron/tests/test_fiat_skill.py` by SHA-256 carries the changed file's digest. The agent-instruction evidence records carry the recomputed corpus digest and correlation identifiers. The two committed copies are byte-identical to the canonical study and runbook. Prove the green exit with:
+
+```bash
+python3 -m unittest plugins.hexaemeron.tests.test_task_identity plugins.hexaemeron.tests.test_hexctl plugins.hexaemeron.tests.test_fiat_skill -v
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 -m unittest discover -s tests
+python3 scripts/promise_machine.py check
+python3 scripts/portable_promise_machine.py sync
+python3 scripts/portable_promise_machine.py check
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/SKILL.md --max-defects 0
+cmp .hexaemeron/study.md docs/fiat-delegated-task-identity-study.md
+cmp .hexaemeron/runbook.md docs/fiat-delegated-task-identity-runbook.md
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
+python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json
+git diff --check
+```
+
+**Why.** Step 3 changes `plugins/hexaemeron/skills/fiat/SKILL.md`, whose whole-file SHA-256 the agent-instruction manifest binds. `corpus_sha256` and the correlation identifiers in `tests/fixtures/agent-instruction-v1/evidence/measurement.json` and `parity.json` derive from that manifest rather than from the source digest, so a digest search does not find them. The Step 3 Exit also read as though Step 3 produces the three `step:3` reports. They were resolved before Step 2's `done push`, whose `step:3` check consumed them (values true, true and 240 ms), and a rerun would overwrite consumed reports.
+
+**Steps touched.** Step 3
+
+**Still holding.** Step 3: entry holds; exit holds.

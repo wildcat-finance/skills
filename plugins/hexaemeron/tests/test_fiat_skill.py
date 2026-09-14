@@ -269,6 +269,86 @@ class FiatSkillContractTests(unittest.TestCase):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
 
+    def test_task_identity_check_is_unconditional_before_any_continuation(self):
+        # Issue 363: an orchestrator continued a Mason under a handle left from
+        # another issue. `next --task-handle` refuses only a handle it is shown,
+        # so this section is what makes showing it unconditional, and neither a
+        # refused handle nor a brief an earlier call left behind reaches a
+        # delegate. The paragraph is pinned sentence for sentence and must be the
+        # section's only paragraph naming a handle, so a dropped sentence, such
+        # as the visible-name requirement, or an exception written beside the
+        # unconditional one fails here (issue 363 S3-R1-01).
+        section = self.fiat.split("\n## Delegation and context\n", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        paragraphs = [" ".join(block.split()) for block in section.split("\n\n")]
+        handle_paragraphs = [text for text in paragraphs if "handle" in text]
+        self.assertEqual(1, len(handle_paragraphs))
+        sentences = re.split(r"(?<=\.) (?=[A-Z])", handle_paragraphs[0])
+        self.assertEqual(
+            [
+                "A delegated envelope also carries `task_identity`, whose `handle` "
+                "is `fiat-<task>-<phase>-<role>`: the run's task, `study` or "
+                "`step-<n>`, and the delegate's role.",
+                "The round is not in the handle, so a Warden keeps one handle across "
+                "a step's rounds.",
+                "Give each spawned delegate that handle as its visible name.",
+                "The handle check is unconditional.",
+                "Before continuing any existing agent handle, for any directive, "
+                "round or reason, run `hexctl next --task-handle <observed>` with "
+                "that handle.",
+                "Exit 0 prints the same directive.",
+                "Exit 2 prints no directive and writes no state, ledger entry or brief.",
+                "Never continue a refused handle: spawn a fresh delegate under the "
+                "`task_identity.handle` that `next` prints without `--task-handle`.",
+                "A `delegate` refusal means the directive has no delegate and runs "
+                "in this session.",
+                "A brief file left at a `--brief-out` path by an earlier call is not "
+                "the current directive's, so pass `--brief-out` and `--task-handle` in "
+                "one call and hand a delegate only a brief path named by a `next` call "
+                "that exited 0.",
+            ],
+            sentences,
+        )
+
+    def test_task_identity_each_agent_names_the_handle_it_is_spawned_under(self):
+        # Each file names the handle the controller derives for its role, so the
+        # prose cannot keep a grammar `task_identity` has stopped emitting.
+        spawned = {
+            "surveyor": ("study", "`fiat-<task>-study-surveyor`", None),
+            "mason": ("implement", "`fiat-<task>-step-<n>-mason`", 3),
+            "warden": ("audit-round", "`fiat-<task>-step-<n>-warden`", 3),
+            "scribe": ("prose", "`fiat-<task>-step-<n>-scribe`", 3),
+        }
+        controller = hexctl_module()
+        state = {
+            "topic": "bind delegated task identity to step and role",
+            "receipts": {
+                controller.RUN_ANCHOR_RECEIPT: {
+                    "task": {"kind": "github-issue", "number": 363}
+                }
+            },
+        }
+        for role, (directive, handle, step) in spawned.items():
+            with self.subTest(role=role):
+                contract = " ".join(AGENTS[role].split())
+                self.assertIn(
+                    f"Fiat spawns you under the handle {handle}, the "
+                    f"`task_identity.handle` of the `{directive}` directive",
+                    contract,
+                )
+                self.assertIn("where `<task>` names the run's task issue or topic.", contract)
+                concrete = handle.strip("`").replace("<task>", "363").replace("<n>", "3")
+                derived = controller.task_identity(
+                    state, role, step=step, round=2 if role == "warden" else None
+                )
+                self.assertEqual(concrete, derived["handle"])
+        self.assertIn(
+            "The round is not in the handle, so a later round of one step may "
+            "continue the same Warden, and a round of another step never does.",
+            " ".join(AGENTS["warden"].split()),
+        )
+
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())
         audit = " ".join(self.audit_loop.split())
