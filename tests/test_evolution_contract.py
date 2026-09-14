@@ -368,8 +368,9 @@ class EvolutionContractTests(unittest.TestCase):
         )
         self.assertIn("skills#1135", latest["evidence"])
         self.assertIn("signature-only", latest["change"])
-        self.assertIn("authenticated connectors", latest["change"])
-        self.assertIn("Human contributor classification", latest["change"])
+        self.assertIn("parity anchor", latest["change"])
+        self.assertIn("web-flow refusal is unchanged", latest["change"])
+        self.assertIn("authenticated connector the same standing", latest["change"])
         self.assertIn("Frontier unchanged", latest["change"])
         # Generations displaced from newest keep their own coverage: each is
         # still a transition the held frontier had to survive.

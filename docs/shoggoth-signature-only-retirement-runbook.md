@@ -85,3 +85,13 @@ fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | next-generation-after-integ
 **Steps touched.** Step 1 Exit and Files only.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-14
+
+**What changed.** Complete replacement Disciplines: phylax: the GitHub ruleset is an external mutation boundary bound to exact repository identity and pre/post documents. ephoros: preimage, postimage, route capability, status context list, and refusal cause answer the operator's three questions without recording credentials. metron: none, because removal of one job is not a performance claim. elenchus: wrong-repository, changed-preimage, partial-response, and unrelated-field-drift fixtures guard the mutation. hypomnema: the superseding decision is `adr/accept-any-validly-signed-authorship`, which a later Fiat run for skills#1135 revised to record two reversals and a restoration. `hexctl.py` keeps its three `HOST_*` frozensets as a parity anchor with no caller, undoing Step 2's removal of the parity gate with `scripts/contributors.py`. `scripts/check_commit_identity.py`, `tests/test_commit_identity.py` and `.github/workflows/identity.yml`, which this step deleted, return, with the checker narrowed and the `identity` status advisory. `.claude/settings.json` and `tests/test_host_settings.py`, which this step also deleted, return, the file with the bytes it had before that deletion and the test narrowed.
+
+**Why.** Step 3's hypomnema clause said the decision record explains why the hosted job has no remaining identity promise, and the revised record no longer says that. The Creator's answers of 2026-09-09 keep the contributor-ranking promise as written and keep the identity checker under a narrower promise. No answer covers the settings file, and the later run keeps it as a reading, because `INSTALL.md` still documents it.
+
+**Steps touched.** Step 3's Disciplines only. No other field of any step changes.
+
+**Still holding.** Steps 1 to 4 keep the evidence their receipts recorded against the fields as first written, and Step 3's phylax, ephoros, metron and elenchus clauses are restated unchanged. Step 3's removal of `identity` from the required contexts of ruleset `21830871` holds, and so do the signature-only rules Step 2 set: neither provenance trailer is mandatory, runtime hosts may author, commit, co-author, open and describe work, and valid local signatures and exact GitHub verification stay required.
