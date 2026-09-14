@@ -119,9 +119,12 @@ post-check refuses completion and preserves the independent replacement
 directory. The final marker records `reports-written`; only a successful
 subsequent link check permits the command to return `admitted`.
 
-Origin drift refuses admission without rollback or attribution to the worker.
-Preserve independent edits and start a fresh launch to resnapshot the declared
-paths. The snapshot covers only that inventory. Worker streams remain bounded,
+Admission compares the declared origin inventory before and after report
+promotion and before returning success. Observed drift refuses admission without
+rollback or attribution to the worker. These checks do not lock origin files;
+a concurrent edit after the final check remains outside the observation.
+Preserve independent edits and any partial reports, then start a fresh launch
+to resnapshot the declared paths. The snapshot covers only that inventory. Worker streams remain bounded,
 untrusted observations; their contents do not establish syscall attribution.
 Scratch stays retired even after capture. Detached descendants are not proved
 dead, and the output cap does not establish a total scratch-disk or aggregate

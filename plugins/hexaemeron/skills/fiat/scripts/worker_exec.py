@@ -745,16 +745,18 @@ def controller_admit(root, receipt, digest, controller_source):
                 or record["root_identity"] != [os.fstat(root_fd).st_dev, os.fstat(root_fd).st_ino]
                 or record["destinations"] != destinations):
             raise Refusal("stale-launch-receipt")
-        current_origin = _origin_snapshot(request["origin"])
-        if current_origin != record["origin_before"]:
-            _exclusive(receipts, path.stem + ".drift-" + uuid.uuid4().hex + ".json",
-                       _json_bytes({"event": "worker_admission_refused", "receipt_sha256": digest,
-                                    "code": "origin-drift", "attribution": "unknown",
-                                    "origin_before": record["origin_before"],
-                                    "origin_observed": current_origin,
-                                    "recovery": "Preserve origin changes; launch again to resnapshot."}))
-            os.fsync(receipts)
-            raise Refusal("origin-drift-preserved-resnapshot-required")
+        def check_origin():
+            current_origin = _origin_snapshot(request["origin"])
+            if current_origin != record["origin_before"]:
+                _exclusive(receipts, path.stem + ".drift-" + uuid.uuid4().hex + ".json",
+                           _json_bytes({"event": "worker_admission_refused", "receipt_sha256": digest,
+                                        "code": "origin-drift", "attribution": "unknown",
+                                        "origin_before": record["origin_before"],
+                                        "origin_observed": current_origin,
+                                        "recovery": "Preserve origin changes; launch again to resnapshot."}))
+                os.fsync(receipts)
+                raise Refusal("origin-drift-preserved-resnapshot-required")
+        check_origin()
         capture = record["capture"]
         tools, runtime, inventory = tool_inventory()
         dependencies = runtime_dependencies(runtime)
@@ -799,17 +801,21 @@ def controller_admit(root, receipt, digest, controller_source):
         # Claim once before publication. Any partial publication remains visible
         # and requires operator inspection; retry never overwrites its files.
         _controller_directories(root, root_fd, metadata, receipts, reports)
+        check_origin()
         _exclusive(receipts, path.stem + ".admission.json", _json_bytes({"receipt_sha256": digest,
                    "status": "promotion-started", "destinations": destinations}))
         for name, content in contents:
             _controller_directories(root, root_fd, metadata, receipts, reports)
+            check_origin()
             _exclusive(reports, name, content)
             _controller_directories(root, root_fd, metadata, receipts, reports)
+            check_origin()
         os.fsync(reports)
         _exclusive(receipts, path.stem + ".complete.json", _json_bytes({"receipt_sha256": digest,
                    "status": "reports-written", "destinations": destinations}))
         os.fsync(receipts)
         _controller_directories(root, root_fd, metadata, receipts, reports)
+        check_origin()
         return {"status": "admitted", "receipt_sha256": digest, "destinations": destinations}
     finally:
         for fd in (receipts, reports, snapshot_fd, metadata, root_fd):

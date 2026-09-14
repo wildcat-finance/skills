@@ -104,6 +104,59 @@ class ControllerLaunchTests(unittest.TestCase):
         with self.assertRaisesRegex(worker.Refusal, "stale-launch-receipt"):
             worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
 
+    def test_origin_drift_during_admission_reads_refuses_before_promotion(self):
+        origin = self.root / "user.txt"
+        origin.write_text("before")
+        request = self.proofs.dispatch_request(self.root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')",
+                    origin={"root": str(self.root), "paths": ["user.txt"]})
+        launch = worker.controller_launch(self.root, request, self.controller)
+        original = worker.runtime_dependencies
+        def independent_change(runtime):
+            result = original(runtime)
+            origin.write_text("independent")
+            return result
+        with mock.patch.object(worker, "runtime_dependencies", side_effect=independent_change):
+            with self.assertRaisesRegex(worker.Refusal, "origin-drift-preserved-resnapshot-required"):
+                worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual(origin.read_text(), "independent")
+        self.assertFalse((self.root / ".hexaemeron/reports/result.json").exists())
+        observations = list((self.root / ".hexaemeron/worker-launches").glob("*.drift-*.json"))
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(json.loads(observations[0].read_text())["attribution"], "unknown")
+        fresh = worker.controller_launch(self.root, request, self.controller)
+        self.assertNotEqual(fresh["record"]["origin_before"], launch["record"]["origin_before"])
+        self.assertEqual(worker.controller_admit(self.root, fresh["receipt"], fresh["sha256"],
+                                               self.controller)["status"], "admitted")
+
+    def test_origin_drift_during_promotion_refuses_and_keeps_partial_reports(self):
+        for boundary in ("result.json", ".complete.json"):
+            with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                origin = root / "user.txt"
+                origin.write_text("before")
+                request = self.proofs.dispatch_request(root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')",
+                    origin={"root": str(root), "paths": ["user.txt"]})
+                launch = worker.controller_launch(root, request, self.controller)
+                original = worker._exclusive
+                def independent_change(directory, name, data):
+                    result = original(directory, name, data)
+                    if name.endswith(boundary):
+                        origin.write_text("independent")
+                    return result
+                with mock.patch.object(worker, "_exclusive", side_effect=independent_change):
+                    with self.assertRaisesRegex(worker.Refusal, "origin-drift-preserved-resnapshot-required"):
+                        worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
+                self.assertEqual(origin.read_text(), "independent")
+                self.assertEqual((root / ".hexaemeron/reports/result.json").read_text(), "candidate")
+                markers = root / ".hexaemeron/worker-launches"
+                self.assertEqual(len(list(markers.glob("*.admission.json"))), 1)
+                self.assertEqual(len(list(markers.glob("*.complete.json"))), int(boundary == ".complete.json"))
+                self.assertEqual(len(list(markers.glob("*.drift-*.json"))), 1)
+                with self.assertRaises(worker.Refusal):
+                    worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
+
     def test_promotion_is_one_shot_and_controller_metadata_alias_refuses(self):
         launch = self.launch()
         result = worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)

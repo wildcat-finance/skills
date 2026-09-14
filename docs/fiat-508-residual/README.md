@@ -43,12 +43,12 @@ The `.invalid` attachment URL and repeated-letter hashes are fixture data.
 Later steps own those runtime checks and their full record formats.
 
 The conformance fixture inventory mirrors every pending criterion and transition
-in the frozen design. `prove_issue_508.py` executes `worker-deadline` and
-`worker-output-cap` for `whole-worker-sandbox`. It writes a
-`protasis-design-report/v1` boolean only after every named native specimen passes,
-with capture observations in a companion `.observations.json` file. Every other
-candidate and criterion exits 1 with `executor-unimplemented` and opens no
-report path. A caller must require a fresh zero exit before consuming a report,
+in the frozen design. `prove_issue_508.py` executes `worker-deadline`,
+`worker-output-cap`, `whole-launch-dispatch` and `origin-drift-recovery` for
+`whole-worker-sandbox`. It writes a `protasis-design-report/v1` boolean only
+after every named native specimen passes, with capture observations in a
+companion `.observations.json` file. Every other candidate and criterion exits 1
+with `executor-unimplemented` and opens no report path. A caller must require a fresh zero exit before consuming a report,
 including an existing report.
 
 Two operator questions are answered by the refusal: which candidate and
