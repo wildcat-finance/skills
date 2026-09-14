@@ -359,7 +359,7 @@
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "3182ab59809a8a1ca66a9aea774c4bf20cc246cdd9124fa5f6f76c96e57c8e13"
+      "sha256": "f53d219fcf0d3bf4bcc66a2a070a2da35d649a06deb0f31c7ead23043d32cd08"
     },
     "tests": {
       "path": "tests/test_contributors.py",
@@ -380,15 +380,19 @@
         "test_ranks_only_the_human_contributors",
         "test_readme_block_carries_handles_and_no_aggregate",
         "test_shoggoth_is_never_ranked",
-        "test_contributor_classification_does_not_reach_fiat_admission",
+        "test_stops_on_a_changed_member_of_a_known_set",
         "test_stops_on_a_duplicate_supplemental_repository",
+        "test_stops_on_a_member_here_that_is_absent_from_hexctl",
+        "test_stops_on_a_member_in_hexctl_that_is_absent_here",
         "test_stops_on_a_readme_that_is_not_utf8",
         "test_stops_on_a_repository_carrying_query_syntax",
+        "test_stops_on_a_set_here_with_no_counterpart_in_hexctl",
+        "test_stops_on_a_set_in_hexctl_with_no_counterpart_here",
         "test_stops_on_a_supplemental_repository_carrying_query_syntax",
         "test_stops_on_an_unknown_account_type",
         "test_stops_on_api_failure",
         "test_stops_on_bad_login_grammar",
-        "test_non_human_names_and_emails_are_classified_locally",
+        "test_stops_on_host_set_drift",
         "test_stops_on_markers_in_the_wrong_order",
         "test_stops_on_one_marker_without_the_other",
         "test_stops_on_owner_in_output",
@@ -402,7 +406,7 @@
         "test_wave_atlas_pull_requests_read_every_page",
         "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "746d1073fce24282bef9e8659bd8b435d42b465823420181e380bc7fd481c1eb"
+      "sha256": "89f0a98a6b00ee285e8aa5c546a2fe8874768a7d373f1df501e03db33e33aaee"
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
@@ -4146,7 +4150,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "599d0fbb9e90cdecbfbd0efe8da5e0b4d45e237a8b32dd038f16cb46c85136f7"
+      "sha256": "95849af688cb2cd7a1a23e1f2a4be0c2f79f59d04d6a6669325ca1be16ee8528"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
