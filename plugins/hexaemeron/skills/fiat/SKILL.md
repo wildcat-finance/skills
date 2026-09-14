@@ -150,7 +150,7 @@ the second.
    as the `Step checkpoint` section of
    [push-discipline.md](references/push-discipline.md) directs. Run `hexctl
    verify` and `hexctl status --json` against the returned `restore.worktree`,
-   then enter the loop. Never call `init` or start a fresh ledger for a
+   then enter the loop with its existing ledger. Never call `init` or start a fresh ledger for a
    restored run. Transfer is local agent-to-agent work; do not ask the user to
    choose a destination, approve the transfer or decide whether it is kept.
 4. If `.hexaemeron/state.json` exists, run `hexctl verify`, then

@@ -666,6 +666,7 @@ class PromiseStructureTests(unittest.TestCase):
             "ephoros": {"ephoros-mechanical-gate", "ephoros-observability-review"},
             "fiat": {
                 "fiat-controller-checkpoint",
+                "fiat-checkpoint-archive",
                 "fiat-decision-assignment-composition",
                 "fiat-design-evidence",
                 "fiat-study-amendment",
@@ -1254,7 +1255,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "transition",
             "exception",
         }
-        self.assertEqual(len(coverage["runtime"]), 47)
+        self.assertEqual(len(coverage["runtime"]), 48)
         for promise_id, binding in coverage["runtime"].items():
             with self.subTest(promise_id=promise_id):
                 self.assertEqual(set(binding), {"source", "sha256", "bindings"})
