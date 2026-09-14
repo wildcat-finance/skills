@@ -2160,6 +2160,8 @@ MUTATING = frozenset(
         "cmd_resume",
         "cmd_reset",
         "cmd_checkpoint_export",
+        "cmd_carryover_export",
+        "cmd_carryover_bind",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -18159,6 +18161,12 @@ def verify_run(
         step = current_step(state)
         if step["status"] != "open" or step["phase"] not in STEP_PHASES:
             die("state inconsistent: current step is not open", 1)
+    if "carryover_exports" in state["receipts"]:
+        backend = carryover_backend()
+        try:
+            backend.verify_receipts(sys.modules[__name__], base_dir, state)
+        except (backend.Refusal, OSError, ValueError, KeyError, TypeError):
+            die("carryover export receipt does not replay", 1)
     return count
 
 
@@ -18526,12 +18534,64 @@ def cmd_worker_admit(args) -> None:
     print(json.dumps(result, sort_keys=True))
 
 
+def carryover_backend():
+    """Load the fixed controller-owned packet codec."""
+    source = Path(__file__).resolve().with_name("carryover.py")
+    spec = importlib.util.spec_from_file_location("fiat_carryover", source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def cmd_carryover_export(args) -> None:
+    backend = carryover_backend()
+    try:
+        request = backend.load(backend.read_regular(args.request, 65536))
+        result = backend.export(sys.modules[__name__], args.dir, request)
+    except (backend.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die("carryover-export refused: " + (str(error) if isinstance(error, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+
+
+def cmd_carryover_bind(args) -> None:
+    backend = carryover_backend()
+    try:
+        request = backend.load(backend.read_regular(args.request, 65536))
+        result = backend.bind_attachment(sys.modules[__name__], args.dir, request)
+    except (backend.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die("carryover-bind refused: " + (str(error) if isinstance(error, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+
+
+def cmd_carryover_validate(args) -> None:
+    backend = carryover_backend()
+    try:
+        packet = backend.validate(sys.modules[__name__], args.dir,
+                                  backend.read_regular(args.packet), args.sha256)
+    except (backend.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die("carryover-validate refused: " + (str(error) if isinstance(error, backend.Refusal) else "invalid-input"))
+    print(json.dumps({"status": "validated", "sequence": packet["sequence"],
+                      "packet_sha256": args.sha256, "replacement_admission": "unavailable"}, sort_keys=True))
+
+
 # ---------------------------------------------------------------------- cli
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hexctl", description=__doc__)
     p.add_argument("--dir", default=".", help="directory holding the state dir")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    sp = sub.add_parser("carryover-export", help="export inert cumulative evidence at exhausted audit")
+    sp.add_argument("--request", required=True)
+    sp.set_defaults(fn=cmd_carryover_export)
+    sp = sub.add_parser("carryover-bind", help="bind a published attachment by exact packet readback")
+    sp.add_argument("--request", required=True)
+    sp.set_defaults(fn=cmd_carryover_bind)
+    sp = sub.add_parser("carryover-validate", help="replay cumulative packet evidence without admission")
+    sp.add_argument("--packet", required=True)
+    sp.add_argument("--sha256", required=True)
+    sp.set_defaults(fn=cmd_carryover_validate)
 
     sp = sub.add_parser("worker-exec", help="capture one declared native worker in retired scratch")
     sp.add_argument("--request", required=True)

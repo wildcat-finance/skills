@@ -3059,6 +3059,7 @@ class PromiseStructureTests(unittest.TestCase):
             "elenchus": {"elenchus-fixed-and-guarded"},
             "ephoros": {"ephoros-mechanical-gate", "ephoros-observability-review"},
             "fiat": {
+                "fiat-cumulative-carryover-custody",
                 "fiat-controller-checkpoint",
                 "fiat-decision-assignment-composition",
                 "fiat-design-evidence",
@@ -3575,15 +3576,15 @@ class PromiseHistoryTests(unittest.TestCase):
         document = json.loads(PROMISE_ID_HISTORY.read_text(encoding="utf-8"))
         self.assertEqual(document["entry_ref"], FIAT_ENTRY_REF)
         self.assertEqual(document["entry_count"], 80)
-        self.assertEqual(len(document["entries"]), 98)
+        self.assertEqual(len(document["entries"]), 99)
         self.assertEqual(
-            len({row["promise_id"] for row in document["entries"]}), 98
+            len({row["promise_id"] for row in document["entries"]}), 99
         )
         completed = run_cli("check", "--only", "history", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["history_entries"], 98)
-        self.assertEqual(report["counts"]["active_history_ids"], 98)
+        self.assertEqual(report["counts"]["history_entries"], 99)
+        self.assertEqual(report["counts"]["active_history_ids"], 99)
 
     def test_deleted_or_duplicated_history_id_is_refused(self):
         for name in ("deleted", "duplicated"):
@@ -4368,7 +4369,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "source_digest",
         }
         level_three_fields = {"authority", "inspectable_evidence"}
-        self.assertEqual(len(records), 47)
+        self.assertEqual(len(records), 48)
         self.assertEqual(set(coverage["runtime"]), set(records))
         native_maps = set()
         for promise_id, binding in coverage["runtime"].items():
@@ -4453,7 +4454,7 @@ class PromiseCoverageTests(unittest.TestCase):
                     completed.returncode, 0, completed.stdout + completed.stderr
                 )
                 self.assertEqual(report["findings"], [])
-                self.assertEqual(report["counts"]["runtime_bindings"], 47)
+                self.assertEqual(report["counts"]["runtime_bindings"], 48)
 
     def test_repository_runtime_specimens_use_the_production_reader(self):
         coverage = json.loads(

@@ -5,7 +5,8 @@ Delivery status:
 - Step 1 preserves the receipted design and defines inert fixture shapes.
 - Step 2 adds the native worker supervisor described below.
 - Step 3 adds controller launch and private report admission, preserving independent origin changes.
-- Carryover admission and command validation remain pending.
+- Step 4 adds cumulative packet export, evidence validation and detached attachment binding; see the [format and custody reference](../../plugins/hexaemeron/skills/fiat/references/carryover-packet.md).
+- Replacement admission and command validation remain pending.
 
 The decision `adr/confine-the-worker-before-admitting-its-output` records the
 selected construction and rejected alternative.
@@ -23,11 +24,11 @@ identities, not portable execution instructions.
 
 [runbook.md](runbook.md) preserves the immutable original runbook named by
 `source-inventory.json`. [amended-runbook.md](amended-runbook.md) copies the
-current canonical runbook, including its nine appended amendments. Those
+current canonical runbook, including its thirteen appended amendments. Those
 amendments select the `unittest-json-v1` Elenchus adapter while retaining the
 `elenchus.unittest.v1` output schema, and name
 `test_confined_replacement_lifecycle.py` for Step 7. The eighth amendment adds the current Fiat version to Step 2's checkpoint
-compatibility set and names its documentation paths. The ninth permits Step 3's current admission-status updates and this exact amended-runbook copy.
+compatibility set and names its documentation paths. The ninth permits Step 3's current admission-status updates and this exact amended-runbook copy. The tenth names Step 4's format and custody documentation, current status and exact amendment copy; it leaves replacement admission for Step 5. The eleventh adds the custody promise's coverage cases and structural reader specimens. The twelfth names its identity history, current count assertions and current demonstration input and count refresh, while preserving historical evidence. The thirteenth permits the new custody promise in the existing test's expected Fiat population, keeping the exact equality assertion.
 Read the amendments with
 the original step text; the preserved source inventory remains unchanged.
 Both runbooks record this delivery against its fixed starting commit and
@@ -40,7 +41,7 @@ inert envelopes only. Their tests check a closed JSON Schema subset without
 adding a dependency. Shape acceptance does not establish safe paths, signatures,
 attachment truth, complete carryover payloads or executable command validity.
 The `.invalid` attachment URL and repeated-letter hashes are fixture data.
-Later steps own those runtime checks and their full record formats.
+Step 4's [packet validation and attachment readback](../../plugins/hexaemeron/skills/fiat/references/carryover-packet.md) provide separate runtime checks. Replacement admission and command validation remain pending.
 
 The conformance fixture inventory mirrors every pending criterion and transition
 in the frozen design. `prove_issue_508.py` executes `worker-deadline`,

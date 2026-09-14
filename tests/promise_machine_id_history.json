@@ -468,6 +468,19 @@
         "successors": []
       },
       "current": {
+        "semantic_sha256": "4ff91b713ac3e24227f2e719ef85414e20dd7e97c19ea6d4a1ef9a634f23b5bb",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "fiat-cumulative-carryover-custody"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
         "semantic_sha256": "c4f239783106cf15ff715e7bebc858b58b9850c5b178ab02c60c33888c842ba1",
         "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
