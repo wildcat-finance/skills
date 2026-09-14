@@ -1,5 +1,7 @@
 """Native worker effects, lifetime and admission boundaries."""
 
+import ctypes
+import errno
 import importlib.util
 import json
 import os
@@ -149,6 +151,43 @@ class NativeTests(unittest.TestCase):
         for path in sentinels:
             self.assertEqual(path.read_bytes(), b"preserve")
             self.assertEqual(path.stat().st_nlink, 1)
+
+    def test_other_process_environment_is_denied_by_sysctl(self):
+        marker = b"warden-harmless-procargs-sentinel"
+        child = subprocess.Popen(
+            [PYTHON, "-I", "-c", "import select,sys; "
+             "select.select([sys.stdin],[],[],15); print('stopped',flush=True)"],
+            env={"WARDEN_TEST_VALUE": marker.decode()}, close_fds=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            self.assertIsNone(child.poll())
+            for variant in (38, 49):  # KERN_PROCARGS and KERN_PROCARGS2
+                with self.subTest(variant=variant):
+                    mib = (ctypes.c_int * 3)(1, variant, child.pid)
+                    buffer = ctypes.create_string_buffer(1024 * 1024)
+                    size = ctypes.c_size_t(len(buffer))
+                    libc = ctypes.CDLL(None, use_errno=True)
+                    self.assertEqual(libc.sysctl(mib, 3, buffer, ctypes.byref(size), None, 0), 0)
+                    self.assertIn(marker, buffer.raw[:size.value])
+                    code = ("import ctypes,json,os\n"
+                            "assert len(os.uname()) == 5\n"
+                            "libc=ctypes.CDLL(None,use_errno=True)\n"
+                            f"mib=(ctypes.c_int*3)(1,{variant},{child.pid})\n"
+                            "buffer=ctypes.create_string_buffer(1024*1024)\n"
+                            "size=ctypes.c_size_t(len(buffer))\n"
+                            "result=libc.sysctl(mib,3,buffer,ctypes.byref(size),None,0)\n"
+                            "print(json.dumps({'result':result,'errno':ctypes.get_errno(),"
+                            f"'sentinel_found':{marker!r} in buffer.raw[:size.value]}}))\n")
+                    capture = self.run_code(code)
+                    self.assert_captured(capture)
+                    observed = json.loads(capture.stdout)
+                    self.assertEqual(observed["result"], -1, observed)
+                    self.assertIn(observed["errno"], (errno.EPERM, errno.EACCES), observed)
+                    self.assertFalse(observed["sentinel_found"], observed)
+        finally:
+            stdout, stderr = child.communicate(b"stop", timeout=5)
+            self.assertEqual(child.returncode, 0, stderr)
+            self.assertEqual(stdout, b"stopped\n")
 
     def test_network_unix_ipc_and_undeclared_deputy_are_denied(self):
         code = ("import socket,subprocess,os\n"

@@ -82,7 +82,10 @@ literal device files and the root directory itself. Global metadata reads remain
 allowed: this is not filename or metadata confidentiality. Network and host IPC
 have no grants. Shell dispatch declares and hashes both `/bin/sh` and `/bin/bash`.
 The supervisor starts with a fixed environment and closes inherited descriptors.
-Native specimens check outside content, write, hard-link and symlink denial.
+Process inspection is explicitly denied; sysctl reads permit only the five named
+queries needed by `os.uname`. Native specimens check both numeric process-argument
+interfaces against a controlled environment sentinel, plus outside content,
+write, hard-link and symlink denial.
 
 The default 1 MiB cap is shared by stdout, stderr and all admitted artifacts.
 At most 32 declared files, 128 inventory entries and eight path components are

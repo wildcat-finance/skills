@@ -161,9 +161,13 @@ def policy_text(scratch, runtime, inventory, dependencies=()):
              literal("/dev/random"), literal("/dev/urandom")]
     reads.extend(literal(item["path"]) for item in (*inventory, *dependencies))
     return "\n".join([
-        "(version 1)", "(deny default)", "(allow process-fork)",
+        "(version 1)", "(deny default)", "(deny process-info*)", "(allow process-fork)",
         "(allow process-exec " + " ".join(literal(i["path"]) for i in inventory) + ")",
-        "(allow signal (target self))", "(allow sysctl-read)",
+        "(allow signal (target self))",
+        # Broad sysctl reads expose process environments even with process-info denied.
+        # These five names keep os.uname (and ctypes startup) available.
+        '(allow sysctl-read (sysctl-name "kern.ostype" "kern.osrelease" '
+        '"kern.version" "kern.hostname" "hw.machine"))',
         "(allow file-read-metadata)", "(allow file-read-data (literal \"/\"))", "(allow file-read* " + " ".join(reads) + ")",
         "(allow file-write* " + subtree(scratch) + ")",
         '(allow file-write-data (literal "/dev/null"))', "",
