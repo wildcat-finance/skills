@@ -4965,16 +4965,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
-        "sha256": "7011412a629c5626cc5a5847d1c3495ae43809abd41b344fd1f5501240b214d3"
+        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "7011412a629c5626cc5a5847d1c3495ae43809abd41b344fd1f5501240b214d3"
+        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
       },
       "reader": "native-json-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
-      "sha256": "52338ee4faded8261c9a9f6202830f03dd1ea8ef5c742a4ca08d73dc6574d1aa",
+      "sha256": "f3ad1c188e8d76f27167b665dbaa0ac85baf36c015c437521bc7cc123f70d561",
       "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {

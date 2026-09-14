@@ -274,28 +274,42 @@ class FiatSkillContractTests(unittest.TestCase):
         # another issue. `next --task-handle` refuses only a handle it is shown,
         # so this section is what makes showing it unconditional, and neither a
         # refused handle nor a brief an earlier call left behind reaches a
-        # delegate.
+        # delegate. The paragraph is pinned sentence for sentence and must be the
+        # section's only paragraph naming a handle, so a dropped sentence, such
+        # as the visible-name requirement, or an exception written beside the
+        # unconditional one fails here (issue 363 S3-R1-01).
         section = self.fiat.split("\n## Delegation and context\n", 1)[1].split(
             "\n## ", 1
         )[0]
-        flat = " ".join(section.split())
-        required = (
-            "`fiat-<task>-<phase>-<role>`",
-            "The round is not in the handle, so a Warden keeps one handle across "
-            "a step's rounds.",
-            "The handle check is unconditional. Before continuing any existing "
-            "agent handle, for any directive, round or reason, run "
-            "`hexctl next --task-handle <observed>` with that handle.",
-            "Exit 2 prints no directive and writes no state, ledger entry or brief.",
-            "Never continue a refused handle: spawn a fresh delegate under the "
-            "`task_identity.handle` that `next` prints without `--task-handle`.",
-            "A brief file left at a `--brief-out` path by an earlier call is not "
-            "the current directive's, so pass `--brief-out` and `--task-handle` in "
-            "one call and hand a delegate only a brief path named by a `next` call "
-            "that exited 0.",
+        paragraphs = [" ".join(block.split()) for block in section.split("\n\n")]
+        handle_paragraphs = [text for text in paragraphs if "handle" in text]
+        self.assertEqual(1, len(handle_paragraphs))
+        sentences = re.split(r"(?<=\.) (?=[A-Z])", handle_paragraphs[0])
+        self.assertEqual(
+            [
+                "A delegated envelope also carries `task_identity`, whose `handle` "
+                "is `fiat-<task>-<phase>-<role>`: the run's task, `study` or "
+                "`step-<n>`, and the delegate's role.",
+                "The round is not in the handle, so a Warden keeps one handle across "
+                "a step's rounds.",
+                "Give each spawned delegate that handle as its visible name.",
+                "The handle check is unconditional.",
+                "Before continuing any existing agent handle, for any directive, "
+                "round or reason, run `hexctl next --task-handle <observed>` with "
+                "that handle.",
+                "Exit 0 prints the same directive.",
+                "Exit 2 prints no directive and writes no state, ledger entry or brief.",
+                "Never continue a refused handle: spawn a fresh delegate under the "
+                "`task_identity.handle` that `next` prints without `--task-handle`.",
+                "A `delegate` refusal means the directive has no delegate and runs "
+                "in this session.",
+                "A brief file left at a `--brief-out` path by an earlier call is not "
+                "the current directive's, so pass `--brief-out` and `--task-handle` in "
+                "one call and hand a delegate only a brief path named by a `next` call "
+                "that exited 0.",
+            ],
+            sentences,
         )
-        missing = [item for item in required if item not in flat]
-        self.assertEqual([], missing)
 
     def test_task_identity_each_agent_names_the_handle_it_is_spawned_under(self):
         # Each file names the handle the controller derives for its role, so the
