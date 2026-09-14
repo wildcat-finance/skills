@@ -262,13 +262,13 @@ class FiatSkillContractTests(unittest.TestCase):
             mason,
         )
         self.assertIn(
-            "A capture-aware implementation brief also carries exactly one "
-            "`step_parent`; a pre-capture brief omits it",
+            "A capture-aware implementation brief also carries `step_parent`. "
+            "An assigned-finding receipt adds the immutable `guard_commit`; "
+            "a zero-assigned receipt omits it",
             mason,
         )
         self.assertIn(
-            "cut the branch from that immutable commit, not by resolving "
-            "`branch_from` again",
+            "Never recreate either branch or resolve `branch_from` again",
             mason,
         )
         for field in (
@@ -288,7 +288,7 @@ class FiatSkillContractTests(unittest.TestCase):
         ):
             self.assertIn(f"`{field}`", mason)
 
-    def test_inoculation_contract_is_source_bound_outside_the_loop_table(self):
+    def test_inoculation_contract_is_one_source_bound_loop_directive(self):
         loop = self.fiat.split("## The loop", 1)[1].split("## ", 1)[0]
         inoculation = self.fiat.split("**Inoculation.**", 1)[1].split(
             "**Implementation.**", 1
@@ -296,21 +296,50 @@ class FiatSkillContractTests(unittest.TestCase):
         fiat = " ".join(self.fiat.split())
         mason = " ".join(AGENTS["mason"].split())
 
-        self.assertNotIn("| `inoculate` |", loop)
+        self.assertIn("| `inoculate` |", loop)
+        self.assertIn(
+            "That loader/capture rule and the loop's existing Step action are one\n"
+            "`inoculate-phase` directive, not two independent instructions.",
+            self.fiat,
+        )
         self.assertIn("`load_checked_inventory` operation is the sole ingestion path", self.fiat)
-        self.assertIn("`done inoculate`; it takes no phase-specific options", inoculation)
+        self.assertIn("`done inoculate` takes no phase-specific options", inoculation)
         self.assertIn("fiat-known-failure-inoculation/v1", inoculation)
         self.assertIn("fiat-no-known-findings/v1", inoculation)
         self.assertIn("no-known-findings-for-step", inoculation)
-        self.assertIn("Only a valid inoculation receipt opens `implement`", inoculation)
+        self.assertIn("opens `implement` on that same branch", inoculation)
+        self.assertIn("also carries the full `step_parent`", fiat)
         self.assertIn(
-            "full `step_parent` commit from its inoculation receipt",
+            "assigned-finding receipt adds its exact guard commit", fiat
+        )
+        self.assertIn("`step_parent` for a zero-assigned Step", fiat)
+        self.assertIn(
+            "Do not recreate it from the parent or resolve a symbolic ref again",
             fiat,
         )
-        self.assertIn("do not resolve the symbolic ref again", fiat)
-        self.assertIn("`guard_manifests` remains empty", mason)
-        self.assertIn("Step 3 owns that evidence boundary", mason)
-        self.assertIn("do not edit a product path", mason)
+        self.assertIn("the orchestrator calls `hexctl retain-guard`", mason)
+        self.assertIn("`completed_ids`, `remaining_ids`", mason)
+        self.assertIn("When `guard_commit` is present", mason)
+        self.assertIn(
+            "atomic create-only creation of the exact `branch` from `step_parent`",
+            mason,
+        )
+        self.assertIn("If that branch already exists at any tip", mason)
+        self.assertIn(
+            "make no edit, reset, repoint or checkout and request a fresh `next` packet",
+            mason,
+        )
+        self.assertIn(
+            "A packet without `guard_commit` authorises only atomic create-only creation",
+            fiat,
+        )
+        self.assertIn(
+            "current immutable context before loading or calling the runner",
+            fiat,
+        )
+        self.assertIn("it never samples a second execution", fiat)
+        self.assertIn("current live Step 3 is explicitly pre-contract", mason)
+        self.assertIn("No product path may ride along", mason)
 
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())

@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 <p align="center">
@@ -33,9 +33,9 @@ The Pashov suite hunts for security findings, while Elenchus starts only once a
 failure or counterexample exists. Metron handles something that is slow but not
 broken.
 
-A Synkrisis finding may suggest an Elenchus hand-off when validated run
-observations show a repeated pattern. That suggestion does not establish a
-cause, and Elenchus still starts only from a concrete failure already in hand.
+Synkrisis hands a repeated pattern to Elenchus after validating it in run
+observations. The hand-off does not establish a cause. Elenchus still starts
+only from a concrete failure already in hand.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
@@ -297,8 +297,21 @@ argument. Elenchus replaces that argument with an absolute location inside the
 detached parent worktree and removes any inherited `ELENCHUS_REPORT_FILE`
 variable before starting the command. Accepted formats are
 `unittest-json-v1`, `forge-junit-v1` and `node-test-json-v1`. Stdlib unittest
-and Node need small repository-owned emitters; Forge can send native
-`forge test --junit` XML to the declared file.
+and Node need small repository-owned emitters. On supported hosts, the hard
+runner boundary does not permit child processes. That restriction survives
+`exec`, so an emitter cannot reopen process creation by replacing itself with
+a test executable. A cold Forge run that needs to start `solc` is therefore
+`inconclusive`; Elenchus still accepts `forge-junit-v1` from a single-process
+reporter.
+
+The command executable is opened through a no-follow directory chain and held
+by descriptor before containment starts. Linux executes that held descriptor
+after installing the process filter. macOS keeps the parent and leaf
+descriptors, compares the no-follow leaf and resolved path inside the sandbox,
+and uses pathname `exec` only after they match; a mismatch is `inconclusive`.
+Darwin has no descriptor-exec primitive available here, so another same-UID
+process can still replace the path after that final comparison and before
+`exec`; this operation does not cover that interval.
 
 In a Fiat audit, Warden owns this invocation. The source-bound runbook step
 supplies its exact test command, report format, and report file. Warden uses
@@ -316,6 +329,31 @@ paths. A commit changing no tests remains `unguarded`.
 Stdout, stderr and ordinary exit codes are retained as bounded diagnostics for
 a person. They never classify the result. A legacy invocation that omits
 either report flag is `inconclusive`; with `--require-guard` it exits 1.
+
+For a Fiat parent-guard check, Fiat supplies the exact parent commit, complete
+UTF-8-byte-sorted raw blob rows, closed command argv, report format and logical
+report file. Elenchus validates each row's path, status, mode, object id, byte
+count and SHA-256 against replacement-free native Git, overlays those exact raw
+bytes and modes into the detached parent worktree, and runs the closed argv
+without a shell. It reads one fresh, bounded, stable, no-follow runner-owned
+report. A classified runner result returns the exact raw report bytes,
+normalized counters, runner exit and unchanged four-state verdict before
+cleaning up the worktree; a refusal or inconclusive execution never invents
+missing report evidence.
+
+Parent materialization streams at most 100,000 entries and 33,554,432 listing
+bytes. It admits at most 33,554,432 bytes for one native blob and 268,435,456
+blob bytes across the parent. A superproject gitlink becomes one bound empty
+directory from its mode and object id; Elenchus neither requires the foreign
+submodule commit locally nor claims to materialize submodule contents.
+
+This operation neither discovers the guard delta nor persists evidence. Fiat
+owns the Step-wide commit, signature, trailer, path, blob, command and
+worktree binding; its own stricter numeric admission; its report-first,
+manifest-last publication; and the inoculation receipt. Elenchus never writes
+under `.hexaemeron`, treats a diagnostic exit as verdict authority, or turns a
+`guarded` parent report into evidence that the fixed tree or wider suite is
+green.
 
 That last distinction is the point. Dropping a new test on an older tree
 usually fails to import, and counting that as a guard would wave through every
@@ -391,4 +429,16 @@ the review the fix now needs.
 - Consequence: 2
 - Refuses: A symptom-only patch, an unreproduced cause, a guard that never failed without the fix, narrowed fuzz bounds, unrelated changes or a stale, malformed, oversized, mixed or empty report.
 - Recovery: Preserve the failure, restore a faithful reproducer, isolate the mechanism, add or repair the guard report and rerun both the unfixed-parent and fixed-tree suites.
+- Exceptions: none
+
+### elenchus-parent-guard-evidence
+
+- Promise: A `guarded` parent-guard result establishes that the declared guard blobs were overlaid as exact raw bytes at their declared modes on the exact parent and that the closed reporter command produced the returned fresh raw report, normalized counters, runner exit and unchanged verdict.
+- Evidence: The full parent object id, bounded streamed parent tree and native blobs, gitlinks represented as bound empty directories, complete ordered replacement-free guard blob rows with path, status, mode, object id, byte count, SHA-256 and raw bytes, closed argv with one whole-argument report placeholder, declared report format and logical file, fresh stable no-follow raw report bytes, normalized counters, runner exit and unchanged verdict.
+- Evidence classes: checked
+- Boundary: The result covers detached-parent execution and report classification only. On macOS it does not cover same-UID executable replacement after the sandbox wrapper's final descriptor/path comparison and before pathname `exec`. It does not discover the Step delta, persist controller evidence, apply Fiat admission, create an inoculation receipt, prove a fixed tree or final suite green, or satisfy `elenchus-fixed-and-guarded` by itself.
+- Authorises: Fiat may evaluate its independent admission rules and, if every Fiat-owned binding still holds, persist the exact returned report bytes and a manifest that names this result.
+- Consequence: 2
+- Refuses: A non-object parent, oversized, timed-out, incomplete, duplicate, unsafe or malformed parent listing, a per-blob or aggregate parent-byte excess, missing, extra, duplicate, unordered, oversized, unsafe or malformed guard blob row, mode, object id, byte count, digest or raw byte mismatch, a decoded or replacement-object view, an open or shell command, a missing or repeated whole-argument placeholder, unsupported format, unsafe logical path, timeout, interrupted runner, or missing, stale, linked, replaced, unstable, oversized, malformed, incomplete or zero-test report.
+- Recovery: Restore the exact parent, raw blob rows, closed argv and runner contract, then rerun the parent-guard operation; Fiat must separately rerun its own binding and admission checks before retaining anything.
 - Exceptions: none

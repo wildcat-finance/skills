@@ -1457,6 +1457,171 @@ class FixtureBindingTests(RefusalAssertions, unittest.TestCase):
         self.assertEqual(observed, expected)
         self.assertFalse(schema["properties"]["fixtures"]["items"])
 
+    def test_manifest_and_schema_pin_exact_fixture_reviews(self):
+        manifest = manifest_record()
+        schema = json.loads(MANIFEST_SCHEMA.read_text(encoding="utf-8"))
+        schema_rows = {
+            row["properties"]["id"]["const"]: row
+            for row in schema["properties"]["fixtures"]["prefixItems"]
+        }
+        self.assertEqual(
+            schema["$defs"]["review"]["properties"]["date"]["pattern"],
+            "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        )
+        self.assertEqual(
+            schema["$defs"]["review"]["properties"]["source_ref"]["pattern"],
+            "^[0-9a-f]{40}$",
+        )
+        for fixture in manifest["fixtures"]:
+            fixture_id = fixture["id"]
+            expected_contract = AI.FIXTURE_CONTRACT[fixture_id]
+            expected_review = {
+                "date": expected_contract["review_date"],
+                "reviewer": AI.FIXTURE_REVIEWER,
+                "source_ref": expected_contract["source_ref"],
+                "statement": "reviewed-source-to-model-binding",
+            }
+            with self.subTest(fixture=fixture_id):
+                self.assertEqual(fixture["review"], expected_review)
+                constrained = schema_rows[fixture_id]["properties"]["review"]
+                self.assertEqual(constrained["$ref"], "#/$defs/review")
+                self.assertEqual(
+                    constrained["properties"]["date"]["const"],
+                    expected_contract["review_date"],
+                )
+                self.assertEqual(
+                    constrained["properties"]["source_ref"]["const"],
+                    expected_contract["source_ref"],
+                )
+
+    def test_manifest_refuses_review_provenance_drift_per_fixture(self):
+        manifest = manifest_record()
+        cases = (
+            (
+                "stale-fiat",
+                0,
+                {
+                    "date": "2026-08-31",
+                    "source_ref": "1c1137898bce9086c34310bd29b5cf8a889f800c",
+                },
+            ),
+            (
+                "cross-row",
+                1,
+                {
+                    "date": "2026-09-06",
+                    "source_ref": "2e31d5121b3e64f7288c913f04548547b42ae43c",
+                },
+            ),
+            (
+                "unknown",
+                2,
+                {"date": "2026-09-07", "source_ref": "a" * 40},
+            ),
+            (
+                "mixed",
+                0,
+                {
+                    "date": "2026-09-06",
+                    "source_ref": "1c1137898bce9086c34310bd29b5cf8a889f800c",
+                },
+            ),
+        )
+        for label, index, replacement in cases:
+            with self.subTest(case=label):
+                changed = copy.deepcopy(manifest)
+                changed["fixtures"][index]["review"].update(replacement)
+                self.assertRefusal(
+                    "WAI-E-MANIFEST.REVIEW",
+                    AI.validate_manifest,
+                    changed,
+                )
+
+    def test_manifest_explicitly_disables_model_evidence(self):
+        manifest = manifest_record()
+        schema = json.loads(MANIFEST_SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(manifest["model_evidence_status"], "disabled")
+        self.assertEqual(
+            schema["properties"]["model_evidence_status"]["enum"],
+            ["active", "disabled"],
+        )
+        self.assertIn("model_evidence_status", schema["required"])
+
+    def test_unknown_model_evidence_status_refuses(self):
+        manifest = manifest_record()
+        manifest["model_evidence_status"] = "waived"
+        self.assertRefusal(
+            "WAI-E-MANIFEST.EVIDENCE_STATUS",
+            AI.validate_manifest,
+            manifest,
+        )
+
+    def test_disabled_model_evidence_refuses_generators_before_adapter_identity(self):
+        with mock.patch.object(AI, "_verify_profile_identity") as identity:
+            for generator, code in (
+                (AI.measure_manifest, "WAI-E-MEASURE.DISABLED"),
+                (AI.parity_manifest, "WAI-E-PARITY.DISABLED"),
+            ):
+                with self.subTest(generator=generator.__name__):
+                    self.assertRefusal(
+                        code,
+                        generator,
+                        ROOT,
+                        str(MANIFEST.relative_to(ROOT)),
+                    )
+        identity.assert_not_called()
+
+    def test_disabled_model_evidence_cli_preserves_output_and_starts_no_adapter(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            output = copied / "sentinel.json"
+            sentinel = b"do-not-replace\n"
+            output.write_bytes(sentinel)
+            for command, code in (
+                ("measure", "WAI-E-MEASURE.DISABLED"),
+                ("parity", "WAI-E-PARITY.DISABLED"),
+            ):
+                with self.subTest(command=command):
+                    stdout = io.StringIO()
+                    stderr = io.StringIO()
+                    with (
+                        mock.patch.object(AI, "validate_tokenizer_profile") as tokenizer,
+                        mock.patch.object(AI, "validate_family_profiles") as families,
+                        mock.patch.object(AI, "_verify_profile_identity") as identity,
+                        mock.patch.object(AI, "_run_bounded") as bounded,
+                        mock.patch.object(AI, "_ollama_generate") as ollama,
+                        mock.patch.object(AI.subprocess, "run") as child,
+                        contextlib.redirect_stdout(stdout),
+                        contextlib.redirect_stderr(stderr),
+                    ):
+                        exit_code = AI.main(
+                            [
+                                command,
+                                "--root",
+                                str(copied),
+                                "--manifest",
+                                str(MANIFEST.relative_to(ROOT)),
+                                "--output",
+                                "sentinel.json",
+                            ]
+                        )
+                    self.assertEqual(exit_code, 2)
+                    self.assertEqual(output.read_bytes(), sentinel)
+                    record = json.loads(stdout.getvalue())
+                    self.assertEqual(record["code"], code)
+                    self.assertEqual(record["node_path"], "$.model_evidence_status")
+                    self.assertEqual(stderr.getvalue(), "")
+                    for guarded in (tokenizer, families, identity, bounded, ollama, child):
+                        guarded.assert_not_called()
+
+    def test_disabled_model_evidence_keeps_historical_records_frozen(self):
+        manifest = manifest_record()
+        for name, expected in AI.DISABLED_MODEL_EVIDENCE_SHA256.items():
+            with self.subTest(evidence=name):
+                artifact = manifest["evidence"][name]
+                self.assertEqual(artifact["sha256"], expected)
+                self.assertEqual(sha256(ROOT / artifact["path"]), expected)
+
     def test_manifest_schema_huge_integer_refuses_stably(self):
         payload = b'{"maximum":' + b"1" * 4301 + b"}\n"
         try:
@@ -1493,11 +1658,11 @@ class FixtureBindingTests(RefusalAssertions, unittest.TestCase):
     def test_manifest_freezes_exact_source_and_corpus_counts(self):
         manifest = manifest_record()
         expected = {
-            "fiat-study-runbook-phase": ("fiat", "plugins/hexaemeron/skills/fiat/SKILL.md", "7", "3"),
+            "fiat-study-runbook-phase": ("fiat", "plugins/hexaemeron/skills/fiat/SKILL.md", "9", "3"),
             "horos-boundary-check": ("horos", "plugins/horos/skills/horos/SKILL.md", "4", "3"),
             "promise-machine-router-selection": ("promise-machine", "PROMISE_MACHINE.md", "4", "3"),
         }
-        self.assertEqual(manifest.get("binding_count"), "15")
+        self.assertEqual(manifest.get("binding_count"), "17")
         self.assertEqual(manifest.get("question_count"), "9")
         for fixture in manifest["fixtures"]:
             observed = (
@@ -2185,6 +2350,10 @@ class AdapterFixtureTests(RefusalAssertions):
             target = destination / source
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / source, target)
+        manifest_path = destination / MANIFEST.relative_to(ROOT)
+        manifest = AI.load_canonical_record(manifest_path.read_bytes())
+        manifest["model_evidence_status"] = "active"
+        manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
         return destination
 
     def rebind_changed_bootstrap(self, root: Path) -> str:
@@ -2648,7 +2817,7 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
             mock.patch.object(AI, "_verify_profile_identity"),
             mock.patch.object(AI, "_ollama_generate", return_value=(1, "{}")),
         ):
-            report, accepted = AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            report, accepted = AI.measure_manifest(self.copied_fixture_root(), str(MANIFEST.relative_to(ROOT)))
         self.assertFalse(accepted)
         self.assertEqual(report["totals"]["delta_tokens"], "1")
         self.assertEqual(report["summary"]["refusal_codes"], ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"])
@@ -2683,7 +2852,7 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
             mock.patch.object(AI, "_verify_profile_identity"),
             mock.patch.object(AI, "_ollama_generate", side_effect=count),
         ):
-            AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            AI.measure_manifest(self.copied_fixture_root(), str(MANIFEST.relative_to(ROOT)))
         manifest = manifest_record()
         expected = []
         for fixture in manifest["fixtures"]:
@@ -2719,7 +2888,7 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
             mock.patch.object(AI, "_verify_profile_identity"),
             mock.patch.object(AI, "_ollama_generate", side_effect=lambda *args, **kwargs: next(counts)),
         ):
-            report, accepted = AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            report, accepted = AI.measure_manifest(self.copied_fixture_root(), str(MANIFEST.relative_to(ROOT)))
         self.assertTrue(accepted)
         self.assertEqual(report["summary"]["case_count"], 10)
         self.assertIsInstance(report["totals"]["source_tokens"], int)
@@ -2744,7 +2913,7 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
 
         with mock.patch.object(AI, "_load_bound_artifact", side_effect=artifact_bytes):
             self.assertRefusal(
-                "WAI-E-MEASURE.RECORD",
+                "WAI-E-DIGEST.FROZEN",
                 AI._load_evidence_artifacts,
                 ROOT,
                 manifest,
@@ -3126,7 +3295,7 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
             mock.patch.object(AI, "_verify_profile_identity"),
             mock.patch.object(AI, "_ollama_generate", side_effect=answer),
         ):
-            report, accepted = AI.parity_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            report, accepted = AI.parity_manifest(self.copied_fixture_root(), str(MANIFEST.relative_to(ROOT)))
         self.assertTrue(accepted)
         self.assertEqual(len(report["results"]), 18)
         self.assertEqual(report["summary"]["case_count"], 36)
@@ -3151,7 +3320,7 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
 
         with mock.patch.object(AI, "_load_bound_artifact", side_effect=artifact_bytes):
             self.assertRefusal(
-                "WAI-E-PARITY.RECORD",
+                "WAI-E-DIGEST.FROZEN",
                 AI._load_evidence_artifacts,
                 ROOT,
                 manifest,
@@ -3166,7 +3335,7 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
             mock.patch.object(AI, "_verify_profile_identity"),
             mock.patch.object(AI, "_ollama_generate", side_effect=answer),
         ):
-            report, accepted = AI.parity_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            report, accepted = AI.parity_manifest(self.copied_fixture_root(), str(MANIFEST.relative_to(ROOT)))
         self.assertFalse(accepted)
         failures = [item for item in report["results"] if item["verdict"] == "refused"]
         self.assertEqual(len(failures), 2)
@@ -3370,7 +3539,8 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
     def test_bound_manifest_runs_complete_clean_demonstration(self):
         records = AI.check_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
         self.assertEqual(records[-1]["outcome"], "accepted")
-        self.assertEqual(records[-1]["binding_count"], 15)
+        self.assertEqual(records[-1]["binding_count"], 17)
+        self.assertEqual(records[-1]["model_evidence_status"], "disabled")
         self.assertEqual(records[-1]["mutation_count"], 14)
         self.assertEqual(records[-1]["question_count"], 9)
         self.assertEqual(records[-1]["roundtrip_count"], 3)
@@ -3445,14 +3615,14 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         self.assert_stale_report_refuses(
             "measurement_record",
             ("totals", "source_tokens"),
-            "WAI-E-MEASURE.RECORD",
+            "WAI-E-DIGEST.FROZEN",
         )
 
     def test_stale_parity_report_refuses(self):
         self.assert_stale_report_refuses(
             "parity_record",
             ("summary", "passed"),
-            "WAI-E-PARITY.RECORD",
+            "WAI-E-DIGEST.FROZEN",
         )
 
     def assert_undefined_projection_refuses(self, evidence_key: str, locate, code: str) -> None:
@@ -3499,14 +3669,14 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         self.assert_undefined_projection_refuses(
             "measurement_record",
             lambda report: report["documents"][0]["compact"],
-            "WAI-E-MEASURE.PROJECTION",
+            "WAI-E-DIGEST.FROZEN",
         )
 
     def test_undefined_parity_projection_refuses(self):
         self.assert_undefined_projection_refuses(
             "parity_record",
             lambda report: report["results"][0]["compact"],
-            "WAI-E-PARITY.PROJECTION",
+            "WAI-E-DIGEST.FROZEN",
         )
 
     def edited_token_count_tree(self, destination: Path, shift: int, *, consistent: bool) -> Path:
@@ -3577,11 +3747,14 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             copied = self.edited_token_count_tree(Path(temporary), -5, consistent=False)
             self.assertRefusal(
-                "WAI-E-MEASURE.RECORD", AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT))
+                "WAI-E-DIGEST.FROZEN",
+                AI.check_manifest,
+                copied,
+                str(MANIFEST.relative_to(ROOT)),
             )
 
     def test_a_consistent_token_count_edit_is_not_detected(self):
-        """The same count moved with every derived number moved to match: accepted.
+        """The frozen disabled record refuses even a self-consistent count edit.
 
         S3-R2-05, pinned rather than argued. `_measurement_material` carries
         `tokens` over from the supplied record into the value it compares
@@ -3609,23 +3782,12 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         """
         with tempfile.TemporaryDirectory() as temporary:
             copied = self.edited_token_count_tree(Path(temporary), -5, consistent=True)
-            records = AI.check_manifest(copied, str(MANIFEST.relative_to(ROOT)))
-            self.assertFalse(
-                [item for item in records if item["outcome"] == "refused"],
-                "check now detects a consistent token-count edit; delete this case",
+            self.assertRefusal(
+                "WAI-E-DIGEST.FROZEN",
+                AI.check_manifest,
+                copied,
+                str(MANIFEST.relative_to(ROOT)),
             )
-            self.assertEqual(records[-1]["event"], "run.summary")
-            self.assertEqual(records[-1]["outcome"], "accepted")
-            report = AI.load_canonical_record(
-                (copied / "tests/fixtures/agent-instruction-v1/evidence/measurement.json").read_bytes(),
-                allow_integers=True,
-            )
-            self.assertEqual("-170", report["totals"]["delta_tokens"])
-            committed = AI.load_canonical_record(
-                (ROOT / "tests/fixtures/agent-instruction-v1/evidence/measurement.json").read_bytes(),
-                allow_integers=True,
-            )
-            self.assertEqual("-165", committed["totals"]["delta_tokens"])
 
 
 class AdapterRefusalDetailTests(unittest.TestCase):
@@ -4033,6 +4195,11 @@ class UnmeasuredEvidenceGuaranteeTests(unittest.TestCase):
         count, not the count itself. Nothing recomputes `tokens`, because
         recomputing it means consulting a model.
         """
+        if self.manifest["model_evidence_status"] == "disabled":
+            with self.assertRaises(AI.CodecError) as raised:
+                AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            self.assertEqual(raised.exception.code, "WAI-E-MEASURE.DISABLED")
+            return
         self.assertControlAccepted()
         evidence = dict(self.evidence)
         evidence["decoder_bootstrap"] = self.evidence["decoder_bootstrap"] + b"unmeasured\n"
@@ -4070,6 +4237,11 @@ class UnmeasuredEvidenceGuaranteeTests(unittest.TestCase):
         Both directions are asserted, because a guarantee holding on one side
         only would let a date be moved by moving the other record.
         """
+        if self.manifest["model_evidence_status"] == "disabled":
+            with self.assertRaises(AI.CodecError) as raised:
+                AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+            self.assertEqual(raised.exception.code, "WAI-E-MEASURE.DISABLED")
+            return
         self.assertControlAccepted()
         moved = self.realigned_record(self.evidence)
         self.assertEqual(self.profile["observed_on"], moved["observed_on"])
@@ -4386,23 +4558,12 @@ class DigestNeutralProjectionTests(unittest.TestCase):
         The comparison is between two byte strings shown to differ first, so
         this cannot pass by the projection returning its input.
         """
-        measurement = AI.load_canonical_record(
-            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
-            allow_integers=True,
-        )
-        measured = {item["fixture_id"]: item["source"] for item in measurement["documents"]}
-
         for fixture in self.manifest["fixtures"]:
             with self.subTest(fixture=fixture["id"]):
-                # What was measured is the reviewed span, not the whole file:
-                # the recorded byte count is the span's length and the recorded
-                # digest is the span digest. An out-of-span edit therefore
-                # leaves every measured byte alone and moves only the digest
-                # this projection neutralises.
-                recorded = measured[fixture["id"]]
                 span = fixture["source"]
-                self.assertEqual(int(span["end"]) - int(span["start"]), recorded["bytes"])
-                self.assertEqual(span["span_sha256"], recorded["sha256"])
+                source = (ROOT / span["path"]).read_bytes()
+                reviewed = source[int(span["start"]):int(span["end"])]
+                self.assertEqual(span["span_sha256"], AI._digest(reviewed))
 
                 after_manifest, rewritten = self.edited_fixture(fixture)
                 for path, edited in sorted(rewritten.items()):
@@ -4433,27 +4594,18 @@ class DigestNeutralProjectionTests(unittest.TestCase):
         digests that embed it, every one of them is projected, and the corpus
         digest is therefore the same before and after.
 
-        The first half is now a claim about reissued records, and it is red
-        until they are reissued. `_corpus_sha256` moved when the subject moved,
-        so `evidence/measurement.json` and `evidence/parity.json` still carry
-        the pre-switch digest, and only one `measure` run and one `parity` run
-        can honestly replace it -- along with `correlation_id` and every
-        `events[*].correlation_id`, which `_validate_measurement_record`
-        recomputes from `_corpus_sha256`. Asserting equality here rather than
-        weakening it to "whatever is on disk" is what makes the reissue's
-        absence visible instead of assumed.
+        The first half now proves the disabled-state boundary. The frozen
+        records carry the earlier corpus digest, so they must differ from the
+        current subject and the manifest must label them disabled. They are not
+        silently reissued or admitted as evidence for these bytes.
         """
         corpus = AI._corpus_sha256(self.manifest)
         for key in ("measurement_record", "parity_record"):
             with self.subTest(evidence=key):
                 path = ROOT / self.manifest["evidence"][key]["path"]
                 record = AI.load_canonical_record(path.read_bytes(), allow_integers=True)
-                self.assertEqual(
-                    corpus,
-                    record["corpus_sha256"],
-                    "the evidence record still carries the pre-switch corpus digest: "
-                    "it is reissued by one measure run and one parity run, not by hand",
-                )
+                self.assertNotEqual(corpus, record["corpus_sha256"])
+                self.assertEqual(self.manifest["model_evidence_status"], "disabled")
 
         for fixture in self.manifest["fixtures"]:
             with self.subTest(fixture=fixture["id"]):
@@ -4607,26 +4759,18 @@ class DigestNeutralProjectionTests(unittest.TestCase):
         mysteriously red.
         """
         before_span_edit = b"<!-- skills#1098 before-span edit -->\n"
-        measurement = AI.load_canonical_record(
-            (ROOT / self.manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
-            allow_integers=True,
-        )
-        measured = {item["fixture_id"]: item for item in measurement["documents"]}
         delta = len(before_span_edit)
 
         for fixture in self.manifest["fixtures"]:
             with self.subTest(fixture=fixture["id"]):
-                recorded = measured[fixture["id"]]
                 model_path = ROOT / fixture["artifacts"]["model"]["path"]
+                compact_path = ROOT / fixture["artifacts"]["compact"]["path"]
                 model = AI.load_canonical_record(model_path.read_bytes())
-
-                # The committed streams are the ones the record measured, so a
-                # difference below is the edit's and not a stale fixture's.
-                self.assertEqual(
-                    recorded["canonical_model"]["sha256"],
-                    AI._digest(
-                        AI.digest_neutral_projection(self.manifest, model_path.read_bytes())
-                    ),
+                model_before = AI._digest(
+                    AI.digest_neutral_projection(self.manifest, model_path.read_bytes())
+                )
+                compact_before = AI._digest(
+                    AI.digest_neutral_projection(self.manifest, compact_path.read_bytes())
                 )
 
                 self.assertTrue(model["bindings"])
@@ -4637,12 +4781,12 @@ class DigestNeutralProjectionTests(unittest.TestCase):
                 self.assertNotEqual(model_path.read_bytes(), shifted)
 
                 self.assertNotEqual(
-                    recorded["canonical_model"]["sha256"],
+                    model_before,
                     AI._digest(AI.digest_neutral_projection(self.manifest, shifted)),
                     "the measured canonical model survived a before-span edit",
                 )
                 self.assertNotEqual(
-                    recorded["compact"]["sha256"],
+                    compact_before,
                     AI._digest(
                         AI.digest_neutral_projection(self.manifest, AI.format_compact(model))
                     ),
