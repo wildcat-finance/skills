@@ -1,9 +1,9 @@
 ---
 name: dokimasia
 description: >
-  Inspect or build the scaffold that compiles a frontend's routes, actions and
-  access guards into a coverage denominator and reconciles a reviewed UAT
-  workbook against it, so every scoped item carries exactly one disposition.
+  Compile a frontend's routes, actions and access guards into a coverage
+  denominator and reconcile a reviewed UAT workbook against it, so every
+  scoped item carries exactly one disposition.
   A closure ratio states that nothing is unaccounted for, never that anything
   passed, and no item may be reported as covered without a reviewed oracle a
   person named. Horos decides what an agent does not read; Hexaemeron Fizz

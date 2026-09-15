@@ -37,8 +37,8 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The seventeen plugins form one marketplace, not seventeen competing descriptions
-of the same job. Alexandria preserves lending inputs; Tabularium interprets
+The <!-- front-door:count key="plugins" -->18 plugins form one marketplace, not
+competing descriptions of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
 needs, while Ariadne binds a released artefact digest to its evidence. Berean
@@ -207,6 +207,9 @@ these instructions.
   running its skill or changing that plugin.
 - Brevitas is under `plugins/brevitas/`. Read `plugins/brevitas/AGENTS.md`
   before running its skill or changing that plugin.
+- Dokimasia is under `plugins/dokimasia/`. Read
+  `plugins/dokimasia/AGENTS.md` before running its skill or changing that
+  plugin.
 - Hermes is under `plugins/hermes/`. Read `plugins/hermes/AGENTS.md` before
   running its skill or changing that plugin.
 - Hexaemeron is under `plugins/hexaemeron/`. Read

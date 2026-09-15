@@ -1,7 +1,7 @@
 # The resumable Ethereum USDC interval collector
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 `docs/compound-v3-harvest.md` specifies the production harvester. This document
@@ -35,6 +35,11 @@ Two historical demonstrations run the whole path with no network at all:
 Ethereum mainnet interval. Their confined reconstruction paths preserve the
 original v1 release identifiers. Ordinary `build` emits
 `alexandria-interval-receipt/v2`; it has no public legacy-build option.
+`examples/usdc-interval-epochs-v0/demo.py` demonstrates v2 offline: literal
+owners over a synthetic upgrade block, a v2 rebuild of the live staging bytes
+under its own identifier, and the refusals the positional rules require. Its
+[proof](usdc-interval-epochs/proof.md) records the guard's failure on the
+parent and the four production conformance reports.
 
 ## What a request carries
 
@@ -307,7 +312,8 @@ attributed to the implementation that replaced the one which produced it. Block
 25,904,935 here carries only the upgrade, at transaction index 193 and log index
 524, so nothing in this capture is misattributed. These preserved bytes do not
 demonstrate the before-upgrade defect, and their original identifier retains
-the v1 scope. A v2 reconstruction has its own identifier.
+the v1 scope. A v2 reconstruction has its own identifier,
+`sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a`.
 
 ## What this does not establish
 

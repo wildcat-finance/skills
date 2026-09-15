@@ -749,8 +749,9 @@ A merge commit preserves the first; a squash or rebase merge does not, and then
 the merge itself has to carry the name. The `integrate` directive says so before
 the merge, and the receipt refuses afterwards if nothing carries an identity,
 naming the step, the commit and the identity by account or digest prefix. Fiat
-does not read the repository's merge settings and does not require a method: it
-refuses the claim, not the merge.
+does not read the repository's merge settings. Literal-only runs may use any
+method that preserves the required attribution; relation-bearing runs require
+the ordered merge parents specified above.
 
 Wait for required checks, merge without bypassing them, and require GitHub to
 report `verified: true` and `reason: valid` for the merge commit. Then delete
