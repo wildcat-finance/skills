@@ -34,7 +34,10 @@ IMPLEMENTED = frozenset({("whole-worker-sandbox", "worker-deadline"),
                          ("whole-worker-sandbox", "origin-drift-recovery"),
                          ("whole-worker-sandbox", "single-cumulative-reconstruction"),
                          ("whole-worker-sandbox", "executed-inoculation-guards"),
-                         ("whole-worker-sandbox", "carryover-lineage-recovery")})
+                         ("whole-worker-sandbox", "carryover-lineage-recovery"),
+                         ("whole-worker-sandbox", "source-owned-report-compatibility"),
+                         ("whole-worker-sandbox", "gate-parser-no-execution"),
+                         ("whole-worker-sandbox", "gate-receipt-replay")})
 
 
 def dispatch_request(root, code, *, origin=None):
@@ -233,7 +236,59 @@ def execute_replacement(criterion):
             "scope":"Actual local signed Git, checkpoint, controller admission and native guard fixtures; attachment transport controlled. Temporary fixture roots are removed after observations. Historical unknowns remain unknown; no independent audit or model evaluation is claimed."}
 
 
+GATE_SPECIMENS = {
+    'source-owned-report-compatibility': ['relative-source-declaration-preserved', 'absolute-execution-destination', 'report-bytes-preserved', 'report-escape-refused'],
+    'gate-parser-no-execution': ['malformed-fence', 'four-draft-brevitas', 'unsupported-substitution', 'injected-command-no-side-effect'],
+    'gate-receipt-replay': ['finite-per-file-command', 'command-drift', 'cli-source-drift', 'adapter-drift', 'report-source-drift'],
+}
+
+
+def execute_gates(criterion):
+    """Run the named nonexecuting validator/real controller/producer specimens."""
+    import test_gate_commands as cases
+    selected = {
+        'source-owned-report-compatibility': (cases.GateReportTests, 'test_source_owned_report_bytes_and_relative_declaration'),
+        'gate-parser-no-execution': (cases.GateConformanceTests, 'test_inert_parser_specimens'),
+        'gate-receipt-replay': (cases.GateConformanceTests, 'test_exact_replay_specimens'),
+    }
+    cls, method = selected[criterion]
+    primary = cls(method)
+    tests = [primary]
+    if criterion == 'gate-receipt-replay':
+        tests += [cases.GateReceiptTests(name) for name in (
+            'test_current_init_and_refusal_precede_runbook_mutation',
+            'test_current_init_marker_cannot_be_downgraded',
+            'test_full_cli_source_drift_blocks_mutation_then_fresh_amendment',
+            'test_pending_amendment_recovers_after_actual_source_replacement',
+            'test_historical_fixture_remains_legacy_without_backfill')]
+    root = Path(__file__).resolve().parents[3]
+    sources = [Path(__file__).resolve(), Path(cases.__file__).resolve(), cases.SOURCE,
+               Path(__file__).with_name('hexctl_harness.py').resolve(),
+               Path(worker_exec.__file__).with_name('hexctl.py').resolve(),
+               root / 'plugins/hexaemeron/skills/elenchus/scripts/elenchus.py']
+    sources += [root / path for path in cases.gates.REGISTRY]
+    before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+    started = time.time()
+    log = StringIO()
+    result = unittest.TextTestRunner(stream=log, verbosity=2).run(unittest.TestSuite(tests))
+    require(result.wasSuccessful() and result.testsRun == len(tests) and not result.skipped,
+            'gate-specimens-failed: ' + log.getvalue())
+    names = GATE_SPECIMENS[criterion]
+    inventory = json.loads((Path(__file__).parent / 'fixtures/issue508/criteria.json').read_text())
+    expected = next(row['specimens'] for row in inventory['criteria'] if row['id'] == criterion)
+    require(names == expected and set(primary.observations) == set(names), 'gate-specimen-inventory-drift')
+    after = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+    require(before == after, 'gate-specimen-source-drift')
+    return {'criterion': criterion, 'specimens': names, 'observations': primary.observations,
+            'execution': {'testsRun': result.testsRun, 'failures': len(result.failures),
+                          'errors': len(result.errors), 'skipped': len(result.skipped), 'log': log.getvalue()},
+            'sources': before, 'source_observation': {'before_unix': started, 'after_unix': time.time(), 'unchanged': True},
+            'scope': 'Actual inert parser and source replay specimens; real disposable controller transitions where selected. The report compatibility specimen runs one real unittest assertion through the existing producer writer and Elenchus reader. No runbook command is executed by the gate adapter; no independent audit or whole delivery success is claimed.'}
+
+
 def execute(criterion, root):
+    if criterion in GATE_SPECIMENS:
+        return execute_gates(criterion)
     if criterion in REPLACEMENT_SPECIMENS:
         return execute_replacement(criterion)
     """Observe real native processes; no assertion supplied by the caller passes."""

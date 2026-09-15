@@ -2461,6 +2461,13 @@ class VersionRelationTests(HexctlCase):
                 handle.write(self.ledger("fiat"))
             with open(skill, "w", encoding="utf-8") as handle:
                 handle.write(self.skill("fiat"))
+            cli = "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
+            source_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+            destination = os.path.join(repository, cli)
+            os.makedirs(os.path.dirname(destination), exist_ok=True)
+            with open(os.path.join(source_root, cli), "rb") as source:
+                with open(destination, "wb") as target:
+                    target.write(source.read())
             for argv in (("add", "-A"), ("commit", "-q", "-m", "seed")):
                 subprocess.run(
                     ["git", *argv],
@@ -2512,7 +2519,8 @@ class VersionRelationTests(HexctlCase):
                     self.design_lock_block(state)
                     + "\n# Runbook\n\n"
                     + self.relation_block("fiat")
-                    + "\n## Step 1: Build\n\n**Goal.** Build.\n"
+                    + "\n## Step 1: Build\n\n**Goal.** Build.\n\n"
+                    + "**Exit.** `python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py draft.md`\n"
                 )
             with open(
                 os.path.join(worktree, "steps.json"), "w", encoding="utf-8"

@@ -3085,7 +3085,7 @@ class PromiseStructureTests(unittest.TestCase):
             },
             "metron": {"metron-budget-verdict", "metron-change-decision"},
             "phylax": {"phylax-mechanical-gate", "phylax-boundary-review"},
-            "protasis": {"protasis-study-readiness", "protasis-runbook-readiness"},
+            "protasis": {"protasis-study-readiness", "protasis-runbook-readiness", "protasis-gate-command-validation"},
             "vulgate": {"vulgate-register-rewrite"},
         }
         for skill, promise_ids in expected.items():
@@ -3577,15 +3577,15 @@ class PromiseHistoryTests(unittest.TestCase):
         document = json.loads(PROMISE_ID_HISTORY.read_text(encoding="utf-8"))
         self.assertEqual(document["entry_ref"], FIAT_ENTRY_REF)
         self.assertEqual(document["entry_count"], 80)
-        self.assertEqual(len(document["entries"]), 100)
+        self.assertEqual(len(document["entries"]), 101)
         self.assertEqual(
-            len({row["promise_id"] for row in document["entries"]}), 100
+            len({row["promise_id"] for row in document["entries"]}), 101
         )
         completed = run_cli("check", "--only", "history", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["history_entries"], 100)
-        self.assertEqual(report["counts"]["active_history_ids"], 100)
+        self.assertEqual(report["counts"]["history_entries"], 101)
+        self.assertEqual(report["counts"]["active_history_ids"], 101)
 
     def test_deleted_or_duplicated_history_id_is_refused(self):
         for name in ("deleted", "duplicated"):

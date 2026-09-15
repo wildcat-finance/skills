@@ -546,12 +546,26 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.10.0")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v5.11.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
-        latest = history_rows(ledger)[-1]
+        rows = history_rows(ledger)
+        current = rows[-1]
+        self.assertEqual(current["version"], "protasis-v5.11.0")
+        self.assertEqual(current["axis"], "generation")
+        self.assertEqual(current["revision"], "amendment-block-check")
+        self.assertEqual(
+            current["digest"],
+            "ca34e050ea7b11b33b1fa1f9575e398f481e20a6e33c7f4edc85cad0d19d5299",
+        )
+        self.assertIn("skills#508", current["evidence"])
+        self.assertIn("references/gate-commands.md", current["evidence"])
+        self.assertIn("inert command-interface", current["change"])
+        self.assertIn("unresolved projection", current["change"])
+        by_version = {entry["version"]: entry for entry in rows}
+        latest = by_version["protasis-v5.10.0"]
         self.assertEqual(latest["version"], "protasis-v5.10.0")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "amendment-block-check")
@@ -562,7 +576,7 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("skills#1000", latest["evidence"])
         self.assertIn("ADR-061", latest["evidence"])
         self.assertIn("protasis-design-evidence/v1", latest["change"])
-        prior = history_rows(ledger)[-2]
+        prior = by_version["protasis-v5.9.0"]
         self.assertEqual(prior["version"], "protasis-v5.9.0")
         self.assertEqual(prior["axis"], "evolution")
         self.assertIn("skills#497", prior["evidence"])

@@ -914,6 +914,32 @@ where the study and runbook live. After a successful verification, run
 and say if a dirty worktree was retained. The next run should not have to
 retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
+## Runbook command evidence
+
+New initialization records `contracts.gate_commands` as
+`protasis-gate-commands/v1` in state and the immutable init event. Runbook and
+amendment receipts for those runs consume Protasis's
+[command-interface result](../protasis/references/gate-commands.md). It binds
+raw command bytes and offsets, the captured source root, effective replacements,
+argv and report substitutions, full CLI and adapter sources, and interface validity. The
+result's `operation_ran:false` cannot stand in for a test report or audit verdict.
+
+Verification compares the marker and stored evidence with the ledger. It
+preserves historical raw commands and rechecks the latest effective result
+against current source. Source drift requires a newly checked append-only
+runbook amendment through the owning repair path; never rewrite an earlier
+receipt. Runs initialized without the marker retain their legacy contract and
+cannot acquire fabricated gate evidence by changing state. Plain `status` and
+`status --field gate_command_status` expose current, stale, legacy or pending
+command evidence without advancing the run. A pending amendment remains
+incomplete until its existing recovery transition finishes.
+
+Checkpoint restoration keeps the original gate receipt, including its captured
+root and absolute report operand. Replay checks that historical derivation and
+separately validates the relative report declaration under the restored root.
+The operand authorizes no command execution at the old root; existing checkpoint
+identity and ledger checks remain the relocation authority.
+
 ## Promise Machine contract
 
 ### fiat-design-evidence
@@ -1003,7 +1029,7 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-receipted-delivery
 
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
-- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
+- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, marked-run command evidence and its init-event binding, step branches and locally verified commit ranges, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
 - Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, the recorded local and GitHub signature checks, and the author and committer identities GitHub returned. Waiting-head ancestry establishes topology only; it does not establish a signature, trailer, GitHub identity, author, committer, publisher, or cause for a moved branch. Verification also does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer or publisher authority beyond those checks, identify the actor who pushed the bytes, or turn user authority merely written into a receipt into evidence.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.

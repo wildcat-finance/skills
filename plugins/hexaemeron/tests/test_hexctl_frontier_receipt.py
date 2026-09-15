@@ -74,7 +74,12 @@ class FrontierReceiptCase(HexctlCase):
             "widget-v1.1.0", "baseline", self.HELD[1], self.base_digest,
             "Versioning starts here.")
         self.write_ledger(self.dir, [self.baseline_row], "widget-v1.1.0")
-        self.git("add", self.ledger_rel)
+        cli = "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
+        source_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+        destination = os.path.join(self.dir, cli)
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        shutil.copyfile(os.path.join(source_root, cli), destination)
+        self.git("add", self.ledger_rel, cli)
         self.git("commit", "-q", "-m", "widget ledger baseline")
 
     def install_blob_passthrough(self):
@@ -141,7 +146,8 @@ class FrontierReceiptCase(HexctlCase):
         self.run_ctl("done", "study", "--artifact", study,
                      "--skills", "hexaemeron:imprimatur")
         runbook = self.write(
-            "runbook.md", "# Runbook\n\n## Step 1: Ship\n\n**Goal.** Ship.\n")
+            "runbook.md", "# Runbook\n\n## Step 1: Ship\n\n**Goal.** Ship.\n\n"
+            "**Exit.** `python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py draft.md`\n")
         steps = self.write("steps.json", json.dumps(["Ship"]))
         self.run_ctl("done", "runbook", "--artifact", runbook,
                      "--steps-file", steps)
