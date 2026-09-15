@@ -60,14 +60,12 @@ filesystem path.
 
 The top-level object is closed to these fields:
 
-| field | value |
-| --- | --- |
-| `schema` | `fiat-controller-checkpoint/v1` |
-| `controller` | controller name, state schema version and Fiat version |
-| `boundary` | `kind`, the semantic `next` object and the exact local ref-to-commit map |
-| `source` | exact state and ledger SHA-256 values, semantic state fingerprint, ledger entry count and tail hash |
-| `resources` | controller file count, byte count and every enforced ceiling |
-| `files` | sorted `controller/<relative-path>` records containing `path`, `bytes` and `sha256` |
+- `schema`: `fiat-controller-checkpoint/v1`.
+- `controller`: controller name, state schema version and Fiat version.
+- `boundary`: `kind`, the semantic `next` object and the exact local ref-to-commit map.
+- `source`: exact state and ledger SHA-256 values, semantic state fingerprint, ledger entry count and tail hash.
+- `resources`: controller file count, byte count and every enforced ceiling.
+- `files`: sorted `controller/<relative-path>` records containing `path`, `bytes` and `sha256`.
 
 The manifest digest identifies exact manifest bytes. It is not the semantic
 checkpoint identity, service acceptance or outer archive identity owned by
@@ -80,11 +78,9 @@ dot, parent, slash, backslash and control-character components refuse. The
 source tree may contain at most 4,096 regular files and 4,096 directories, with
 these byte ceilings:
 
-| resource | ceiling |
-| --- | ---: |
-| one controller file | 64 MiB |
-| all controller files | 256 MiB |
-| `MANIFEST.json` | 1 MiB |
+- One controller file: 64 MiB.
+- All controller files: 256 MiB.
+- `MANIFEST.json`: 1 MiB.
 
 Each directory and file is opened without following symlinks. A regular file
 must have one link. Devices, sockets, FIFOs, symlinks and hard-linked files
@@ -220,11 +216,12 @@ before identity stdout and does not widen the two checkpoint boundaries.
 
 ## Outer recovery boundary
 
-These commands do not create or verify the Git bundle, package an archive,
-handle keys or mint a semantic checkpoint identity. ADR-028 retains those jobs
-in the mandatory local outer procedure. That procedure writes to the fixed
-checkpoint store under the origin checkout and publishes nothing remotely.
-Restore accepts a directory already extracted and verified from the local
-archive handed over by another agent; it does not extract an archive or fetch a
-remote object. Continuation means the imported ledger plus its one relocation
-entry, never a fresh Fiat ledger.
+The capsule commands preserve controller state and continue its ledger. The
+native `checkpoint archive`, `checkpoint inspect` and `checkpoint restore
+--archive` commands own the outer Git bundle, stored ZIP, signatures and
+identity join; [checkpoint-archive.md](checkpoint-archive.md) fixes that
+contract. The mandatory local procedure writes to the fixed checkpoint store
+and publishes nothing remotely. Capsule restore accepts an already verified
+directory; outer restore verifies and extracts the archive before invoking
+that same relocation transaction. Continuation adds one relocation entry to
+the imported ledger and never starts a new one.

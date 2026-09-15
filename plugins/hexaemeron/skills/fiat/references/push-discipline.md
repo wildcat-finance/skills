@@ -297,92 +297,65 @@ receipts. Nothing is inferred for it and it still owes an ordinary merge.
 
 Every successful `done push` boundary gets a complete local checkpoint. The
 same rule applies when an exhausted audit reaches `audit-verdict`. Saving it is
-mandatory controller work, not a user choice: it cannot be waived, and the
-agent must not ask the user whether to save it, where to put it, or whether to
-keep it. A save failure blocks the next directive. Preserve the boundary,
-repair the failure and retry the same save.
+mandatory controller work: it cannot be waived, and the agent must not ask the
+user whether to save it, where to put it, or whether to keep it. A save failure
+blocks the next directive. Preserve the boundary, repair the failure and retry.
 
-The destination is derived from controller state. It is never supplied by the
-user:
+Run the native exporter before acting on the next directive:
+
+```text
+hexctl --dir <run-worktree> checkpoint archive
+```
+
+It derives the fixed local store from controller state:
 
 ```text
 <origin>/.hexaemeron/checkpoints/<run-worktree-name>/
-  step-<n>-<full-head-sha>/
-  audit-verdict-step-<n>-loop-<loop>-<full-head-sha>/
+  step-<n>-<full-head-sha>/checkpoint.zip
+  audit-verdict-step-<n>-loop-<loop>-<full-head-sha>/checkpoint.zip
 ```
 
-Use the `step-...` form after `done push` and the `audit-verdict-...` form at
-the exhausted-loop boundary. `<origin>` is `config.git.origin`,
-`<run-worktree-name>` is the basename of `config.git.worktree`, and every
-number and SHA comes from the verified controller state and Git boundary. The
-named boundary directory must be new. Build beside it and expose the final
-directory only after the archive and sidecar verify; never replace an existing
-checkpoint.
+The first form follows `done push`; the second records the exhausted audit
+boundary. The command writes a stored ZIP and `checkpoint.zip.sha256` beside
+it, verifies the complete archive before publication and refuses an occupied
+boundary directory. One content manifest covers all members; the outer digest
+stays outside the archive. No state or ledger entry is appended by export.
+[checkpoint-archive.md](checkpoint-archive.md) owns the layout, signatures,
+limits, refusal classes and restore transaction.
 
-Once the boundary is reached, and before packaging or acting on the next
-directive, export the controller capsule into the checkpoint staging area:
+Do not upload the checkpoint, publish it to a service, post its digests to an
+issue, commit it, or push it. Transport remains the local filesystem.
+
+For the direct agent-to-agent hand-off, carry the absolute archive path, outer
+SHA-256, archive manifest SHA-256, controller-manifest SHA-256, `snapshot_id`,
+step, loop when applicable, full head SHA and expected next directive. Keep the
+origin and run-worktree name from the verified state. Pass these values directly;
+when no receiver is active, leave the checkpoint at its fixed path.
+
+The receiver runs both commands with the handed-off outer digest:
 
 ```text
-hexctl --dir <run-worktree> checkpoint export --out <new-controller-capsule-directory>
+hexctl checkpoint inspect --archive <zip> --sha256 <outer-hex>
+hexctl --dir <empty-destination> checkpoint restore --archive <zip> --sha256 <outer-hex>
 ```
 
-Keep the manifest SHA-256 printed by the command outside the capsule. Export
-accepts only the post-`done push`, pre-next-action boundary (or the active
-`audit-verdict` boundary) and does not change state or append a ledger entry.
-The schema, resource limits and refusal rules live in
-[controller-checkpoint.md](controller-checkpoint.md). Then build the local
-portable checkpoint:
+Inspection checks the carrier, content manifest, bundle refs, signatures,
+receipts and declared identity. Restore repeats inspection, recreates the Git
+repository, relocates the capsule through the existing transaction, rejoins
+`snapshot_id` and reports the semantic next directive. It executes no directive.
+Run `verify`, `status --json`, `next` and `checkpoint identity` against the
+returned `restore.worktree`; the destination root is the restored origin and
+may contain a separate run worktree. Never initialise a new ledger for it.
 
-- Build the checkpoint in the fashion of
-  [the fiat-377 end-of-step-2 note](https://github.com/wildcat-finance/skills/issues/377#issuecomment-5435028801):
-  a self-contained Git bundle carrying the base, the run branch and every
-  step branch; the exported controller capsule in place of a manually copied
-  or rewritten `.hexaemeron` tree; an outer `MANIFEST.json` with the ref
-  boundary, the controller-capsule manifest digest, the run commits with
-  per-commit signature and trailer results, the signer fingerprints, the
-  artifact digests, the restore rule and the proof list;
-  `pubkey.asc`, the public key of whoever signed the run's commits;
-  the proof transcript from the producing machine; a `.sha256` sidecar for
-  each of the three main artifacts; and `CHECKPOINT-README.txt` with the
-  contents list and the restore rule.
-- Write the zip's own `.sha256` sidecar beside the zip in the fixed boundary
-  directory. The outer digest cannot travel inside the archive it covers; the
-  inner sidecars cover member artifacts after extraction.
-- Do not upload the checkpoint, publish it to a service, post its digests to an
-  issue, commit it, or push it. The current transport is the local filesystem.
-
-When another agent takes over, pass it the absolute archive path, outer
-SHA-256, controller-manifest SHA-256, origin, run-worktree name, step and audit
-loop when applicable, full head SHA, and expected next directive. This is a
-direct agent-to-agent hand-off. Do not route it through a user question. If no
-receiver is active yet, leave the verified checkpoint at its fixed path; its
-existence is not optional and needs no user decision.
-
-The receiving agent verifies before anything else: recompute the outer archive
-digest against the directly handed-off value and local sidecar, verify every
-member digest, import the bundled key and pin it to the fingerprints the outer
-MANIFEST records, verify the bundle and its ref boundary, then `git
-verify-commit` every run commit with an exactly-once count of both provenance
-trailers, compared against the bundled proof transcript. Restore those refs
-into a fresh clean top-level checkout, then restore the already verified
-controller capsule with the manifest digest handed over outside it:
-
-```text
-hexctl --dir <fresh-origin> checkpoint restore \
-  --from <controller-capsule-directory> \
-  --manifest-sha256 <sha256-reported-by-export>
-```
-
-The restore command checks the capsule, exact refs and semantic directive,
-relocates the same state, appends one `checkpoint:restore` event to the same
-ledger and executes no directive. The standalone
-[controller-checkpoint reference](controller-checkpoint.md) is authoritative
-for the schema and native recovery boundary; this section remains
-authoritative for the outer bundle, signatures, local archive, sidecars and
-direct hand-off. Work that already landed on `main` needs no clean-checkout
-proof beyond that. A run that modifies the alexandria or lazarus plugins owes
-one more: the same battery in a fresh Linux container (colima or Docker, empty
-keyring, checkpoint copied into the container from its verified local path).
+A clean-machine proof uses the archive, sidecar and controller as its only
+inbound files. After standalone inspection, materialise the sibling runtime
+from the verified bundle at the manifest's full working commit. Overlay only
+its `hexctl.py` with the supplied controller and verify that file's SHA-256.
+Use this runtime for restore and subsequent checks. Record the bundle digest,
+runtime commit and controller overlay; the runtime tree has that explicit
+modification. The container starts with `--network none`, no host mounts and an
+empty keyring. The proof script retains the transcript and text log. A run that
+modifies Alexandria or Lazarus still owes the clean Linux proof.
 
 ## Bringing the stack down
 

@@ -352,6 +352,10 @@ class FiatSkillContractTests(unittest.TestCase):
             "absolute archive path",
             "outer SHA-256",
             "controller-manifest SHA-256",
+            "checkpoint archive",
+            "checkpoint inspect",
+            "checkpoint restore --archive",
+            "`snapshot_id`",
         )
         missing = [item for item in required if item not in flat]
         self.assertEqual([], missing)
