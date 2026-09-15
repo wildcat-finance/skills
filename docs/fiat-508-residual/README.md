@@ -8,7 +8,7 @@ Delivery status:
 - Step 4 adds cumulative packet export, evidence validation and detached attachment binding; see the [format and custody reference](../../plugins/hexaemeron/skills/fiat/references/carryover-packet.md).
 - Step 5 adds complete replacement reconstruction and executed current guard coverage. Its conformance reports, implementation checks and independent audit passed.
 - Step 6 adds command-interface validation and receipt replay, including checkpoint relocation. Conformance reports, implementation checks and the independent audit passed.
-- Step 7 adds the joined replacement lifecycle fixture. All eleven conformance criteria pass; the full suite, independent product audit and delivery remain pending.
+- Step 7 adds the joined replacement lifecycle fixture. All eleven conformance criteria, full implementation checks and the independent product audit passed; delivery remains pending.
 
 The decision `adr/confine-the-worker-before-admitting-its-output` records the
 selected construction and rejected alternative.
