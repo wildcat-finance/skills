@@ -81,12 +81,14 @@ on 2026-09-09. Against its merge base
 `3cc0ad7f521985e46cf29f364a20e19fa99b64dd` the branch changed 73 files. This
 run adopts 30 and reworks 43: 10 regenerated, 22 reverted to the bytes of
 `59239072` and 11 rewritten, as section 4 of
-`docs/signature-only-authorship/study.md` lists. At this revision 26 of the 30
-adopted files keep the branch's bytes. In `AGENTS.md`, `README.md` and
+`docs/signature-only-authorship/study.md` lists. Of the 30 adopted files, 25
+keep the branch's bytes. In `AGENTS.md`, `README.md` and
 `plugins/hexaemeron/AGENTS.md`, Step 1's merge combined the branch's changes
-with those `main` made after that merge base, and this revision changed the
-assertions `tests/test_evolution_contract.py` makes on the latest Fiat history
-row. The branch contradicted the Creator's answers in two places: it deleted
+with those `main` made after that merge base; the revision of 2026-09-14
+changed the assertions `tests/test_evolution_contract.py` makes on the latest
+Fiat history row; and Step 6 corrected a docstring in
+`plugins/hexaemeron/tests/test_hexctl.py` that still described the withdrawn
+author and trailer checks, changing no assertion. The branch contradicted the Creator's answers in two places: it deleted
 the identity checker, and it rewrote the contributor-ranking promise and cut
 the parity check behind it.
 
