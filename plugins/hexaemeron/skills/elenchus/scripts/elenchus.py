@@ -1853,6 +1853,80 @@ def parent_guard_evidence(
         shutil.rmtree(workdir, ignore_errors=True)
 
 
+def _digest_blob(repo: Path, oid: str, budget: list[int]) -> bytes:
+    size = int(_native_git(repo, "cat-file", "-s", oid))
+    if size > MAX_GUARD_BLOB_BYTES or size > budget[0]:
+        raise ReportError("digest inspection exceeds the byte limit")
+    budget[0] -= size
+    return _native_git(repo, "cat-file", "blob", oid)
+
+
+def _digest_register(repo: Path, ref: str, path: str, budget: list[int]) -> dict:
+    entry = _tree_entry(repo, ref, path)
+    if entry is None or entry[0] not in ("100644", "100755"):
+        return {}
+    oid = entry[2]
+    raw = _digest_blob(repo, oid, budget)
+    try:
+        root = _json_object(raw)
+    except (ReportError, RecursionError):
+        return {}
+    found = {}
+    pending = [root]
+    visited = 0
+    while pending:
+        value = pending.pop()
+        visited += 1
+        if visited > MAX_GUARD_BLOBS * 16:
+            raise ReportError("a digest register exceeds the binding inspection limit")
+        if isinstance(value, dict):
+            if "path" in value and "sha256" in value:
+                try:
+                    name = _guard_path(value["path"])
+                except ReportError:
+                    continue
+                digest = value["sha256"]
+                if isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest):
+                    found.setdefault(name, set()).add(digest)
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+    return found
+
+
+def digest_rebinds(repo: Path, parent: str, ref: str, tests: list[str]) -> list[dict]:
+    """Record changed JSON path/sha256 pins without altering the overlay."""
+    rows = []
+    budget = [MAX_GUARD_BLOBS_BYTES]
+    registers = [path for path in tests if path.endswith(".json")]
+    if len(registers) > MAX_GUARD_BLOBS:
+        raise ReportError("too many digest registers to inspect")
+    for register in registers:
+        before = _digest_register(repo, parent, register, budget)
+        after = _digest_register(repo, ref, register, budget)
+        for path in sorted(before.keys() & after.keys()):
+            if len(before[path]) != 1 or len(after[path]) != 1:
+                continue
+            old, new = next(iter(before[path])), next(iter(after[path]))
+            if old == new:
+                continue
+            entries = [_tree_entry(repo, commit, path) for commit in (parent, ref)]
+            if any(entry is None or entry[0] not in ("100644", "100755") for entry in entries):
+                continue
+            digests = []
+            for entry in entries:
+                raw = _digest_blob(repo, entry[2], budget)
+                digests.append(hashlib.sha256(raw).hexdigest())
+            if digests != [old, new]:
+                continue
+            rows.append({"register": register, "path": path,
+                         "parent_sha256": old, "rebound_sha256": new,
+                         "target_overlaid": path in tests})
+            if len(rows) > MAX_GUARD_BLOBS:
+                raise ReportError("too many digest rebinds to inspect")
+    return rows
+
+
 def check(
     repo: Path,
     ref: str,
@@ -1877,6 +1951,11 @@ def check(
         return _base_result(
             ref, "inconclusive", tests, "the commit has no parent to compare against"
         )
+
+    try:
+        rebinds = digest_rebinds(repo, parent, ref, tests)
+    except (ReportError, ValueError, OSError) as err:
+        return _base_result(ref, "inconclusive", tests, str(err))
 
     workdir = Path(tempfile.mkdtemp(prefix="elenchus-"))
     tree = workdir / "tree"
@@ -1978,6 +2057,13 @@ def check(
                 }
             except ReportError as err:
                 result = _base_result(ref, "inconclusive", tests, str(err))
+        result["digest_rebinds"] = rebinds
+        mismatches = sum(not row["target_overlaid"] for row in rebinds)
+        if mismatches:
+            result["detail"] += (
+                f"; {mismatches} digest rebind(s) expect changed bytes while the target remains at its parent"
+                "; assertion attribution is unknown"
+            )
         result.update({"exit_code": run.returncode, "output": output})
         return result
     finally:
