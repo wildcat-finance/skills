@@ -18481,12 +18481,65 @@ def cmd_reset(args) -> None:
         write_breadcrumbs(origin)
 
 
+def worker_backend():
+    """Load the controller-owned native backend, never a worker-selected module."""
+    source = Path(__file__).resolve().with_name("worker_exec.py")
+    spec = importlib.util.spec_from_file_location("fiat_native_worker", source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def cmd_worker_exec(args) -> None:
+    backend = worker_backend()
+    try:
+        root = backend._absolute_directory(args.dir)
+        request_path = Path(args.request)
+        parent = backend._open_dir(request_path.parent.resolve(strict=True))
+        try:
+            data, _ = backend._read_regular(parent, request_path.name, 65536)
+        finally:
+            os.close(parent)
+        def unique(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise backend.Refusal("duplicate-request-key")
+                result[key] = value
+            return result
+        request = json.loads(data, object_pairs_hook=unique)
+        result = backend.controller_launch(root, request, Path(__file__))
+    except (backend.Refusal, OSError, ValueError, TypeError) as exc:
+        die("worker-exec refused: " + (exc.code if isinstance(exc, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+    if result["record"]["status"] != "ready":
+        raise SystemExit(1)
+
+
+def cmd_worker_admit(args) -> None:
+    backend = worker_backend()
+    try:
+        result = backend.controller_admit(args.dir, args.receipt, args.sha256, Path(__file__))
+    except (backend.Refusal, OSError, ValueError, TypeError, KeyError) as exc:
+        die("worker-admit refused: " + (exc.code if isinstance(exc, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+
+
 # ---------------------------------------------------------------------- cli
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hexctl", description=__doc__)
     p.add_argument("--dir", default=".", help="directory holding the state dir")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    sp = sub.add_parser("worker-exec", help="capture one declared native worker in retired scratch")
+    sp.add_argument("--request", required=True)
+    sp.set_defaults(fn=cmd_worker_exec)
+    sp = sub.add_parser("worker-admit", help="promote reports from one pinned private capture")
+    sp.add_argument("--receipt", required=True)
+    sp.add_argument("--sha256", required=True)
+    sp.set_defaults(fn=cmd_worker_admit)
 
     sp = sub.add_parser("init", help="start a run")
     sp.add_argument("--topic", required=True)

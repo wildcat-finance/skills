@@ -369,7 +369,7 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("skills#508", latest["evidence"])
         self.assertIn("native macOS worker supervisor", latest["change"])
         self.assertIn("shared stream and artifact byte cap", latest["change"])
-        self.assertIn("Controller launch admission remains pending", latest["change"])
+        self.assertIn("Controller launch and private report admission now bind", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
         filed_decision = by_version["fiat-v5.55.1"]
         self.assertEqual(filed_decision["axis"], "generation")

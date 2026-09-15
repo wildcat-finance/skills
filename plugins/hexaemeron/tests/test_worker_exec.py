@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import platform
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -21,6 +22,209 @@ worker = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = worker
 SPEC.loader.exec_module(worker)
 PYTHON = str(Path(sys.executable).resolve())
+
+
+@unittest.skipUnless(platform.system() == "Darwin", "native Darwin policy required")
+class ControllerLaunchTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        helper_spec = importlib.util.spec_from_file_location("launch_proofs", Path(__file__).with_name("prove_issue_508.py"))
+        self.proofs = importlib.util.module_from_spec(helper_spec)
+        helper_spec.loader.exec_module(self.proofs)
+        self.controller = SCRIPT.with_name("hexctl.py")
+
+    def launch(self):
+        request = self.proofs.dispatch_request(self.root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('immutable')")
+        return worker.controller_launch(self.root, request, self.controller)
+
+    def test_controller_dispatch_conformance_uses_real_tools_and_detached_writer(self):
+        self.proofs.execute("whole-launch-dispatch", self.root)
+
+    def test_origin_drift_is_preserved_and_fresh_launch_resnapshots(self):
+        self.proofs.execute("origin-drift-recovery", self.root)
+
+    def test_receipt_digest_mismatch_never_promotes(self):
+        launch = self.launch()
+        with self.assertRaisesRegex(worker.Refusal, "launch-receipt-mismatch"):
+            worker.controller_admit(self.root, launch["receipt"], "0"*64, self.controller)
+        self.assertFalse((self.root / ".hexaemeron/reports/result.json").exists())
+
+    def test_private_snapshot_replacement_and_source_change_refuse(self):
+        launch = self.launch()
+        snapshot = Path(launch["record"]["capture"]["snapshot"]) / "result.json"
+        snapshot.chmod(0o600)
+        snapshot.write_text("replaced")
+        with self.assertRaisesRegex(worker.Refusal, "private-snapshot-mismatch"):
+            worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        other_source = self.root / "controller.py"
+        other_source.write_text("changed")
+        with self.assertRaisesRegex(worker.Refusal, "stale-launch-receipt"):
+            worker.controller_admit(self.root, launch["receipt"], launch["sha256"], other_source)
+
+    def test_destination_alias_and_existing_bytes_are_never_overwritten(self):
+        launch = self.launch()
+        destination = self.root / ".hexaemeron/reports/result.json"
+        original = self.root / "outside"
+        original.write_text("preserve")
+        destination.symlink_to(original)
+        with self.assertRaises(FileExistsError):
+            worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual(original.read_text(), "preserve")
+
+    def test_request_rejects_metadata_destinations_and_duplicate_operands(self):
+        request = self.proofs.dispatch_request(self.root, "pass")
+        request["reports"][0]["source"] = ".hexaemeron/state.json"
+        with self.assertRaisesRegex(worker.Refusal, "invalid-report-destination"):
+            worker.controller_launch(self.root, request, self.controller)
+        request = self.proofs.dispatch_request(self.root, "pass")
+        request["reports"].append(dict(request["reports"][0]))
+        with self.assertRaisesRegex(worker.Refusal, "duplicate-report-destination"):
+            worker.controller_launch(self.root, request, self.controller)
+
+    def test_origin_changes_before_capture_returns_refuse_without_rollback(self):
+        origin = self.root / "user.txt"
+        origin.write_text("before")
+        request = self.proofs.dispatch_request(self.root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')",
+                    origin={"root": str(self.root), "paths": ["user.txt"]})
+        real_run = worker.run_worker
+        def independent_change(*args, **kwargs):
+            capture = real_run(*args, **kwargs)
+            origin.write_text("independent")
+            return capture
+        with mock.patch.object(worker, "run_worker", side_effect=independent_change):
+            launch = worker.controller_launch(self.root, request, self.controller)
+        self.assertEqual(launch["record"]["origin_status"], "changed-unattributed")
+        self.assertEqual(launch["record"]["status"], "refused")
+        self.assertEqual(launch["record"]["attribution"], "unknown")
+        self.assertEqual(origin.read_text(), "independent")
+        with self.assertRaisesRegex(worker.Refusal, "stale-launch-receipt"):
+            worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+
+    def test_origin_drift_during_admission_reads_refuses_before_promotion(self):
+        origin = self.root / "user.txt"
+        origin.write_text("before")
+        request = self.proofs.dispatch_request(self.root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')",
+                    origin={"root": str(self.root), "paths": ["user.txt"]})
+        launch = worker.controller_launch(self.root, request, self.controller)
+        original = worker.runtime_dependencies
+        def independent_change(runtime):
+            result = original(runtime)
+            origin.write_text("independent")
+            return result
+        with mock.patch.object(worker, "runtime_dependencies", side_effect=independent_change):
+            with self.assertRaisesRegex(worker.Refusal, "origin-drift-preserved-resnapshot-required"):
+                worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual(origin.read_text(), "independent")
+        self.assertFalse((self.root / ".hexaemeron/reports/result.json").exists())
+        observations = list((self.root / ".hexaemeron/worker-launches").glob("*.drift-*.json"))
+        self.assertEqual(len(observations), 1)
+        self.assertEqual(json.loads(observations[0].read_text())["attribution"], "unknown")
+        fresh = worker.controller_launch(self.root, request, self.controller)
+        self.assertNotEqual(fresh["record"]["origin_before"], launch["record"]["origin_before"])
+        self.assertEqual(worker.controller_admit(self.root, fresh["receipt"], fresh["sha256"],
+                                               self.controller)["status"], "admitted")
+
+    def test_origin_drift_during_promotion_refuses_and_keeps_partial_reports(self):
+        for boundary in ("result.json", ".complete.json"):
+            with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                origin = root / "user.txt"
+                origin.write_text("before")
+                request = self.proofs.dispatch_request(root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')",
+                    origin={"root": str(root), "paths": ["user.txt"]})
+                launch = worker.controller_launch(root, request, self.controller)
+                original = worker._exclusive
+                def independent_change(directory, name, data):
+                    result = original(directory, name, data)
+                    if name.endswith(boundary):
+                        origin.write_text("independent")
+                    return result
+                with mock.patch.object(worker, "_exclusive", side_effect=independent_change):
+                    with self.assertRaisesRegex(worker.Refusal, "origin-drift-preserved-resnapshot-required"):
+                        worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
+                self.assertEqual(origin.read_text(), "independent")
+                self.assertEqual((root / ".hexaemeron/reports/result.json").read_text(), "candidate")
+                markers = root / ".hexaemeron/worker-launches"
+                self.assertEqual(len(list(markers.glob("*.admission.json"))), 1)
+                self.assertEqual(len(list(markers.glob("*.complete.json"))), int(boundary == ".complete.json"))
+                self.assertEqual(len(list(markers.glob("*.drift-*.json"))), 1)
+                with self.assertRaises(worker.Refusal):
+                    worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
+
+    def test_promotion_is_one_shot_and_controller_metadata_alias_refuses(self):
+        launch = self.launch()
+        result = worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual(result["status"], "admitted")
+        with self.assertRaises(FileExistsError):
+            worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        fresh = self.root / "fresh"
+        fresh.mkdir()
+        (fresh / ".hexaemeron").symlink_to(self.root / ".hexaemeron", target_is_directory=True)
+        with self.assertRaises(OSError):
+            worker.controller_launch(fresh, self.proofs.dispatch_request(fresh, "pass"), self.controller)
+
+    def test_multiple_reports_keep_their_source_mapping_and_shared_cap(self):
+        request = self.proofs.dispatch_request(self.root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('aa'); "
+                    "pathlib.Path(sys.argv[2]).write_text('bbb')")
+        request["argv"].append(".hexaemeron/reports/second.json")
+        request["reports"].append({"index": 5, "source": request["argv"][5], "output": "a.json"})
+        request["output_cap_bytes"] = 5
+        launch = worker.controller_launch(self.root, request, self.controller)
+        worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual((self.root / ".hexaemeron/reports/result.json").read_text(), "aa")
+        self.assertEqual((self.root / ".hexaemeron/reports/second.json").read_text(), "bbb")
+        fresh = self.root / "capped"
+        fresh.mkdir()
+        request["root"] = str(fresh)
+        request["output_cap_bytes"] = 4
+        refused = worker.controller_launch(fresh, request, self.controller)
+        self.assertEqual(refused["record"]["status"], "refused")
+        self.assertEqual(refused["record"]["capture"]["code"], "output-cap")
+
+    def test_real_controller_directory_substitution_refuses_before_promotion(self):
+        for relative in (".hexaemeron/reports", ".hexaemeron/worker-launches", ".hexaemeron"):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp).resolve()
+                request = self.proofs.dispatch_request(root,
+                    "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('candidate')")
+                launch = worker.controller_launch(root, request, self.controller)
+                directory = root / relative
+                retired = root / "retired-directory"
+                directory.rename(retired)
+                shutil.copytree(retired, directory)
+                sentinel = directory / "independent.txt"
+                sentinel.write_text("preserve")
+                with self.assertRaisesRegex(worker.Refusal, "controller-directory-drift"):
+                    worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
+                self.assertEqual(sentinel.read_text(), "preserve")
+                self.assertFalse((root / ".hexaemeron/reports/result.json").exists())
+
+    def test_directory_rename_during_promotion_refuses_and_preserves_partial_evidence(self):
+        launch = self.launch()
+        original = worker._exclusive
+        retired = self.root / "retired-controller"
+        def replace_directory(directory, name, data):
+            if name == "result.json":
+                (self.root / ".hexaemeron").rename(retired)
+                (self.root / ".hexaemeron/reports").mkdir(parents=True)
+                (self.root / ".hexaemeron/reports/independent.txt").write_text("preserve")
+            return original(directory, name, data)
+        with mock.patch.object(worker, "_exclusive", side_effect=replace_directory):
+            with self.assertRaisesRegex(worker.Refusal, "controller-directory-drift"):
+                worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
+        self.assertEqual((self.root / ".hexaemeron/reports/independent.txt").read_text(), "preserve")
+        self.assertFalse((self.root / ".hexaemeron/reports/result.json").exists())
+        # This interleaving occurs after the pre-check. The held descriptor
+        # preserves the old directory; the post-check must refuse completion.
+        self.assertEqual((retired / "reports/result.json").read_text(), "immutable")
+        self.assertFalse(list((retired / "worker-launches").glob("*.complete.json")))
 
 
 class RequestTests(unittest.TestCase):

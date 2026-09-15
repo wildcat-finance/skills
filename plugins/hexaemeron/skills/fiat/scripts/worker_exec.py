@@ -8,6 +8,7 @@ This module records observations; it writes no Fiat receipt or Git metadata.
 """
 
 import argparse
+import base64
 from dataclasses import dataclass
 import hashlib
 import json
@@ -23,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 
 SCHEMA = "fiat-worker-capture/v1"
 MAX_CAP = 16 * 1024 * 1024
@@ -30,6 +32,7 @@ DEFAULT_CAP = 1024 * 1024
 MAX_FILES = 32
 MAX_ENTRIES = 128
 MAX_DEPTH = 8
+MAX_RECEIPT = MAX_CAP * 2 + 262144
 CHUNK = 65536
 TOOLS = ("patch", "python", "shell")
 SANDBOX = Path("/usr/bin/sandbox-exec")
@@ -368,7 +371,7 @@ def _capture(proc, output_fd, declared, cap, deadline):
 
 
 def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
-               output_cap_bytes=DEFAULT_CAP, tools=TOOLS):
+               output_cap_bytes=DEFAULT_CAP, tools=TOOLS, report_operands=()):
     """Run the finite native backend, returning captured files or a refusal.
 
     Inputs are literal argv, declared output paths and a shared stream/artifact
@@ -395,6 +398,13 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
             or len(set(outputs)) != len(outputs)):
         raise Refusal("invalid-artifact-inventory")
     declared = tuple(str(_relative(p)) for p in outputs)
+    if (type(report_operands) not in (list, tuple) or len(report_operands) > MAX_FILES
+            or any(type(item) is not dict or set(item) != {"index", "source", "output"}
+                   or type(item["index"]) is not int or not 0 < item["index"] < len(argv)
+                   or item["source"] != argv[item["index"]] or item["output"] not in declared
+                   for item in report_operands)
+            or len({item["index"] for item in report_operands}) != len(report_operands)):
+        raise Refusal("invalid-report-operands")
     try:
         dependencies = runtime_dependencies(runtime)
     except (OSError, subprocess.SubprocessError, UnicodeError) as exc:
@@ -417,6 +427,10 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
     policy_path = private / "policy.sb"
     policy_path.write_text(policy)
     policy_path.chmod(0o400)
+    source_argv = list(argv)
+    argv = list(argv)
+    for operand in report_operands:
+        argv[operand["index"]] = str(output / operand["output"])
     env = _environment(scratch, output)
     deadline = started + deadline_seconds
     record = {"schema": SCHEMA, "event": "fiat_worker_capture", "launch": launch.name,
@@ -428,7 +442,9 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
               "supervisor": _identity(Path(__file__).resolve()),
               "policy_sha256": hashlib.sha256(policy.encode()).hexdigest(),
               "deadline_seconds": deadline_seconds, "output_cap_bytes": output_cap_bytes,
-              "argv": list(argv), "outputs": list(declared), "snapshot": None,
+              "argv": list(argv), "source_argv": source_argv,
+              "report_operands": list(report_operands),
+              "outputs": list(declared), "snapshot": None,
               "artifacts": [], "artifact_bytes": 0, "stream_bytes": 0,
               "status": "refused", "code": None, "returncode": None}
     stdout = stderr = b""
@@ -484,6 +500,327 @@ def run_worker(target_root, argv, *, outputs=(), deadline_seconds=30,
     record["elapsed_seconds"] = time.monotonic() - started
     record["recovery"] = "Inspect this retired scratch; start a fresh launch after repair."
     return Capture(record, stdout, stderr)
+
+
+def _json_bytes(value):
+    return (json.dumps(value, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
+
+
+def _digest(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def _read_regular(directory, name, cap):
+    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > cap:
+            raise Refusal("unsafe-controller-input")
+        data = bytearray()
+        while len(data) <= cap:
+            part = os.read(fd, min(CHUNK, cap + 1 - len(data)))
+            if not part:
+                break
+            data.extend(part)
+        if len(data) > cap or _stamp(before) != _stamp(os.fstat(fd)):
+            raise Refusal("controller-input-drift")
+        return bytes(data), _stamp(before)
+    finally:
+        os.close(fd)
+
+
+def _directory_at(root_fd, parts, create=False):
+    directory = os.dup(root_fd)
+    try:
+        for part in parts:
+            if create:
+                try:
+                    os.mkdir(part, mode=0o700, dir_fd=directory)
+                except FileExistsError:
+                    pass
+            child = _open_dir(part, directory)
+            os.close(directory)
+            directory = child
+        return directory
+    except BaseException:
+        os.close(directory)
+        raise
+
+
+def _exclusive(directory, name, data):
+    fd = os.open(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                 0o400, dir_fd=directory)
+    try:
+        with os.fdopen(fd, "wb", closefd=False) as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _controller_directories(root, root_fd, metadata, receipts, reports):
+    """Check namespace links against held descriptors; record all parent inodes.
+
+    Rechecks detect observed renames, not atomic namespace stability. Writes
+    use the held directories; a rename after a pre-check can leave partial
+    output there, so callers recheck before reporting successful admission.
+    """
+    def identity(info):
+        return [info.st_dev, info.st_ino]
+    try:
+        links = ((None, root, root_fd), (root_fd, ".hexaemeron", metadata),
+                 (metadata, "worker-launches", receipts), (metadata, "reports", reports))
+        identities = []
+        for parent, name, held in links:
+            linked = os.stat(name, dir_fd=parent, follow_symlinks=False)
+            actual = os.fstat(held)
+            if not stat.S_ISDIR(linked.st_mode) or identity(linked) != identity(actual):
+                raise Refusal("controller-directory-drift")
+            identities.append(identity(actual))
+        return identities
+    except OSError as exc:
+        raise Refusal("controller-directory-drift") from exc
+
+
+def _origin_snapshot(origin):
+    """Hash only the explicitly declared regular files; never write origin."""
+    root = _absolute_directory(origin["root"])
+    fd = _open_dir(root)
+    try:
+        info = os.fstat(fd)
+        records = []
+        remaining = MAX_CAP
+        for name in origin["paths"]:
+            parts = _relative(name).parts
+            parent = _directory_at(fd, parts[:-1])
+            try:
+                try:
+                    data, stamp = _read_regular(parent, parts[-1], remaining)
+                    remaining -= len(data)
+                    records.append({"path": name, "sha256": _digest(data),
+                                    "bytes": len(data), "identity": list(stamp)})
+                except FileNotFoundError:
+                    records.append({"path": name, "missing": True})
+            finally:
+                os.close(parent)
+        return {"root": str(root), "identity": [info.st_dev, info.st_ino], "files": records}
+    finally:
+        os.close(fd)
+
+
+def _launch_request(root, request):
+    fields = {"schema", "root", "argv", "tools", "deadline_seconds",
+              "output_cap_bytes", "reports", "origin"}
+    if type(request) is not dict or set(request) != fields or request["schema"] != "fiat-worker-request/v1":
+        raise Refusal("invalid-launch-request")
+    if request["root"] != str(root):
+        raise Refusal("request-root-mismatch")
+    reports = request["reports"]
+    if type(reports) is not list or not 1 <= len(reports) <= MAX_FILES:
+        raise Refusal("invalid-report-inventory")
+    outputs, operands, destinations = [], [], []
+    for report in reports:
+        if type(report) is not dict or set(report) != {"index", "source", "output"}:
+            raise Refusal("invalid-report-declaration")
+        source = report["source"]
+        if type(source) is not str:
+            raise Refusal("invalid-report-destination")
+        path = PurePosixPath(source)
+        if (path.is_absolute() or str(path) != source or
+                path.parts[:2] != (".hexaemeron", "reports") or len(path.parts) != 3):
+            raise Refusal("invalid-report-destination")
+        _relative(path.name)
+        outputs.append(str(_relative(report["output"])))
+        operands.append(dict(report))
+        destinations.append(str(root / source))
+    if len(set(destinations)) != len(destinations):
+        raise Refusal("duplicate-report-destination")
+    origin = request["origin"]
+    if (type(origin) is not dict or set(origin) != {"root", "paths"}
+            or type(origin["paths"]) is not list or len(origin["paths"]) > 128
+            or any(type(p) is not str for p in origin["paths"])
+            or len(set(origin["paths"])) != len(origin["paths"])):
+        raise Refusal("invalid-origin-inventory")
+    _absolute_directory(origin["root"])
+    for name in origin["paths"]:
+        _relative(name)
+    return outputs, operands, destinations
+
+
+def controller_launch(root, request, controller_source):
+    """Capture one native launch and retain a controller-owned admission record.
+
+    This is a separate execution path, not a Fiat phase receipt. A caller must
+    retain the returned receipt digest before asking to promote its files.
+    Origin changes are observed without attribution and never rolled back.
+    """
+    root = _absolute_directory(root)
+    outputs, operands, destinations = _launch_request(root, request)
+    request = json.loads(_json_bytes(request))
+    controller_identity = _identity(Path(controller_source).resolve())
+    before = _origin_snapshot(request["origin"])
+    root_fd = _open_dir(root)
+    metadata = receipts = reports_fd = None
+    try:
+        metadata = _directory_at(root_fd, (".hexaemeron",), create=True)
+        receipts = _directory_at(metadata, ("worker-launches",), create=True)
+        reports_fd = _directory_at(metadata, ("reports",), create=True)
+        directories = _controller_directories(root, root_fd, metadata, receipts, reports_fd)
+        for destination in destinations:
+            try:
+                os.stat(Path(destination).name, dir_fd=reports_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            raise Refusal("report-destination-exists")
+        capture = run_worker(root, request["argv"], outputs=outputs, tools=request["tools"],
+                             deadline_seconds=request["deadline_seconds"],
+                             output_cap_bytes=request["output_cap_bytes"], report_operands=operands)
+        try:
+            after = _origin_snapshot(request["origin"])
+            origin_status = "unchanged" if before == after else "changed-unattributed"
+        except (OSError, Refusal):
+            after = None
+            origin_status = "unreadable-unattributed"
+        record = {"schema": "fiat-worker-launch/v1", "request": request,
+                  "request_sha256": _digest(_json_bytes(request)),
+                  "controller": controller_identity,
+                  "controller_directories": directories,
+                  "root_identity": [os.fstat(root_fd).st_dev, os.fstat(root_fd).st_ino],
+                  "capture": capture.record, "destinations": destinations,
+                  "streams": {name: {"base64": base64.b64encode(data).decode("ascii"),
+                                     "bytes": len(data), "sha256": _digest(data)}
+                              for name, data in (("stdout", capture.stdout), ("stderr", capture.stderr))},
+                  "stream_evidence": "Untrusted worker output; no inferred syscall attribution.",
+                  "origin_before": before, "origin_after": after,
+                  "origin_status": origin_status, "attribution": "unknown",
+                  "status": "ready" if origin_status == "unchanged" and
+                  capture.record["status"] == "captured" and controller_identity ==
+                  _identity(Path(controller_source).resolve()) else "refused",
+                  "recovery": "Preserve origin changes; start a fresh launch to resnapshot."}
+        data = _json_bytes(record)
+        name = uuid.uuid4().hex + ".json"
+        if _controller_directories(root, root_fd, metadata, receipts, reports_fd) != directories:
+            raise Refusal("controller-directory-drift")
+        _exclusive(receipts, name, data)
+        os.fsync(receipts)
+        _controller_directories(root, root_fd, metadata, receipts, reports_fd)
+        return {"receipt": str(root / ".hexaemeron/worker-launches" / name),
+                "sha256": _digest(data), "record": record}
+    finally:
+        if receipts is not None:
+            os.close(receipts)
+        if reports_fd is not None:
+            os.close(reports_fd)
+        if metadata is not None:
+            os.close(metadata)
+        os.close(root_fd)
+
+
+def controller_admit(root, receipt, digest, controller_source):
+    """Verify a pinned private capture, then exclusively publish its reports."""
+    root = _absolute_directory(root)
+    path = Path(receipt)
+    if (path.parent != root / ".hexaemeron/worker-launches" or
+            len(path.stem) != 32 or any(c not in "0123456789abcdef" for c in path.stem)
+            or path.suffix != ".json"):
+        raise Refusal("invalid-launch-receipt-path")
+    root_fd = _open_dir(root)
+    metadata = receipts = reports = snapshot_fd = None
+    try:
+        metadata = _directory_at(root_fd, (".hexaemeron",))
+        receipts = _directory_at(metadata, ("worker-launches",))
+        reports = _directory_at(metadata, ("reports",))
+        data, _ = _read_regular(receipts, path.name, MAX_RECEIPT)
+        if _digest(data) != digest:
+            raise Refusal("launch-receipt-mismatch")
+        record = json.loads(data)
+        if _controller_directories(root, root_fd, metadata, receipts, reports) != record["controller_directories"]:
+            raise Refusal("controller-directory-drift")
+        request = record["request"]
+        outputs, operands, destinations = _launch_request(root, request)
+        if (record["schema"] != "fiat-worker-launch/v1" or record["status"] != "ready"
+                or record["request_sha256"] != _digest(_json_bytes(request))
+                or record["controller"] != _identity(Path(controller_source).resolve())
+                or record["root_identity"] != [os.fstat(root_fd).st_dev, os.fstat(root_fd).st_ino]
+                or record["destinations"] != destinations):
+            raise Refusal("stale-launch-receipt")
+        def check_origin():
+            current_origin = _origin_snapshot(request["origin"])
+            if current_origin != record["origin_before"]:
+                _exclusive(receipts, path.stem + ".drift-" + uuid.uuid4().hex + ".json",
+                           _json_bytes({"event": "worker_admission_refused", "receipt_sha256": digest,
+                                        "code": "origin-drift", "attribution": "unknown",
+                                        "origin_before": record["origin_before"],
+                                        "origin_observed": current_origin,
+                                        "recovery": "Preserve origin changes; launch again to resnapshot."}))
+                os.fsync(receipts)
+                raise Refusal("origin-drift-preserved-resnapshot-required")
+        check_origin()
+        capture = record["capture"]
+        tools, runtime, inventory = tool_inventory()
+        dependencies = runtime_dependencies(runtime)
+        if (capture["supervisor"] != _identity(Path(__file__).resolve())
+                or capture["executables"] != inventory or capture["runtime_dependencies"] != dependencies
+                or capture["native_backend"] != _identity(SANDBOX)
+                or capture["tool_inventory"] != request["tools"]
+                or capture["deadline_seconds"] != request["deadline_seconds"]
+                or capture["output_cap_bytes"] != request["output_cap_bytes"]
+                or capture["source_argv"] != request["argv"] or capture["report_operands"] != operands
+                or capture["outputs"] != outputs or capture["status"] != "captured"):
+            raise Refusal("launch-binding-mismatch")
+        scratch = Path(capture["scratch_root"])
+        launch = scratch.parent
+        if (launch.parent != root / "tmp" or not launch.name.startswith("fiat-worker-")
+                or scratch.name != "scratch" or capture["snapshot"] != str(launch / "private/snapshot")
+                or capture["target_root"] != str(root)
+                or capture["policy_sha256"] != _digest(policy_text(scratch, runtime, inventory, dependencies).encode())):
+            raise Refusal("snapshot-binding-mismatch")
+        resolved_argv = list(request["argv"])
+        for operand in operands:
+            resolved_argv[operand["index"]] = str(scratch / "output" / operand["output"])
+        if capture["argv"] != resolved_argv:
+            raise Refusal("launch-argv-mismatch")
+        snapshot_fd = _directory_at(root_fd, ("tmp", launch.name, "private", "snapshot"))
+        remaining = request["output_cap_bytes"] - capture["stream_bytes"]
+        contents = []
+        if [a["path"] for a in capture["artifacts"]] != sorted(outputs):
+            raise Refusal("artifact-manifest-mismatch")
+        by_output = {item["output"]: destination for item, destination in zip(request["reports"], destinations)}
+        for artifact in capture["artifacts"]:
+            parts = _relative(artifact["path"]).parts
+            parent = _directory_at(snapshot_fd, parts[:-1])
+            try:
+                content, _ = _read_regular(parent, parts[-1], remaining)
+            finally:
+                os.close(parent)
+            if _digest(content) != artifact["sha256"] or len(content) != artifact["bytes"]:
+                raise Refusal("private-snapshot-mismatch")
+            remaining -= len(content)
+            contents.append((Path(by_output[artifact["path"]]).name, content))
+        # Claim once before publication. Any partial publication remains visible
+        # and requires operator inspection; retry never overwrites its files.
+        _controller_directories(root, root_fd, metadata, receipts, reports)
+        check_origin()
+        _exclusive(receipts, path.stem + ".admission.json", _json_bytes({"receipt_sha256": digest,
+                   "status": "promotion-started", "destinations": destinations}))
+        for name, content in contents:
+            _controller_directories(root, root_fd, metadata, receipts, reports)
+            check_origin()
+            _exclusive(reports, name, content)
+            _controller_directories(root, root_fd, metadata, receipts, reports)
+            check_origin()
+        os.fsync(reports)
+        _exclusive(receipts, path.stem + ".complete.json", _json_bytes({"receipt_sha256": digest,
+                   "status": "reports-written", "destinations": destinations}))
+        os.fsync(receipts)
+        _controller_directories(root, root_fd, metadata, receipts, reports)
+        check_origin()
+        return {"status": "admitted", "receipt_sha256": digest, "destinations": destinations}
+    finally:
+        for fd in (receipts, reports, snapshot_fd, metadata, root_fd):
+            if fd is not None:
+                os.close(fd)
 
 
 def _start(arguments):

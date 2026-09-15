@@ -196,3 +196,13 @@ Complete replacement Files: plugins/hexaemeron/tests/prove_issue_508.py; plugins
 **Steps touched.** Step 2.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
+
+### Amendment -- 2026-09-14
+
+**What changed.** Complete replacement Files: plugins/hexaemeron/skills/fiat/scripts/hexctl.py; plugins/hexaemeron/skills/fiat/scripts/worker_exec.py; plugins/hexaemeron/tests/test_worker_exec.py; plugins/hexaemeron/tests/prove_issue_508.py; plugins/hexaemeron/agents/mason.md; plugins/hexaemeron/skills/fiat/EVOLUTION.md; docs/fiat-508-residual/README.md; docs/fiat-508-residual/amended-runbook.md. In EVOLUTION.md, update only the current relation-resolved Fiat row to describe the delivered controller admission. In the README, update the current admission status while preserving historical observations and limits. Preserve this amendment in the byte-identical committed runbook copy. Also update declared check ownership and generated copies when their sources change.
+
+**Why.** Step 3 implements controller launch and admission, while the current Fiat row and README still say admission is pending. Those statements would misdescribe the implemented step. This correction permits their status refresh and the committed amendment copy, within the same version relation and held frontier.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
