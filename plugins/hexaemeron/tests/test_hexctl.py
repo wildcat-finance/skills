@@ -5569,8 +5569,8 @@ class GitHubSignerDiagnosis(unittest.TestCase):
         """The diagnosis must not turn a passing verification into a refusal.
 
         Checks which refusal, not whether one happened. A commit that verifies
-        still goes on to the author and trailer checks, and those refuse this
-        synthetic sha for reasons that have nothing to do with signing. What must
+        may return or exit; the test accepts either and reads only the error
+        output it captured. What must
         not appear is a signature complaint.
         """
         module = self.hexctl
