@@ -1148,3 +1148,37 @@ step's Entry, Exit, Files, Tests or Disciplines field changes.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-12
+
+**What changed.** Two values the reference listed as open are settled here, so
+the controller no longer ships either ahead of its record. The fixed text of
+the archive's `README.txt` is the `CHECKPOINT_ARCHIVE_README` constant, 815
+bytes of UTF-8 whose SHA-256 is
+`5d574e8e218d1b59d79be786269c5a86928fdb90762da0c0c62c97cb90cf9371`: a title
+line, one paragraph naming the five carried members and pointing at
+`checkpoint.json` as the content manifest, a restore rule giving the inspect
+and restore commands in that order, and a closing paragraph stating that the
+outer digest travels beside the archive in `checkpoint.zip.sha256` and is
+handed over separately, and that a restored run executes nothing until the
+operator runs `hexctl next`. The closed reason vocabulary behind
+`identity.status` `unavailable` has exactly one member, `symbolic-base`, and no
+other value may appear: a run whose base is still symbolic predates the
+immutable-base rule and can mint no identity, and every other identity failure
+refuses rather than continuing. Nothing else moves: no refusal class, ceiling,
+schema field, entry path, budget, secret pattern or fixture id changes.
+**Why.** Step 2's audit round 1 raised S2-R1b-04. The reference's `## Open
+items` says each of these is settled by a dated study amendment before the code
+that needs it, and the controller had shipped both without one: the README text
+as a module constant and the reason as
+`CHECKPOINT_ARCHIVE_IDENTITY_UNAVAILABLE` at line 591. A one-member vocabulary
+still has to be written down, because the reference's silence would otherwise
+read as room for a second reason that the code does not admit. Pinning the
+README by digest rather than by restatement keeps the record exact without
+creating a second copy that can drift from the constant, which is the failure
+the single content manifest exists to avoid.
+**Steps touched.** Step 2 ships both values, and steps 3, 4 and 5 read them
+back through the inspector and the restore transaction. No step's Entry, Exit,
+Files, Tests or Disciplines field changes.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

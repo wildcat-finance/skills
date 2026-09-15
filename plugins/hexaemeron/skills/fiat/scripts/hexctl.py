@@ -53,6 +53,7 @@ import sys
 import tempfile
 import time
 import urllib.parse
+import zipfile
 from pathlib import Path
 
 STATE_DIR_NAME = ".hexaemeron"
@@ -549,6 +550,265 @@ CHECKPOINT_IDENTITY_DOMAIN = b"wildcat-fiat-checkpoint-identity/v1\0"
 CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX = 100_000
 CHECKPOINT_IDENTITY_SKILLS_MAX = 32
 CHECKPOINT_IDENTITY_TEXT_BYTES_MAX = 128
+
+CHECKPOINT_ARCHIVE_SCHEMA = "fiat-checkpoint-archive/v1"
+CHECKPOINT_ARCHIVE_EXPORT_SCHEMA = "fiat-checkpoint-archive-export/v1"
+CHECKPOINT_ARCHIVE_PROOF_SCHEMA = "fiat-checkpoint-signature-proof/v1"
+CHECKPOINT_ARCHIVE_STORE_DIR = "checkpoints"
+CHECKPOINT_ARCHIVE_FILE = "checkpoint.zip"
+CHECKPOINT_ARCHIVE_SIDECAR_FILE = "checkpoint.zip.sha256"
+CHECKPOINT_ARCHIVE_MANIFEST_ENTRY = "checkpoint.json"
+CHECKPOINT_ARCHIVE_README_ENTRY = "README.txt"
+CHECKPOINT_ARCHIVE_BUNDLE_ENTRY = "git/repository.bundle"
+CHECKPOINT_ARCHIVE_CAPSULE_DIR = "controller-capsule"
+CHECKPOINT_ARCHIVE_IDENTITY_ENTRY = "identity/checkpoint-identity.json"
+CHECKPOINT_ARCHIVE_PROOF_ENTRY = "proof/signatures.json"
+CHECKPOINT_ARCHIVE_PUBKEY_ENTRY = "proof/pubkey.asc"
+CHECKPOINT_ARCHIVE_SIGNERS_ENTRY = "proof/allowed_signers"
+CHECKPOINT_ARCHIVE_ACCEPTANCE_DIR = "acceptance/prior"
+CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT = "outside"
+CHECKPOINT_ARCHIVE_ENTRIES_MAX = 4200
+CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX = 1300 * 1024 * 1024
+CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX = 1024 * 1024 * 1024
+CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX = 64 * 1024 * 1024
+CHECKPOINT_ARCHIVE_NAME_BYTES_MAX = 1024
+CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX = 255
+CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX = 64
+CHECKPOINT_ARCHIVE_ENTRY_MODE = 0o100644
+CHECKPOINT_ARCHIVE_ENTRY_TIME = (1980, 1, 1, 0, 0, 0)
+CHECKPOINT_ARCHIVE_CREATE_SYSTEM = 3
+CHECKPOINT_ARCHIVE_ZIP_VERSION = 20
+CHECKPOINT_ARCHIVE_STAGES = (
+    "export",
+    "identity",
+    "bundle",
+    "proof",
+    "pack",
+    "inspect",
+    "publish",
+)
+CHECKPOINT_ARCHIVE_SIGNATURE_FORMATS = ("openpgp", "ssh")
+CHECKPOINT_ARCHIVE_IDENTITY_UNAVAILABLE = "symbolic-base"
+CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
+    {
+        "boundary-unaccepted",
+        "worktree-dirty",
+        "boundary-occupied",
+        "ref-disagreement",
+        "bundle-incomplete",
+        "bundle-oversized",
+        "signature-unverified",
+        "signature-format-unsupported",
+        "identity-unavailable",
+        "secret-shaped-member",
+        "manifest-mismatch",
+    }
+)
+"""The classes `checkpoint archive` may print. One name, exit 1, nothing else.
+
+Closed here so a new refusal site cannot invent a class the reference does not
+name, and so the inspector of the next step reads the same vocabulary.
+"""
+CHECKPOINT_ARCHIVE_SECRET_LABEL = rb"[A-Z0-9]{1,16}(?: [A-Z0-9]{1,16}){0,3}"
+"""The PEM armour label the pattern below admits: up to four words of up to 16.
+
+Bounded so the longest header the set can match is a number. The study's
+2026-09-09 amendment requires the scan's carry to be derived from that number,
+and an unbounded label leaves no number to derive it from. Every armour label
+in use is far shorter: `RSA`, `EC`, `DSA`, `ENCRYPTED`, `OPENSSH`.
+"""
+CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS = (
+    re.compile(rb"-----BEGIN (?:" + CHECKPOINT_ARCHIVE_SECRET_LABEL + rb" )?PRIVATE KEY-----"),
+    re.compile(rb"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
+)
+"""The two armour headers, which refuse only with key material after them.
+
+These match a header and nothing more, so on their own they cannot tell a key
+from a document that names one. The study's second 2026-09-09 amendment settles
+that: these two forms count as secret-shaped only as a block, meaning the header
+plus at least one line of base64 body or its matching `-----END` marker. A
+header named in prose or quoted in a code span is not a secret, which is what
+lets a run archive its own specification text.
+"""
+CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS = (
+    re.compile(rb"ghp_[A-Za-z0-9]{36}"),
+    re.compile(rb"github_pat_[A-Za-z0-9_]{22,}"),
+    re.compile(rb"AKIA[0-9A-Z]{16}"),
+    re.compile(rb"xox[baprs]-"),
+)
+"""The four token shapes, which refuse on the match alone.
+
+Each is self-delimiting: the characters that make it a credential are the whole
+match, so there is no surrounding block to read and the amendment leaves them
+unchanged.
+"""
+CHECKPOINT_ARCHIVE_SECRET_PATTERNS = (
+    CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS + CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS
+)
+"""The six shapes a member may not carry, as the study's amended section 4.
+
+The OpenSSH header the earlier set listed separately is dropped: the PEM
+pattern above matches it on its own, so it was a sixth name for five patterns.
+OpenPGP armour takes its place, which no pattern reached before, because its
+header ends `PRIVATE KEY BLOCK-----` rather than `PRIVATE KEY-----` and this is
+the one private-key armour a command that exports OpenPGP material can meet.
+"""
+CHECKPOINT_ARCHIVE_SECRET_HEADERS = (
+    b"-----BEGIN " + b" ".join([b"A" * 16] * 4) + b" PRIVATE KEY-----",
+    b"-----BEGIN PGP PRIVATE KEY BLOCK-----",
+    b"ghp_" + b"A" * 36,
+    b"github_pat_" + b"A" * 22,
+    b"AKIA" + b"A" * 16,
+    b"xoxb-",
+)
+"""The longest run each pattern above needs in view, in the same order.
+
+One of the six, `github_pat_`, has an open-ended tail. Wherever it matches at
+all a match of the length recorded here also exists at the same offset, because
+the tail repeats one character class, so this length is still what the scan has
+to carry to see it across a chunk boundary.
+"""
+CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK = rb"(?:\x0d|\\r|\\u000[dD])?(?:\x0a|\\n|\\u000[aA])"
+"""What ends a line for the body witness: a line feed as a byte, as the
+two-character escape or as JSON's six-character numeric escape in either
+letter case, and the carriage return that may precede it in the matching form.
+
+The study's third 2026-09-09 amendment settles the escape. A PEM key held as a
+JSON string value carries no newline byte at all: `json.dumps` writes each one
+as the two characters `\\` and `n`, so a key inside `state.json` or on one
+`ledger.jsonl` line is one physical line however many body lines it had, and a
+witness that only reads the byte never arrives. Both of those files are scan
+targets the study names, so reading the escape as a delimiter is what makes the
+block rule cover the shape a controller file actually carries a credential in.
+
+The 2026-09-10 amendment adds the carriage return, and withdraws the earlier
+one's claim that reading the escape closed the whole hole. `json.dumps` writes
+a CRLF line ending as the four characters `\\`, `r`, `\\`, `n`, and a witness
+that reads only the carriage-return byte stops one escape short of the line
+feed behind it, so a CRLF key in a JSON string value published while an
+otherwise identical line-feed key refused. That was S2-R4-02.
+
+The second 2026-09-10 amendment adds the numeric escapes. `\\u000a` is as
+legal a JSON spelling of a line feed as `\\n`, `json.loads` returns the same
+key from either, and the hex digits may be written in either case, so a
+witness that read only the two-character form let a key through on the choice
+of escape. That was S2-R6-01. The third 2026-09-10 amendment closed the
+residue this set alone leaves. A body carrying no line delimiter in any of these forms,
+such as a key whose line breaks were stripped rather than encoded, is refused
+on its footer, which the separate footer reach of 9,984 bytes puts in view for
+every key up to the declared largest of 8,192 bits. What the set still does not
+see is a key whose modulus exceeds that declared size, and the study states
+that residue rather than implying the class is shut.
+"""
+CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
+    rb"(?:\A|(?<=\x0a)|(?<=\\n)|(?<=\\u000[aA]))"
+    rb"[A-Za-z0-9+/=]{16,}[ \t]*"
+    rb"(?=\Z|" + CHECKPOINT_ARCHIVE_SECRET_LINE_BREAK + rb")"
+)
+"""One whole line of base64, which is what a key's body looks like.
+
+The line rather than a run: a bare run of base64 characters is also what a
+SHA-256 digest, a commit id and half the identifiers in this repository look
+like, and a document quoting an armour header near one of those is exactly the
+false refusal the amendment removes. A body line is the whole line, so prose
+around a header never supplies one.
+
+Both delimiters are zero-width, so a match still starts at the body's first
+byte and the lookahead comparison against the header below is unchanged. The
+alternative, consuming the delimiter, would make `finditer` skip every second
+body line in a run of them, because one match's trailing delimiter is the
+next one's leading delimiter. The carriage return moved into that lookahead
+with the first 2026-09-10 amendment: the tail used to consume a `\\r` byte and
+so could only ever see the raw half of the pair. The numeric escape joined
+both lookarounds with the second: a line that ends in `\\u000a` is followed by
+a line that begins after it, and a lookbehind naming only the byte and the
+two-character escape would find the first body line and none after it.
+"""
+CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
+"""The longest line the scan will read between a header and the key material.
+
+RFC 4880 armour puts optional `Version`, `Comment`, `MessageID`, `Hash` and
+`Charset` lines after the header, and a `Comment` is free text; PEM and OpenSSH
+put none. This bounds one of them.
+"""
+CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES = 7
+"""How many such lines: the five armour headers, one blank line, one body line."""
+CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD = (
+    CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE * CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES
+)
+"""Bytes after a header in which the body has to start.
+
+This bounds where the key material begins, which is what the armour lines
+above measure. It is not how far the footer may sit, because the footer sits
+past the whole body and the body is the larger distance by an order of
+magnitude; `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD` below carries that.
+"""
+CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY = 8192
+"""The largest RSA modulus, in bits, whose footer the scan undertakes to reach.
+
+Measured on keys generated in process, as the distance from the end of the
+header to the start of the footer, in the worst spelling a JSON string value
+can give a line break, the twelve bytes of two numeric escapes: 1,900 bytes at
+2,048 bits, 2,812 at 3,072, 3,732 at 4,096 and 7,380 at 8,192. The reach below
+covers the largest of those with room, and a key beyond this size is stated
+residue rather than a silent gap.
+"""
+CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD = (
+    CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD + CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY
+)
+"""Bytes after a header in which that header's own footer has to appear.
+
+The armour allowance plus the largest body, because the two distances compose:
+the body may start anywhere inside the armour lines, and then runs its own
+length before the footer.
+
+Separating this from the block lookahead is S2-R7-01. While the two were one
+constant at 1,792 bytes, the footer of any key of 3,072 bits or more lay out of
+reach -- 2,356 to 2,812 bytes past the header at 3,072 bits and 3,132 to 3,732
+at 4,096 -- so for exactly the sizes in use the block rule had only its body
+witness and no second one. Each spelling of a line break the body witness could
+not read was therefore a complete bypass rather than a degradation, which is
+what produced S2-R4-02 and S2-R6-01 in successive rounds. Over the 164 paths
+and 7,717,110 bytes this run's own export scans, best of five, the scan takes
+42.07 ms at the old 1,792 and 39.07 ms at 8,192 and refuses none of them at
+either, so the reach costs no measurable time and adds no false refusal.
+"""
+CHECKPOINT_ARCHIVE_SECRET_WINDOW = (
+    max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
+    + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
+)
+"""Bytes carried between scan chunks: the longest header plus its lookahead.
+
+Derived rather than declared, so a pattern whose header outgrows the carry
+cannot be added without moving it. Both terms are load-bearing. A match of n
+bytes that straddles a boundary leaves at most n - 1 of them in the chunk
+before it, so the header term brings the whole header into one search. Block
+semantics then need the bytes after it as well, and a header sitting more than
+the lookahead before the end of a chunk would otherwise be dropped from the
+carry while its body lies in the next chunk, so the carry has to cover the
+header and everything the block decision reads after it. That is the footer
+reach rather than the block lookahead, because the footer is the further of
+the two the decision consults.
+"""
+CHECKPOINT_ARCHIVE_README = """Fiat checkpoint archive
+
+This archive carries one Fiat run at one accepted boundary: the controller
+capsule, a complete-history Git bundle of the run's refs, the signature proof
+for the run's receipted commits, the signer's public key material, and the
+semantic checkpoint identity. checkpoint.json is the content manifest; every
+other member is listed there with its exact size and SHA-256.
+
+Restore rule. Verify before extracting anything:
+
+  hexctl checkpoint inspect --archive checkpoint.zip --sha256 <outer-hex>
+  hexctl --dir <empty-destination> checkpoint restore \\
+      --archive checkpoint.zip --sha256 <outer-hex>
+
+The outer SHA-256 travels beside this archive in checkpoint.zip.sha256 and is
+handed over separately. The restored run executes nothing: it waits for the
+operator's explicit `hexctl next`.
+"""
+
 
 RUN_ANCHOR_SCHEMA = "fiat-run-anchor/v1"
 RUN_ANCHOR_RECEIPT = "run_anchor"
@@ -2154,6 +2414,7 @@ MUTATING = frozenset(
         "cmd_resume",
         "cmd_reset",
         "cmd_checkpoint_export",
+        "cmd_checkpoint_archive",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -16727,6 +16988,1146 @@ def cmd_checkpoint_restore(args) -> None:
     )
 
 
+def _checkpoint_archive_refuse(refusal: str) -> None:
+    """Exit on one bounded class name, with no path, member or tool output.
+
+    Every archive refusal is a name from the reference's closed table. The
+    diagnosis a reader needs is which check said no; anything more would carry
+    an entry name, an entry's content or `gpg` output out of a command whose
+    whole purpose is to keep hostile bytes inside its stage.
+    """
+    if refusal not in CHECKPOINT_ARCHIVE_REFUSALS:
+        refusal = "manifest-mismatch"
+    print(refusal, file=sys.stderr)
+    sys.exit(1)
+
+
+def _checkpoint_archive_guarded(refusal: str, operation):
+    """Run one existing controller reader without letting its diagnosis escape.
+
+    The readers this reuses -- the boundary rule, the ref set, the capsule
+    exporter, the identity -- all refuse through `die`, which prints a path-
+    bearing sentence and exits 2. The archive owes one class name and exit 1,
+    so their stream is captured and their exit is translated here.
+    """
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            return operation()
+    except SystemExit as stopped:
+        if stopped.code in (0, None):
+            raise
+        _checkpoint_archive_refuse(refusal)
+    except Exception:
+        _checkpoint_archive_refuse(refusal)
+
+
+def _checkpoint_archive_elapsed_ms(started: float) -> int:
+    """One stage's wall time, as the integer milliseconds `timing_ms` reports."""
+    return max(0, int((time.monotonic() - started) * 1000))
+
+
+def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
+    """Whether these bytes carry one of the study's six secret shapes.
+
+    A token match is the whole answer. An armour header is only half of one:
+    the study's second 2026-09-09 amendment requires the block, so the header
+    refuses only when its own `-----END` marker or a whole line of base64 body
+    follows it. The two have their own reaches and the difference is the point.
+    A body has to *start* within `CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD`,
+    which the armour lines bound. A footer sits past the whole body, so it has
+    until `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD`, which adds the largest
+    body the scan undertakes to reach. Holding both to the armour figure was
+    S2-R7-01: it put the footer of every key of 3,072 bits or more out of
+    range, leaving the body witness as the only witness for exactly the sizes
+    in use. The footer is derived from the header that matched rather than
+    looked for generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not
+    completed by an unrelated `-----END CERTIFICATE-----` further down the
+    file.
+
+    A body line ends at a line feed as a byte, as the two-character escape or
+    as the six-character numeric escape in either letter case, and at the
+    carriage return that may precede it in the matching form. The study's
+    third 2026-09-09 amendment requires the escape, its first 2026-09-10
+    amendment the carriage return and its second the numeric escapes: a key
+    carried as a JSON string value supplies no newline byte, and past the
+    lookahead it supplies no footer either, so before those three the block
+    rule published it. A body with no line delimiter in any of these forms
+    refuses on its footer alone, which since S2-R7-01 the footer reach
+    actually covers up to `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY` bits. The
+    residue that remains is a key larger than that.
+
+    The body positions are found once for the whole buffer and then walked with
+    one forward index per pattern, because `finditer` yields matches in
+    increasing order. Searching the lookahead separately for every header would
+    make a member of repeated headers cost work in the square of their count.
+    """
+    for pattern in CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS:
+        if pattern.search(data):
+            return True
+    if not any(
+        pattern.search(data) for pattern in CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS
+    ):
+        return False
+    bodies = [found.start() for found in CHECKPOINT_ARCHIVE_SECRET_BODY.finditer(data)]
+    for pattern in CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS:
+        index = 0
+        for match in pattern.finditer(data):
+            start = match.end()
+            body_limit = start + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
+            footer_limit = start + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
+            footer = b"-----END " + match.group(0)[len(b"-----BEGIN ") :]
+            if data.find(footer, start, footer_limit) != -1:
+                return True
+            while index < len(bodies) and bodies[index] < start:
+                index += 1
+            if index < len(bodies) and bodies[index] < body_limit:
+                return True
+    return False
+
+
+def _checkpoint_archive_scan(path: str) -> None:
+    """Refuse one staged member whose bytes carry a secret-shaped run.
+
+    Read in bounded chunks with a carried window, so a pattern straddling a
+    chunk boundary still matches and a bundle never enters memory whole.
+    """
+    window = b""
+    try:
+        with open(path, "rb") as handle:
+            while True:
+                chunk = handle.read(CHECKPOINT_IO_CHUNK)
+                if not chunk:
+                    return
+                if _checkpoint_archive_secret_shaped(window + chunk):
+                    _checkpoint_archive_refuse("secret-shaped-member")
+                window = chunk[-CHECKPOINT_ARCHIVE_SECRET_WINDOW:]
+    except OSError:
+        die("checkpoint archive member could not be read for the secret scan")
+
+
+def _checkpoint_archive_digest(path: str) -> tuple[int, str]:
+    """The exact size and SHA-256 of one staged member, read in bounded chunks."""
+    digest = hashlib.sha256()
+    total = 0
+    try:
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(CHECKPOINT_IO_CHUNK), b""):
+                total += len(chunk)
+                digest.update(chunk)
+    except OSError:
+        die("checkpoint archive member could not be read for its digest")
+    return total, digest.hexdigest()
+
+
+def _checkpoint_archive_entry_name(name: str) -> str:
+    """Hold one entry path to the portable name the capsule reader already fixes."""
+    parts = tuple(name.split("/"))
+    if _checkpoint_archive_guarded(
+        "manifest-mismatch", lambda: _checkpoint_safe_relative(parts)
+    ) != name:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    if len(name.encode("utf-8")) > CHECKPOINT_ARCHIVE_NAME_BYTES_MAX or any(
+        len(part.encode("utf-8")) > CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX
+        for part in parts
+    ):
+        _checkpoint_archive_refuse("manifest-mismatch")
+    return name
+
+
+def _checkpoint_archive_member_dir(members: str, name: str) -> str:
+    """Create one member's parent inside the private stage and return its path."""
+    path = os.path.join(members, *name.split("/"))
+    parent = os.path.dirname(path)
+    try:
+        os.makedirs(parent, 0o700, exist_ok=True)
+    except OSError:
+        die("checkpoint archive stage could not be prepared")
+    return path
+
+
+def _checkpoint_archive_write_member(members: str, name: str, payload: bytes) -> str:
+    """Write one member into the private stage by descriptor, never through a link."""
+    path = _checkpoint_archive_member_dir(members, _checkpoint_archive_entry_name(name))
+    try:
+        descriptor = os.open(
+            path,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
+        try:
+            _checkpoint_write_all(descriptor, payload)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except OSError:
+        die("checkpoint archive member could not be written")
+    return path
+
+
+def _checkpoint_archive_boundary_directory(
+    boundary: str, step: int, loop, working_commit: str
+) -> str:
+    """ADR-028's two boundary directory names, derived and never supplied."""
+    if boundary == "post-push":
+        return f"step-{step}-{working_commit}"
+    return f"audit-verdict-step-{step}-loop-{loop}-{working_commit}"
+
+
+def _checkpoint_archive_store(base_dir: str, state: dict, boundary_name: str):
+    """Derive the store path from controller state and reserve the boundary."""
+    origin = configured_git_path(state, "origin")
+    worktree = configured_git_path(state, "worktree")
+    if not isinstance(origin, str) or not origin:
+        die("checkpoint archive requires a recorded origin checkout")
+    if not isinstance(worktree, str) or not worktree:
+        die("checkpoint archive requires a recorded run worktree")
+    worktree_name = os.path.basename(os.path.normpath(worktree))
+    if not worktree_name or worktree_name in (".", ".."):
+        die("checkpoint archive run worktree has no usable name")
+    store = os.path.join(
+        state_root(origin), CHECKPOINT_ARCHIVE_STORE_DIR, worktree_name
+    )
+    try:
+        os.makedirs(store, 0o700, exist_ok=True)
+    except OSError:
+        die("checkpoint archive store directory could not be prepared")
+    destination = os.path.join(store, boundary_name)
+    if os.path.lexists(destination):
+        _checkpoint_archive_refuse("boundary-occupied")
+    return worktree_name, destination
+
+
+def _checkpoint_archive_clean_worktree(base_dir: str) -> None:
+    """Refuse a run worktree carrying a tracked change at the boundary."""
+    status, data = bounded_run(
+        base_dir,
+        "git",
+        ["status", "--porcelain=v1", "--untracked-files=no"],
+    )
+    if status != 0:
+        _checkpoint_archive_refuse("worktree-dirty")
+    if data.strip():
+        _checkpoint_archive_refuse("worktree-dirty")
+
+
+def _checkpoint_archive_bundle_header(path: str):
+    """Read the bundle's own header: its heads, prerequisites and hash algorithm.
+
+    `git bundle verify` answers in prose a locale can change. The header the
+    controller just wrote is a fixed, documented format, so the three-way ref
+    join and the complete-history rule are decided on it and `verify` is kept
+    as the independent second opinion.
+    """
+    heads: dict[str, str] = {}
+    prerequisites = 0
+    algorithm = "sha1"
+    try:
+        with open(path, "rb") as handle:
+            signature = handle.readline(64)
+            if signature == b"# v3 git bundle\n":
+                capabilities = True
+            elif signature == b"# v2 git bundle\n":
+                capabilities = False
+            else:
+                _checkpoint_archive_refuse("bundle-incomplete")
+            while True:
+                line = handle.readline(CHECKPOINT_ARCHIVE_NAME_BYTES_MAX + 128)
+                if not line or line == b"\n":
+                    break
+                try:
+                    text = line.rstrip(b"\n").decode("utf-8")
+                except UnicodeDecodeError:
+                    _checkpoint_archive_refuse("bundle-incomplete")
+                if capabilities and text.startswith("@"):
+                    if text.startswith("@object-format="):
+                        algorithm = text.split("=", 1)[1]
+                    continue
+                if text.startswith("-"):
+                    prerequisites += 1
+                    continue
+                commit_sha, _, name = text.partition(" ")
+                if COMMIT_RE.fullmatch(commit_sha) is None or not name:
+                    _checkpoint_archive_refuse("bundle-incomplete")
+                heads[name] = commit_sha
+    except OSError:
+        _checkpoint_archive_refuse("bundle-incomplete")
+    return heads, prerequisites, algorithm
+
+
+def _checkpoint_archive_bundle(base_dir: str, refs: dict[str, str], path: str):
+    """Build and join one single-threaded complete-history bundle of exactly `refs`.
+
+    `pack.threads=1` is study section 2's measured determinism rule: default
+    threading produced two different bundles from one state. The rev-list
+    arguments are the ref set's own names, spelled `refs/heads/<name>`, so the
+    bundle's heads are exactly those refs and no tag or `HEAD` can enter. A ref
+    the controller recorded as a bare commit -- the immutable run base -- names
+    no branch, so it is passed as a revision for object completeness and is not
+    a bundle head.
+    """
+    named = {name: value for name, value in refs.items() if COMMIT_RE.fullmatch(name) is None}
+    anchored = sorted(
+        {value for name, value in refs.items() if COMMIT_RE.fullmatch(name) is not None}
+    )
+    revisions = [f"refs/heads/{name}" for name in sorted(named)]
+    if not revisions:
+        _checkpoint_archive_refuse("bundle-incomplete")
+    status, _ = bounded_run(
+        base_dir,
+        "git",
+        ["-c", "pack.threads=1", "bundle", "create", path, *revisions, *anchored],
+    )
+    if status != 0 or not os.path.isfile(path):
+        _checkpoint_archive_refuse("bundle-incomplete")
+    size = os.path.getsize(path)
+    if size > CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX:
+        _checkpoint_archive_refuse("bundle-oversized")
+    heads, prerequisites, algorithm = _checkpoint_archive_bundle_header(path)
+    if prerequisites or algorithm != "sha1":
+        _checkpoint_archive_refuse("bundle-incomplete")
+    if bounded_run(base_dir, "git", ["bundle", "verify", path])[0] != 0:
+        _checkpoint_archive_refuse("bundle-incomplete")
+    if heads != {f"refs/heads/{name}": value for name, value in named.items()}:
+        _checkpoint_archive_refuse("ref-disagreement")
+    return size, algorithm
+
+
+def _checkpoint_archive_signature_format(base_dir: str) -> str:
+    """The repository's declared signature format, or the Git default."""
+    status, data = bounded_run(base_dir, "git", ["config", "--get", "gpg.format"])
+    if status == 1:
+        return "openpgp"
+    if status != 0:
+        _checkpoint_archive_refuse("signature-format-unsupported")
+    value = data.decode("utf-8", "replace").strip()
+    if value not in CHECKPOINT_ARCHIVE_SIGNATURE_FORMATS:
+        _checkpoint_archive_refuse("signature-format-unsupported")
+    return value
+
+
+def _checkpoint_archive_verifier_argv(argv: list[str]) -> list[str]:
+    """One Git argv with the native verifier programs pinned ahead of it."""
+    pinned = [item for setting in SIGNATURE_VERIFIER_CONFIG for item in ("-c", setting)]
+    return [*pinned, *argv]
+
+
+def _checkpoint_archive_commit_read(
+    base_dir: str,
+    commit_sha: str,
+    environment: dict[str, str] | None,
+    verifier: list[str] | None = None,
+):
+    """Read one commit's signature status, fingerprint and message in one pass.
+
+    `%G?` is Git's own verdict on the signature, decided by the keyring this
+    call runs against; `%GF` is the key it was made with; `%B` is the message
+    the trailer counts are taken from. Reading all three together is what keeps
+    the recorded status, the recorded fingerprint and the counted trailers
+    facts about one object rather than three reads of a moving target.
+    """
+    status, data = bounded_run(
+        base_dir,
+        "git",
+        _checkpoint_archive_verifier_argv(
+            [
+                *(verifier or []),
+                "log",
+                "--no-walk",
+                "-1",
+                "--format=%G?%x00%GF%x00%B",
+                commit_sha,
+            ]
+        ),
+        environment=environment,
+    )
+    if status != 0:
+        _checkpoint_archive_refuse("signature-unverified")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        _checkpoint_archive_refuse("signature-unverified")
+    parts = text.split("\0")
+    if len(parts) != 3:
+        _checkpoint_archive_refuse("signature-unverified")
+    return parts[0].strip(), parts[1].strip(), parts[2]
+
+
+def _checkpoint_archive_disposable_keyring() -> str:
+    """One private OpenPGP home, created here and removed here.
+
+    Not under the stage. An OpenPGP home is also where its agent's Unix socket
+    would go, and a socket path is capped near 104 bytes; the stage sits under
+    the derived store path, whose boundary directory alone is 45 characters,
+    so a keyring there refuses every import with a name-too-long connect error
+    rather than verifying anything. `--no-autostart` keeps the agent out of it
+    either way, and the directory is created at mode 0700 and deleted after
+    use, so nothing of the operator's keyring is read or written.
+    """
+    try:
+        home = tempfile.mkdtemp(prefix=".fiat-gpg-")
+        os.chmod(home, 0o700)
+    except OSError:
+        die("checkpoint archive disposable keyring could not be created")
+    return home
+
+
+def _checkpoint_archive_keyring_environment(home: str) -> dict[str, str]:
+    """The bounded environment the disposable verification runs under.
+
+    `HOME` moves with `GNUPGHOME` so the operator's global Git configuration
+    cannot decide the outcome, and the locale is pinned so the child's answers
+    do not change with the caller's.
+    """
+    return {
+        "PATH": os.environ.get("PATH", ""),
+        "HOME": home,
+        "GNUPGHOME": home,
+        "LC_ALL": "C",
+        "GIT_TERMINAL_PROMPT": "0",
+    }
+
+
+def _checkpoint_archive_openpgp_material(
+    base_dir: str, fingerprints: list[str], members: str
+) -> tuple[str, bytes]:
+    """Export the pinned public keys and seed one disposable keyring from them."""
+    status, data = bounded_run(
+        base_dir,
+        "gpg",
+        ["--batch", "--quiet", "--no-autostart", "--armor", "--export", *fingerprints],
+    )
+    if status != 0 or not data.strip():
+        _checkpoint_archive_refuse("signature-unverified")
+    _checkpoint_archive_write_member(members, CHECKPOINT_ARCHIVE_PUBKEY_ENTRY, data)
+    return CHECKPOINT_ARCHIVE_PUBKEY_ENTRY, data
+
+
+def _checkpoint_archive_seed_keyring(
+    base_dir: str, home: str, key_path: str, fingerprints: list[str]
+) -> None:
+    """Import the exported public keys and pin them as this keyring's own trust.
+
+    Ownertrust is what separates Git's `G` from its `U`: a good signature by a
+    key the keyring does not trust reports `U`, and the proof requires `G`. The
+    trust is written into a keyring this command created and deletes, from the
+    fingerprints the export pinned, so nothing outside the stage learns it.
+    """
+    environment = _checkpoint_archive_keyring_environment(home)
+    if bounded_run(
+        base_dir,
+        "gpg",
+        ["--batch", "--quiet", "--no-autostart", "--import", key_path],
+        environment=environment,
+    )[0] != 0:
+        _checkpoint_archive_refuse("signature-unverified")
+    ownertrust = os.path.join(home, "ownertrust.txt")
+    try:
+        with open(ownertrust, "w", encoding="utf-8") as handle:
+            for fingerprint in fingerprints:
+                handle.write(f"{fingerprint}:6:\n")
+    except OSError:
+        die("checkpoint archive disposable keyring could not be prepared")
+    if bounded_run(
+        base_dir,
+        "gpg",
+        ["--batch", "--quiet", "--no-autostart", "--import-ownertrust", ownertrust],
+        environment=environment,
+    )[0] != 0:
+        _checkpoint_archive_refuse("signature-unverified")
+
+
+def _checkpoint_archive_trailers(body: str) -> dict[str, int]:
+    """The two provenance trailer counts this run's commits owe, exactly once each."""
+    lines = body.splitlines()
+    return {
+        "coauthored_by_shoggoth": lines.count(COAUTHOR_TRAILER),
+        "wildcat_origin": lines.count(ORIGIN_TRAILER),
+    }
+
+
+def _checkpoint_archive_write_proof(proof: dict, members: str, signer: dict):
+    """Write `proof/signatures.json` and return the manifest's two joined blocks."""
+    payload = canonical(proof).encode("utf-8") + b"\n"
+    _checkpoint_archive_write_member(members, CHECKPOINT_ARCHIVE_PROOF_ENTRY, payload)
+    return signer, {
+        "commits": len(proof["commits"]),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+    }
+
+
+def _checkpoint_archive_empty_proof(signature_format: str, members: str):
+    """The proof a boundary with no receipted commits can honestly carry."""
+    signer = {"format": signature_format, "fingerprints": [], "key_path": None}
+    return _checkpoint_archive_write_proof(
+        {
+            "schema": CHECKPOINT_ARCHIVE_PROOF_SCHEMA,
+            "commits": [],
+            "signer": signer,
+        },
+        members,
+        signer,
+    )
+
+
+def _checkpoint_archive_proof(base_dir: str, state: dict, step: dict, members: str):
+    """Verify every receipted commit in a disposable keyring and record the proof.
+
+    Only the run's own receipted commits are covered. Merges on the integration
+    branch are signed by GitHub's key, which no local keyring can validate, so
+    claiming them would turn a known boundary into a false assurance.
+    """
+    signature_format = _checkpoint_archive_signature_format(base_dir)
+    push = as_dict(as_dict(step.get("receipts")).get("push"))
+    commits = push.get("verified_commits")
+    if step.get("phase") != "done":
+        rounds = as_dict(step.get("audit")).get("rounds")
+        commits = as_dict(rounds[-1]).get("verified_commits") if rounds else None
+    if not isinstance(commits, list) or len(commits) > GIT_PATHS_MAX:
+        _checkpoint_archive_refuse("signature-unverified")
+    commits = [
+        commit_sha
+        for commit_sha in commits
+        if isinstance(commit_sha, str) and COMMIT_RE.fullmatch(commit_sha)
+    ]
+    github_verified = push.get("github_verified")
+    github_verified = github_verified if isinstance(github_verified, list) else []
+
+    fingerprints: list[str] = []
+    for commit_sha in commits:
+        _, fingerprint, _ = _checkpoint_archive_commit_read(base_dir, commit_sha, None)
+        if not re.fullmatch(r"[0-9A-F]{40}(?:[0-9A-F]{24})?", fingerprint):
+            _checkpoint_archive_refuse("signature-unverified")
+        if fingerprint not in fingerprints:
+            fingerprints.append(fingerprint)
+    if commits and not fingerprints:
+        _checkpoint_archive_refuse("signature-unverified")
+    fingerprints.sort()
+
+    if not commits:
+        # An audit-verdict boundary reached before the step pushed has no push
+        # receipt, so there is nothing signed to cover. Exporting a keyring for
+        # an empty fingerprint list would export the operator's whole keyring;
+        # claiming a proof over no commits would be worse.
+        return _checkpoint_archive_empty_proof(signature_format, members)
+
+    home = _checkpoint_archive_disposable_keyring()
+    try:
+        if signature_format == "openpgp":
+            key_entry, _ = _checkpoint_archive_openpgp_material(
+                base_dir, fingerprints, members
+            )
+            _checkpoint_archive_seed_keyring(
+                base_dir,
+                home,
+                os.path.join(members, *key_entry.split("/")),
+                fingerprints,
+            )
+            environment = _checkpoint_archive_keyring_environment(home)
+            verifier: list[str] = []
+        else:
+            key_entry = _checkpoint_archive_ssh_material(base_dir, members)
+            environment = _checkpoint_archive_keyring_environment(home)
+            verifier = [
+                "-c",
+                "gpg.ssh.allowedSignersFile="
+                + os.path.join(members, *key_entry.split("/")),
+            ]
+        records = []
+        for commit_sha in commits:
+            if bounded_run(
+                base_dir,
+                "git",
+                _checkpoint_archive_verifier_argv(
+                    [*verifier, "--no-replace-objects", "verify-commit", commit_sha]
+                ),
+                environment=environment,
+            )[0] != 0:
+                _checkpoint_archive_refuse("signature-unverified")
+            status, fingerprint, body = _checkpoint_archive_commit_read(
+                base_dir, commit_sha, environment, verifier
+            )
+            trailers = _checkpoint_archive_trailers(body)
+            if (
+                status != "G"
+                or fingerprint not in fingerprints
+                or trailers["coauthored_by_shoggoth"] != 1
+                or trailers["wildcat_origin"] != 1
+            ):
+                _checkpoint_archive_refuse("signature-unverified")
+            records.append(
+                {
+                    "sha": commit_sha,
+                    "format": signature_format,
+                    "status": status,
+                    "fingerprint": fingerprint,
+                    "trailers": trailers,
+                    "github_verified": commit_sha in github_verified,
+                }
+            )
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+
+    signer = {
+        "format": signature_format,
+        "fingerprints": fingerprints,
+        "key_path": key_entry,
+    }
+    return _checkpoint_archive_write_proof(
+        {
+            "schema": CHECKPOINT_ARCHIVE_PROOF_SCHEMA,
+            "commits": records,
+            "signer": signer,
+        },
+        members,
+        signer,
+    )
+
+
+def _checkpoint_archive_ssh_material(base_dir: str, members: str) -> str:
+    """Carry the repository's own allowed-signers file as the SSH key material."""
+    status, data = bounded_run(
+        base_dir, "git", ["config", "--get", "gpg.ssh.allowedSignersFile"]
+    )
+    if status != 0:
+        _checkpoint_archive_refuse("signature-unverified")
+    source = data.decode("utf-8", "replace").strip()
+    if not source:
+        _checkpoint_archive_refuse("signature-unverified")
+    resolved = _checkpoint_archive_guarded(
+        "signature-unverified",
+        lambda: scoped_path(base_dir, source, "checkpoint archive allowed signers"),
+    )
+    try:
+        with open(resolved, "rb") as handle:
+            payload = handle.read(CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX + 1)
+    except OSError:
+        _checkpoint_archive_refuse("signature-unverified")
+    if not payload or len(payload) > CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX:
+        _checkpoint_archive_refuse("signature-unverified")
+    _checkpoint_archive_write_member(
+        members, CHECKPOINT_ARCHIVE_SIGNERS_ENTRY, payload
+    )
+    return CHECKPOINT_ARCHIVE_SIGNERS_ENTRY
+
+
+def _checkpoint_archive_identity(base_dir: str, state: dict, members: str):
+    """Embed the in-process `checkpoint identity` result, or say it is unavailable.
+
+    A run whose base is still symbolic predates the immutable-base rule and can
+    mint no identity; the reference lets export continue with `unavailable` for
+    exactly that case. Every other identity failure is a refusal, because an
+    archive that quietly dropped its semantic identity would restore into a run
+    nobody could rejoin to this boundary.
+    """
+    if COMMIT_RE.fullmatch(str(state.get("base"))) is None:
+        return {
+            "status": "unavailable",
+            "reason": CHECKPOINT_ARCHIVE_IDENTITY_UNAVAILABLE,
+        }, None
+    state_bytes = _checkpoint_read_staged(
+        state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+    ledger_bytes = _checkpoint_read_staged(
+        ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+
+    def mint():
+        semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+        runtime = semantics["runtime_state"]
+        source_evidence, _ = _checkpoint_identity_source_evidence(base_dir, runtime)
+        evidence = {
+            "schema": CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA,
+            "git": _checkpoint_identity_git_evidence(base_dir, semantics),
+            "sources": source_evidence,
+            "observations": semantics["observations"],
+        }
+        _checkpoint_identity_verify_observations(base_dir, runtime)
+        return checkpoint_identity_from_captured(state_bytes, ledger_bytes, evidence)
+
+    result = _checkpoint_archive_guarded("identity-unavailable", mint)
+    payload = canonical(result).encode("utf-8") + b"\n"
+    _checkpoint_archive_write_member(
+        members, CHECKPOINT_ARCHIVE_IDENTITY_ENTRY, payload
+    )
+    return {"status": "bound", "snapshot_id": result["snapshot_id"]}, result[
+        "snapshot_id"
+    ]
+
+
+def _checkpoint_archive_inventory(members: str) -> list[tuple[str, str]]:
+    """Every staged member as one sorted `(entry path, staged path)` pair."""
+    found = []
+    for current, directories, files in os.walk(members, followlinks=False):
+        directories.sort()
+        for name in sorted(files):
+            path = os.path.join(current, name)
+            relative = os.path.relpath(path, members)
+            entry = _checkpoint_archive_entry_name(relative.replace(os.sep, "/"))
+            found.append((entry, path))
+    found.sort(key=lambda item: item[0].encode("utf-8"))
+    return found
+
+
+def _checkpoint_archive_entry_info(name: str):
+    """One ZIP entry header with every build-time value replaced by a fixed one."""
+    info = zipfile.ZipInfo(name, date_time=CHECKPOINT_ARCHIVE_ENTRY_TIME)
+    info.compress_type = zipfile.ZIP_STORED
+    info.create_system = CHECKPOINT_ARCHIVE_CREATE_SYSTEM
+    info.create_version = CHECKPOINT_ARCHIVE_ZIP_VERSION
+    info.extract_version = CHECKPOINT_ARCHIVE_ZIP_VERSION
+    info.external_attr = CHECKPOINT_ARCHIVE_ENTRY_MODE << 16
+    info.internal_attr = 0
+    info.flag_bits = 0
+    info.extra = b""
+    info.comment = b""
+    return info
+
+
+def _checkpoint_archive_pack(
+    order: list[tuple[str, str]], manifest_bytes: bytes, archive_path: str
+) -> None:
+    """Write the stored container in sorted order, streaming every member."""
+    try:
+        with zipfile.ZipFile(
+            archive_path, "w", compression=zipfile.ZIP_STORED, allowZip64=False
+        ) as container:
+            for name, path in order:
+                info = _checkpoint_archive_entry_info(name)
+                if path is None:
+                    container.writestr(info, manifest_bytes)
+                    continue
+                with open(path, "rb") as source, container.open(info, "w") as target:
+                    shutil.copyfileobj(source, target, CHECKPOINT_IO_CHUNK)
+    except (OSError, ValueError, zipfile.BadZipFile):
+        die("checkpoint archive could not be packed")
+
+
+def _checkpoint_archive_self_check(
+    archive_path: str, manifest: dict, manifest_bytes: bytes
+) -> tuple[int, str]:
+    """Re-read the packed container and rejoin it to `checkpoint.json`.
+
+    The manifest is written from what the stage held; this reads what the file
+    now holds. Step 3 replaces this with the inspector, which does the same
+    join from outside the producing process.
+    """
+    expected = {
+        entry["path"]: entry for entry in manifest["archive"]["entries"]
+    }
+    order = sorted(
+        [*expected, CHECKPOINT_ARCHIVE_MANIFEST_ENTRY],
+        key=lambda name: name.encode("utf-8"),
+    )
+    try:
+        with zipfile.ZipFile(archive_path, "r") as container:
+            if container.comment:
+                _checkpoint_archive_refuse("manifest-mismatch")
+            infos = container.infolist()
+            if [info.filename for info in infos] != order:
+                _checkpoint_archive_refuse("manifest-mismatch")
+            for info in infos:
+                if (
+                    info.compress_type != zipfile.ZIP_STORED
+                    or info.create_system != CHECKPOINT_ARCHIVE_CREATE_SYSTEM
+                    or info.external_attr >> 16 != CHECKPOINT_ARCHIVE_ENTRY_MODE
+                    or info.date_time != CHECKPOINT_ARCHIVE_ENTRY_TIME
+                    or info.extra
+                    or info.comment
+                    or info.flag_bits & 0x1
+                    or info.compress_size != info.file_size
+                ):
+                    _checkpoint_archive_refuse("manifest-mismatch")
+                digest = hashlib.sha256()
+                total = 0
+                with container.open(info, "r") as stream:
+                    for chunk in iter(lambda: stream.read(CHECKPOINT_IO_CHUNK), b""):
+                        total += len(chunk)
+                        digest.update(chunk)
+                if info.filename == CHECKPOINT_ARCHIVE_MANIFEST_ENTRY:
+                    if total != len(manifest_bytes) or digest.digest() != hashlib.sha256(
+                        manifest_bytes
+                    ).digest():
+                        _checkpoint_archive_refuse("manifest-mismatch")
+                    continue
+                record = expected[info.filename]
+                if (
+                    total != record["bytes"]
+                    or info.file_size != record["bytes"]
+                    or digest.hexdigest() != record["sha256"]
+                ):
+                    _checkpoint_archive_refuse("manifest-mismatch")
+    except (OSError, zipfile.BadZipFile):
+        _checkpoint_archive_refuse("manifest-mismatch")
+    size, outer = _checkpoint_archive_digest(archive_path)
+    with open(archive_path, "rb") as handle:
+        handle.seek(max(0, size - 64 * 1024))
+        if b"PK\x06\x06" in handle.read():
+            _checkpoint_archive_refuse("manifest-mismatch")
+    return size, outer
+
+
+def _checkpoint_archive_manifest(
+    *,
+    entries: list[dict],
+    boundary: str,
+    step: int,
+    loop,
+    working_commit: str,
+    directive: dict,
+    anchor: dict,
+    worktree_name: str,
+    refs: dict[str, str],
+    bundle: dict,
+    capsule: dict,
+    identity: dict,
+    signer: dict,
+    proof: dict,
+    version: str,
+) -> tuple[dict, bytes]:
+    """Compose the closed content manifest, written after every other member."""
+    boundary_record = {
+        "kind": boundary,
+        "step": step,
+        "working_commit_sha": working_commit,
+        "next": directive,
+    }
+    if loop is not None:
+        boundary_record["loop"] = loop
+    manifest = {
+        "schema": CHECKPOINT_ARCHIVE_SCHEMA,
+        "archive": {
+            "format": "zip",
+            "compression": "stored",
+            "entries": entries,
+        },
+        "boundary": boundary_record,
+        "run": {
+            "repository": anchor["repository"],
+            "run_branch": anchor["run_branch"],
+            "worktree_name": worktree_name,
+            "task_issue": anchor["task"],
+            "initial_base_sha": anchor["initial_base_sha"],
+            "run_anchor_sha256": hashlib.sha256(
+                canonical(anchor).encode("utf-8")
+            ).hexdigest(),
+        },
+        "refs": refs,
+        "bundle": bundle,
+        "controller_capsule": capsule,
+        "identity": identity,
+        "signer": signer,
+        "proof": proof,
+        "acceptance": {
+            "current": CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT,
+            "prior": [],
+        },
+        "controller": {"name": "hexctl", "version": version},
+        "limits": {
+            "entries": CHECKPOINT_ARCHIVE_ENTRIES_MAX,
+            "expanded_bytes": CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX,
+            "bundle_bytes": CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX,
+            "entry_bytes": CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX,
+            "name_bytes": CHECKPOINT_ARCHIVE_NAME_BYTES_MAX,
+            "component_bytes": CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX,
+            "prior_acceptances": CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX,
+            "capsule": {
+                "files": CHECKPOINT_FILES_MAX,
+                "directories": CHECKPOINT_DIRECTORIES_MAX,
+                "total_bytes": CHECKPOINT_TOTAL_BYTES_MAX,
+                "file_bytes": CHECKPOINT_FILE_BYTES_MAX,
+                "manifest_bytes": CHECKPOINT_MANIFEST_BYTES_MAX,
+                "path_bytes": CHECKPOINT_PATH_BYTES_MAX,
+            },
+        },
+    }
+    return manifest, canonical(manifest).encode("utf-8") + b"\n"
+
+
+def _checkpoint_archive_capsule(
+    members: str, base_dir: str, state: dict, boundary: str, directive: dict, refs: dict
+):
+    """Build the controller capsule in place, through the existing exporter."""
+    capsule_root = os.path.join(members, CHECKPOINT_ARCHIVE_CAPSULE_DIR)
+    controller_stage = os.path.join(capsule_root, CHECKPOINT_CONTROLLER_DIR)
+    try:
+        os.makedirs(controller_stage, 0o700)
+    except OSError:
+        die("checkpoint archive capsule stage could not be created")
+    inventory = _checkpoint_archive_guarded(
+        "manifest-mismatch",
+        lambda: _checkpoint_snapshot(state_root(base_dir), controller_stage),
+    )
+    manifest, manifest_bytes, manifest_digest = _checkpoint_archive_guarded(
+        "manifest-mismatch",
+        lambda: _checkpoint_manifest(
+            capsule_root, state, boundary, directive, refs, inventory
+        ),
+    )
+    _checkpoint_archive_guarded(
+        "manifest-mismatch",
+        lambda: _checkpoint_write_manifest(capsule_root, manifest_bytes),
+    )
+    if _checkpoint_read_staged(
+        os.path.join(capsule_root, CHECKPOINT_MANIFEST_FILE),
+        CHECKPOINT_MANIFEST_BYTES_MAX,
+    ) != manifest_bytes:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    source = manifest["source"]
+    return {
+        "manifest_sha256": manifest_digest,
+        "state_sha256": source["state_sha256"],
+        "ledger_sha256": source["ledger_sha256"],
+        "ledger_entries": source["ledger_entries"],
+        "ledger_tail": source["ledger_tail"],
+        "files": manifest["resources"]["files"],
+        "bytes": manifest["resources"]["bytes"],
+    }
+
+
+def _checkpoint_archive_publish(
+    stage: str,
+    stage_name: str,
+    parent: str,
+    parent_descriptor: int,
+    destination_name: str,
+) -> None:
+    """Make the boundary directory durable, then expose it by no-replace rename."""
+    _checkpoint_fsync_directories(stage)
+    if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+        _checkpoint_archive_refuse("boundary-occupied")
+    _checkpoint_archive_guarded(
+        "boundary-occupied",
+        lambda: _checkpoint_atomic_publish(stage_name, destination_name),
+    )
+    try:
+        os.fsync(parent_descriptor)
+    except OSError:
+        die("checkpoint archive publication could not be made durable")
+
+
+def cmd_checkpoint_archive(args) -> None:
+    """Build and publish one outer checkpoint archive at an accepted boundary.
+
+    The command changes no controller state and appends no ledger entry: it
+    takes the run lock and runs the ordinary verification exactly as
+    `checkpoint export` does, so nothing can move underneath it, and then only
+    reads. Everything is built in a hidden sibling stage; the boundary
+    directory appears complete or not at all.
+    """
+    started = time.monotonic()
+    timing: dict[str, int] = {}
+    base_dir = os.path.abspath(args.dir)
+    verify_run(base_dir)
+    state = load_state(base_dir)
+    ledger = ledger_entries(base_dir)
+    if os.path.lexists(state_path(base_dir) + ".tmp"):
+        die("checkpoint archive refuses a pending controller transaction")
+    boundary, directive = _checkpoint_archive_guarded(
+        "boundary-unaccepted", lambda: _checkpoint_boundary(state, ledger)
+    )
+    kind, step_number, working_commit = _checkpoint_archive_guarded(
+        "boundary-unaccepted",
+        lambda: _checkpoint_identity_working_commit(state, ledger),
+    )
+    if kind != boundary:
+        _checkpoint_archive_refuse("boundary-unaccepted")
+    step = next(item for item in state["steps"] if item.get("n") == step_number)
+    loop = None
+    if boundary == "audit-verdict":
+        loop = len(as_dict(step.get("audit")).get("rounds") or [])
+    _checkpoint_archive_clean_worktree(base_dir)
+    worktree_name, destination = _checkpoint_archive_store(
+        base_dir,
+        state,
+        _checkpoint_archive_boundary_directory(
+            boundary, step_number, loop, working_commit
+        ),
+    )
+    anchor = validate_run_anchor_shape(state["receipts"].get(RUN_ANCHOR_RECEIPT))
+    version = ledger_version(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
+    )
+    if version is None:
+        die("checkpoint archive controller version cannot be resolved")
+    refs = _checkpoint_archive_guarded(
+        "ref-disagreement", lambda: _checkpoint_refs(base_dir, state)
+    )
+
+    _, parent, parent_descriptor = _checkpoint_archive_guarded(
+        "boundary-occupied", lambda: _checkpoint_destination(base_dir, destination)
+    )
+    working_descriptor = None
+    result = None
+    try:
+        try:
+            working_descriptor = os.open(
+                ".", os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_DIRECTORY", 0)
+            )
+            os.fchdir(parent_descriptor)
+        except OSError:
+            die("checkpoint archive store parent could not be pinned")
+        try:
+            stage = tempfile.mkdtemp(prefix=f".{os.path.basename(destination)}.stage-", dir=".")
+            os.chmod(stage, 0o700)
+        except OSError:
+            die("checkpoint archive private stage could not be created")
+        stage_name = os.path.basename(stage)
+        published = False
+        try:
+            members = os.path.join(stage, ".members")
+            try:
+                os.mkdir(members, 0o700)
+            except OSError:
+                die("checkpoint archive private stage could not be created")
+
+            capsule = _checkpoint_archive_capsule(
+                members, base_dir, state, boundary, directive, refs
+            )
+            timing["export"] = _checkpoint_archive_elapsed_ms(started)
+
+            marker = time.monotonic()
+            identity, snapshot_id = _checkpoint_archive_identity(
+                base_dir, state, members
+            )
+            timing["identity"] = _checkpoint_archive_elapsed_ms(marker)
+
+            marker = time.monotonic()
+            bundle_path = _checkpoint_archive_member_dir(
+                members, CHECKPOINT_ARCHIVE_BUNDLE_ENTRY
+            )
+            bundle_bytes, algorithm = _checkpoint_archive_bundle(
+                base_dir, refs, bundle_path
+            )
+            timing["bundle"] = _checkpoint_archive_elapsed_ms(marker)
+
+            marker = time.monotonic()
+            signer, proof = _checkpoint_archive_proof(base_dir, state, step, members)
+            timing["proof"] = _checkpoint_archive_elapsed_ms(marker)
+
+            _checkpoint_archive_write_member(
+                members,
+                CHECKPOINT_ARCHIVE_README_ENTRY,
+                CHECKPOINT_ARCHIVE_README.encode("utf-8"),
+            )
+
+            for name in (STATE_FILE, LEDGER_FILE):
+                _checkpoint_archive_scan(os.path.join(state_root(base_dir), name))
+            staged = _checkpoint_archive_inventory(members)
+            if len(staged) + 1 > CHECKPOINT_ARCHIVE_ENTRIES_MAX:
+                _checkpoint_archive_refuse("manifest-mismatch")
+            entries = []
+            for name, path in staged:
+                _checkpoint_archive_scan(path)
+                size, digest = _checkpoint_archive_digest(path)
+                entries.append({"path": name, "bytes": size, "sha256": digest})
+            bundle_record = next(
+                item
+                for item in entries
+                if item["path"] == CHECKPOINT_ARCHIVE_BUNDLE_ENTRY
+            )
+            if bundle_record["bytes"] != bundle_bytes:
+                _checkpoint_archive_refuse("manifest-mismatch")
+
+            manifest, manifest_bytes = _checkpoint_archive_manifest(
+                entries=entries,
+                boundary=boundary,
+                step=step_number,
+                loop=loop,
+                working_commit=working_commit,
+                directive=directive,
+                anchor=anchor,
+                worktree_name=worktree_name,
+                refs=refs,
+                bundle={
+                    "bytes": bundle_bytes,
+                    "sha256": bundle_record["sha256"],
+                    "hash_algorithm": algorithm,
+                    "complete_history": True,
+                },
+                capsule=capsule,
+                identity=identity,
+                signer=signer,
+                proof=proof,
+                version=version,
+            )
+            if _checkpoint_archive_secret_shaped(manifest_bytes):
+                _checkpoint_archive_refuse("secret-shaped-member")
+
+            marker = time.monotonic()
+            staged_paths = dict(staged)
+            order = [
+                (name, staged_paths.get(name))
+                for name in sorted(
+                    [item["path"] for item in entries]
+                    + [CHECKPOINT_ARCHIVE_MANIFEST_ENTRY],
+                    key=lambda value: value.encode("utf-8"),
+                )
+            ]
+            archive_path = os.path.join(stage, CHECKPOINT_ARCHIVE_FILE)
+            _checkpoint_archive_pack(order, manifest_bytes, archive_path)
+            shutil.rmtree(members, ignore_errors=True)
+            timing["pack"] = _checkpoint_archive_elapsed_ms(marker)
+
+            marker = time.monotonic()
+            archive_bytes, outer = _checkpoint_archive_self_check(
+                archive_path, manifest, manifest_bytes
+            )
+            timing["inspect"] = _checkpoint_archive_elapsed_ms(marker)
+
+            marker = time.monotonic()
+            sidecar_path = os.path.join(stage, CHECKPOINT_ARCHIVE_SIDECAR_FILE)
+            try:
+                with open(sidecar_path, "wb") as handle:
+                    handle.write(f"{outer}  {CHECKPOINT_ARCHIVE_FILE}\n".encode("utf-8"))
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.chmod(archive_path, 0o600)
+                os.chmod(sidecar_path, 0o600)
+            except OSError:
+                die("checkpoint archive sidecar could not be written")
+            _checkpoint_archive_publish(
+                stage,
+                stage_name,
+                parent,
+                parent_descriptor,
+                os.path.basename(destination),
+            )
+            published = True
+            timing["publish"] = _checkpoint_archive_elapsed_ms(marker)
+            result = {
+                "schema": CHECKPOINT_ARCHIVE_EXPORT_SCHEMA,
+                "archive": os.path.join(destination, CHECKPOINT_ARCHIVE_FILE),
+                "sidecar": os.path.join(destination, CHECKPOINT_ARCHIVE_SIDECAR_FILE),
+                "outer_sha256": outer,
+                "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+                "snapshot_id": snapshot_id,
+                "bundle_sha256": bundle_record["sha256"],
+                "entries": len(order),
+                "bytes": archive_bytes,
+                "boundary": boundary,
+                "next": directive,
+                "timing_ms": timing,
+            }
+        finally:
+            if not published:
+                with contextlib.suppress(OSError):
+                    shutil.rmtree(stage_name, dir_fd=parent_descriptor)
+    finally:
+        if working_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.fchdir(working_descriptor)
+            with contextlib.suppress(OSError):
+                os.close(working_descriptor)
+        with contextlib.suppress(OSError):
+            os.close(parent_descriptor)
+
+    print(canonical(result))
+
+
 def cmd_next(args) -> None:
     state = load_state(args.dir)
     directive = _next_directive(state, args.dir)
@@ -17631,13 +19032,18 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_resume)
 
     sp = sub.add_parser(
-        "checkpoint", help="identify, export or restore portable controller state"
+        "checkpoint",
+        help="identify, export, archive or restore portable controller state",
     )
     checkpoint = sp.add_subparsers(dest="checkpoint_action", required=True)
     identity = checkpoint.add_parser(
         "identity", help="print one verified semantic checkpoint identity"
     )
     identity.set_defaults(fn=cmd_checkpoint_identity)
+    archive = checkpoint.add_parser(
+        "archive", help="publish one outer checkpoint archive at this boundary"
+    )
+    archive.set_defaults(fn=cmd_checkpoint_archive)
     export = checkpoint.add_parser(
         "export", help="write one deterministic controller capsule"
     )
