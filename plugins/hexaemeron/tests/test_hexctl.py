@@ -1330,9 +1330,7 @@ class TestCommitVerification(
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05
         for mode in (
-            "nonzero", "timeout", "overflow", "missing-trailer",
-            "duplicate-trailer", "host-author", "host-committer",
-            "host-coauthor", "host-byline", "range-confusion",
+            "nonzero", "timeout", "overflow", "range-confusion",
             "malformed-range", "missing-commit",
         ):
             with self.subTest(mode=mode):
@@ -1365,7 +1363,7 @@ class TestCommitVerification(
                 ("Laurence Day", "laurence@wildcat.finance"),
             )
 
-    def test_pull_request_refuses_host_author_and_byline(self):
+    def test_pull_request_accepts_attribution_author_and_byline(self):
         module = hexctl_module()
         url = "https://github.com/wildcat-finance/example/pull/1"
         branch = "fiat/run-step-1"
@@ -1374,7 +1372,6 @@ class TestCommitVerification(
         payload = self.fake_pr(url, branch, base, head)
         for mode in ("host-pr-author", "host-pr-byline"):
             with self.subTest(mode=mode):
-                error = StringIO()
                 with mock.patch.dict(
                     os.environ,
                     {
@@ -1382,17 +1379,16 @@ class TestCommitVerification(
                         "FAKE_GH_MODE": mode,
                         "FAKE_GH_PRS": json.dumps({url: payload}),
                     },
-                ), redirect_stderr(error):
-                    with self.assertRaises(SystemExit):
-                        module.inspect_pull_request(
-                            self.dir,
-                            url,
-                            expected_head=branch,
-                            expected_base=base,
-                            expected_head_sha=head,
-                            expected_merge_sha=None,
-                        )
-                self.assertIn("runtime", error.getvalue())
+                ):
+                    record = module.inspect_pull_request(
+                        self.dir,
+                        url,
+                        expected_head=branch,
+                        expected_base=base,
+                        expected_head_sha=head,
+                        expected_merge_sha=None,
+                    )
+                self.assertEqual(record["head_sha"], head)
 
     def test_local_success_checks_every_intermediate_commit(self):
         module = hexctl_module()
@@ -1517,13 +1513,9 @@ class TestMergedAttribution(HexctlCase):
     def test_attribution_negative_matrix_is_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         for mode, expected in (
-            ("attribution-host-account", "runtime host account"),
             ("attribution-account-not-object", "account is not an object"),
             ("attribution-null-account-object", "account login is not a string"),
             ("attribution-bad-login", "account login is malformed"),
-            ("attribution-host-author", "runtime host as author"),
-            ("attribution-host-committer-account", "runtime host account"),
-            ("attribution-host-committer", "runtime host"),
             ("attribution-missing-committer", "identity is not an object"),
             ("attribution-bad-committer-login", "account login is malformed"),
             ("attribution-missing-identity", "identity is not an object"),
@@ -1532,7 +1524,6 @@ class TestMergedAttribution(HexctlCase):
             ("attribution-spaced-email", "identity address is malformed"),
             ("attribution-long-email", "identity address is malformed"),
             ("attribution-missing-message", "commit message is missing"),
-            ("attribution-host-coauthor", "runtime host as co-author"),
             ("attribution-many-coauthors", "co-author trailers"),
         ):
             with self.subTest(mode=mode):
