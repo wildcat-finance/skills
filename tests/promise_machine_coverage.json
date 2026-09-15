@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "80f1505e230abb78fedce29b0ccef87e416975b76bf112c6e3e58ecf60cc61cb"
+        "sha256": "b9005ac8b7ab18ed879821b4b57a010f0f1257a4c25f1b8fab244e1cd0235809"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "f8dbe0370456ceff13529fbdb43bc123177d41a941eade6fbdcbfae957772efc"
+        "sha256": "e9eea5126deae1209932b64d0b2cc07c8945c277bcde0fcad29da433f84312dc"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "5e4cc6e7339037f3a2a39677c11bebffc62476e20a257f7ce1dfd525fc3583d3"
+        "sha256": "ab2d72ee515a153e4e9ce708cc0767ce5b7c6c58be834f1abb6d591c60c81a73"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "2718514ce9b932edb34d073678fdd0c48b4841b6d360631cb07661b6c3e02e28"
+      "sha256": "6046b98f40b224e57297f33f67b43ca956623338b6c2b1decc5572effc8d239f"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -1339,6 +1339,31 @@
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_halt_blocks_progress_and_resume_restores"
+    },
+    "fiat-replacement-m": {
+      "claim": "Unsupported lifecycle and observer mutations refuse the guard adapter.",
+      "path": "plugins/hexaemeron/tests/test_carryover.py",
+      "selector": "test_lifecycle_decorators_dispatch_and_observer_mutation_refuse"
+    },
+    "fiat-replacement-o": {
+      "claim": "Native execution retains its complete input outside the controller archive and verifies captured evidence.",
+      "path": "plugins/hexaemeron/tests/test_carryover.py",
+      "selector": "test_native_guard_capture_preserves_complete_input_outside_controller_archive"
+    },
+    "fiat-replacement-p": {
+      "claim": "Complete current-base reconstruction admits a two-pass cumulative packet through actual signed source and native guard execution.",
+      "path": "plugins/hexaemeron/tests/test_carryover.py",
+      "selector": "test_signed_archive_to_native_admission_keeps_fresh_audit_and_pending_recovery"
+    },
+    "fiat-replacement-r": {
+      "claim": "A concurrent independent edit is preserved in displacement custody with the original backup available after refusal.",
+      "path": "plugins/hexaemeron/tests/test_carryover.py",
+      "selector": "test_independent_edit_after_preimage_check_is_preserved_and_refused"
+    },
+    "fiat-replacement-s": {
+      "claim": "Discovery, skips and replaced guard bodies cannot supply execution evidence.",
+      "path": "plugins/hexaemeron/tests/test_carryover.py",
+      "selector": "test_discovery_skips_and_replaced_bodies_cannot_supply_execution_evidence"
     },
     "fiat-retirement-m": {
       "claim": "A run that has not reached its terminal phase cannot be archived or cleared.",
@@ -4103,6 +4128,22 @@
       "group": "prompt",
       "promise_id": "vulgate-register-rewrite",
       "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-replacement-m",
+        "O": "fiat-replacement-o",
+        "P": "fiat-replacement-p",
+        "R": "fiat-replacement-r",
+        "S": "fiat-replacement-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-replacement-admission",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     }
   ],
   "run_observation": {
@@ -4197,7 +4238,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "44eecab1494235e7bc3a4e6291a22c2159fa668c4d9e1d7518e641169d6bc8f4"
+      "sha256": "7280b565bba00244ed836203cb9352d8b26c5ff022bc5ff58d06f5c35be2dcc1"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4840,16 +4881,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-cumulative-carryover-custody.json",
         "selector": "negative",
-        "sha256": "34cb5677e9c1f0b80e3d9d0ed85ed4f4e214ea41b9c3dedbf4b339529f281c87"
+        "sha256": "7e7dbc7a7d9ef3beb747d080b66aa0e56b8685c6ea8401dc484f8a17324492a9"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-cumulative-carryover-custody.json",
         "selector": "positive",
-        "sha256": "34cb5677e9c1f0b80e3d9d0ed85ed4f4e214ea41b9c3dedbf4b339529f281c87"
+        "sha256": "7e7dbc7a7d9ef3beb747d080b66aa0e56b8685c6ea8401dc484f8a17324492a9"
       },
       "reader": "native-json-v1",
       "selector": "test_composed_signed_tree_capsule_export_and_receipt_replay",
-      "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b",
+      "sha256": "38d338968c93b63f02ff0b6c2f1140a88d0c1afca30241b51beb3c295dd4dfed",
       "source": "plugins/hexaemeron/tests/test_carryover.py"
     },
     "fiat-decision-assignment-composition": {
@@ -4929,12 +4970,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "347a82983f1f3e2e8f7ef98cd20c5329b0158870052431c4a64f64c1d5f6009e"
+        "sha256": "0cf696480f18bcff0c900468f0ae189fccf4c8f496a6589bc61ec7a3cb5f8c5f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "347a82983f1f3e2e8f7ef98cd20c5329b0158870052431c4a64f64c1d5f6009e"
+        "sha256": "0cf696480f18bcff0c900468f0ae189fccf4c8f496a6589bc61ec7a3cb5f8c5f"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -4998,6 +5039,35 @@
       "selector": "test_push_advances_steps_then_the_stack_integrates",
       "sha256": "394785a395f7f5f92131f29ef91b7f9e64896142ddc8223fbdd7f5e08be7fc3b",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
+    },
+    "fiat-replacement-admission": {
+      "bindings": {
+        "evidence_classes": "native_document.fiat_replacement_admission.evidence.classes",
+        "evidence_references": "native_document.fiat_replacement_admission.evidence.references",
+        "exception": "native_document.fiat_replacement_admission.exception_state",
+        "promise_id": "native_document.fiat_replacement_admission.promise",
+        "scope": "native_document.fiat_replacement_admission.target.scope",
+        "source_digest": "native_document.fiat_replacement_admission.source.sha256",
+        "subject": "native_document.fiat_replacement_admission.target.subject",
+        "transition": "native_document.fiat_replacement_admission.authorised_transition",
+        "unknowns": "native_document.fiat_replacement_admission.open_unknowns"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-replacement-admission.json",
+        "selector": "negative",
+        "sha256": "439d8e44b775606484219c40f83958c35c6b00e0761fea8ee768b605f0e64e45"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-replacement-admission.json",
+        "selector": "positive",
+        "sha256": "439d8e44b775606484219c40f83958c35c6b00e0761fea8ee768b605f0e64e45"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_signed_archive_to_native_admission_keeps_fresh_audit_and_pending_recovery",
+      "sha256": "38d338968c93b63f02ff0b6c2f1140a88d0c1afca30241b51beb3c295dd4dfed",
+      "source": "plugins/hexaemeron/tests/test_carryover.py"
     },
     "fiat-run-observation-binding": {
       "bindings": {

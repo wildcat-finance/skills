@@ -2,6 +2,9 @@
 """Execute due native specimens; refuse every pending criterion."""
 
 import argparse
+import hashlib
+from io import StringIO
+import unittest
 import json
 import os
 from pathlib import Path
@@ -28,7 +31,10 @@ CRITERIA = (
 IMPLEMENTED = frozenset({("whole-worker-sandbox", "worker-deadline"),
                          ("whole-worker-sandbox", "worker-output-cap"),
                          ("whole-worker-sandbox", "whole-launch-dispatch"),
-                         ("whole-worker-sandbox", "origin-drift-recovery")})
+                         ("whole-worker-sandbox", "origin-drift-recovery"),
+                         ("whole-worker-sandbox", "single-cumulative-reconstruction"),
+                         ("whole-worker-sandbox", "executed-inoculation-guards"),
+                         ("whole-worker-sandbox", "carryover-lineage-recovery")})
 
 
 def dispatch_request(root, code, *, origin=None):
@@ -184,7 +190,52 @@ def require(condition, code):
         raise worker_exec.Refusal(code)
 
 
+REPLACEMENT_SPECIMENS = {
+    "single-cumulative-reconstruction": ["two-exhausted-passes-one-packet", "current-base-complete-reconstruction",
+        "omitted-payload-refused", "partial-mapping-refused", "no-gate-before-completion"],
+    "executed-inoculation-guards": ["discovery-only-refused", "skipped-guard-refused", "replaced-guard-refused",
+        "executed-passes-all-families", "new-independent-audit-after-guards"],
+    "carryover-lineage-recovery": ["stale-source-refused", "duplicate-sequence-refused",
+        "interrupted-admission-preserved", "missing-occurrence-refused", "attachment-digest-mismatch",
+        "signed-fixed-tree-ref-required"],
+}
+
+
+def execute_replacement(criterion):
+    require(sys.platform == "darwin", "unsupported-native-host")
+    import test_carryover
+    sources=[Path(__file__),Path(test_carryover.__file__),
+             Path(test_carryover.__file__).with_name('hexctl_harness.py')]
+    sources += [Path(worker_exec.__file__).with_name(name+'.py') for name in
+                ('worker_exec','hexctl','carryover','replacement','inoculation')]
+    before={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+    started=time.time()
+    composed=test_carryover.ReplacementAdmissionTests(
+        "test_signed_archive_to_native_admission_keeps_fresh_audit_and_pending_recovery")
+    negative=test_carryover.ReplacementGuardAdmissionTests(
+        "test_discovery_skips_and_replaced_bodies_cannot_supply_execution_evidence")
+    log=StringIO()
+    result=unittest.TextTestRunner(stream=log,verbosity=2).run(unittest.TestSuite([composed,negative]))
+    require(result.wasSuccessful() and result.testsRun == 2 and not result.skipped,
+            "replacement-specimens-failed: "+log.getvalue())
+    observations={**composed.observations,**negative.observations}
+    names=REPLACEMENT_SPECIMENS[criterion]
+    inventory=json.loads((Path(__file__).parent/"fixtures/issue508/criteria.json").read_text())
+    expected=next(row["specimens"] for row in inventory["criteria"] if row["id"]==criterion)
+    require(names==expected and all(name in observations for name in names),"specimen-inventory-drift")
+    after={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+    require(before==after,'replacement-specimen-source-drift')
+    return {"criterion":criterion,"specimens":names,
+            "observations":{name:observations[name] for name in names},
+            "execution":{"testsRun":result.testsRun,"failures":len(result.failures),
+                         "errors":len(result.errors),"skipped":len(result.skipped),"log":log.getvalue()},
+            "sources":before,"source_observation":{"before_unix":started,"after_unix":time.time(),"unchanged":True},
+            "scope":"Actual local signed Git, checkpoint, controller admission and native guard fixtures; attachment transport controlled. Temporary fixture roots are removed after observations. Historical unknowns remain unknown; no independent audit or model evaluation is claimed."}
+
+
 def execute(criterion, root):
+    if criterion in REPLACEMENT_SPECIMENS:
+        return execute_replacement(criterion)
     """Observe real native processes; no assertion supplied by the caller passes."""
     python = str(Path(sys.executable).resolve())
     observations = []

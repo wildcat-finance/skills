@@ -765,11 +765,49 @@ identity live in detached receipts. Binding performs a GET; uploading remains
 a separate operator action. An interrupted export can leave an unreceipted
 output, which must be inspected before retrying.
 
+An export may name an optional absolute `proof_repository` prepared separately
+with the required native objects and signed refs. Its receipt then binds that
+repository's path, device and inode for replay. Omitting it preserves the original
+source-root behavior and receipt shape. Export does not fetch or import refs.
+
 These operations preserve open findings and the exhausted audit verdict.
-Replacement admission remains unavailable until Step 5; the existing
-`audit-verdict` decision and stop rules still apply. The reference records the
+Replacement admission is a separate operation; the existing `audit-verdict`
+decision and stop rules still apply to custody commands. The reference records the
 packet, native Git and provider byte limits, ASCII path rules, drift refusals
 and readback timing limits.
+
+## Replacement reconstruction and inoculation
+
+Read [carryover-packet.md](references/carryover-packet.md) before using
+`replacement-begin --request <path>` or `replacement-resume`, with the
+controller's preceding `--dir <new-run-worktree>` option. Begin with a fresh,
+already initialized run at the exact current base and one complete cumulative
+packet. The begin command records the request and attachment readback;
+resume reconstructs, executes the mapped guards and resumes recorded promotion. Name the read-only native
+`proof_repository`; the packet embeds controller evidence, not a Git bundle.
+Reconstruct every supported tracked current-base file and apply every carried
+file disposition before candidate guard execution.
+
+Map every raw finding occurrence by its exact identity tuple, offset, ordinal
+and raw digest. Retain historical unknown guard and family values. Explicit
+current mappings may name current coverage; they do not establish historical
+guard execution. The fixed adapter executes unchanged, source-bound bodies
+within its restricted Python form and requires actual assertion observations.
+Unsupported arbitrary unittest behavior refuses.
+
+Preserve partial stages and originals when admission is pending. The complete
+image and originals live in bound private storage outside `.hexaemeron`; the
+controller archive retains bounded custody evidence. Replay still needs that
+storage and the native proof repository. Resume only against the recorded source
+and destination identities. Promotion preserves actual displaced files and installs
+candidates exclusively. Refusal can leave a destination absent; inspect the
+retained bytes and restore them or clear retired temporaries when required before
+resume. This is not atomic rollback. Inspection and halt remain available while
+acceptance is blocked; clear a halt with ordinary `resume` before
+`replacement-resume`. A replacement earns a
+fresh independent audit; neither a custody receipt nor the old run's verdict
+can supply it. The reference owns the request fields, copy and proof limits,
+refusal codes and recovery instructions.
 
 ## Delegation and context
 
@@ -941,13 +979,25 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-cumulative-carryover-custody
 
 - Promise: Successful `carryover-export`, `carryover-validate` and, when requested, `carryover-bind` establish the checked cumulative packet, source relationships and detached custody observations each command reports.
-- Evidence: Exact packet and archive digests, replayed controller and ledger bytes, native local Git objects, verified signed fixed commit and tree, complete inherited and changed-file dispositions, raw finding occurrences and explicit unknowns, reconstructed lineage prefixes, derived export receipt and ledger entry, and a separate attachment size and digest readback receipt when binding succeeds.
+- Evidence: Exact packet and archive digests, replayed controller and ledger bytes, native local Git objects and the proof-repository identity when explicitly supplied, verified signed fixed commit and tree, complete inherited and changed-file dispositions, raw finding occurrences and explicit unknowns, reconstructed lineage prefixes, derived export receipt and ledger entry, and a separate attachment size and digest readback receipt when binding succeeds.
 - Evidence classes: checked, recorded
 - Boundary: Evidence remains inert. The commands do not establish audit judgement or model-answer truth, continued attachment availability, issue-comment placement, atomic namespace protection or a hard readback return time. Packet, decoded, native Git and provider limits are separate; their exact bounds and refusals are in the carryover reference.
-- Authorises: Exporting and replaying the complete bounded packet at the exhausted audit boundary and recording a provider identity only after exact byte readback, while retaining open findings and the audit verdict. Replacement admission remains unavailable until Step 5.
+- Authorises: Exporting and replaying the complete bounded packet at the exhausted audit boundary and recording a provider identity only after exact byte readback, while retaining open findings and the audit verdict. These custody commands do not admit a replacement; their historical unavailable-admission results stay unchanged.
 - Consequence: 2
 - Refuses: A non-exhausted or mismatched archive, missing source objects, moved or unverified fixed ref, incomplete or altered lineage, producer or payload drift, duplicate source pass, unsafe path or mode, resource-cap breach, occupied output, observed controller drift, duplicate export or binding, or mismatched attachment identity, transport result, size or digest.
 - Recovery: Preserve the archived controller, packet and independent edits, inspect the refusal and any unreceipted exclusive output, repair the evidence without rewriting receipt history, and retry the named command.
+- Exceptions: none
+
+### fiat-replacement-admission
+
+- Promise: Successful replacement admission establishes complete private reconstruction against one exact current base and cumulative packet, source-bound execution of every mapped current guard, and recorded coverage for every raw finding occurrence and declared family before a fresh independent audit.
+- Evidence: The exact request and packet digests, explicit native proof repository and verified signed source refs, current base and reconstructed file inventories, complete file and raw-occurrence mappings, unchanged guard and dependency source digests, fixed assertion observations, native worker input and output captures, pending recovery records, derived admission receipt and ledger binding.
+- Evidence classes: checked, recorded
+- Boundary: Historical missing guard or family values remain unknown; current mapping and execution do not prove historical execution or audit judgement. Restricted Python source support does not admit arbitrary unittest behavior. The packet contains no Git bundle and does not embed the external reconstruction storage. The 256 MiB active reservation covers twice the image bytes, twice the original backup bytes and the largest live candidate temporary. Independently grown destinations moved into preserved custody are distinct from those copies; retired attempts, retired temporaries and displaced bytes have no total-history or global disk quota. Byte budgets, namespace observations and retained partial stages do not establish atomic rollback, detached-descendant death or aggregate resource quotas. Admission carries no clean audit verdict and is distinct from checkpoint restoration.
+- Authorises: Continuing the reconstructed replacement through a fresh independent audit after every required current guard and occurrence mapping is checked and recorded.
+- Consequence: 2
+- Refuses: A non-fresh or wrong-base run, unavailable native proof, incomplete cumulative lineage or raw producer evidence, missing or duplicate occurrence mapping, partial or conflicting file reconstruction, unsupported or altered guard bodies, missing family coverage, skipped or unexecuted assertions, failed worker capture, source drift or inconsistent pending recovery evidence.
+- Recovery: Preserve the original run, packet, native source objects, partial staging and reports; inspect the named refusal, restore exact evidence and resume only the recorded pending transition without rewriting historical receipts.
 - Exceptions: none
 
 ### fiat-receipted-delivery
