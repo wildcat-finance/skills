@@ -2119,6 +2119,11 @@ class LifecycleTests(unittest.TestCase):
 
     START_MONOTONIC_NS = 1_000_000_000
     START_WALL_NS = 1_787_918_401 * NANOSECONDS_PER_SECOND
+    # A woken worker still has to be scheduled, take the runtime's locks and
+    # write its terminal receipt before it exits. Under suite load that took
+    # longer than a one-second join (skills#1657), so a join whose outcome a
+    # test asserts waits this long and fails only for a worker that never wakes.
+    WAKE_JOIN_SECONDS = 30
 
     def setUp(self):
         self.policy = compile_policy((FIXTURES / "accepted-job.json").read_bytes())
@@ -3380,7 +3385,7 @@ class LifecycleTests(unittest.TestCase):
                 worker.start()
                 self.assertTrue(second_receipted.wait(5))
                 monotonic.set(runtime._controller.elapsed_deadline_ns)
-                worker.join(1)
+                worker.join(self.WAKE_JOIN_SECONDS)
                 finished_at_deadline = not worker.is_alive()
                 if worker.is_alive():
                     runtime.cancel()
@@ -3455,7 +3460,7 @@ class LifecycleTests(unittest.TestCase):
                 worker.start()
                 self.assertTrue(second_receipted.wait(5))
                 runtime.cancel()
-                worker.join(1)
+                worker.join(self.WAKE_JOIN_SECONDS)
                 woke_after_cancellation = not worker.is_alive()
                 if worker.is_alive():
                     with runtime._provider_turn_condition:
