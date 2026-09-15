@@ -1,0 +1,128 @@
+name: identity
+
+# The candidate supplies Git objects only. Policy and Python imports come from
+# the exact protected base; no pull-request tree is checked out or executed.
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Mark exact head pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "identity: event head object identifier is malformed" >&2
+            exit 2
+          fi
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api --method POST \
+            "repos/wildcat-finance/skills/statuses/$HEAD_SHA" \
+            -f state=pending \
+            -f context=identity \
+            -f description="Base-owned identity policy is evaluating this head" \
+            -f target_url="$run_url" \
+            >/dev/null
+
+      - name: Check out exact base policy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Check candidate commit identities with base policy
+        id: evaluate
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_LOGIN: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$PR_NUMBER" in
+            ""|*[!0-9]*)
+              echo "identity: pull-request number is malformed" >&2
+              exit 2
+              ;;
+          esac
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] ||
+             [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "identity: event object identifier is malformed" >&2
+            exit 2
+          fi
+
+          candidate_repository="$RUNNER_TEMP/identity-candidate.git"
+          test ! -e "$candidate_repository"
+          git init --bare "$candidate_repository"
+          git --git-dir="$candidate_repository" remote add origin \
+            https://github.com/wildcat-finance/skills.git
+          git --git-dir="$candidate_repository" fetch \
+            --no-tags \
+            --no-write-fetch-head \
+            --filter=blob:none \
+            origin \
+            +refs/heads/main:refs/remotes/origin/main \
+            "+refs/pull/${PR_NUMBER}/head:refs/pull/request/head"
+
+          fetched_head="$(
+            git --git-dir="$candidate_repository" rev-parse refs/pull/request/head
+          )"
+          test "$fetched_head" = "$HEAD_SHA"
+
+          python3 scripts/check_commit_identity.py \
+            --repository "$candidate_repository" \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --pull-request-login "$PR_LOGIN"
+
+      - name: Publish exact-head result
+        if: ${{ always() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVALUATION_OUTCOME: ${{ steps.evaluate.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "identity: event head object identifier is malformed" >&2
+            exit 2
+          fi
+          state=failure
+          description="Base-owned identity policy refused or could not evaluate this head"
+          if [ "$EVALUATION_OUTCOME" = "success" ]; then
+            state=success
+            description="Base-owned identity policy accepted this head"
+          fi
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          gh api --method POST \
+            "repos/wildcat-finance/skills/statuses/$HEAD_SHA" \
+            -f state="$state" \
+            -f context=identity \
+            -f description="$description" \
+            -f target_url="$run_url" \
+            >/dev/null
