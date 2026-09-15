@@ -429,3 +429,37 @@ checks the explicit Hypomnema study mode.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-14
+
+**What changed.** A later Fiat run for skills#1135 reverses two parts of this
+study's selected design, and `adr/accept-any-validly-signed-authorship`
+records both with their reasons and the alternatives that lost. First, the
+`HOST_*` parity contract with Fiat that section 3 removes is back.
+`hexctl.py` keeps its three `HOST_*` frozensets as a parity anchor with no
+caller, `scripts/contributors.py` keeps its `HOST_*` names and its parity
+check against them, and the contributor-ranking promise stays as written.
+Fiat still refuses no commit on those sets. Second, the identity workflow and
+checker that section 4 deletes return. `scripts/check_commit_identity.py`
+keeps its bounded reads and malformed-identity refusals, drops its trailer,
+runtime-host and ambiguous-Shoggoth refusals, and no longer imports
+`contributors`. `.github/workflows/identity.yml` publishes an `identity`
+status that ruleset `21830871` no longer requires. The same run restores
+`.claude/settings.json`, with the bytes it had before the runbook's Step 3
+deleted it, and a narrowed `tests/test_host_settings.py`, which that step also
+deleted.
+
+**Why.** The Creator's answers of 2026-09-09 keep the contributor-ranking
+promise as written and keep the identity checker under a narrower promise. No
+answer covers the settings file. The later run keeps it as a reading, because
+`INSTALL.md` still documents it.
+
+**Steps touched.** None. The run this study specified merged its four steps
+into its own run branch, and the later run reworks their result on a separate
+branch.
+
+**Still holding.** The signature-only decision: neither provenance trailer is
+mandatory, runtime hosts may author, commit, co-author, open and describe
+work, and valid local signatures and exact GitHub verification stay required.
+The removal of `identity` from the required contexts of ruleset `21830871`
+also holds.
