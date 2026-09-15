@@ -312,3 +312,13 @@ Complete replacement Files: plugins/hexaemeron/tests/prove_issue_508.py; plugins
 
 **Still holding.** Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
 
+
+### Amendment -- 2026-09-15
+
+**What changed.** Complete replacement Files: plugins/hexaemeron/tests/prove_issue_508.py; plugins/hexaemeron/tests/test_confined_replacement_lifecycle.py; plugins/hexaemeron/skills/fiat/SKILL.md; plugins/hexaemeron/skills/fiat/EVOLUTION.md; plugins/hexaemeron/skills/protasis/SKILL.md; plugins/hexaemeron/skills/protasis/EVOLUTION.md; docs/fiat-508-residual/; generated installation copies and Horos artefacts. Also update declared check ownership and generated copies when their sources change. Also include plugins/hexaemeron/skills/fiat/scripts/hexctl.py only for the bounded absolute-spelling repair at replacement receipt replay, preserving identity and symlink checks. Also include tests/promise_machine_coverage.json; docs/promise-machine/obligation-gates/demonstration-run.json; docs/promise-machine/obligation-gates/demonstration-evidence.md; docs/promise-machine/obligation-gates/evaluation-run.json only for current source-digest and descriptor refresh required by that controller change. Preserve all existing promise identities, prior 100-entry continuity, current 101-entry inventory, historical answers, prompts, model identifiers, commands, dates and outcomes. Add no Promise Machine identity or native fixture, and run no historical model evaluation.
+
+**Why.** The captured replay discrepancy shows default `hexctl verify` refusing `unsafe-target-root` when its base directory is `.`, while verification with an absolute directory succeeds. The documented command has no absolute-directory precondition. Pass an absolute spelling of the same base directory at the replacement receipt replay boundary without resolving symlink components; retain the existing identity and symlink checks. This adds one runtime file for that compatibility repair, with its regression in the already scoped lifecycle test. The same controller source change requires its existing evidence consumers to refresh current bindings without changing historical results. Goal, Entry, Exit, Tests, Disciplines, the study, selected design, version relations and held frontier remain unchanged. Steps 1 through 6 remain completed and unchanged. The Step 7 entry and exit holds are requirements, not claims that their checks have run.
+
+**Steps touched.** Step 7.
+
+**Still holding.** Step 7: entry holds; exit holds.

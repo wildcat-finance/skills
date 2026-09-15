@@ -37,7 +37,8 @@ IMPLEMENTED = frozenset({("whole-worker-sandbox", "worker-deadline"),
                          ("whole-worker-sandbox", "carryover-lineage-recovery"),
                          ("whole-worker-sandbox", "source-owned-report-compatibility"),
                          ("whole-worker-sandbox", "gate-parser-no-execution"),
-                         ("whole-worker-sandbox", "gate-receipt-replay")})
+                         ("whole-worker-sandbox", "gate-receipt-replay"),
+                         ("whole-worker-sandbox", "whole-path-demonstration")})
 
 
 def dispatch_request(root, code, *, origin=None):
@@ -286,7 +287,44 @@ def execute_gates(criterion):
             'scope': 'Actual inert parser and source replay specimens; real disposable controller transitions where selected. The report compatibility specimen runs one real unittest assertion through the existing producer writer and Elenchus reader. No runbook command is executed by the gate adapter; no independent audit or whole delivery success is claimed.'}
 
 
+
+def execute_lifecycle():
+    """Execute the joined native fixture; delivery transport remains controlled."""
+    require(sys.platform == 'darwin', 'unsupported-native-host')
+    import test_confined_replacement_lifecycle as cases
+    root = Path(__file__).resolve().parents[3]
+    sources = [Path(__file__).resolve(), Path(cases.__file__).resolve(),
+               Path(__file__).with_name('test_carryover.py').resolve(),
+               Path(__file__).parent / 'fixtures/issue508/criteria.json',
+               Path(__file__).with_name('hexctl_harness.py').resolve(), root / cases.CLI,
+               root / 'plugins/hexaemeron/skills/protasis/scripts/gate_commands.py',
+               root / 'plugins/hexaemeron/skills/protasis/scripts/protasis.py']
+    sources += sorted(Path(worker_exec.__file__).parent.glob('*.py'))
+    before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+    started = time.time()
+    case = cases.ConfinedReplacementLifecycleTests(
+        'test_exhausted_source_to_current_gate_audit_and_integration')
+    log = StringIO()
+    result = unittest.TextTestRunner(stream=log, verbosity=2).run(unittest.TestSuite([case]))
+    require(result.wasSuccessful() and result.testsRun == 1 and not result.skipped,
+            'lifecycle-specimen-failed: ' + log.getvalue())
+    names = ['exhaust-export-retire', 'complete-reconstruction', 'executed-inoculation',
+             'independent-audit', 'matching-launch-and-gate-evidence', 'integration-refuses-mismatch']
+    inventory = json.loads((Path(__file__).parent / 'fixtures/issue508/criteria.json').read_text())
+    expected = next(row['specimens'] for row in inventory['criteria'] if row['id'] == 'whole-path-demonstration')
+    require(names == expected and set(case.observations) == set(names), 'lifecycle-specimen-inventory-drift')
+    after = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
+    require(before == after, 'lifecycle-specimen-source-drift')
+    return {'criterion': 'whole-path-demonstration', 'specimens': names,
+            'observations': case.observations,
+            'execution': {'testsRun': result.testsRun, 'failures': len(result.failures),
+                          'errors': len(result.errors), 'skipped': len(result.skipped), 'log': log.getvalue()},
+            'sources': before, 'source_observation': {'before_unix': started, 'after_unix': time.time(), 'unchanged': True},
+            'scope': 'Actual local signed Git, archived exhaustion/export/retirement, complete current-base reconstruction, native mapped guards, current gate receipts and controller integration transitions. Attachment and host Git/GitHub delivery transport are controlled fixtures. The new audit round proves transition handling only; independent product Warden remains separate. No model backend, VM deployment, external publication or protection of conversation tools is claimed.'}
+
 def execute(criterion, root):
+    if criterion == "whole-path-demonstration":
+        return execute_lifecycle()
     if criterion in GATE_SPECIMENS:
         return execute_gates(criterion)
     if criterion in REPLACEMENT_SPECIMENS:

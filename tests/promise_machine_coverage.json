@@ -4279,7 +4279,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4398256582b9a3edd303e13814cdb29d0540adbd9ac1da7e2216a0de986b3024"
+      "sha256": "28adbe9f841dde5062b552221a2dd85c71efce7872698e67bf6188ce4090ae75"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -5011,12 +5011,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "00cdbc22eb900e222b85219e29a91170e86983fecd02a7f9bb6d71ad828d409d"
+        "sha256": "b078752cd7bbc59c78d1dafc93b1c0e2b75c235e6df3f8655f32f87ecbe77a10"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "00cdbc22eb900e222b85219e29a91170e86983fecd02a7f9bb6d71ad828d409d"
+        "sha256": "b078752cd7bbc59c78d1dafc93b1c0e2b75c235e6df3f8655f32f87ecbe77a10"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",

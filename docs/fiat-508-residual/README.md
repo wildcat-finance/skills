@@ -7,8 +7,8 @@ Delivery status:
 - Step 3 adds controller launch and private report admission, preserving independent origin changes.
 - Step 4 adds cumulative packet export, evidence validation and detached attachment binding; see the [format and custody reference](../../plugins/hexaemeron/skills/fiat/references/carryover-packet.md).
 - Step 5 adds complete replacement reconstruction and executed current guard coverage. Its conformance reports, implementation checks and independent audit passed.
-- Step 6 adds command-interface validation and receipt replay, including checkpoint relocation. Conformance reports, implementation checks and the independent audit passed; delivery remains pending.
-- The joined lifecycle remains pending.
+- Step 6 adds command-interface validation and receipt replay, including checkpoint relocation. Conformance reports, implementation checks and the independent audit passed.
+- Step 7 adds the joined replacement lifecycle fixture. All eleven conformance criteria pass; the full suite, independent product audit and delivery remain pending.
 
 The decision `adr/confine-the-worker-before-admitting-its-output` records the
 selected construction and rejected alternative.
@@ -26,11 +26,11 @@ identities, not portable execution instructions.
 
 [runbook.md](runbook.md) preserves the immutable original runbook named by
 `source-inventory.json`. [amended-runbook.md](amended-runbook.md) copies the
-current canonical runbook, including its twenty appended amendments. Those
+current canonical runbook, including its twenty-one appended amendments. Those
 amendments select the `unittest-json-v1` Elenchus adapter while retaining the
 `elenchus.unittest.v1` output schema, and name
 `test_confined_replacement_lifecycle.py` for Step 7. The eighth amendment adds the current Fiat version to Step 2's checkpoint
-compatibility set and names its documentation paths. The ninth permits Step 3's current admission-status updates and this exact amended-runbook copy. The tenth names Step 4's format and custody documentation, current status and exact amendment copy; it leaves replacement admission for Step 5. The eleventh adds the custody promise's coverage cases and structural reader specimens. The twelfth names its identity history, current count assertions and current demonstration input and count refresh, while preserving historical evidence. The thirteenth permits the new custody promise in the existing test's expected Fiat population, keeping the exact equality assertion. The fourteenth names Step 5's reconstruction and guard modules, internal worker input, documentation and separate replacement promise coverage; it preserves exact current-count assertions and historical evidence. The fifteenth permits the existing verification test to assert `allow_pending_replacement=True` and ordered observation and filing events. The sixteenth names Step 6's canonical command grammar, version records, distinct validation promise and current consumers, preserving historical evidence and all entry and exit requirements. The seventeenth permits explicit historical fixture creation in the shared controller harness before its first init receipt, while real initialization and new gate tests keep the strict contract. The eighteenth records command validation as Consequence 1, keeps the runtime count at 49 without a new native binding, and preserves existing reader evidence and unknowns. The nineteenth permits registered CLI source and literal Exit commands in two current-init fixture families while preserving strict initialization and every existing assertion. The twentieth updates the one Protasis evolution-contract test for the new generation while retaining its historical row assertions and mature-frontier checks.
+compatibility set and names its documentation paths. The ninth permits Step 3's current admission-status updates and this exact amended-runbook copy. The tenth names Step 4's format and custody documentation, current status and exact amendment copy; it leaves replacement admission for Step 5. The eleventh adds the custody promise's coverage cases and structural reader specimens. The twelfth names its identity history, current count assertions and current demonstration input and count refresh, while preserving historical evidence. The thirteenth permits the new custody promise in the existing test's expected Fiat population, keeping the exact equality assertion. The fourteenth names Step 5's reconstruction and guard modules, internal worker input, documentation and separate replacement promise coverage; it preserves exact current-count assertions and historical evidence. The fifteenth permits the existing verification test to assert `allow_pending_replacement=True` and ordered observation and filing events. The sixteenth names Step 6's canonical command grammar, version records, distinct validation promise and current consumers, preserving historical evidence and all entry and exit requirements. The seventeenth permits explicit historical fixture creation in the shared controller harness before its first init receipt, while real initialization and new gate tests keep the strict contract. The eighteenth records command validation as Consequence 1, keeps the runtime count at 49 without a new native binding, and preserves existing reader evidence and unknowns. The nineteenth permits registered CLI source and literal Exit commands in two current-init fixture families while preserving strict initialization and every existing assertion. The twentieth updates the one Protasis evolution-contract test for the new generation while retaining its historical row assertions and mature-frontier checks. The twenty-first permits the ordinary relative-root replay fix and current evidence-binding refresh while retaining identity, symlink and historical-evidence checks.
 Read the amendments with
 the original step text; the preserved source inventory remains unchanged.
 Both runbooks record this delivery against its fixed starting commit and
@@ -51,12 +51,30 @@ in the frozen design. For `whole-worker-sandbox`, `prove_issue_508.py` executes
 `origin-drift-recovery`, `single-cumulative-reconstruction`,
 `executed-inoculation-guards`, `carryover-lineage-recovery`,
 `source-owned-report-compatibility`, `gate-parser-no-execution` and
-`gate-receipt-replay`. All ten criterion reports pass. The three command reports
+`gate-receipt-replay` and `whole-path-demonstration`. All eleven current criterion reports pass. Step 7 freshly reran the ten earlier criteria to separate report destinations, preserving their twenty historical canonical artifacts. The three command reports
 were refreshed after the relocation repair; earlier runtime evidence remains
 bound to its observed sources, with historical report bytes preserved. The Step 5 fixtures use actual local signed Git, checkpoints,
 controller admission and native guard execution with controlled attachment
 transport. They preserve historical unknowns and do not establish an independent
-audit or a model evaluation. The resolver writes a `protasis-design-report/v1`
+audit or a model evaluation.
+
+The Step 7 report covers six specimens within one passing lifecycle test. It
+uses actual local signed Git, archived exhaustion, export and retirement,
+complete current-base reconstruction, native mapped guards, strict current
+command receipts and controller integration transitions. Attachment and host
+Git/GitHub delivery transport are controlled fixtures. Its new audit round
+checks transition handling; it does not replace the independent product Warden
+audit. Missing or changed producer evidence, a missing gate receipt and CLI
+source drift refuse integration. The missing gate-receipt specimen establishes
+state/ledger disagreement, not a separate semantic verdict about that receipt.
+The test also retains symlink refusal. Default relative-root verification now
+passes an absolute spelling to replacement replay without resolving symlink
+components. The same-test old/fixed execution pair records that repair directly;
+it is separate from a normalized Elenchus Git-parent verdict. No model backend,
+VM deployment, external publication or protection of conversation tools is
+claimed.
+
+The resolver writes a `protasis-design-report/v1`
 boolean only after every named specimen passes, with observations in a companion
 `.observations.json` file. Every other candidate and criterion exits 1
 with `executor-unimplemented` and opens no report path. A caller must require a fresh zero exit before consuming a report,
