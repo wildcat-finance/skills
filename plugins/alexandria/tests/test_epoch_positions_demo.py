@@ -221,6 +221,41 @@ class VerifyTamperTests(EpochDemoTestCase):
         self.assertIn("usdc-interval-epochs-demo:", stderr.getvalue())
         self.assertNotIn("Traceback", stderr.getvalue())
 
+    def assert_controlled_refusal(self, built):
+        """Only an AlexandriaError counts: any other exception means `verify` used unchecked build bytes."""
+        try:
+            self.module.verify(built)
+        except AlexandriaError:
+            return
+        except Exception as error:
+            self.fail(f"verify used unchecked build bytes and raised {type(error).__name__}: {error}")
+        self.fail("verify accepted a tampered build directory")
+
+    def test_a_component_path_outside_the_build_is_refused_before_use(self):
+        """S3-R1-01: a manifest naming a file outside the build must not be read into a summary."""
+        built = self.copy("outside-component")
+        outside = Path(self.enterContext(tempfile.TemporaryDirectory())) / "epoch-table.json"
+        outside.write_text(json.dumps({"log_attributions": 5}), encoding="utf-8")
+        manifest_path = built / "live-release" / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        for row in manifest["components"]:
+            if row["name"] == "epoch-table":
+                row["object_path"] = str(outside)
+        manifest_path.write_bytes(canonical_bytes(manifest))
+        self.assert_controlled_refusal(built)
+
+    def test_a_malformed_release_manifest_is_refused_without_escaping(self):
+        """S3-R1-01: a manifest with no components refuses as a checked release, not as a KeyError."""
+        built = self.copy("malformed-manifest")
+        (built / "live-release" / "manifest.json").write_text("{}", encoding="utf-8")
+        self.assert_controlled_refusal(built)
+
+    def test_a_summary_that_is_not_an_object_is_refused(self):
+        """S3-R1-01: the recorded summary is build input and is checked for shape before use."""
+        built = self.copy("summary-not-object")
+        (built / "summary.json").write_bytes(canonical_bytes([]))
+        self.assert_controlled_refusal(built)
+
 
 if __name__ == "__main__":
     unittest.main()

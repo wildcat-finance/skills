@@ -35,10 +35,11 @@ EXAMPLE = Path(__file__).resolve().parent
 PLUGIN = EXAMPLE.parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
-from alexandria_lib.canonical import canonical_bytes, load_bytes  # noqa: E402
+from alexandria_lib.canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import UPGRADED_TOPIC  # noqa: E402
-from alexandria_lib.release import ingest  # noqa: E402
+from alexandria_lib.paths import read_confined_file  # noqa: E402
+from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES, ingest  # noqa: E402
 from usdc_interval import Builder, Collector, Reconciler, check_interval  # noqa: E402
 
 
@@ -73,6 +74,15 @@ def _read(path: Path, label: str):
     if path.is_symlink() or not path.is_file():
         raise AlexandriaError(f"the demonstration's {label} is missing at {path}")
     return load_bytes(path.read_bytes(), label)
+
+
+def _built(root: Path, relative: str, label: str, max_bytes: int = MAX_CONTROL_BYTES):
+    """Read one file of a build directory, which `verify` must treat as hostile.
+
+    The read is confined below the root, refuses links and is capped, so a
+    tampered manifest cannot name a file elsewhere on disk or an unbounded one.
+    """
+    return load_bytes(read_confined_file(root, relative, label, max_bytes=max_bytes), label, max_bytes=max_bytes)
 
 
 def _fixture_provider():
@@ -125,10 +135,11 @@ def specimen(*, first_block_from_log: bool = True) -> dict:
 
 
 def _component(release: Path, name: str):
-    manifest = _read(release / "manifest.json", "release manifest")
+    """One component of a release; callers run `check_interval` on it first."""
+    manifest = _built(release, "manifest.json", "release manifest")
     for row in manifest["components"]:
         if row["name"] == name:
-            return _read(release / row["object_path"], f"release {name}")
+            return _built(release, row["object_path"], f"release {name}", MAX_RAW_COMPONENT_BYTES)
     raise AlexandriaError(f"the release carries no {name} component")
 
 
@@ -158,17 +169,19 @@ def staging_digest(root: Path) -> str:
 
 def synthetic_summary(release: Path) -> dict:
     """Check the synthetic release and name each log's owner by address."""
+    checked = _checked(release)
     receipt = _component(release, "epoch-table")
     owners = [epoch["implementation"] for epoch in receipt["epochs"]]
     ownership = [
         {**{field: row[field] for field in OWNERSHIP_FIELDS}, "implementation": owners[row["epoch_index"]]}
         for row in receipt["log_attributions"]
     ]
-    return {**_checked(release), "ownership": ownership, "upgrade_block": str(UPGRADE_BLOCK)}
+    return {**checked, "ownership": ownership, "upgrade_block": str(UPGRADE_BLOCK)}
 
 
 def live_summary(release: Path) -> dict:
     """Check the live v2 release and count its owners; its identifier binds every row."""
+    checked = _checked(release)
     receipt = _component(release, "epoch-table")
     counts: dict = {}
     for row in receipt["log_attributions"]:
@@ -179,7 +192,7 @@ def live_summary(release: Path) -> dict:
         for epoch in receipt["epochs"][1:]
     ]
     return {
-        **_checked(release),
+        **checked,
         "attributions": counts,
         "boundaries": boundaries,
         "historical_release_id": _read(LIVE / "expected.json", "historical expectation")["release_id"],
@@ -224,7 +237,7 @@ def unsupported_attribution(state: dict, workspace: Path, name: str, position: i
 
 def rebound_refusal(release: Path, workspace: Path, name: str, edit) -> str:
     """Re-ingest an edited epoch table under fresh digests; `check` must refuse it."""
-    manifest = _read(release / "manifest.json", "release manifest")
+    manifest = _built(release, "manifest.json", "release manifest")
     source = workspace / name / "source"
     source.mkdir(parents=True)
     components = []
@@ -348,8 +361,8 @@ def build(output: Path) -> dict:
 def verify(built: Path) -> dict:
     """Re-check both releases and re-run every probe; compare with the pins."""
     built = built.absolute()
-    recorded = _read(built / "summary.json", "demonstration summary")
-    if recorded.get("format") != SUMMARY_FORMAT:
+    recorded = _built(built, "summary.json", "demonstration summary")
+    if not isinstance(recorded, dict) or recorded.get("format") != SUMMARY_FORMAT:
         raise AlexandriaError("the demonstration summary has an unknown format")
     expected = _read(EXPECTED, "pinned expectation")
     live_expected = _read(LIVE_EXPECTED, "pinned live v2 expectation")
