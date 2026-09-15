@@ -337,6 +337,10 @@ runner counts and verdicts: a binding mismatch may coexist with a real
 regression. Empty rows cover only inspected JSON bindings, excluding pins in
 code, ambiguous bindings, and other digest formats. Inspection reads at most
 2 MiB per blob and 16 MiB in total; exceeding either limit is `inconclusive`.
+The fixed-and-guarded emitter accepts these optional rows after checking
+their shape, paths, digests and agreement with `tests`. Its nine-field record
+keeps the qualified verdict detail; retain the original JSON result for the
+individual rebind rows.
 This diagnostic belongs to the commit-based CLI; the separate caller-bound
 `parent_guard_evidence` operation retains its exact blob and report contract.
 

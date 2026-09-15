@@ -85,3 +85,36 @@ class DigestRebindReports(RunnerCase):
             result = self.outcome(ref)
         self.assertEqual("inconclusive", result["status"])
         self.assertIn("byte limit", result["detail"])
+
+
+class DigestRebindEmitterTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        path = Path(__file__).parents[1] / 'skills/elenchus/scripts/fixed_and_guarded.py'
+        spec = importlib.util.spec_from_file_location('rebind_record_emitter', path)
+        cls.emitter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.emitter)
+
+    def result(self):
+        return {
+            'ref': 'a' * 40, 'status': 'guarded',
+            'tests': ['tests/pins.json', 'test_behavior.py'], 'detail': 'qualified guard',
+            'report': {'complete': True, 'executed': 1, 'assertion_failures': 1,
+                       'errors': 0, 'skipped': 0},
+            'digest_rebinds': [{'register': 'tests/pins.json', 'path': 'source.py',
+                               'parent_sha256': 'a' * 64, 'rebound_sha256': 'b' * 64,
+                               'target_overlaid': False}],
+        }
+
+    def test_emitter_accepts_the_optional_diagnostic(self):
+        self.assertEqual([], self.emitter.result_findings(self.result()))
+
+    def test_emitter_refuses_malformed_or_inconsistent_diagnostics(self):
+        for key, value in [('target_overlaid', 0), ('target_overlaid', True),
+                           ('path', '../source.py'), ('parent_sha256', 'not-a-digest'),
+                           ('register', 'other.json'), ('unexpected', 'field')]:
+            with self.subTest(key=key, value=value):
+                result = self.result()
+                result['digest_rebinds'][0][key] = value
+                findings = self.emitter.result_findings(result)
+                self.assertTrue(any(f.code == 'F006' for f in findings))
