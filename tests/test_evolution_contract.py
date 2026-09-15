@@ -389,7 +389,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.57.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.58.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -405,6 +405,25 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("skills#363", latest["evidence"])
         self.assertIn("`next --task-handle` refuses", latest["change"])
         self.assertIn("skills#1212", latest["change"])
+        # The signature-only generation landed under this frontier and is the
+        # newest row; it moves neither the revision nor the held job.
+        signature_only = history_rows(ledger)[-1]
+        self.assertEqual(signature_only["version"], "fiat-v6.58.1")
+        self.assertEqual(signature_only["axis"], "generation")
+        self.assertEqual(signature_only["revision"], "delegated-task-identity")
+        self.assertEqual(
+            signature_only["digest"],
+            "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
+        )
+        self.assertIn("skills#1135", signature_only["evidence"])
+        self.assertIn("signature-only", signature_only["change"])
+        self.assertIn("parity anchor", signature_only["change"])
+        self.assertIn("inoculation guard commit", signature_only["change"])
+        self.assertIn("web-flow refusal is unchanged", signature_only["change"])
+        self.assertIn(
+            "authenticated connector the same standing", signature_only["change"]
+        )
+        self.assertIn("Frontier unchanged", signature_only["change"])
 
     def test_fiat_state_shape_frontier_holds_the_task_identity_successor(self):
         ledger = (
