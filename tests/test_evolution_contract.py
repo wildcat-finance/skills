@@ -351,7 +351,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.55.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.56.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -359,17 +359,26 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.55.1")
+        self.assertEqual(latest["version"], "fiat-v5.56.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#1345", latest["evidence"])
-        self.assertIn("routes a filed `Fiat-Required: 0`", latest["change"])
-        self.assertIn("fifteen-minute window", latest["change"])
+        self.assertIn("skills#508", latest["evidence"])
+        self.assertIn("native macOS worker supervisor", latest["change"])
+        self.assertIn("shared stream and artifact byte cap", latest["change"])
+        self.assertIn("Controller launch admission remains pending", latest["change"])
         self.assertIn("held target stay unchanged", latest["change"])
+        filed_decision = by_version["fiat-v5.55.1"]
+        self.assertEqual(filed_decision["axis"], "generation")
+        self.assertEqual(filed_decision["revision"], "state-shape-validation")
+        self.assertEqual(filed_decision["digest"], latest["digest"])
+        self.assertIn("skills#1345", filed_decision["evidence"])
+        self.assertIn("routes a filed `Fiat-Required: 0`", filed_decision["change"])
+        self.assertIn("fifteen-minute window", filed_decision["change"])
+        self.assertIn("held target stay unchanged", filed_decision["change"])
         # Generations displaced from newest keep their own coverage: each is
         # still a transition the held frontier had to survive.
         halted_reset = by_version["fiat-v5.54.1"]
