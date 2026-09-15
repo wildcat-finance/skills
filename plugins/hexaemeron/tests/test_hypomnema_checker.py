@@ -9,6 +9,7 @@ import contextlib
 import io
 import json
 import os
+import random
 import tempfile
 import time
 import unittest
@@ -255,6 +256,72 @@ class Runbooks(unittest.TestCase):
         started = time.perf_counter()
         self.assertEqual(["H003"], codes(line))
         self.assertLess(time.perf_counter() - started, 2.0)
+
+
+class PointerScanCost(unittest.TestCase):
+    @staticmethod
+    def recorded_lines(repeats):
+        """The line shapes step 2 round 1 of the skills#1086 run timed."""
+        return (
+            ("openers", "[" * repeats),
+            ("link-openers", "[a](" * repeats),
+            ("shared-closer", "[" * repeats + "](" + "a" * repeats),
+            ("quoted-links", "`[a](b)` " * repeats),
+            ("quoted-runbooks", "`runbook: a/b.md` " * repeats),
+        )
+
+    @staticmethod
+    def reading(matches):
+        return [(match.span(), match.groupdict()) for match in matches]
+
+    def test_each_recorded_quadratic_line_is_read_in_linear_time(self):
+        # At 20,000 repeats this lint took 0.70 s, 19.2 s, 10.3 s, 3.36 s and
+        # 3.42 s on these lines before skills#1656, in this order, and under
+        # 30 ms each after it, on an Apple M5 Max.
+        for shape, line in self.recorded_lines(20000):
+            with self.subTest(shape=shape):
+                started = time.perf_counter()
+                self.assertEqual([], codes(line))
+                self.assertLess(time.perf_counter() - started, 1.0)
+
+    def test_the_link_scan_yields_exactly_the_matches_of_the_pattern(self):
+        # Tokens rather than characters: a wrong skip can show only once a later
+        # link starts inside an earlier target, a dozen characters in, and every
+        # string that long over an eight-character alphabet is too many to try.
+        tokens = ("[", "]", "(", ")", "](", "!", '"', " ", "\t", "\xa0", "a", "b.md")
+        generator = random.Random(1656)
+        lines = [line for _, line in self.recorded_lines(200)] + [
+            "".join(generator.choice(tokens)
+                    for _ in range(generator.randint(0, 24)))
+            for _ in range(20000)
+        ]
+        for line in lines:
+            self.assertEqual(
+                self.reading(hypomnema.LINK.finditer(line)),
+                self.reading(hypomnema._links(line)),
+                line[:80],
+            )
+
+    def test_merged_spans_hold_exactly_the_offsets_the_pairs_hold(self):
+        # Runs of one and two backticks pair independently, so these overlap.
+        self.assertEqual([(2, 17)], hypomnema._code_spans("a `` b ` c `` d ` e"))
+        generator = random.Random(1656)
+        for _ in range(2000):
+            pairs = []
+            for _ in range(generator.randint(0, 8)):
+                start = generator.randint(0, 40)
+                pairs.append((start, start + generator.randint(1, 12)))
+            spans = hypomnema._disjoint_spans(pairs)
+            self.assertTrue(all(
+                left[0] < left[1] <= right[0]
+                for left, right in zip(spans, spans[1:])
+            ))
+            for index in range(-1, 54):
+                self.assertEqual(
+                    any(start <= index < end for start, end in pairs),
+                    hypomnema._within(spans, index),
+                    (pairs, index),
+                )
 
 
 class YamlRunbooks(unittest.TestCase):

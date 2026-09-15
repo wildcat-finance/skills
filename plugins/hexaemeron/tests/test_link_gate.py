@@ -681,11 +681,11 @@ class CheckerBoundaryTests(LinkGateCase):
 class ScanBoundTests(LinkGateCase):
     """The in-process scan takes the checker's timeout as its own bound."""
 
-    # Hypomnema's `LINK` backtracks on the first line and `_within` scans every
-    # span for each match on the second, so each is quadratic in its length.
+    # The rule calls `LINK.finditer`, which retries the pattern at every `[` of
+    # this line and reads to its end each time, so the scan is quadratic in its
+    # length. A line of quoted links no longer is: `_within` bisects the spans.
     QUADRATIC_LINES = (
         ("link-openers", "[a](" * 20000),
-        ("quoted-links", "`[a](b)` " * 20000),
     )
 
     def test_a_quadratic_line_refuses_at_the_pointer_rule_bound(self):
