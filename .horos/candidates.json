@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23054335,
+    "bytes_blob": 23152247,
     "bytes_generated": 98
   },
   "entries": [
@@ -644,9 +644,9 @@
       "path": "docs/agent-instruction-reconciliation/demonstration-evidence/f9ac940750ae9d116251588496fb1e724e70b656470b72337e73dc8f48fde23c.bin"
     },
     {
-      "bytes": 96519,
+      "bytes": 97912,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 96519 bytes",
+      "evidence": "no newline in the first 4096 bytes of 97912 bytes",
       "grade": "candidate",
       "path": "docs/agent-instruction-reconciliation/demonstration.json"
     },
@@ -656,6 +656,13 @@
       "evidence": "no newline in a 2048-byte window at offset 173511 of 347023 bytes",
       "grade": "candidate",
       "path": "docs/agent-instruction-reconciliation/fixture-isolation/step-1-checks.json"
+    },
+    {
+      "bytes": 96519,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 96519 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/history/demonstration-before-command-cleanup.json"
     },
     {
       "bytes": 67355,

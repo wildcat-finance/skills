@@ -1,0 +1,162 @@
+# Issue 508 residual study
+
+Status: study complete for controller review. The selected design is a native macOS worker launcher, cumulative replacement packet and bounded command validator. Implementation conformance remains pending at the named transitions in `design-evidence.json`; this study does not receipt itself.
+
+Assumptions and decisions precede the proposed mechanisms. The user has confirmed that host-enforced protection is mandatory: every delegated write must be checked before execution, regardless of tool. A Fiat adapter that can be bypassed by a direct host tool does not satisfy that requirement. No global host configuration change or VM deployment is authorised by this study.
+
+The exact target is `issue/16777233-552933416`, resolved and verified at `/Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/tmp/fiat/fiat-508-restudy-residual-carryover-confinement-and-g`. Its starting commit is `45f2a7e3e14395af218c9373eeecaf263bf766da`.
+
+## 1. Problem and proving path
+
+Issue #508 requires three residual capabilities: cumulative exhausted-audit carryover, delegated-write confinement, and executable runbook command validation. The current issue review requires each to be studied separately against current main.
+
+A working prototype must reproduce the exhausted-round replacement lifecycle, deny out-of-target writes through every enabled worker tool, and reject the four-draft Brevitas command before runbook receipt. Passing a path-validator fixture alone cannot establish the second condition.
+
+The proving paths are the issue's acceptance cases 1 through 4 for carryover, 5 through 8 and 11 for confinement, and 9 through 10 for command validation and delivery checks. The future resolver commands are recorded in `design-evidence.json`; they are implementation obligations, not executed study evidence.
+
+## 2. Prior art and dispositions
+
+The live issue body was read on 13 September 2026; it has no comments. Its 26 August review supersedes the historical design assumptions while retaining the three residual mechanisms.
+
+Current controller observations:
+
+- `plugins/hexaemeron/skills/fiat/scripts/hexctl.py:17698` emits `audit-verdict` on exhausted rounds with findings.
+- `hexctl.py:14600` already admits checkpoint export at that boundary; `hexctl.py:16141` verifies and exports controller evidence.
+- `hexctl.py:16979` relocates an existing controller; `hexctl.py:17037` requires the same ledger prefix plus one restore event.
+- `hexctl.py:18396` already verifies, retires and archives halted runs.
+- `hexctl.py:4667` parses filing-triage carryover rows. It does not define cumulative audit reconstruction.
+- `hexctl.py:7425` binds runbook bytes, design lock, version relations and step topology.
+- `plugins/hexaemeron/skills/protasis/scripts/protasis.py:292` checks command presence only.
+
+The whole-set `audit_synopsis.py --check` ran from the target with Python 3.14.6 and exited 0. The complete plugin synopsis `plugins/hexaemeron/audit/AUDIT_SYNOPSIS.md` was read: F-01 through F-09 are fixed, F-10 is accepted; missing legacy schema, coverage, not-checked and Elenchus fields remain unknown. Its unpursued cross-filesystem replacement, concurrent invocation and terminal-output questions are historical leads, not evidence of current closure.
+
+The mechanism-specific reading is recorded in `audit-source-inventory.json`, with exact source digests and read ranges. Later bounded reads completed the previously truncated #560 and #622 records. The #1098 instruction-reconciliation corpus is outside the selected mechanism; its truncated read supplies no conclusion. This inventory does not claim every unrelated historical audit was read.
+
+Portable checkpoint #557 supplies descriptor-bound staging, bounded readers, exact interrupted retry and filesystem identity precedents. #860 preserves same-run identity and rejects restore stacking; reuse those checks without confusing a replacement run with continuation. #560 requires commit identity and strict JSON types. #576 prevents a whole configuration section from bypassing audit-log ownership. #429 recovery preserves source identity and failed-write rollback. #608 retains frozen source declarations; #774 distinguishes fixed from guarded and direct limit tests from whole-path evidence. #1318 preserves producer report bytes and deliberately limits lexical guard matching. These are reused constraints, not claims that #508 is already delivered.
+
+The complete #622 original and Carryover-2 synopses show why a discovered method is insufficient: decorators, lifecycle overrides, skip metadata and replacement dispatch can suppress the actual guard. Carryover-2 round 8 still required Carryover-3 despite fixes. The Carryover-3 Step-1 record supplies the complete current-base reconstruction precedent; its later runner scheduling steps are outside this study. Root #434 Carryover-5 records retain the final cumulative 61 IDs and eight families, rather than treating the earlier 36-ID count as complete. Legacy repeated IDs remain raw occurrences; missing legacy fields stay unknown. Those counts are historical, not new tests.
+
+The latest two relevant merged pull request bodies, #1577 and #1551, were read in full. #1577 preserves these hand-offs at their existing issues: `run-checks-vacuous-green` (#1429), `amendment-reach-is-unreported` (#1433), `audit-tree-unlinted` (#1451), `routed-exit-not-discriminable` (#1453), `register-scope-narrower-than-criterion` (#1454), `frontier-ledger-readers` (#1555), `carried-forward-bom` (#1556), `integration-resolver-names-head` (#1575), `guard-error-reads-inconclusive` (#1576), `brevitas-b022-line-anchored` (#1338), `dead-code-needs-a-clean-tree` (#1342), and `coverage-overlay-verdict` (#1198). This study does not absorb their implementation. Its `study-write-access-sentence` and `study-on-call-plain-verify` dispositions remain historical corrections explained in that PR. The reported inconclusive Elenchus outcomes remain inconclusive here. #1551 leaves renumbering existing framework collisions outside its change and records then-existing test failures against #1538; neither statement establishes a current failure or authorises renumbering in #508.
+
+Programme issues #872, #873, #875 and #878 were read live. They respectively specify a signed launch request, a disposable VM launcher, a trusted Fiat adapter, and hostile whole-path tests. These are prospective contracts, not delivered enforcement.
+
+## 3. Constraints and non-goals
+
+Use the starting commit above and Python 3.14.6, as declared by `.python-version`. Preserve the old #508 worktree and archive as historical evidence. No receipts, implementation, commits or publications belong to this study.
+
+The active task has `danger-full-access` permissions. Its own tools are not established as confined. The target's `git rev-parse --git-common-dir` returns `/Users/c0rtexzer0/Documents/GitHub/skills-fiat-508/.git`: ordinary linked-worktree Git mutations may therefore reach outside the target. The eventual design must account for shared metadata without granting workers general origin-write access.
+
+Always preserve evidence and run applicable repository checks before delivery. Changes to global host security configuration and VM deployment remain outside this study's authority. Never edit vendored code, delete a failing test, invent a command result or expose credentials.
+
+## 4. Separate mechanisms and candidate constructions
+
+| Module | Responsibility | Depends on |
+| --- | --- | --- |
+| carryover | Bind cumulative exhausted-audit evidence to a replacement run | existing checkpoint and audit readers |
+| confinement | Deny worker writes outside its permitted filesystem before execution | an enforced execution host |
+| gate-validation | Bind checked command interfaces before runbook receipt | current CLI parsers and receipt source binding |
+
+The selected candidate is `whole-worker-sandbox`; `optional-tool-mediation` is rejected because its unmediated writer succeeds in the comparative specimen. A mandatory host broker that exposes no other writer could satisfy the same requirement; it is not the rejected optional construction. The disposable VM in #873 remains an alternative programme implementation, with no fabricated local measurements.
+
+`design-probe.py` runs the same inside-write and forbidden-write specimens for both selected and rejected constructions. Four source-bound reports record a working inside write for both; forbidden writes are zero beneath the whole-worker policy and one through the optional construction's exposed writer. `design-evidence.json` records the unique feasible frontier. These observations establish native primitive feasibility and the specific optional bypass, not complete enabled-tool coverage.
+
+Saved host evidence is `.hexaemeron/host-write-probe.py` and `.hexaemeron/host-write-probe-result.json`. The script SHA-256 is `acd016afa881bec87709b34c0ea6d1030913c5986ab061b9846e53ad1b653670`. Parent executed the final script with Python 3.14.6; the saved result records macOS 26.5.1, all 5 cases passing and the outside fixture preserved. I read both saved files. The cases permit an inside Python write and deny an outside Python write, symlink escape, outside deletion and nested-shell write. The fixture stays under this target and is removed. This establishes those process-level observations only.
+
+I independently read `codex exec --help` and `codex sandbox --help`. The former offers `--ephemeral`, `--ignore-user-config` and a sandbox mode described for model-generated shell commands; the latter runs a named command under Seatbelt. Help output does not establish how every enabled tool service is placed. The current collaboration interface has no per-worker enforcement parameter and inherits this task's permissions.
+
+### Confinement module specification
+
+The implementation entrypoint will be a Fiat `worker-exec` supervisor launching one declared executable worker command under `/usr/bin/sandbox-exec`. The worker process and every enabled executor must descend from that launch. An executable shell, Python and patch worker is sufficient for the first prototype; a production model backend is not claimed. External MCP, app, command and other host deputies are unavailable. Unsupported operating systems, capabilities or launch policies refuse before the worker starts. This adds a new enforced execution path; it does not retrofit this conversation's tools.
+
+The launch request binds the absolute execution root, worker argv, executable identities, policy digest, allowed tool inventory, deadline and output cap. Clear inherited authority and close descriptors; deny network and host IPC by default. Permit only the declared scratch root; the live run's `.hexaemeron`, worktree `.git` pointer, shared Git directory and aliases remain denied. Disposable fixture repositories may own their own `.git` inside scratch; those are data, never the live run metadata. Set child `TMPDIR` inside scratch. Keep controller metadata, shared Git, signing and receipts outside the worker. Relative source-owned report declarations remain unchanged: the dispatcher resolves declared operands to absolute paths and validates them before execution. The OS denies resolved out-of-root writes even in arbitrary child code; it cannot prove that every syscall argument was spelled absolutely.
+
+Workers operate in disposable scratch beneath the target. Declared study, audit and report outputs go to the worker candidate-output subtree; the controller verifies and promotes their immutable snapshot to the declared `.hexaemeron` destination. Workers never write that live state directory directly. Guard destination substitution and preserve source-owned Elenchus declarations. The controller admits only bounded regular-file bytes copied through descriptor-bound, no-follow reads into controller-owned staging after the launch returns. It hashes and verifies that private snapshot before applying an approved manifest. Worker exit alone never certifies the mutable scratch tree. Symlinks, devices, metadata paths and stale admission identities refuse. A detached descendant can keep changing scratch but cannot reach the admitted snapshot or controller state; uncertain cleanup is recorded and refuses subsequent reuse of that scratch. Whole-path acceptance must demonstrate this separation with a `setsid` descendant. Process-group killing alone is insufficient.
+
+The stronger saved `host-dispatch-probe.py` and result add a default-deny policy, clean environment, closed inherited descriptors and a denied loopback connection to the five filesystem specimens. They establish those six observations only. Full dispatch, IPC/deputy exclusion, metadata protection, inherited-descriptor handling and stable admission remain required implementation conformance.
+
+Apple documents host directory exposure through configured directory-sharing devices. The vfkit project documents a VM command-line interface and explicit `virtio-fs` shares. These are implementation candidates, not conformance evidence for this task.
+
+### Carryover module specification
+
+Carryover reuses checkpoint export and halted-run retirement but adds a separate replacement admission. One bounded Markdown packet contains a closed JSON manifest and the complete cumulative changed-file payload, including deletions and executable modes, encoded as data. It binds source run, step, every round, original and fixed commit/tree identities, producer bytes and digests, finding occurrences, dispositions, guard identities and families. References preserve provenance; reconstructing the candidate cannot depend on an older packet. The manifest binds the monotonically numbered `<issue>-CARRYOVER[-N].md` sequence, exact packet digest, issue attachment identity and URL, archived controller evidence identities and a locally verified signed fixed-tree ref. Admission refuses missing or stale evidence, duplicate or non-successor sequence numbers, an attachment identity or digest mismatch, and an unverifiable signed ref. Packet creation and replacement admission never automatically close a pull request, delete a remote branch or merge. Reject symlinks, special files, duplicate destinations, Git/controller metadata and payloads above 64 MiB before applying anything.
+
+Normalised findings use `(source_run, step, round, id)` with raw occurrence references, preserving repeated legacy rows rather than silently dropping them. Missing legacy evidence remains unknown and blocks dependent acceptance. Reconstruct the entire manifest on current base in private staging, recording every unchanged, transformed or conflicted path. Any conflict requires a complete revised mapping. No test, lint or acceptance gate runs on a partial reconstruction; bounded inert manifest validation necessarily precedes reconstruction. Execute all mapped inoculation guards, require actual non-skipped passes and family coverage, then request a new independent audit. Exhaustion remains finding-bearing; it never becomes clean through packet creation.
+
+### Gate-validation module specification
+
+Command validation parses every fenced command using a bounded grammar: literal argv, quoted operands and finite per-file loops over a declared list. Reject command substitution, arbitrary shell evaluation and unsupported forms. Checked-in CLI adapters validate arity and options without importing arbitrary target modules or executing runbook commands. Use harmless temporary specimens for supported parser probes. Bind original command bytes, adapter and CLI source digests, report substitutions and results at `done runbook`; replay refuses drift. Preserve Elenchus's source-owned input syntax and exact report bytes.
+
+### Shared transition contract
+
+The design has 13 criteria across correctness, time, space, compatibility and recovery, with two candidates and 26 results: four observed selection results and 22 pending conformance results. The rejected candidate is not an implementation obligation. The selected candidate's obligations define this seven-step order: contracts and fixtures; native supervisor, policy, lifetime and caps; controller launch binding and origin recovery; cumulative packet binding; replacement reconstruction and inoculation; command validation and receipt replay; joined demonstration.
+
+| Before transition | Selected conformance requirement |
+| --- | --- |
+| step:4 | `whole-launch-dispatch`: every enabled shell/Python/patch writer is confined; external deputies, inherited descriptors, IPC, metadata and policy loosening specimens refuse; stable admission survives a detached writer |
+| step:3 | `worker-deadline`: a two-second specimen returns a bounded refusal within ten seconds; no mutable scratch is accepted after timeout or uncertain cleanup |
+| step:3 | `worker-output-cap`: a 1 MiB configured stream/artifact limit refuses the first excess bytes without retaining an unbounded buffer |
+| step:4 | `origin-drift-recovery`: denied writes leave origin bytes unchanged; independent user drift is preserved, reported without invented attribution and re-snapshotted |
+| step:6 | `single-cumulative-reconstruction`: at least two exhausted passes reconstruct completely on current base before any gate; omitted payloads and partial mappings refuse |
+| step:6 | `executed-inoculation-guards`: discovery-only, skipped and replaced guards refuse; all required actual passes and families precede fresh audit |
+| step:6 | `carryover-lineage-recovery`: stale source, duplicate identity, interrupted admission and missing prior occurrence refuse without losing original evidence |
+| step:7 | `source-owned-report-compatibility`: source report declarations and bytes remain unchanged while execution destinations are absolute and checked |
+| step:7 | `gate-parser-no-execution`: malformed fences, the four-draft Brevitas command, unsupported substitutions and injected commands refuse without side effects |
+| step:7 | `gate-receipt-replay`: valid finite per-file commands pass; command, CLI, adapter or report-source drift invalidates the receipt |
+| integration | `whole-path-demonstration`: exhaust, export, retire, reconstruct, inoculate, independently audit and integrate only under matching launch and gate evidence |
+
+The future `prove_issue_508.py` commands in the matrix must emit `true` only when their complete named specimen set passes; absent executors or reports refuse. No pending row is positive evidence today.
+
+## 5. Risk register
+
+```risk-register
+tool-bypass | worker tools and external services | every enabled writer is inside the enforced policy or is unavailable
+git-common-dir | linked worktree and origin metadata | worker Git operations cannot mutate shared origin metadata
+partial-reconstruction | inherited audit passes | no test or acceptance gate runs before the complete manifest is applied
+packet-omission | cumulative carryover lineage | missing or duplicate prior items refuse replacement admission
+origin-drift | concurrent user files | preserve drift and attribute only supported attempted writes
+gate-probe-effects | runbook commands and CLI parsers | validation cannot execute arbitrary repository commands
+source-substitution | command reports and current CLI bytes | receipt and replay bind the same command and implementation
+false-closure | inoculation and independent audit | executed guards never replace a clean independent round
+descendant-lifetime | detached workers and mutable scratch | only the verified controller-owned snapshot can be admitted
+controller-metadata | worker root exceptions | worker writes to controller and Git metadata refuse
+inherited-authority | descriptors and host deputies | unavailable host services cannot execute writes for the worker
+```
+
+## 6. Glossary
+
+Cumulative packet: one complete reconstruction source covering all inherited passes.
+Inoculation: executed guards mapped to carried findings and declared families.
+Confinement: host-enforced denial before an out-of-target write occurs.
+Gate probe: an observed interface check, with no claim about future implementation success.
+
+## 7. Sources
+
+- [Issue 508](https://github.com/wildcat-finance/skills/issues/508), current review and retained original acceptance.
+- [JobSpec owner](https://github.com/wildcat-finance/skills/issues/872), [VM launcher owner](https://github.com/wildcat-finance/skills/issues/873), [Fiat adapter owner](https://github.com/wildcat-finance/skills/issues/875), [hostile acceptance owner](https://github.com/wildcat-finance/skills/issues/878).
+- [Apple directory sharing](https://developer.apple.com/documentation/virtualization/shared-directories) and [vfkit usage](https://github.com/crc-org/vfkit/blob/main/doc/usage.md), read 13 September 2026.
+- Local source locations in section 2 and `plugins/brevitas/skills/brevitas/scripts/brevitas.py:446`, whose parser admits one optional draft at line 448.
+- Exact read-only probe: importing current Protasis with `python3 -B` and calling `_has_command` on the fenced four-draft command returned `True`. Running `python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py one.md two.md three.md four.md` exited 2 and rejected `two.md three.md four.md`.
+
+## 8. Signals
+
+[Ephoros](../plugins/hexaemeron/skills/ephoros/SKILL.md) owns the signal contract. Record which policy and complete tool inventory governed a batch, which attempted target was denied, whether origin drift was attributed, and which carryover or gate-source identity refused. The controller must name the blocked transition and retain enough evidence for recovery without reading unrelated user-file contents.
+
+## 9. Trust boundaries
+
+[Phylax](../plugins/hexaemeron/skills/phylax/SKILL.md) owns the trust-boundary controls. Worker tools, subprocess descendants, external tool services, Git metadata and host artefact import are separate write authorities. An allowed shell path cannot authorise a separate unsandboxed tool service. The trusted controller keeps receipt, signing and publication authority.
+
+## 10. Performance
+
+[Metron](../plugins/hexaemeron/skills/metron/SKILL.md) owns measurements. No performance improvement is claimed. The matrix requires a bounded deadline and output-cap specimen before step 3. Record launch and copy timings against the exact fixture; the saved elapsed time is one observation, not a general bound.
+
+## 11. Refusal and guards
+
+[Elenchus](../plugins/hexaemeron/skills/elenchus/SKILL.md) owns reproduction and guards. Retain the parser-failure specimen. Future guards must cover tool bypass, traversal, symlink escape, origin target, report escape, concurrent user drift and partial reconstruction.
+
+Selection readiness is supported by the comparative native primitive probe. Full enabled-tool dispatch, descendant lifetime, metadata protection and complete replacement lifecycle remain explicit conformance gates. Their absence today does not claim a working implementation or allow the dependent step to pass.
+
+## 12. Decisions and homes
+
+[Hypomnema](../plugins/hexaemeron/skills/hypomnema/SKILL.md) owns durable decisions. Preserve the user's mandatory host-enforcement decision here. The implementation ADR must preserve the selected native host boundary, controller-owned snapshot admission, cumulative packet format and bounded command grammar. Programme #872/#873/#875/#878 retain their broader launch, VM, adapter and hostile-pilot ownership; this finite Mac prototype does not close them.
+
+All 12 study sections and the checked candidate matrix are ready for controller review. Study receipt, runbook receipt, implementation, independent audit and delivery remain separate transitions. No current host confinement or completed delivery is claimed.

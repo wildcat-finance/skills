@@ -1,0 +1,54 @@
+{
+  "cases": [
+    {
+      "case": "inside-python",
+      "denied": false,
+      "exit": 0,
+      "expected_exit": 0,
+      "passed": true
+    },
+    {
+      "case": "outside-python",
+      "denied": true,
+      "exit": 1,
+      "expected_exit": 1,
+      "passed": true
+    },
+    {
+      "case": "symlink-escape",
+      "denied": true,
+      "exit": 1,
+      "expected_exit": 1,
+      "passed": true
+    },
+    {
+      "case": "outside-delete",
+      "denied": true,
+      "exit": 1,
+      "expected_exit": 1,
+      "passed": true
+    },
+    {
+      "case": "nested-shell",
+      "denied": true,
+      "exit": 1,
+      "expected_exit": 1,
+      "passed": true
+    },
+    {
+      "case": "loopback-connect",
+      "denied": true,
+      "exit": 1,
+      "expected_exit": 1,
+      "passed": true
+    }
+  ],
+  "elapsed_ns": 327278375,
+  "inside_written": true,
+  "outside_preserved": true,
+  "passed": true,
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "python": "3.14.6",
+  "schema": "fiat-508-host-dispatch-probe/v1",
+  "script_sha256": "fe526de1fff206292da4f9a2f735c67002342a2db039abceea6ed767cbfd554d"
+}
