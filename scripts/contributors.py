@@ -8,15 +8,15 @@ requests in Shoggoth Wave Atlas also qualify, and merged PRs across both
 repositories supply the second key.
 
 This module holds the classification primitives. Which identities are runtime
-hosts rather than contributors is decided by ADR-016, and the mechanical set it
-refers to lives in plugins/hexaemeron/skills/fiat/scripts/hexctl.py. The copy
-below is kept equal to that one by tests/test_contributors.py, which fails when
-either side is edited alone.
+hosts rather than contributors is declared here and again, with no caller, in
+plugins/hexaemeron/skills/fiat/scripts/hexctl.py. verify_host_set_parity stops,
+and tests/test_contributors.py fails, when either copy is edited alone. Fiat
+refuses no commit on this classification; only the ranking reads it.
 
 The Wildcat-Origin trailer is deliberately not part of the classification. It
-records which tool performed the work, not who decided it: every commit by this
-repository's external human contributors carries it, and some commits authored
-by a runtime host carry none. See docs/contributors/study.md, item 4.
+records which tool performed the work, not who decided it, and ranking by it
+was rejected on this repository's own commit history. See
+docs/contributors/study.md, item 4.
 """
 
 from __future__ import annotations
@@ -80,11 +80,11 @@ LOGIN_RE = re.compile(r"\A[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
 # derived from the history, so it is named here rather than inferred.
 EXCLUDED_MAINTAINERS = frozenset({"laurenceday"})
 
-# The Shoggoth is the author of governed agent work under ADR-016, so it is a
-# legitimate Git author and a legitimate GitHub contributor. It is still not a
-# human being thanked for helping. It is deliberately NOT in the runtime-host
-# set: a host identity is a transport that should never have been an author,
-# whereas this one should. Different reason, different set, different message.
+# The Shoggoth account is a legitimate Git author and GitHub contributor, and
+# it is still not a human being thanked for helping. It is deliberately NOT in
+# the runtime-host set, which names the software that executed work rather
+# than an actor who contributed it. Different reason, different set, different
+# message. Neither exclusion decides whether anyone's signed commit is valid.
 AGENT_LOGINS = frozenset({"shoggoth-wildcat"})
 
 REPOSITORY = "wildcat-finance/skills"
@@ -167,10 +167,10 @@ def frozensets_from_source(path, prefix: str = "HOST_") -> dict:
             or not isinstance(call.func, ast.Name)
             or call.func.id != "frozenset"
         ):
-            # A HOST_* name that is not a frozenset is not a classification set.
-            # hexctl.py has HOST_BYLINE_RE, a compiled pattern. Skipping it is
-            # deliberate; a genuinely missing set is caught by comparing the
-            # discovered names, not by asserting shape here.
+            # A HOST_* name that is not a frozenset, such as a compiled pattern,
+            # is not a classification set. Skipping it is deliberate; a
+            # genuinely missing set is caught by comparing the discovered
+            # names, not by asserting shape here.
             continue
         if len(call.args) != 1:
             raise Stop(
@@ -191,10 +191,10 @@ def frozensets_from_source(path, prefix: str = "HOST_") -> dict:
 def verify_host_set_parity(hexctl_path) -> None:
     """Stop when this module's host set and Fiat's declaration have diverged.
 
-    ADR-016 names one mechanical set of runtime host identities and Fiat owns
-    it. The copy above exists so this stays a standalone root script. An
-    unchecked copy can stop agreeing and rank a runtime identity as a person,
-    so the divergence is a stop rather than a warning.
+    hexctl.py refuses nothing on its copy and keeps it for this check, which
+    the contributor-ranking promise names as evidence. The copy above keeps
+    this a standalone root script. An unchecked copy can stop agreeing and
+    rank a runtime identity as a person, so divergence is a stop, not a warning.
     """
     declared = frozensets_from_source(hexctl_path)
     if sorted(declared) != sorted(PARITY_SET_NAMES):
@@ -202,7 +202,7 @@ def verify_host_set_parity(hexctl_path) -> None:
         extra = sorted(set(declared) - set(PARITY_SET_NAMES))
         raise Stop(
             "host set drift: hexctl.py and this module disagree about which "
-            f"HOST_* sets exist (missing here: {missing or 'none'}; "
+            f"HOST_* sets exist (missing there: {missing or 'none'}; "
             f"present there and unaccounted for here: {extra or 'none'})"
         )
     ours = {

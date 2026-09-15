@@ -582,17 +582,17 @@
     {
       "bytes": 274116,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "ed3656bb1139439d42472f8490ff168befb01950373246a9a53227113cee37c2"
+      "sha256": "bf9c5178d98ce4367e665dacb2adb1775bc7c99814aa19c935cc444066c069f6"
     },
     {
       "bytes": 52900,
       "path": "tests/promise_machine_id_history.json",
-      "sha256": "5b2aa6527205d5fa7f150fcdcd65540108f1da0be55881b8194f64f512b961e6"
+      "sha256": "5bb96be5c6862a6d5ee0ffad788fe297a9a660d3f6acc2bd8716086030d47e01"
     },
     {
       "bytes": 26778,
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "d4981a119aee8942e3105c8cec936094b1556efd2c79a41242af34f8ea7d9298"
+      "sha256": "d4a0292390df02a283727d06a32b0e34b36c9955abeb3ccbb01c47662ebad629"
     },
     {
       "bytes": 685,
@@ -612,7 +612,7 @@
     {
       "bytes": 3231,
       "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
-      "sha256": "20bbd8d7003cd6884009d6f357ec85cb87ec3a6be11aae9852ec90b4c0d49863"
+      "sha256": "d9a653ffeeeea8a93d26556592e95b201f237f327851fe3565829a787f0854fc"
     }
   ],
   "issue": "wildcat-finance/skills#884",

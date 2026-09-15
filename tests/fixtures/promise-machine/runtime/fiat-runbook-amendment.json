@@ -18,12 +18,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+                "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+                "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
               }
             ]
           },
@@ -55,12 +55,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+            "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+            "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
           }
         ],
         "exception": {
@@ -101,12 +101,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+                "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+                "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
               }
             ]
           },
@@ -121,7 +121,7 @@
           ],
           "promise": "fiat-runbook-amendment",
           "source": {
-            "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+            "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
           },
           "target": {
             "scope": "structural binding for fiat-runbook-amendment",
@@ -138,12 +138,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+            "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75"
+            "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564"
           }
         ],
         "exception": {
@@ -151,7 +151,7 @@
         },
         "promise_id": "fiat-runbook-amendment",
         "scope": "structural binding for fiat-runbook-amendment",
-        "source_digest": "e824d93db63c1956b6c241ff305f3533d6ff1c71a8ef247f112b79fff0307a75",
+        "source_digest": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564",
         "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly",
         "transition": {
           "action": "structurally bind fiat-runbook-amendment without running its domain operation",

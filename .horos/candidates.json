@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23977978,
+    "bytes_blob": 24230692,
     "bytes_generated": 98
   },
   "entries": [
@@ -33,6 +33,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
+    },
+    {
+      "bytes": 125807,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 123759",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1135-retire-the-shoggoth-cosignature-and-host-au.md"
+    },
+    {
+      "bytes": 126458,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1135-retire-the-shoggoth-cosignature-and-host-au.synopsis.md"
     },
     {
       "bytes": 26945,
@@ -854,16 +868,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 71851,
+      "bytes": 73141,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 35925",
+      "evidence": "mean line length above 400 in a window at offset 36570",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 97627,
+      "bytes": 96786,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 95579",
+      "evidence": "mean line length above 400 in a window at offset 94738",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

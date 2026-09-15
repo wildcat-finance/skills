@@ -79,12 +79,10 @@ When the capture assigns one or more findings to `consuming_step` and the
 packet has no `guard_commit`, use the successfully created Step branch and make
 one guard-only commit whose complete native delta is
 exactly the UTF-8-byte-sorted `allowed_guard_paths` union. No product path may
-ride along. Sign the commit, give it `step_parent` as its sole parent, and end
-its message with exactly one copy of
-`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and
-`Wildcat-Origin: shoggoth`. Leave the branch and `HEAD` at that commit and
-report its full object id. When `guard_commit` is present, require the exact
-Step branch and `HEAD` already at that commit; make no new commit or edit, and
+ride along. Sign the commit and give it `step_parent` as its sole parent. Leave
+the branch and `HEAD` at that commit and report its full object id. When
+`guard_commit` is present, require the exact Step branch and `HEAD` already at
+that commit; make no new commit or edit, and
 return the same object id. In either case, do not run or classify the
 reporters, write a report or manifest, or select an evidence path: the
 orchestrator calls
@@ -153,9 +151,8 @@ failed does not need Elenchus.
 
 Assigned inoculation creates only the one guard-only commit described above;
 implementation commits the product repair and later coherent units. Sign every
-commit and end its message, after a blank
-line, with exactly `Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and
-`Wildcat-Origin: shoggoth`; the controller will verify the whole owned range.
+commit with a repository-valid key; the controller verifies the whole owned
+range. No provenance trailer is mandatory.
 Do not push, do not open a PR, do not merge
 anything, and do not touch the controller -- the orchestrator owns all of
 that. In inoculation mode, report the exact no-known record path and SHA-256 or

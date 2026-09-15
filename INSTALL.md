@@ -122,15 +122,10 @@ every pull-request description. `sessionUrl` set to `false` omits the claude.ai
 session link a cloud or Remote Control session adds as a `Claude-Session`
 trailer on commits and as a link in pull-request descriptions.
 
-There are two important limits. The effect of `sessionUrl: false` is documented
-but has not been observed here in a live cloud session. No documented switch
-was found for Codex, GitHub Copilot, Cursor, Gemini CLI, or Windsurf; remove
-runtime-host bylines before the receipt on those harnesses. In every case Fiat
-reads the commit range and pull-request body back and refuses a runtime-host
-co-author, generated-by line, or session-link byline. A setting is not evidence
-that the line is absent. The rule is
-[ADR-016](./docs/decisions/ADR-016-attribute-governed-agent-work-to-shoggoth.md);
-the keys are documented in Anthropic's
+These settings are optional presentation preferences, not Fiat policy. Fiat
+accepts valid signed commits and records bylines or co-authors as attribution.
+It does not require a contributor to disable a host's footer. The keys are
+documented in Anthropic's
 [settings reference](https://code.claude.com/docs/en/settings-reference).
 
 ### LOCAL AGENTS
