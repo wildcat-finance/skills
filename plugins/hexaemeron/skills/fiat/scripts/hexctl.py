@@ -17937,6 +17937,7 @@ def cmd_status(args) -> None:
         return
     if state["receipts"].get("replacement_pending"):
         print("PENDING: replacement admission; inspect status --json, halt safely, or run replacement-resume")
+    print("gate commands: " + json.dumps(gate_status, sort_keys=True))
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):

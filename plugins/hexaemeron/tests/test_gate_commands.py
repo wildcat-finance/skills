@@ -220,6 +220,27 @@ except ImportError:
 
 
 class GateReceiptTests(HexctlCase):
+    def test_plain_status_reports_current_and_stale_without_mutation(self):
+        import json
+        self.current_run()
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        for stale in (False, True):
+            if stale:
+                path = Path(self.target, BREVITAS)
+                path.write_text(path.read_text() + '\n# fixture source drift\n')
+            with self.subTest(stale=stale):
+                paths = [Path(self.target, '.hexaemeron', name) for name in ('state.json', 'ledger.jsonl')]
+                before = [path.read_bytes() for path in paths]
+                expected = json.loads(self.run_ctl('status', '--field', 'gate_command_status').stdout)
+                result = self.run_ctl('status')
+                self.assertEqual([path.read_bytes() for path in paths], before)
+                lines = [line.removeprefix('gate commands: ') for line in result.stdout.splitlines() if line.startswith('gate commands: ')]
+                self.assertEqual(len(lines), 1, result.stdout)
+                self.assertEqual(json.loads(lines[0]), expected)
+                self.assertEqual(expected['status'], 'stale-or-invalid' if stale else 'current')
+
     def test_current_report_receipt_survives_actual_checkpoint_relocation(self):
         import json
         try:
