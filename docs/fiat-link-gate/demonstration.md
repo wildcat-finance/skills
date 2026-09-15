@@ -1,6 +1,6 @@
 # Demonstration: the link gate refuses a location-dependent study
 
-Step 3 of the [skills#1086](https://github.com/wildcat-finance/skills/issues/1086) run, recorded on 2026-09-14. It runs the study's demo path with the step 2 controller, `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` at commit `6add41dfe502062074ab841911fead4439f64dcd`, in a throwaway repository under the ignored `tmp/` directory. The throwaway run holds this run's design record and its 18 reports, so `done study` reaches the link gate. Local absolute paths read `<worktree>`, and the throwaway repository's commit id differs on every run.
+Step 3 of the [skills#1086](https://github.com/wildcat-finance/skills/issues/1086) run, recorded on 2026-09-14. It runs the study's demo path with the step 2 controller, `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` at commit `6add41dfe502062074ab841911fead4439f64dcd`, in a throwaway repository under the ignored `tmp/` directory. `done study` runs the link gate before its design-lock check, so the throwaway run holds this run's design record and its 18 reports for the conforming study to receipt. Local absolute paths read `<worktree>`. The throwaway repository's commit id differs on every run, and so do the `state.json` and `ledger.jsonl` digests: both files record timestamps and that commit id, and `state.json` records absolute paths.
 
 What it shows:
 
@@ -8,7 +8,7 @@ What it shows:
 2. The SHA-256 digests of the throwaway run's `state.json` and `ledger.jsonl` are identical before and after that refusal, so nothing was pinned.
 3. The same study with each citation pinned to commit `485c90d3ad545b696584197f83d942c705988216` receipts with exit 0, and the run moves to `runbook`.
 
-The commands and their output, as run from the worktree root:
+The commands and their output, as run from the worktree root with `hexctl` set to `<worktree>/plugins/hexaemeron/skills/fiat/scripts/hexctl.py` and `demo` to `<worktree>/tmp/fiat-1086-demo`:
 
 ```text
 $ mkdir "$demo"
