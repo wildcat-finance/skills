@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_checkpoint_archive": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-checkpoint-archive without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded",
+              "measured"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+              },
+              {
+                "evidence_class": "measured",
+                "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-baseline.json",
+                "sha256": "f056cf1be6d5ce8cbc55521be32af59dc71cfd285aaf7a88c892cb76b4a11dae"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-checkpoint-archive",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-checkpoint-archive",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py#test_restore_from_archive_recreates_repository_and_controller_state"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded",
+          "measured"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+          },
+          {
+            "evidence_class": "measured",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-baseline.json",
+            "sha256": "f056cf1be6d5ce8cbc55521be32af59dc71cfd285aaf7a88c892cb76b4a11dae"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-checkpoint-archive",
+        "scope": "structural binding for fiat-checkpoint-archive",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py#test_restore_from_archive_recreates_repository_and_controller_state",
+        "transition": {
+          "action": "structurally bind fiat-checkpoint-archive without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_checkpoint_archive": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-checkpoint-archive without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded",
+              "measured"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+              },
+              {
+                "evidence_class": "measured",
+                "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-baseline.json",
+                "sha256": "f056cf1be6d5ce8cbc55521be32af59dc71cfd285aaf7a88c892cb76b4a11dae"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-checkpoint-archive",
+          "source": {
+            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+          },
+          "target": {
+            "scope": "structural binding for fiat-checkpoint-archive",
+            "subject": "runtime source plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py#test_restore_from_archive_recreates_repository_and_controller_state"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded",
+          "measured"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+          },
+          {
+            "evidence_class": "measured",
+            "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint-archive-baseline.json",
+            "sha256": "f056cf1be6d5ce8cbc55521be32af59dc71cfd285aaf7a88c892cb76b4a11dae"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-checkpoint-archive",
+        "scope": "structural binding for fiat-checkpoint-archive",
+        "source_digest": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e",
+        "subject": "runtime source plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py#test_restore_from_archive_recreates_repository_and_controller_state",
+        "transition": {
+          "action": "structurally bind fiat-checkpoint-archive without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

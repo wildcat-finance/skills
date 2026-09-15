@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.59.1"
+  version: "6.60.1"
 ---
 
 <p align="center">
@@ -147,15 +147,15 @@ the second.
 1. If the user passed `status`, run `hexctl status` and report. Stop.
 2. Apply the frontier maturity gate below. This happens before `init` and
    before resuming an existing frontier run.
-3. If another agent hands over a local checkpoint path, verify the archive and
-   Git boundary first, restore its refs into a fresh clean top-level checkout,
-   then restore the checked controller capsule with `hexctl checkpoint
-   restore`, per the `Step checkpoint` section of
-   [push-discipline.md](references/push-discipline.md). Run `hexctl verify` and
-   `hexctl status --json` against the restored worktree, then enter the loop.
-   Never call `init` or start a fresh ledger for a restored run. Checkpoint
-   transfer is local agent-to-agent work; do not ask the user to choose a
-   destination, approve the transfer, or decide whether the checkpoint is kept.
+3. If another agent hands over a local checkpoint path, run `hexctl checkpoint
+   inspect --archive <zip> --sha256 <outer-hex>` and `hexctl --dir
+   <empty-destination> checkpoint restore --archive <zip> --sha256 <outer-hex>`
+   as the `Step checkpoint` section of
+   [push-discipline.md](references/push-discipline.md) directs. Run `hexctl
+   verify` and `hexctl status --json` against the returned `restore.worktree`,
+   then enter the loop with its own ledger. Never call `init` or start a fresh ledger for a
+   restored run. Transfer is local agent-to-agent work; do not ask the user to
+   choose a destination, approve the transfer or decide whether it is kept.
 4. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
    `hexctl status --json`. If its phase is `done`, run `hexctl reset` to
    archive the completed run, then continue immediately as a new run at step
@@ -831,12 +831,13 @@ verification like any other commit the run receipts. Adoption is detected, not
 requested: a stacked step still refuses `--merge-commit`, so there is no flag
 to know about.
 
-Then, before packaging or acting on the next directive, save the complete step
-checkpoint in the fixed local checkpoint store exactly as the `Step checkpoint`
-section of [push-discipline.md](references/push-discipline.md) requires. This is
-mandatory controller work: do not ask the user whether to save it, where to put
-it, or whether it may be skipped. Preserve the export command's manifest
-SHA-256 outside the capsule for checked restore.
+Then run `hexctl --dir <run-worktree> checkpoint archive` to save the complete
+step checkpoint in the fixed local checkpoint store. The `Step checkpoint`
+section of [push-discipline.md](references/push-discipline.md) names the
+`checkpoint inspect` and `checkpoint restore --archive` receiver commands and
+the direct hand-off values. This is mandatory controller work: do not ask the
+user whether to save it, where to put it or whether it may be skipped. Keep the
+outer SHA-256, manifest SHA-256 and `snapshot_id` outside the archive.
 
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before each merge, an unchanged waiting head passes without a relation process.
@@ -1142,6 +1143,18 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Consequence: 2
 - Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, unsupported controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
+- Exceptions: none
+
+### fiat-checkpoint-archive
+
+- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
+- Evidence: The out-of-band outer SHA-256, closed content manifest, capsule manifest digest, complete-history bundle, pinned signature checks with recorded trailer counts, identity join, hostile archive tests, clean-machine transcript and six recorded budget measurements.
+- Evidence classes: checked, recorded, measured
+- Boundary: Checks bind this archive and its carried public keys. They do not prove signer ownership, delivery-claim truth, future performance, acceptance by another party or authority to execute the next directive. Acceptance of this archive stays outside it; prior acceptance entries remain reserved.
+- Authorises: Creating the mandatory local checkpoint, handing its exact identities to another agent and restoring its repository and ledger after inspection succeeds.
+- Consequence: 2
+- Refuses: An unaccepted or dirty boundary, occupied destination, digest or ref disagreement, incomplete history, unsupported schema or signature format, unverified signature, hostile entry, secret-shaped member, resource excess, identity mismatch or self-referential acceptance.
+- Recovery: Preserve the source and failure record, repair the named condition, rerun inspection with the handed-off digest and restore into a new empty destination under the existing transaction rules.
 - Exceptions: none
 
 ### fiat-known-failure-inoculation

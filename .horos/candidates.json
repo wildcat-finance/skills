@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 24276805,
+    "bytes_blob": 25034416,
     "bytes_generated": 98
   },
   "entries": [
@@ -455,6 +455,20 @@
       "path": "audit/rounds/fiat-859-reinstate-the-wave-delta-distributed-checkpo.synopsis.md"
     },
     {
+      "bytes": 376713,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 188356 of 376713 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.md"
+    },
+    {
+      "bytes": 378244,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.synopsis.md"
+    },
+    {
       "bytes": 46184,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -875,16 +889,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 74337,
+      "bytes": 75266,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 37168",
+      "evidence": "mean line length above 400 in a window at offset 37633",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 97150,
+      "bytes": 98875,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 95102",
+      "evidence": "mean line length above 400 in a window at offset 96827",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

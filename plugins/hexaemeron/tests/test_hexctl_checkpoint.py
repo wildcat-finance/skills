@@ -2098,6 +2098,24 @@ class HexctlCheckpointTests(HexctlCase):
             ).is_file()
         )
 
+    def test_native_restore_retires_the_relocation_marker_on_success(self):
+        # Every other marker assertion in this module pins the marker
+        # surviving a refusal or an interrupted run.  This one pins the
+        # opposite end: a native `checkpoint restore --from` that runs to
+        # completion retires its own relocation marker in place, which is
+        # the branch the archive path defers instead of taking.
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+
+        result = self.restore_into(origin, capsule, exported["manifest_sha256"])
+        self.assertEqual("new", json.loads(result.stdout)["recovery"])
+        marker = origin / ".hexaemeron" / "checkpoint-restore.json"
+        self.assertFalse(
+            marker.exists(),
+            "a completed native restore must leave no relocation marker",
+        )
+
     def test_restore_replaced_marker_is_not_deleted(self):
         self.to_post_push()
         capsule, _, exported = self.export("capsule")

@@ -26,7 +26,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
       "id": "input",
       "class": "fixture",
       "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
-      "sha256": "3fc856bedff0f73c8a4805f6a4b7c9d05eba1bdbe7fcbcb8ee1c7258d3717c8c"
+      "sha256": "44f323d9ed1f710f437a5420895acf23eaafa411668501c6cb5f1b05eba75eb3"
     }
   ],
   "commands": [

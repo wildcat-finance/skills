@@ -389,12 +389,13 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.59.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
-        latest = history_rows(ledger)[-1]
+        # The link-gate generation was the newest row until the archive
+        # generation; it moves neither the revision nor the held job.
+        latest = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.59.1")
         self.assertEqual(latest["version"], "fiat-v6.59.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
@@ -414,10 +415,17 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.60.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
+        archive = history_rows(ledger)[-1]
+        self.assertEqual(archive["version"], "fiat-v6.60.1")
+        self.assertEqual(archive["axis"], "generation")
+        self.assertIn("skills#861", archive["evidence"])
+        self.assertIn("checkpoint archive", archive["change"])
+        self.assertIn("clean-machine transcript", archive["change"])
         latest = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.56.1")
         self.assertEqual(latest["version"], "fiat-v6.56.1")
         self.assertEqual(latest["axis"], "evolution")
@@ -429,9 +437,9 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("skills#363", latest["evidence"])
         self.assertIn("`next --task-handle` refuses", latest["change"])
         self.assertIn("skills#1212", latest["change"])
-        # The signature-only generation landed under this frontier and was the
-        # newest row until the link-gate generation; it moves neither the revision
-        # nor the held job.
+        # The signature-only generation landed under this frontier before the
+        # link-gate and archive generations; it moves neither the revision nor
+        # the held job.
         signature_only = next(
             row for row in history_rows(ledger) if row["version"] == "fiat-v6.58.1"
         )

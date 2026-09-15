@@ -242,11 +242,12 @@ before identity stdout and does not widen the two checkpoint boundaries.
 
 ## Outer recovery boundary
 
-These commands do not create or verify the Git bundle, package an archive,
-handle keys or mint a semantic checkpoint identity. ADR-028 retains those jobs
-in the mandatory local outer procedure. That procedure writes to the fixed
-checkpoint store under the origin checkout and publishes nothing remotely.
-Restore accepts a directory already extracted and verified from the local
-archive handed over by another agent; it does not extract an archive or fetch a
-remote object. Continuation means the imported ledger plus its one relocation
-entry, never a fresh Fiat ledger.
+The capsule commands preserve controller state and continue its ledger. The
+native `checkpoint archive`, `checkpoint inspect` and `checkpoint restore
+--archive` commands own the outer Git bundle, stored ZIP, signatures and
+identity join; [checkpoint-archive.md](checkpoint-archive.md) fixes that
+contract. The mandatory local procedure writes to the fixed checkpoint store
+and publishes nothing remotely. Capsule restore accepts an already verified
+directory; outer restore verifies and extracts the archive before invoking
+that same relocation transaction. Continuation adds one relocation entry to
+the imported ledger and never starts a new one.
