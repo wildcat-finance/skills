@@ -62,7 +62,7 @@ and hold every marker against its authored clause.
 
 | Gate class | Issue obligation | Evaluator | Rows | Negative cases | Findings | Tests |
 | --- | --- | --- | --- | --- | --- | --- |
-| `result-binding` | result binding | `check --only runtime` | 1 | 47 runtime binding rows | `PM095` | 14 |
+| `result-binding` | result binding | `check --only runtime` | 1 | 48 runtime binding rows | `PM095` | 14 |
 | `level-3-separation` | level-3 separation | `check --only obligations` | 1 | 4 consequence specimens | `PM090` | 11 |
 | `exception-resolution` | exception resolution | `check --only exceptions` | 1 | 1 exception specimen | `PM093`, `PM038` | 17 |
 | `composition` | all seven composition clauses | `check --only composition` | 7 | 7 composition relations | `PM097` | 10 |
@@ -93,17 +93,17 @@ checker cannot emit and that nobody named.
 | Obligation markers in `PROMISE_MACHINE.md` | 18 |
 | Obligation registry rows | 18 |
 | Distinct negative specimen files | 12 |
-| Runtime binding rows | 47 |
+| Runtime binding rows | 48 |
 | Composition relations | 7 |
-| Promise-id history rows | 98 |
-| Active history ids | 98 |
+| Promise-id history rows | 99 |
+| Active history ids | 99 |
 | Declared history cases | 9 |
 | Declared upstream-provenance cases | 12 |
 | Evaluation cases | 11 |
 | Evaluation outcomes | 55 |
 | Issue-listed gate classes | 10 |
-| Declared promises | 98 |
-| Coverage rows | 98 |
+| Declared promises | 99 |
+| Coverage rows | 99 |
 | Selected repository scopes | 27 |
 | Selected repository checks | 35 |
 
@@ -113,13 +113,13 @@ Each digest is checked byte for byte by the currency guard.
 
 - `PROMISE_MACHINE.md`, SHA-256 `ae019700f378a250fe08a3d6cb68c0553ee60a410cbb6035d3c9c3cd2866b34f`, 32144 bytes
 - `tests/promise_machine_obligations.json`, SHA-256 `384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f`, 9630 bytes
-- `tests/promise_machine_coverage.json`, SHA-256 `8330a72f02718f0d577c0061e8a273681854e0c9b6b9d82f675c56da5c41b13f`, 260456 bytes
-- `tests/promise_machine_id_history.json`, SHA-256 `c315434f786ed32d52b66885ec78138153fc07ac9a909b5dd34fabeae3d9c05d`, 51331 bytes
+- `tests/promise_machine_coverage.json`, SHA-256 `c5944c3480153ec821259abd0f6506bd3ecfe3adcdc0eeed503d66f4fb474ff2`, 264127 bytes
+- `tests/promise_machine_id_history.json`, SHA-256 `9e3aa60dcd4146de44105e1faddf0df659de07b0bdd36ffb6ce2a3d49f0914b9`, 51724 bytes
 - `tests/fixtures/promise-machine/composition/cases.json`, SHA-256 `f06c0cd0bd593578eeb4c2498dc4acc6cab45ecb6cd6e434832d2cc84e624243`, 26778 bytes
 - `tests/fixtures/promise-machine/history/cases.json`, SHA-256 `9051ac6c291330f527705177bffa70985657ec7f96707b7a9349d4e574cfc3f0`, 685 bytes
 - `tests/fixtures/promise-machine/upstream-provenance/cases.json`, SHA-256 `f60821b1edf450d47a581f12562c13e1931c2b09c960bce2fb8a0b1767c154cf`, 935 bytes
 - `docs/promise-machine/obligation-gates/evaluation-answers.json`, SHA-256 `3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855`, 1911 bytes
-- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `61bbdd9e1c579f05977586e0d32f7c7cf1be20f05327dbd4966d6a004506a07c`, 3231 bytes
+- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `350eece590019d12e1aa3e0084eabc9981d587f5f18253d6c64911a2f59823e7`, 3231 bytes
 
 ## When a gate stops the line
 

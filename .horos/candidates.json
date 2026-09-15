@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23152919,
+    "bytes_blob": 23176699,
     "bytes_generated": 98
   },
   "entries": [
@@ -271,6 +271,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-503-imprimatur-1-read-comment-spans-in-source-fi.synopsis.md"
+    },
+    {
+      "bytes": 20405,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-508-restudy-residual-carryover-confinement-and-g.synopsis.md"
     },
     {
       "bytes": 57473,
@@ -812,16 +819,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 68008,
+      "bytes": 68194,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 34004",
+      "evidence": "mean line length above 400 in a window at offset 34097",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 78862,
+      "bytes": 82051,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 76814",
+      "evidence": "mean line length above 400 in a window at offset 80003",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

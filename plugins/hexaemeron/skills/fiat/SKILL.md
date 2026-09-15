@@ -749,6 +749,28 @@ closing-comment bytes, read the comment and issue state back from GitHub, and
 report only that remote evidence. The controller's closure receipt does not
 attest the comment's semantic passes or bytes.
 
+## Cumulative carryover custody
+
+At an exhausted `audit-verdict` boundary, Step 4 can export and validate inert
+cumulative evidence, then bind an already uploaded attachment by exact readback.
+Read [carryover-packet.md](references/carryover-packet.md) before using
+`carryover-export --request <path>`, `carryover-validate --packet <path> --sha256
+<digest>` or `carryover-bind --request <path>`. Each command also accepts the
+controller's preceding `--dir <run-worktree>` option.
+
+Archive the exact controller boundary with `checkpoint export` before exporting
+the packet. Preserve every prior pass, raw finding occurrence, unknown legacy
+field and complete file disposition. The export digest and later provider
+identity live in detached receipts. Binding performs a GET; uploading remains
+a separate operator action. An interrupted export can leave an unreceipted
+output, which must be inspected before retrying.
+
+These operations preserve open findings and the exhausted audit verdict.
+Replacement admission remains unavailable until Step 5; the existing
+`audit-verdict` decision and stop rules still apply. The reference records the
+packet, native Git and provider byte limits, ASCII path rules, drift refusals
+and readback timing limits.
+
 ## Delegation and context
 
 Every `next` envelope carries `state_sha256`, an explicit `agent`, and a
@@ -914,6 +936,18 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Consequence: 2
 - Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, unsupported controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
+- Exceptions: none
+
+### fiat-cumulative-carryover-custody
+
+- Promise: Successful `carryover-export`, `carryover-validate` and, when requested, `carryover-bind` establish the checked cumulative packet, source relationships and detached custody observations each command reports.
+- Evidence: Exact packet and archive digests, replayed controller and ledger bytes, native local Git objects, verified signed fixed commit and tree, complete inherited and changed-file dispositions, raw finding occurrences and explicit unknowns, reconstructed lineage prefixes, derived export receipt and ledger entry, and a separate attachment size and digest readback receipt when binding succeeds.
+- Evidence classes: checked, recorded
+- Boundary: Evidence remains inert. The commands do not establish audit judgement or model-answer truth, continued attachment availability, issue-comment placement, atomic namespace protection or a hard readback return time. Packet, decoded, native Git and provider limits are separate; their exact bounds and refusals are in the carryover reference.
+- Authorises: Exporting and replaying the complete bounded packet at the exhausted audit boundary and recording a provider identity only after exact byte readback, while retaining open findings and the audit verdict. Replacement admission remains unavailable until Step 5.
+- Consequence: 2
+- Refuses: A non-exhausted or mismatched archive, missing source objects, moved or unverified fixed ref, incomplete or altered lineage, producer or payload drift, duplicate source pass, unsafe path or mode, resource-cap breach, occupied output, observed controller drift, duplicate export or binding, or mismatched attachment identity, transport result, size or digest.
+- Recovery: Preserve the archived controller, packet and independent edits, inspect the refusal and any unreceipted exclusive output, repair the evidence without rewriting receipt history, and retry the named command.
 - Exceptions: none
 
 ### fiat-receipted-delivery

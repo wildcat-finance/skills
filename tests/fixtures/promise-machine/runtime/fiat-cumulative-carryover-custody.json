@@ -1,0 +1,171 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "fiat_cumulative_carryover_custody": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-cumulative-carryover-custody without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-cumulative-carryover-custody",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for fiat-cumulative-carryover-custody",
+            "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_composed_signed_tree_capsule_export_and_receipt_replay"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-cumulative-carryover-custody",
+        "scope": "structural binding for fiat-cumulative-carryover-custody",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_composed_signed_tree_capsule_export_and_receipt_replay",
+        "transition": {
+          "action": "structurally bind fiat-cumulative-carryover-custody without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "fiat_cumulative_carryover_custody": {
+          "authorised_transition": {
+            "action": "structurally bind fiat-cumulative-carryover-custody without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_carryover.py",
+                "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "fiat-cumulative-carryover-custody",
+          "source": {
+            "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+          },
+          "target": {
+            "scope": "structural binding for fiat-cumulative-carryover-custody",
+            "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_composed_signed_tree_capsule_export_and_receipt_replay"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_carryover.py",
+            "sha256": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "fiat-cumulative-carryover-custody",
+        "scope": "structural binding for fiat-cumulative-carryover-custody",
+        "source_digest": "247628b7fc560556505d3eeadb1091a165ddc1cf0729554486da98a0af1b5b5b",
+        "subject": "runtime source plugins/hexaemeron/tests/test_carryover.py#test_composed_signed_tree_capsule_export_and_receipt_replay",
+        "transition": {
+          "action": "structurally bind fiat-cumulative-carryover-custody without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}
