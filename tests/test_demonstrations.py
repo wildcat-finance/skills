@@ -1769,9 +1769,9 @@ class RunnerExecutionBoundaryTests(RunnerHarness):
             [
                 "python3", "-c",
                 "import os, sys, time;"
-                " child = os.fork() == 0;"
-                " (os.setsid(), time.sleep(30), os._exit(0)) if child else"
-                " (print('parent-done'), sys.stdout.flush(), os._exit(0))",
+                " ready, signal_ready = os.pipe(); child = os.fork() == 0;"
+                " (os.setsid(), os.write(signal_ready, b'1'), time.sleep(30), os._exit(0)) if child else"
+                " (os.read(ready, 1), print('parent-done'), sys.stdout.flush(), os._exit(0))",
             ],
             ['run: line "parent-done"'],
         )

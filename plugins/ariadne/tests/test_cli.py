@@ -5,6 +5,7 @@ time one is added, which is how registry.py came to say the registry was empty a
 test_cli.py came to say there were two subcommands when there were six.
 """
 
+import argparse
 import contextlib
 import io
 import json
@@ -179,6 +180,38 @@ class InspectTests(unittest.TestCase):
     def test_no_subcommand_prints_help_and_exits_two(self):
         code, _, _ = run([])
         self.assertEqual(code, 2)
+
+
+class PairTests(unittest.TestCase):
+    """`key=value` flags: one record per flag, one value per key."""
+
+    def test_the_defined_keys_are_read(self):
+        self.assertEqual(
+            ariadne.parse_pairs("start=1, end=2", {"start", "end"}, "--gap"),
+            {"start": "1", "end": "2"},
+        )
+
+    def test_a_key_given_twice_is_refused_rather_than_overwritten(self):
+        """The last value used to win, so a second key rewrote the record silently."""
+        for value in ("start=1,end=2,end=9", "start=1,end=2,end=2", "end=2, end =9"):
+            with self.subTest(value=value):
+                with self.assertRaises(argparse.ArgumentTypeError) as caught:
+                    ariadne.parse_pairs(value, {"start", "end"}, "--gap")
+                self.assertEqual(
+                    str(caught.exception), "--gap repeats end; each key takes one value"
+                )
+
+    def test_every_pair_flag_refuses_a_repeated_key(self):
+        for parse, value, key in (
+            (ariadne.deployment, "chain_id=1,address=0x01,creation_tx=0x02,address=0x03", "address"),
+            (ariadne.audit, "report=a.pdf,revision=abc,scope=all,report=b.pdf", "report"),
+            (ariadne.gap, "start=1,end=2,reason=gone,reason=back", "reason"),
+            (ariadne.dataset_input, "name=n,locator=l,file=a,file=b", "file"),
+        ):
+            with self.subTest(flag=parse.__name__):
+                with self.assertRaises(argparse.ArgumentTypeError) as caught:
+                    parse(value)
+                self.assertIn("repeats %s" % key, str(caught.exception))
 
 
 if __name__ == "__main__":

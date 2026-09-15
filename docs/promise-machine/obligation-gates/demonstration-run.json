@@ -93,22 +93,22 @@
   ],
   "contract": "promise-machine/v1",
   "counts": {
-    "active_history_ids": 98,
+    "active_history_ids": 99,
     "composition_relations": 7,
-    "coverage_rows": 98,
+    "coverage_rows": 99,
     "evaluation_cases": 11,
     "evaluation_outcomes": 55,
     "gate_classes": 10,
     "history_cases": 9,
-    "history_rows": 98,
+    "history_rows": 99,
     "negative_specimens": 12,
     "obligation_markers": 18,
-    "promises": 98,
+    "promises": 99,
     "provenance_rows": 12,
     "registry_rows": 18,
-    "repository_checks": 35,
+    "repository_checks": 37,
     "repository_scopes": 27,
-    "runtime_rows": 47
+    "runtime_rows": 48
   },
   "date": "2026-09-02",
   "evidence_classes": {
@@ -131,7 +131,7 @@
       "issue_obligation": "result binding",
       "marker_backed": true,
       "negative_cases": {
-        "count": 47,
+        "count": 48,
         "kind": "runtime binding rows"
       },
       "network_findings": [],
@@ -580,19 +580,19 @@
       "sha256": "384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f"
     },
     {
-      "bytes": 260329,
+      "bytes": 264156,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "b3e1065bb867624d3eed33cb9bb6a0419434a5b6941bf9413f9d8bd9a5434520"
+      "sha256": "298a1403c335d3309013639bf70bd8650ae6a66cc6d5bc05652632204a0fa739"
     },
     {
-      "bytes": 51333,
+      "bytes": 51722,
       "path": "tests/promise_machine_id_history.json",
-      "sha256": "56271bdfb40d76d22314b2adb8a8ea4de7c9e7fad27bbb336d26ba4ecf022537"
+      "sha256": "fb8ced627567f25de78bc16d5a790c292a8db0f0268105a262aee943a6816d9e"
     },
     {
       "bytes": 26778,
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "47fbe34c778f066e6a4b6318202e61dc27de9fceccd919380c4fc92d5b08b75d"
+      "sha256": "a2df1c836f34fad4732373802380f434d7d8162f953b8795c424fefd39914e1c"
     },
     {
       "bytes": 685,
@@ -612,7 +612,7 @@
     {
       "bytes": 3231,
       "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
-      "sha256": "b59ab62d41186990745e9b8fe312b6d1799f96ca9bf96d4a44a16e03215fa7aa"
+      "sha256": "403de4bdb4082367a8dda13a9dd754e744e5995aae8864fe061b1c9ef3b77b3e"
     }
   ],
   "issue": "wildcat-finance/skills#884",

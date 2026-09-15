@@ -1,8 +1,8 @@
 {
   "counts": {
     "bytes_asset": 138,
-    "bytes_binary": 11,
-    "bytes_blob": 21199762,
+    "bytes_binary": 9723,
+    "bytes_blob": 24230692,
     "bytes_generated": 98
   },
   "entries": [
@@ -49,6 +49,13 @@
       "path": "audit/rounds/fiat-1135-retire-the-shoggoth-cosignature-and-host-au.synopsis.md"
     },
     {
+      "bytes": 26945,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1264-rebind-runbook-amendments-across-a-study-am.synopsis.md"
+    },
+    {
       "bytes": 131133,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 65566",
@@ -75,6 +82,34 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1276-declare-a-held-job-s-required-inputs-in-the.synopsis.md"
+    },
+    {
+      "bytes": 152877,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 76438 of 152877 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.md"
+    },
+    {
+      "bytes": 153762,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1298-imprimatur-structural-prose-family-evidence.synopsis.md"
+    },
+    {
+      "bytes": 288275,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 144137",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1345-route-a-zero-decision-and-gate-the-line-tha.md"
+    },
+    {
+      "bytes": 289601,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1345-route-a-zero-decision-and-gate-the-line-tha.synopsis.md"
     },
     {
       "bytes": 126085,
@@ -105,6 +140,13 @@
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
     },
     {
+      "bytes": 60462,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1420-ephoros-next-extend-e001-to-e003-to-the-typ.synopsis.md"
+    },
+    {
       "bytes": 28639,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -124,6 +166,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.synopsis.md"
+    },
+    {
+      "bytes": 47297,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-363-bind-delegated-task-identity-to-step-and-rol.synopsis.md"
     },
     {
       "bytes": 56306,
@@ -229,6 +278,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
+    },
+    {
+      "bytes": 70302,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 35151 of 70302 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md"
+    },
+    {
+      "bytes": 70988,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-453-inject-known-failure-guards-before-productio.synopsis.md"
     },
     {
       "bytes": 70765,
@@ -413,6 +476,20 @@
       "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
     },
     {
+      "bytes": 112036,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 109988",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.md"
+    },
+    {
+      "bytes": 112838,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.synopsis.md"
+    },
+    {
       "bytes": 17050,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -476,11 +553,193 @@
       "path": "audit/rounds/fiat-shoggoth-front-door-derived.synopsis.md"
     },
     {
+      "bytes": 499,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/119628eb1e8cf2330914ceceec89fade8eb978d018ac74b6792173d39cb290a2.bin"
+    },
+    {
+      "bytes": 275,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/331f3f26ca93b490e67a5ce1af7903772497347be0aef64c15e6aa55a40b7f22.bin"
+    },
+    {
+      "bytes": 206,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/340abdf361edb5291a33b07ed1a3662783e10215d0e2e6e29de6003495a4d18a.bin"
+    },
+    {
+      "bytes": 78674,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 76626",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/3e24a2c0783475892ebd3596edb39c898921c73a5a6fe3a01bf9fba9f3e5d983.bin"
+    },
+    {
+      "bytes": 533,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/4b870e9add6d56e43afb2dd5f8ae342bc128742138f38eee68563b2d2133640a.bin"
+    },
+    {
+      "bytes": 32,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/5da73e88e23d432aee348ed056dbad329b7c76edb95c47967fd8a1b6f487d789.bin"
+    },
+    {
+      "bytes": 350,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/82346067b0250b4a550ff4bc0951f31877f35fd9fdbddc39af84271701c5abc8.bin"
+    },
+    {
+      "bytes": 224,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/92f5f09364476ff002dcab37befcc49aa22498f38069b3a8aeb58c7873a9d35e.bin"
+    },
+    {
+      "bytes": 154,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/9ec7ea0c4788bb71d680c218373c2802e9eef06dba37c1c13e9b9f9cbf932b60.bin"
+    },
+    {
+      "bytes": 430,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/a9f91d6883664865ed93d0bb83a51cf5f816ced082fdb580e56292836d675b62.bin"
+    },
+    {
+      "bytes": 206,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/b2651d86277f78d5598458ef1a6cd0af9f01388e6479c319ed714aeed07ff46b.bin"
+    },
+    {
+      "bytes": 24559,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 24559 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/b8520b37c164fc426952e408415b7bc9f434ac6ca47d776a4959930acb98dd4d.bin"
+    },
+    {
+      "bytes": 78621,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 76573",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/babe74b138953a5d1dfcee0b67afb94d9bb7d99c1798df241f0eb073be09fdef.bin"
+    },
+    {
+      "bytes": 525,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/bb0aa1626074ce4385a840937e04d49398c0fb1233b830b5e1fef908be74a493.bin"
+    },
+    {
+      "bytes": 206,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/c9a345f1a6cef1fad20f525b4bf6ff9817e95b9e6c7c3362ef576581d5abab0c.bin"
+    },
+    {
+      "bytes": 1085,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/d657cc550c1288d2329d3da5608cade1f08f606297e9100f5783eb3ab4ff4a24.bin"
+    },
+    {
+      "bytes": 85130,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 85130 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/e3a8951f0bb0b02636e74d645d82f83fd0d71a876f0523a31a6e556e417bea2b.bin"
+    },
+    {
+      "bytes": 944,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/e47c580949a71202f28f2f0c92152c63ccb7e727777152d02824c271a4b64526.bin"
+    },
+    {
+      "bytes": 626,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/e9548ec67fb27a951c9b70834d6fbc35fb947f51974422d922fdc4d268f60e59.bin"
+    },
+    {
+      "bytes": 24559,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 24559 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/f69c93edd160738a11a600f75a77fe697958cc97af664967eb9536b612686dea.bin"
+    },
+    {
+      "bytes": 3417,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration-evidence/f9ac940750ae9d116251588496fb1e724e70b656470b72337e73dc8f48fde23c.bin"
+    },
+    {
+      "bytes": 96519,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 96519 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/demonstration.json"
+    },
+    {
+      "bytes": 347023,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 173511 of 347023 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/fixture-isolation/step-1-checks.json"
+    },
+    {
+      "bytes": 67355,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/study-evidence/audit-read-inventory.json"
+    },
+    {
       "bytes": 79048,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 39524",
       "grade": "candidate",
       "path": "docs/commit-gate/runbook.md"
+    },
+    {
+      "bytes": 459957,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 229978 of 459957 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1359/evidence/consumer-inputs.json"
+    },
+    {
+      "bytes": 24683,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 24683 bytes",
+      "grade": "candidate",
+      "path": "docs/main-root-suite-recovery/parity-attempt-1.json"
     },
     {
       "bytes": 59394,
@@ -609,16 +868,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 67677,
+      "bytes": 73141,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 33838",
+      "evidence": "mean line length above 400 in a window at offset 36570",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 77841,
+      "bytes": 96786,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 75793",
+      "evidence": "mean line length above 400 in a window at offset 94738",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
@@ -649,6 +908,27 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/imprimatur/evals/labelled-prose-v1/samples.jsonl"
+    },
+    {
+      "bytes": 39553,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/families.jsonl"
+    },
+    {
+      "bytes": 231041,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 115520",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/selection-rejections.jsonl"
+    },
+    {
+      "bytes": 63471,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/specimens.jsonl"
     },
     {
       "bytes": 11,
@@ -799,9 +1079,9 @@
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
     },
     {
-      "bytes": 24566,
+      "bytes": 24559,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 24566 bytes",
+      "evidence": "no newline in the first 4096 bytes of 24559 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }

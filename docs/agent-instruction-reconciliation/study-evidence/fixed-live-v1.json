@@ -1,0 +1,125 @@
+{
+  "base_head": "b9f8e36b8b6210bcd023a68059ecb46da3e35769",
+  "candidate": "fixed-live-v1",
+  "hostile_cases": [],
+  "observations": [
+    {
+      "exit": 2,
+      "failure": "plugins/hexaemeron/skills/fiat/SKILL.md is off its recorded reviewed-span digest at the recorded offsets 18710-23038, so this edit either changed the reviewed bytes or moved them. Neither is reconcilable here. Changed reviewed bytes are what the recorded token counts are counts of, and only agent_instruction.py measure can reissue those counts, on the machine the tokenizer profile pins. Moved reviewed bytes need their offsets re-derived from the pre-edit source, which this tree no longer holds; see wildcat-finance/skills#1192",
+      "fixture": "fiat-study-runbook-phase",
+      "placement": "before-span",
+      "refusals": [
+        [
+          "WAI-E-DIGEST.SOURCE",
+          "$.fixtures.fiat-study-runbook-phase.source.sha256"
+        ],
+        [
+          "WAI-E-CHECK.FIXTURE",
+          null
+        ]
+      ],
+      "repair_classification_correct": false,
+      "reviewed_span_preserved": false
+    },
+    {
+      "exit": 0,
+      "failure": null,
+      "fixture": "fiat-study-runbook-phase",
+      "placement": "after-span",
+      "refusals": [],
+      "repair_classification_correct": true,
+      "reviewed_span_preserved": true
+    },
+    {
+      "exit": 2,
+      "failure": "plugins/horos/skills/horos/SKILL.md is off its manifest digest. This tool reconciles one edited source and refuses a tree that has drifted elsewhere. If a previous reconcile was interrupted, this is the artefact it had already rewritten: restore the bound tree with `git checkout -- tests/fixtures/agent-instruction-v1 tests/promise_machine_coverage.json` and run it again",
+      "fixture": "horos-boundary-check",
+      "placement": "before-span",
+      "refusals": [
+        [
+          "WAI-E-DIGEST.SOURCE",
+          "$.fixtures.horos-boundary-check.source.sha256"
+        ],
+        [
+          "WAI-E-CHECK.FIXTURE",
+          null
+        ]
+      ],
+      "repair_classification_correct": false,
+      "reviewed_span_preserved": false
+    },
+    {
+      "exit": 2,
+      "failure": "plugins/horos/skills/horos/SKILL.md is off its manifest digest. This tool reconciles one edited source and refuses a tree that has drifted elsewhere. If a previous reconcile was interrupted, this is the artefact it had already rewritten: restore the bound tree with `git checkout -- tests/fixtures/agent-instruction-v1 tests/promise_machine_coverage.json` and run it again",
+      "fixture": "horos-boundary-check",
+      "placement": "after-span",
+      "refusals": [
+        [
+          "WAI-E-DIGEST.SOURCE",
+          "$.fixtures.horos-boundary-check.source.sha256"
+        ],
+        [
+          "WAI-E-CHECK.FIXTURE",
+          null
+        ]
+      ],
+      "repair_classification_correct": false,
+      "reviewed_span_preserved": true
+    },
+    {
+      "exit": 2,
+      "failure": "PROMISE_MACHINE.md is off its manifest digest. This tool reconciles one edited source and refuses a tree that has drifted elsewhere. If a previous reconcile was interrupted, this is the artefact it had already rewritten: restore the bound tree with `git checkout -- tests/fixtures/agent-instruction-v1 tests/promise_machine_coverage.json` and run it again",
+      "fixture": "promise-machine-router-selection",
+      "placement": "before-span",
+      "refusals": [
+        [
+          "WAI-E-DIGEST.SOURCE",
+          "$.fixtures.promise-machine-router-selection.source.sha256"
+        ],
+        [
+          "WAI-E-CHECK.FIXTURE",
+          null
+        ]
+      ],
+      "repair_classification_correct": false,
+      "reviewed_span_preserved": false
+    },
+    {
+      "exit": 2,
+      "failure": "PROMISE_MACHINE.md is off its manifest digest. This tool reconciles one edited source and refuses a tree that has drifted elsewhere. If a previous reconcile was interrupted, this is the artefact it had already rewritten: restore the bound tree with `git checkout -- tests/fixtures/agent-instruction-v1 tests/promise_machine_coverage.json` and run it again",
+      "fixture": "promise-machine-router-selection",
+      "placement": "after-span",
+      "refusals": [
+        [
+          "WAI-E-DIGEST.SOURCE",
+          "$.fixtures.promise-machine-router-selection.source.sha256"
+        ],
+        [
+          "WAI-E-CHECK.FIXTURE",
+          null
+        ]
+      ],
+      "repair_classification_correct": false,
+      "reviewed_span_preserved": true
+    }
+  ],
+  "preparation_samples_ms": [
+    56.12675,
+    225.957875,
+    45.533625,
+    49.530375,
+    43.582416,
+    51.936458
+  ],
+  "publication_faults_restored": [],
+  "publication_probe_boundary": "four generated targets, handled injected OSError; durable journal admission, killed-process replay and coverage publication remain conformance work",
+  "source_unchanged": true,
+  "values": {
+    "fixture-placements": 1,
+    "legacy-v1": true,
+    "prepare-p95": 226,
+    "recover-preimage": false,
+    "review-boundary": false,
+    "staging-bytes": 0
+  }
+}

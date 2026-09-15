@@ -1,0 +1,9 @@
+{
+  "candidate": "forward-scan",
+  "command": "python3 .hexaemeron/design-probes/failclosed.py forward-scan",
+  "criterion": "fail-closed-bypass",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

@@ -1,0 +1,9 @@
+{
+  "candidate": "forward-scan",
+  "command": "python3 .hexaemeron/design-probes/runtime.py forward-scan (median of three runs: 2728.4, 2664.2, 2720.4 ms)",
+  "criterion": "cap-scale-runtime",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 2720
+}

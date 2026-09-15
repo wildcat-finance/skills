@@ -244,10 +244,6 @@ class FiatSkillContractTests(unittest.TestCase):
                 "`topic`, `target_dir`, `base_ref`, `output_path`, "
                 "`design_output_path`, and `plugin_root`"
             ),
-            "mason": (
-                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
-                "and `plugin_root`"
-            ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
                 "`audit_log_path`, `step`, `round`, `warden_continuity`, "
@@ -260,6 +256,176 @@ class FiatSkillContractTests(unittest.TestCase):
             with self.subTest(role=role):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
+
+        mason = " ".join(AGENTS["mason"].split())
+        implementation = (
+            "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+            "and `plugin_root`"
+        )
+        self.assertIn(
+            f"An `implement` directive gives you one `brief` object with "
+            f"{implementation}",
+            mason,
+        )
+        self.assertIn(
+            "A capture-aware implementation brief also carries `step_parent`. "
+            "An assigned-finding receipt adds the immutable `guard_commit`; "
+            "a zero-assigned receipt omits it",
+            mason,
+        )
+        self.assertIn(
+            "Never recreate either branch or resolve `branch_from` again",
+            mason,
+        )
+        for field in (
+            "study_sha256",
+            "runbook_sha256",
+            "inventory_sha256",
+            "known_failure_inventory",
+            "consuming_step",
+            "assigned_findings",
+            "allowed_guard_paths",
+            "reporter_contracts",
+            "branch",
+            "branch_from",
+            "step_parent",
+            "evidence_directory",
+            "plugin_root",
+        ):
+            self.assertIn(f"`{field}`", mason)
+
+    def test_inoculation_contract_is_one_source_bound_loop_directive(self):
+        loop = self.fiat.split("## The loop", 1)[1].split("## ", 1)[0]
+        inoculation = self.fiat.split("**Inoculation.**", 1)[1].split(
+            "**Implementation.**", 1
+        )[0]
+        fiat = " ".join(self.fiat.split())
+        mason = " ".join(AGENTS["mason"].split())
+
+        self.assertIn("| `inoculate` |", loop)
+        self.assertIn(
+            "That loader/capture rule and the loop's existing Step action are one\n"
+            "`inoculate-phase` directive, not two independent instructions.",
+            self.fiat,
+        )
+        self.assertIn("`load_checked_inventory` operation is the sole ingestion path", self.fiat)
+        self.assertIn("`done inoculate` takes no phase-specific options", inoculation)
+        self.assertIn("fiat-known-failure-inoculation/v1", inoculation)
+        self.assertIn("fiat-no-known-findings/v1", inoculation)
+        self.assertIn("no-known-findings-for-step", inoculation)
+        self.assertIn("opens `implement` on that same branch", inoculation)
+        self.assertIn("also carries the full `step_parent`", fiat)
+        self.assertIn(
+            "assigned-finding receipt adds its exact guard commit", fiat
+        )
+        self.assertIn("`step_parent` for a zero-assigned Step", fiat)
+        self.assertIn(
+            "Do not recreate it from the parent or resolve a symbolic ref again",
+            fiat,
+        )
+        self.assertIn("the orchestrator calls `hexctl retain-guard`", mason)
+        self.assertIn("`completed_ids`, `remaining_ids`", mason)
+        self.assertIn("When `guard_commit` is present", mason)
+        self.assertIn(
+            "atomic create-only creation of the exact `branch` from `step_parent`",
+            mason,
+        )
+        self.assertIn("If that branch already exists at any tip", mason)
+        self.assertIn(
+            "make no edit, reset, repoint or checkout and request a fresh `next` packet",
+            mason,
+        )
+        self.assertIn(
+            "A packet without `guard_commit` authorises only atomic create-only creation",
+            fiat,
+        )
+        self.assertIn(
+            "current immutable context before loading or calling the runner",
+            fiat,
+        )
+        self.assertIn("it never samples a second execution", fiat)
+        self.assertIn("current live Step 3 is explicitly pre-contract", mason)
+        self.assertIn("No product path may ride along", mason)
+
+    def test_task_identity_check_is_unconditional_before_any_continuation(self):
+        # Issue 363: an orchestrator continued a Mason under a handle left from
+        # another issue. `next --task-handle` refuses only a handle it is shown,
+        # so this section is what makes showing it unconditional, and neither a
+        # refused handle nor a brief an earlier call left behind reaches a
+        # delegate. The paragraph is pinned sentence for sentence and must be the
+        # section's only paragraph naming a handle, so a dropped sentence, such
+        # as the visible-name requirement, or an exception written beside the
+        # unconditional one fails here (issue 363 S3-R1-01).
+        section = self.fiat.split("\n## Delegation and context\n", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        paragraphs = [" ".join(block.split()) for block in section.split("\n\n")]
+        handle_paragraphs = [text for text in paragraphs if "handle" in text]
+        self.assertEqual(1, len(handle_paragraphs))
+        sentences = re.split(r"(?<=\.) (?=[A-Z])", handle_paragraphs[0])
+        self.assertEqual(
+            [
+                "A delegated envelope also carries `task_identity`, whose `handle` "
+                "is `fiat-<task>-<phase>-<role>`: the run's task, `study` or "
+                "`step-<n>`, and the delegate's role.",
+                "The round is not in the handle, so a Warden keeps one handle across "
+                "a step's rounds.",
+                "Give each spawned delegate that handle as its visible name.",
+                "The handle check is unconditional.",
+                "Before continuing any existing agent handle, for any directive, "
+                "round or reason, run `hexctl next --task-handle <observed>` with "
+                "that handle.",
+                "Exit 0 prints the same directive.",
+                "Exit 2 prints no directive and writes no state, ledger entry or brief.",
+                "Never continue a refused handle: spawn a fresh delegate under the "
+                "`task_identity.handle` that `next` prints without `--task-handle`.",
+                "A `delegate` refusal means the directive has no delegate and runs "
+                "in this session.",
+                "A brief file left at a `--brief-out` path by an earlier call is not "
+                "the current directive's, so pass `--brief-out` and `--task-handle` in "
+                "one call and hand a delegate only a brief path named by a `next` call "
+                "that exited 0.",
+            ],
+            sentences,
+        )
+
+    def test_task_identity_each_agent_names_the_handle_it_is_spawned_under(self):
+        # Each file names the handle the controller derives for its role, so the
+        # prose cannot keep a grammar `task_identity` has stopped emitting.
+        spawned = {
+            "surveyor": ("study", "`fiat-<task>-study-surveyor`", None),
+            "mason": ("implement", "`fiat-<task>-step-<n>-mason`", 3),
+            "warden": ("audit-round", "`fiat-<task>-step-<n>-warden`", 3),
+            "scribe": ("prose", "`fiat-<task>-step-<n>-scribe`", 3),
+        }
+        controller = hexctl_module()
+        state = {
+            "topic": "bind delegated task identity to step and role",
+            "receipts": {
+                controller.RUN_ANCHOR_RECEIPT: {
+                    "task": {"kind": "github-issue", "number": 363}
+                }
+            },
+        }
+        for role, (directive, handle, step) in spawned.items():
+            with self.subTest(role=role):
+                contract = " ".join(AGENTS[role].split())
+                self.assertIn(
+                    f"Fiat spawns you under the handle {handle}, the "
+                    f"`task_identity.handle` of the `{directive}` directive",
+                    contract,
+                )
+                self.assertIn("where `<task>` names the run's task issue or topic.", contract)
+                concrete = handle.strip("`").replace("<task>", "363").replace("<n>", "3")
+                derived = controller.task_identity(
+                    state, role, step=step, round=2 if role == "warden" else None
+                )
+                self.assertEqual(concrete, derived["handle"])
+        self.assertIn(
+            "The round is not in the handle, so a later round of one step may "
+            "continue the same Warden, and a round of another step never does.",
+            " ".join(AGENTS["warden"].split()),
+        )
 
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())

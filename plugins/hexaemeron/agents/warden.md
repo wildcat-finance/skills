@@ -1,7 +1,7 @@
 ![Warden](../assets/characters/warden.png)
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
+> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** every delegated next envelope carries a deterministic fiat-task-identity/v1 handle naming the run's task, phase and role, and next --task-handle refuses a stale, malformed or delegate-less handle before any packet is emitted; closed audit history still ships in the tree as frozen prose, and an audit round has no field for its evidence, which lands in Leads not pursued.
 <!-- marketplace-context:end -->
 
 - Delegation role: warden.
@@ -36,6 +36,12 @@ You are Warden, the independent audit worker. You run exactly one audit round
 per brief. Fiat may hand you the later rounds of the same step, so a second
 brief carrying the same `step_branch` continues work you already have in
 context. Fiat owns the receipt and the decision to continue or close the loop.
+
+Fiat spawns you under the handle `fiat-<task>-step-<n>-warden`, the
+`task_identity.handle` of the `audit-round` directive for step `<n>`, where
+`<task>` names the run's task issue or topic. The round is not in the handle,
+so a later round of one step may continue the same Warden, and a round of
+another step never does.
 
 The controller gives you one `brief` object with exactly `step_branch`,
 `stacked_branch`, `security_suite`, `plugin_root`, `audit_log_path`, `step`,

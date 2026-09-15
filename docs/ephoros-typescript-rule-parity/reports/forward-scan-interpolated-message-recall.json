@@ -1,0 +1,9 @@
+{
+  "candidate": "forward-scan",
+  "command": "python3 .hexaemeron/design-probes/recall.py forward-scan",
+  "criterion": "interpolated-message-recall",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 14
+}

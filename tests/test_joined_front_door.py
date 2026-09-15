@@ -36,10 +36,9 @@ Three narrower guards sit beside them: the committed Horos boundary against the
 delivered tree, one spelling for the public-set selection everywhere a reader
 can reach, and no topology literal in any shipped first-party document.
 
-Two boundaries govern how this is done. Every scratch tree is built below a
-temporary directory and never inside the repository, and a document in it is
-replaced through a fresh file and `os.replace`, never opened for writing, so a
-hard link into the repository cannot be written through. And the
+Two boundaries govern how this is done. Every scratch tree uses independent
+copies below a temporary directory, so creating, changing and deleting it
+leaves source bytes and file identities unchanged. And the
 `.github/workflows/repo.yml` job checks the tree out and installs nothing, so
 the one case that executes demonstrations reuses
 `tests.test_demonstrations.absent_dependencies`: the runner still refuses an
@@ -62,11 +61,12 @@ import tempfile
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))  # noqa: E402  (locates the checker)
 
-from shoggoth_topology import read as discover_topology  # noqa: E402
+from shoggoth_topology import _file_identity, read as discover_topology  # noqa: E402
 
 try:
     import demonstrations  # noqa: E402
@@ -211,13 +211,10 @@ def swept_documents(topology) -> list[str]:
 def plant_tree(destination: Path) -> None:
     """Materialise the delivered tree below `destination`.
 
-    Hard links rather than copies: the checker only reads, the tree is 90 MiB,
-    and a copy per case would put seconds on the suite for nothing. Every
-    mutation below goes through `replace`, which swaps a directory entry and
-    never opens an existing file for writing, so no link back into the
-    repository is ever written through. A filesystem that will not link across
-    the boundary falls back to a copy rather than skipping the file, because a
-    scratch tree missing a document is a sweep that reports nothing.
+    Independent copies keep fixture creation and deletion from changing source
+    ctime while a concurrent reader checks its identity. Fixture mutations also
+    remain confined to the copy. A missing document would leave part of the
+    sweep unchecked, so copy errors propagate.
     """
 
     for name in delivered_paths():
@@ -226,10 +223,7 @@ def plant_tree(destination: Path) -> None:
             continue
         target = destination / name
         target.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            os.link(source, target)
-        except OSError:
-            shutil.copy2(source, target)
+        shutil.copy2(source, target)
 
 
 def replace(path: Path, text: str) -> None:
@@ -305,6 +299,36 @@ def regenerate_counts(root: Path, counts: dict[str, int]) -> dict[str, str]:
         replace(path, out)
         rewritten[item.relative] = out
     return rewritten
+
+
+class FixtureIsolationTests(unittest.TestCase):
+    """Fixture lifetimes leave the source bytes and read identity unchanged."""
+
+    def test_creating_changing_and_removing_a_fixture_preserves_its_source(self):
+        with tempfile.TemporaryDirectory(prefix="joined-source-isolation-") as name:
+            root = Path(name)
+            source_root = root / "source"
+            source_root.mkdir()
+            source = source_root / "record.txt"
+            original = b"preserved source bytes\n"
+            source.write_bytes(original)
+            identity = _file_identity(source.stat())
+            fixture = root / "fixture"
+
+            with mock.patch.dict(
+                globals(),
+                {"ROOT": source_root, "delivered_paths": lambda: ["record.txt"]},
+            ):
+                plant_tree(fixture)
+
+            self.assertEqual(_file_identity(source.stat()), identity)
+            self.assertEqual(source.read_bytes(), original)
+            (fixture / "record.txt").write_bytes(b"fixture mutation\n")
+            self.assertEqual(_file_identity(source.stat()), identity)
+            self.assertEqual(source.read_bytes(), original)
+            shutil.rmtree(fixture)
+            self.assertEqual(_file_identity(source.stat()), identity)
+            self.assertEqual(source.read_bytes(), original)
 
 
 class JoinedHarness(unittest.TestCase):

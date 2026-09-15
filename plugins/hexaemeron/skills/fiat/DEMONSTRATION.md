@@ -26,7 +26,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
       "id": "input",
       "class": "fixture",
       "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
-      "sha256": "5ae0b020bef6c375e018fd7cbb47593a7fee5e1409e50605f6fa46e96c5a968f"
+      "sha256": "3fc856bedff0f73c8a4805f6a4b7c9d05eba1bdbe7fcbcb8ee1c7258d3717c8c"
     }
   ],
   "commands": [
@@ -42,7 +42,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
     }
   ],
   "observations": [
-    "The command exits 0 in about 138.6 seconds with no network.",
+    "The offline command must exit 0; its elapsed time is not an acceptance condition.",
     "Its last reported line is: OK"
   ],
   "frontier": {
@@ -61,3 +61,8 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
 | Version | Axis | Demo frontier revision | Demo frontier SHA-256 | Evidence | Change |
 | --- | --- | --- | --- | --- | --- |
 | `fiat-demo-v0.1.0` | baseline | `replay-a-preserved-run` | `fc4e742709eb564873abb6aacd7048bb5c09b0f9a4d0f3b5a62ae40574986955` | `adr/govern-real-data-demonstrations-separately` | The demonstration lane starts here. Status `constructed` is decided by the material inputs above, not by the prose. |
+
+The earlier fixture digest
+`5ae0b020bef6c375e018fd7cbb47593a7fee5e1409e50605f6fa46e96c5a968f`
+was recorded as exiting 0 in about 138.6 seconds with no network. That timing
+is historical and does not describe the current fixture.

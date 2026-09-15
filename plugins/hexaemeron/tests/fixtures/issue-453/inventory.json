@@ -1,0 +1,137 @@
+{
+  "schema": "protasis-known-failure-inventory/v1",
+  "source_views": [
+    {
+      "id": "issue-327-root",
+      "path": "audit/AUDIT_SYNOPSIS.md",
+      "source_sha256": "d0be89aa23e8db7979ac29ff1613e31d59a1ee78d07131147d50eb6268e01d9d",
+      "view_sha256": "82dc1d43e0fa9ee7a4cd7044aadeeb4049a1980e57943486809bc1d14533d0ee"
+    },
+    {
+      "id": "issue-429-schema",
+      "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md",
+      "source_sha256": "51891eaf4a387acb79ab65c9508c09cb84828cb40c475a3b363fddcecd74fe8d",
+      "view_sha256": "937417919bb6c27ab5a47a8d5adadef2eb088592d2937f0154e7868a133f0a50"
+    },
+    {
+      "id": "issue-369-consumer",
+      "path": "audit/rounds/fiat-369-read-audit-synopsis-resigned.synopsis.md",
+      "source_sha256": "a5bbc01858fb95cb5334a503285c73418e2ee4a7618f66920f89c1aafa94f784",
+      "view_sha256": "f6a9c8c82d4eeaefd6c836f574d6497611a3bed40baa72bc5e10d049b4ab90a6"
+    }
+  ],
+  "findings": [
+    {
+      "id": "kf-453-01",
+      "source_ref": "issue-429-schema: every round excludes issue 453 report-byte binding; issue 453 acceptance 2 and 7",
+      "failure": "an omitted, duplicate, malformed, stale, or unassigned inventory can reach a runbook without a named refusal",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_known_failure_inventory.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+        "plugins/hexaemeron/tests/fixtures/issue-453/inventory.json"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-01.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-01 --report .elenchus/issue-453-kf-453-01-green.json",
+      "consuming_step": 1
+    },
+    {
+      "id": "kf-453-02",
+      "source_ref": "issue-327-root:341 carries issue 453 production gating; issue 369 Not checked names issue-453 behaviour",
+      "failure": "done runbook opens implement directly and done implement is callable without an inoculation receipt",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-02.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-02 --report .elenchus/issue-453-kf-453-02-green.json",
+      "consuming_step": 2
+    },
+    {
+      "id": "kf-453-03",
+      "source_ref": "issue-327-root:341 says the receipt is a declaration, not report-byte attestation; issue-429-schema leaves binding to issue 453",
+      "failure": "Mason receives no source-bound inventory and Fiat binds no finding, parent, test bytes, command, report bytes, or consuming step",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_guard_evidence.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+        "plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-03 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-03.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-03 --report .elenchus/issue-453-kf-453-03-green.json",
+      "consuming_step": 3
+    },
+    {
+      "id": "kf-453-04",
+      "source_ref": "issue-327-root:338-344 preserves passed and unguarded declarations without a production block; issue 453 acceptance 4",
+      "failure": "a non-guard outcome, stale report, zero run, unexpected assertion, or infrastructure failure can be mistaken for inoculation",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_guard_evidence.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+        "plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-04 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-04.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-04 --report .elenchus/issue-453-kf-453-04-green.json",
+      "consuming_step": 3
+    },
+    {
+      "id": "kf-453-05",
+      "source_ref": "issue-327-root:341 carries the production guarded gate; issue 453 acceptance 1 and 5",
+      "failure": "a guard commit containing an undeclared product path can be receipted before guard evidence",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+        "plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-05 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-05.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-05 --report .elenchus/issue-453-kf-453-05-green.json",
+      "consuming_step": 3
+    },
+    {
+      "id": "kf-453-06",
+      "source_ref": "issue-369-consumer: Not checked includes issue-453 behaviour; issue 453 acceptance 7 and 8",
+      "failure": "resume can forget remaining findings, while an empty inventory can be accepted without a bound no-known-findings claim",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_recovery.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+        "plugins/hexaemeron/tests/fixtures/issue-453/recovery.json"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-06 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-06.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-06 --report .elenchus/issue-453-kf-453-06-green.json",
+      "consuming_step": 4
+    },
+    {
+      "id": "kf-453-07",
+      "source_ref": "issue-327-root:342-344 records documentation-only unguarded fixes; issue 453 acceptance 6 and 9",
+      "failure": "a deliberately red guard commit can be treated as a finished step or hidden as an expected failure instead of becoming fixed-tree green",
+      "guard_paths": [
+        "plugins/hexaemeron/tests/test_issue_453_recovery.py",
+        "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+        "plugins/hexaemeron/tests/fixtures/issue-453/final-green.json"
+      ],
+      "test_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-07 --report {report}",
+      "report_format": "unittest-json-v1",
+      "report_file": ".elenchus/issue-453-kf-453-07.json",
+      "expected_guard_verdict": "guarded",
+      "green_command": "python3 plugins/hexaemeron/tests/emit_issue_453_guard_report.py --case kf-453-07 --report .elenchus/issue-453-kf-453-07-green.json",
+      "consuming_step": 4
+    }
+  ],
+  "no_known_findings": null
+}

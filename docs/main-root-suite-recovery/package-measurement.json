@@ -1,0 +1,991 @@
+{
+  "schema": "main-root-suite-recovery-package/v1",
+  "base": "b9cafd196b1d8f8b74b207320836532c14e78bab",
+  "baseline_runtime_bytes": 27036319,
+  "runtime_bytes": 18239372,
+  "cap": 26214400,
+  "headroom": 7975028,
+  "minimum_headroom": 5242880,
+  "file_count": 1395,
+  "omitted_count": 32,
+  "omitted_source_bytes": 8788268,
+  "transformed_count": 47,
+  "manifest_sha256": "28d09f7d5e0820e4c405398ef78973f0ffc5bee8f093300056ac8d9db6d2c77d",
+  "omitted_files": [
+    {
+      "path": "assets/characters/promise-machine.png",
+      "bytes": 242387,
+      "sha256": "a735d9284150171401bf22bc4c13e5fffba222b8ae755c36396ccf3e3055beae"
+    },
+    {
+      "path": "plugins/alexandria/assets/characters/alexandria.png",
+      "bytes": 236207,
+      "sha256": "79409b4703250acc93fda499c9c46082e66dfe8fd32169ba8535f8a76c852b2c"
+    },
+    {
+      "path": "plugins/anamnesis/assets/characters/anamnesis.webp",
+      "bytes": 58214,
+      "sha256": "57016e69bf1aa2139188e0e67eeb17376d49c8944649b19f90fb643ef00d6cc2"
+    },
+    {
+      "path": "plugins/ariadne/assets/characters/ariadne.png",
+      "bytes": 314982,
+      "sha256": "d121e09507820113c0bf846b725a5d873891933991f2c4854fddcf0b01d6f2b8"
+    },
+    {
+      "path": "plugins/berean/assets/characters/berean.png",
+      "bytes": 227051,
+      "sha256": "fbe20c815fff0bc98b835fac2bc378e4afc050c5de24fab2d84b51f7d458f06f"
+    },
+    {
+      "path": "plugins/brevitas/assets/characters/brevitas.png",
+      "bytes": 252746,
+      "sha256": "f0b7f99c3af45a5f64b85f53892af418a488b492ece17afc20ecfad6ec2c546b"
+    },
+    {
+      "path": "plugins/hermes/assets/characters/hermes.png",
+      "bytes": 257751,
+      "sha256": "4cd680f884bedbdac1fbf7aea4b60e89c531ca4f19dad0bc30912d6a8d482fc6"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/elenchus.png",
+      "bytes": 286235,
+      "sha256": "147c5c3c35f2867a0789b944898b89ae12b0a0ea1adcaf2ae2ef27aaa7e41f12"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/ephoros.png",
+      "bytes": 299075,
+      "sha256": "4e3b7dd3f68f6fedf8746db41fab3861020fb352b79c12047b285fecffb1d5ed"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/fiat.png",
+      "bytes": 331406,
+      "sha256": "5d9883cb3f6cab89dc9f1d321a10a97260beea975753e54877fddd357c1b2e70"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png",
+      "bytes": 426737,
+      "sha256": "4e09434cccbb7458019712627f26cb209381e293cefdc223903d247b77473e5e"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron.png",
+      "bytes": 298992,
+      "sha256": "35541601873dd94d31e5c7fbc556433fcf7a955d57625cf0b61e0f946674da6c"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/hypomnema.png",
+      "bytes": 302132,
+      "sha256": "81b56b03451733c26e3a3e76eed7906e6394c6e918a0a9725f93ee0fce189863"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/imprimatur.png",
+      "bytes": 264254,
+      "sha256": "33a164386b6a8f60cd78fc6f1d69c53b2ccab7bd40585f3fd960e6950d5ad128"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/kronos.png",
+      "bytes": 312978,
+      "sha256": "d35fdc6c9412182bf8874f7cddcd71d6bfc331aa605dc7c41ef85e4bbf7b558b"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/mason.png",
+      "bytes": 252057,
+      "sha256": "802866d2c0df4fc59932bf9b81a65f837357eeaa0ba2c5409e45339f7e11e8f3"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/metron.png",
+      "bytes": 226555,
+      "sha256": "aa6d3c0bf7e5069af89e782b8da43400f9b5f913cf3cc254a9842cede47441a8"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/phylax.png",
+      "bytes": 269181,
+      "sha256": "e09f2ad9c2aac55af983124adfa18727af55157fe4c143700519e41fbc28eefe"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/protasis.png",
+      "bytes": 256887,
+      "sha256": "35d673ef0db0d8214cf8911d2b70a16d57614b12244d5248ce6040286bfa5b98"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/scribe.png",
+      "bytes": 294228,
+      "sha256": "392e74e166a56893d801b65b6270286877dd30456da6faaa82eef26d336777f9"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/surveyor.png",
+      "bytes": 317607,
+      "sha256": "21e76db29385539ed15ae79704d0eb90f8af016fbb847c303b829ef16a4aa731"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/vulgate.png",
+      "bytes": 243626,
+      "sha256": "b4f02eb3eb13e67f402577281ebff937322cdeb526985d3fa00106efcd816964"
+    },
+    {
+      "path": "plugins/hexaemeron/assets/characters/warden.png",
+      "bytes": 325678,
+      "sha256": "d3ca8a4d12ec19daf6b0b8c6e07fa342242f4f9397bc7a1e68944f6478a96c4b"
+    },
+    {
+      "path": "plugins/horos/assets/characters/horos.png",
+      "bytes": 313921,
+      "sha256": "80c4c84ecb5427ab71b2e2da192a5417ec5fdaef9e3501182a680381aee1c308"
+    },
+    {
+      "path": "plugins/janus/assets/characters/janus.png",
+      "bytes": 349681,
+      "sha256": "8965d9451ac2d44a859bd76c26afb39f1076a49359b3fade05ef5341e0759791"
+    },
+    {
+      "path": "plugins/lazarus/assets/characters/lazarus.png",
+      "bytes": 282087,
+      "sha256": "50a52bbfcece8d1c9a3a4d718943febeffb038643fc53db401a0d1c7e65d8c27"
+    },
+    {
+      "path": "plugins/lemma/assets/characters/lemma.png",
+      "bytes": 225829,
+      "sha256": "31e5cae757270abb0482cc2d5bf4f72f2fa1586c2b94c3a90e4c4f5d3350095a"
+    },
+    {
+      "path": "plugins/pandects/assets/characters/pandects.png",
+      "bytes": 278892,
+      "sha256": "3a9c0996c2f1bf7804de9f88371fa8a3cc3cd65e02f1b00ba6394ca0629a0af1"
+    },
+    {
+      "path": "plugins/probitas/assets/characters/probitas.png",
+      "bytes": 263217,
+      "sha256": "86fdb442170e4477fc99fe42a70904a53f4924c5205ab93f04e28b2a489beceb"
+    },
+    {
+      "path": "plugins/sapheneia/assets/characters/sapheneia.png",
+      "bytes": 229220,
+      "sha256": "7ea04d29f2e4139385607383dd92b3ef1748265a34f3c5125c4979cc77451aae"
+    },
+    {
+      "path": "plugins/synkrisis/assets/characters/synkrisis.png",
+      "bytes": 303545,
+      "sha256": "0a0326e5c02b7849e093c046e0ba9aa81e0d2661c025b01d64ee16cc5cf27a6c"
+    },
+    {
+      "path": "plugins/tabularium/assets/characters/tabularium.png",
+      "bytes": 244910,
+      "sha256": "138f2c5732d5a12d542975d72430338de8605a53c671de956814ceb5b7756187"
+    }
+  ],
+  "transformed_files": [
+    {
+      "bytes": 7694,
+      "path": ".agents/skills/promise-machine/SKILL.md",
+      "sha256": "457d6f532e65b8c990d1e09fb5f44a9a92753f614385baeb42c7d53b3077ed45",
+      "source": ".agents/skills/promise-machine/SKILL.md",
+      "source_sha256": "d42a50abf24cf0479c96a4d5e6a2bd73b3e1b71109cdaeb576cbef453a110c08",
+      "source_bytes": 7765,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 242,
+          "end": 313,
+          "target": "assets/characters/promise-machine.png"
+        }
+      ]
+    },
+    {
+      "bytes": 15819,
+      "path": "plugins/alexandria/README.md",
+      "sha256": "045e56aab99b8fb54414feb55839fa0b8ef05c48503b2437694f8790b2d951fd",
+      "source": "plugins/alexandria/README.md",
+      "source_sha256": "435f96a07716b0019522ad7771be1d3e079d3babfb7b1139927357f940b6fa5b",
+      "source_bytes": 15868,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 49,
+          "target": "plugins/alexandria/assets/characters/alexandria.png"
+        }
+      ]
+    },
+    {
+      "bytes": 21873,
+      "path": "plugins/alexandria/skills/alexandria/SKILL.md",
+      "sha256": "d76a2d4dcf4d1a8b5e1cf7358c101b210bdb0a9c309a2733352d9c578644c43c",
+      "source": "plugins/alexandria/skills/alexandria/SKILL.md",
+      "source_sha256": "8e54a6540d98c2d1b3960d7162ce8183bc8e7a4fcfb2a1d7e465523f0a3f6bf4",
+      "source_bytes": 21936,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 687,
+          "end": 750,
+          "target": "plugins/alexandria/assets/characters/alexandria.png"
+        }
+      ]
+    },
+    {
+      "bytes": 14087,
+      "path": "plugins/anamnesis/README.md",
+      "sha256": "41e1022d42a3b07bb0597dc90a2de2f8ce1cbf1a804d65f1a8f6c8f5552ec28f",
+      "source": "plugins/anamnesis/README.md",
+      "source_sha256": "e54baf08e5d6ffb872794242c3697a31859f229984c3b1d8f28bbc0921d6f1d1",
+      "source_bytes": 14166,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 79,
+          "target": "plugins/anamnesis/assets/characters/anamnesis.webp"
+        }
+      ]
+    },
+    {
+      "bytes": 19841,
+      "path": "plugins/anamnesis/skills/anamnesis/SKILL.md",
+      "sha256": "f5b2baeae4a421438799a4410a15932a2bbb3fa39887cb069832c2607e014bf2",
+      "source": "plugins/anamnesis/skills/anamnesis/SKILL.md",
+      "source_sha256": "5ac9a180f4379825fa1c9b710d33e8c20a0ee1f10e89bca0bed411fdb67e99e5",
+      "source_bytes": 19904,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 666,
+          "end": 729,
+          "target": "plugins/anamnesis/assets/characters/anamnesis.webp"
+        }
+      ]
+    },
+    {
+      "bytes": 12864,
+      "path": "plugins/ariadne/README.md",
+      "sha256": "a9921a59ff85a5d0062315738b50943c14d53846fa187f4e63c29b9b8610e4cb",
+      "source": "plugins/ariadne/README.md",
+      "source_sha256": "419aeaba9ad3b0f85ffef4d282f4a4d363f103870e2f1f803d53f416cb48a8c1",
+      "source_bytes": 12907,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 43,
+          "target": "plugins/ariadne/assets/characters/ariadne.png"
+        }
+      ]
+    },
+    {
+      "bytes": 22733,
+      "path": "plugins/ariadne/skills/ariadne/SKILL.md",
+      "sha256": "e47391db58ccf8571c3392faed106fbce36eb4384a67f82ebf9b311d6b13f4ea",
+      "source": "plugins/ariadne/skills/ariadne/SKILL.md",
+      "source_sha256": "8244f93104cfa3ee060c5a681d3ded250019ceab256e86cf8705fdd1fbb2fa28",
+      "source_bytes": 22793,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 605,
+          "end": 665,
+          "target": "plugins/ariadne/assets/characters/ariadne.png"
+        }
+      ]
+    },
+    {
+      "bytes": 7526,
+      "path": "plugins/berean/README.md",
+      "sha256": "a701196dc84eead7f12d549e1a0c49e06ec605cd99f9202c2dee77c7c2e71533",
+      "source": "plugins/berean/README.md",
+      "source_sha256": "51b443d3b85162729d44849410923baa8061299742ec5803647bbf3d0331c4da",
+      "source_bytes": 7567,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 41,
+          "target": "plugins/berean/assets/characters/berean.png"
+        }
+      ]
+    },
+    {
+      "bytes": 11708,
+      "path": "plugins/berean/skills/berean/SKILL.md",
+      "sha256": "ad2f527f9a6e832fbe7093ca7de6cfee90d811eec35971bc8f00cc4fc0090869",
+      "source": "plugins/berean/skills/berean/SKILL.md",
+      "source_sha256": "1ed74eabc09f3939c4ff422e4c807acd41746f5f653a57d625fd365d276d0ccc",
+      "source_bytes": 11767,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 650,
+          "end": 709,
+          "target": "plugins/berean/assets/characters/berean.png"
+        }
+      ]
+    },
+    {
+      "bytes": 5349,
+      "path": "plugins/brevitas/README.md",
+      "sha256": "03d4df47a3f3fb00e955037bdfec68344fc70f4f75a5d5ac96909714e915316c",
+      "source": "plugins/brevitas/README.md",
+      "source_sha256": "e3c98907ad53506124e547433a53c37f417540301bd002b0cd991f68fdfb8f4b",
+      "source_bytes": 5394,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 45,
+          "target": "plugins/brevitas/assets/characters/brevitas.png"
+        }
+      ]
+    },
+    {
+      "bytes": 7794,
+      "path": "plugins/brevitas/skills/brevitas/SKILL.md",
+      "sha256": "af9a204ea5fda8f64d79a82214622799f753cbb0c4951c2537d0572ba7017b1d",
+      "source": "plugins/brevitas/skills/brevitas/SKILL.md",
+      "source_sha256": "da70dbf3585dbcbb9d169e09ec6549464dc77d33a9b5aff4d9b82114eb7d73fa",
+      "source_bytes": 7855,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 545,
+          "end": 606,
+          "target": "plugins/brevitas/assets/characters/brevitas.png"
+        }
+      ]
+    },
+    {
+      "bytes": 4196,
+      "path": "plugins/hermes/README.md",
+      "sha256": "0a2a45d148fda284fc28047b20c30e3da27658c1ed3a908f0d2df432f210f9c5",
+      "source": "plugins/hermes/README.md",
+      "source_sha256": "64a7bbd235a18a658d0920d3832d4b2f6fbadddbfa559dfeaf8ab5fee92d91d5",
+      "source_bytes": 4237,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 41,
+          "target": "plugins/hermes/assets/characters/hermes.png"
+        }
+      ]
+    },
+    {
+      "bytes": 19468,
+      "path": "plugins/hermes/skills/hermes/SKILL.md",
+      "sha256": "3e2e113b7a7ca13a8eb61745a09ceb5a99e81604de199fc876b47a42292987bc",
+      "source": "plugins/hermes/skills/hermes/SKILL.md",
+      "source_sha256": "90ee8281ba7bc8c7cbb77e13cfb9308275b3a351251184dd8dce7d140163348e",
+      "source_bytes": 19527,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 677,
+          "end": 736,
+          "target": "plugins/hermes/assets/characters/hermes.png"
+        }
+      ]
+    },
+    {
+      "bytes": 8922,
+      "path": "plugins/hexaemeron/AGENTS.md",
+      "sha256": "62acda441484de6aeb6ebb48a3cd1ec754027567dddd306fb85e6a5b3e0db15a",
+      "source": "plugins/hexaemeron/AGENTS.md",
+      "source_sha256": "cf453a8d9ce37e6d0f8fba8241f9b6f42eabe6e049ca396221031ae88631cc06",
+      "source_bytes": 8990,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 21,
+          "end": 89,
+          "target": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png"
+        }
+      ]
+    },
+    {
+      "bytes": 21976,
+      "path": "plugins/hexaemeron/README.md",
+      "sha256": "cf2bb1fbd5653b98f5621b3f7b34e9e7611e495f4c25e5e53479196aed6cc65b",
+      "source": "plugins/hexaemeron/README.md",
+      "source_sha256": "e00a91c3351847005a5305f2a1ada63dd5fe29634dcd1d3670795c2576b5b107",
+      "source_bytes": 22025,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 49,
+          "target": "plugins/hexaemeron/assets/characters/hexaemeron.png"
+        }
+      ]
+    },
+    {
+      "bytes": 4403,
+      "path": "plugins/hexaemeron/agents/mason.md",
+      "sha256": "32126df50d9a7290c5d924132f80348a842de91d1d5cc6c65f5fb57aaf3d5f53",
+      "source": "plugins/hexaemeron/agents/mason.md",
+      "source_sha256": "63083c901757e274f8f7664f9a0e19e8b34e5b9aed7b697b573bc7987d916e98",
+      "source_bytes": 4443,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 40,
+          "target": "plugins/hexaemeron/assets/characters/mason.png"
+        }
+      ]
+    },
+    {
+      "bytes": 4031,
+      "path": "plugins/hexaemeron/agents/scribe.md",
+      "sha256": "48e4baa6a3a42b71eba4eac01d82c654f778a7952b635df0f6cb5b0a21dc0e7a",
+      "source": "plugins/hexaemeron/agents/scribe.md",
+      "source_sha256": "83ed6fa93cba4f2ce523106f6ba4193e2d02af4886782d04d0c2552c7f331b5b",
+      "source_bytes": 4073,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 42,
+          "target": "plugins/hexaemeron/assets/characters/scribe.png"
+        }
+      ]
+    },
+    {
+      "bytes": 4799,
+      "path": "plugins/hexaemeron/agents/surveyor.md",
+      "sha256": "c7752f6110bc81a60a0b367d1a02e195e775c52bc0d9ef17b12c9880e070b643",
+      "source": "plugins/hexaemeron/agents/surveyor.md",
+      "source_sha256": "b5ebcdc3a1041f71bff8d9cb4e49d2948175f50c7f2779dee0d0f42c43418efa",
+      "source_bytes": 4845,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 46,
+          "target": "plugins/hexaemeron/assets/characters/surveyor.png"
+        }
+      ]
+    },
+    {
+      "bytes": 8921,
+      "path": "plugins/hexaemeron/agents/warden.md",
+      "sha256": "da0ee94e8a453368286789fe9f43342fa7c022b48d8d502c4f4cc45c28f34d31",
+      "source": "plugins/hexaemeron/agents/warden.md",
+      "source_sha256": "ff49ed973554c5c821bcaa02823417a547cf28c51e02b75cec4e7e31a2423e02",
+      "source_bytes": 8963,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 42,
+          "target": "plugins/hexaemeron/assets/characters/warden.png"
+        }
+      ]
+    },
+    {
+      "bytes": 24257,
+      "path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
+      "sha256": "e3e8dfd5e0b8255e8fa3b8acf27e1bcffa1cb8dc92630039ce10ec568b729be5",
+      "source": "plugins/hexaemeron/skills/elenchus/SKILL.md",
+      "source_sha256": "accf3ca04714f8ef2624875fa24652f592a7ee1018252dbf2a639ddc66837320",
+      "source_bytes": 24318,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 696,
+          "end": 757,
+          "target": "plugins/hexaemeron/assets/characters/elenchus.png"
+        }
+      ]
+    },
+    {
+      "bytes": 20371,
+      "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
+      "sha256": "5bd02dd8d1332b332c59d6d7e41e36176c65c5d6b431aae0e3f85df35707b863",
+      "source": "plugins/hexaemeron/skills/ephoros/SKILL.md",
+      "source_sha256": "7a993ef04f74ff490a6dc77daecd103c45198eb7680e069f425189ed600ea786",
+      "source_bytes": 20431,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 651,
+          "end": 711,
+          "target": "plugins/hexaemeron/assets/characters/ephoros.png"
+        }
+      ]
+    },
+    {
+      "bytes": 78564,
+      "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+      "sha256": "27c90fc11f234552d9d29c9f36b3a70bbfc1d838c5fa78c9c07be6074f168b7a",
+      "source": "plugins/hexaemeron/skills/fiat/SKILL.md",
+      "source_sha256": "babe74b138953a5d1dfcee0b67afb94d9bb7d99c1798df241f0eb073be09fdef",
+      "source_bytes": 78621,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 414,
+          "end": 471,
+          "target": "plugins/hexaemeron/assets/characters/fiat.png"
+        }
+      ]
+    },
+    {
+      "bytes": 23867,
+      "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+      "sha256": "b0b00da6aec13ec94160917b4c59715c0afafc752ab05d59f39dbb821eb63f2c",
+      "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+      "source_sha256": "59cf1fea6bffe21b44477a7d1368d33d3b5fc42b05a7e0a4da0403ed911de4bf",
+      "source_bytes": 23929,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 640,
+          "end": 702,
+          "target": "plugins/hexaemeron/assets/characters/hypomnema.png"
+        }
+      ]
+    },
+    {
+      "bytes": 11711,
+      "path": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+      "sha256": "73a995d5cff7aadfd7c3256b5f411c7d64c1bb3984af8c73d9d699a428461fae",
+      "source": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
+      "source_sha256": "0c5185a240b9461a4b1222e367bc82a9f42b3e33d1bfcca58d06a197ea728bab",
+      "source_bytes": 11774,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 421,
+          "end": 484,
+          "target": "plugins/hexaemeron/assets/characters/imprimatur.png"
+        }
+      ]
+    },
+    {
+      "bytes": 22876,
+      "path": "plugins/hexaemeron/skills/kronos/SKILL.md",
+      "sha256": "2a69ab63122741687bbaec72b7b1ab18f98e726b3fad8935d87966a8091c1691",
+      "source": "plugins/hexaemeron/skills/kronos/SKILL.md",
+      "source_sha256": "7ab6a253ea37ab06cf0ae9b082ad58b739e96b260fbda6e5272157ea5e48ab68",
+      "source_bytes": 22935,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 519,
+          "end": 578,
+          "target": "plugins/hexaemeron/assets/characters/kronos.png"
+        }
+      ]
+    },
+    {
+      "bytes": 12181,
+      "path": "plugins/hexaemeron/skills/metron/SKILL.md",
+      "sha256": "4039eea6806925f6777a19b7cd7fd9e2efbf8f10e2a2fe274bc4fafcf9742daa",
+      "source": "plugins/hexaemeron/skills/metron/SKILL.md",
+      "source_sha256": "488c52b68f0c81964798902e42f7f95182265ad59ce4a6fc2be84133819000aa",
+      "source_bytes": 12240,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 552,
+          "end": 611,
+          "target": "plugins/hexaemeron/assets/characters/metron.png"
+        }
+      ]
+    },
+    {
+      "bytes": 24030,
+      "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
+      "sha256": "c3b68658841418396c1e26d71484a3a8416f65a641775a3049163e7c2c84df7e",
+      "source": "plugins/hexaemeron/skills/phylax/SKILL.md",
+      "source_sha256": "5e65b919c6a8dd18c0512961d47b18e39943ffce3d09f01aea14b785be8a057f",
+      "source_bytes": 24089,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 710,
+          "end": 769,
+          "target": "plugins/hexaemeron/assets/characters/phylax.png"
+        }
+      ]
+    },
+    {
+      "bytes": 32377,
+      "path": "plugins/hexaemeron/skills/protasis/SKILL.md",
+      "sha256": "36f3cc0e5309251bbff3f28ae02e45dcf94f6f6fed6abe84b0db406deb4d140b",
+      "source": "plugins/hexaemeron/skills/protasis/SKILL.md",
+      "source_sha256": "7dcf7e92e9617227890e0ed35406e96c6d15d2645f26f4eb1fe43a936f4f0e09",
+      "source_bytes": 32438,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 797,
+          "end": 858,
+          "target": "plugins/hexaemeron/assets/characters/protasis.png"
+        }
+      ]
+    },
+    {
+      "bytes": 7242,
+      "path": "plugins/hexaemeron/skills/vulgate/SKILL.md",
+      "sha256": "ca88c1730c287a1357755dd3081cfe649e2ac9518f493a72c339992dc6d2eca5",
+      "source": "plugins/hexaemeron/skills/vulgate/SKILL.md",
+      "source_sha256": "007908e9e5fc65eefeeb40a99b665602cceb5fb05265f9d05daa6b408b51e5f9",
+      "source_bytes": 7302,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 343,
+          "end": 403,
+          "target": "plugins/hexaemeron/assets/characters/vulgate.png"
+        }
+      ]
+    },
+    {
+      "bytes": 5872,
+      "path": "plugins/horos/README.md",
+      "sha256": "08c88d58af3c6bc9c4d3289f4f38268b7b0a81cb17fdcb415e0cb44907956d28",
+      "source": "plugins/horos/README.md",
+      "source_sha256": "1bf6bd9f7240d3b19131741f776a3f96842fb6273f53d88ac245d0af8848a26b",
+      "source_bytes": 5911,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 39,
+          "target": "plugins/horos/assets/characters/horos.png"
+        }
+      ]
+    },
+    {
+      "bytes": 15239,
+      "path": "plugins/horos/skills/horos/SKILL.md",
+      "sha256": "4391cf9209fce1ef8da8117f321b95df9308a4698c4bf70a44c823de0e0a13af",
+      "source": "plugins/horos/skills/horos/SKILL.md",
+      "source_sha256": "b03fb485073074df2e5ca4fa928e350cefd22a4ff86752808b1f0fa19c3f1634",
+      "source_bytes": 15297,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 575,
+          "end": 633,
+          "target": "plugins/horos/assets/characters/horos.png"
+        }
+      ]
+    },
+    {
+      "bytes": 7122,
+      "path": "plugins/janus/README.md",
+      "sha256": "fdfe804dcdfd520ace9a8cc2687ffebd093488f22e993893f3b36fd4191353c9",
+      "source": "plugins/janus/README.md",
+      "source_sha256": "fe1e1c2f1313fce9f724249925d34faab40052310cf9c3439225371d3ec55e39",
+      "source_bytes": 7161,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 39,
+          "target": "plugins/janus/assets/characters/janus.png"
+        }
+      ]
+    },
+    {
+      "bytes": 11432,
+      "path": "plugins/janus/skills/janus/SKILL.md",
+      "sha256": "901cc2763a839a002f803f6d3cff293efe9c98a6652b6b3e254d98aabd410b81",
+      "source": "plugins/janus/skills/janus/SKILL.md",
+      "source_sha256": "f839a2f7f5bb022f2cce3917f45305c366b0113a7182eee0ebc5bdc5c8427b93",
+      "source_bytes": 11490,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 704,
+          "end": 762,
+          "target": "plugins/janus/assets/characters/janus.png"
+        }
+      ]
+    },
+    {
+      "bytes": 10711,
+      "path": "plugins/lazarus/README.md",
+      "sha256": "a7ef5f955879e90013573ed344a7b07c6ac55b0b4a1af1aa0fe45fec67d7adde",
+      "source": "plugins/lazarus/README.md",
+      "source_sha256": "75fdd84b16cf424776e9bd7ac14614b9817693c0fc7c9ba18647fbc4d804181f",
+      "source_bytes": 10754,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 43,
+          "target": "plugins/lazarus/assets/characters/lazarus.png"
+        }
+      ]
+    },
+    {
+      "bytes": 17309,
+      "path": "plugins/lazarus/skills/lazarus/SKILL.md",
+      "sha256": "e0ff69b64c86d7a9b9b35c89914f3d49c657076f48e945caaa24566ca448efde",
+      "source": "plugins/lazarus/skills/lazarus/SKILL.md",
+      "source_sha256": "84b82afc6fbfef250cfa114c657753690881aa6df62ea542a177f7896bd8410c",
+      "source_bytes": 17369,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 501,
+          "end": 561,
+          "target": "plugins/lazarus/assets/characters/lazarus.png"
+        }
+      ]
+    },
+    {
+      "bytes": 9813,
+      "path": "plugins/lemma/README.md",
+      "sha256": "dc4c5c3b1ad5ebf1a77c6cb5fc49febfef93459d740766e088597180ca8f0e31",
+      "source": "plugins/lemma/README.md",
+      "source_sha256": "e4ff47b93e205b8953c640f91707f66b88f39b81fe05a8f85b661a5120e0da51",
+      "source_bytes": 9852,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 39,
+          "target": "plugins/lemma/assets/characters/lemma.png"
+        }
+      ]
+    },
+    {
+      "bytes": 10489,
+      "path": "plugins/lemma/skills/lemma/SKILL.md",
+      "sha256": "4ef2bc67655f7f649dcff46299f6b4952e561197aff0d08828fe4b3cc6da6724",
+      "source": "plugins/lemma/skills/lemma/SKILL.md",
+      "source_sha256": "49edcab238fd5c96eb783cea7eca592c332c70c484c878ae8a92c65f8c591b18",
+      "source_bytes": 10547,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 470,
+          "end": 528,
+          "target": "plugins/lemma/assets/characters/lemma.png"
+        }
+      ]
+    },
+    {
+      "bytes": 18069,
+      "path": "plugins/pandects/README.md",
+      "sha256": "4e313eb5856f959d5bae37a21cb37e70251147830f04da435db6d71b3da285e2",
+      "source": "plugins/pandects/README.md",
+      "source_sha256": "4b824c408e445ce8f99b6af52b7d377b3b1090b6559fd5daa1a1ac0ce69bd577",
+      "source_bytes": 18114,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 45,
+          "target": "plugins/pandects/assets/characters/pandects.png"
+        }
+      ]
+    },
+    {
+      "bytes": 16555,
+      "path": "plugins/pandects/skills/pandects/SKILL.md",
+      "sha256": "dd64204234d5665139fc9832c3d46ea243c78665ce757ebe0da24fb6f665505b",
+      "source": "plugins/pandects/skills/pandects/SKILL.md",
+      "source_sha256": "304977caf08b32c9db8b9dc4a00aca6cdb06c6e86f11e9dff595a8fa5acbe878",
+      "source_bytes": 16616,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 591,
+          "end": 652,
+          "target": "plugins/pandects/assets/characters/pandects.png"
+        }
+      ]
+    },
+    {
+      "bytes": 20046,
+      "path": "plugins/probitas/README.md",
+      "sha256": "1ad1e16c4c7af8e3dd5d315ebb186f0754faf9d79287052d1b4d52742e567eef",
+      "source": "plugins/probitas/README.md",
+      "source_sha256": "f32b50fc3ff31ba04b747c8d54ce57243279e1f26a7b08e0e22a6d50f46c9c42",
+      "source_bytes": 20091,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 45,
+          "target": "plugins/probitas/assets/characters/probitas.png"
+        }
+      ]
+    },
+    {
+      "bytes": 19920,
+      "path": "plugins/probitas/skills/probitas/SKILL.md",
+      "sha256": "8a9478e516b025956073b4ea6048589c016bfe91ef21d0750a76fe5835db97a0",
+      "source": "plugins/probitas/skills/probitas/SKILL.md",
+      "source_sha256": "0c15b11c021a3b1b3949128563609ebe97cf2466e43f6746a2e4e1f9ab5ac943",
+      "source_bytes": 19981,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 661,
+          "end": 722,
+          "target": "plugins/probitas/assets/characters/probitas.png"
+        }
+      ]
+    },
+    {
+      "bytes": 5132,
+      "path": "plugins/sapheneia/README.md",
+      "sha256": "2995f98165e0f422d0222f06ed4306c40cdff4ad481ee7db345a6227dadcc360",
+      "source": "plugins/sapheneia/README.md",
+      "source_sha256": "1c9836283cd2830e6da81b52d226cb62c66ae5aed9478a26959d8e8b56fd623a",
+      "source_bytes": 5179,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 47,
+          "target": "plugins/sapheneia/assets/characters/sapheneia.png"
+        }
+      ]
+    },
+    {
+      "bytes": 15273,
+      "path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+      "sha256": "004a9a6f1c5806d728221057dc110e2eb77034a947dc7c82c900b8bb62dc0d95",
+      "source": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+      "source_sha256": "5857502c9d4ea5eed04db58974ade934b1f239aec29cb3c7271f321e63a4e019",
+      "source_bytes": 15335,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 600,
+          "end": 662,
+          "target": "plugins/sapheneia/assets/characters/sapheneia.png"
+        }
+      ]
+    },
+    {
+      "bytes": 5185,
+      "path": "plugins/synkrisis/README.md",
+      "sha256": "ea7f4c1c373e083683e40f299804423ac9e9c982d309d95f893238bcddc09fa2",
+      "source": "plugins/synkrisis/README.md",
+      "source_sha256": "262676eab8204043f520f0ae8124c9c7f1bee9c9be3a9b3328e68561fa0a43b3",
+      "source_bytes": 5232,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 47,
+          "target": "plugins/synkrisis/assets/characters/synkrisis.png"
+        }
+      ]
+    },
+    {
+      "bytes": 13221,
+      "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+      "sha256": "37822f6e4001d074e799d18ce3c173196e8a9ed0673d14da091df2f4f35ff534",
+      "source": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+      "source_sha256": "5b6e0c65644de57f87c16d6e4520ed5112f0a917f1c751cf8d3c690cf78f15eb",
+      "source_bytes": 13283,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 591,
+          "end": 653,
+          "target": "plugins/synkrisis/assets/characters/synkrisis.png"
+        }
+      ]
+    },
+    {
+      "bytes": 13247,
+      "path": "plugins/tabularium/README.md",
+      "sha256": "5d208410ae1c7d97ab0faf5d1303bfaf06e2a2a4137787316825f380d9e2f5c9",
+      "source": "plugins/tabularium/README.md",
+      "source_sha256": "760a70008858f17c59b226652999f46723a18035da108599a3876aca62d7982e",
+      "source_bytes": 13296,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 0,
+          "end": 49,
+          "target": "plugins/tabularium/assets/characters/tabularium.png"
+        }
+      ]
+    },
+    {
+      "bytes": 13098,
+      "path": "plugins/tabularium/skills/tabularium/SKILL.md",
+      "sha256": "98a62f8f0100a4cf25adea54f5faf8d39da513585b327afeee82220f8b449038",
+      "source": "plugins/tabularium/skills/tabularium/SKILL.md",
+      "source_sha256": "11f107a7596b93eae895542643822d60b5b90b7ce5bc08828bea8a0b9a3b2667",
+      "source_bytes": 13161,
+      "transform": "remove-decorative-portrait-images/v1",
+      "removed_images": [
+        {
+          "start": 689,
+          "end": 752,
+          "target": "plugins/tabularium/assets/characters/tabularium.png"
+        }
+      ]
+    }
+  ],
+  "derived_evaluation": {
+    "bytes": 3231,
+    "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+    "sha256": "25ed7dac1755139ec6027ff432317358eea94915e5b1f0cc018671095aeba978",
+    "source": "docs/promise-machine/obligation-gates/evaluation-run.json",
+    "source_bytes": 3231,
+    "source_sha256": "de58b85acf3181d21592f666bcf5a98946d5a1c1248f83a8e38e9fa542a23fe9",
+    "transform": "replay-unchanged-evaluation-prompts/v1",
+    "generated_by": "tests/promise_evaluation_driver.py",
+    "unchanged_prompts": [
+      {
+        "case": "hexaemeron-fizz-convert-properties",
+        "sha256": "1fd4050b3cd6b502762c7f316c8dca9ed2205ef3dd4b47ad15f3aeca61b256f2"
+      },
+      {
+        "case": "hexaemeron-fizz-harness-campaign",
+        "sha256": "835b2522d0927beb7f171bf3f9db7edf560cfb6d2dc49a46abf54e52d4a88f10"
+      },
+      {
+        "case": "hexaemeron-fizz-sync-drift",
+        "sha256": "f7e40b2f8394677d4d93324312da5ba8679b478fc8f42af87d531d4a021b8bcb"
+      },
+      {
+        "case": "hexaemeron-solidity-audit-report",
+        "sha256": "f1ca386a48f9d67f9ceec8492bb985f6fea9876754b49b385e58166e461b3fa2"
+      },
+      {
+        "case": "hexaemeron-x-ray-preaudit",
+        "sha256": "19e4f4652361274d9900cba0b4a09d0d41f28686c5081aa9afba77b7b4ff6a48"
+      },
+      {
+        "case": "hypomnema-record-placement",
+        "sha256": "e4f929442411fdd449f2de170ccbdd992693c767ac7a7836324f8e0db6d42821"
+      },
+      {
+        "case": "kronos-fiat-dispatch",
+        "sha256": "bfe3e8ce29119cd2654aded4366174de12ccf2acbd3c143964f6e8618e13a3aa"
+      },
+      {
+        "case": "sapheneia-deactivation",
+        "sha256": "222f3aef4e9d7d74a82602db27f1739f500b4260347044bc002e3deac06f58b0"
+      },
+      {
+        "case": "sapheneia-durable-record-shape",
+        "sha256": "5a864f183b8ee8e96afb991830477e6ca88708ac8a71ca26f05f3fbb2597d385"
+      },
+      {
+        "case": "sapheneia-session-shape",
+        "sha256": "10942941825d4dd68b138e228e09673b33416641755c5b54ad43638fe0a1bb53"
+      },
+      {
+        "case": "vulgate-register-rewrite",
+        "sha256": "01beda797367f2b68c29c1dada2c8e1ee6ac14c00eb12115c620c064b029a463"
+      }
+    ],
+    "answers_sha256": "3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855",
+    "new_model_observation": false
+  },
+  "complete_package_bytes": 18668573,
+  "complete_package_headroom": 7545827,
+  "complete_package_file_count": 1402
+}
