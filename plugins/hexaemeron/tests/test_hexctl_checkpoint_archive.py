@@ -2554,7 +2554,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
             json.loads(output)["bundle_sha256"], manifest["bundle"]["sha256"]
         )
 
-    def test_archive_signature_proof_requires_good_status_and_exactly_one_trailer_each(self):
+    def test_archive_signature_proof_requires_good_status_and_records_trailer_counts(self):
         head = self.to_post_push()
         self.archive()
         with zipfile.ZipFile(self.published()) as container:
@@ -2577,17 +2577,22 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         self.assertEqual("proof/pubkey.asc", manifest["signer"]["key_path"])
         self.assertEqual(1, manifest["proof"]["commits"])
 
-        # A second run of the same fixture, this time with the trailer counted
-        # twice. `done push` reads the message through the fake delivery tool
-        # and accepts it; the proof reads the commit itself and does not.
+        # A second run of the same fixture, this time with no co-author trailer
+        # and the origin trailer counted twice. Admission is signature-only, so
+        # the proof records the counts it reads from the commit itself and
+        # refuses nothing on them.
         self.tearDown()
         self.setUp()
-        self.to_post_push(
-            message=f"step 1\n\n{COAUTHOR}\n{ORIGIN_TRAILER}\n{ORIGIN_TRAILER}\n"
+        head = self.to_post_push(message=f"step 1\n\n{ORIGIN_TRAILER}\n{ORIGIN_TRAILER}\n")
+        self.archive()
+        with zipfile.ZipFile(self.published()) as container:
+            proof = json.loads(container.read("proof/signatures.json"))
+        self.assertEqual([head], [record["sha"] for record in proof["commits"]])
+        self.assertEqual("G", proof["commits"][0]["status"])
+        self.assertEqual(
+            {"coauthored_by_shoggoth": 0, "wildcat_origin": 2},
+            proof["commits"][0]["trailers"],
         )
-        result, _ = self.archive(expect=1)
-        self.assertEqual("signature-unverified\n", result.stderr)
-        self.assertFalse(sorted(self.store_root().glob("*/*")))
 
     def test_signature_unverified_refuses_before_publish_on_a_status_other_than_good(self):
         """A good signature by a key the keyring does not trust is not a proof.
@@ -2632,9 +2637,8 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         object, so the second is compared against the pinned set. The seam is
         patched here for the same reason the ref-disagreement and
         manifest-mismatch cases above are: two keys that both verify one commit
-        cannot be built from outside the process. Status stays `G` and both
-        trailers stay correct, so the fingerprint comparison is the only check
-        that can refuse.
+        cannot be built from outside the process. Status stays `G`, so the
+        fingerprint comparison is the only check that can refuse.
         """
         self.to_post_push()
         module = hexctl_module()

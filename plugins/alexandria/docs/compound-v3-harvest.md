@@ -1,19 +1,20 @@
 # Compound v3 harvest specification
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
 <!-- marketplace-context:end -->
 
 This is the production collection plan for Compound v3. Phase 0 ships a bounded
 network capture and checked-in method-proof release. The resumable interval
 collector specified below now exists for one market, the Ethereum mainnet USDC
 Comet: see [the collector document](usdc-interval-collector.md). It covers the
-shard loop, the checkpointed resume, the reorg rewind, implementation-epoch
-discovery, second-provider reconciliation and offline release verification. It
-does not cover the other 27 markets at the pin, does not read an interval's
-first block, preserves no implementation code, state call or configuration
-read, and has never run against a live provider. Neither it nor Phase 0
-registers a Compound mapping. A production harvester should preserve the RPC responses and
+shard loop, the checkpointed resume, the reorg rewind, the opening reads that
+bind the interval's first block and each implementation's runtime code,
+implementation-epoch discovery, second-provider reconciliation and offline
+release verification, and it has now been run against two live providers over a
+2,000-block Ethereum mainnet interval that is checked in. It does not cover the
+other 27 markets at the pin, and preserves no state call or configuration read.
+Neither it nor Phase 0 registers a Compound mapping. A production harvester should preserve the RPC responses and
 scope receipts described here as an Alexandria raw release. A separate,
 reviewed mapping would turn that release into credit events and position
 observations.

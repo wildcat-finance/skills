@@ -106,6 +106,13 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:1f102e7d14ee9c2baac2f7651352563826810667c05dad9b5e37d45143a0c0b6",
+      "path": "plugins/alexandria/scripts/alexandria_lib/proof_backed.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:afa8c843bddb8a2bc978401df37455e4486d612ed39401cf52dc82ab5afb49f1",
       "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
       "suppressed": false,
@@ -134,10 +141,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d30137d31906b9a5acff51f8003ee073349946639bd8318062d48e716c33d126",
+      "id": "sha256:3cda5729275f3cd1ecc724afccfeb789234f6c81cbc252434d3ed6c03738b7e9",
       "path": "plugins/alexandria/scripts/usdc_interval.py",
       "suppressed": false,
-      "symbol": "json@19"
+      "symbol": "json@27"
     },
     {
       "analyser_id": "python",
@@ -152,6 +159,13 @@
       "path": "plugins/anamnesis/tests/test_s3_consumers.py",
       "suppressed": false,
       "symbol": "copy@5"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:55e2a20847b4e536560bddaae5e987ca498735b9a521d196ee1faca472826af8",
+      "path": "plugins/anamnesis/tests/test_s9_estate.py",
+      "suppressed": false,
+      "symbol": "copy@13"
     },
     {
       "analyser_id": "python",
@@ -498,31 +512,31 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:f107f6566e20eae116931972cbeb3096a50f3744ebf47587268e051ec8598a9e",
+      "id": "sha256:cd59e4ef54730764b4579ceeb45926822caaeb7a3f31f147c6f468c06ccef43f",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "Path@53"
+      "symbol": "Path@56"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:46ebdd863ba65d7c46ec790ab9a592339e7f8e6c7f5ad0b5c39b292367e567ea",
+      "id": "sha256:ab97e4c536871daba983658de05f7dad64b6dca3003058f9086b2d8fecd3416a",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "_recover_runbook_amendment.canonical_path@10244"
+      "symbol": "_recover_runbook_amendment.canonical_path@11468"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:db2c600adf6e4fa6be3abee6fab070255998ebf7992e26a36f4c20e72eea3205",
+      "id": "sha256:02ec1c774fe6e75e044a6f0ffa44d16785020561d16f369a5baf6a72e4ccf643",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "_recover_study_amendment.canonical_path@10100"
+      "symbol": "_recover_study_amendment.canonical_path@11324"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:c80cc0b82ccf4af90b39b75294262753231cf67fc151497f36b80ba89bde066a",
+      "id": "sha256:fab4569ecec7039ad24f8267c53b5c28455a74c350aa21f8c90850df8e937f1f",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "cmd_checkpoint_restore.root@15111"
+      "symbol": "cmd_checkpoint_restore.root@16480"
     },
     {
       "analyser_id": "python",
@@ -876,38 +890,38 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:c77b1751c9cf01e9994311e56af93cfa685834d89ed22b5cc490ba2e26773e5a",
+      "id": "sha256:6068f3c90600b06b34a3dc1ac1e0a69c50569589b8d48b44ab2b2106dd1fc738",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "suppressed": false,
-      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@2257"
+      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@2303"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:0812ed4212afdc24800e221054ae8c1ff6643a0bac3428fcafda588678dccd52",
+      "id": "sha256:29b321bae274a8e547046df72d889363293ab535b4dab27a26914106747fc1e8",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "suppressed": false,
-      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@2619"
+      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@2665"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:1681526149e37bf88611f07e59a1f68cb9f49b3644fca92614f53f443bf37bb9",
+      "id": "sha256:ed16d19b4173dd0e2421aa44110f9da8af60843610540e87b7a4bba5ab85af4c",
       "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
       "suppressed": false,
-      "symbol": "test_export_manifest_closes_the_controller_capsule.controller@283"
+      "symbol": "test_export_manifest_closes_the_controller_capsule.controller@284"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:ee2a5df97cb3858120df593a6dad905a5b9f48c31b9fb7cf088968c5a42541ea",
+      "id": "sha256:ed6a1efb38e13a338d491561e10da1074e07e85932e1889f2af758bedb292209",
       "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
       "suppressed": false,
-      "symbol": "test_restore_moved_private_stage_cannot_redirect_writes.worktree@1436"
+      "symbol": "test_restore_moved_private_stage_cannot_redirect_writes.worktree@1638"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:268307a7aecc3fe62192175392e7352623c01a5f1295f3f32177e81ab4f5f323",
+      "id": "sha256:312ff34b98dbb34cfb5c8f3ba79eabfb77d2b270a2210f6481f487155283c73c",
       "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
       "suppressed": false,
-      "symbol": "test_restore_moved_worktree_home_cannot_redirect_writes.imported@1396"
+      "symbol": "test_restore_moved_worktree_home_cannot_redirect_writes.imported@1598"
     },
     {
       "analyser_id": "python",
@@ -929,6 +943,13 @@
       "path": "plugins/hexaemeron/tests/test_hexctl_remote_refs.py",
       "suppressed": false,
       "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:fa98d2c20c798bb9f4e8d28b311ff239036d2e0688ef3ff8a066746ea33c7084",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "suppressed": false,
+      "symbol": "test_two_numbered_records_sharing_a_slug_are_not_a_finding.status@802"
     },
     {
       "analyser_id": "python",
@@ -969,6 +990,13 @@
       "analyser_id": "python",
       "id": "sha256:d69734ac8ad1246161113527e6be705b8121df6b4af75212bf826a780aa8e141",
       "path": "plugins/horos/skills/horos/scripts/languages/go/go.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:17abb3e5534f17c7ecf1b80b9f74b99636da5ed8c6d040bc7a5b9f0e8942d940",
+      "path": "plugins/horos/skills/horos/scripts/languages/markdown/markdown.py",
       "suppressed": false,
       "symbol": "<module>"
     },
@@ -1184,6 +1212,13 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:987a2514325c58e6120b0dff93a5195fb414a41bc0524f6fa173c8dba0b37876",
+      "path": "plugins/lazarus/tests/test_empty_receipts.py",
+      "suppressed": false,
+      "symbol": "dump@15"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:ec968628831f585c932a6b4f76a43c27165da0f8dcd5c7c10f1591b317311d75",
       "path": "plugins/lazarus/tests/test_receipts.py",
       "suppressed": false,
@@ -1277,6 +1312,13 @@
       "analyser_id": "python",
       "id": "sha256:f745390da6fcedf1bdb53682c7334f08b8a4423a55ab1f6f78d6de7a7afef83b",
       "path": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4c7803f4c890c3889f240cbba4d691646eedf3aa2fa41be380749a715a42e2b1",
+      "path": "plugins/probitas/scripts/probitas_lib/delta.py",
       "suppressed": false,
       "symbol": "<module>"
     },
@@ -1471,17 +1513,17 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:bb6d948c552a3889a30df19db03e134b8d7857374b56e168e9372f362f496baa",
+      "id": "sha256:55158b4b53bdcca720e34d69dc80ee274d5372a474474a480836d5b37dd5f997",
       "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "_validate_measurement_record.model_tokens@2843"
+      "symbol": "_validate_measurement_record.model_tokens@3047"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:62134cf15f9a0a125adee86c01f072cd7c2e08c91c52c04617756bee1d752d5f",
+      "id": "sha256:1966b8da052d6e78a7c45b9b4fa780a0d06a212963878da98f171b0fe3ec2665",
       "path": "scripts/agent_instruction.py",
       "suppressed": false,
-      "symbol": "parse.depth@1083"
+      "symbol": "parse.depth@1130"
     },
     {
       "analyser_id": "python",
@@ -1499,17 +1541,24 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:9d8278c8a4b55ff65a70648541385b820349f1d01efd76871bf7004cea75d10f",
+      "id": "sha256:849517978184449dd789d6fb439798647444d4b548a1d802deb3db35b07b74c7",
       "path": "tests/test_agent_instruction.py",
       "suppressed": false,
-      "symbol": "test_governed_node_shrink_with_rebound_derivatives_refuses.compact_path@1821"
+      "symbol": "test_governed_node_shrink_with_rebound_derivatives_refuses.compact_path@1823"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:41fc4d462456ae9bf3d917e0d1dc7739abf58bf5e04dbe97486d6c05cb024019",
+      "id": "sha256:5465d6c44f6efd754f18e304783f2aa6ddbecb3c2be73e59aa01516a8e15b3b2",
+      "path": "tests/test_demonstrations.py",
+      "suppressed": false,
+      "symbol": "test_every_public_set_record_declares_its_command_program.skill@1173"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8b818903456e3c1d1f8fcaeea79348c70c66d86cf604a477a4e704e1e4fe2371",
       "path": "tests/test_promise_machine_contract.py",
       "suppressed": false,
-      "symbol": "test_missing_root_licence_is_refused.plugin@295"
+      "symbol": "test_missing_root_licence_is_refused.plugin@2689"
     },
     {
       "analyser_id": "python",
@@ -1536,10 +1585,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "3dd0b2291366b2e9fc0ca54fe62c86d0cc58e807",
-    "git_tree": "4f3f5226d1ef1723db2a71bb168b93424fa4cd5c"
+    "commit": "a8f896fec61f29f4be428137029a3ffcfbbeefbf",
+    "git_tree": "3d353430ed2618b568df7e09ceca52398c994734"
   },
   "universe": {
-    "id": "sha256:027604f782c150527354a85619d4a0bd4f3d7837ff6e6dd7c0c6df2c94748fea"
+    "id": "sha256:7963c64ada3b185d3ebdcd6d1522a609d23be890681657c17a17801ba508f5b8"
   }
 }

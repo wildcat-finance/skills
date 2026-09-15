@@ -1,0 +1,9 @@
+{
+  "candidate": "span-index",
+  "command": "python3 .hexaemeron/design-probes/runtime.py span-index (median of three runs: 27.3, 26.7, 26.8 ms)",
+  "criterion": "cap-scale-runtime",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 27
+}

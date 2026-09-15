@@ -1,0 +1,205 @@
+{
+  "schema": "wildcat.kickoff-targets.observations.v1",
+  "chain_id": 9745,
+  "chain": "Plasma mainnet",
+  "rpc": "https://rpc.plasma.to",
+  "tools": {
+    "cast": "1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)"
+  },
+  "observations": [
+    {
+      "label": "estate",
+      "block": {
+        "number": 32261184,
+        "hash": "0xb983d701256d863e14c8f634ea0848456788d398910ebf39046dee684af4add4",
+        "timestamp": 1789201754
+      },
+      "method": "cast block finalized; cast code --block N; cast call --block N"
+    }
+  ],
+  "code": [
+    {
+      "address": "0x37064895ba2c1e269eaf7ff32564818d08903f5b",
+      "block_number": 32261184,
+      "code_length": 3364,
+      "code_keccak256": "0xf26374e1752f30d49309c1c709f827e6ebe548fc8d5ebf020ceccf3c787839ab"
+    },
+    {
+      "address": "0x38056f7fe6396417b191bf7dc6a3aa04235f3f46",
+      "block_number": 32261184,
+      "code_length": 1083,
+      "code_keccak256": "0x0bea4108a880a6b0e882f26f74933c28aa205a7ec9eb18769464e5d83fa7d791"
+    },
+    {
+      "address": "0x40217f6e5891c8f1524744c0747e07d316a0c798",
+      "block_number": 32261184,
+      "code_length": 16808,
+      "code_keccak256": "0xb98eda9d084e6962017cedc87db6c596107d0fed39599727f17ee89eb66125a2",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 16807,
+        "init_code_keccak256": "0x464519dae5573af83bacec80d7072c01285161bb495d8437c66d348007ab68ee"
+      }
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "block_number": 32261184,
+      "code_length": 1649,
+      "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9"
+    },
+    {
+      "address": "0x59010b706959c15977304c2553f3f4c697a73018",
+      "block_number": 32261184,
+      "code_length": 18232,
+      "code_keccak256": "0x4f57d03b05ebf51479b193f2a6eda33e7202e6d70a88ce92f9b7b73087fab227",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 18231,
+        "init_code_keccak256": "0xbbf77dc0804fe3f2b75bbdf2779642c5c8fa0f56b2fa52e6edd1af8b73798695"
+      }
+    },
+    {
+      "address": "0x74b253041be30b7698b5f69239c271ea8db57261",
+      "block_number": 32261184,
+      "code_length": 20658,
+      "code_keccak256": "0xe583179fb2bb61ffd06d1e8949d657ee6157894812a370d08a1fa472bf4df2a8",
+      "stored_init_code": {
+        "leading_byte": "0x00",
+        "init_code_length": 20657,
+        "init_code_keccak256": "0xbaa6a8ea7519c36d1d1a9417fc6b59ef0d565b223b173c4691d76b5b4b8dbd0c"
+      }
+    },
+    {
+      "address": "0x792f1368f8b8f450c14875eb6ff0028dfc2629b4",
+      "block_number": 32261184,
+      "code_length": 564,
+      "code_keccak256": "0x4008623e2fce20f82fcb0f8bdf0201f134d289f673e554533f85db478439e0f3"
+    },
+    {
+      "address": "0x7e5d6d9f9a2091dd781118514f5397a8107c81c5",
+      "block_number": 32261184,
+      "code_length": 20104,
+      "code_keccak256": "0xa9e619f7afdc5b23cb73a6739adea5dde81fdcc3f55506ac1e9183c8722a0a6f"
+    },
+    {
+      "address": "0x931fe4a88e1c1f1a7402df6a40988f38503f1061",
+      "block_number": 32261184,
+      "code_length": 8469,
+      "code_keccak256": "0xfa19d6740e1281178fb69200cd5dd9438c7cccedc87a19069e2a091f4fa3e340"
+    },
+    {
+      "address": "0xb46bae25ac6d23148531ed1853a8881fd842e517",
+      "block_number": 32261184,
+      "code_length": 13390,
+      "code_keccak256": "0xf655292fe7ef1f2c76eac7dfa4d2513f665942b45596f217059de486be6f94c0"
+    },
+    {
+      "address": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+      "block_number": 32261184,
+      "code_length": 8724,
+      "code_keccak256": "0x06947561474996c8be6474a214c0857be0fa5b0e4eb5aab624bb7c1ed88c19c4"
+    },
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "block_number": 32261184,
+      "code_length": 2783,
+      "code_keccak256": "0x472b55e3bde3f78282cfd318f6de3638479fca77ba461e31e20c01ea297676cf"
+    }
+  ],
+  "hooks_factory": {
+    "address": "0xb46bae25ac6d23148531ed1853a8881fd842e517",
+    "block_number": 32261184,
+    "marketInitCodeHash": "0xbaa6a8ea7519c36d1d1a9417fc6b59ef0d565b223b173c4691d76b5b4b8dbd0c",
+    "marketInitCodeStorage": "0x74b253041be30b7698b5f69239c271ea8db57261",
+    "archController": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+    "sanctionsSentinel": "0x37064895ba2c1e269eaf7ff32564818d08903f5b",
+    "getHooksTemplatesCount": 2,
+    "getHooksTemplates": [
+      "0x40217f6e5891c8f1524744c0747e07d316a0c798",
+      "0x59010b706959c15977304c2553f3f4c697a73018"
+    ],
+    "templates": {
+      "0x40217f6e5891c8f1524744c0747e07d316a0c798": {
+        "name": "OpenTermHooks",
+        "index": 0,
+        "enabled": true,
+        "exists": true,
+        "protocol_fee_bips": 500,
+        "fee_recipient": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+        "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+        "origination_fee_amount": 0,
+        "market_count": 4,
+        "markets": [
+          "0x74c7861c3e706e7299654f89a3c0091184aa10f0",
+          "0x9a0ba9278284659194157c476010bcfebeb21794",
+          "0xa460c09c1ccfc655f048b2ebfd95b3d5285a1faf",
+          "0xff604fc5f725c107b0bd15974f03f3de2849500e"
+        ]
+      },
+      "0x59010b706959c15977304c2553f3f4c697a73018": {
+        "name": "FixedTermHooks",
+        "index": 1,
+        "enabled": true,
+        "exists": true,
+        "protocol_fee_bips": 500,
+        "fee_recipient": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+        "origination_fee_asset": "0x0000000000000000000000000000000000000000",
+        "origination_fee_amount": 0,
+        "market_count": 0,
+        "markets": []
+      }
+    },
+    "v2_markets_total": 4,
+    "v2_markets_sha256": "1f7284a1e54acf1c0dde67a218033136071b20129194c4d2c868b1cf1150f4af"
+  },
+  "arch_controller": {
+    "address": "0xdb2e0de97d6d96aa56754635704a4273e0f348ae",
+    "block_number": 32261184,
+    "getRegisteredBorrowersCount": 4,
+    "getRegisteredControllerFactoriesCount": 1,
+    "getRegisteredControllersCount": 1,
+    "getRegisteredMarketsCount": 4,
+    "getRegisteredControllerFactories": [
+      "0xb46bae25ac6d23148531ed1853a8881fd842e517"
+    ],
+    "getRegisteredMarkets": [
+      "0x74c7861c3e706e7299654f89a3c0091184aa10f0",
+      "0x9a0ba9278284659194157c476010bcfebeb21794",
+      "0xa460c09c1ccfc655f048b2ebfd95b3d5285a1faf",
+      "0xff604fc5f725c107b0bd15974f03f3de2849500e"
+    ],
+    "registered_markets_sha256": "1f7284a1e54acf1c0dde67a218033136071b20129194c4d2c868b1cf1150f4af"
+  },
+  "anchors": {
+    "arch_controller_start": {
+      "block_number": 1989721,
+      "block_hash": "0x4ba78b31be560d14ada419eb40f22419898a7fe361b94b26d1ab591185f561f1",
+      "timestamp": 1758918798,
+      "source": "wildcat-finance/subgraph networks.json startBlock; block hash from cast block"
+    },
+    "sentinel_start": {
+      "block_number": 1989725,
+      "block_hash": "0x57f4c2a321cdd12326b5ce4b327ca65fdfd80f4907efcb5f29e710e24570323d",
+      "timestamp": 1758918802,
+      "source": "same"
+    },
+    "hooks_factory_start": {
+      "block_number": 1989742,
+      "block_hash": "0x6f58b983f039d5594ccaaf7204855fc7671b63b1700527b32a4ee0d0d3bbf7d3",
+      "timestamp": 1758918819,
+      "source": "same"
+    }
+  },
+  "same_address_different_code": [
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "ethereum": "WildcatArchController",
+      "plasma": "WildcatCopyOfChainalysisList"
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "ethereum": "WildcatSanctionsSentinel",
+      "plasma": "WildcatFeeRecipient (same runtime code as Ethereum 0x35a5d1bd68f3139971027b92c1ee9384a0708554)"
+    }
+  ]
+}

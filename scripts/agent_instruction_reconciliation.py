@@ -1,0 +1,1398 @@
+#!/usr/bin/env python3
+"""Stage reviewed v1 bindings and publish a checked set with recovery evidence."""
+
+from __future__ import annotations
+
+import copy
+import ctypes
+import hashlib
+import json
+import math
+import os
+import re
+import secrets
+import selectors
+import signal
+import stat
+import subprocess
+import sys
+import tempfile
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import agent_instruction as codec
+import prove_agent_instruction_reconciliation as prover
+
+
+MANIFEST = prover.MANIFEST
+COVERAGE = prover.COVERAGE
+CHECKER = prover.CHECKER
+STATE = "tmp/agent-instruction-reconciliation"
+ACTIVE = f"{STATE}/active.json"
+MAX_FILE_BYTES = 1 << 20
+MAX_TARGETS = 256
+MAX_TOTAL_BYTES = 32 << 20
+TIMEOUT_SECONDS = 600
+PLAN_SCHEMA = "agent-instruction-reconciliation-plan/v1"
+JOURNAL_SCHEMA = "agent-instruction-reconciliation-journal/v1"
+RESULT_SCHEMA = "agent-instruction-reconciliation-result/v1"
+SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+OBJECT_ID = re.compile(r"[0-9a-f]{40}\Z")
+
+
+class ReconciliationError(ValueError):
+    """A bounded refusal at a named input, dependency or publication boundary."""
+
+    def __init__(self, code: str, detail: str):
+        self.code = code
+        self.detail = detail[:500]
+        super().__init__(f"{code}: {self.detail}")
+
+
+def fail(code: str, detail: str) -> None:
+    raise ReconciliationError(code, detail)
+
+
+def sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def encoded(value: Any) -> bytes:
+    data = (json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n").encode()
+    if len(data) > MAX_FILE_BYTES:
+        fail("AIR-E-LIMIT.FILE", "record exceeds the per-file limit")
+    return data
+
+
+def record(data: bytes, *, allow_floats=False) -> dict[str, Any]:
+    def pairs(items):
+        out = {}
+        for key, value in items:
+            if key in out:
+                fail("AIR-E-JSON.DUPLICATE", "duplicate object key")
+            out[key] = value
+        return out
+
+    def inspect(value, depth=0):
+        if depth > 24:
+            fail("AIR-E-JSON.DEPTH", "record nesting exceeds the limit")
+        if isinstance(value, dict):
+            if len(value) > MAX_TARGETS * 8:
+                fail("AIR-E-JSON.COUNT", "record has too many members")
+            for key, item in value.items():
+                if not isinstance(key, str) or len(key) > 1024:
+                    fail("AIR-E-JSON.KEY", "invalid record key")
+                inspect(item, depth + 1)
+        elif isinstance(value, list):
+            if len(value) > MAX_TARGETS * 8:
+                fail("AIR-E-JSON.COUNT", "record has too many entries")
+            for item in value:
+                inspect(item, depth + 1)
+        elif isinstance(value, float) and allow_floats and math.isfinite(value):
+            pass
+        elif not isinstance(value, (str, int, bool, type(None))):
+            fail("AIR-E-JSON.VALUE", "unsupported record value")
+
+    if len(data) > MAX_FILE_BYTES:
+        fail("AIR-E-LIMIT.FILE", "JSON exceeds the per-file limit")
+    try:
+        value = json.loads(data, object_pairs_hook=pairs)
+        inspect(value)
+    except (UnicodeError, ValueError, RecursionError) as exc:
+        if isinstance(exc, ReconciliationError):
+            raise
+        fail("AIR-E-JSON.INVALID", "invalid JSON record")
+    if not isinstance(value, dict):
+        fail("AIR-E-JSON.OBJECT", "expected an object")
+    return value
+
+
+def fields(value: dict[str, Any], expected: set[str], schema: str) -> None:
+    if set(value) != expected or value.get("schema") != schema:
+        fail("AIR-E-RECORD.SHAPE", "record schema or fields differ")
+
+
+def relative(value: str) -> str:
+    if not isinstance(value, str) or not value or len(value) > 1024:
+        fail("AIR-E-PATH.SYNTAX", "invalid relative path")
+    if value.startswith("/") or "\\" in value or any(ord(c) < 32 or ord(c) == 127 for c in value):
+        fail("AIR-E-PATH.SYNTAX", "path must be a plain relative POSIX path")
+    if any(part in ("", ".", "..", ".git") for part in value.split("/")):
+        fail("AIR-E-PATH.SYNTAX", "path contains a forbidden component")
+    return value
+
+
+def identity(info: os.stat_result) -> tuple[int, ...]:
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def exchange_files(source_fd, source, target_fd, target):
+    """Exchange names without discarding either file; unsupported hosts refuse."""
+    name = {"darwin": "renameatx_np", "linux": "renameat2"}.get(sys.platform)
+    function = getattr(ctypes.CDLL(None, use_errno=True), name, None) if name else None
+    if function is None:
+        fail("AIR-E-EXCHANGE.UNSUPPORTED", "atomic file exchange is unavailable")
+    function.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+    function.restype = ctypes.c_int
+    # Darwin RENAME_SWAP and Linux RENAME_EXCHANGE both have value 2.
+    if function(source_fd, os.fsencode(source), target_fd, os.fsencode(target), 2):
+        fail("AIR-E-EXCHANGE.REFUSED", f"atomic exchange refused with errno {ctypes.get_errno()}; no replace fallback")
+
+
+def conflict(target, slot, body):
+    error = ReconciliationError("AIR-E-TARGET.CONFLICT", "retained exchange version requires explicit resolution")
+    error.conflict = {"target": target, "path": slot, "sha256": sha(body)}
+    raise error
+
+
+class Root:
+    """A no-follow directory walk, checked again before and after every write."""
+
+    def __init__(self, path: Path | str):
+        if ".." in str(path).split("/"):
+            fail("AIR-E-PATH.ROOT", "root traversal aliases are not admitted")
+        self.path = Path(os.path.abspath(path))
+        if self.path != self.path.resolve(strict=True):
+            fail("AIR-E-PATH.ROOT", "root aliases or symlinks are not admitted")
+        self.fd = os.open(self.path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        self.key = self.directory_key(os.fstat(self.fd))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        os.close(self.fd)
+
+    @staticmethod
+    def directory_key(info):
+        return info.st_dev, info.st_ino, stat.S_IFMT(info.st_mode)
+
+    def parent(self, name: str, *, create=False):
+        parts = relative(name).split("/")
+        current = os.dup(self.fd)
+        chain = []
+        try:
+            for part in parts[:-1]:
+                if create:
+                    try:
+                        os.mkdir(part, mode=0o700, dir_fd=current)
+                        os.fsync(current)
+                    except FileExistsError:
+                        pass
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=current)
+                chain.append((current, part, self.directory_key(os.fstat(child))))
+                current = child
+            return current, parts[-1], chain
+        except OSError as exc:
+            os.close(current)
+            for fd, _, _ in chain:
+                os.close(fd)
+            if isinstance(exc, FileNotFoundError):
+                fail("AIR-E-PATH.MISSING", "parent does not exist")
+            fail("AIR-E-PATH.PARENT", "parent is absent, replaced or not a regular directory")
+
+    def anchored(self, chain):
+        try:
+            if self.directory_key(os.stat(self.path, follow_symlinks=False)) != self.key:
+                fail("AIR-E-PATH.RACE", "root changed during the operation")
+            for fd, name, expected in chain:
+                if self.directory_key(os.stat(name, dir_fd=fd, follow_symlinks=False)) != expected:
+                    fail("AIR-E-PATH.RACE", "a parent changed during the operation")
+        except OSError:
+            fail("AIR-E-PATH.RACE", "a parent disappeared during the operation")
+
+    @staticmethod
+    def close_parent(parent, chain):
+        os.close(parent)
+        for fd, _, _ in chain:
+            os.close(fd)
+
+    def read(self, name: str) -> tuple[bytes, tuple[int, ...]]:
+        parent, leaf, chain = self.parent(name)
+        fd = -1
+        try:
+            self.anchored(chain)
+            fd = os.open(leaf, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+            before = os.fstat(fd)
+            if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+                fail("AIR-E-PATH.LEAF", "a regular file with one link is required")
+            if before.st_size > min(MAX_FILE_BYTES, codec.MAX_FILE_BYTES):
+                fail("AIR-E-LIMIT.FILE", "input exceeds its owner's per-file limit")
+            chunks = []; total = 0
+            while True:
+                chunk = os.read(fd, min(65536, MAX_FILE_BYTES + 1 - total))
+                if not chunk:
+                    break
+                chunks.append(chunk); total += len(chunk)
+                if total > MAX_FILE_BYTES:
+                    fail("AIR-E-LIMIT.FILE", "input grew beyond the per-file limit")
+            if identity(before) != identity(os.fstat(fd)) or identity(before) != identity(os.stat(leaf, dir_fd=parent, follow_symlinks=False)):
+                fail("AIR-E-IO.RACE", "input identity changed during its read")
+            self.anchored(chain)
+            return b"".join(chunks), identity(before)
+        except FileNotFoundError:
+            fail("AIR-E-PATH.MISSING", "file does not exist")
+        except OSError:
+            fail("AIR-E-PATH.LEAF", "file is absent, linked or unreadable")
+        finally:
+            if fd >= 0:
+                os.close(fd)
+            self.close_parent(parent, chain)
+
+    def write(self, name: str, data: bytes, *, expected=None, fresh=False, exchange=None, mode=0o600) -> None:
+        if len(data) > MAX_FILE_BYTES:
+            fail("AIR-E-LIMIT.FILE", "output exceeds the per-file limit")
+        parent, leaf, chain = self.parent(name, create=True)
+        temporary = ".air-" + secrets.token_hex(16)
+        fd = -1; created = False
+        slot_parent = -1; slot_chain = []
+        try:
+            self.anchored(chain)
+            try:
+                before = os.stat(leaf, dir_fd=parent, follow_symlinks=False)
+            except FileNotFoundError:
+                before = None
+            if fresh and before is not None:
+                fail("AIR-E-PATH.EXISTS", "destination already exists")
+            if before is not None and (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1):
+                fail("AIR-E-PATH.LEAF", "destination is not an independent regular file")
+            if expected is not None and (before is None or identity(before) != tuple(expected)):
+                fail("AIR-E-TARGET.RACE", "target identity changed before publication")
+            old_bytes = None
+            if before is not None:
+                old_bytes, old_key = self.read(name)
+                if old_key != identity(before):
+                    fail("AIR-E-TARGET.RACE", "target changed before replacement staging")
+            if exchange is not None:
+                if fresh or before is None or exchange == name:
+                    fail("AIR-E-EXCHANGE.SLOT", "an exchange slot requires a distinct existing target")
+                slot = relative(exchange)
+                staged, staged_key = self.read(slot)
+                if staged != data or stat.S_IMODE(staged_key[2]) != stat.S_IMODE(before.st_mode):
+                    fail("AIR-E-EXCHANGE.SLOT", "journalled exchange slot differs from planned bytes or mode")
+                slot_parent, temporary, slot_chain = self.parent(slot)
+            else:
+                slot = str(Path(name).parent / temporary)
+                fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=parent)
+                created = True
+                os.fchmod(fd, stat.S_IMODE(before.st_mode) if before else mode)
+                view = memoryview(data)
+                while view:
+                    written = os.write(fd, view)
+                    if written <= 0:
+                        fail("AIR-E-IO.WRITE", "write made no progress")
+                    view = view[written:]
+                os.fsync(fd); os.close(fd); fd = -1
+                _, staged_key = self.read(slot)
+            self.anchored(chain)
+            self.anchored(slot_chain)
+            try:
+                now = os.stat(leaf, dir_fd=parent, follow_symlinks=False)
+            except FileNotFoundError:
+                now = None
+            if (identity(now) if now else None) != (identity(before) if before else None):
+                fail("AIR-E-TARGET.RACE", "target changed while its replacement was staged")
+            if before is None:
+                os.link(temporary, leaf, src_dir_fd=parent, dst_dir_fd=parent, follow_symlinks=False)
+                os.unlink(temporary, dir_fd=parent)
+                created = False
+            else:
+                exchange_files(slot_parent if slot_parent >= 0 else parent, temporary, parent, leaf)
+                # Never delete the displaced file or exchange it back: either
+                # action could destroy another writer's version. Journalled
+                # slots also survive a kill immediately after this syscall.
+                created = False
+                os.fsync(slot_parent if slot_parent >= 0 else parent)
+                os.fsync(parent)
+                displaced, displaced_key = self.read(slot)
+                # Exchange itself changes ctime. Bytes and the remaining
+                # identity fields still bind the pre-publication version.
+                if displaced != old_bytes or displaced_key[:-1] != old_key[:-1]:
+                    conflict(name, slot, displaced)
+            os.fsync(parent); self.anchored(chain); self.anchored(slot_chain)
+            observed, observed_key = self.read(name)
+            if observed != data or observed_key[:-1] != staged_key[:-1]:
+                fail("AIR-E-TARGET.READBACK", "published bytes or stable identity differ from the planned version")
+
+        finally:
+            if fd >= 0:
+                os.close(fd)
+            if created:
+                os.unlink(temporary, dir_fd=parent)
+            if slot_parent >= 0:
+                self.close_parent(slot_parent, slot_chain)
+            self.close_parent(parent, chain)
+
+    def mkdir_new(self, name: str):
+        parent, leaf, chain = self.parent(name, create=True)
+        try:
+            self.anchored(chain)
+            os.mkdir(leaf, 0o700, dir_fd=parent)
+            os.fsync(parent); self.anchored(chain)
+        except OSError:
+            fail("AIR-E-STAGE.EXISTS", "stage must be a new independent directory")
+        finally:
+            self.close_parent(parent, chain)
+
+    def exists(self, name: str) -> bool:
+        try:
+            self.read(name)
+            return True
+        except ReconciliationError as exc:
+            if exc.code != "AIR-E-PATH.MISSING":
+                raise
+            return False
+
+    def unlink(self, name: str, expected: tuple[int, ...]) -> None:
+        parent, leaf, chain = self.parent(name)
+        try:
+            self.anchored(chain)
+            if identity(os.stat(leaf, dir_fd=parent, follow_symlinks=False)) != tuple(expected):
+                fail("AIR-E-TARGET.RACE", "removal target changed")
+            os.unlink(leaf, dir_fd=parent)
+            os.fsync(parent); self.anchored(chain)
+        finally:
+            self.close_parent(parent, chain)
+
+    def inventory(self, prefix: str) -> dict[str, str]:
+        """Bound the entire stage, including otherwise unused hostile entries."""
+        parent, leaf, chain = self.parent(prefix)
+        directory = -1
+        found = {}; total = 0; directories = 0
+        try:
+            directory = os.open(leaf, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+
+            def visit(fd, parts):
+                nonlocal total, directories
+                directories += 1
+                if directories > MAX_TARGETS * 8 or len(parts) > 24:
+                    fail("AIR-E-LIMIT.DIRECTORIES", "stage directory count or depth exceeds the limit")
+                for entry in os.listdir(fd):
+                    name = "/".join([prefix, *parts, entry])
+                    info = os.stat(entry, dir_fd=fd, follow_symlinks=False)
+                    if stat.S_ISDIR(info.st_mode):
+                        child = os.open(entry, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                        try:
+                            visit(child, [*parts, entry])
+                        finally:
+                            os.close(child)
+                    else:
+                        body, _ = self.read(name)
+                        total += len(body)
+                        if total > MAX_TOTAL_BYTES or len(found) >= MAX_TARGETS * 8:
+                            fail("AIR-E-LIMIT.TOTAL", "stage aggregate byte or file count exceeds the limit")
+                        found[name[len(prefix) + 1:]] = sha(body)
+
+            visit(directory, [])
+            self.anchored(chain)
+            if self.directory_key(os.fstat(directory)) != self.directory_key(os.stat(leaf, dir_fd=parent, follow_symlinks=False)):
+                fail("AIR-E-STAGE.RACE", "stage directory changed during inventory")
+            return found
+        finally:
+            if directory >= 0:
+                os.close(directory)
+            self.close_parent(parent, chain)
+
+
+def bounded_command(argv: list[str], root: Path, *, timeout=TIMEOUT_SECONDS):
+    """Execute fixed owner argv with no shell, inherited Git options or lazy fetch."""
+    env = {"PATH": "/usr/bin:/bin", "LC_ALL": "C.UTF-8", "PYTHONIOENCODING": "utf-8",
+           "PYTHONDONTWRITEBYTECODE": "1", "GIT_CONFIG_NOSYSTEM": "1",
+           "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null",
+           "GIT_NO_REPLACE_OBJECTS": "1", "GIT_NO_LAZY_FETCH": "1", "GIT_OPTIONAL_LOCKS": "0"}
+    process = subprocess.Popen(argv, cwd=root, env=env, stdin=subprocess.DEVNULL,
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+    output = {"stdout": bytearray(), "stderr": bytearray()}
+    deadline = time.monotonic() + timeout
+    completed = False
+    try:
+        with selectors.DefaultSelector() as selector:
+            for name in output:
+                pipe = getattr(process, name); os.set_blocking(pipe.fileno(), False)
+                selector.register(pipe, selectors.EVENT_READ, name)
+            while selector.get_map():
+                if time.monotonic() >= deadline:
+                    fail("AIR-E-COMMAND.TIMEOUT", "owner command exceeded its fixed deadline")
+                for key, _ in selector.select(min(0.1, max(0, deadline - time.monotonic()))):
+                    chunk = os.read(key.fileobj.fileno(), 65536)
+                    if not chunk:
+                        selector.unregister(key.fileobj); continue
+                    output[key.data].extend(chunk)
+                    if sum(map(len, output.values())) > MAX_FILE_BYTES:
+                        fail("AIR-E-COMMAND.OUTPUT", "owner command exceeded its output limit")
+        process.wait(timeout=max(0.01, deadline - time.monotonic()))
+        completed = True
+        return process.returncode, bytes(output["stdout"]), bytes(output["stderr"])
+    except subprocess.TimeoutExpired:
+        fail("AIR-E-COMMAND.TIMEOUT", "owner command exceeded its fixed deadline")
+    finally:
+        try:
+            if not completed:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                except PermissionError:
+                    # Darwin can report EPERM for a zombie-only group. Reap an
+                    # exited leader, then accept only a confirmed absent group.
+                    if process.poll() is None:
+                        raise
+                    try:
+                        os.killpg(process.pid, 0)
+                    except ProcessLookupError:
+                        pass
+                    else:
+                        raise
+                process.wait()
+        finally:
+            # Cleanup errors must not leave our pipe descriptors open. Never
+            # send another terminating signal after reaping: the PID can recur.
+            process.stdout.close(); process.stderr.close()
+
+
+class Baseline:
+    """Read and hash immutable Git objects without checking out or executing them."""
+
+    def __init__(self, root: Path, commit: str):
+        if not isinstance(commit, str) or not OBJECT_ID.fullmatch(commit):
+            fail("AIR-E-BASELINE.ID", "baseline must be a complete immutable commit id")
+        self.root = root; self.commit = commit; self.cache = {}
+        body = self.object("commit", commit)
+        first = body.split(b"\n", 1)[0]
+        if not re.fullmatch(rb"tree [0-9a-f]{40}", first):
+            fail("AIR-E-BASELINE.COMMIT", "commit has no canonical tree header")
+        self.tree = first[5:].decode()
+
+    def object(self, kind: str, oid: str) -> bytes:
+        key = kind, oid
+        if key in self.cache:
+            return self.cache[key]
+        code, body, _ = bounded_command(
+            ["/usr/bin/git", "--no-pager", "--no-replace-objects", "-c", "core.fsmonitor=false",
+             "-c", "core.hooksPath=/dev/null", "-c", "protocol.allow=never", "cat-file", kind, oid], self.root)
+        if code or hashlib.sha1(kind.encode() + b" " + str(len(body)).encode() + b"\0" + body).hexdigest() != oid:
+            fail("AIR-E-BASELINE.OBJECT", "missing, substituted or invalid Git object")
+        self.cache[key] = body
+        if sum(map(len, self.cache.values())) > MAX_TOTAL_BYTES:
+            fail("AIR-E-LIMIT.TOTAL", "baseline objects exceed the total budget")
+        return body
+
+    def read(self, name: str) -> bytes:
+        parts = relative(name).split("/"); oid = self.tree
+        for index, part in enumerate(parts):
+            raw = self.object("tree", oid); entries = {}; offset = 0
+            while offset < len(raw):
+                end = raw.find(b"\0", offset)
+                if end < 0 or end + 21 > len(raw):
+                    fail("AIR-E-BASELINE.TREE", "malformed tree entry")
+                try:
+                    mode, entry = raw[offset:end].split(b" ", 1)
+                    entry = entry.decode("utf-8")
+                except (ValueError, UnicodeError):
+                    fail("AIR-E-BASELINE.TREE", "malformed tree name")
+                if entry in entries:
+                    fail("AIR-E-BASELINE.TREE", "duplicate tree name")
+                entries[entry] = mode, raw[end + 1:end + 21].hex(); offset = end + 21
+            if part not in entries:
+                fail("AIR-E-BASELINE.MISSING", f"baseline does not contain {name}")
+            mode, oid = entries[part]
+            if index < len(parts) - 1:
+                if mode != b"40000":
+                    fail("AIR-E-BASELINE.TYPE", "baseline parent is not a directory")
+            elif mode not in (b"100644", b"100755"):
+                fail("AIR-E-BASELINE.TYPE", "baseline input is not a regular file")
+        return self.object("blob", oid)
+
+
+def closure(manifest: dict[str, Any]) -> set[str]:
+    paths = {MANIFEST, CHECKER, COVERAGE, manifest["schema_path"]}
+    for fixture in manifest["fixtures"]:
+        paths.add(fixture["source"]["path"])
+        paths.update(entry["path"] for entry in fixture["artifacts"].values())
+    paths.update(entry["path"] for entry in manifest["evidence"].values())
+    if len(paths) > MAX_TARGETS:
+        fail("AIR-E-LIMIT.TARGETS", "baseline closure exceeds the target budget")
+    return {relative(path) for path in paths}
+
+
+def check_corpus(path: Path, *, reports=True) -> list[dict[str, Any]]:
+    try:
+        result = codec._check_manifest_bytes(path, codec.read_confined(path, MANIFEST),
+                                             validate_evidence_reports=reports)
+    except codec.CodecError as exc:
+        fail("AIR-E-CHECK." + exc.code, exc.node_path)
+    if not result or result[-1]["outcome"] != "accepted":
+        refused = [r for r in result if r["outcome"] == "refused"]
+        fail("AIR-E-CHECK.FIXTURE", json.dumps(refused[:1], sort_keys=True))
+    return result
+
+
+def materialize(root: Root, prefix: str, files: dict[str, bytes]) -> None:
+    if len(files) > MAX_TARGETS or sum(map(len, files.values())) > MAX_TOTAL_BYTES:
+        fail("AIR-E-LIMIT.TOTAL", "candidate exceeds the count or byte budget")
+    for name, data in sorted(files.items()):
+        root.write(f"{prefix}/{relative(name)}", data, fresh=True)
+
+
+def accepted_baseline(repository: Root, commit: str):
+    baseline = Baseline(repository.path, commit)
+    try:
+        manifest = codec.validate_manifest(codec.load_canonical_record(baseline.read(MANIFEST)))
+    except codec.CodecError as exc:
+        fail("AIR-E-BASELINE.MANIFEST", exc.code)
+    files = {name: baseline.read(name) for name in sorted(closure(manifest))}
+    trusted = Path(codec.__file__).read_bytes()
+    if files[CHECKER] != trusted:
+        fail("AIR-E-BASELINE.CHECKER", "baseline checker differs from the running owner")
+    if sum(map(len, files.values())) * 5 > MAX_TOTAL_BYTES:
+        fail("AIR-E-LIMIT.TOTAL", "baseline and publication copies exceed the stage budget")
+    # The baseline's complete bound closure is checked with the running owner,
+    # never with code read from the supplied commit.
+    with tempfile.TemporaryDirectory(prefix="air-baseline-") as name:
+        with Root(Path(name).resolve()) as temporary:
+            materialize(temporary, "tree", files)
+        check_corpus(Path(name) / "tree")
+    coverage = record(files[COVERAGE])
+    try:
+        row = coverage["agent_instruction"]
+        bindings = [row["manifest"], *row["fixtures"], *row["evidence"]]
+        for entry in bindings:
+            if entry["path"] not in files or sha(files[entry["path"]]) != entry["sha256"]:
+                fail("AIR-E-BASELINE.COVERAGE", "coverage does not bind the accepted closure")
+    except (KeyError, TypeError):
+        fail("AIR-E-BASELINE.COVERAGE", "coverage owner row is incomplete")
+    return baseline, manifest, files
+
+
+def rebind_coverage(original: bytes, files: dict[str, bytes]) -> tuple[bytes, list[str]]:
+    parsed = record(original)
+    try:
+        row = parsed["agent_instruction"]
+        entries = [row["manifest"], *row["fixtures"], *row["evidence"]]
+    except (KeyError, TypeError):
+        fail("AIR-E-COVERAGE.SHAPE", "coverage owner row is incomplete")
+    result = original; changed = []
+    for entry in entries:
+        path = relative(entry["path"])
+        if path not in files:
+            fail("AIR-E-COVERAGE.PATH", "coverage points outside the accepted closure")
+        new = sha(files[path]); old = entry["sha256"]
+        if old != new:
+            if not isinstance(old, str) or not SHA256.fullmatch(old) or result.count(old.encode()) != 1:
+                fail("AIR-E-COVERAGE.AMBIGUOUS", "coverage digest has no unique owned occurrence")
+            result = result.replace(old.encode(), new.encode())
+            changed.append(path)
+    return result, sorted(changed)
+
+
+def derive(manifest: dict[str, Any], files: dict[str, bytes], source: str, edited: bytes):
+    """Relocate every affected fixture from its exact baseline anchor and nodes."""
+    selected = [entry for entry in manifest["fixtures"] if entry["source"]["path"] == source]
+    if not selected:
+        fail("AIR-E-SOURCE.UNBOUND", "the manifest binds no fixture to the selected source")
+    candidate = dict(files); candidate[source] = edited
+    updated = copy.deepcopy(manifest); offsets = {}
+    with tempfile.TemporaryDirectory(prefix="air-relocation-") as name:
+        with Root(Path(name).resolve()) as temporary:
+            materialize(temporary, "tree", files)
+        for fixture in selected:
+            fixture_id = fixture["id"]
+
+            class Selected(prover.Reconciliation):
+                @staticmethod
+                def _subject_fixture(value):
+                    return next(entry for entry in value["fixtures"] if entry["id"] == fixture_id)
+
+            owner = Selected(Path(name) / "tree", checker=codec)
+            try:
+                relocated = owner.rederive_offsets(edited)
+            except prover.ProverError as exc:
+                fail("AIR-E-REVIEW.AMBIGUOUS", str(exc))
+            if relocated is None:
+                fail("AIR-E-REVIEW.CHANGED", "the unchanged reviewed anchor is absent")
+            entry = next(item for item in updated["fixtures"] if item["id"] == fixture_id)
+            entry["source"]["sha256"] = sha(edited)
+            start, end = relocated["governed"]["rederived"]
+            entry["source"]["start"] = str(start); entry["source"]["end"] = str(end)
+            model = codec.load_canonical_json(files[fixture["artifacts"]["model"]["path"]])
+            spans = codec.load_canonical_record(files[fixture["artifacts"]["source_spans"]["path"]])
+            owner._write_rederived_offsets(model["bindings"], relocated)
+            owner._write_rederived_offsets(spans["spans"], relocated)
+            model["sources"][0]["sha256"] = sha(edited); spans["source"]["sha256"] = sha(edited)
+            new_artifacts = {"model": codec.canonical_json_bytes(model),
+                             "source_spans": codec.canonical_record_bytes(spans),
+                             "compact": codec.format_compact(model)}
+            for kind, body in new_artifacts.items():
+                path = entry["artifacts"][kind]["path"]
+                candidate[path] = body; entry["artifacts"][kind]["sha256"] = sha(body)
+            offsets[fixture_id] = relocated
+    candidate[MANIFEST] = codec.canonical_record_bytes(updated)
+    candidate[COVERAGE], rebound = rebind_coverage(files[COVERAGE], candidate)
+    return updated, candidate, offsets, rebound
+
+
+def ensure_no_active(repository: Root):
+    if repository.exists(ACTIVE):
+        data, _ = repository.read(ACTIVE)
+        fail("AIR-E-JOURNAL.PENDING", f"unfinished publication; recover --journal-sha256 {sha(data)}")
+
+
+def stage_path(value: str, protected: set[str]) -> str:
+    value = relative(value)
+    if value == STATE or value.startswith(STATE + "/"):
+        fail("AIR-E-STAGE.STATE", "stage must be separate from the fixed journal directory")
+    if value.split("/")[0] in {".hexaemeron", ".agents", ".horos"}:
+        fail("AIR-E-STAGE.RESERVED", "stage overlaps another owner's operational records")
+    for path in protected:
+        if value == path or value.startswith(path + "/") or path.startswith(value + "/"):
+            fail("AIR-E-STAGE.OVERLAP", "stage overlaps a bound input")
+    if value.startswith(codec.FIXTURE_ROOT + "/"):
+        fail("AIR-E-STAGE.OVERLAP", "stage overlaps corpus closure")
+    return value
+
+
+def dependencies(manifest, candidate, baseline_manifest):
+    corpus = codec._corpus_sha256(manifest)
+    states = {}
+    for kind, entry in manifest["evidence"].items():
+        body = candidate[entry["path"]]
+        item = {"state": "ready", "path": entry["path"], "sha256": sha(body)}
+        if kind in {"measurement_record", "parity_record"}:
+            observed = codec.load_canonical_record(body, allow_integers=True)
+            item["corpus_sha256"] = observed.get("corpus_sha256")
+            if manifest["model_evidence_status"] == "disabled":
+                item["state"] = "disabled"
+            elif item["corpus_sha256"] != corpus:
+                item["state"] = "needs-evidence"
+        states[kind] = item
+    return {"corpus": {"state": "ready", "sha256": corpus,
+                       "baseline_sha256": codec._corpus_sha256(baseline_manifest)},
+            **states,
+            "coverage_dependents": {"state": "needs-evidence", "owner": "promise-machine coverage replay",
+                                     "detail": "Rebound coverage still requires its owner's unchanged-prompt replay and repository checks."}}
+
+
+def measured_streams(manifest, candidate):
+    observed = codec.load_canonical_record(candidate[manifest["evidence"]["measurement_record"]["path"]], allow_integers=True)
+    documents = {entry["fixture_id"]: entry for entry in observed["documents"]}
+    streams = {}
+    for fixture in manifest["fixtures"]:
+        source = fixture["source"]
+        materials = {"source": candidate[source["path"]][int(source["start"]):int(source["end"])]}
+        for role in ("model", "compact"):
+            materials[role] = codec.digest_neutral_projection(manifest, candidate[fixture["artifacts"][role]["path"]])
+        streams[fixture["id"]] = {
+            role: {"state": "disabled" if manifest["model_evidence_status"] == "disabled" else "ready" if documents[fixture["id"]]["canonical_model" if role == "model" else role]["sha256"] == sha(body) else "needs-evidence",
+                   "sha256": sha(body), "bytes": len(body), "recorded_sha256": documents[fixture["id"]]["canonical_model" if role == "model" else role]["sha256"],
+                   "projection": codec.MEASURED_PROJECTION_NONE if role == "source" else codec.MEASURED_PROJECTION_DIGEST_NEUTRAL}
+            for role, body in materials.items()}
+    return streams
+
+
+def prepare(root: Path | str, *, baseline: str, source: str, stage: str):
+    with Root(root) as repository:
+        ensure_no_active(repository)
+        source = relative(source)
+        base, manifest, original = accepted_baseline(repository, baseline)
+        stage = stage_path(stage, set(original))
+        live = {}; live_ids = {}
+        for name in sorted(original):
+            body, key = repository.read(name)
+            if name != source and body != original[name]:
+                fail("AIR-E-SIBLING.DRIFT", f"unrelated bound input changed: {name}")
+            live[name] = body; live_ids[name] = list(key)
+        if source not in original:
+            fail("AIR-E-SOURCE.UNBOUND", "source is outside the accepted baseline closure")
+        updated, candidate, offsets, rebound = derive(manifest, original, source, live[source])
+        # Structural acceptance reads every evidence hash and both frozen profile
+        # authorities, while allowing stale report semantics to remain visible.
+        with tempfile.TemporaryDirectory(prefix="air-preflight-") as name:
+            with Root(Path(name).resolve()) as temporary:
+                materialize(temporary, "tree", candidate)
+            check_corpus(Path(name) / "tree", reports=False)
+        dep = dependencies(updated, candidate, manifest)
+        outcome = "needs-evidence" if any(v["state"] == "needs-evidence" for k, v in dep.items() if k != "coverage_dependents") else "ready"
+        if outcome == "ready":
+            with tempfile.TemporaryDirectory(prefix="air-accepted-") as name:
+                with Root(Path(name).resolve()) as temporary:
+                    materialize(temporary, "tree", candidate)
+                check_corpus(Path(name) / "tree")
+        plan = {"schema": PLAN_SCHEMA, "baseline": baseline, "baseline_tree": base.tree,
+                "source": source, "source_sha256": sha(live[source]), "stage": stage,
+                "live": {name: {"sha256": sha(live[name]), "identity": live_ids[name]} for name in sorted(live)},
+                "candidate": {name: sha(body) for name, body in sorted(candidate.items())},
+                "affected_fixtures": sorted(offsets), "offsets": offsets,
+                "coverage_rebound": rebound, "dependencies": dep, "outcome": outcome}
+        raw = encoded(plan)
+        if sum(map(len, original.values())) + sum(map(len, candidate.values())) + len(raw) > MAX_TOTAL_BYTES:
+            fail("AIR-E-LIMIT.TOTAL", "prepared stage exceeds the aggregate budget")
+        repository.mkdir_new(stage)
+        materialize(repository, stage + "/baseline", original)
+        materialize(repository, stage + "/work", candidate)
+        repository.mkdir_new(stage + "/work/acquisitions")
+        repository.write(stage + "/plan.json", raw, fresh=True)
+        # Recheck live inputs after staging so a concurrent edit cannot earn a plan.
+        for name in sorted(live):
+            body, key = repository.read(name)
+            if body != live[name] or list(key) != live_ids[name]:
+                fail("AIR-E-PREPARE.RACE", "live dependency changed during preparation")
+        work = stage + "/work"
+        commands = [["python3", CHECKER, verb, "--root", work, "--manifest", MANIFEST,
+                     "--output", f"acquisitions/{filename}.json"]
+                    for verb, filename in [("measure", "measurement"), ("parity", "parity")]
+                    if updated["model_evidence_status"] == "active"]
+        commands.append(["python3", CHECKER, "check", "--root", stage + "/accepted", "--manifest", MANIFEST])
+        return {"schema": RESULT_SCHEMA, "operation": "prepare", "outcome": outcome,
+                "baseline": baseline, "source": source, "stage": stage, "plan_sha256": sha(raw),
+                "affected_fixtures": sorted(offsets), "dependencies": dep, "owner_commands": commands,
+                "measured_streams": measured_streams(updated, candidate),
+                "publication_targets": sorted(name for name in candidate if name != source and candidate[name] != original[name])}
+
+
+PLAN_FIELDS = {"schema", "baseline", "baseline_tree", "source", "source_sha256", "stage",
+               "live", "candidate", "affected_fixtures", "offsets", "coverage_rebound", "dependencies", "outcome"}
+JOURNAL_FIELDS = {"schema", "stage", "plan_sha256", "source", "source_sha256", "targets"}
+
+
+def pinned_record(repository: Root, path: str, digest: str):
+    if not isinstance(digest, str) or not SHA256.fullmatch(digest):
+        fail("AIR-E-RECORD.DIGEST", "a complete external SHA-256 is required")
+    raw, key = repository.read(path)
+    if sha(raw) != digest:
+        fail("AIR-E-RECORD.DIGEST", "record differs from the supplied SHA-256")
+    return record(raw), raw, key
+
+
+def load_plan(repository: Root, stage: str, digest: str, *, live=True):
+    plan, _, _ = pinned_record(repository, relative(stage) + "/plan.json", digest)
+    fields(plan, PLAN_FIELDS, PLAN_SCHEMA)
+    base, manifest, original = accepted_baseline(repository, plan["baseline"])
+    stage_path(stage, set(original))
+    if plan["stage"] != stage or plan["baseline_tree"] != base.tree or plan["source"] not in original:
+        fail("AIR-E-PLAN.IDENTITY", "stage, baseline tree or source differs")
+    if set(plan["live"]) != set(original) or set(plan["candidate"]) != set(original):
+        fail("AIR-E-PLAN.CLOSURE", "plan does not name exactly the bound closure")
+    edited, _ = repository.read(stage + "/work/" + plan["source"])
+    if sha(edited) != plan["source_sha256"]:
+        fail("AIR-E-STAGE.DRIFT", "staged source differs from the prepared edit")
+    updated, candidate, offsets, rebound = derive(manifest, original, plan["source"], edited)
+    dep = dependencies(updated, candidate, manifest)
+    if (plan["candidate"] != {p: sha(b) for p, b in candidate.items()} or
+            plan["offsets"] != offsets or plan["affected_fixtures"] != sorted(offsets) or
+            plan["coverage_rebound"] != rebound or plan["dependencies"] != dep):
+        fail("AIR-E-PLAN.DERIVATION", "plan differs from exact baseline rederivation")
+    for name in sorted(original):
+        for part, expected in (("baseline", original[name]), ("work", candidate[name])):
+            observed, _ = repository.read(f"{stage}/{part}/{name}")
+            if observed != expected:
+                fail("AIR-E-STAGE.DRIFT", "a prepared dependency changed")
+        entry = plan["live"][name]
+        if (set(entry) != {"sha256", "identity"} or entry["sha256"] != sha(edited if name == plan["source"] else original[name]) or
+                not isinstance(entry["identity"], list) or len(entry["identity"]) != 7 or
+                any(type(v) is not int or v < 0 for v in entry["identity"])):
+            fail("AIR-E-PLAN.LIVE", "live dependency descriptor is invalid")
+        if live:
+            body, key = repository.read(name)
+            if sha(body) != entry["sha256"] or list(key) != entry["identity"]:
+                fail("AIR-E-LIVE.DRIFT", f"live dependency changed after prepare: {name}")
+    repository.inventory(stage)
+    return plan, original, updated, candidate
+
+
+def admit_evidence(repository: Root, stage: str, candidate: dict[str, bytes]):
+    candidate = dict(candidate)
+    manifest = codec.load_canonical_record(candidate[MANIFEST])
+    paths = {"measurement_record": stage + "/work/acquisitions/measurement.json",
+             "parity_record": stage + "/work/acquisitions/parity.json"}
+    present = {kind: repository.exists(path) for kind, path in paths.items()}
+    if any(present.values()) and not all(present.values()):
+        fail("AIR-E-EVIDENCE.PAIR", "admission requires both fresh owner reports together")
+    if all(present.values()):
+        for kind, path in paths.items():
+            body, _ = repository.read(path)
+            entry = manifest["evidence"][kind]
+            candidate[entry["path"]] = body
+            entry["sha256"] = sha(body)
+        candidate[MANIFEST] = codec.canonical_record_bytes(manifest)
+        candidate[COVERAGE], _ = rebind_coverage(candidate[COVERAGE], candidate)
+    return candidate
+
+
+def accept_stage(repository: Root, stage: str, candidate: dict[str, bytes]):
+    """Admit both reports as one closure and run the owner's full offline check."""
+    candidate = admit_evidence(repository, stage, candidate)
+    # Check before creating a durable accepted copy. Incomplete acquisition can
+    # be repaired at its separate output paths without changing prepared inputs.
+    with tempfile.TemporaryDirectory(prefix="air-admission-") as name:
+        temporary_path = Path(name).resolve()
+        with Root(temporary_path) as temporary:
+            materialize(temporary, "tree", candidate)
+        check_corpus(temporary_path / "tree")
+    accepted = stage + "/accepted"
+    if repository.exists(accepted + "/" + MANIFEST):
+        for path, body in candidate.items():
+            if repository.read(accepted + "/" + path)[0] != body:
+                fail("AIR-E-ACCEPTED.DRIFT", "accepted copy differs from the current complete candidate")
+    else:
+        repository.mkdir_new(accepted)
+        materialize(repository, accepted, candidate)
+    observed = repository.inventory(accepted)
+    if observed != {p: sha(b) for p, b in candidate.items()}:
+        fail("AIR-E-ACCEPTED.CLOSURE", "accepted copy has missing or extra dependencies")
+    # Execute only the running owner's checker, never code staged by an input.
+    command = [sys.executable, str(Path(codec.__file__).resolve()), "check", "--root",
+               str(repository.path / accepted), "--manifest", MANIFEST]
+    code, stdout, stderr = bounded_command(command, repository.path)
+    if code:
+        fail("AIR-E-CHECK.COMMAND", f"full owner checker exited {code}: {stderr.decode(errors='replace')[:200]}")
+    expected = check_corpus(repository.path / accepted)
+    if not stdout or expected[-1]["outcome"] != "accepted":
+        fail("AIR-E-CHECK.COMMAND", "full owner checker did not accept the complete staged closure")
+    return candidate, {"argv": command, "exit": code, "stdout_sha256": sha(stdout),
+                       "stderr_sha256": sha(stderr), "records": expected}
+
+
+def publication_targets(original, candidate, source):
+    targets = [name for name in original if name != source and original[name] != candidate[name]]
+    allowed = {MANIFEST, COVERAGE}
+    manifest = codec.load_canonical_record(original[MANIFEST])
+    for fixture in manifest["fixtures"]:
+        allowed.update(fixture["artifacts"][role]["path"] for role in ("model", "source_spans", "compact"))
+    allowed.update(manifest["evidence"][role]["path"] for role in ("measurement_record", "parity_record"))
+    if len(targets) > MAX_TARGETS or set(targets) - allowed:
+        fail("AIR-E-TARGET.SCOPE", "publication target set exceeds the owned generated inputs")
+    return sorted(targets, key=lambda p: (2 if p == COVERAGE else 1 if p == MANIFEST else 0, p))
+
+
+def observe_versions(repository, plan, original, candidate, published):
+    for name in original:
+        body, key = repository.read(name)
+        expected = candidate[name] if name in published or name == plan["source"] else original[name]
+        if body != expected:
+            fail("AIR-E-TARGET.THIRD", f"unexpected version at {name}")
+        if name not in published and list(key) != plan["live"][name]["identity"]:
+            fail("AIR-E-LIVE.DRIFT", f"unpublished dependency identity changed: {name}")
+
+
+def archive_journal(repository, journal_raw, *, outcome):
+    digest = sha(journal_raw)
+    destination = f"{STATE}/{outcome}/{digest}.json"
+    if repository.exists(destination):
+        if repository.read(destination)[0] != journal_raw:
+            fail("AIR-E-JOURNAL.ARCHIVE", "journal archive differs")
+    else:
+        repository.write(destination, journal_raw, fresh=True)
+    current, key = repository.read(ACTIVE)
+    if current != journal_raw:
+        fail("AIR-E-JOURNAL.DRIFT", "active journal changed before completion")
+    repository.unlink(ACTIVE, key)
+
+
+def journal_entry(stage, index, path, original, candidate):
+    return {"path": path, "old_sha256": sha(original[path]), "new_sha256": sha(candidate[path]),
+            "old": f"{stage}/publication/old/{index}.bin", "new": f"{stage}/publication/new/{index}.bin",
+            "publish_slot": f"{stage}/publication/exchange/{index}.bin",
+            "restore_slot": f"{stage}/publication/restore/{index}.bin"}
+
+
+def exchange_versions(repository, journal, plan, original, candidate):
+    """Inspect every retained slot before admitting any restoration or success."""
+    for entry in journal["targets"]:
+        path = entry["path"]
+        old_key = tuple(plan["live"][path]["identity"][:-1])
+        new_key = tuple(entry["publish_identity"][:-1])
+        restored_key = tuple(entry["restore_identity"][:-1])
+        for role, allowed in (
+                ("publish_slot", ((candidate[path], new_key), (original[path], old_key))),
+                ("restore_slot", ((original[path], restored_key), (candidate[path], new_key)))):
+            body, key = repository.read(entry[role])
+            if (body, key[:-1]) not in allowed:
+                conflict(path, entry[role], body)
+        body, key = repository.read(path)
+        if (body, key[:-1]) not in ((original[path], old_key), (candidate[path], new_key),
+                                    (original[path], restored_key)):
+            fail("AIR-E-RECOVERY.THIRD", f"third version at {path}; no recovery write admitted")
+
+
+def validate_journal(repository, value, digest):
+    fields(value, JOURNAL_FIELDS, JOURNAL_SCHEMA)
+    plan, original, _, prepared = load_plan(repository, value["stage"], value["plan_sha256"], live=False)
+    candidate = admit_evidence(repository, value["stage"], prepared)
+    with tempfile.TemporaryDirectory(prefix="air-recovery-check-") as name:
+        temporary_path = Path(name).resolve()
+        with Root(temporary_path) as temporary:
+            materialize(temporary, "tree", candidate)
+        check_corpus(temporary_path / "tree")
+    targets = publication_targets(original, candidate, plan["source"])
+    if not isinstance(value["targets"], list) or len(value["targets"]) != len(targets):
+        fail("AIR-E-JOURNAL.DERIVATION", "journal target count differs")
+    expected = []
+    for index, path in enumerate(targets):
+        entry = journal_entry(value["stage"], index, path, original, candidate)
+        for field in ("publish_identity", "restore_identity"):
+            key = value["targets"][index].get(field)
+            if not isinstance(key, list) or len(key) != 7 or any(type(v) is not int or v < 0 for v in key):
+                fail("AIR-E-JOURNAL.IDENTITY", "invalid exchange-slot identity")
+            entry[field] = key
+        expected.append(entry)
+    if (value["targets"] != expected or value["source"] != plan["source"] or
+            value["source_sha256"] != plan["source_sha256"]):
+        fail("AIR-E-JOURNAL.DERIVATION", "journal does not match the complete planned target set")
+    for entry in expected:
+        for version in ("old", "new"):
+            if sha(repository.read(entry[version])[0]) != entry[version + "_sha256"]:
+                fail("AIR-E-JOURNAL.BACKUP", "journal backup differs from its digest")
+    if sha(repository.read(plan["source"])[0]) != plan["source_sha256"]:
+        fail("AIR-E-RECOVERY.SOURCE", "edited source changed; recovery leaves it untouched")
+    exchange_versions(repository, value, plan, original, candidate)
+    return plan, original, candidate, targets
+
+
+def restore(repository, journal, journal_raw):
+    plan, original, candidate, targets = validate_journal(repository, journal, sha(journal_raw))
+    versions = {}
+    # All versions and all backups must pass before the first restoration.
+    for path in targets:
+        body, key = repository.read(path)
+        if body not in (original[path], candidate[path]):
+            fail("AIR-E-RECOVERY.THIRD", f"third version at {path}; no recovery write admitted")
+        versions[path] = body, key
+    entries = {entry["path"]: entry for entry in journal["targets"]}
+    for path in reversed(targets):
+        exchange_versions(repository, journal, plan, original, candidate)
+        body, key = versions[path]
+        if body != original[path]:
+            repository.write(path, original[path], expected=key, exchange=entries[path]["restore_slot"])
+    for path in targets:
+        if repository.read(path)[0] != original[path]:
+            fail("AIR-E-RECOVERY.READBACK", "restored target differs from the old version")
+    exchange_versions(repository, journal, plan, original, candidate)
+    archive_journal(repository, journal_raw, outcome="recovered")
+
+
+def apply(root: Path | str, *, stage: str, plan_sha256: str, check_only=False, phase_hook=None):
+    with Root(root) as repository:
+        ensure_no_active(repository)
+        plan, original, _, prepared = load_plan(repository, stage, plan_sha256)
+        candidate, checked = accept_stage(repository, stage, prepared)
+        targets = publication_targets(original, candidate, plan["source"])
+        staged_inventory = repository.inventory(stage)
+        observe_versions(repository, plan, original, candidate, set())
+        if check_only:
+            return {"schema": RESULT_SCHEMA, "operation": "apply-check", "outcome": "ready",
+                    "plan_sha256": plan_sha256, "targets": targets, "owner_check": checked,
+                    "measured_streams": measured_streams(codec.load_canonical_record(candidate[MANIFEST]), candidate)}
+        if not targets:
+            return {"schema": RESULT_SCHEMA, "operation": "apply", "outcome": "unchanged",
+                    "plan_sha256": plan_sha256, "targets": [], "owner_check": checked}
+        repository.mkdir_new(stage + "/publication")
+        entries = []
+        for index, path in enumerate(targets):
+            entry = journal_entry(stage, index, path, original, candidate)
+            repository.write(entry["old"], original[path], fresh=True)
+            repository.write(entry["new"], candidate[path], fresh=True)
+            mode = stat.S_IMODE(plan["live"][path]["identity"][2])
+            for role, body, field in (("publish_slot", candidate[path], "publish_identity"),
+                                      ("restore_slot", original[path], "restore_identity")):
+                repository.write(entry[role], body, fresh=True, mode=mode)
+                entry[field] = list(repository.read(entry[role])[1])
+            entries.append(entry)
+        journal = {"schema": JOURNAL_SCHEMA, "stage": stage, "plan_sha256": plan_sha256,
+                   "source": plan["source"], "source_sha256": plan["source_sha256"], "targets": entries}
+        journal_raw = encoded(journal); journal_sha = sha(journal_raw)
+        repository.write(stage + "/publication/journal.json", journal_raw, fresh=True)
+        staged_inventory = repository.inventory(stage)
+        observe_versions(repository, plan, original, candidate, set())
+        repository.write(ACTIVE, journal_raw, fresh=True)
+        event = {"schema": RESULT_SCHEMA, "operation": "apply", "phase": "journal-durable",
+                 "journal_sha256": journal_sha, "targets": targets,
+                 "recovery_command": ["python3", "scripts/prove_agent_instruction_reconciliation.py", "recover",
+                                      "--root", str(repository.path), "--journal-sha256", journal_sha]}
+        print(encoded(event).decode(), end="", flush=True)
+        published = set()
+        try:
+            if phase_hook:
+                phase_hook("journal-durable", None)
+            for entry in entries:
+                path = entry["path"]
+                if repository.inventory(stage) != staged_inventory:
+                    fail("AIR-E-STAGE.RACE", "stage changed after full acceptance")
+                observe_versions(repository, plan, original, candidate, published)
+                _, key = repository.read(path)
+                repository.write(path, candidate[path], expected=key, exchange=entry["publish_slot"])
+                staged_inventory[entry["publish_slot"][len(stage) + 1:]] = sha(original[path])
+                published.add(path)
+                if phase_hook:
+                    phase_hook("target-published", path)
+            observe_versions(repository, plan, original, candidate, published)
+            if repository.inventory(stage) != staged_inventory:
+                fail("AIR-E-STAGE.RACE", "stage changed during publication")
+            exchange_versions(repository, journal, plan, original, candidate)
+            check_corpus(repository.path)
+            archive_journal(repository, journal_raw, outcome="applied")
+        except Exception as exc:
+            try:
+                restore(repository, journal, journal_raw)
+            except Exception as recovery:
+                error = ReconciliationError("AIR-E-APPLY.RECOVERY", f"publication failed ({type(exc).__name__}); journal {journal_sha} remains: {recovery}")
+                if hasattr(recovery, "conflict"):
+                    error.conflict = recovery.conflict
+                raise error from recovery
+            fail("AIR-E-APPLY.ROLLED-BACK", f"publication failed ({type(exc).__name__}); prior generated set restored; journal {journal_sha}")
+        return {"schema": RESULT_SCHEMA, "operation": "apply", "outcome": "accepted",
+                "plan_sha256": plan_sha256, "journal_sha256": journal_sha, "targets": targets, "owner_check": checked,
+                "measured_streams": measured_streams(codec.load_canonical_record(candidate[MANIFEST]), candidate)}
+
+
+def recover(root: Path | str, *, journal_sha256: str):
+    with Root(root) as repository:
+        if repository.exists(ACTIVE):
+            value, raw, _ = pinned_record(repository, ACTIVE, journal_sha256)
+            restore(repository, value, raw)
+            outcome = "recovered"
+        else:
+            value, raw, _ = pinned_record(repository, f"{STATE}/recovered/{journal_sha256}.json", journal_sha256)
+            _, original, _, targets = validate_journal(repository, value, journal_sha256)
+            if any(repository.read(path)[0] != original[path] for path in targets):
+                fail("AIR-E-RECOVERY.THIRD", "a restored target changed after completed recovery")
+            outcome = "already-recovered"
+        return {"schema": RESULT_SCHEMA, "operation": "recover", "outcome": outcome,
+                "journal_sha256": journal_sha256, "source_sha256": value["source_sha256"]}
+
+
+DEMONSTRATION_SCHEMA = "agent-instruction-reconciliation-demonstration/v1"
+VERIFICATION_SCHEMA = "agent-instruction-reconciliation-verification/v1"
+BOUNDARY_TESTS = {
+    "test_actual_sigkill_blocks_next_operation_and_recovery_is_idempotent",
+    "test_all_six_placements_select_and_relocate_exact_bytes",
+    "test_apply_checks_complete_stage_and_publishes_inputs_before_manifest",
+    "test_baseline_is_full_commit_and_inherited_git_redirection_is_ignored",
+    "test_changed_and_duplicate_reviewed_anchors_refuse",
+    "test_duplicate_json_and_path_aliases_refuse",
+    "test_every_affected_sibling_is_selected_by_source_not_a_fixed_id",
+    "test_file_target_and_total_limits_refuse_without_live_writes",
+    "test_handled_partial_publication_restores_and_fresh_retry_succeeds",
+    "test_legacy_law_and_horos_selection_is_the_behavioral_counterfactual",
+    "test_missing_or_duplicate_node_bytes_refuse_before_derivation",
+    "test_object_bytes_are_verified_against_the_requested_digest",
+    "test_output_and_wall_time_limits_kill_the_bounded_command",
+    "test_stage_mutation_live_identity_race_and_partial_evidence_pair_refuse",
+    "test_stage_race_after_journal_blocks_publication",
+    "test_stale_reports_do_not_earn_apply_and_no_journal_or_live_write_occurs",
+    "test_symlink_hardlink_fifo_and_parent_alias_refuse",
+    "test_third_version_refuses_rollback_and_recovery_without_overwrite",
+    "test_unrelated_bound_sibling_drift_refuses",
+    "test_writer_detects_target_replacement_while_temporary_file_is_flushed",
+    "test_final_publication_syscall_preserves_concurrent_version",
+    "test_exchange_preserves_third_and_fourth_versions_without_exchange_back",
+    "test_journalled_exchange_conflict_blocks_apply_and_recovery",
+    "test_recovery_exchange_retains_a_new_conflict",
+    "test_sigkill_immediately_after_exchange_recovers_retained_slot",
+    "test_exchange_refuses_unsupported_hosts_and_keeps_stable_identity",
+}
+
+
+# The recorded 15-binding demonstration predates the 17-binding inoculation
+# corpus. Its three owner implementations are preserved on main by these exact
+# digests; historical verification must not reinterpret it with a newer codec.
+HISTORICAL_DEMONSTRATION_OWNERS = {
+    "agent_instruction": "3c5fabf3510e449b0476de4a7ecb6c2bd4909c5b65c7a10ecdaef5e86ec923f2",
+    "prove_agent_instruction_reconciliation": "e4c396ce502e9c97f75d5d9be2ff885ef236b6aa91ea80da24eef5ccef323c53",
+    "agent_instruction_reconciliation": "84632d90863afe513293779d7dd1241bac2aa3c5e63e1303aaebf5bc1e953093",
+}
+
+
+def verify_historical_demonstration(root: Path | str, path: str):
+    """Replay the fixed recorded owners, without claiming a current-code run."""
+    import builtins
+    import importlib.util
+
+    frozen = {}
+    with Root(Path(root).resolve()) as repository:
+        for name, digest in HISTORICAL_DEMONSTRATION_OWNERS.items():
+            source = "docs/agent-instruction-reconciliation/demonstration-evidence/" + digest + ".bin"
+            data, _ = repository.read(source)
+            if sha(data) != digest:
+                fail("AIR-E-DEMO.BOUNDARY", "recorded owner differs from its pinned implementation")
+            frozen[name] = data
+    with tempfile.TemporaryDirectory(prefix="air-recorded-owners-") as scratch:
+        scripts = Path(scratch) / "scripts"
+        scripts.mkdir()
+        modules = {}
+        def owner_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if level == 0 and name in modules:
+                return modules[name]
+            return builtins.__import__(name, globals, locals, fromlist, level)
+        for name, data in frozen.items():
+            source = scripts / (name + ".py")
+            source.write_bytes(data)
+            spec = importlib.util.spec_from_file_location("recorded_" + name, source)
+            module = importlib.util.module_from_spec(spec)
+            module.__dict__["__builtins__"] = dict(vars(builtins), __import__=owner_import)
+            spec.loader.exec_module(module)
+            modules[name] = module
+        owner = modules["agent_instruction_reconciliation"]
+        # No command or model is part of this replay, including a future
+        # accidental call from a historical reader.
+        def refuse_command(*args, **kwargs):
+            fail("AIR-E-DEMO.COMMAND", "historical verification cannot start a command")
+        owner.bounded_command = refuse_command
+        try:
+            result = owner.verify_demonstration(root, path)
+        except owner.ReconciliationError as error:
+            fail(error.code, error.detail)
+        except modules["agent_instruction"].CodecError as error:
+            fail("AIR-E-CHECK", str(error))
+    return {**result, "implementation_scope": "recorded-implementation",
+            "owner_sha256": dict(HISTORICAL_DEMONSTRATION_OWNERS)}
+
+
+def verify_demonstration(root: Path | str, path: str):
+    """Recheck preserved Git objects, relocated bytes and owner report semantics offline."""
+    if sha(Path(codec.__file__).read_bytes()) != HISTORICAL_DEMONSTRATION_OWNERS["agent_instruction"]:
+        return verify_historical_demonstration(root, path)
+    with Root(root) as repository:
+        raw, _ = repository.read(relative(path)); value = record(raw)
+        fields(value, {"schema", "baseline", "dependencies", "cases", "boundary", "acquisitions", "counterfactual", "limits"}, DEMONSTRATION_SCHEMA)
+        if not isinstance(value["dependencies"], dict) or not value["dependencies"] or len(value["dependencies"]) > MAX_TARGETS:
+            fail("AIR-E-DEMO.DEPENDENCIES", "demonstration dependency inventory is empty or excessive")
+        data = {}; total = 0
+        for name, digest in value["dependencies"].items():
+            body, _ = repository.read(relative(name)); total += len(body)
+            if not isinstance(digest, str) or sha(body) != digest:
+                fail("AIR-E-DEMO.DIGEST", f"demonstration dependency differs: {name}")
+            if total > MAX_TOTAL_BYTES:
+                fail("AIR-E-LIMIT.TOTAL", "demonstration dependencies exceed the aggregate budget")
+            data[name] = body
+
+        def bound(name):
+            if name not in data:
+                fail("AIR-E-DEMO.UNBOUND", "record references an undeclared dependency")
+            return data[name]
+
+        def files(mapping):
+            if not isinstance(mapping, dict) or len(mapping) > MAX_TARGETS:
+                fail("AIR-E-DEMO.CLOSURE", "invalid preserved file map")
+            return {relative(name): bound(dependency) for name, dependency in mapping.items()}
+
+        baseline = value["baseline"]
+        if set(baseline) != {"commit", "tree", "objects", "files"}:
+            fail("AIR-E-DEMO.BASELINE", "baseline record fields differ")
+
+        class PreservedBaseline(Baseline):
+            def object(self, kind, oid):
+                key = kind + ":" + oid
+                if key not in baseline["objects"]:
+                    fail("AIR-E-DEMO.OBJECT", "required historical Git object was not preserved")
+                body = bound(baseline["objects"][key])
+                if hashlib.sha1(kind.encode() + b" " + str(len(body)).encode() + b"\0" + body).hexdigest() != oid:
+                    fail("AIR-E-DEMO.OBJECT", "preserved Git object has the wrong identity")
+                return body
+
+        historical = PreservedBaseline(repository.path, baseline["commit"])
+        if historical.tree != baseline["tree"]:
+            fail("AIR-E-DEMO.TREE", "preserved commit and tree differ")
+        original = files(baseline["files"])
+        manifest = codec.validate_manifest(codec.load_canonical_record(original[MANIFEST]))
+        if set(original) != closure(manifest) or any(historical.read(p) != body for p, body in original.items()):
+            fail("AIR-E-DEMO.BASELINE", "preserved closure differs from the immutable Git baseline")
+        if original[CHECKER] != Path(codec.__file__).read_bytes():
+            fail("AIR-E-DEMO.CHECKER", "preserved owner checker differs from the verifier's owner")
+        with tempfile.TemporaryDirectory(prefix="air-demo-baseline-") as name:
+            temporary_path = Path(name).resolve()
+            with Root(temporary_path) as temporary:
+                materialize(temporary, "tree", original)
+            check_corpus(temporary_path / "tree")
+        expected_cases = {(f["id"], placement) for f in manifest["fixtures"] for placement in ("before", "after")}
+        if not isinstance(value["cases"], list) or len(value["cases"]) != 6:
+            fail("AIR-E-DEMO.CASES", "exactly six structural placements are required")
+        seen = set(); reviewed = set(); complete = 0; completed_files = None
+        for case in value["cases"]:
+            if set(case) != {"fixture", "placement", "prepared", "plan", "prepare_result", "accepted", "apply_result", "journal", "publication"}:
+                fail("AIR-E-DEMO.CASE", "case fields differ")
+            key = case["fixture"], case["placement"]
+            if key not in expected_cases or key in seen:
+                fail("AIR-E-DEMO.CASE", "duplicate or unknown placement")
+            seen.add(key)
+            fixture = next(f for f in manifest["fixtures"] if f["id"] == case["fixture"])
+            source = fixture["source"]["path"]
+            prepared = files(case["prepared"])
+            if set(prepared) != set(original):
+                fail("AIR-E-DEMO.CLOSURE", "case does not preserve the complete prepared closure")
+            edited = prepared[source]
+            if (case["placement"] == "before" and (edited == original[source] or not edited.endswith(original[source]))) or (
+                    case["placement"] == "after" and (edited == original[source] or not edited.startswith(original[source]))):
+                fail("AIR-E-DEMO.PLACEMENT", "edited bytes do not match the declared placement")
+            updated, derived, offsets, rebound = derive(manifest, original, source, edited)
+            if prepared != derived:
+                fail("AIR-E-DEMO.DERIVATION", "preserved candidate differs from exact relocation")
+            plan_bytes = bound(case["plan"]); plan = record(plan_bytes)
+            fields(plan, PLAN_FIELDS, PLAN_SCHEMA)
+            expected_outcome = "needs-evidence" if case["placement"] == "before" else "ready"
+            if (plan["baseline"] != baseline["commit"] or plan["source"] != source or
+                    plan["candidate"] != {p: sha(b) for p, b in prepared.items()} or
+                    plan["offsets"] != offsets or plan["coverage_rebound"] != rebound or
+                    plan["dependencies"] != dependencies(updated, prepared, manifest) or plan["outcome"] != expected_outcome):
+                fail("AIR-E-DEMO.PLAN", "preserved plan differs from derived dependencies")
+            result = record(bound(case["prepare_result"]))
+            if result.get("plan_sha256") != sha(plan_bytes) or result.get("outcome") != expected_outcome:
+                fail("AIR-E-DEMO.RESULT", "preparation result does not bind its exact plan")
+            for fixture_id, spans in offsets.items():
+                for node in spans["nodes"]:
+                    reviewed.add((fixture_id, node))
+            with tempfile.TemporaryDirectory(prefix="air-demo-case-") as name:
+                temporary_path = Path(name).resolve()
+                with Root(temporary_path) as temporary:
+                    materialize(temporary, "tree", prepared)
+                check_corpus(temporary_path / "tree", reports=case["placement"] == "after")
+            if case["accepted"] is None:
+                if case["apply_result"] is not None or case["journal"] is not None or case["publication"] is not None:
+                    fail("AIR-E-DEMO.COMPLETE", "partial completed-case evidence")
+                continue
+            if key != ("promise-machine-router-selection", "before"):
+                fail("AIR-E-DEMO.LAW", "completed demonstration must be the moved law span")
+            accepted = files(case["accepted"]); expected = dict(prepared)
+            amended = copy.deepcopy(updated)
+            for role in ("measurement_record", "parity_record"):
+                entry = amended["evidence"][role]
+                expected[entry["path"]] = accepted[entry["path"]]
+                entry["sha256"] = sha(expected[entry["path"]])
+            expected[MANIFEST] = codec.canonical_record_bytes(amended)
+            expected[COVERAGE], _ = rebind_coverage(prepared[COVERAGE], expected)
+            if accepted != expected:
+                fail("AIR-E-DEMO.ADMISSION", "completed closure changes more than paired owner evidence")
+            with tempfile.TemporaryDirectory(prefix="air-demo-complete-") as name:
+                temporary_path = Path(name).resolve()
+                with Root(temporary_path) as temporary:
+                    materialize(temporary, "tree", accepted)
+                check_corpus(temporary_path / "tree")
+            result = record(bound(case["apply_result"])); journal_bytes = bound(case["journal"])
+            journal = record(journal_bytes); fields(journal, JOURNAL_FIELDS, JOURNAL_SCHEMA)
+            targets = publication_targets(original, accepted, source)
+            if (result.get("outcome") != "accepted" or result.get("targets") != targets or
+                    result.get("plan_sha256") != sha(plan_bytes) or result.get("journal_sha256") != sha(journal_bytes) or
+                    journal["source_sha256"] != sha(edited) or journal["plan_sha256"] != sha(plan_bytes) or
+                    [entry["path"] for entry in journal["targets"]] != targets):
+                fail("AIR-E-DEMO.PUBLICATION", "completed publication is not bound to the planned complete target set")
+            publication = files(case["publication"])
+            expected_publication = {}
+            for index, entry in enumerate(journal["targets"]):
+                path = entry["path"]
+                expected_entry = journal_entry(plan["stage"], index, path, original, accepted)
+                for field in ("publish_identity", "restore_identity"):
+                    identity_value = entry.get(field)
+                    if not isinstance(identity_value, list) or len(identity_value) != 7 or any(type(v) is not int or v < 0 for v in identity_value):
+                        fail("AIR-E-DEMO.JOURNAL", "journal exchange identity is invalid")
+                    expected_entry[field] = identity_value
+                if entry != expected_entry:
+                    fail("AIR-E-DEMO.JOURNAL", "journal versions or slots differ from the preserved derivation")
+                for role in ("old", "publish_slot", "restore_slot"):
+                    expected_publication[entry[role]] = original[path]
+                expected_publication[entry["new"]] = accepted[path]
+            if publication != expected_publication:
+                fail("AIR-E-DEMO.JOURNAL", "displaced files and complete backups were not preserved")
+            complete += 1; completed_files = accepted
+        if seen != expected_cases or complete != 1 or len(reviewed) != 15:
+            fail("AIR-E-DEMO.COUNTS", "structural, complete-repair or unchanged-binding count differs")
+        acquisitions = value["acquisitions"]
+        if set(acquisitions) != {"measure", "parity"}:
+            fail("AIR-E-DEMO.ACQUISITION", "both actual owner acquisitions are required")
+        for verb, role in (("measure", "measurement_record"), ("parity", "parity_record")):
+            entry = acquisitions[verb]
+            if set(entry) != {"result", "stdout", "stderr", "output"}:
+                fail("AIR-E-DEMO.ACQUISITION", "acquisition evidence fields differ")
+            observation = record(bound(entry["result"]), allow_floats=True)
+            output = bound(entry["output"])
+            if (observation.get("exit") != 0 or observation.get("timed_out") is not False or
+                    observation.get("output_sha256") != sha(output) or observation.get("stdout_sha256") != sha(bound(entry["stdout"])) or
+                    observation.get("stderr_sha256") != sha(bound(entry["stderr"])) or
+                    output != completed_files[manifest["evidence"][role]["path"]]):
+                fail("AIR-E-DEMO.ACQUISITION", "actual owner outputs do not bind the accepted reports")
+            command = observation.get("argv", [])
+            # The executable and original absolute root are provenance, and
+            # are never executed by verification.
+            if len(command) != 9 or command[2] != verb or command[3] != "--root" or command[5:9] != ["--manifest", MANIFEST, "--output", "acquisitions/" + ("measurement" if verb == "measure" else "parity") + ".json"]:
+                fail("AIR-E-DEMO.COMMAND", "recorded acquisition is not the declared owner command")
+            start = datetime.fromisoformat(observation["started_at"]); end = datetime.fromisoformat(observation["finished_at"])
+            if start.tzinfo is None or end.tzinfo is None or end < start or (end - start).total_seconds() > TIMEOUT_SECONDS:
+                fail("AIR-E-DEMO.TIME", "acquisition timestamps are absent, unordered or exceed the recorded limit")
+            if observation.get("profile_observed_on") != "2026-09-12" or start.date().isoformat() < observation["profile_observed_on"]:
+                fail("AIR-E-DEMO.PROFILE-DATE", "acquisition time and frozen profile observation differ inconsistently")
+        boundary = value["boundary"]
+        if set(boundary) != {"report", "observations", "stdout", "stderr", "test_source", "implementation"}:
+            fail("AIR-E-DEMO.BOUNDARY", "boundary evidence fields differ")
+        if set(boundary["implementation"]) != {"scripts/agent_instruction_reconciliation.py", "scripts/prove_agent_instruction_reconciliation.py"}:
+            fail("AIR-E-DEMO.BOUNDARY", "boundary implementation inventory differs")
+        for path, dependency in boundary["implementation"].items():
+            if bound(dependency) != (Path(__file__).resolve().parents[1] / path).read_bytes():
+                fail("AIR-E-DEMO.BOUNDARY", "demonstrated implementation differs from the running verifier")
+        report = record(bound(boundary["report"])); observations = record(bound(boundary["observations"]))
+        bound(boundary["stdout"]); bound(boundary["stderr"]); bound(boundary["test_source"])
+        if (report.get("schema") != "elenchus.unittest.v1" or report.get("complete") is not True or
+                type(report.get("testsRun")) is not int or report["testsRun"] < len(BOUNDARY_TESTS) or
+                any(report.get(key) != 0 for key in ("failures", "errors", "skipped", "expectedFailures", "unexpectedSuccesses")) or
+                observations.get("schema") != "agent-instruction-reconciliation-boundary-observations/v1" or
+                not BOUNDARY_TESTS.issubset(observations.get("tests", {})) or
+                any(observations["tests"].get(name) != "passed" for name in BOUNDARY_TESTS)):
+            fail("AIR-E-DEMO.BOUNDARY", "required executed boundary observations are incomplete or failed")
+        counterfactual = value["counterfactual"]
+        if set(counterfactual) != {"legacy", "fixed", "script", "exchange"}:
+            fail("AIR-E-DEMO.GUARD", "counterfactual evidence fields differ")
+        bound(counterfactual["script"])
+        for mode, failures in (("legacy", 2), ("fixed", 0)):
+            attempt = counterfactual[mode]
+            if set(attempt) != {"report", "stdout", "stderr"}:
+                fail("AIR-E-DEMO.GUARD", "counterfactual attempt is incomplete")
+            report = record(bound(attempt["report"]))
+            bound(attempt["stdout"]); stderr = bound(attempt["stderr"])
+            if (report.get("schema") != "elenchus.unittest.v1" or report.get("complete") is not True or
+                    report.get("testsRun") != 2 or report.get("failures") != failures or
+                    any(report.get(k) != 0 for k in ("errors", "skipped", "expectedFailures", "unexpectedSuccesses")) or
+                    (mode == "legacy" and b"AssertionError: 'refused' != 'ready'" not in stderr)):
+                fail("AIR-E-DEMO.GUARD", "guard does not show the two behavioral assertions failing only under legacy selection")
+        exchange = counterfactual["exchange"]
+        if set(exchange) != {"old", "fixed", "script"}:
+            fail("AIR-E-DEMO.GUARD", "exchange counterfactual is incomplete")
+        bound(exchange["script"])
+        for mode, failures in (("old", 1), ("fixed", 0)):
+            attempt = exchange[mode]
+            if set(attempt) != {"report", "stdout", "stderr", "helper", "tests"}:
+                fail("AIR-E-DEMO.GUARD", "exchange attempt fields differ")
+            report = record(bound(attempt["report"])); stderr = bound(attempt["stderr"])
+            bound(attempt["stdout"]); helper = bound(attempt["helper"]); bound(attempt["tests"])
+            if (report.get("schema") != "elenchus.unittest.v1" or report.get("complete") is not True or
+                    report.get("testsRun") != 1 or report.get("failures") != failures or
+                    any(report.get(k) != 0 for k in ("errors", "skipped", "expectedFailures", "unexpectedSuccesses")) or
+                    (mode == "old" and b"publication accepted and lost the concurrent version" not in stderr) or
+                    (mode == "fixed" and helper != Path(__file__).read_bytes())):
+                fail("AIR-E-DEMO.GUARD", "exact-syscall guard lacks the old failure and current success")
+        return {"schema": VERIFICATION_SCHEMA, "outcome": "accepted", "record_sha256": sha(raw),
+                "structural_placements": len(seen), "complete_law_repairs": complete,
+                "unchanged_reviewed_bindings": len(reviewed), "verified_dependencies": len(data)}
+
+
+def run_command(arguments):
+    """Emit a bounded refusal for malformed external input without a traceback."""
+    try:
+        if arguments.command == "prepare":
+            result = prepare(arguments.root, baseline=arguments.baseline, source=arguments.source, stage=arguments.stage)
+        elif arguments.command == "apply":
+            result = apply(arguments.root, stage=arguments.stage, plan_sha256=arguments.plan_sha256,
+                           check_only=arguments.check_only)
+        elif arguments.command == "recover":
+            result = recover(arguments.root, journal_sha256=arguments.journal_sha256)
+        else:
+            result = verify_demonstration(arguments.root, arguments.verify)
+        print(encoded(result).decode(), end="", flush=True)
+        return 0
+    except (ReconciliationError, codec.CodecError, OSError, ValueError, KeyError, TypeError) as exc:
+        result = {"schema": RESULT_SCHEMA, "operation": arguments.command, "outcome": "refused",
+                  "code": getattr(exc, "code", "AIR-E-INPUT.INVALID"),
+                  "detail": str(exc)[:500]}
+        if hasattr(exc, "conflict"):
+            result["conflict"] = exc.conflict
+        print(encoded(result).decode(), end="", flush=True)
+        return 2

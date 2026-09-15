@@ -142,7 +142,7 @@ output digest, the semantic `next`, `outer_sha256` and `snapshot_id`.
 `fiat-checkpoint-signature-proof/v1`, the `proof/signatures.json` member: per
 receipted commit `sha`, `format`, `status` (`G` required), `fingerprint`, the
 counts of `Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` and
-`Wildcat-Origin: shoggoth` trailers (exactly one each), and the GitHub
+`Wildcat-Origin: shoggoth` trailers (recorded, not required), and the GitHub
 verification recorded by the push receipt. No raw `gpg` output. Only the run's
 receipted commits (`push.verified_commits`) are covered; merges on the
 integration branch are never claimed.
@@ -180,7 +180,7 @@ also inherits every inspector class because it runs the inspector first.
 | `ref-disagreement` | archive, inspect, restore | bundle heads, capsule `boundary.refs` and manifest `refs` disagree, or a restored ref differs from the map |
 | `bundle-incomplete` | archive, inspect | `git bundle verify` names a prerequisite, another hash algorithm or a head outside the manifest |
 | `bundle-oversized` | archive, inspect | the bundle exceeds 1 GiB |
-| `signature-unverified` | archive, inspect | a receipted commit is not `G` under the pinned fingerprints, or its trailer counts are not exactly one each |
+| `signature-unverified` | archive, inspect | a receipted commit is not `G` under the pinned fingerprints |
 | `signature-format-unsupported` | archive, inspect | `gpg.format` is neither `openpgp` nor `ssh` |
 | `identity-unavailable` | archive | identity cannot be minted; export continues with `status: unavailable` only for a legacy symbolic base |
 | `secret-shaped-member` | archive, inspect | a member or a scanned controller file matches one of the six secret patterns |

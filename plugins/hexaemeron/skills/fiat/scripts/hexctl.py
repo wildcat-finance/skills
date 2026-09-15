@@ -8,8 +8,10 @@ command appends a ledger entry, so `verify` can prove the run history was not
 edited after the fact.
 
 Phase order is fixed. Globally: study -> runbook -> steps -> integrate -> done.
-Within each step: implement -> audit -> prose -> push. Step branches chain off
-one another and their pull requests stack; nothing merges while the steps run.
+Within a source-bound step: inoculate -> implement -> audit -> prose -> push.
+Steps whose receipted runbook predates the inventory capture retain the earlier
+implement-first path. Step branches chain off one another and their pull
+requests stack; nothing merges while the steps run.
 The integrate phase merges the stack into the run branch in step order, then
 merges the run branch into the recorded base exactly once and closes any
 recorded task issue.
@@ -22,7 +24,10 @@ independent pull request rather than a run. The same read requires the issue's
 request body, so an outstanding item is either filed as its own issue, pointed
 at the issue that already carries it, or refused with a stated reason.
 `issue-check` also binds a candidate's title and labels to the repository's
-four issue queues before anything is filed. At integration, every `filed`
+four issue queues before anything is filed, and refuses a `framework-N` whose
+number another issue already holds, open or closed, because the shorthand that
+cites these issues in prose has to resolve to one of them. At integration,
+every `filed`
 carryover reference into wildcat-finance/skills is opened and replayed against
 that same publication contract; a URL alone is not a filing receipt.
 
@@ -46,12 +51,15 @@ import json
 import os
 import re
 import selectors
+import shlex
 import shutil
+import signal
 import stat
 import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unicodedata
 import urllib.parse
@@ -128,7 +136,7 @@ STATUS_BLOCK_END = "<!-- status:end -->"
 
 # ``issue`` remains accepted only so runs created by older controllers can
 # advance directly into implementation without losing their ledger history.
-STEP_PHASES = ["issue", "implement", "audit", "prose", "push"]
+STEP_PHASES = ["issue", "inoculate", "implement", "audit", "prose", "push"]
 GLOBAL_PHASES = ["study", "runbook", "steps", "integrate", "done"]
 
 # Decorative only: the day each phase maps to in the plugin's naming conceit.
@@ -136,6 +144,7 @@ DAY = {
     "study": 1,
     "runbook": 2,
     "issue": 3,
+    "inoculate": 3,
     "implement": 4,
     "audit": 5,
     "prose": 6,
@@ -278,6 +287,9 @@ def now() -> str:
 
 SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
+# A study amendment's write-ahead marker carries one runbook rebind record per
+# effective runbook amendment, so the marker cap grows with the history cap.
+AMENDMENT_PENDING_BYTES_MAX = 65536 + AMENDMENT_HISTORY_MAX * 320
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
 # Two surfaces grow with work the count is not about, so each carries its own
@@ -432,6 +444,13 @@ OBSERVATION_CAPTURE_STATUSES = (
 OBSERVATION_REDACTION_STATUSES = ("passed", "failed", "unknown")
 OBSERVATION_REASON_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 _OBSERVATION_VALIDATOR = None
+# The names the study and runbook pointer rule reads from the bundled Hypomnema
+# checker, so the pointers it recognises cannot drift from the ones it resolves.
+LINK_GATE_INTERFACE = (
+    "LINK", "RUNBOOK", "suppressed", "_external", "_code_spans", "_within"
+)
+LINK_GATE_TARGET_BYTES_MAX = 256
+_LINK_GATE_CHECKER = None
 
 CHECKPOINT_SCHEMA = "fiat-controller-checkpoint/v1"
 CHECKPOINT_RESULT_SCHEMA = "fiat-controller-checkpoint-export/v1"
@@ -469,7 +488,14 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.51.1",
         "fiat-v5.52.1",
         "fiat-v5.53.1",
-    "fiat-v5.54.1",
+        "fiat-v5.54.1",
+        "fiat-v5.55.1",
+        "fiat-v5.56.1",
+        "fiat-v6.56.1",
+        "fiat-v6.57.1",
+        "fiat-v6.58.1",
+        "fiat-v6.59.1",
+        "fiat-v6.60.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -512,7 +538,237 @@ DESIGN_LOCK_KEYS = frozenset({"schema", "sha256", "candidate"})
 DESIGN_CONTRACT_KEYS = frozenset({"design_evidence"})
 DESIGN_TRANSITIONS_MAX = 502
 DESIGN_CONSUMED_MAX = 128
+KNOWN_FAILURE_INVENTORY_SCHEMA = "protasis-known-failure-inventory/v1"
+KNOWN_FAILURE_CAPTURE_SCHEMA = "protasis-known-failure-inventory-capture/v1"
+KNOWN_FAILURE_CAPTURE_KEYS = frozenset(
+    {
+        "schema",
+        "study_sha256",
+        "runbook_sha256",
+        "inventory_sha256",
+        "source_views",
+        "findings",
+        "no_known_findings",
+        "assignments",
+    }
+)
+KNOWN_FAILURE_SOURCE_VIEW_KEYS = frozenset(
+    {"id", "path", "source_sha256", "view_sha256"}
+)
+KNOWN_FAILURE_FINDING_KEYS = frozenset(
+    {
+        "id",
+        "source_ref",
+        "failure",
+        "guard_paths",
+        "test_command",
+        "report_format",
+        "report_file",
+        "expected_guard_verdict",
+        "green_command",
+        "consuming_step",
+    }
+)
+KNOWN_FAILURE_NO_FINDINGS_KEYS = frozenset(
+    {"source_views", "consuming_step", "surveyor_assertion"}
+)
+KNOWN_FAILURE_NO_FINDINGS_VIEW_KEYS = frozenset(
+    {"id", "source_sha256", "view_sha256"}
+)
+KNOWN_FAILURE_ASSIGNMENT_KEYS = frozenset({"finding_id", "step"})
+KNOWN_FAILURE_ID_RE = re.compile(r"^kf-[a-z0-9]+(?:-[a-z0-9]+)*$")
+KNOWN_FAILURE_MAX_FINDINGS = 128
+KNOWN_FAILURE_MAX_SOURCE_VIEWS = 128
+KNOWN_FAILURE_MAX_GUARD_PATHS = 4096
+GUARD_RESULT_SCHEMA = "fiat-guard-retention-result/v1"
+GUARD_RESULT_KEYS = frozenset(
+    {"schema", "finding_id", "retained_report", "manifest", "disposition"}
+)
+GUARD_RESULT_REFERENCE_KEYS = frozenset({"path", "sha256"})
+GUARD_MANIFEST_SCHEMA = "elenchus-guard-manifest/v1"
+GUARD_MANIFEST_KEYS = frozenset(
+    {
+        "schema",
+        "finding_id",
+        "consuming_step",
+        "controller_run_id",
+        "worktree_identity",
+        "capture",
+        "step_parent",
+        "guard_commit",
+        "changed_paths",
+        "guard_blobs",
+        "test_command",
+        "test_argv",
+        "report_format",
+        "report_file",
+        "retained_report",
+        "runner_exit",
+        "counters",
+        "verdict",
+    }
+)
+GUARD_WORKTREE_IDENTITY_KEYS = frozenset({"device", "inode"})
+GUARD_CAPTURE_KEYS = frozenset(
+    {"study_sha256", "runbook_sha256", "inventory_sha256"}
+)
+GUARD_BLOB_KEYS = frozenset(
+    {"path", "status", "mode", "oid", "bytes", "sha256"}
+)
+GUARD_RETAINED_REPORT_KEYS = frozenset({"path", "bytes", "sha256"})
+GUARD_COUNTER_KEYS = frozenset(
+    {"complete", "executed", "assertion_failures", "errors", "skipped"}
+)
+GUARD_REPORT_FORMATS = frozenset(
+    {"unittest-json-v1", "forge-junit-v1", "node-test-json-v1"}
+)
+GUARD_REPORT_PLACEHOLDER = "{report}"
+GUARD_REPORT_BYTES_MAX = 1024 * 1024
+GUARD_BLOB_BYTES_MAX = 2 * 1024 * 1024
+GUARD_BLOBS_BYTES_MAX = 16 * 1024 * 1024
+GUARD_MANIFEST_BYTES_MAX = 8 * 1024 * 1024
+GUARD_MANIFEST_DEPTH_MAX = 32
+GUARD_COMMAND_BYTES_MAX = 4096
+GUARD_COMMAND_ARGUMENTS_MAX = 16
+GUARD_RUNNER_TIMEOUT = 900
+GUARD_GIT_METADATA_BYTES_MAX = 8 * 1024 * 1024
+GUARD_TRACKED_FILE_BYTES_MAX = 256 * 1024 * 1024
+GUARD_TRACKED_BYTES_MAX = 2 * 1024 * 1024 * 1024
+GUARD_REPORT_DIRECTORY = "reports"
+GUARD_MANIFEST_DIRECTORY = "manifests"
+GUARD_PUBLICATION_SCHEMA = "elenchus-guard-publication/v1"
+GUARD_PUBLICATION_KEYS = frozenset(
+    {
+        "schema",
+        "finding_id",
+        "report_sha256",
+        "manifest_sha256",
+        "runner_exit",
+        "counters",
+    }
+)
+GUARD_PUBLICATION_BYTES_MAX = 4096
+INOCULATION_RECEIPT_SCHEMA = "fiat-known-failure-inoculation/v1"
+INOCULATION_RECEIPT_KEYS = frozenset(
+    {
+        "schema",
+        "step",
+        "study_sha256",
+        "runbook_sha256",
+        "inventory_sha256",
+        "step_parent",
+        "assigned_ids",
+        "source_views",
+        "no_known_findings",
+        "guard_manifests",
+    }
+)
+INOCULATION_MANIFEST_REFERENCE_KEYS = frozenset(
+    {"finding_id", "path", "sha256"}
+)
+NO_KNOWN_FINDINGS_SCHEMA = "fiat-no-known-findings/v1"
+NO_KNOWN_FINDINGS_KEYS = frozenset(
+    {
+        "schema",
+        "study_sha256",
+        "inventory_sha256",
+        "source_views",
+        "consuming_step",
+        "assertion",
+    }
+)
+NO_KNOWN_FINDINGS_ASSERTION = "no-known-findings-for-step"
+NO_KNOWN_FINDINGS_FILE = "no-known-findings.json"
+NO_KNOWN_FINDINGS_BYTES_MAX = 64 * 1024
+NO_KNOWN_TRANSACTION_FILE = "no-known-inoculation.pending.json"
+NO_KNOWN_TRANSACTION_SCHEMA = "fiat-no-known-inoculation-transaction/v1"
+NO_KNOWN_TRANSACTION_BYTES_MAX = 256 * 1024
+NO_KNOWN_TRANSACTION_KEYS = frozenset(
+    {
+        "schema",
+        "step",
+        "state_before_sha256",
+        "state_after_sha256",
+        "ledger_head",
+        "ledger_entry",
+        "receipt_sha256",
+        "boundary",
+        "boundary_sha256",
+        "no_known_text",
+        "no_known_sha256",
+        "receipt",
+    }
+)
+NO_KNOWN_BOUNDARY_KEYS = frozenset(
+    {
+        "worktree_identity",
+        "step_parent",
+        "branch",
+        "head",
+        "tip",
+        "tracked",
+        "audit",
+    }
+)
+NO_KNOWN_LEDGER_ENTRY_KEYS = frozenset(
+    {"ts", "event", "data", "prev", "state", "hash"}
+)
+RECOVERY_PROJECTION_SCHEMA = "fiat-known-failure-recovery/v1"
+RECOVERY_PROJECTION_KEYS = frozenset(
+    {
+        "schema",
+        "step",
+        "phase",
+        "study_sha256",
+        "runbook_sha256",
+        "inventory_sha256",
+        "step_parent",
+        "assigned_ids",
+        "completed_ids",
+        "remaining_ids",
+        "guard_manifests",
+        "final_green",
+        "no_known_findings",
+    }
+)
+RECOVERY_FINAL_GREEN_KEYS = frozenset(
+    {"completed_ids", "remaining_ids", "manifests", "suites"}
+)
+RECOVERY_SUITE_KEYS = frozenset({"check", "argv", "cwd", "exit"})
+RECOVERY_PHASES_AFTER_INOCULATE = frozenset(
+    {"implement", "audit", "prose", "push"}
+)
+RECOVERY_PHASES_AFTER_IMPLEMENT = frozenset({"audit", "prose", "push"})
+FINAL_GREEN_MANIFEST_SCHEMA = "fiat-final-green-manifest/v1"
+FINAL_GREEN_MANIFEST_KEYS = frozenset(
+    {
+        "schema",
+        "finding_id",
+        "consuming_step",
+        "controller_run_id",
+        "worktree_identity",
+        "capture",
+        "final_commit",
+        "green_command",
+        "green_argv",
+        "report_format",
+        "report_file",
+        "retained_report",
+        "runner_exit",
+        "counters",
+        "admission",
+    }
+)
+FINAL_GREEN_ADMISSION = "final-green"
+FINAL_GREEN_DIRECTORY = "final-green"
+FINAL_GREEN_REPORT_FORMATS = frozenset({"unittest-json-v1"})
+FINAL_GREEN_REPORT_FLAG = "--report"
+FINAL_GREEN_INTERPRETERS = frozenset({"python3"})
+FINAL_GREEN_SUITE_CHECKS = ("root-suite", "hexaemeron-suite")
+FINAL_GREEN_RUNNER_TIMEOUT = 5400
+FINAL_GREEN_RECEIPT_KEYS = frozenset({"final_commit", "manifests", "suites"})
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
+VERSION_EVOLUTION_RESOLUTION_SCHEMA = "fiat-version-resolution/v2"
 VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
 VERSION_RESOLUTIONS_MAX = 8
 VERSION_RESOLUTION_PENDING_BYTES_MAX = 256 * 1024
@@ -557,6 +813,8 @@ CHECKPOINT_IDENTITY_TEXT_BYTES_MAX = 128
 CHECKPOINT_ARCHIVE_SCHEMA = "fiat-checkpoint-archive/v1"
 CHECKPOINT_ARCHIVE_EXPORT_SCHEMA = "fiat-checkpoint-archive-export/v1"
 CHECKPOINT_ARCHIVE_PROOF_SCHEMA = "fiat-checkpoint-signature-proof/v1"
+CHECKPOINT_ARCHIVE_COAUTHOR_TRAILER = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
+CHECKPOINT_ARCHIVE_ORIGIN_TRAILER = "Wildcat-Origin: shoggoth"
 CHECKPOINT_ARCHIVE_STORE_DIR = "checkpoints"
 CHECKPOINT_ARCHIVE_FILE = "checkpoint.zip"
 CHECKPOINT_ARCHIVE_SIDECAR_FILE = "checkpoint.zip.sha256"
@@ -1901,10 +2159,14 @@ def validate_version_resolution_shape(value, path: str) -> dict:
     """Validate one closed append-only integrate-time resolution receipt."""
     if not isinstance(value, dict):
         _state_resolution_fault(path, "must be an object")
-    if set(value) != VERSION_RESOLUTION_KEYS:
+    recovery = value.get("schema") == VERSION_EVOLUTION_RESOLUTION_SCHEMA
+    expected = VERSION_RESOLUTION_KEYS | ({"evolution_recovery"} if recovery else set())
+    if set(value) != expected:
         _state_resolution_fault(path, "has an unsupported field set")
-    if value.get("schema") != VERSION_RESOLUTION_SCHEMA:
+    if value.get("schema") not in (VERSION_RESOLUTION_SCHEMA, VERSION_EVOLUTION_RESOLUTION_SCHEMA):
         _state_resolution_fault(f"{path}.schema", "is not supported")
+    if recovery:
+        validate_evolution_recovery(value["evolution_recovery"], value["base_commit"], value["head_commit"])
     for name in ("runbook_sha256", "relations_sha256"):
         digest = value.get(name)
         if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
@@ -1972,7 +2234,7 @@ def validate_version_resolution_shape(value, path: str) -> dict:
             labels["resolved_version"],
         )
         if (
-            base[0] != anchor[0]
+            (base[0] < anchor[0] if recovery else base[0] != anchor[0])
             or base[2] != anchor[2]
             or base[1] < anchor[1]
             or resolved != (base[0], base[1] + 1, base[2])
@@ -2204,11 +2466,15 @@ def load_amendment_pending(base_dir: str, subject: str) -> dict | None:
         die(f"{subject} amendment pending record is not a regular file", 1)
     try:
         with open(path, "rb") as handle:
-            raw = handle.read(65537)
+            raw = handle.read(AMENDMENT_PENDING_BYTES_MAX + 1)
     except OSError as exc:
         die(f"{subject} amendment pending record cannot be read: {exc}", 1)
-    if len(raw) > 65536:
-        die(f"{subject} amendment pending record exceeds 65536-byte cap", 1)
+    if len(raw) > AMENDMENT_PENDING_BYTES_MAX:
+        die(
+            f"{subject} amendment pending record exceeds "
+            f"{AMENDMENT_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     try:
         value = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
@@ -2264,13 +2530,21 @@ def write_amendment_pending(base_dir: str, subject: str, value: dict) -> None:
     root = state_root(base_dir)
     path = amendment_pending_path(base_dir, subject)
     value = {**value, "subject": subject}
+    encoded = json.dumps(value, sort_keys=True) + "\n"
+    if len(encoded.encode("utf-8")) > AMENDMENT_PENDING_BYTES_MAX:
+        # Refuse before the marker, the artefact or the ledger is touched:
+        # a marker the reader cannot load would leave the run unrecoverable.
+        die(
+            f"{subject} amendment pending record exceeds "
+            f"{AMENDMENT_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     descriptor, temporary = tempfile.mkstemp(
         prefix=f".{subject}-amendment-pending-", dir=root
     )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, sort_keys=True)
-            handle.write("\n")
+            handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
@@ -2474,6 +2748,7 @@ def load_state(
     *,
     allow_pending_amendment: bool = False,
     allow_pending_resolution: bool = False,
+    allow_pending_no_known: bool = False,
 ) -> dict:
     path = state_path(base_dir)
     if not os.path.exists(path):
@@ -2505,10 +2780,14 @@ def load_state(
     state = validate_state_shape(state)
     amendments = pending_amendments(base_dir)
     resolution = load_version_resolution_pending(base_dir)
-    if amendments and resolution is not None:
+    no_known = load_no_known_transaction(base_dir, state)
+    pending_kinds = int(bool(amendments)) + int(resolution is not None) + int(
+        no_known is not None
+    )
+    if pending_kinds > 1:
         die(
-            "amendment and version-resolution transactions are both pending; "
-            "inspect both markers without removing either",
+            "multiple controller transactions are pending; inspect every "
+            "marker without removing any of them",
             1,
         )
     if amendments and not allow_pending_amendment:
@@ -2523,6 +2802,12 @@ def load_state(
             "version-resolution transaction is pending; rerun `hexctl done "
             "resolve-versions` to recover before continuing"
         )
+    if no_known is not None and not allow_pending_no_known:
+        die(
+            "no-known inoculation transaction is pending; rerun `hexctl done "
+            "inoculate` to recover before continuing"
+        )
+    _validate_no_known_completion_records(base_dir, state)
     return state
 
 
@@ -2541,6 +2826,7 @@ MUTATING = frozenset(
         "cmd_reset",
         "cmd_checkpoint_export",
         "cmd_checkpoint_archive",
+        "cmd_retain_guard",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -2608,6 +2894,15 @@ def held_lock(base_dir: str, command: str):
             yield
             return
         os.makedirs(root, exist_ok=True)
+        # This invocation found the root absent. It is not a claim to have
+        # created it: `makedirs(exist_ok=True)` is a no-op on a directory
+        # another process made a moment earlier, so two inits racing on a
+        # fresh checkout both set this. Exclusion does not depend on it. Only
+        # the flock winner reaches the teardown, and the teardown's own guard,
+        # no state file and nothing but the lock, is what makes removal safe.
+        root_was_absent = True
+    else:
+        root_was_absent = False
 
     path = lock_path(base_dir)
     try:
@@ -2618,6 +2913,16 @@ def held_lock(base_dir: str, command: str):
             | getattr(os, "O_CLOEXEC", 0)
             | getattr(os, "O_NOFOLLOW", 0),
             0o600,
+        )
+    except FileNotFoundError:
+        # The state root went away between the check above and this open. The
+        # teardown below removes a root it found empty, so a contender can
+        # arrive in that window. Saying the lock is unsafe would name the wrong
+        # cause: it is absent, and starting again finds or makes a new one.
+        die(
+            "the run state directory went away while this command was starting;"
+            " nothing was changed, so run it again",
+            1,
         )
     except OSError:
         die("run lock is not a safe regular file", 1)
@@ -2660,6 +2965,29 @@ def held_lock(base_dir: str, command: str):
     finally:
         if acquired:
             try:
+                # `held_lock` opens this lock under the *calling* checkout's
+                # state root. A
+                # run's own state goes to the worktree's, so every `init`
+                # started from a checkout without `.hexaemeron/` leaves this
+                # directory holding nothing but the lock, whether it routed a
+                # filed `0` or built a run. Nothing tracked ignores it there:
+                # the self-ignoring `.gitignore` is written into the worktree's
+                # root, not this one. So a leftover lock dirties `git status`
+                # and stops the next run at the clean-tree preflight, which is
+                # why this removes it rather than leaving a marker.
+                #
+                # The unlink happens while the lock is still held. A contender
+                # holding this inode cannot exist, one blocked on it dies at
+                # `flock` as before, and one that opens the path afterwards
+                # creates its own inode and is right to, because nothing here
+                # owns the run any more.
+                if root_was_absent and not os.path.exists(state_path(base_dir)):
+                    try:
+                        if os.listdir(root) == ["lock"]:
+                            os.unlink(path)
+                            os.rmdir(root)
+                    except OSError:
+                        pass
                 os.ftruncate(fd, 0)
                 os.fsync(fd)
                 fcntl.flock(fd, fcntl.LOCK_UN)
@@ -2804,9 +3132,10 @@ def amendment_block(state: dict) -> dict | None:
         return None
 
     current_study = study_receipt.get("sha256")
+    rebind_index = _runbook_rebind_index(study_amendments)
     for amendment in reversed(runbook_amendments or []):
         item = as_dict(amendment)
-        if item.get("study_sha256") != current_study:
+        if effective_study_sha256(item, None, index=rebind_index) != current_study:
             continue
         if step_number not in (item.get("steps_touched") or []):
             continue
@@ -3037,13 +3366,52 @@ def cmd_init(args) -> None:
     # The two network reads are the last pre-mutation checks, because every
     # cheaper refusal has already had its chance. The filing decision goes
     # first: whether this work earned a run at all precedes any question about
-    # the controller that would run it, and a `0` verdict must cost the operator
-    # nothing but the read. A run naming no issue reads no decision, and says so
+    # the controller that would run it, and a `0` verdict costs the operator
+    # the reads and nothing else. Since the provenance block, that is two
+    # reads rather than one: a `0` pays for a GraphQL request whose answer
+    # `routed_filing_directive` never carries, and can wait `GIT_TIMEOUT`
+    # twice. The reader builds the block unconditionally on purpose, because
+    # routing on the value inside it would put the decision about a `0` in two
+    # places, which the note at the end of `read_task_issue_contract` refuses
+    # (S3-R1-04). A run naming no issue reads no decision, and says so
     # rather than passing quietly for the same reason the carried-forward
     # heading is mandatory: an absent answer cannot be told apart from a
     # question nobody asked.
     if args.task_issue is not None:
         task_issue_contract = read_task_issue_contract(args.dir, args.task_issue)
+        if task_issue_contract["fiat_required"] == 0:
+            # The filer answered that this work does not need a run, so the
+            # answer is reported and nothing is built. This sits before the
+            # first mutation deliberately: the directive's claim that no state,
+            # worktree or branch exists is true because none has been made yet,
+            # not because something was cleaned up afterwards.
+            print(json.dumps(routed_filing_directive(task_issue_contract)))
+            sys.exit(0)
+        provenance = task_issue_contract.get("provenance")
+        if isinstance(provenance, dict):
+            window = filing_decision_window(
+                provenance, task_issue_contract.get("fiat_required")
+            )
+            if window["verdict"] == "refuse":
+                # The observation, and nothing after it. The refusal this
+                # delivery replaced ended by naming the edit that turned it
+                # off, and an agent told to start a run read that as the
+                # instruction. So this names what was seen and stops: no edit,
+                # no flag, no variable, and no instruction to wait, because a
+                # sentence about when the window clears is the same sentence
+                # with time in place of an edit.
+                die(
+                    f"task issue {task_issue_contract['repository']}#"
+                    f"{task_issue_contract['number']}: "
+                    f"{clean(window['observed'])}. No run state, worktree or "
+                    f"branch was created.",
+                    1,
+                )
+            # Beside the provenance block, not inside it. `provenance` records
+            # what was read, and its key set is held so no readable field can
+            # go missing unnoticed; the window is a judgement drawn from those
+            # fields, and filing it among them would blur the two.
+            task_issue_contract["filing_window"] = window
     else:
         task_issue_contract = {
             "issue": None,
@@ -3525,21 +3893,47 @@ def parse_version_relation_source(text: str) -> dict | None:
     }
 
 
+def _native_git_executable() -> str:
+    """Resolve Git only from the platform's fixed default executable path."""
+    executable = shutil.which("git", path=os.defpath)
+    if executable is None or not os.path.isabs(executable):
+        die("native Git executable cannot be resolved from the system path")
+    return executable
+
+
 def _native_relation_environment() -> dict[str, str]:
     """A Git environment that cannot substitute for the repository relation."""
     environment = {
-        name: value
-        for name, value in os.environ.items()
-        if not name.startswith("GIT_")
+        "PATH": os.defpath,
+        "LANG": "C",
+        "LC_ALL": "C",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_SYSTEM": os.devnull,
+        "GIT_NO_LAZY_FETCH": "1",
+        "GIT_TERMINAL_PROMPT": "0",
     }
-    environment.update(
-        {
-            "GIT_CONFIG_GLOBAL": os.devnull,
-            "GIT_CONFIG_NOSYSTEM": "1",
-            "GIT_CONFIG_SYSTEM": os.devnull,
-            "GIT_NO_LAZY_FETCH": "1",
-            "GIT_TERMINAL_PROMPT": "0",
-        }
+    ssh_agent = os.environ.get("SSH_AUTH_SOCK")
+    if ssh_agent:
+        environment["SSH_AUTH_SOCK"] = ssh_agent
+    return environment
+
+
+def _native_signature_environment() -> dict[str, str]:
+    """Extend native Git only with explicit signature trust-store inputs."""
+    environment = _native_relation_environment()
+    for name in ("HOME", "GNUPGHOME"):
+        value = os.environ.get(name)
+        if value:
+            environment[name] = value
+    directories = [
+        *os.defpath.split(os.pathsep),
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+        "/opt/local/bin",
+    ]
+    environment["PATH"] = os.pathsep.join(
+        dict.fromkeys(path for path in directories if os.path.isabs(path))
     )
     return environment
 
@@ -3550,10 +3944,23 @@ def _native_relation_git(
     """Read native local objects without inherited Git substitution state."""
     return bounded_tool(
         base_dir,
-        "git",
+        _native_git_executable(),
         ["--no-replace-objects", *argv],
         refusal,
         environment=_native_relation_environment(),
+    )
+
+
+def _native_signature_git(
+    base_dir: str, argv: list[str], refusal: str
+) -> bytes:
+    """Verify a signature with pinned Git and a fixed verifier-only PATH."""
+    return bounded_tool(
+        base_dir,
+        _native_git_executable(),
+        ["--no-replace-objects", *argv],
+        refusal,
+        environment=_native_signature_environment(),
     )
 
 
@@ -3572,7 +3979,7 @@ def _native_ancestry_status(
     descendant = require_full_sha(descendant, "waiting step observed tip")
     status, _output, failure = bounded_probe(
         base_dir,
-        "git",
+        _native_git_executable(),
         [
             "--no-replace-objects",
             "merge-base",
@@ -4438,6 +4845,8 @@ def resolve_version_relation_target(
     base_commit: str,
     head_commit: str,
     anchor: dict,
+    *,
+    allow_evolution: bool = False,
 ) -> dict:
     """Resolve and prove one target against exact base and candidate objects."""
     anchor_snapshot = _version_target_snapshot(
@@ -4453,6 +4862,14 @@ def resolve_version_relation_target(
     _require_history_prefix(
         anchor_snapshot["rows"], base_snapshot["rows"], "version resolution base"
     )
+    original_anchor = anchor
+    if allow_evolution and base_snapshot["parts"][0] > anchor["evolution"]:
+        if base_snapshot["parts"][2] != anchor["epoch"]:
+            die("evolution recovery cannot cross an epoch change")
+        # Keep the original evidence intact. Only the candidate comparison uses
+        # the exact base frontier after replaying the complete original prefix.
+        anchor = capture_version_relation_target(base_dir, base_commit, anchor)
+        anchor_snapshot = base_snapshot
     compatibility_fault = version_compatibility_fault(anchor, base_snapshot)
     if compatibility_fault:
         die(
@@ -4506,7 +4923,7 @@ def resolve_version_relation_target(
         "skill": anchor["skill"],
         "ledger": anchor["ledger"],
         "relation": anchor["relation"],
-        "anchor_version": anchor["anchor_version"],
+        "anchor_version": original_anchor["anchor_version"],
         "base_version": base_snapshot["current"],
         "resolved_version": resolved_version,
         "base_ledger_sha256": base_snapshot["ledger_sha256"],
@@ -4686,12 +5103,27 @@ def _resolution_without_timestamp(receipt: dict) -> dict:
     return {key: value for key, value in receipt.items() if key != "ts"}
 
 
+def validate_evolution_recovery(value, base_commit: str, head_commit: str) -> dict:
+    """Check the explicit operator declaration for one exact composition."""
+    if not isinstance(value, dict) or set(value) != {"authority", "reason", "base_commit", "head_commit"}:
+        die("evolution recovery has an unsupported field set")
+    for field in ("authority", "reason"):
+        text = value[field]
+        if not isinstance(text, str) or not text.strip() or len(text) > 2048 or any(ord(c) < 32 or ord(c) == 127 for c in text):
+            die(f"evolution recovery {field} must be bounded non-empty single-line text")
+    for field, expected in (("base_commit", base_commit), ("head_commit", head_commit)):
+        if require_full_sha(value[field], f"evolution recovery {field}") != expected:
+            die(f"evolution recovery {field} is stale for this composition")
+    return value
+
+
 def build_version_resolution(
     base_dir: str,
     state: dict,
     *,
     exact_base: str | None = None,
     exact_head: str | None = None,
+    evolution_recovery: dict | None = None,
 ) -> dict:
     """Build one atomic resolution from stable refs or exact terminal parents."""
     runbook = receipted_source(base_dir, state, "runbook")
@@ -4763,6 +5195,12 @@ def build_version_resolution(
             head_commit,
             relations,
         )
+    if evolution_recovery is None:
+        history = integrate.get("version_resolutions") or []
+        if history:
+            evolution_recovery = history[-1].get("evolution_recovery")
+    if evolution_recovery is not None:
+        validate_evolution_recovery(evolution_recovery, base_commit, head_commit)
     targets = [
         resolve_version_relation_target(
             base_dir,
@@ -4770,9 +5208,15 @@ def build_version_resolution(
             base_commit,
             head_commit,
             target,
+            **({"allow_evolution": True} if evolution_recovery is not None else {}),
         )
         for target in relations["targets"]
     ]
+    if evolution_recovery is not None and not any(
+        _label_parts(t["base_version"], t["skill"])[0]
+        > _label_parts(t["anchor_version"], t["skill"])[0] for t in targets
+    ):
+        die("evolution recovery requires an actual evolution advance")
     if exact_base is None:
         final_head = remote_branch_tip(
             base_dir,
@@ -4801,6 +5245,9 @@ def build_version_resolution(
         "targets": sorted(targets, key=lambda target: target["skill"]),
         "ts": now(),
     }
+    if evolution_recovery is not None:
+        receipt["schema"] = VERSION_EVOLUTION_RESOLUTION_SCHEMA
+        receipt["evolution_recovery"] = dict(evolution_recovery)
     validate_version_resolution_shape(receipt, "built.version_resolution")
     return receipt
 
@@ -5184,6 +5631,23 @@ def stale_body_report(bodies: list[dict]) -> dict:
     }
 
 
+def fiat_required_declarations(text: str) -> list[str]:
+    """Every `Fiat-Required` value one body declares, in the order declared.
+
+    Extracted so a reader that needs the *shape* of a declaration -- none, one,
+    or several -- asks the parser that reads the value rather than counting the
+    lines a second way. `admitted_issue_body` and `rest_filing_stamps` were
+    extracted for the same reason: two readers of one response that do not
+    share a rule end up disagreeing about it (S3-R4-04).
+    """
+    declarations = []
+    for physical in _unfenced_markdown_lines(text):
+        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
+        if match is not None:
+            declarations.append(match.group("value"))
+    return declarations
+
+
 def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     """The filing decision one issue body declares, and every fault in it.
 
@@ -5191,11 +5655,7 @@ def fiat_required_value(text: str, label: str) -> tuple[str | None, list[str]]:
     decide anything. More than one declaration is a fault rather than a
     precedence rule: an issue carrying both answers has made no decision.
     """
-    declarations = []
-    for physical in _unfenced_markdown_lines(text):
-        match = FIAT_REQUIRED_LINE_RE.match(physical.rstrip("\r\n"))
-        if match is not None:
-            declarations.append(match.group("value"))
+    declarations = fiat_required_declarations(text)
     if not declarations:
         return None, [
             f"{label} declares no `{FIAT_REQUIRED_KEY}` line. Add exactly one "
@@ -5353,6 +5813,134 @@ def issue_publication_from_payload(
     return issue_publication_contract_faults(title, labels, body, label)
 
 
+def admitted_issue_body(
+    payload: dict, repository: str, number: str, label: str
+) -> str:
+    """The issue body a filing-decision reader is allowed to read.
+
+    One response, two readers, and they did not agree about it. `init`
+    refuses a body that is not text in the transport shape and dies on one
+    above the cap; `filing_decision_divergence` substituted `""` for the
+    first and parsed the second, so `verify --check-filing-decision` reported
+    the SHA-256 of the empty string as the issue's current body digest under
+    "the filing decision has moved since this run read it" (S3-R3-01). Both
+    builders of the block go through here for the same reason
+    `rest_filing_stamps` exists.
+
+    A null body is not that case. GitHub sends it for an issue whose body is
+    empty, so `""` is what the response says rather than a substitution for
+    what it did not.
+    """
+    body = payload.get("body")
+    if body is None:
+        body = ""
+    if not isinstance(body, str):
+        github_unreachable(
+            label,
+            f"repos/{repository}/issues/{number}",
+            "returned a body that is not text",
+        )
+    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
+        die(
+            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
+            f"reader will parse, so its filing decisions went unread"
+        )
+    return body
+
+
+def framework_number_holders(
+    base_dir: str, repository: str, number: str, label: str
+) -> list[dict]:
+    """Every issue whose title already claims this exact `framework-N`.
+
+    ADR-009 left who assigns `N` to #370, which closed without answering, so
+    nothing allocates the number and nothing refuses a second claim on it. The
+    shorthand is how this repository refers to these issues in prose, and it is
+    far from the issue number, so a duplicate does not merely look untidy: it
+    makes the reference ambiguous and has already sent work to the wrong topic.
+
+    One bounded search read, because the qualifier answers the exact question
+    and returns one object. `in:title` tokenises, so `framework-11` also comes
+    back for `framework-110`; every row is therefore re-matched against
+    `FRAMEWORK_ISSUE_TITLE_RE` and kept only when its parsed number is equal.
+    Closed issues count. A number freed by closing one issue is still the
+    number the prose in the tree cites, and #1036 is cited by URL precisely
+    because its shorthand is not unique.
+
+    Rows come back sorted by issue number so a refusal reads the same twice.
+    """
+    query = "+".join(
+        (
+            f"repo:{repository}",
+            "is:issue",
+            "in:title",
+            f"framework-{number}",
+        )
+    )
+    path = f"search/issues?q={query}&per_page=100"
+    payload = github_rest(base_dir, path, label)
+    items = payload.get("items")
+    if not isinstance(items, list):
+        github_unreachable(label, path, "returned items that are not an array")
+    if payload.get("incomplete_results") is True:
+        github_unreachable(label, path, "returned an incomplete search result")
+    holders = []
+    for index, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            github_unreachable(label, path, f"returned result {index} as not one object")
+        title = item.get("title")
+        held = item.get("number")
+        if not isinstance(title, str) or not isinstance(held, int):
+            github_unreachable(
+                label, path, f"returned result {index} without a title and number"
+            )
+        match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+        if match is None or match.group("number") != number:
+            continue
+        state = item.get("state")
+        holders.append(
+            {
+                "number": held,
+                "state": state if isinstance(state, str) else "unknown",
+                "title": title,
+            }
+        )
+    return sorted(holders, key=lambda row: row["number"])
+
+
+def framework_number_faults(
+    base_dir: str, repository: str, title: str, label: str, own_number: int | None
+) -> list[str]:
+    """Refuse a `framework-N` another issue already holds.
+
+    The check runs only once the title has passed its shape rule, because an
+    ill-formed title carries no number to be unique about. `own_number` is the
+    issue being checked when one has already been filed; it holds its own
+    number and is not its own duplicate.
+
+    A transport that cannot answer refuses inside ``github_rest`` rather than
+    here, so an unreachable search never reads as a clean number.
+    """
+    match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+    if match is None:
+        return []
+    number = match.group("number")
+    others = [
+        row
+        for row in framework_number_holders(base_dir, repository, number, label)
+        if row["number"] != own_number
+    ]
+    if not others:
+        return []
+    held = ", ".join(f"#{row['number']} ({row['state']})" for row in others)
+    carries = "already holds" if len(others) == 1 else "already hold"
+    return [
+        f"{label} claims framework-{number}, which {held} {carries}; "
+        f"the shorthand has to resolve to one issue, so pick a number no "
+        f"issue in {repository} carries"
+    ]
+
+
 def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     """The filing decisions one GitHub issue carries, read over REST.
 
@@ -5393,44 +5981,565 @@ def read_task_issue_contract(base_dir: str, issue_url: str) -> dict:
     payload = github_rest(
         base_dir, f"repos/{repository}/issues/{number}", label
     )
-    body = payload.get("body")
-    if body is None:
-        body = ""
-    if not isinstance(body, str):
-        github_unreachable(
-            label,
-            f"repos/{repository}/issues/{number}",
-            "returned a body that is not text",
-        )
-    if len(body.encode("utf-8")) > ISSUE_BODY_BYTES_MAX:
-        die(
-            f"{label} has a body above the {ISSUE_BODY_BYTES_MAX}-byte cap this "
-            f"reader will parse, so its filing decisions went unread"
-        )
+    body = admitted_issue_body(payload, repository, number, label)
     record, faults = issue_contract_faults(body, label)
     if faults:
+        # The faults quote values copied out of the issue body, which is
+        # somebody else's text on its way to an operator's terminal.
+        # `filing_decision_divergence` cleans and bounds the identical
+        # sentence before it reaches stdout; this refusal, which is where the
+        # sentence has always gone, did neither, so an escape sequence on a
+        # `Fiat-Required` line rendered raw and a 250000-character value
+        # printed in full (S3-R6-02).
+        detail = bounded_issue_fault_detail(faults)
         die(
             "the filing contract is not satisfied: "
-            + "; ".join(faults)
+            + detail
             + f". Edit {issue_url} so it declares one `{FIAT_REQUIRED_KEY}` "
             f"line and one `{CARRYOVER_INFO}` block, then start the run again"
         )
-    if record["fiat_required"] == 0:
-        die(
-            f"{label} declares `{FIAT_REQUIRED_KEY}: 0`: the filer decided this "
-            f"work does not need a Fiat run. No run state, worktree or branch "
-            f"was created. Do the work as one independent pull request, point "
-            f"the issue at that pull request, and close it there. If that "
-            f"decision was wrong, change the issue to "
-            f"`{FIAT_REQUIRED_KEY}: 1` and say why in the issue before "
-            f"starting a run.",
-            1,
-        )
+    # A filed `0` is not a fault, so it does not refuse here. This reader
+    # reports what the issue decided and `cmd_init` routes it, which keeps the
+    # decision about what to do with a `0` in one place instead of two.
+    # `adr/route-a-filed-zero-as-an-answer` records why it stopped being an
+    # error, and why the bytes that used to end this refusal are gone.
+    #
+    # The provenance block answers "why did this run start" from the run's own
+    # evidence. `created_at` and `updated_at` come out of the response already
+    # read, so the REST half costs nothing; the GraphQL half is the one extra
+    # request this command makes and it is never required.
+    provenance = {
+        **rest_filing_stamps(payload),
+        **github_issue_edit_provenance(base_dir, repository, number),
+    }
     return {
         "issue": issue_url,
         "repository": repository,
         "number": number,
         **record,
+        "provenance": provenance,
+    }
+
+
+ISSUE_EDITS_QUERY = (
+    "query($owner:String!,$name:String!,$number:Int!){"
+    "repository(owner:$owner,name:$name){"
+    "issue(number:$number){userContentEdits(first:20){"
+    "totalCount nodes{editedAt diff}}}}}"
+)
+"""The one GraphQL request this controller makes.
+
+`userContentEdits` is the only surface that says whether an issue's *body*
+changed, as opposed to `updated_at`, which a comment or a label also moves.
+`diff` is misnamed: it returns the whole body at that revision, newest first,
+including the revision the issue was created with. That is why the reader below
+reduces it to a value and a digest and never keeps it.
+"""
+
+ISSUE_EDIT_NODES_MAX = 20
+"""Matched to the `first:` argument, so a response claiming more is refused
+rather than silently truncated into a smaller edit count than the issue has."""
+
+UNREADABLE_DECISION_DETAIL_MAX = 200
+"""How much of an unreadable-decision fault reaches stdout.
+
+The fault copies a value out of the issue body, and a body line runs to
+`ISSUE_BODY_BYTES_MAX`. Bounded here so a diagnostic cannot be made to print
+a quarter of a megabyte of somebody else's text."""
+
+ISSUE_FAULT_DETAIL_MAX = 2000
+"""How much of the filing contract's refusal reaches stderr.
+
+The same bound for the same reason, at the destination the fault sentence has
+always had. Larger than `UNREADABLE_DECISION_DETAIL_MAX` because a refusal
+joins every fault the body carries rather than the filing one alone: the
+longest reader-authored set `issue_contract_faults` produces is 399 characters,
+so nothing a filer needs to read is cut (S3-R6-02)."""
+
+
+def bounded_issue_fault_detail(
+    faults: list[str], limit: int = ISSUE_FAULT_DETAIL_MAX
+) -> str:
+    """Every fault one issue body earned, fit for an operator's stream.
+
+    The faults quote values copied out of the body, so this is somebody
+    else's text on its way to a terminal, and one `clean` and one bound are
+    what the destination owes it.
+
+    Extracted for the reason `admitted_issue_body`, `rest_filing_stamps` and
+    `fiat_required_declarations` were: each destination carried its own copy
+    of the rule and they did not agree. Round 6 read the sentence as having
+    two destinations, repaired the one that lacked the rule, and left two more
+    it had not enumerated -- `cmd_issue_check`'s fault printer and the filed
+    carryover refusal in `done integrate` -- both of which reached stderr raw
+    and unbounded, 2 escape sequences and a BEL byte for byte and 250156 bytes
+    for a 250000-character value. One function now, so a fifth destination
+    inherits the rule rather than restating it (S3-R7-03).
+    """
+    detail = clean("; ".join(faults))
+    if len(detail) > limit:
+        detail = detail[:limit] + "..."
+    return detail
+
+FILING_PROVENANCE_UNKNOWN = "unknown"
+"""What the reader records for a field it could not read at all.
+
+`unknown_filing_provenance` writes this instead of a value or an absence, so a
+receipt can tell "no edit history" from "could not look". Every reader of a
+recorded provenance block owes that distinction back: comparing the sentinel as
+though it were a value throws it away in both directions (S3-R2-01).
+"""
+
+
+def rest_filing_stamps(payload: dict) -> dict:
+    """The two provenance fields the REST response already carries.
+
+    Both builders of a provenance block go through here so the recorded and the
+    re-read halves normalise identically. They did not: `init` coerced a
+    non-string `updated_at` to `None` and the divergence reader kept it, so the
+    two sides of one comparison disagreed about the same response (S3-R2-01).
+
+    Agreeing with each other was not enough. A stamp the response did not
+    carry as text is a stamp this reader did not read, and coercing it to
+    `None` handed `filing_decision_divergence` an absence to compare as though
+    it were a value: a run whose `init` read a non-string `updated_at`
+    reported "the issue has been touched since this run read it" over an issue
+    nothing had touched (S3-R4-02). `FILING_PROVENANCE_UNKNOWN` is what says
+    "could not read", so it is what an unread stamp gets, and the comparison
+    already declines to read that as data.
+    """
+    stamps = {}
+    for field in ("created_at", "updated_at"):
+        value = payload.get(field)
+        stamps[field] = (
+            value if isinstance(value, str) else FILING_PROVENANCE_UNKNOWN
+        )
+    return stamps
+
+
+def unknown_filing_provenance(reason: str) -> dict:
+    """Every readable field as `unknown`, with the reason it could not be read.
+
+    An absent field cannot be told apart from a question nobody asked, which is
+    the rule ADR-067 already applies to the nulls it records. So a transport
+    that failed says so in every field it would have filled, and the caller can
+    tell "no edit history" from "could not look".
+    """
+    return {
+        "edit_count": FILING_PROVENANCE_UNKNOWN,
+        "last_edited_at": FILING_PROVENANCE_UNKNOWN,
+        "prior_fiat_required": FILING_PROVENANCE_UNKNOWN,
+        "reason": reason,
+    }
+
+
+def github_issue_edit_provenance(
+    base_dir: str, repository: str, number: str
+) -> dict:
+    """Reduce one issue's edit history to what the filing decision needs.
+
+    Three values leave this function: how many revisions the body has, when the
+    most recent one landed, and what the `Fiat-Required` line said in the
+    revision before it. Everything else, including every byte of every prior
+    body, is dropped here. Prior bodies are somebody else's text and there is
+    no receipt, ledger or stream they belong in.
+
+    The request is never required. An environment that reads the issue over
+    REST may still not reach GraphQL, and a revision's `diff` may come back
+    null. Why it is withheld is not established: on 2026-09-13 `diff` was
+    readable on a public repository with read access alone, against the
+    write-access reading the study and this docstring carried (S4-R1-03).
+    Every failure returns `unknown` with its reason rather than a value that
+    reads like an answer.
+    """
+    owner, _, name = repository.partition("/")
+    if not owner or not name or not number.isdigit():
+        return unknown_filing_provenance(
+            "the issue identity is not one GraphQL can be asked about"
+        )
+    returncode, output, failure = bounded_probe(
+        base_dir,
+        "gh",
+        [
+            "api",
+            "graphql",
+            "-f",
+            f"query={ISSUE_EDITS_QUERY}",
+            "-F",
+            f"owner={owner}",
+            "-F",
+            f"name={name}",
+            "-F",
+            f"number={number}",
+        ],
+    )
+    if failure == "start":
+        return unknown_filing_provenance("could not start the gh client")
+    if failure == "timeout":
+        return unknown_filing_provenance(
+            f"the GraphQL read timed out after {GIT_TIMEOUT} seconds"
+        )
+    if failure == "output-cap":
+        return unknown_filing_provenance(
+            f"the GraphQL response exceeded the {GIT_OUTPUT_MAX}-byte cap"
+        )
+    if returncode != 0:
+        return unknown_filing_provenance(
+            f"the GraphQL read failed with exit {returncode}"
+        )
+    try:
+        payload = json.loads(output.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError, RecursionError):
+        # `RecursionError` is not a `ValueError`, so a deeply nested array
+        # walked the caller off the interpreter's stack instead of landing in
+        # the `unknown` every other malformed response produces. 400000 bytes
+        # of `[` reaches it, well inside the GIT_OUTPUT_MAX cap, so the cap is
+        # not the bound here and the parser has to say so itself (S3-R1-02).
+        return unknown_filing_provenance(
+            "the GraphQL response was not UTF-8 JSON"
+        )
+    if as_dict(payload).get("errors"):
+        return unknown_filing_provenance("the GraphQL response carried errors")
+    edits = as_dict(
+        as_dict(as_dict(as_dict(payload).get("data")).get("repository")).get("issue")
+    ).get("userContentEdits")
+    edits = as_dict(edits)
+    total = edits.get("totalCount")
+    nodes = edits.get("nodes")
+    # `bool` is a subclass of `int`, so a `totalCount` of `true` passed as a
+    # count, compared `False` against `ISSUE_EDIT_NODES_MAX`, and recorded
+    # `"edit_count": true`. It then compared equal to a real count of 1 in
+    # `filing_decision_divergence`, because `True == 1`, so a moved edit count
+    # reported no divergence at all. Rejected here rather than coerced, which
+    # is what the boundary is for (S3-R1-03).
+    if (
+        not isinstance(total, int)
+        or isinstance(total, bool)
+        or not isinstance(nodes, list)
+    ):
+        return unknown_filing_provenance(
+            "the GraphQL response did not carry an edit history"
+        )
+    if total > ISSUE_EDIT_NODES_MAX:
+        return unknown_filing_provenance(
+            f"the issue has {total} revisions, above the "
+            f"{ISSUE_EDIT_NODES_MAX} this reader requests"
+        )
+    # `totalCount` and `nodes` were validated separately and never against
+    # each other, so one response could answer the same question twice and be
+    # believed both times. A response claiming 3 revisions and carrying none
+    # recorded `edit_count: 3` beside `last_edited_at: None`, and that `None`
+    # is the "read, and there is no last-edit time" of the note below, which
+    # the response did not say: the comparison then read it as a value and
+    # printed "the filing decision has moved since this run read it" on
+    # `last_edited_at: recorded None, now <time>` over a body whose digest,
+    # decision, `updated_at` and `edit_count` were all identical (S3-R4-03).
+    # `first:` equals `ISSUE_EDIT_NODES_MAX` and a larger `totalCount` is
+    # already refused above, so a well-formed response carries exactly `total`
+    # nodes. Anything else is one read the two halves disagree about, and a
+    # count no node list supports is not a count this reader read. This also
+    # refuses a negative `totalCount`, which passed both checks above and
+    # recorded `edit_count: -3`, because no list length can equal it.
+    if len(nodes) != total:
+        return unknown_filing_provenance(
+            f"the GraphQL response claimed {total} revisions and carried "
+            f"{len(nodes)}, so its edit history was not read"
+        )
+    revisions = [as_dict(node) for node in nodes]
+    # Three states, not two. A response carrying no revision at all was read
+    # and says there is no last-edit time, so that is `None`. A newest node
+    # whose `editedAt` is absent or is not text was not read, and recording
+    # `None` for it put an absence into the one compared field that carries
+    # the strong headline: an issue whose body never moved reported
+    # "the filing decision has moved since this run read it" on
+    # `last_edited_at: recorded None, now <time>` alone (S3-R4-01). The
+    # sibling field on the same node, `diff`, already takes the sentinel when
+    # it is withheld; this one did not.
+    last_edited = None
+    reasons: list[str] = []
+    if revisions:
+        edited = revisions[0].get("editedAt")
+        if isinstance(edited, str):
+            last_edited = edited
+        else:
+            last_edited = FILING_PROVENANCE_UNKNOWN
+            reasons.append(
+                "the newest revision carried no readable `editedAt`"
+            )
+    prior = FILING_PROVENANCE_UNKNOWN
+    if len(revisions) < 2:
+        prior = None
+        # Counted off the nodes actually carried, not off `totalCount`. The
+        # two are validated separately and a response where they disagree
+        # wrote `edit_count: 4` beside "the body has one revision", which is a
+        # revision count the run never read (S3-R2-03). An empty node list
+        # said the same thing about a body it had seen nothing of.
+        reasons.append(
+            f"the response carried {len(revisions)} "
+            f"{'revision' if len(revisions) == 1 else 'revisions'}, so it "
+            "carries no prior value"
+        )
+    else:
+        body = revisions[1].get("diff")
+        if not isinstance(body, str):
+            # What was read, and nothing about why. This sentence used to
+            # attribute a null `diff` to write access on the repository, a
+            # cause the reader never observed and one measured false on a
+            # public repository with read access alone (S4-R1-03).
+            reasons.append(
+                "the prior revision's `diff` was absent or not text, so no "
+                "prior body was read"
+            )
+        else:
+            # The only thing taken from a prior body, before it goes out of
+            # scope. `fiat_required_value` reads outside fenced code, so a
+            # prior body quoting the line decides nothing here either.
+            #
+            # Three readings, not one. That function returns `None` for a body
+            # declaring no line, for one declaring the line more than once,
+            # and for one declaring a value that is neither 0 nor 1, and all
+            # three recorded `None` under "the prior revision declared no
+            # `Fiat-Required` line". The first was read and has no prior
+            # value, which is what `None` says here; the other two are bodies
+            # this reader could not read a decision out of, and naming them as
+            # an absence is the reading S3-R4-01 removed from `last_edited_at`
+            # and S3-R4-02 from the REST stamps, reached through the prior
+            # revision (S3-R4-04). The shape comes from the same parser rather
+            # than from a second count, and the reason names it without
+            # quoting the body: `init`'s own fault copies the declared value
+            # out, and a prior body reaches no recorded surface.
+            value, _faults = fiat_required_value(body, "a prior revision")
+            declarations = fiat_required_declarations(body)
+            if value is not None:
+                prior = int(value)
+            elif not declarations:
+                prior = None
+                reasons.append(
+                    "the prior revision declared no `Fiat-Required` line"
+                )
+            elif len(declarations) > 1:
+                reasons.append(
+                    f"the prior revision declared `Fiat-Required` "
+                    f"{len(declarations)} times, so it made no decision"
+                )
+            else:
+                reasons.append(
+                    "the prior revision declared a `Fiat-Required` value that "
+                    "is neither 0 nor 1"
+                )
+    return {
+        "edit_count": total,
+        "last_edited_at": last_edited,
+        "prior_fiat_required": prior,
+        # A list because one block can now carry two unread fields, and the
+        # single string this used to be could only explain whichever was
+        # written last.
+        "reason": "; ".join(reasons) if reasons else None,
+    }
+
+
+FILING_DECISION_WINDOW_SECONDS = 900
+"""How recently a filing decision may have moved before `init` refuses to run on it.
+
+Fifteen minutes, and a judgement rather than a measurement.
+`adr/route-a-filed-zero-as-an-answer` records the length as a tuned parameter
+rather than a decision, so changing it is a code change with a test.
+
+What the window is for: an agent that met a refusal, edited the issue, and
+started the run. On skills#1337 the edit that moved the line to `1` landed six
+minutes and fifty-six seconds after the issue was filed, and a run followed
+within minutes. Anything above about five minutes catches that sequence, and
+fifteen is twice the observed interval.
+
+What a longer window costs: the recovery is time, and a filer who legitimately
+corrected a decision has nothing else to do but let it pass.
+
+There is no clock override and there must not be one. A variable that moved
+"now" forward would be a variable that clears the refusal, which the decision
+record rules out by name. Tests build their timestamps from the real clock.
+"""
+
+
+def _filing_stamp(value) -> datetime.datetime | None:
+    """One recorded timestamp as an aware datetime, or None if it is not one."""
+    if not isinstance(value, str) or value == FILING_PROVENANCE_UNKNOWN:
+        return None
+    try:
+        stamp = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return stamp if stamp.tzinfo is not None else None
+
+
+def filing_decision_window(provenance: dict, current: object) -> dict:
+    """Whether the filing decision is too young for a run to start on.
+
+    Three verdicts, and only one of them stops the run.
+
+    `refuse` needs GraphQL to show the body changed inside the window and
+    either the decision line moved or the prior revision's line could not be
+    read. A body edit that left the decision where it was is not refused: the
+    study's refinement exists to remove that false positive.
+
+    `clear` means the evidence rules out a recent change. REST can say this
+    much on its own, because `updated_at` moves on every edit and so bounds
+    the last body change from above: if it is older than the window, the body
+    is too.
+
+    `undiscriminated` means something moved inside the window and nothing read
+    here can say whether it was the body. The maintainer decided on 6 September
+    2026 that this proceeds, because a comment moves `updated_at` too and a
+    refusal on that read would stop a run for the wrong reason most times it
+    fired. The observation is recorded and never described as enforced.
+    """
+    seconds = FILING_DECISION_WINDOW_SECONDS
+    moment = datetime.datetime.now(datetime.timezone.utc)
+
+    def age(stamp: datetime.datetime) -> float:
+        return (moment - stamp).total_seconds()
+
+    def verdict(kind: str, observed: str) -> dict:
+        return {"seconds": seconds, "verdict": kind, "observed": observed}
+
+    created = _filing_stamp(provenance.get("created_at"))
+    updated = _filing_stamp(provenance.get("updated_at"))
+    edits = provenance.get("edit_count")
+    last = _filing_stamp(provenance.get("last_edited_at"))
+
+    def rest_only(why: str) -> dict:
+        if updated is None:
+            return verdict(
+                "undiscriminated",
+                f"{why}, and `updated_at` could not be read either",
+            )
+        if age(updated) > seconds:
+            return verdict(
+                "clear",
+                f"{why}, but `updated_at` is {int(age(updated))}s old, which "
+                f"bounds the last body change from above",
+            )
+        if created is not None and updated == created:
+            return verdict(
+                "clear",
+                f"{why}, and `updated_at` equals `created_at`, so nothing has "
+                f"changed since the issue was filed",
+            )
+        return verdict(
+            "undiscriminated",
+            f"{why}; `updated_at` is {int(age(updated))}s old, inside the "
+            f"window, and a comment or a label moves it as readily as an edit, "
+            f"so this read cannot say whether the body changed",
+        )
+
+    if isinstance(edits, bool) or not isinstance(edits, int):
+        return rest_only("GraphQL could not say whether the body changed")
+    if edits <= 1:
+        return verdict(
+            "clear",
+            "the body has one revision, so it has not changed since it was filed",
+        )
+    if last is None:
+        return rest_only(
+            "the body has more than one revision but its last edit time could "
+            "not be read"
+        )
+    if age(last) > seconds:
+        return verdict(
+            "clear",
+            f"the body last changed {int(age(last))}s ago, outside the window",
+        )
+    prior = provenance.get("prior_fiat_required")
+    when = f"{int(age(last))}s ago"
+    if prior == FILING_PROVENANCE_UNKNOWN:
+        return verdict(
+            "refuse",
+            f"the body changed {when}, inside the {seconds // 60}-minute window, "
+            f"and the prior revision's `{FIAT_REQUIRED_KEY}` line could not be "
+            f"read, so a moved decision cannot be ruled out",
+        )
+    if prior is None:
+        return verdict(
+            "refuse",
+            f"the body changed {when}, inside the {seconds // 60}-minute window, "
+            f"and the prior revision declared no readable "
+            f"`{FIAT_REQUIRED_KEY}` decision",
+        )
+    if prior != current:
+        return verdict(
+            "refuse",
+            f"the `{FIAT_REQUIRED_KEY}` decision moved from {prior} to {current} "
+            f"{when}, inside the {seconds // 60}-minute window",
+        )
+    return verdict(
+        "clear",
+        f"the body changed {when}, inside the window, but the "
+        f"`{FIAT_REQUIRED_KEY}` decision stayed {current}",
+    )
+
+
+def routed_filing_directive(contract: dict) -> dict:
+    """The directive a filed `Fiat-Required: 0` earns, in place of a refusal.
+
+    A `0` is the filer's answer to whether this work needs a run, so `init`
+    reports the route that answer chose rather than failing on it. The object
+    is the shape the loop's other directives already carry, and the closure
+    block is the one `done integrate` already emits, so a caller that parses a
+    directive parses this without new grammar.
+
+    It names no mechanism that would grant a run instead. That is the whole
+    point: the refusal this replaces ended by naming the edit that turned it
+    off, and an agent told to start a run read that as the instruction for
+    doing so. Nothing here can be read that way, because nothing here is a
+    door.
+
+    Every issue-derived string passes `clean`, because an agent consumes this
+    object and an issue body is somebody else's text.
+    """
+    def scrubbed(value):
+        """Every string this object carries, at any depth and keys included.
+
+        The row shape is three fixed string keys today and
+        `carryover_row_faults` refuses a row carrying a control character
+        before this is reached, so nothing currently arrives dirty. Neither
+        fact is pinned by anything here, and the cost of not depending on
+        them is one recursion (S2-R1-04).
+        """
+        if isinstance(value, str):
+            return clean(value)
+        if isinstance(value, dict):
+            return {clean(str(key)): scrubbed(inner)
+                    for key, inner in value.items()}
+        if isinstance(value, list):
+            return [scrubbed(inner) for inner in value]
+        return value
+
+    issue = clean(str(contract["issue"]))
+    repository = clean(str(contract["repository"]))
+    number = clean(str(contract["number"]))
+    rows = scrubbed(list(contract.get("carryover") or []))
+    return {
+        "do": "pull-request",
+        "reason": f"the task issue declares `{FIAT_REQUIRED_KEY}: 0`",
+        "task_issue": issue,
+        "repository": repository,
+        "number": number,
+        "fiat_required": 0,
+        "route": (
+            "do the work as one independent pull request; no run state, "
+            "worktree or branch was created and none is owed"
+        ),
+        "run_state": None,
+        "worktree": None,
+        "branch": None,
+        "carryover": rows,
+        "task_issue_closure": {
+            "issue": issue,
+            "required_before_merge": f"Closes {repository}#{number}",
+            "gate": (
+                "the issue closes on that pull request; no Fiat receipt is "
+                "owed because no run exists to record one"
+            ),
+        },
     }
 
 
@@ -5447,7 +6556,11 @@ def carried_forward_fault(path: str) -> str | None:
     try:
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
-    except OSError as exc:
+    except (OSError, UnicodeDecodeError) as exc:
+        # `UnicodeDecodeError` derives from `ValueError`, so `OSError` alone
+        # let a body that is not UTF-8 out as a traceback while every other
+        # unreadable body earned this sentence. The exception's own text names
+        # the byte and its offset and quotes no content (S3-R8-01).
         return (f"the run-level pull request body {path} cannot be read "
                 f"({exc}); the prose phase writes it and the integration pull "
                 f"request is opened from it")
@@ -5466,8 +6579,14 @@ def carried_forward_fault(path: str) -> str | None:
         section, f"the '{CARRIED_FORWARD_HEADING}' section of {path}"
     )
     if faults:
+        # Bounded per row rather than over the join, the shape
+        # `cmd_issue_check` uses, because this is a list a filer works down
+        # and `CARRYOVER_ROWS_MAX` already bounds it at 128 lines. The faults
+        # quote a row's id and disposition out of the body, so the destination
+        # owes them the same one rule the four filing-fault destinations take
+        # (S3-R8-02).
         return (
-            "; ".join(faults)
+            "; ".join(bounded_issue_fault_detail([fault]) for fault in faults)
             + f". Integration cannot proceed until every outstanding item under "
             f"'{CARRIED_FORWARD_HEADING}' has been considered for an issue of "
             f"its own and compared against what is already filed"
@@ -6292,9 +7411,16 @@ def cmd_issue_check(args) -> None:
                 payload, label, path
             )
         else:
-            text = payload.get("body") or ""
-            if not isinstance(text, str):
-                github_unreachable(label, path, "returned a body that is not text")
+            # The third reader of one response. `read_task_issue_contract`
+            # and `filing_decision_divergence` both go through
+            # `admitted_issue_body`; this one kept its own rule and agreed
+            # with neither. `or ""` made the type check below it unreachable
+            # for a falsy non-string, so a body of `[]` was read as an empty
+            # string and reported as "declares no `Fiat-Required` line",
+            # which is a claim about a body this reader never read, and no
+            # `ISSUE_BODY_BYTES_MAX` cap applied, where the `--body` sibling
+            # above and `admitted_issue_body` both refuse (S3-R6-01).
+            text = admitted_issue_body(payload, repository, number, label)
             record, faults = issue_contract_faults(text, label)
 
     if args.body:
@@ -6304,8 +7430,25 @@ def cmd_issue_check(args) -> None:
             )
         else:
             record, faults = issue_contract_faults(text, label)
+    # Uniqueness is asked only of a title that already passed its shape rule,
+    # and only in the repository whose prose uses the shorthand. A candidate
+    # has no number of its own yet; a filed issue holds one and is not its own
+    # duplicate.
+    if skills_contract and not faults and record.get("queue") == "framework-N":
+        faults = framework_number_faults(
+            args.dir,
+            repository,
+            record["title"],
+            label,
+            int(number) if args.issue else None,
+        )
     for fault in faults:
-        print(f"{label}: {fault}" if not fault.startswith(label) else fault,
+        # Bounded per line rather than over the join, because this destination
+        # is a list a filer reads and works down. `CARRYOVER_ROWS_MAX` bounds
+        # the number of lines at 128, and the longest reader-authored fault is
+        # 399 characters, so nothing a filer needs is cut (S3-R7-03).
+        bounded = bounded_issue_fault_detail([fault])
+        print(f"{label}: {bounded}" if not fault.startswith(label) else bounded,
               file=sys.stderr)
     if faults:
         print(
@@ -6986,6 +8129,5810 @@ def _append_design_transition(state: dict, transition: dict | None) -> None:
     design["transitions"].append(transition)
 
 
+_KNOWN_FAILURE_INVENTORY_MODULE = None
+_ELENCHUS_GUARD_MODULE = None
+
+
+def _known_failure_inventory_module():
+    """Load Protasis's one public inventory operation from this plugin."""
+    global _KNOWN_FAILURE_INVENTORY_MODULE
+    if _KNOWN_FAILURE_INVENTORY_MODULE is not None:
+        return _KNOWN_FAILURE_INVENTORY_MODULE
+    root = plugin_root()
+    relative = "skills/protasis/scripts/known_failure_inventory.py"
+    source = os.path.join(root, *relative.split("/"))
+    source_bytes = _read_stable_controller_file(
+        root,
+        relative,
+        "Protasis known-failure inventory loader",
+        limit=SOURCE_BYTES_MAX,
+    )
+    module_name = "_hexaemeron_fiat_known_failure_inventory"
+    specification = importlib.util.spec_from_file_location(module_name, source)
+    if specification is None or specification.loader is None:
+        die("Protasis known-failure inventory loader cannot be resolved", 1)
+    module = importlib.util.module_from_spec(specification)
+    # dataclasses resolves annotations through the importing module while its
+    # decorator runs, so publish this private trusted name for that interval.
+    sys.modules[module_name] = module
+    try:
+        code = compile(source_bytes, source, "exec", dont_inherit=True)
+        # phylax: allow execute the stably read plugin-contained Protasis loader bytes without reopening the file
+        exec(code, module.__dict__)
+    except (Exception, SystemExit):
+        sys.modules.pop(module_name, None)
+        die("Protasis known-failure inventory loader failed to initialise", 1)
+    operation = getattr(module, "load_checked_inventory", None)
+    if not callable(operation):
+        sys.modules.pop(module_name, None)
+        die("Protasis known-failure inventory loader has no public operation", 1)
+    _KNOWN_FAILURE_INVENTORY_MODULE = module
+    return module
+
+
+def _elenchus_guard_module():
+    """Load Elenchus's one in-memory detached-parent guard operation."""
+    global _ELENCHUS_GUARD_MODULE
+    if _ELENCHUS_GUARD_MODULE is not None:
+        return _ELENCHUS_GUARD_MODULE
+    root = plugin_root()
+    relative = "skills/elenchus/scripts/elenchus.py"
+    source = os.path.join(root, *relative.split("/"))
+    source_bytes = _read_stable_controller_file(
+        root,
+        relative,
+        "Elenchus parent-guard loader",
+        limit=SOURCE_BYTES_MAX,
+    )
+    module_name = "_hexaemeron_fiat_elenchus_guard"
+    specification = importlib.util.spec_from_file_location(module_name, source)
+    if specification is None or specification.loader is None:
+        die("Elenchus parent-guard loader cannot be resolved", 1)
+    module = importlib.util.module_from_spec(specification)
+    sys.modules[module_name] = module
+    try:
+        code = compile(source_bytes, source, "exec", dont_inherit=True)
+        # phylax: allow execute only stably read plugin-contained Elenchus bytes
+        exec(code, module.__dict__)
+    except (Exception, SystemExit):
+        sys.modules.pop(module_name, None)
+        die("Elenchus parent-guard loader failed to initialise", 1)
+    operation = getattr(module, "parent_guard_evidence", None)
+    if not callable(operation):
+        sys.modules.pop(module_name, None)
+        die("Elenchus parent-guard loader has no public operation", 1)
+    _ELENCHUS_GUARD_MODULE = module
+    return module
+
+
+def _known_failure_portable_path(value) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    parts = value.split("/")
+    return bool(
+        encoded
+        and len(encoded) <= 1024
+        and not os.path.isabs(value)
+        and "\\" not in value
+        and all(part not in ("", ".", "..") for part in parts)
+        and not _contains_nonprinting_character(value)
+    )
+
+
+def _known_failure_text(value, *, limit: int = 4096) -> bool:
+    if not isinstance(value, str) or not value or _contains_nonprinting_character(value):
+        return False
+    try:
+        return len(value.encode("utf-8")) <= limit
+    except UnicodeEncodeError:
+        return False
+
+
+def _validate_known_failure_capture(value, label: str = "known-failure capture") -> dict:
+    """Validate the closed loader result without reparsing its source."""
+    if not isinstance(value, dict) or set(value) != KNOWN_FAILURE_CAPTURE_KEYS:
+        die(f"{label} has an unsupported field set", 1)
+    if value.get("schema") != KNOWN_FAILURE_CAPTURE_SCHEMA:
+        die(f"{label} has an unsupported schema", 1)
+    for name in ("study_sha256", "runbook_sha256", "inventory_sha256"):
+        digest = value.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            die(f"{label} has an invalid {name}", 1)
+
+    source_views = value.get("source_views")
+    if (
+        not isinstance(source_views, list)
+        or not source_views
+        or len(source_views) > KNOWN_FAILURE_MAX_SOURCE_VIEWS
+    ):
+        die(f"{label} has an invalid source_views list", 1)
+    source_ids = set()
+    for index, source_view in enumerate(source_views):
+        if (
+            not isinstance(source_view, dict)
+            or set(source_view) != KNOWN_FAILURE_SOURCE_VIEW_KEYS
+        ):
+            die(f"{label} source_views[{index}] has an unsupported field set", 1)
+        source_id = source_view.get("id")
+        if (
+            not _known_failure_text(source_id, limit=256)
+            or source_id in source_ids
+            or not _known_failure_portable_path(source_view.get("path"))
+        ):
+            die(f"{label} source_views[{index}] has an invalid identity", 1)
+        source_ids.add(source_id)
+        for name in ("source_sha256", "view_sha256"):
+            digest = source_view.get(name)
+            if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                die(f"{label} source_views[{index}] has an invalid {name}", 1)
+
+    findings = value.get("findings")
+    if not isinstance(findings, list) or len(findings) > KNOWN_FAILURE_MAX_FINDINGS:
+        die(f"{label} has an invalid findings list", 1)
+    finding_ids = set()
+    guard_paths_total = 0
+    expected_assignments = []
+    for index, finding in enumerate(findings):
+        if not isinstance(finding, dict) or set(finding) != KNOWN_FAILURE_FINDING_KEYS:
+            die(f"{label} findings[{index}] has an unsupported field set", 1)
+        finding_id = finding.get("id")
+        step_number = finding.get("consuming_step")
+        if (
+            not isinstance(finding_id, str)
+            or KNOWN_FAILURE_ID_RE.fullmatch(finding_id) is None
+            or finding_id in finding_ids
+            or isinstance(step_number, bool)
+            or not isinstance(step_number, int)
+            or step_number <= 0
+        ):
+            die(f"{label} findings[{index}] has an invalid identity", 1)
+        finding_ids.add(finding_id)
+        for name in (
+            "source_ref",
+            "failure",
+            "test_command",
+            "report_format",
+            "report_file",
+            "green_command",
+        ):
+            if not _known_failure_text(finding.get(name)):
+                die(f"{label} findings[{index}] has an invalid {name}", 1)
+        if finding.get("expected_guard_verdict") != "guarded":
+            die(f"{label} findings[{index}] has an unsupported guard verdict", 1)
+        guard_paths = finding.get("guard_paths")
+        if (
+            not isinstance(guard_paths, list)
+            or not guard_paths
+            or any(not _known_failure_portable_path(path) for path in guard_paths)
+            or len(set(guard_paths)) != len(guard_paths)
+        ):
+            die(f"{label} findings[{index}] has invalid guard_paths", 1)
+        guard_paths_total += len(guard_paths)
+        if guard_paths_total > KNOWN_FAILURE_MAX_GUARD_PATHS:
+            die(f"{label} exceeds the guard path ceiling", 1)
+        expected_assignments.append({"finding_id": finding_id, "step": step_number})
+
+    assignments = value.get("assignments")
+    if not isinstance(assignments, list):
+        die(f"{label} has an invalid assignments list", 1)
+    for index, assignment in enumerate(assignments):
+        if not isinstance(assignment, dict) or set(assignment) != KNOWN_FAILURE_ASSIGNMENT_KEYS:
+            die(f"{label} assignments[{index}] has an unsupported field set", 1)
+    expected_assignments.sort(key=lambda item: (item["step"], item["finding_id"]))
+    if assignments != expected_assignments:
+        die(f"{label} assignments are incomplete, duplicated, or unordered", 1)
+
+    no_known_findings = value.get("no_known_findings")
+    if findings:
+        if no_known_findings is not None:
+            die(f"{label} combines findings with a no-known-findings claim", 1)
+    else:
+        if (
+            not isinstance(no_known_findings, dict)
+            or set(no_known_findings) != KNOWN_FAILURE_NO_FINDINGS_KEYS
+        ):
+            die(f"{label} has no closed no-known-findings claim", 1)
+        claim_views = no_known_findings.get("source_views")
+        checked_views = [
+            {
+                "id": item["id"],
+                "source_sha256": item["source_sha256"],
+                "view_sha256": item["view_sha256"],
+            }
+            for item in source_views
+        ]
+        if (
+            not isinstance(claim_views, list)
+            or any(
+                not isinstance(item, dict)
+                or set(item) != KNOWN_FAILURE_NO_FINDINGS_VIEW_KEYS
+                for item in claim_views
+            )
+            or claim_views != checked_views
+            or no_known_findings.get("surveyor_assertion") != "no-known-findings"
+            or isinstance(no_known_findings.get("consuming_step"), bool)
+            or not isinstance(no_known_findings.get("consuming_step"), int)
+            or no_known_findings["consuming_step"] <= 0
+        ):
+            die(f"{label} has a stale or incomplete no-known-findings claim", 1)
+
+    inventory = {
+        "schema": KNOWN_FAILURE_INVENTORY_SCHEMA,
+        "source_views": source_views,
+        "findings": findings,
+        "no_known_findings": no_known_findings,
+    }
+    actual_inventory = hashlib.sha256(canonical(inventory).encode("utf-8")).hexdigest()
+    if actual_inventory != value["inventory_sha256"]:
+        die(f"{label} inventory_sha256 does not match its closed inventory", 1)
+    return value
+
+
+def _load_checked_inventory(
+    base_dir: str,
+    study_path: str,
+    runbook_path: str,
+):
+    """Call the sole Protasis ingestion operation and close its result."""
+    module = _known_failure_inventory_module()
+    try:
+        result = module.load_checked_inventory(
+            Path(study_path), Path(runbook_path), Path(base_dir)
+        )
+    except (Exception, SystemExit):
+        die("Protasis known-failure inventory loader failed", 1)
+    status = getattr(result, "status", None)
+    capture = getattr(result, "capture", None)
+    findings = getattr(result, "findings", None)
+    if status == "absent" and capture is None and findings == ():
+        return None
+    if status == "refused" and capture is None and isinstance(findings, tuple) and findings:
+        first = findings[0]
+        code = getattr(first, "code", None)
+        message = getattr(first, "message", None)
+        if (
+            isinstance(code, str)
+            and re.fullmatch(r"K0(?:0[0-9]|1[0-2])", code)
+            and _known_failure_text(message)
+        ):
+            die(f"Protasis known-failure inventory refused: {code} {message}")
+        die("Protasis known-failure inventory refused")
+    if status != "clean" or findings != ():
+        die("Protasis known-failure inventory loader returned an unsupported result", 1)
+    return _validate_known_failure_capture(capture)
+
+
+def _require_amendment_digest_chain(
+    receipt: dict,
+    initial_sha256: str,
+    current_sha256: str,
+    subject: str,
+) -> None:
+    """Require append-only amendment receipts to explain a source digest move."""
+    history = receipt.get("amendments")
+    if history is None:
+        if initial_sha256 != current_sha256:
+            die(f"receipted known-failure capture has a stale {subject} digest", 1)
+        return
+    if not isinstance(history, list) or not history:
+        die(f"{subject} receipt amendments history must be a non-empty array", 1)
+    cursor = initial_sha256
+    for index, raw in enumerate(history, 1):
+        item = as_dict(raw)
+        next_sha256 = item.get("new_sha256")
+        if (
+            item.get("prior_sha256") != cursor
+            or not isinstance(next_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", next_sha256) is None
+        ):
+            die(
+                f"{subject} amendment {index} does not continue the "
+                "known-failure capture digest chain",
+                1,
+            )
+        cursor = next_sha256
+    if cursor != current_sha256:
+        die(
+            f"{subject} amendment digest chain does not reach the current receipt",
+            1,
+        )
+
+
+def _known_failure_semantics(capture: dict) -> dict:
+    """Return the captured contract without its mutable source byte digests."""
+    return {
+        key: value
+        for key, value in capture.items()
+        if key not in {"study_sha256", "runbook_sha256"}
+    }
+
+
+def _require_matching_known_failure_semantics(
+    stored: dict, current: dict, subject: str, *, code: int = 1
+) -> None:
+    """Keep an append-only source amendment outside the captured contract."""
+    if _known_failure_semantics(current) != _known_failure_semantics(stored):
+        die(
+            f"known-failure inventory semantics changed across a {subject} amendment",
+            code,
+        )
+
+
+def _require_capture_aware_amendment_candidate(
+    base_dir: str,
+    state: dict,
+    subject: str,
+    candidate: bytes,
+) -> None:
+    """Check the exact candidate bytes before opening a durable transaction."""
+    runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    has_capture = "known_failure_inventory" in runbook_receipt
+    stored = None
+    if has_capture:
+        stored = _validate_known_failure_capture(
+            runbook_receipt.get("known_failure_inventory"),
+            "receipted known-failure capture",
+        )
+    if subject not in {"study", "runbook"}:
+        die(f"unsupported capture-aware amendment subject: {subject}", 1)
+
+    counterpart_name = "runbook" if subject == "study" else "study"
+    counterpart = receipted_source(base_dir, state, counterpart_name)
+    if counterpart is None:
+        die(
+            "capture-aware amendment has no receipted counterpart source",
+            1,
+        )
+
+    root = state_root(base_dir)
+    os.makedirs(root, exist_ok=True)
+    descriptor, candidate_path = tempfile.mkstemp(
+        prefix=f"amended-{subject}-inventory-",
+        suffix=".md",
+        dir=root,
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(candidate)
+            handle.flush()
+            os.fsync(handle.fileno())
+        study_path = candidate_path if subject == "study" else counterpart["path"]
+        runbook_path = candidate_path if subject == "runbook" else counterpart["path"]
+        current = _load_checked_inventory(base_dir, study_path, runbook_path)
+    finally:
+        try:
+            os.unlink(candidate_path)
+        except FileNotFoundError:
+            pass
+
+    if not has_capture:
+        if current is not None:
+            die(
+                f"{subject} amendment cannot retrofit a known-failure capture "
+                "onto a pre-capture run"
+            )
+        return
+    if current is None:
+        die(
+            f"{subject} amendment removes the receipted known-failure inventory"
+        )
+    candidate_sha256 = hashlib.sha256(candidate).hexdigest()
+    expected_study_sha256 = (
+        candidate_sha256 if subject == "study" else counterpart["sha256"]
+    )
+    expected_runbook_sha256 = (
+        candidate_sha256 if subject == "runbook" else counterpart["sha256"]
+    )
+    if (
+        current["study_sha256"] != expected_study_sha256
+        or current["runbook_sha256"] != expected_runbook_sha256
+    ):
+        die(
+            f"checked {subject} amendment has stale source digests"
+        )
+    _require_matching_known_failure_semantics(stored, current, subject, code=2)
+
+
+def receipted_known_failure_inventory(
+    base_dir: str,
+    state: dict,
+    *,
+    study: dict | None = None,
+    runbook: dict | None = None,
+) -> dict | None:
+    """Revalidate one captured inventory; absence preserves the legacy path."""
+    receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    if "known_failure_inventory" not in receipt:
+        return None
+    stored = receipt["known_failure_inventory"]
+    stored = _validate_known_failure_capture(stored, "receipted known-failure capture")
+    study = study or receipted_source(base_dir, state, "study")
+    runbook = runbook or receipted_source(base_dir, state, "runbook")
+    if study is None or runbook is None:
+        die("receipted known-failure capture has no source artefacts", 1)
+    _require_amendment_digest_chain(
+        as_dict(study.get("receipt")),
+        stored["study_sha256"],
+        study["sha256"],
+        "study",
+    )
+    _require_amendment_digest_chain(
+        as_dict(runbook.get("receipt")),
+        stored["runbook_sha256"],
+        runbook["sha256"],
+        "runbook",
+    )
+    current = _load_checked_inventory(base_dir, study["path"], runbook["path"])
+    if current is None:
+        die("receipted known-failure capture no longer matches its checked sources", 1)
+    if (
+        current["study_sha256"] != study["sha256"]
+        or current["runbook_sha256"] != runbook["sha256"]
+    ):
+        die("checked known-failure capture has stale source digests", 1)
+    _require_matching_known_failure_semantics(stored, current, "source")
+    return current
+
+
+def _assigned_findings(capture: dict, step_number: int) -> list[dict]:
+    return [
+        finding
+        for finding in capture["findings"]
+        if finding["consuming_step"] == step_number
+    ]
+
+
+def _assigned_ids(capture: dict, step_number: int) -> list[str]:
+    return sorted(finding["id"] for finding in _assigned_findings(capture, step_number))
+
+
+def _open_inoculation_step(
+    base_dir: str, state: dict, step: dict, *, step_parent: str | None = None
+) -> None:
+    parent = step_pr_base(state, step)
+    observed = step_parent or resolved_commit(
+        base_dir, parent, f"step {step['n']} inoculation parent"
+    )
+    observed = require_full_sha(observed, f"step {step['n']} inoculation parent")
+    step["status"] = "open"
+    step["phase"] = "inoculate"
+    step["inoculation_parent"] = observed
+
+
+def _inoculation_parent(base_dir: str, state: dict, step: dict) -> str:
+    recorded = require_full_sha(
+        step.get("inoculation_parent"), f"step {step['n']} inoculation parent"
+    )
+    current = resolved_commit(
+        base_dir,
+        step_pr_base(state, step),
+        f"step {step['n']} inoculation parent",
+    )
+    if current != recorded:
+        die(
+            f"step {step['n']} inoculation parent changed: expected "
+            f"{recorded}, got {current}; restore the exact parent before retrying"
+        )
+    return recorded
+
+
+def _native_inoculation_parent(base_dir: str, state: dict, step: dict) -> str:
+    """Recheck an inoculation parent through replacement-free system Git."""
+    recorded = require_full_sha(
+        step.get("inoculation_parent"), f"step {step['n']} inoculation parent"
+    )
+    current = _native_relation_commit(
+        base_dir,
+        step_pr_base(state, step),
+        f"step {step['n']} inoculation parent",
+    )
+    if current != recorded:
+        die(
+            f"step {step['n']} inoculation parent changed: expected "
+            f"{recorded}, got {current}; restore the exact parent before retrying"
+        )
+    return recorded
+
+
+def _inoculation_evidence_relative(step_number: int) -> str:
+    if isinstance(step_number, bool) or not isinstance(step_number, int) or step_number <= 0:
+        die("inoculation step number is invalid", 1)
+    return f"{STATE_DIR_NAME}/steps/{step_number}/inoculation"
+
+
+def _read_stable_controller_file(
+    base_dir: str, relative: str, label: str, *, limit: int
+) -> bytes:
+    """Read one controller-local leaf through stable no-follow descriptors."""
+    if not _known_failure_portable_path(relative):
+        die(f"{label} path is not a safe relative path")
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    non_blocking = getattr(os, "O_NONBLOCK", 0)
+    if not no_follow or not directory_only or not non_blocking:
+        die(f"platform cannot safely read {label}", 1)
+    root = os.path.realpath(base_dir)
+    directory_flags = os.O_RDONLY | no_follow | directory_only | getattr(os, "O_CLOEXEC", 0)
+    file_flags = os.O_RDONLY | no_follow | non_blocking | getattr(os, "O_CLOEXEC", 0)
+    descriptors = []
+    directory_edges = []
+    file_descriptor = None
+    try:
+        root_descriptor = os.open(root, directory_flags)
+        descriptors.append(root_descriptor)
+        root_identity = os.fstat(root_descriptor)
+        directory_descriptor = root_descriptor
+        for component in relative.split("/")[:-1]:
+            parent_descriptor = directory_descriptor
+            next_descriptor = os.open(
+                component, directory_flags, dir_fd=parent_descriptor
+            )
+            if not stat.S_ISDIR(os.fstat(next_descriptor).st_mode):
+                raise OSError("non-directory component")
+            descriptors.append(next_descriptor)
+            directory_edges.append(
+                (parent_descriptor, component, next_descriptor)
+            )
+            directory_descriptor = next_descriptor
+        leaf = relative.split("/")[-1]
+        file_descriptor = os.open(leaf, file_flags, dir_fd=directory_descriptor)
+        before = os.fstat(file_descriptor)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+            raise OSError("not a single-link regular file")
+        chunks = []
+        remaining = limit + 1
+        while remaining:
+            chunk = os.read(file_descriptor, min(65_536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        after = os.fstat(file_descriptor)
+        named = os.stat(leaf, dir_fd=directory_descriptor, follow_symlinks=False)
+        named_root = os.stat(root, follow_symlinks=False)
+        if (
+            not stat.S_ISDIR(named_root.st_mode)
+            or (named_root.st_dev, named_root.st_ino)
+            != (root_identity.st_dev, root_identity.st_ino)
+        ):
+            raise OSError("controller root changed during read")
+        for parent_descriptor, component, child_descriptor in directory_edges:
+            named_directory = os.stat(
+                component,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+            opened_directory = os.fstat(child_descriptor)
+            if (
+                not stat.S_ISDIR(named_directory.st_mode)
+                or (named_directory.st_dev, named_directory.st_ino)
+                != (opened_directory.st_dev, opened_directory.st_ino)
+            ):
+                raise OSError("directory component changed during read")
+        identity = (
+            before.st_dev,
+            before.st_ino,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        )
+        if (
+            len(data) > limit
+            or len(data) != after.st_size
+            or identity
+            != (
+                after.st_dev,
+                after.st_ino,
+                after.st_size,
+                after.st_mtime_ns,
+                after.st_ctime_ns,
+            )
+            or identity
+            != (
+                named.st_dev,
+                named.st_ino,
+                named.st_size,
+                named.st_mtime_ns,
+                named.st_ctime_ns,
+            )
+        ):
+            raise OSError("changed during read")
+    except OSError:
+        die(f"{label} is not one stable bounded regular file")
+    finally:
+        if file_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(file_descriptor)
+        for descriptor in reversed(descriptors):
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+    return data
+
+
+def _strict_json_document(data: bytes, label: str):
+    try:
+        return json.loads(
+            data.decode("utf-8", "strict"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError):
+        die(f"{label} is not strict UTF-8 JSON")
+
+
+def _guard_exact_nonnegative_integer(value, label: str) -> int:
+    if type(value) is not int or value < 0:
+        raise ValueError(f"{label} must be a non-negative JSON integer")
+    return value
+
+
+def _guard_json_document(data: bytes, label: str):
+    """Parse one strict JSON document for a pure guard-admission API."""
+    try:
+        return json.loads(
+            data.decode("utf-8", "strict"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError, RecursionError) as exc:
+        raise ValueError(f"{label} is not strict UTF-8 JSON") from exc
+
+
+def _guard_json_depth(value, depth: int = 1) -> int:
+    """Return JSON container depth without using the Python call stack."""
+    maximum = depth
+    pending = [(value, depth)]
+    while pending:
+        current, current_depth = pending.pop()
+        maximum = max(maximum, current_depth)
+        if isinstance(current, dict):
+            pending.extend(
+                (item, current_depth + 1) for item in current.values()
+            )
+        elif isinstance(current, list):
+            pending.extend((item, current_depth + 1) for item in current)
+    return maximum
+
+
+def _guard_admission_counters(
+    report_format: str, raw_report: bytes, result: dict
+) -> dict:
+    """Apply Fiat's stricter admission policy to one Elenchus result.
+
+    This stays a ValueError API because historical red guards exercise it as
+    a pure validator; the CLI boundary converts its failures into a bounded
+    controller refusal.
+    """
+    if report_format not in GUARD_REPORT_FORMATS:
+        raise ValueError("unsupported guard report format")
+    if not isinstance(raw_report, bytes) or len(raw_report) > GUARD_REPORT_BYTES_MAX:
+        raise ValueError("guard report bytes are invalid or oversized")
+    if type(result) is not dict or result.get("status") != "guarded":
+        raise ValueError("Elenchus did not return guarded")
+    counters = result.get("report")
+    if type(counters) is not dict or set(counters) != GUARD_COUNTER_KEYS:
+        raise ValueError("normalized guard counters have an unsupported field set")
+    if counters.get("complete") is not True:
+        raise ValueError("guard report is incomplete")
+    executed = _guard_exact_nonnegative_integer(counters.get("executed"), "executed")
+    failures = _guard_exact_nonnegative_integer(
+        counters.get("assertion_failures"), "assertion_failures"
+    )
+    errors = _guard_exact_nonnegative_integer(counters.get("errors"), "errors")
+    skipped = _guard_exact_nonnegative_integer(counters.get("skipped"), "skipped")
+    if executed < 1 or failures < 1 or errors != 0 or skipped != 0:
+        raise ValueError("guard counters do not prove one clean assertion failure")
+
+    if report_format == "unittest-json-v1":
+        raw = _guard_json_document(raw_report, "unittest guard report")
+        keys = {
+            "schema",
+            "complete",
+            "testsRun",
+            "failures",
+            "errors",
+            "skipped",
+            "expectedFailures",
+            "unexpectedSuccesses",
+        }
+        if type(raw) is not dict or set(raw) != keys:
+            raise ValueError("unittest guard report has an unsupported field set")
+        if raw.get("schema") != "elenchus.unittest.v1" or raw.get("complete") is not True:
+            raise ValueError("unittest guard report has an unsupported schema or state")
+        tests_run = _guard_exact_nonnegative_integer(raw.get("testsRun"), "testsRun")
+        raw_failures = _guard_exact_nonnegative_integer(raw.get("failures"), "failures")
+        raw_errors = _guard_exact_nonnegative_integer(raw.get("errors"), "errors")
+        raw_skipped = _guard_exact_nonnegative_integer(raw.get("skipped"), "skipped")
+        expected = _guard_exact_nonnegative_integer(
+            raw.get("expectedFailures"), "expectedFailures"
+        )
+        unexpected = _guard_exact_nonnegative_integer(
+            raw.get("unexpectedSuccesses"), "unexpectedSuccesses"
+        )
+        if (
+            tests_run < 1
+            or raw_failures < 1
+            or raw_errors != 0
+            or raw_skipped != 0
+            or expected != 0
+            or unexpected != 0
+        ):
+            raise ValueError("unittest guard report is not an ordinary assertion failure")
+        if (tests_run, raw_failures, raw_errors, raw_skipped) != (
+            executed,
+            failures,
+            errors,
+            skipped,
+        ):
+            raise ValueError("raw and normalized guard counters differ")
+    return {
+        "complete": True,
+        "executed": executed,
+        "assertion_failures": failures,
+        "errors": errors,
+        "skipped": skipped,
+    }
+
+
+def _build_guard_manifest(
+    *,
+    finding_id: str,
+    consuming_step: int,
+    controller_run_id: str,
+    worktree_identity: dict,
+    capture: dict,
+    step_parent: str,
+    guard_commit: str,
+    changed_paths: list[str],
+    guard_blobs: list[dict],
+    test_command: str,
+    test_argv: list[str],
+    report_format: str,
+    report_file: str,
+    retained_report: dict,
+    runner_exit: int,
+    counters: dict,
+    verdict: str,
+) -> dict:
+    """Construct the closed manifest shape retained by historical guards."""
+    return {
+        "schema": GUARD_MANIFEST_SCHEMA,
+        "finding_id": finding_id,
+        "consuming_step": consuming_step,
+        "controller_run_id": controller_run_id,
+        "worktree_identity": worktree_identity,
+        "capture": capture,
+        "step_parent": step_parent,
+        "guard_commit": guard_commit,
+        "changed_paths": changed_paths,
+        "guard_blobs": guard_blobs,
+        "test_command": test_command,
+        "test_argv": test_argv,
+        "report_format": report_format,
+        "report_file": report_file,
+        "retained_report": retained_report,
+        "runner_exit": runner_exit,
+        "counters": counters,
+        "verdict": verdict,
+    }
+
+
+def _validate_guard_delta_rows(rows: list[dict], allowed_paths: list[str]) -> list[dict]:
+    """Validate the complete native A/M delta against the Step-wide path set."""
+    if type(rows) is not list or type(allowed_paths) is not list:
+        raise ValueError("guard delta and allowed paths must be arrays")
+    if (
+        not allowed_paths
+        or len(allowed_paths) > KNOWN_FAILURE_MAX_GUARD_PATHS
+        or any(not _known_failure_portable_path(path) for path in allowed_paths)
+        or len(set(allowed_paths)) != len(allowed_paths)
+    ):
+        raise ValueError("allowed guard path set is invalid")
+    expected = sorted(allowed_paths, key=lambda value: value.encode("utf-8"))
+    if allowed_paths != expected:
+        raise ValueError("allowed guard paths are not UTF-8-byte sorted")
+    seen = []
+    for row in rows:
+        if type(row) is not dict or set(row) not in (
+            {"path", "status", "old_mode", "new_mode"},
+            {"path", "status", "old_mode", "new_mode", "old_oid", "new_oid"},
+        ):
+            raise ValueError("guard delta row has an unsupported field set")
+        path = row.get("path")
+        status = row.get("status")
+        old_mode = row.get("old_mode")
+        new_mode = row.get("new_mode")
+        if path not in expected:
+            raise ValueError("undeclared guard path")
+        if path in seen:
+            raise ValueError("duplicate guard path")
+        if status not in {"A", "M"}:
+            raise ValueError("guard delta row is not an addition or modification")
+        if new_mode not in {"100644", "100755"}:
+            raise ValueError("guard delta row has an invalid new mode")
+        if status == "A" and old_mode != "000000":
+            raise ValueError("added guard path has an invalid old mode")
+        if status == "M" and old_mode not in {"100644", "100755"}:
+            raise ValueError("modified guard path has an invalid old mode")
+        if "old_oid" in row:
+            object_re = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
+            old_oid = row["old_oid"]
+            new_oid = row["new_oid"]
+            if object_re.fullmatch(new_oid or "") is None or set(new_oid) == {"0"}:
+                raise ValueError("guard delta row has an invalid new object id")
+            if object_re.fullmatch(old_oid or "") is None:
+                raise ValueError("guard delta row has an invalid old object id")
+            if status == "A" and set(old_oid) != {"0"}:
+                raise ValueError("added guard path has a non-null old object id")
+            if status == "M" and set(old_oid) == {"0"}:
+                raise ValueError("modified guard path has a null old object id")
+        seen.append(path)
+    if seen != expected:
+        missing = sorted(set(expected) - set(seen), key=lambda value: value.encode("utf-8"))
+        if missing:
+            raise ValueError("guard delta is missing a declared guard path")
+        raise ValueError("guard delta rows are not UTF-8-byte sorted")
+    return rows
+
+
+def _guard_test_argv(command: str) -> list[str]:
+    if (
+        not isinstance(command, str)
+        or not command
+        or len(command.encode("utf-8")) > GUARD_COMMAND_BYTES_MAX
+        or _contains_nonprinting_character(command)
+    ):
+        raise ValueError("guard command is invalid or oversized")
+    try:
+        argv = shlex.split(command, posix=True)
+    except ValueError as exc:
+        raise ValueError("guard command cannot be parsed") from exc
+    if (
+        not argv
+        or len(argv) > GUARD_COMMAND_ARGUMENTS_MAX
+        or any(not item or _contains_nonprinting_character(item) for item in argv)
+        or argv.count(GUARD_REPORT_PLACEHOLDER) != 1
+        or " ".join(argv) != command
+    ):
+        raise ValueError("guard command is not one closed canonical argv")
+    return argv
+
+
+def _guard_native_git(base_dir: str, argv: list[str], refusal: str) -> bytes:
+    """Read native local Git state with the larger guard-metadata ceiling."""
+    return bounded_tool(
+        base_dir,
+        _native_git_executable(),
+        ["--no-replace-objects", "-c", "core.useReplaceRefs=false", *argv],
+        refusal,
+        environment=_native_relation_environment(),
+        output_max=GUARD_GIT_METADATA_BYTES_MAX,
+    )
+
+
+def _guard_exact_git(base_dir: str, argv: list[str], refusal: str) -> bytes:
+    """Read zero-authority Git state without a caller-controlled executable."""
+    environment = _native_relation_environment()
+    return bounded_tool(
+        base_dir,
+        _native_git_executable(),
+        ["--no-replace-objects", "-c", "core.useReplaceRefs=false", *argv],
+        refusal,
+        environment=environment,
+        output_max=GUARD_GIT_METADATA_BYTES_MAX,
+    )
+
+
+def _guard_worktree_identity(base_dir: str, state: dict) -> dict:
+    """Bind the caller, repository and configured worktree to one directory."""
+    try:
+        lexical = os.path.abspath(os.fspath(base_dir))
+        supplied = os.lstat(lexical)
+    except (OSError, TypeError, ValueError):
+        die("guard worktree cannot be identified")
+    if stat.S_ISLNK(supplied.st_mode) or not stat.S_ISDIR(supplied.st_mode):
+        die("guard worktree is not one physical directory")
+    reported = tool_text(
+        _guard_native_git(
+            lexical,
+            ["rev-parse", "--show-toplevel"],
+            "guard repository root cannot be resolved",
+        ),
+        "guard repository root",
+    ).strip()
+    configured = configured_git_path(state, "worktree")
+    if not isinstance(configured, str) or not configured:
+        die("guard state has no managed worktree path")
+    try:
+        reported_info = os.lstat(reported)
+        configured_info = os.lstat(configured)
+    except (OSError, TypeError, ValueError):
+        die("guard managed worktree path cannot be identified")
+    identities = []
+    for label, item in (
+        ("supplied", supplied),
+        ("reported", reported_info),
+        ("configured", configured_info),
+    ):
+        if stat.S_ISLNK(item.st_mode) or not stat.S_ISDIR(item.st_mode):
+            die(f"guard {label} worktree path is not one physical directory")
+        identities.append((item.st_dev, item.st_ino))
+    if len(set(identities)) != 1:
+        die("guard command is not running in its physical managed worktree")
+    device, inode = identities[0]
+    return {"device": device, "inode": inode}
+
+
+def _guard_status_rows(base_dir: str) -> list[tuple[str, str]]:
+    raw = _guard_native_git(
+        base_dir,
+        [
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+            "--ignore-submodules=none",
+        ],
+        "guard worktree status cannot be read",
+    )
+    rows = []
+    for record in raw.split(b"\0"):
+        if not record:
+            continue
+        if len(record) < 4 or record[2:3] != b" ":
+            die("guard worktree status is malformed")
+        try:
+            code = record[:2].decode("ascii")
+            path = record[3:].decode("utf-8", "strict")
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            die("guard worktree status is not UTF-8")
+        if not _known_failure_portable_path(path):
+            die("guard worktree status contains an unsafe path")
+        rows.append((code, path))
+    return rows
+
+
+def _guard_audit_paths(state: dict) -> tuple[str, str]:
+    log = configured_audit_log(state).replace(os.sep, "/")
+    if not _known_failure_portable_path(log):
+        die("configured audit log is not one safe relative path")
+    stem, extension = os.path.splitext(log)
+    if extension.lower() != ".md":
+        die("configured audit log has no derivable synopsis path")
+    synopsis = stem + ".synopsis.md"
+    if not _known_failure_portable_path(synopsis) or synopsis == log:
+        die("configured audit synopsis is not one safe relative path")
+    return log, synopsis
+
+
+def _guard_file_snapshot(
+    base_dir: str, relative: str, label: str, *, limit: int
+) -> tuple[bytes, tuple]:
+    """Read one fixed leaf and return its operation-local complete identity."""
+    if not _known_failure_portable_path(relative):
+        die(f"{label} path is not a safe relative path")
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    non_blocking = getattr(os, "O_NONBLOCK", 0)
+    if (
+        not no_follow
+        or not directory_only
+        or not non_blocking
+        or os.open not in os.supports_dir_fd
+    ):
+        die(f"platform cannot safely read {label}", 1)
+    directory_flags = (
+        os.O_RDONLY | no_follow | directory_only | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = (
+        os.O_RDONLY | no_follow | non_blocking | getattr(os, "O_CLOEXEC", 0)
+    )
+    descriptors = []
+    file_descriptor = None
+    try:
+        root = os.path.abspath(base_dir)
+        root_descriptor = os.open(root, directory_flags)
+        descriptors.append(root_descriptor)
+        directory_descriptor = root_descriptor
+        edges = []
+        for component in relative.split("/")[:-1]:
+            parent = directory_descriptor
+            child = os.open(component, directory_flags, dir_fd=parent)
+            descriptors.append(child)
+            if not stat.S_ISDIR(os.fstat(child).st_mode):
+                raise OSError("non-directory component")
+            edges.append((parent, component, child))
+            directory_descriptor = child
+        leaf = relative.split("/")[-1]
+        file_descriptor = os.open(leaf, file_flags, dir_fd=directory_descriptor)
+        opened = os.fstat(file_descriptor)
+        identity = (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_mode,
+            opened.st_nlink,
+            opened.st_size,
+            opened.st_mtime_ns,
+            opened.st_ctime_ns,
+        )
+        named = os.stat(leaf, dir_fd=directory_descriptor, follow_symlinks=False)
+        named_identity = (
+            named.st_dev,
+            named.st_ino,
+            named.st_mode,
+            named.st_nlink,
+            named.st_size,
+            named.st_mtime_ns,
+            named.st_ctime_ns,
+        )
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or opened.st_nlink != 1
+            or identity != named_identity
+            or opened.st_size > limit
+        ):
+            raise OSError("unsafe leaf")
+        chunks = []
+        remaining = limit + 1
+        while remaining:
+            chunk = os.read(file_descriptor, min(65_536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        finished = os.fstat(file_descriptor)
+        final_named = os.stat(
+            leaf, dir_fd=directory_descriptor, follow_symlinks=False
+        )
+        final_identities = [
+            (
+                item.st_dev,
+                item.st_ino,
+                item.st_mode,
+                item.st_nlink,
+                item.st_size,
+                item.st_mtime_ns,
+                item.st_ctime_ns,
+            )
+            for item in (finished, final_named)
+        ]
+        for parent, component, child in edges:
+            current = os.stat(component, dir_fd=parent, follow_symlinks=False)
+            opened_directory = os.fstat(child)
+            if (
+                not stat.S_ISDIR(current.st_mode)
+                or (current.st_dev, current.st_ino)
+                != (opened_directory.st_dev, opened_directory.st_ino)
+            ):
+                raise OSError("directory changed")
+        if (
+            len(data) > limit
+            or len(data) != opened.st_size
+            or any(item != identity for item in final_identities)
+        ):
+            raise OSError("unstable leaf")
+        return data, identity
+    except OSError:
+        die(f"{label} is not one stable bounded single-link regular file")
+    finally:
+        if file_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(file_descriptor)
+        for descriptor in reversed(descriptors):
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+
+
+def _guard_require_absent_leaf(
+    base_dir: str, relative: str, label: str
+) -> None:
+    """Prove one fixed leaf is absent without following its parent path."""
+    if not _known_failure_portable_path(relative):
+        die(f"{label} path is not a safe relative path")
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    if not no_follow or not directory_only or os.open not in os.supports_dir_fd:
+        die(f"platform cannot safely inspect {label}", 1)
+    flags = (
+        os.O_RDONLY
+        | no_follow
+        | directory_only
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    descriptors = []
+    try:
+        root_descriptor = os.open(os.path.abspath(base_dir), flags)
+        descriptors.append(root_descriptor)
+        directory = root_descriptor
+        for component in relative.split("/")[:-1]:
+            try:
+                child = os.open(component, flags, dir_fd=directory)
+            except FileNotFoundError:
+                return
+            opened = os.fstat(child)
+            named = os.stat(component, dir_fd=directory, follow_symlinks=False)
+            if (
+                not stat.S_ISDIR(opened.st_mode)
+                or not stat.S_ISDIR(named.st_mode)
+                or (opened.st_dev, opened.st_ino)
+                != (named.st_dev, named.st_ino)
+            ):
+                os.close(child)
+                raise OSError("directory component changed")
+            descriptors.append(child)
+            directory = child
+        try:
+            os.stat(
+                relative.split("/")[-1],
+                dir_fd=directory,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            return
+        die(f"{label} must be absent before the first audit round")
+    except OSError:
+        die(f"{label} cannot be inspected through one stable no-follow path")
+    finally:
+        for descriptor in reversed(descriptors):
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+
+
+_GUARD_AUDIT_SYNOPSIS_MODULE = None
+
+
+def _guard_audit_synopsis_module():
+    global _GUARD_AUDIT_SYNOPSIS_MODULE
+    if _GUARD_AUDIT_SYNOPSIS_MODULE is not None:
+        return _GUARD_AUDIT_SYNOPSIS_MODULE
+    root = os.path.dirname(os.path.realpath(__file__))
+    relative = "audit_synopsis.py"
+    source = os.path.join(root, relative)
+    source_bytes = _read_stable_controller_file(
+        root, relative, "audit synopsis renderer", limit=SOURCE_BYTES_MAX
+    )
+    module_name = "_hexaemeron_fiat_guard_audit_synopsis"
+    specification = importlib.util.spec_from_file_location(module_name, source)
+    if specification is None or specification.loader is None:
+        die("audit synopsis renderer cannot be resolved", 1)
+    module = importlib.util.module_from_spec(specification)
+    sys.modules[module_name] = module
+    try:
+        # phylax: allow execute only stably read plugin-contained renderer bytes
+        exec(compile(source_bytes, source, "exec", dont_inherit=True), module.__dict__)
+    except (Exception, SystemExit):
+        sys.modules.pop(module_name, None)
+        die("audit synopsis renderer failed to initialise", 1)
+    if not callable(getattr(module, "render_source", None)):
+        die("audit synopsis renderer has no render operation", 1)
+    _GUARD_AUDIT_SYNOPSIS_MODULE = module
+    return module
+
+
+def _latest_guard_audit_receipt(state: dict, log_path: str) -> dict | None:
+    latest = None
+    for step in state.get("steps") or []:
+        for raw in as_dict(as_dict(step).get("audit")).get("rounds") or []:
+            entry = as_dict(raw)
+            if entry.get("log") != log_path:
+                die("guard audit receipt names a foreign log path")
+            latest = entry
+    if latest is None:
+        return None
+    offset = latest.get("log_end_offset")
+    digest = latest.get("synopsis_sha256")
+    if (
+        type(offset) is not int
+        or offset <= 0
+        or offset > SOURCE_BYTES_MAX
+        or not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+    ):
+        die("latest guard audit receipt has invalid byte bindings")
+    return latest
+
+
+def _guard_audit_pair_operation(base_dir: str, state: dict) -> dict:
+    """Validate one operation-local untouched audit pair and status view."""
+    log_path, synopsis_path = _guard_audit_paths(state)
+    latest = _latest_guard_audit_receipt(state, log_path)
+    if latest is None:
+        for path, label in (
+            (log_path, "fresh guard audit log"),
+            (synopsis_path, "fresh guard audit synopsis"),
+        ):
+            _guard_require_absent_leaf(base_dir, path, label)
+        if _guard_status_rows(base_dir):
+            die("fresh guard worktree must be exactly clean")
+        for path, label in (
+            (log_path, "fresh guard audit log"),
+            (synopsis_path, "fresh guard audit synopsis"),
+        ):
+            _guard_require_absent_leaf(base_dir, path, label)
+        if _guard_status_rows(base_dir):
+            die("fresh guard worktree changed during clean-boundary validation")
+        return {"status": "clean", "audit_pair": None}
+    expected_rows = sorted(
+        [("??", log_path), ("??", synopsis_path)],
+        key=lambda item: item[1].encode("utf-8"),
+    )
+    before_rows = _guard_status_rows(base_dir)
+    if before_rows != expected_rows:
+        die("guard worktree must contain exactly the untracked audit pair")
+    log_bytes, log_identity = _guard_file_snapshot(
+        base_dir, log_path, "guard audit log", limit=SOURCE_BYTES_MAX
+    )
+    synopsis_bytes, synopsis_identity = _guard_file_snapshot(
+        base_dir, synopsis_path, "guard audit synopsis", limit=SOURCE_BYTES_MAX
+    )
+    if len(log_bytes) != latest["log_end_offset"]:
+        die("guard audit log has an unreceipted suffix or missing prefix")
+    synopsis_sha256 = hashlib.sha256(synopsis_bytes).hexdigest()
+    if synopsis_sha256 != latest["synopsis_sha256"]:
+        die("guard audit synopsis digest does not match its latest receipt")
+    try:
+        rendered = _guard_audit_synopsis_module().render_source(log_path, log_bytes)
+    except (Exception, SystemExit):
+        die("guard audit log and synopsis cannot be revalidated")
+    if (
+        not isinstance(rendered, dict)
+        or rendered.get("bytes") != synopsis_bytes
+        or rendered.get("source_sha256") != hashlib.sha256(log_bytes).hexdigest()
+        or rendered.get("synopsis_sha256") != synopsis_sha256
+    ):
+        die("guard audit pair bytes do not match their receipt-bound rendering")
+    final_log, final_log_identity = _guard_file_snapshot(
+        base_dir, log_path, "guard audit log", limit=SOURCE_BYTES_MAX
+    )
+    final_synopsis, final_synopsis_identity = _guard_file_snapshot(
+        base_dir, synopsis_path, "guard audit synopsis", limit=SOURCE_BYTES_MAX
+    )
+    if (
+        (log_bytes, log_identity) != (final_log, final_log_identity)
+        or (synopsis_bytes, synopsis_identity)
+        != (final_synopsis, final_synopsis_identity)
+        or _guard_status_rows(base_dir) != expected_rows
+    ):
+        die("guard audit pair changed during validation")
+    return {
+        "log": log_path,
+        "log_sha256": hashlib.sha256(log_bytes).hexdigest(),
+        "synopsis": synopsis_path,
+        "synopsis_sha256": synopsis_sha256,
+    }
+
+
+def _guard_symlink_snapshot(
+    base_dir: str, relative: str
+) -> tuple[bytes, tuple]:
+    """Read one tracked symlink as link bytes without following any edge."""
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    if not no_follow or not directory_only or os.open not in os.supports_dir_fd:
+        die("platform cannot safely inspect tracked symlink", 1)
+    flags = (
+        os.O_RDONLY
+        | no_follow
+        | directory_only
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    descriptors = []
+    edges = []
+    try:
+        root = os.open(os.path.abspath(base_dir), flags)
+        descriptors.append(root)
+        directory = root
+        for component in relative.split("/")[:-1]:
+            child = os.open(component, flags, dir_fd=directory)
+            opened = os.fstat(child)
+            named = os.stat(component, dir_fd=directory, follow_symlinks=False)
+            if (
+                not stat.S_ISDIR(opened.st_mode)
+                or not stat.S_ISDIR(named.st_mode)
+                or (opened.st_dev, opened.st_ino)
+                != (named.st_dev, named.st_ino)
+            ):
+                os.close(child)
+                raise OSError("tracked symlink parent changed")
+            edges.append((directory, component, child))
+            descriptors.append(child)
+            directory = child
+        leaf = relative.split("/")[-1]
+        before = os.stat(leaf, dir_fd=directory, follow_symlinks=False)
+        identity = (
+            before.st_dev,
+            before.st_ino,
+            before.st_mode,
+            before.st_nlink,
+            before.st_size,
+            before.st_mtime_ns,
+            before.st_ctime_ns,
+        )
+        if not stat.S_ISLNK(before.st_mode) or before.st_nlink != 1:
+            raise OSError("tracked symlink has the wrong type")
+        payload = os.fsencode(os.readlink(leaf, dir_fd=directory))
+        after = os.stat(leaf, dir_fd=directory, follow_symlinks=False)
+        after_identity = (
+            after.st_dev,
+            after.st_ino,
+            after.st_mode,
+            after.st_nlink,
+            after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
+        )
+        for parent, component, child in edges:
+            current = os.stat(component, dir_fd=parent, follow_symlinks=False)
+            opened = os.fstat(child)
+            if (
+                not stat.S_ISDIR(current.st_mode)
+                or (current.st_dev, current.st_ino)
+                != (opened.st_dev, opened.st_ino)
+            ):
+                raise OSError("tracked symlink parent changed")
+        if identity != after_identity or len(payload) > GUARD_TRACKED_FILE_BYTES_MAX:
+            raise OSError("tracked symlink changed")
+        return payload, identity
+    except OSError:
+        die("tracked symlink is not one stable no-follow leaf")
+    finally:
+        for descriptor in reversed(descriptors):
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+
+
+def _guard_git_blob_oid(payload: bytes, expected_oid: str) -> str:
+    if len(expected_oid) == 40:
+        digest = hashlib.sha1()
+    elif len(expected_oid) == 64:
+        digest = hashlib.sha256()
+    else:
+        die("tracked HEAD tree contains an unsupported object id")
+    digest.update(f"blob {len(payload)}\0".encode("ascii"))
+    digest.update(payload)
+    return digest.hexdigest()
+
+
+def _guard_tracked_worktree(base_dir: str, head: str) -> dict:
+    """Compare raw tracked worktree leaves with the native HEAD tree."""
+    raw = _guard_exact_git(
+        base_dir,
+        ["ls-tree", "-r", "-z", "--full-tree", head],
+        "no-known HEAD tree cannot be read",
+    )
+    if raw and not raw.endswith(b"\0"):
+        die("no-known HEAD tree is truncated")
+    seen = set()
+    total = 0
+    count = 0
+    for encoded in raw.split(b"\0"):
+        if not encoded:
+            continue
+        try:
+            header, path_bytes = encoded.split(b"\t", 1)
+            mode_bytes, kind, oid_bytes = header.split(b" ")
+            mode = mode_bytes.decode("ascii")
+            object_kind = kind.decode("ascii")
+            oid = oid_bytes.decode("ascii")
+            path = path_bytes.decode("utf-8", "strict")
+        except (ValueError, UnicodeDecodeError):
+            die("no-known HEAD tree has malformed metadata")
+        blob_entry = object_kind == "blob" and mode in {
+            "100644",
+            "100755",
+            "120000",
+        }
+        gitlink_entry = object_kind == "commit" and mode == "160000"
+        if (
+            path in seen
+            or not _known_failure_portable_path(path)
+            or not (blob_entry or gitlink_entry)
+            or COMMIT_RE.fullmatch(oid) is None
+        ):
+            die("no-known HEAD tree contains an unsupported tracked entry")
+        seen.add(path)
+        if gitlink_entry:
+            # A superproject binds a gitlink by the exact mode, object id and
+            # path in its tree. The foreign commit need not exist locally, and
+            # the superproject worktree has no blob bytes to compare for it.
+            count += 1
+            continue
+        if mode == "120000":
+            payload, identity = _guard_symlink_snapshot(base_dir, path)
+        else:
+            payload, identity = _guard_file_snapshot(
+                base_dir,
+                path,
+                f"tracked worktree file {path}",
+                limit=GUARD_TRACKED_FILE_BYTES_MAX,
+            )
+            # Git records one executable class, derived from the owner's
+            # execute bit. Group/other-only execute bits do not make a 100644
+            # entry a Git executable and must not hide a lost owner bit on a
+            # 100755 entry.
+            executable = bool(stat.S_IMODE(identity[2]) & stat.S_IXUSR)
+            if executable != (mode == "100755"):
+                die(f"tracked worktree file {path} has the wrong executable mode")
+        if _guard_git_blob_oid(payload, oid) != oid:
+            die(f"tracked worktree file {path} differs from native HEAD")
+        total += len(payload)
+        count += 1
+        if total > GUARD_TRACKED_BYTES_MAX:
+            die("tracked worktree exceeds the no-known byte limit")
+    return {
+        "count": count,
+        "bytes": total,
+        "tree_sha256": hashlib.sha256(raw).hexdigest(),
+    }
+
+
+def _guard_no_known_boundary(
+    base_dir: str, state: dict, step: dict
+) -> dict:
+    """Prove the zero-assignment Step is still at its pre-edit boundary."""
+    worktree_identity = _guard_worktree_identity(base_dir, state)
+    step_parent = _native_inoculation_parent(base_dir, state, step)
+    expected_branch = step_branch_name(state, step)
+    branch = tool_text(
+        _guard_exact_git(
+            base_dir,
+            ["symbolic-ref", "--quiet", "--short", "HEAD"],
+            "no-known worktree is not on its Step branch",
+        ),
+        "no-known worktree branch",
+    ).strip()
+    head = tool_text(
+        _guard_exact_git(
+            base_dir,
+            ["rev-parse", "--verify", "HEAD"],
+            "no-known worktree HEAD cannot be resolved",
+        ),
+        "no-known worktree HEAD",
+    ).strip()
+    tip = tool_text(
+        _guard_exact_git(
+            base_dir,
+            ["rev-parse", "--verify", f"refs/heads/{expected_branch}"],
+            "no-known Step branch tip cannot be resolved",
+        ),
+        "no-known Step branch tip",
+    ).strip()
+    if (
+        branch != expected_branch
+        or head != step_parent
+        or tip != step_parent
+        or COMMIT_RE.fullmatch(head) is None
+        or COMMIT_RE.fullmatch(tip) is None
+    ):
+        die(
+            "no-known authority requires the exact Step branch at its "
+            "recorded inoculation parent"
+        )
+    tracked = _guard_tracked_worktree(base_dir, head)
+    audit = _guard_audit_pair_operation(base_dir, state)
+    final_branch = tool_text(
+        _guard_exact_git(
+            base_dir,
+            ["symbolic-ref", "--quiet", "--short", "HEAD"],
+            "no-known worktree branch changed during validation",
+        ),
+        "no-known final worktree branch",
+    ).strip()
+    final_head = tool_text(
+        _guard_exact_git(
+            base_dir,
+            ["rev-parse", "--verify", "HEAD"],
+            "no-known worktree HEAD changed during validation",
+        ),
+        "no-known final worktree HEAD",
+    ).strip()
+    final_tip = tool_text(
+        _guard_exact_git(
+            base_dir,
+            ["rev-parse", "--verify", f"refs/heads/{expected_branch}"],
+            "no-known Step branch tip changed during validation",
+        ),
+        "no-known final Step branch tip",
+    ).strip()
+    if (final_branch, final_head, final_tip) != (branch, head, tip):
+        die("no-known Step branch changed during boundary validation")
+    return {
+        "worktree_identity": worktree_identity,
+        "step_parent": step_parent,
+        "branch": branch,
+        "head": head,
+        "tip": tip,
+        "tracked": tracked,
+        "audit": audit,
+    }
+
+
+def _guard_changed_paths(capture: dict, step: dict) -> list[str]:
+    assigned = _assigned_findings(capture, step["n"])
+    if not assigned or len(assigned) > KNOWN_FAILURE_MAX_FINDINGS:
+        die(f"step {step['n']} has no bounded assigned known-failure set")
+    paths = sorted(
+        {path for finding in assigned for path in finding["guard_paths"]},
+        key=lambda value: value.encode("utf-8"),
+    )
+    if (
+        not paths
+        or len(paths) > KNOWN_FAILURE_MAX_GUARD_PATHS
+        or any(not _known_failure_portable_path(path) for path in paths)
+    ):
+        die("step guard path union is invalid or oversized")
+    return paths
+
+
+def _guard_delta_rows(
+    base_dir: str, step_parent: str, guard_commit: str, changed_paths: list[str]
+) -> list[dict]:
+    raw = _guard_native_git(
+        base_dir,
+        [
+            "diff-tree",
+            "--no-commit-id",
+            "-r",
+            "--raw",
+            "-z",
+            "--no-renames",
+            step_parent,
+            guard_commit,
+            "--",
+        ],
+        "guard commit delta cannot be read",
+    )
+    fields = raw.split(b"\0")
+    if fields and fields[-1] == b"":
+        fields.pop()
+    if len(fields) % 2:
+        die("guard commit delta returned ambiguous raw framing")
+    metadata_re = re.compile(
+        rb":(?P<old_mode>[0-7]{6}) (?P<new_mode>[0-7]{6}) "
+        rb"(?P<old_oid>[0-9a-f]{40}|[0-9a-f]{64}) "
+        rb"(?P<new_oid>[0-9a-f]{40}|[0-9a-f]{64}) (?P<status>[A-Z])\Z"
+    )
+    rows = []
+    for index in range(0, len(fields), 2):
+        match = metadata_re.fullmatch(fields[index])
+        try:
+            path = fields[index + 1].decode("utf-8", "strict")
+        except UnicodeDecodeError:
+            die("guard commit delta contains a non-UTF-8 path")
+        if match is None:
+            die("guard commit delta contains an unsupported row")
+        rows.append(
+            {
+                "path": path,
+                "status": match.group("status").decode("ascii"),
+                "old_mode": match.group("old_mode").decode("ascii"),
+                "new_mode": match.group("new_mode").decode("ascii"),
+                "old_oid": match.group("old_oid").decode("ascii"),
+                "new_oid": match.group("new_oid").decode("ascii"),
+            }
+        )
+    try:
+        return _validate_guard_delta_rows(rows, changed_paths)
+    except ValueError as exc:
+        die(str(exc))
+
+
+def _guard_tree_rows(
+    base_dir: str, guard_commit: str, changed_paths: list[str]
+) -> dict[str, dict]:
+    rows = {}
+    for start in range(0, len(changed_paths), 64):
+        batch = changed_paths[start : start + 64]
+        raw = _guard_native_git(
+            base_dir,
+            ["ls-tree", "-z", "--full-tree", guard_commit, "--", *batch],
+            "guard commit tree rows cannot be read",
+        )
+        for record in raw.split(b"\0"):
+            if not record:
+                continue
+            metadata, separator, path_bytes = record.partition(b"\t")
+            match = re.fullmatch(
+                rb"(?P<mode>[0-7]{6}) (?P<kind>[a-z]+) "
+                rb"(?P<oid>[0-9a-f]{40}|[0-9a-f]{64})",
+                metadata,
+            )
+            try:
+                path = path_bytes.decode("utf-8", "strict")
+            except UnicodeDecodeError:
+                die("guard commit tree contains a non-UTF-8 path")
+            if (
+                separator != b"\t"
+                or match is None
+                or path not in batch
+                or path in rows
+                or match.group("kind") != b"blob"
+                or match.group("mode") not in (b"100644", b"100755")
+            ):
+                die("guard commit tree contains an unsupported row")
+            rows[path] = {
+                "mode": match.group("mode").decode("ascii"),
+                "oid": match.group("oid").decode("ascii"),
+            }
+    if set(rows) != set(changed_paths):
+        die("guard commit tree does not contain the exact changed path set")
+    return rows
+
+
+def _guard_blob_rows(
+    base_dir: str, delta_rows: list[dict], tree_rows: dict[str, dict]
+) -> tuple[list[dict], list[dict]]:
+    retained = []
+    supplied = []
+    total = 0
+    for delta in delta_rows:
+        path = delta["path"]
+        tree = tree_rows[path]
+        if tree["mode"] != delta["new_mode"] or tree["oid"] != delta["new_oid"]:
+            die("guard commit delta and tree object rows differ")
+        size_text = tool_text(
+            _guard_native_git(
+                base_dir,
+                ["cat-file", "-s", tree["oid"]],
+                "guard blob size cannot be read",
+            ),
+            "guard blob size",
+        ).strip()
+        if re.fullmatch(r"0|[1-9][0-9]*", size_text) is None:
+            die("guard blob size is malformed")
+        size = int(size_text)
+        if size > GUARD_BLOB_BYTES_MAX:
+            die("guard blob exceeds the per-blob byte limit")
+        total += size
+        if total > GUARD_BLOBS_BYTES_MAX:
+            die("guard blobs exceed the Step-wide byte limit")
+        raw = _guard_native_git(
+            base_dir,
+            ["cat-file", "blob", tree["oid"]],
+            "guard blob cannot be read",
+        )
+        if len(raw) != size:
+            die("guard blob length does not match Git metadata")
+        row = {
+            "path": path,
+            "status": delta["status"],
+            "mode": tree["mode"],
+            "oid": tree["oid"],
+            "bytes": size,
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        }
+        retained.append(row)
+        supplied.append({**row, "raw": raw})
+    return retained, supplied
+
+
+def _guard_commit_evidence(
+    base_dir: str,
+    state: dict,
+    capture: dict,
+    step: dict,
+    guard_commit: str,
+    *,
+    writer: bool,
+) -> dict:
+    guard_commit = require_full_sha(guard_commit, "guard commit")
+    worktree_identity = _guard_worktree_identity(base_dir, state)
+    step_parent = _native_inoculation_parent(base_dir, state, step)
+    resolved = tool_text(
+        _guard_native_git(
+            base_dir,
+            ["rev-parse", "--verify", "--end-of-options", f"{guard_commit}^{{commit}}"],
+            "guard commit cannot be resolved natively",
+        ),
+        "guard commit",
+    ).strip()
+    if resolved != guard_commit:
+        die("guard commit did not resolve to its exact native object")
+    parent_text = tool_text(
+        _guard_native_git(
+            base_dir,
+            ["show", "-s", "--no-show-signature", "--format=%P", guard_commit],
+            "guard commit parents cannot be read",
+        ),
+        "guard commit parents",
+    ).strip()
+    parents = parent_text.split() if parent_text else []
+    if parents != [step_parent]:
+        die("guard commit does not have the recorded Step parent as its sole parent")
+    verify_local_commit(
+        base_dir, guard_commit, f"step {step['n']} guard", native_relation=True
+    )
+
+    head = tool_text(
+        _guard_native_git(
+            base_dir,
+            ["rev-parse", "--verify", "HEAD"],
+            "guard worktree HEAD cannot be resolved",
+        ),
+        "guard worktree HEAD",
+    ).strip()
+    if COMMIT_RE.fullmatch(head) is None:
+        die("guard worktree HEAD is malformed")
+    if writer:
+        expected_branch = step_branch_name(state, step)
+        branch = tool_text(
+            _guard_native_git(
+                base_dir,
+                ["symbolic-ref", "--quiet", "--short", "HEAD"],
+                "guard worktree is not on its Step branch",
+            ),
+            "guard worktree branch",
+        ).strip()
+        tip = tool_text(
+            _guard_native_git(
+                base_dir,
+                ["rev-parse", "--verify", f"refs/heads/{expected_branch}"],
+                "guard Step branch tip cannot be resolved",
+            ),
+            "guard Step branch tip",
+        ).strip()
+        if branch != expected_branch or head != guard_commit or tip != guard_commit:
+            die("guard writer requires the exact Step branch and guard commit tip")
+        _guard_audit_pair_operation(base_dir, state)
+    else:
+        status = bounded_probe(
+            base_dir,
+            _native_git_executable(),
+            [
+                "--no-replace-objects",
+                "-c",
+                "core.useReplaceRefs=false",
+                "merge-base",
+                "--is-ancestor",
+                guard_commit,
+                head,
+            ],
+            environment=_native_relation_environment(),
+            output_max=GUARD_GIT_METADATA_BYTES_MAX,
+        )
+        if status[2] is not None or status[0] != 0:
+            die("retained guard commit is not an ancestor of the current tip")
+
+    changed_paths = _guard_changed_paths(capture, step)
+    delta_rows = _guard_delta_rows(base_dir, step_parent, guard_commit, changed_paths)
+    tree_rows = _guard_tree_rows(base_dir, guard_commit, changed_paths)
+    guard_blobs, supplied_blobs = _guard_blob_rows(base_dir, delta_rows, tree_rows)
+    return {
+        "worktree_identity": worktree_identity,
+        "step_parent": step_parent,
+        "guard_commit": guard_commit,
+        "changed_paths": changed_paths,
+        "guard_blobs": guard_blobs,
+        "supplied_blobs": supplied_blobs,
+    }
+
+
+def _guard_evidence_components(step: dict, directory: str) -> list[str]:
+    if directory not in {GUARD_REPORT_DIRECTORY, GUARD_MANIFEST_DIRECTORY}:
+        die("guard evidence directory is invalid", 1)
+    return [
+        STATE_DIR_NAME,
+        "steps",
+        str(step["n"]),
+        "inoculation",
+        directory,
+    ]
+
+
+def _guard_open_directory(
+    base_dir: str,
+    components: list[str],
+    label: str,
+    *,
+    create: bool,
+    missing_ok: bool = False,
+) -> int | None:
+    """Open a fixed controller directory without following any component."""
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    directory_only = getattr(os, "O_DIRECTORY", 0)
+    if not no_follow or not directory_only or os.open not in os.supports_dir_fd:
+        die(f"platform cannot safely access {label}", 1)
+    flags = os.O_RDONLY | no_follow | directory_only | getattr(os, "O_CLOEXEC", 0)
+    descriptor = None
+    try:
+        descriptor = os.open(os.path.abspath(base_dir), flags)
+        for component in components:
+            child = None
+            try:
+                child = os.open(component, flags, dir_fd=descriptor)
+            except FileNotFoundError:
+                if not create:
+                    if missing_ok:
+                        os.close(descriptor)
+                        return None
+                    raise
+                os.mkdir(component, 0o700, dir_fd=descriptor)
+                os.fsync(descriptor)
+                child = os.open(component, flags, dir_fd=descriptor)
+            opened = os.fstat(child)
+            named = os.stat(component, dir_fd=descriptor, follow_symlinks=False)
+            if (
+                not stat.S_ISDIR(opened.st_mode)
+                or not stat.S_ISDIR(named.st_mode)
+                or (opened.st_dev, opened.st_ino) != (named.st_dev, named.st_ino)
+            ):
+                raise OSError("directory component changed")
+            os.close(descriptor)
+            descriptor = child
+        return descriptor
+    except OSError:
+        if descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+        die(f"{label} is not one stable no-follow directory")
+
+
+def _guard_read_leaf(
+    directory: int,
+    name: str,
+    label: str,
+    *,
+    limit: int,
+    missing_ok: bool = False,
+) -> tuple[bytes, tuple] | None:
+    """Read a final evidence leaf relative to its stable directory."""
+    if "/" in name or name in {"", ".", ".."}:
+        die(f"{label} leaf name is invalid", 1)
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
+    descriptor = None
+    try:
+        descriptor = os.open(name, flags, dir_fd=directory)
+    except FileNotFoundError:
+        if missing_ok:
+            return None
+        die(f"{label} is missing")
+    except OSError:
+        die(f"{label} cannot be opened without following links")
+    try:
+        opened = os.fstat(descriptor)
+        named = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        identity = (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_mode,
+            opened.st_nlink,
+            opened.st_size,
+            opened.st_mtime_ns,
+            opened.st_ctime_ns,
+        )
+        named_identity = (
+            named.st_dev,
+            named.st_ino,
+            named.st_mode,
+            named.st_nlink,
+            named.st_size,
+            named.st_mtime_ns,
+            named.st_ctime_ns,
+        )
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or opened.st_nlink != 1
+            or opened.st_size > limit
+            or identity != named_identity
+        ):
+            die(f"{label} is not one bounded single-link regular file")
+        chunks = []
+        remaining = limit + 1
+        while remaining:
+            chunk = os.read(descriptor, min(65_536, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        data = b"".join(chunks)
+        finished = os.fstat(descriptor)
+        final_named = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        final_identities = [
+            (
+                item.st_dev,
+                item.st_ino,
+                item.st_mode,
+                item.st_nlink,
+                item.st_size,
+                item.st_mtime_ns,
+                item.st_ctime_ns,
+            )
+            for item in (finished, final_named)
+        ]
+        if (
+            len(data) > limit
+            or len(data) != opened.st_size
+            or any(item != identity for item in final_identities)
+        ):
+            die(f"{label} changed while it was read")
+        return data, identity
+    except OSError:
+        die(f"{label} changed while it was read")
+    finally:
+        os.close(descriptor)
+
+
+def _guard_entry_exists(directory: int, name: str, label: str) -> bool:
+    """Check only whether one fixed no-follow directory entry exists.
+
+    A durable positive completion record makes the former pending entry inert.
+    Recovery must therefore be able to move even malformed or replaced pending
+    bytes out of the gating name without first treating them as evidence.
+    """
+    if "/" in name or name in {"", ".", ".."}:
+        die(f"{label} leaf name is invalid", 1)
+    try:
+        os.stat(name, dir_fd=directory, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        die(f"{label} directory entry cannot be inspected without following links")
+    return True
+
+
+def _guard_initial_capture(state: dict) -> dict:
+    stored = _validate_known_failure_capture(
+        as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+            "known_failure_inventory"
+        ),
+        "receipted known-failure capture",
+    )
+    return {
+        "study_sha256": stored["study_sha256"],
+        "runbook_sha256": stored["runbook_sha256"],
+        "inventory_sha256": stored["inventory_sha256"],
+    }
+
+
+def _guard_report_relative(step: dict, finding_id: str) -> str:
+    return (
+        _inoculation_evidence_relative(step["n"])
+        + f"/{GUARD_REPORT_DIRECTORY}/{finding_id}.report"
+    )
+
+
+def _guard_manifest_relative(step: dict, finding_id: str) -> str:
+    return (
+        _inoculation_evidence_relative(step["n"])
+        + f"/{GUARD_MANIFEST_DIRECTORY}/{finding_id}.json"
+    )
+
+
+def _guard_publication_name(finding_id: str) -> str:
+    return f".pending-{finding_id}.json"
+
+
+def _guard_completion_name(finding_id: str) -> str:
+    return f".complete-{finding_id}.json"
+
+
+def _guard_retired_publication_name(finding_id: str) -> str:
+    return f".intent-{finding_id}.json"
+
+
+def _guard_publication_bytes(
+    finding_id: str,
+    report_bytes: bytes,
+    manifest_bytes: bytes,
+    *,
+    runner_exit: int,
+    counters: dict,
+) -> bytes:
+    document = {
+        "schema": GUARD_PUBLICATION_SCHEMA,
+        "finding_id": finding_id,
+        "report_sha256": hashlib.sha256(report_bytes).hexdigest(),
+        "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+        "runner_exit": runner_exit,
+        "counters": counters,
+    }
+    return (
+        json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("ascii")
+
+
+def _guard_validate_publication(
+    payload: bytes, finding_id: str, *, label: str
+) -> dict:
+    try:
+        document = _guard_json_document(payload, label)
+    except ValueError as exc:
+        die(str(exc))
+    counters = document.get("counters") if type(document) is dict else None
+    if (
+        type(document) is not dict
+        or set(document) != GUARD_PUBLICATION_KEYS
+        or document.get("schema") != GUARD_PUBLICATION_SCHEMA
+        or document.get("finding_id") != finding_id
+        or type(document.get("runner_exit")) is not int
+        or document["runner_exit"] < 0
+        or type(counters) is not dict
+        or set(counters) != GUARD_COUNTER_KEYS
+        or counters.get("complete") is not True
+        or any(
+            type(counters.get(key)) is not int or counters[key] < 0
+            for key in ("executed", "assertion_failures", "errors", "skipped")
+        )
+        or counters.get("executed", 0) < 1
+        or counters.get("assertion_failures", 0) < 1
+        or counters.get("errors") != 0
+        or counters.get("skipped") != 0
+        or any(
+            type(document.get(key)) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", document[key]) is None
+            for key in ("report_sha256", "manifest_sha256")
+        )
+    ):
+        die(f"{label} has an unsupported binding")
+    canonical = (
+        json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("ascii")
+    if canonical != payload:
+        die(f"{label} is not canonical JSON")
+    return document
+
+
+def _guard_read_publication(
+    directory: int, finding_id: str, *, missing_ok: bool
+) -> tuple[bytes, tuple, dict] | None:
+    label = f"guard publication marker {finding_id}"
+    retained = _guard_read_leaf(
+        directory,
+        _guard_publication_name(finding_id),
+        label,
+        limit=GUARD_PUBLICATION_BYTES_MAX,
+        missing_ok=missing_ok,
+    )
+    if retained is None:
+        return None
+    payload, identity = retained
+    if stat.S_IMODE(identity[2]) != 0o600:
+        die(f"{label} does not retain mode 0600")
+    return payload, identity, _guard_validate_publication(
+        payload, finding_id, label=label
+    )
+
+
+def _guard_read_completion(
+    directory: int, finding_id: str, *, missing_ok: bool
+) -> tuple[bytes, tuple, dict] | None:
+    label = f"guard completion record {finding_id}"
+    retained = _guard_read_leaf(
+        directory,
+        _guard_completion_name(finding_id),
+        label,
+        limit=GUARD_PUBLICATION_BYTES_MAX,
+        missing_ok=missing_ok,
+    )
+    if retained is None:
+        return None
+    payload, identity = retained
+    if stat.S_IMODE(identity[2]) != 0o600:
+        die(f"{label} does not retain mode 0600")
+    return payload, identity, _guard_validate_publication(
+        payload, finding_id, label=label
+    )
+
+
+def _guard_preflight_existing_publication(
+    base_dir: str,
+    step: dict,
+    finding_id: str,
+    report_bytes: bytes,
+    manifest_bytes: bytes,
+    runner_exit: int,
+    counters: dict,
+) -> bool:
+    """Validate a pending exact pair before any retry publication mutation."""
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _guard_evidence_components(step, GUARD_MANIFEST_DIRECTORY),
+        "guard manifest directory",
+        create=False,
+        missing_ok=True,
+    )
+    if manifest_directory is None:
+        return False
+    expected_marker = _guard_publication_bytes(
+        finding_id,
+        report_bytes,
+        manifest_bytes,
+        runner_exit=runner_exit,
+        counters=counters,
+    )
+    try:
+        completed = _guard_read_completion(
+            manifest_directory, finding_id, missing_ok=True
+        )
+        if completed is not None and completed[0] != expected_marker:
+            die(
+                f"guard completion record {finding_id} binds different "
+                "pending evidence"
+            )
+        if completed is None:
+            pending = _guard_read_publication(
+                manifest_directory, finding_id, missing_ok=True
+            )
+            if pending is None:
+                return False
+            if pending[0] != expected_marker:
+                die(
+                    f"guard publication marker {finding_id} binds different "
+                    "pending evidence"
+                )
+        else:
+            # Once the exact positive completion is durable, pending is only
+            # a recovery gate. Its bytes are no longer evidence and may have
+            # changed before a crash; retirement preserves them without use.
+            _guard_entry_exists(
+                manifest_directory,
+                _guard_publication_name(finding_id),
+                f"guard publication marker {finding_id}",
+            )
+        retained_manifest = _guard_read_leaf(
+            manifest_directory,
+            f"{finding_id}.json",
+            f"guard manifest {finding_id}",
+            limit=GUARD_MANIFEST_BYTES_MAX,
+            missing_ok=True,
+        )
+        if retained_manifest is not None and (
+            retained_manifest[0] != manifest_bytes
+            or stat.S_IMODE(retained_manifest[1][2]) != 0o600
+        ):
+            die(
+                f"guard manifest {finding_id} pending final differs from "
+                "its publication marker"
+            )
+    finally:
+        os.close(manifest_directory)
+
+    report_directory = _guard_open_directory(
+        base_dir,
+        _guard_evidence_components(step, GUARD_REPORT_DIRECTORY),
+        "guard report directory",
+        create=False,
+        missing_ok=True,
+    )
+    if report_directory is None:
+        die(f"guard publication marker {finding_id} has no retained report")
+    try:
+        retained_report = _guard_read_leaf(
+            report_directory,
+            f"{finding_id}.report",
+            f"guard report {finding_id}",
+            limit=GUARD_REPORT_BYTES_MAX,
+            missing_ok=True,
+        )
+        if retained_report is None or (
+            retained_report[0] != report_bytes
+            or stat.S_IMODE(retained_report[1][2]) != 0o600
+        ):
+            die(
+                f"guard report {finding_id} differs from its pending "
+                "publication marker"
+            )
+    finally:
+        os.close(report_directory)
+    return True
+
+
+def _guard_canonical_manifest(manifest: dict) -> bytes:
+    data = (
+        json.dumps(
+            manifest,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    ).encode("utf-8")
+    if len(data) > GUARD_MANIFEST_BYTES_MAX:
+        die("guard manifest exceeds the byte limit")
+    return data
+
+
+def _validate_guard_manifest(
+    manifest: dict,
+    raw_report: bytes,
+    *,
+    state: dict,
+    capture: dict,
+    step: dict,
+    finding: dict,
+    evidence: dict,
+) -> dict:
+    label = f"guard manifest for {finding['id']}"
+    if type(manifest) is not dict or set(manifest) != GUARD_MANIFEST_KEYS:
+        die(f"{label} has an unsupported field set")
+    if _guard_json_depth(manifest) > GUARD_MANIFEST_DEPTH_MAX:
+        die(f"{label} exceeds the JSON depth limit")
+    worktree = manifest.get("worktree_identity")
+    capture_binding = manifest.get("capture")
+    retained_report = manifest.get("retained_report")
+    if type(worktree) is not dict or set(worktree) != GUARD_WORKTREE_IDENTITY_KEYS:
+        die(f"{label} has an invalid worktree identity")
+    if any(type(worktree.get(key)) is not int or worktree[key] < 0 for key in worktree):
+        die(f"{label} has an invalid worktree identity")
+    if type(capture_binding) is not dict or set(capture_binding) != GUARD_CAPTURE_KEYS:
+        die(f"{label} has an invalid capture binding")
+    if type(retained_report) is not dict or set(retained_report) != GUARD_RETAINED_REPORT_KEYS:
+        die(f"{label} has an invalid retained report reference")
+    expected_report_path = _guard_report_relative(step, finding["id"])
+    report_digest = hashlib.sha256(raw_report).hexdigest()
+    if retained_report != {
+        "path": expected_report_path,
+        "bytes": len(raw_report),
+        "sha256": report_digest,
+    }:
+        die(f"{label} does not bind its exact retained report bytes")
+    try:
+        argv = _guard_test_argv(finding["test_command"])
+        counters = _guard_admission_counters(
+            finding["report_format"],
+            raw_report,
+            {"status": manifest.get("verdict"), "report": manifest.get("counters")},
+        )
+    except ValueError as exc:
+        die(f"{label} is not admissible: {exc}")
+    runner_exit = manifest.get("runner_exit")
+    if type(runner_exit) is not int or runner_exit < 0:
+        die(f"{label} has an invalid runner exit")
+    if manifest != _build_guard_manifest(
+        finding_id=finding["id"],
+        consuming_step=step["n"],
+        controller_run_id=controller_run_id(state),
+        worktree_identity=evidence["worktree_identity"],
+        capture=_guard_initial_capture(state),
+        step_parent=evidence["step_parent"],
+        guard_commit=evidence["guard_commit"],
+        changed_paths=evidence["changed_paths"],
+        guard_blobs=evidence["guard_blobs"],
+        test_command=finding["test_command"],
+        test_argv=argv,
+        report_format=finding["report_format"],
+        report_file=finding["report_file"],
+        retained_report=retained_report,
+        runner_exit=runner_exit,
+        counters=counters,
+        verdict="guarded",
+    ):
+        die(f"{label} does not match its immutable context")
+    return manifest
+
+
+def _guard_manifest_documents(
+    base_dir: str, state: dict, capture: dict, step: dict
+) -> list[dict]:
+    """Read pairs carrying a durable positive completion record."""
+    assigned = {finding["id"]: finding for finding in _assigned_findings(capture, step["n"])}
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _guard_evidence_components(step, GUARD_MANIFEST_DIRECTORY),
+        "guard manifest directory",
+        create=False,
+        missing_ok=True,
+    )
+    if manifest_directory is None:
+        return []
+    try:
+        try:
+            names = os.listdir(manifest_directory)
+        except OSError:
+            die("guard manifest directory cannot be listed stably")
+        final_names = {f"{finding_id}.json" for finding_id in assigned}
+        pending_names = {
+            _guard_publication_name(finding_id) for finding_id in assigned
+        }
+        completion_names = {
+            _guard_completion_name(finding_id) for finding_id in assigned
+        }
+        retired_names = {
+            _guard_retired_publication_name(finding_id)
+            for finding_id in assigned
+        }
+        foreign = sorted(
+            name
+            for name in names
+            if not name.startswith(".stage-")
+            and name not in final_names
+            and name not in pending_names
+            and name not in completion_names
+            and name not in retired_names
+        )
+        if foreign:
+            die("guard manifest directory contains a foreign final leaf")
+        documents = []
+        for finding_id in sorted(assigned):
+            completed = _guard_read_completion(
+                manifest_directory, finding_id, missing_ok=True
+            )
+            if _guard_entry_exists(
+                manifest_directory,
+                _guard_publication_name(finding_id),
+                f"guard pending intent {finding_id}",
+            ):
+                # Positive completion is written while pending remains. The
+                # pending name is retired only afterwards, so an interrupted
+                # completion can never expose an uncommitted final pair.
+                continue
+            if completed is None:
+                # Report and manifest names alone never confer authority.
+                continue
+            name = f"{finding_id}.json"
+            first = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"guard manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+                missing_ok=True,
+            )
+            if first is None:
+                continue
+            manifest_bytes, manifest_identity = first
+            if stat.S_IMODE(manifest_identity[2]) != 0o600:
+                die(f"guard manifest {finding_id} does not retain mode 0600")
+            manifest = _guard_json_document(
+                manifest_bytes, f"guard manifest {finding_id}"
+            )
+            if (
+                type(manifest) is not dict
+                or _guard_json_depth(manifest) > GUARD_MANIFEST_DEPTH_MAX
+            ):
+                die(f"guard manifest {finding_id} is not one bounded object")
+            if _guard_canonical_manifest(manifest) != manifest_bytes:
+                die(f"guard manifest {finding_id} is not canonical JSON")
+            report_directory = _guard_open_directory(
+                base_dir,
+                _guard_evidence_components(step, GUARD_REPORT_DIRECTORY),
+                "guard report directory",
+                create=False,
+            )
+            try:
+                report = _guard_read_leaf(
+                    report_directory,
+                    f"{finding_id}.report",
+                    f"guard report {finding_id}",
+                    limit=GUARD_REPORT_BYTES_MAX,
+                )
+            finally:
+                os.close(report_directory)
+            assert report is not None
+            report_bytes, report_identity = report
+            if stat.S_IMODE(report_identity[2]) != 0o600:
+                die(f"guard report {finding_id} does not retain mode 0600")
+            if completed[2] != {
+                "schema": GUARD_PUBLICATION_SCHEMA,
+                "finding_id": finding_id,
+                "report_sha256": hashlib.sha256(report_bytes).hexdigest(),
+                "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+                "runner_exit": manifest.get("runner_exit"),
+                "counters": manifest.get("counters"),
+            }:
+                die(
+                    f"guard completion record {finding_id} does not bind its "
+                    "exact final pair"
+                )
+            second = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"guard manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+            )
+            assert second is not None
+            if second != (manifest_bytes, manifest_identity):
+                die(f"guard manifest {finding_id} changed during pair discovery")
+            late_pending = _guard_entry_exists(
+                manifest_directory,
+                _guard_publication_name(finding_id),
+                f"guard pending intent {finding_id}",
+            )
+            if late_pending:
+                continue
+            report_directory = _guard_open_directory(
+                base_dir,
+                _guard_evidence_components(step, GUARD_REPORT_DIRECTORY),
+                "guard report directory",
+                create=False,
+            )
+            try:
+                second_report = _guard_read_leaf(
+                    report_directory,
+                    f"{finding_id}.report",
+                    f"guard report {finding_id}",
+                    limit=GUARD_REPORT_BYTES_MAX,
+                )
+            finally:
+                os.close(report_directory)
+            if second_report != (report_bytes, report_identity):
+                die(f"guard report {finding_id} changed during pair discovery")
+            final_manifest = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"guard manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+            )
+            if final_manifest != (manifest_bytes, manifest_identity):
+                die(f"guard manifest {finding_id} changed during pair discovery")
+            final_pending = _guard_entry_exists(
+                manifest_directory,
+                _guard_publication_name(finding_id),
+                f"guard pending intent {finding_id}",
+            )
+            if final_pending:
+                continue
+            final_completion = _guard_read_completion(
+                manifest_directory, finding_id, missing_ok=False
+            )
+            if final_completion != completed:
+                die(
+                    f"guard completion record {finding_id} changed during "
+                    "pair discovery"
+                )
+            documents.append(
+                {
+                    "finding": assigned[finding_id],
+                    "manifest": manifest,
+                    "manifest_bytes": manifest_bytes,
+                    "report_bytes": report_bytes,
+                }
+            )
+        return documents
+    except ValueError as exc:
+        die(str(exc))
+    finally:
+        os.close(manifest_directory)
+
+
+def _discover_guard_evidence(
+    base_dir: str,
+    state: dict,
+    capture: dict,
+    step: dict,
+    *,
+    recheck_state: bool,
+) -> dict:
+    documents = _guard_manifest_documents(base_dir, state, capture, step)
+    commits = {
+        document["manifest"].get("guard_commit") for document in documents
+    }
+    if len(commits) > 1:
+        die("guard manifests bind mixed guard commits")
+    evidence = None
+    if commits:
+        guard_commit = next(iter(commits))
+        evidence = _guard_commit_evidence(
+            base_dir, state, capture, step, guard_commit, writer=False
+        )
+        for document in documents:
+            _validate_guard_manifest(
+                document["manifest"],
+                document["report_bytes"],
+                state=state,
+                capture=capture,
+                step=step,
+                finding=document["finding"],
+                evidence=evidence,
+            )
+    if recheck_state:
+        current = load_state(base_dir)
+        if state_fingerprint(current) != state_fingerprint(state):
+            die("controller state changed during lock-free guard discovery")
+    completed_ids = sorted(document["finding"]["id"] for document in documents)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    result = {
+        "inventory_sha256": _guard_initial_capture(state)["inventory_sha256"],
+        "assigned_count": len(assigned_ids),
+        "completed_ids": completed_ids,
+        "remaining_ids": sorted(set(assigned_ids) - set(completed_ids)),
+    }
+    if evidence is not None:
+        result["guard_commit"] = evidence["guard_commit"]
+    result["documents"] = documents
+    result["evidence"] = evidence
+    return result
+
+
+def _guard_write_all(descriptor: int, payload: bytes, label: str) -> None:
+    remaining = payload
+    try:
+        while remaining:
+            written = os.write(descriptor, remaining)
+            if written <= 0 or written > len(remaining):
+                raise OSError("short write")
+            remaining = remaining[written:]
+    except OSError:
+        die(f"{label} staging write failed")
+
+
+def _guard_write_stage(
+    directory: int, payload: bytes, label: str, *, limit: int
+) -> str:
+    if len(payload) > limit:
+        die(f"{label} exceeds its byte limit")
+    name = ".stage-" + os.urandom(24).hex()
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    descriptor = None
+    try:
+        descriptor = os.open(name, flags, 0o600, dir_fd=directory)
+        _guard_write_all(descriptor, payload, label)
+        os.fsync(descriptor)
+        info = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(info.st_mode)
+            or info.st_nlink != 1
+            or stat.S_IMODE(info.st_mode) != 0o600
+            or info.st_size != len(payload)
+        ):
+            die(f"{label} staging leaf failed revalidation")
+    except OSError:
+        die(f"{label} staging leaf could not be created")
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+    checked = _guard_read_leaf(
+        directory, name, f"{label} staging leaf", limit=limit
+    )
+    assert checked is not None
+    if checked[0] != payload:
+        die(f"{label} staging bytes changed after fsync")
+    return name
+
+
+def _guard_atomic_no_replace(
+    directory: int, stage: str, final: str, label: str
+) -> None:
+    """Publish one staged leaf atomically, refusing an occupied final name."""
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+    except OSError:
+        die("guard platform has no atomic no-replace publication")
+    source = os.fsencode(stage)
+    destination = os.fsencode(final)
+    if hasattr(libc, "renameat2"):
+        rename = libc.renameat2
+        rename.argtypes = (
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        )
+        rename.restype = ctypes.c_int
+        result = rename(directory, source, directory, destination, 1)
+    elif hasattr(libc, "renameatx_np"):
+        rename = libc.renameatx_np
+        rename.argtypes = (
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        )
+        rename.restype = ctypes.c_int
+        result = rename(directory, source, directory, destination, 0x00000004)
+    else:
+        die("guard platform has no atomic no-replace publication")
+    if result != 0:
+        error = ctypes.get_errno()
+        if error in (errno.EEXIST, errno.ENOTEMPTY):
+            die(f"{label} final leaf became occupied")
+        die(f"{label} could not be published atomically")
+
+
+def _guard_fsync_directory(directory: int, label: str) -> None:
+    try:
+        os.fsync(directory)
+    except OSError:
+        die(f"{label} directory could not be made durable")
+
+
+def _guard_publish_leaf(
+    directory: int,
+    final: str,
+    payload: bytes,
+    label: str,
+    *,
+    limit: int,
+) -> None:
+    stage = _guard_write_stage(directory, payload, label, limit=limit)
+    try:
+        _guard_atomic_no_replace(directory, stage, final, label)
+        _guard_fsync_directory(directory, label)
+    finally:
+        with contextlib.suppress(FileNotFoundError, OSError):
+            os.unlink(stage, dir_fd=directory)
+    checked = _guard_read_leaf(directory, final, label, limit=limit)
+    assert checked is not None
+    if checked[0] != payload:
+        die(f"{label} final bytes differ after publication")
+
+
+def _guard_ensure_publication(
+    directory: int, finding_id: str, payload: bytes
+) -> None:
+    label = f"guard publication marker {finding_id}"
+    completed = _guard_read_completion(directory, finding_id, missing_ok=True)
+    if completed is not None:
+        if completed[0] != payload:
+            die(f"guard completion record {finding_id} binds different evidence")
+        # Completion, not the now-inert pending bytes, is the retry authority.
+        _guard_fsync_directory(
+            directory, f"guard completion record {finding_id}"
+        )
+        return
+    retained = _guard_read_publication(directory, finding_id, missing_ok=True)
+    if retained is None:
+        _guard_publish_leaf(
+            directory,
+            _guard_publication_name(finding_id),
+            payload,
+            label,
+            limit=GUARD_PUBLICATION_BYTES_MAX,
+        )
+    elif retained[0] != payload:
+        die(f"{label} binds different pending evidence")
+    else:
+        # A previous marker rename may have been followed by a failed fsync.
+        _guard_fsync_directory(directory, label)
+    checked = _guard_read_publication(directory, finding_id, missing_ok=False)
+    assert checked is not None
+    if checked[0] != payload:
+        die(f"{label} changed while publication was prepared")
+
+
+def _guard_publish_manifest(
+    directory: int,
+    finding_id: str,
+    payload: bytes,
+    revalidate,
+) -> None:
+    """Publish or finish one pending manifest, making its directory durable."""
+    final = f"{finding_id}.json"
+    label = f"guard manifest {finding_id}"
+    retained = _guard_read_leaf(
+        directory,
+        final,
+        label,
+        limit=GUARD_MANIFEST_BYTES_MAX,
+        missing_ok=True,
+    )
+    if retained is None:
+        stage = _guard_write_stage(
+            directory, payload, label, limit=GUARD_MANIFEST_BYTES_MAX
+        )
+        try:
+            # This is the last binding read before the authority-name rename.
+            revalidate()
+            _guard_atomic_no_replace(directory, stage, final, label)
+            _guard_fsync_directory(directory, label)
+        finally:
+            with contextlib.suppress(FileNotFoundError, OSError):
+                os.unlink(stage, dir_fd=directory)
+    else:
+        if (
+            retained[0] != payload
+            or stat.S_IMODE(retained[1][2]) != 0o600
+        ):
+            die(f"{label} pending final bytes differ from the current binding")
+        # Repair an exact rename whose earlier directory fsync did not finish.
+        revalidate()
+        _guard_fsync_directory(directory, label)
+    checked = _guard_read_leaf(
+        directory, final, label, limit=GUARD_MANIFEST_BYTES_MAX
+    )
+    assert checked is not None
+    if checked[0] != payload or stat.S_IMODE(checked[1][2]) != 0o600:
+        die(f"{label} final bytes differ after durable publication")
+
+
+def _guard_finish_publication(
+    directory: int, finding_id: str, payload: bytes
+) -> None:
+    label = f"guard publication marker {finding_id}"
+    completion_label = f"guard completion record {finding_id}"
+    completed = _guard_read_completion(directory, finding_id, missing_ok=True)
+    if completed is None:
+        retained = _guard_read_publication(
+            directory, finding_id, missing_ok=False
+        )
+        assert retained is not None
+        if retained[0] != payload:
+            die(f"{label} changed before completion")
+        # Publish the positive authority record while the durable pending
+        # marker still gates readers. A failed completion fsync therefore
+        # remains visibly incomplete without any restoration operation.
+        _guard_publish_leaf(
+            directory,
+            _guard_completion_name(finding_id),
+            payload,
+            completion_label,
+            limit=GUARD_PUBLICATION_BYTES_MAX,
+        )
+    elif completed[0] != payload:
+        die(f"{completion_label} binds different evidence")
+    else:
+        # Retrying a visible completion candidate makes its directory entry
+        # durable before the pending gate can be retired.
+        _guard_fsync_directory(directory, completion_label)
+    checked = _guard_read_completion(directory, finding_id, missing_ok=False)
+    assert checked is not None
+    if checked[0] != payload:
+        die(f"{completion_label} changed before pending retirement")
+    if not _guard_entry_exists(
+        directory, _guard_publication_name(finding_id), label
+    ):
+        return
+    # Completion is now the sole evidence authority. Move whichever entry is
+    # still at the pending name, byte-for-byte, without parsing or comparing it.
+    _guard_atomic_no_replace(
+        directory,
+        _guard_publication_name(finding_id),
+        _guard_retired_publication_name(finding_id),
+        label,
+    )
+    try:
+        os.fsync(directory)
+    except OSError:
+        # The completion record crossed its durability barrier before this
+        # rename. Its presence, not the uncertain pending absence, is the
+        # retained authority; a crash may only re-expose the harmless gate.
+        die(f"{label} retirement was not durable; completion remains authoritative")
+
+
+def _guard_resume_pending_publication(
+    base_dir: str,
+    state: dict,
+    capture: dict,
+    step: dict,
+    finding: dict,
+    evidence: dict,
+    argv: list[str],
+    revalidate,
+) -> tuple[bytes, bytes] | None:
+    """Finish one exact persisted publication before any runner invocation."""
+    finding_id = finding["id"]
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _guard_evidence_components(step, GUARD_MANIFEST_DIRECTORY),
+        "guard manifest directory",
+        create=False,
+        missing_ok=True,
+    )
+    if manifest_directory is None:
+        return None
+    report_directory = None
+    try:
+        completed = _guard_read_completion(
+            manifest_directory, finding_id, missing_ok=True
+        )
+        if completed is None:
+            publication = _guard_read_publication(
+                manifest_directory, finding_id, missing_ok=True
+            )
+            if publication is None:
+                orphan_manifest = _guard_read_leaf(
+                    manifest_directory,
+                    f"{finding_id}.json",
+                    f"guard manifest {finding_id}",
+                    limit=GUARD_MANIFEST_BYTES_MAX,
+                    missing_ok=True,
+                )
+                if orphan_manifest is not None:
+                    die(
+                        f"guard manifest {finding_id} has no pending or "
+                        "completion authority"
+                    )
+                return None
+        else:
+            publication = completed
+            # Completion is positive authority. The pending entry is now only
+            # a gate and may be opaque after an interrupted retirement.
+            _guard_entry_exists(
+                manifest_directory,
+                _guard_publication_name(finding_id),
+                f"guard publication marker {finding_id}",
+            )
+        marker = publication[2]
+
+        report_directory = _guard_open_directory(
+            base_dir,
+            _guard_evidence_components(step, GUARD_REPORT_DIRECTORY),
+            "guard report directory",
+            create=False,
+            missing_ok=True,
+        )
+        if report_directory is None:
+            die(f"guard publication marker {finding_id} has no retained report")
+        retained_report = _guard_read_leaf(
+            report_directory,
+            f"{finding_id}.report",
+            f"guard report {finding_id}",
+            limit=GUARD_REPORT_BYTES_MAX,
+            missing_ok=True,
+        )
+        if retained_report is None:
+            die(f"guard publication marker {finding_id} has no retained report")
+        raw_report, report_identity = retained_report
+        if (
+            stat.S_IMODE(report_identity[2]) != 0o600
+            or hashlib.sha256(raw_report).hexdigest()
+            != marker["report_sha256"]
+        ):
+            die(
+                f"guard report {finding_id} differs from its pending "
+                "publication marker"
+            )
+        try:
+            counters = _guard_admission_counters(
+                finding["report_format"],
+                raw_report,
+                {"status": "guarded", "report": marker["counters"]},
+            )
+        except ValueError as exc:
+            die(f"guard publication marker {finding_id} is not admissible: {exc}")
+        if counters != marker["counters"]:
+            die(
+                f"guard publication marker {finding_id} changes admitted "
+                "counters"
+            )
+        report_reference = {
+            "path": _guard_report_relative(step, finding_id),
+            "bytes": len(raw_report),
+            "sha256": marker["report_sha256"],
+        }
+        manifest = _build_guard_manifest(
+            finding_id=finding_id,
+            consuming_step=step["n"],
+            controller_run_id=controller_run_id(state),
+            worktree_identity=evidence["worktree_identity"],
+            capture=_guard_initial_capture(state),
+            step_parent=evidence["step_parent"],
+            guard_commit=evidence["guard_commit"],
+            changed_paths=evidence["changed_paths"],
+            guard_blobs=evidence["guard_blobs"],
+            test_command=finding["test_command"],
+            test_argv=argv,
+            report_format=finding["report_format"],
+            report_file=finding["report_file"],
+            retained_report=report_reference,
+            runner_exit=marker["runner_exit"],
+            counters=counters,
+            verdict="guarded",
+        )
+        manifest_bytes = _guard_canonical_manifest(manifest)
+        if (
+            hashlib.sha256(manifest_bytes).hexdigest()
+            != marker["manifest_sha256"]
+        ):
+            die(
+                f"guard publication marker {finding_id} does not match its "
+                "immutable context"
+            )
+        _validate_guard_manifest(
+            manifest,
+            raw_report,
+            state=state,
+            capture=capture,
+            step=step,
+            finding=finding,
+            evidence=evidence,
+        )
+
+        retained_manifest = _guard_read_leaf(
+            manifest_directory,
+            f"{finding_id}.json",
+            f"guard manifest {finding_id}",
+            limit=GUARD_MANIFEST_BYTES_MAX,
+            missing_ok=True,
+        )
+        if completed is not None and retained_manifest is None:
+            die(
+                f"guard completion record {finding_id} has no exact final "
+                "manifest"
+            )
+        if retained_manifest is not None and (
+            retained_manifest[0] != manifest_bytes
+            or stat.S_IMODE(retained_manifest[1][2]) != 0o600
+        ):
+            die(
+                f"guard manifest {finding_id} pending final differs from "
+                "its publication marker"
+            )
+
+        # Re-read every evidence leaf before the first recovery write. A
+        # mismatch refuses while the incomplete publication stays untouched.
+        if _guard_read_leaf(
+            report_directory,
+            f"{finding_id}.report",
+            f"guard report {finding_id}",
+            limit=GUARD_REPORT_BYTES_MAX,
+        ) != retained_report:
+            die(f"guard report {finding_id} changed before recovery")
+        if completed is None:
+            if _guard_read_completion(
+                manifest_directory, finding_id, missing_ok=True
+            ) is not None:
+                die(f"guard completion record {finding_id} appeared during recovery")
+            if _guard_read_publication(
+                manifest_directory, finding_id, missing_ok=False
+            ) != publication:
+                die(f"guard publication marker {finding_id} changed during recovery")
+            # A visible marker can be the result of a rename whose directory
+            # fsync failed. Re-establish that durability barrier, then bind the
+            # exact same marker again before any manifest stage or rename.
+            _guard_fsync_directory(
+                manifest_directory, f"guard publication marker {finding_id}"
+            )
+            if _guard_read_completion(
+                manifest_directory, finding_id, missing_ok=True
+            ) is not None:
+                die(f"guard completion record {finding_id} appeared during recovery")
+            if _guard_read_publication(
+                manifest_directory, finding_id, missing_ok=False
+            ) != publication:
+                die(
+                    f"guard publication marker {finding_id} changed after "
+                    "its recovery durability barrier"
+                )
+        elif _guard_read_completion(
+            manifest_directory, finding_id, missing_ok=False
+        ) != completed:
+            die(f"guard completion record {finding_id} changed during recovery")
+        revalidate()
+        _guard_publish_manifest(
+            manifest_directory, finding_id, manifest_bytes, revalidate
+        )
+
+        if _guard_read_leaf(
+            report_directory,
+            f"{finding_id}.report",
+            f"guard report {finding_id}",
+            limit=GUARD_REPORT_BYTES_MAX,
+        ) != retained_report:
+            die(f"guard report {finding_id} changed during recovery")
+        final_manifest = _guard_read_leaf(
+            manifest_directory,
+            f"{finding_id}.json",
+            f"guard manifest {finding_id}",
+            limit=GUARD_MANIFEST_BYTES_MAX,
+        )
+        assert final_manifest is not None
+        if (
+            final_manifest[0] != manifest_bytes
+            or stat.S_IMODE(final_manifest[1][2]) != 0o600
+        ):
+            die(f"guard manifest {finding_id} changed during recovery")
+        if completed is None:
+            if _guard_read_completion(
+                manifest_directory, finding_id, missing_ok=True
+            ) is not None:
+                die(f"guard completion record {finding_id} appeared during recovery")
+            if _guard_read_publication(
+                manifest_directory, finding_id, missing_ok=False
+            ) != publication:
+                die(f"guard publication marker {finding_id} changed during recovery")
+        elif _guard_read_completion(
+            manifest_directory, finding_id, missing_ok=False
+        ) != completed:
+            die(f"guard completion record {finding_id} changed during recovery")
+        revalidate()
+        _guard_finish_publication(
+            manifest_directory, finding_id, publication[0]
+        )
+        return manifest_bytes, raw_report
+    finally:
+        if report_directory is not None:
+            os.close(report_directory)
+        os.close(manifest_directory)
+
+
+def _guard_remove_orphan(
+    directory: int, name: str, observed: tuple[bytes, tuple], label: str
+) -> None:
+    current = _guard_read_leaf(
+        directory, name, label, limit=GUARD_REPORT_BYTES_MAX
+    )
+    if current != observed:
+        die(f"{label} changed before orphan removal")
+    try:
+        os.unlink(name, dir_fd=directory)
+        _guard_fsync_directory(directory, label)
+    except OSError:
+        die(f"{label} could not be removed safely")
+
+
+def _guard_result(
+    step: dict, finding_id: str, manifest_bytes: bytes, report_bytes: bytes, disposition: str
+) -> dict:
+    result = {
+        "schema": GUARD_RESULT_SCHEMA,
+        "finding_id": finding_id,
+        "retained_report": {
+            "path": _guard_report_relative(step, finding_id),
+            "sha256": hashlib.sha256(report_bytes).hexdigest(),
+        },
+        "manifest": {
+            "path": _guard_manifest_relative(step, finding_id),
+            "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+        },
+        "disposition": disposition,
+    }
+    if (
+        set(result) != GUARD_RESULT_KEYS
+        or set(result["retained_report"]) != GUARD_RESULT_REFERENCE_KEYS
+        or set(result["manifest"]) != GUARD_RESULT_REFERENCE_KEYS
+        or disposition not in {"created", "already-retained"}
+    ):
+        die("guard retention result could not be constructed", 1)
+    return result
+
+
+def _expected_no_known_findings_record(capture: dict, step: dict) -> dict:
+    return {
+        "schema": NO_KNOWN_FINDINGS_SCHEMA,
+        "study_sha256": capture["study_sha256"],
+        "inventory_sha256": capture["inventory_sha256"],
+        "source_views": [
+            {
+                "id": source_view["id"],
+                "source_sha256": source_view["source_sha256"],
+                "view_sha256": source_view["view_sha256"],
+            }
+            for source_view in capture["source_views"]
+        ],
+        "consuming_step": step["n"],
+        "assertion": NO_KNOWN_FINDINGS_ASSERTION,
+    }
+
+
+def _no_known_findings_snapshot(
+    base_dir: str, capture: dict, step: dict
+) -> tuple[dict, bytes]:
+    relative = os.path.join(
+        _inoculation_evidence_relative(step["n"]), NO_KNOWN_FINDINGS_FILE
+    ).replace(os.sep, "/")
+    data = _read_stable_controller_file(
+        base_dir,
+        relative,
+        "no-known-findings record",
+        limit=NO_KNOWN_FINDINGS_BYTES_MAX,
+    )
+    record = _strict_json_document(data, "no-known-findings record")
+    expected = _expected_no_known_findings_record(capture, step)
+    if (
+        not isinstance(record, dict)
+        or set(record) != NO_KNOWN_FINDINGS_KEYS
+        or record != expected
+    ):
+        die("no-known-findings record does not match the checked inventory and step")
+    return record, data
+
+
+def _no_known_findings_record(base_dir: str, capture: dict, step: dict) -> dict:
+    return _no_known_findings_snapshot(base_dir, capture, step)[0]
+
+
+def _no_known_transaction_bytes(value: dict) -> bytes:
+    try:
+        payload = (
+            json.dumps(
+                value,
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            + "\n"
+        ).encode("ascii")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        die("no-known inoculation transaction has unsupported content", 1)
+    if len(payload) > NO_KNOWN_TRANSACTION_BYTES_MAX:
+        die("no-known inoculation transaction exceeds its byte limit", 1)
+    return payload
+
+
+def _no_known_completion_name(step_number: int) -> str:
+    if type(step_number) is not int or step_number <= 0:
+        die("no-known completion names an invalid Step", 1)
+    return f"no-known-inoculation.step-{step_number}.complete.json"
+
+
+def _no_known_retired_name(step_number: int) -> str:
+    if type(step_number) is not int or step_number <= 0:
+        die("no-known retired intent names an invalid Step", 1)
+    return f"no-known-inoculation.step-{step_number}.intent.json"
+
+
+def _validate_no_known_boundary_payload(boundary) -> bool:
+    if type(boundary) is not dict or set(boundary) != NO_KNOWN_BOUNDARY_KEYS:
+        return False
+    worktree = boundary.get("worktree_identity")
+    tracked = boundary.get("tracked")
+    audit = boundary.get("audit")
+    if (
+        type(worktree) is not dict
+        or set(worktree) != GUARD_WORKTREE_IDENTITY_KEYS
+        or any(type(value) is not int or value < 0 for value in worktree.values())
+        or type(tracked) is not dict
+        or set(tracked) != {"count", "bytes", "tree_sha256"}
+        or type(tracked.get("count")) is not int
+        or tracked["count"] < 0
+        or type(tracked.get("bytes")) is not int
+        or tracked["bytes"] < 0
+        or type(tracked.get("tree_sha256")) is not str
+        or re.fullmatch(r"[0-9a-f]{64}", tracked["tree_sha256"]) is None
+        or type(boundary.get("branch")) is not str
+        or not boundary["branch"]
+        or any(
+            type(boundary.get(name)) is not str
+            or COMMIT_RE.fullmatch(boundary[name]) is None
+            for name in ("step_parent", "head", "tip")
+        )
+    ):
+        return False
+    if audit == {"status": "clean", "audit_pair": None}:
+        return True
+    return (
+        type(audit) is dict
+        and set(audit) == {"log", "log_sha256", "synopsis", "synopsis_sha256"}
+        and _known_failure_portable_path(audit.get("log"))
+        and _known_failure_portable_path(audit.get("synopsis"))
+        and all(
+            type(audit.get(name)) is str
+            and re.fullmatch(r"[0-9a-f]{64}", audit[name]) is not None
+            for name in ("log_sha256", "synopsis_sha256")
+        )
+    )
+
+
+def _validate_no_known_transaction_payload(
+    payload: bytes, *, label: str
+) -> dict:
+    try:
+        value = _guard_json_document(payload, label)
+    except ValueError as exc:
+        die(str(exc), 1)
+    digests = (
+        "state_before_sha256",
+        "state_after_sha256",
+        "ledger_head",
+        "receipt_sha256",
+        "boundary_sha256",
+        "no_known_sha256",
+    )
+    entry = value.get("ledger_entry") if type(value) is dict else None
+    receipt = value.get("receipt") if type(value) is dict else None
+    boundary = value.get("boundary") if type(value) is dict else None
+    no_known_text = value.get("no_known_text") if type(value) is dict else None
+    try:
+        no_known_bytes = no_known_text.encode("utf-8")
+    except (AttributeError, UnicodeEncodeError):
+        no_known_bytes = b""
+    try:
+        no_known_record = _guard_json_document(
+            no_known_bytes, f"{label} retained no-known evidence"
+        )
+    except ValueError:
+        no_known_record = None
+    entry_body = None
+    if type(entry) is dict and set(entry) == NO_KNOWN_LEDGER_ENTRY_KEYS:
+        entry_body = {
+            key: entry[key]
+            for key in ("ts", "event", "data", "prev", "state")
+        }
+    if (
+        type(value) is not dict
+        or set(value) != NO_KNOWN_TRANSACTION_KEYS
+        or _guard_json_depth(value) > GUARD_MANIFEST_DEPTH_MAX
+        or value.get("schema") != NO_KNOWN_TRANSACTION_SCHEMA
+        or type(value.get("step")) is not int
+        or value["step"] <= 0
+        or any(
+            type(value.get(name)) is not str
+            or re.fullmatch(r"[0-9a-f]{64}", value[name]) is None
+            for name in digests
+        )
+        or type(receipt) is not dict
+        or receipt.get("schema") != INOCULATION_RECEIPT_SCHEMA
+        or receipt.get("step") != value.get("step")
+        or receipt.get("assigned_ids") != []
+        or receipt.get("guard_manifests") != []
+        or hashlib.sha256(canonical(receipt).encode()).hexdigest()
+        != value.get("receipt_sha256")
+        or not _validate_no_known_boundary_payload(boundary)
+        or boundary.get("step_parent") != receipt.get("step_parent")
+        or boundary.get("head") != receipt.get("step_parent")
+        or boundary.get("tip") != receipt.get("step_parent")
+        or hashlib.sha256(canonical(boundary).encode()).hexdigest()
+        != value.get("boundary_sha256")
+        or type(no_known_text) is not str
+        or not no_known_bytes
+        or len(no_known_bytes) > NO_KNOWN_FINDINGS_BYTES_MAX
+        or hashlib.sha256(no_known_bytes).hexdigest()
+        != value.get("no_known_sha256")
+        or no_known_record != receipt.get("no_known_findings")
+        or entry_body is None
+        or type(entry.get("ts")) is not str
+        or not entry["ts"]
+        or entry.get("event") != "done:inoculate"
+        or entry.get("data") != receipt
+        or entry.get("prev") != value.get("ledger_head")
+        or entry.get("state") != value.get("state_after_sha256")
+        or type(entry.get("hash")) is not str
+        or re.fullmatch(r"[0-9a-f]{64}", entry["hash"]) is None
+        or hashlib.sha256(canonical(entry_body).encode()).hexdigest()
+        != entry.get("hash")
+        or _no_known_transaction_bytes(value) != payload
+    ):
+        die(f"{label} has an unsupported binding", 1)
+    return value
+
+
+def _read_no_known_transaction_leaf(
+    directory: int, name: str, label: str, *, missing_ok: bool
+) -> tuple[bytes, tuple, dict] | None:
+    retained = _guard_read_leaf(
+        directory,
+        name,
+        label,
+        limit=NO_KNOWN_TRANSACTION_BYTES_MAX,
+        missing_ok=missing_ok,
+    )
+    if retained is None:
+        return None
+    payload, identity = retained
+    if stat.S_IMODE(identity[2]) != 0o600:
+        die(f"{label} does not retain mode 0600", 1)
+    return payload, identity, _validate_no_known_transaction_payload(
+        payload, label=label
+    )
+
+
+def load_no_known_completion(
+    base_dir: str, step_number: int, *, missing_ok: bool = True
+) -> tuple[bytes, tuple, dict] | None:
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known completion directory",
+        create=False,
+        missing_ok=missing_ok,
+    )
+    if directory is None:
+        return None
+    try:
+        return _read_no_known_transaction_leaf(
+            directory,
+            _no_known_completion_name(step_number),
+            f"no-known inoculation completion for Step {step_number}",
+            missing_ok=missing_ok,
+        )
+    finally:
+        os.close(directory)
+
+
+def load_no_known_transaction(
+    base_dir: str, state: dict | None = None
+) -> dict | None:
+    """Read one active write-ahead no-known transition."""
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known transaction directory",
+        create=False,
+        missing_ok=True,
+    )
+    if directory is None:
+        return None
+    try:
+        completion = None
+        if state is not None and state.get("current_step") is not None:
+            step = current_step(state)
+            completion = _read_no_known_transaction_leaf(
+                directory,
+                _no_known_completion_name(step["n"]),
+                f"no-known inoculation completion for Step {step['n']}",
+                missing_ok=True,
+            )
+        if completion is not None:
+            pending_exists = _guard_entry_exists(
+                directory,
+                NO_KNOWN_TRANSACTION_FILE,
+                "no-known inoculation transaction",
+            )
+            retained = None
+        else:
+            retained = _read_no_known_transaction_leaf(
+                directory,
+                NO_KNOWN_TRANSACTION_FILE,
+                "no-known inoculation transaction",
+                missing_ok=True,
+            )
+            pending_exists = retained is not None
+    finally:
+        os.close(directory)
+    if completion is not None and pending_exists:
+        # A positive completion has already sealed the exact transition. The
+        # surviving pending name is only a recovery gate; never parse its bytes
+        # or let post-completion replacement override the sealed record.
+        return completion[2]
+    if retained is not None:
+        return retained[2]
+    if completion is None or state is None or state.get("current_step") is None:
+        return None
+    step = current_step(state)
+    receipt = as_dict(as_dict(step.get("receipts")).get("inoculate"))
+    if receipt == completion[2]["receipt"]:
+        return None
+    if (
+        step.get("phase") == "inoculate"
+        and "inoculate" not in as_dict(step.get("receipts"))
+        and state_fingerprint(state) == completion[2]["state_before_sha256"]
+    ):
+        return completion[2]
+    die("no-known completion record disagrees with controller state", 1)
+
+
+def _write_no_known_transaction(base_dir: str, value: dict) -> bytes:
+    payload = _no_known_transaction_bytes(value)
+    if _validate_no_known_transaction_payload(
+        payload, label="no-known inoculation transaction"
+    ) != value:
+        die("no-known inoculation transaction changed during construction", 1)
+    if load_no_known_transaction(base_dir) is not None:
+        die("no-known inoculation transaction is already pending")
+    if load_no_known_completion(base_dir, value["step"]) is not None:
+        die("no-known inoculation completion already occupies this Step")
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known transaction directory",
+        create=False,
+    )
+    assert directory is not None
+    try:
+        _guard_publish_leaf(
+            directory,
+            NO_KNOWN_TRANSACTION_FILE,
+            payload,
+            "no-known inoculation transaction",
+            limit=NO_KNOWN_TRANSACTION_BYTES_MAX,
+        )
+    finally:
+        os.close(directory)
+    return payload
+
+
+def _ensure_no_known_completion(
+    base_dir: str, marker: dict, payload: bytes
+) -> None:
+    """Durably publish the immutable positive record while pending gates it."""
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known completion directory",
+        create=False,
+    )
+    assert directory is not None
+    try:
+        completed = _read_no_known_transaction_leaf(
+            directory,
+            _no_known_completion_name(marker["step"]),
+            f"no-known inoculation completion for Step {marker['step']}",
+            missing_ok=True,
+        )
+        if completed is None:
+            pending = _read_no_known_transaction_leaf(
+                directory,
+                NO_KNOWN_TRANSACTION_FILE,
+                "no-known inoculation transaction",
+                missing_ok=True,
+            )
+            if pending is None:
+                die("no-known completion has neither positive nor pending record", 1)
+            if pending[0] != payload:
+                die("no-known inoculation transaction changed before completion")
+            _guard_publish_leaf(
+                directory,
+                _no_known_completion_name(marker["step"]),
+                payload,
+                f"no-known inoculation completion for Step {marker['step']}",
+                limit=NO_KNOWN_TRANSACTION_BYTES_MAX,
+            )
+        elif completed[0] != payload:
+            die("no-known completion record binds a different transaction", 1)
+        else:
+            # A retry makes an exact visible completion candidate durable
+            # before any state or ledger authority is applied.
+            _guard_fsync_directory(
+                directory,
+                f"no-known inoculation completion for Step {marker['step']}",
+            )
+        checked = _read_no_known_transaction_leaf(
+            directory,
+            _no_known_completion_name(marker["step"]),
+            f"no-known inoculation completion for Step {marker['step']}",
+            missing_ok=False,
+        )
+        assert checked is not None
+        if checked[0] != payload:
+            die("no-known completion changed during durable publication", 1)
+    finally:
+        os.close(directory)
+
+
+def _retire_no_known_transaction(
+    base_dir: str, marker: dict, payload: bytes
+) -> None:
+    """Move the no-longer-authoritative intent to inert retained history."""
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known transaction directory",
+        create=False,
+    )
+    assert directory is not None
+    try:
+        completed = _read_no_known_transaction_leaf(
+            directory,
+            _no_known_completion_name(marker["step"]),
+            f"no-known inoculation completion for Step {marker['step']}",
+            missing_ok=False,
+        )
+        assert completed is not None
+        if completed[0] != payload:
+            die("no-known completion changed before intent retirement", 1)
+        retired_name = _no_known_retired_name(marker["step"])
+        if not _guard_entry_exists(
+            directory,
+            NO_KNOWN_TRANSACTION_FILE,
+            "no-known inoculation transaction",
+        ):
+            return
+        # Completion is the sole authority now. Preserve whichever directory
+        # entry survived at the pending name without parsing or comparing it.
+        _guard_atomic_no_replace(
+            directory,
+            NO_KNOWN_TRANSACTION_FILE,
+            retired_name,
+            "no-known inoculation transaction",
+        )
+        try:
+            os.fsync(directory)
+        except OSError:
+            # Positive completion and the state/ledger writes were made
+            # durable first. A crash can only choose which inert intent name
+            # survives; it cannot manufacture authority without completion.
+            die(
+                "no-known intent retirement was not durable; positive "
+                "completion remains authoritative",
+                1,
+            )
+    finally:
+        os.close(directory)
+
+
+def _no_known_boundary_sha256(boundary: dict) -> str:
+    return hashlib.sha256(canonical(boundary).encode()).hexdigest()
+
+
+def _state_with_no_known_receipt(state: dict, receipt: dict) -> dict:
+    candidate = json.loads(json.dumps(state))
+    step = current_step(candidate)
+    if step.get("phase") != "inoculate":
+        die("no-known transaction prior state is not in inoculate")
+    step["receipts"]["inoculate"] = receipt
+    step["phase"] = "implement"
+    return candidate
+
+
+def _revalidate_no_known_transaction(
+    base_dir: str, state: dict, marker: dict
+) -> None:
+    step = current_step(state)
+    if step.get("n") != marker["step"]:
+        die("no-known transaction names a different current Step")
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None or _assigned_ids(capture, step["n"]):
+        die("no-known transaction no longer has an exact zero assignment")
+    step_parent = _inoculation_parent(base_dir, state, step)
+    receipt = _validate_inoculation_receipt(
+        marker["receipt"], capture, step, step_parent, state=state
+    )
+    if receipt.get("no_known_findings") is None:
+        die("no-known transaction has no explicit no-known claim")
+    boundary = _guard_no_known_boundary(base_dir, state, step)
+    record, raw = _no_known_findings_snapshot(base_dir, capture, step)
+    if (
+        record != receipt["no_known_findings"]
+        or boundary != marker["boundary"]
+        or _no_known_boundary_sha256(boundary) != marker["boundary_sha256"]
+        or raw.decode("utf-8") != marker["no_known_text"]
+        or hashlib.sha256(raw).hexdigest() != marker["no_known_sha256"]
+    ):
+        die("no-known transaction evidence changed before completion")
+
+
+def _make_no_known_write_durable(
+    base_dir: str, path: str, label: str, *, replaced: bool = False
+) -> None:
+    descriptor = None
+    directory = None
+    try:
+        descriptor = os.open(
+            path,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1:
+            raise OSError("unsafe transaction leaf")
+        os.fsync(descriptor)
+        if replaced:
+            directory = os.open(
+                state_root(base_dir),
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0)
+                | getattr(os, "O_DIRECTORY", 0),
+            )
+            os.fsync(directory)
+    except OSError:
+        die(f"no-known inoculation {label} could not be made durable", 1)
+    finally:
+        if directory is not None:
+            with contextlib.suppress(OSError):
+                os.close(directory)
+        if descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+
+
+def _guard_atomic_replace(
+    directory: int, stage: str, final: str, label: str
+) -> None:
+    """Atomically replace one fixed leaf from a same-directory safe stage."""
+    try:
+        os.replace(
+            stage,
+            final,
+            src_dir_fd=directory,
+            dst_dir_fd=directory,
+        )
+    except OSError:
+        die(f"{label} could not replace its final leaf atomically", 1)
+
+
+def _no_known_replace_leaf(
+    directory: int,
+    name: str,
+    observed: tuple[bytes, tuple],
+    payload: bytes,
+    label: str,
+) -> None:
+    """Fsync a random no-follow stage before replacing one observed leaf."""
+    stage = _guard_write_stage(
+        directory, payload, label, limit=CHECKPOINT_FILE_BYTES_MAX
+    )
+    try:
+        current = _guard_read_leaf(
+            directory,
+            name,
+            f"{label} prior leaf",
+            limit=CHECKPOINT_FILE_BYTES_MAX,
+        )
+        if current != observed:
+            die(f"{label} prior leaf changed before atomic replacement", 1)
+        _guard_atomic_replace(directory, stage, name, label)
+        _guard_fsync_directory(directory, label)
+    finally:
+        with contextlib.suppress(FileNotFoundError, OSError):
+            os.unlink(stage, dir_fd=directory)
+    retained = _guard_read_leaf(
+        directory, name, label, limit=CHECKPOINT_FILE_BYTES_MAX
+    )
+    assert retained is not None
+    if retained[0] != payload or stat.S_IMODE(retained[1][2]) != 0o600:
+        die(f"{label} final bytes differ after atomic replacement", 1)
+
+
+def _no_known_ledger_entries(payload: bytes, label: str) -> list[dict]:
+    entries = []
+    previous = "genesis"
+    try:
+        text = payload.decode("utf-8")
+        for line_number, line in enumerate(text.splitlines(), 1):
+            if not line.strip():
+                continue
+            entry = json.loads(line)
+            expected = hashlib.sha256(
+                canonical(
+                    {
+                        "ts": entry["ts"],
+                        "event": entry["event"],
+                        "data": entry["data"],
+                        "prev": entry["prev"],
+                        "state": entry["state"],
+                    }
+                ).encode()
+            ).hexdigest()
+            if entry["prev"] != previous or entry["hash"] != expected:
+                die(
+                    f"{label} controller ledger is not intact at line "
+                    f"{line_number}",
+                    1,
+                )
+            previous = entry["hash"]
+            entries.append(entry)
+    except (UnicodeDecodeError, ValueError, KeyError, TypeError):
+        die(f"{label} controller ledger is malformed", 1)
+    if not entries:
+        die(f"{label} controller ledger is empty", 1)
+    return entries
+
+
+def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
+    """Atomically publish the old ledger plus the exact sealed entry."""
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known inoculation ledger directory",
+        create=False,
+    )
+    assert directory is not None
+    try:
+        retained = _guard_read_leaf(
+            directory,
+            LEDGER_FILE,
+            "no-known inoculation ledger",
+            limit=CHECKPOINT_FILE_BYTES_MAX,
+        )
+        assert retained is not None
+        entries = _no_known_ledger_entries(
+            retained[0], "no-known inoculation"
+        )
+        if entries[-1].get("hash") != entry["prev"]:
+            die("no-known inoculation ledger moved before its bound append", 1)
+        separator = b"" if retained[0].endswith(b"\n") else b"\n"
+        payload = (
+            retained[0]
+            + separator
+            + (json.dumps(entry, sort_keys=True) + "\n").encode("utf-8")
+        )
+        if len(payload) > CHECKPOINT_FILE_BYTES_MAX:
+            die("no-known inoculation ledger replacement exceeds its byte limit", 1)
+        _no_known_replace_leaf(
+            directory,
+            LEDGER_FILE,
+            retained,
+            payload,
+            "no-known inoculation ledger replacement",
+        )
+    finally:
+        os.close(directory)
+    if _intact_ledger_entries(base_dir, "no-known inoculation")[-1] != entry:
+        die("no-known inoculation exact ledger entry changed after replacement", 1)
+
+
+def _replace_no_known_state(
+    base_dir: str, observed_state: dict, candidate: dict
+) -> None:
+    """Atomically publish a fully staged, fsynced controller state."""
+    directory = _guard_open_directory(
+        base_dir,
+        [STATE_DIR_NAME],
+        "no-known inoculation state directory",
+        create=False,
+    )
+    assert directory is not None
+    try:
+        retained = _guard_read_leaf(
+            directory,
+            STATE_FILE,
+            "no-known inoculation prior state",
+            limit=CHECKPOINT_FILE_BYTES_MAX,
+        )
+        assert retained is not None
+        try:
+            on_disk = json.loads(retained[0].decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            die("no-known inoculation prior state is malformed", 1)
+        if validate_state_shape(on_disk) != observed_state:
+            die("no-known inoculation state changed before replacement", 1)
+        try:
+            payload = (
+                json.dumps(candidate, indent=2, sort_keys=False) + "\n"
+            ).encode("utf-8")
+        except (TypeError, ValueError, UnicodeEncodeError):
+            die("no-known inoculation candidate state is not serializable", 1)
+        _no_known_replace_leaf(
+            directory,
+            STATE_FILE,
+            retained,
+            payload,
+            "no-known inoculation state replacement",
+        )
+    finally:
+        os.close(directory)
+
+
+def _validate_no_known_completion_records(base_dir: str, state: dict) -> None:
+    """Require positive immutable authority for every receipted zero Step."""
+    expected = []
+    for step in state.get("steps", []):
+        receipt = as_dict(as_dict(step.get("receipts")).get("inoculate"))
+        if receipt.get("no_known_findings") is not None:
+            expected.append((step["n"], receipt))
+    if not expected:
+        return
+    entries = _intact_ledger_entries(base_dir, "no-known completion")
+    for step_number, receipt in expected:
+        completed = load_no_known_completion(
+            base_dir, step_number, missing_ok=True
+        )
+        if completed is None:
+            die(
+                f"step {step_number} no-known receipt has no positive "
+                "completion record",
+                1,
+            )
+        marker = completed[2]
+        if marker["receipt"] != receipt or marker["ledger_entry"] not in entries:
+            die(
+                f"step {step_number} no-known completion does not bind its "
+                "exact receipt and ledger entry; inoculation receipt state "
+                "does not match its controller ledger events",
+                1,
+            )
+
+
+def _finish_no_known_transaction(
+    base_dir: str, state: dict, marker: dict
+) -> None:
+    """Recover or complete one marker-gated ledger/state transition."""
+    payload = _no_known_transaction_bytes(marker)
+    if _validate_no_known_transaction_payload(
+        payload, label="no-known inoculation transaction"
+    ) != marker:
+        die("no-known inoculation transaction changed before recovery", 1)
+    state_hash = state_fingerprint(state)
+    before = marker["state_before_sha256"]
+    after = marker["state_after_sha256"]
+    entries = _intact_ledger_entries(base_dir, "no-known inoculation")
+    last = entries[-1]
+    bound_entry = marker["ledger_entry"]
+    event_durable = last == bound_entry
+    if state_hash == after:
+        step = current_step(state)
+        if (
+            not event_durable
+            or step.get("phase") != "implement"
+            or as_dict(step.get("receipts")).get("inoculate")
+            != marker["receipt"]
+        ):
+            die(
+                "no-known inoculation state is present without its exact "
+                "transaction ledger event",
+                1,
+            )
+        completed = load_no_known_completion(
+            base_dir, marker["step"], missing_ok=True
+        )
+        if completed is None or completed[0] != payload:
+            die(
+                "no-known inoculation state exists without its exact positive "
+                "completion record",
+                1,
+            )
+        _make_no_known_write_durable(
+            base_dir, ledger_path(base_dir), "ledger recovery"
+        )
+        _make_no_known_write_durable(
+            base_dir, state_path(base_dir), "state recovery", replaced=True
+        )
+        _retire_no_known_transaction(base_dir, marker, payload)
+        return
+    if state_hash != before:
+        die("no-known inoculation pending state fingerprint does not match", 1)
+    candidate = _state_with_no_known_receipt(state, marker["receipt"])
+    if state_fingerprint(candidate) != after:
+        die("no-known inoculation pending candidate fingerprint does not match", 1)
+    if not event_durable and (
+        last.get("hash") != marker["ledger_head"]
+        or last.get("state") != before
+    ):
+        die("no-known inoculation ledger ends with an unrelated transition", 1)
+    completed = load_no_known_completion(
+        base_dir, marker["step"], missing_ok=True
+    )
+    if completed is None:
+        # This is the last live-input observation. The positive completion
+        # published next embeds the exact raw record and full boundary. Once
+        # its fsync succeeds, those immutable bytes -- not the ignored source
+        # leaf -- are the transaction's authority.
+        _revalidate_no_known_transaction(base_dir, state, marker)
+        _ensure_no_known_completion(base_dir, marker, payload)
+    elif completed[0] != payload:
+        die("no-known completion record binds a different transaction", 1)
+    else:
+        _ensure_no_known_completion(base_dir, marker, payload)
+    if not event_durable:
+        _append_no_known_ledger_entry(base_dir, bound_entry)
+    _make_no_known_write_durable(
+        base_dir, ledger_path(base_dir), "ledger event"
+    )
+    _replace_no_known_state(base_dir, state, candidate)
+    _retire_no_known_transaction(base_dir, marker, payload)
+
+
+def _receipted_known_failure_source_digest(
+    state: dict, subject: str, digest: str
+) -> bool:
+    """Return whether one digest is on the source's captured amendment chain."""
+    runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    stored = _validate_known_failure_capture(
+        runbook_receipt.get("known_failure_inventory"),
+        "receipted known-failure capture",
+    )
+    cursor = stored[f"{subject}_sha256"]
+    seen = digest == cursor
+    source_receipt = as_dict(as_dict(state.get("receipts")).get(subject))
+    history = source_receipt.get("amendments")
+    if history is not None and (not isinstance(history, list) or not history):
+        die(f"{subject} receipt amendments history must be a non-empty array", 1)
+    for index, raw in enumerate(history or [], 1):
+        item = as_dict(raw)
+        next_sha256 = item.get("new_sha256")
+        if (
+            item.get("prior_sha256") != cursor
+            or not isinstance(next_sha256, str)
+            or re.fullmatch(r"[0-9a-f]{64}", next_sha256) is None
+        ):
+            die(f"{subject} amendment {index} has a broken digest chain", 1)
+        cursor = next_sha256
+        seen = seen or digest == cursor
+    if cursor != source_receipt.get("sha256"):
+        die(f"{subject} amendment digest chain does not reach its receipt", 1)
+    return seen
+
+
+def _validate_inoculation_receipt(
+    receipt,
+    capture: dict,
+    step: dict,
+    step_parent: str,
+    *,
+    state: dict | None = None,
+) -> dict:
+    label = f"step {step['n']} inoculation receipt"
+    if not isinstance(receipt, dict) or set(receipt) != INOCULATION_RECEIPT_KEYS:
+        die(f"{label} has an unsupported field set", 1)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    source_digests_match = (
+        receipt.get("study_sha256") == capture["study_sha256"]
+        and receipt.get("runbook_sha256") == capture["runbook_sha256"]
+    )
+    if not source_digests_match and state is not None:
+        source_digests_match = _receipted_known_failure_source_digest(
+            state, "study", receipt.get("study_sha256")
+        ) and _receipted_known_failure_source_digest(
+            state, "runbook", receipt.get("runbook_sha256")
+        )
+    if (
+        receipt.get("schema") != INOCULATION_RECEIPT_SCHEMA
+        or receipt.get("step") != step["n"]
+        or not source_digests_match
+        or receipt.get("inventory_sha256") != capture["inventory_sha256"]
+        or receipt.get("step_parent") != step_parent
+        or receipt.get("assigned_ids") != assigned_ids
+        or receipt.get("source_views") != capture["source_views"]
+    ):
+        die(f"{label} does not match its capture, step, or parent", 1)
+    manifests = receipt.get("guard_manifests")
+    if not isinstance(manifests, list):
+        die(f"{label} has no guard_manifests list", 1)
+    identities = []
+    for index, manifest in enumerate(manifests):
+        if (
+            not isinstance(manifest, dict)
+            or set(manifest) != INOCULATION_MANIFEST_REFERENCE_KEYS
+        ):
+            die(f"{label} guard_manifests[{index}] has an unsupported field set", 1)
+        finding_id = manifest.get("finding_id")
+        path = manifest.get("path")
+        digest = manifest.get("sha256")
+        if (
+            finding_id not in assigned_ids
+            or not _known_failure_portable_path(path)
+            or path != _guard_manifest_relative(step, finding_id)
+            or not isinstance(digest, str)
+            or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+        ):
+            die(f"{label} guard_manifests[{index}] is malformed", 1)
+        identities.append((finding_id, path))
+    if identities != sorted(set(identities)):
+        die(f"{label} guard_manifests are duplicated or unordered", 1)
+    completed = sorted(item[0] for item in identities)
+    if assigned_ids:
+        if completed != assigned_ids or receipt.get("no_known_findings") is not None:
+            die(f"{label} does not cover the complete assigned id set", 1)
+    else:
+        receipt_capture = dict(capture)
+        receipt_capture["study_sha256"] = receipt.get("study_sha256")
+    if not assigned_ids and (
+        manifests
+        or receipt.get("no_known_findings")
+        != _expected_no_known_findings_record(receipt_capture, step)
+    ):
+        die(f"{label} has no checked no-known-findings record", 1)
+    return receipt
+
+
+def _validate_receipted_guard_evidence(
+    base_dir: str,
+    state: dict,
+    capture: dict,
+    step: dict,
+    receipt: dict,
+) -> dict:
+    assigned_ids = _assigned_ids(capture, step["n"])
+    if not assigned_ids:
+        return {
+            "inventory_sha256": capture["inventory_sha256"],
+            "assigned_count": 0,
+            "completed_ids": [],
+            "remaining_ids": [],
+        }
+    discovered = _discover_guard_evidence(
+        base_dir, state, capture, step, recheck_state=True
+    )
+    if discovered["remaining_ids"]:
+        die("receipted inoculation no longer has its complete guard evidence")
+    references = [
+        {
+            "finding_id": document["finding"]["id"],
+            "path": _guard_manifest_relative(step, document["finding"]["id"]),
+            "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+        }
+        for document in discovered["documents"]
+    ]
+    references.sort(key=lambda item: item["finding_id"])
+    if receipt.get("guard_manifests") != references:
+        die("inoculation receipt does not bind its exact final guard manifests")
+    return discovered
+
+
+def _recovery_manifest_path(step_number: int, kind: str, finding_id: str) -> str:
+    """Derive the one controller-owned path a manifest reference may name."""
+    if kind == "guard":
+        root = _inoculation_evidence_relative(step_number)
+    elif kind == "final-green":
+        root = _final_green_evidence_relative(step_number)
+    else:
+        die("recovery manifest kind is invalid", 1)
+    return f"{root}/{GUARD_MANIFEST_DIRECTORY}/{finding_id}.json"
+
+
+def _final_green_evidence_relative(step_number: int) -> str:
+    if (
+        isinstance(step_number, bool)
+        or not isinstance(step_number, int)
+        or step_number <= 0
+    ):
+        die("final-green step number is invalid", 1)
+    return f"{STATE_DIR_NAME}/steps/{step_number}/{FINAL_GREEN_DIRECTORY}"
+
+
+def _final_green_components(step: dict, directory: str) -> list[str]:
+    if directory not in {GUARD_REPORT_DIRECTORY, GUARD_MANIFEST_DIRECTORY}:
+        die("final-green evidence directory is invalid", 1)
+    return [
+        STATE_DIR_NAME,
+        "steps",
+        str(step["n"]),
+        FINAL_GREEN_DIRECTORY,
+        directory,
+    ]
+
+
+def _final_green_report_relative(step: dict, finding_id: str) -> str:
+    return (
+        _final_green_evidence_relative(step["n"])
+        + f"/{GUARD_REPORT_DIRECTORY}/{finding_id}.report"
+    )
+
+
+def _final_green_manifest_relative(step: dict, finding_id: str) -> str:
+    return _recovery_manifest_path(step["n"], "final-green", finding_id)
+
+
+def _recovery_digest(value, label: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise ValueError(f"recovery projection has an invalid {label}")
+    return value
+
+
+def _recovery_commit(value, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", value) is None
+    ):
+        raise ValueError(f"recovery projection has an invalid {label}")
+    return value
+
+
+def _recovery_id_list(value, label: str) -> list[str]:
+    if type(value) is not list or len(value) > KNOWN_FAILURE_MAX_FINDINGS:
+        raise ValueError(f"recovery projection {label} is not a bounded array")
+    for item in value:
+        if not isinstance(item, str) or KNOWN_FAILURE_ID_RE.match(item) is None:
+            raise ValueError(
+                f"recovery projection {label} holds an invalid finding id"
+            )
+    if value != sorted(set(value)):
+        raise ValueError(f"recovery projection {label} is not uniquely sorted")
+    return list(value)
+
+
+def _recovery_manifest_references(
+    value,
+    *,
+    step_number: int,
+    kind: str,
+    assigned_ids: list[str],
+    completed_ids: list[str],
+) -> list[dict]:
+    """Validate one closed manifest-reference array against derived paths."""
+    if type(value) is not list or len(value) > KNOWN_FAILURE_MAX_FINDINGS:
+        raise ValueError(
+            f"recovery projection {kind} manifests are not a bounded array"
+        )
+    identifiers = []
+    for row in value:
+        if type(row) is not dict or set(row) != INOCULATION_MANIFEST_REFERENCE_KEYS:
+            raise ValueError(
+                f"recovery projection {kind} manifest has an unsupported field set"
+            )
+        finding_id = row.get("finding_id")
+        if finding_id not in assigned_ids:
+            raise ValueError(
+                f"recovery projection {kind} manifest names an unassigned finding"
+            )
+        if row.get("path") != _recovery_manifest_path(step_number, kind, finding_id):
+            raise ValueError(
+                f"recovery projection {kind} manifest is not at its "
+                "controller-derived path"
+            )
+        _recovery_digest(row.get("sha256"), f"{kind} manifest digest")
+        identifiers.append(finding_id)
+    if identifiers != sorted(set(identifiers)):
+        raise ValueError(
+            f"recovery projection {kind} manifests are not uniquely sorted"
+        )
+    if identifiers != completed_ids:
+        raise ValueError(
+            f"recovery projection {kind} manifests do not match its completed ids"
+        )
+    return list(value)
+
+
+def _recovery_suite_rows(value) -> list[dict]:
+    """Validate the declared suite evidence bound beside final-green ids."""
+    if type(value) is not list or len(value) > len(FINAL_GREEN_SUITE_CHECKS):
+        raise ValueError("recovery projection suite evidence is not a bounded array")
+    checks = []
+    for row in value:
+        if type(row) is not dict or set(row) != RECOVERY_SUITE_KEYS:
+            raise ValueError(
+                "recovery projection suite evidence has an unsupported field set"
+            )
+        check = row.get("check")
+        if check not in FINAL_GREEN_SUITE_CHECKS:
+            raise ValueError(
+                "recovery projection suite evidence names an undeclared check"
+            )
+        argv = row.get("argv")
+        if (
+            type(argv) is not list
+            or not argv
+            or len(argv) > GUARD_COMMAND_ARGUMENTS_MAX
+            or any(
+                not isinstance(item, str)
+                or not item
+                or _contains_nonprinting_character(item)
+                for item in argv
+            )
+        ):
+            raise ValueError("recovery projection suite evidence has an invalid argv")
+        cwd = row.get("cwd")
+        if not isinstance(cwd, str) or not cwd or _contains_nonprinting_character(cwd):
+            raise ValueError(
+                "recovery projection suite evidence has an invalid working directory"
+            )
+        if type(row.get("exit")) is not int or row["exit"] != 0:
+            raise ValueError("recovery projection suite evidence did not exit zero")
+        checks.append(check)
+    if checks != sorted(set(checks)):
+        raise ValueError("recovery projection suite evidence is not uniquely sorted")
+    return list(value)
+
+
+def _recovery_no_known_findings(claim, document: dict, step_number: int) -> dict:
+    if type(claim) is not dict or set(claim) != NO_KNOWN_FINDINGS_KEYS:
+        raise ValueError("recovery projection has no bound no-known-findings claim")
+    # The claim's study digest is the prefix it was written against, and a
+    # later holding amendment moves the current tip without rewriting the
+    # receipt. The inventory digest is what an amendment may not move
+    # silently, so that is the join checked here; the receipt's own
+    # amendment chain is where the study tip is reconciled.
+    _recovery_digest(claim.get("study_sha256"), "no-known-findings study_sha256")
+    if (
+        claim.get("schema") != NO_KNOWN_FINDINGS_SCHEMA
+        or claim.get("assertion") != NO_KNOWN_FINDINGS_ASSERTION
+        or claim.get("consuming_step") != step_number
+        or claim.get("inventory_sha256") != document["inventory_sha256"]
+    ):
+        raise ValueError(
+            "recovery projection no-known-findings claim is not source-bound"
+        )
+    views = claim.get("source_views")
+    if (
+        type(views) is not list
+        or not views
+        or len(views) > KNOWN_FAILURE_MAX_SOURCE_VIEWS
+    ):
+        raise ValueError(
+            "recovery projection no-known-findings claim has no checked views"
+        )
+    identifiers = []
+    for view in views:
+        if type(view) is not dict or set(view) != KNOWN_FAILURE_NO_FINDINGS_VIEW_KEYS:
+            raise ValueError(
+                "recovery projection no-known-findings view has an unsupported "
+                "field set"
+            )
+        if not _known_failure_text(view.get("id"), limit=256):
+            raise ValueError(
+                "recovery projection no-known-findings view has an invalid id"
+            )
+        for name in ("source_sha256", "view_sha256"):
+            _recovery_digest(view.get(name), f"no-known-findings view {name}")
+        identifiers.append(view["id"])
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError("recovery projection no-known-findings views are duplicated")
+    return claim
+
+
+def validate_known_failure_recovery(
+    document,
+    *,
+    capture: dict | None = None,
+    require_phase_completeness: bool = True,
+) -> dict:
+    """Validate one closed known-failure recovery projection.
+
+    This is the single reconstruction contract behind `status`, `next`,
+    `verify`, checkpoint export and restore, and a post-compaction
+    delegation packet, so the same missing, reordered, stale or foreign
+    evidence is refused by name wherever a reader rebuilds the step. It stays
+    a ValueError API because the historical Step 4 guards exercise it as a
+    pure validator; every controller boundary turns its failures into a
+    bounded refusal.
+
+    `require_phase_completeness` is false only for an observer that must not
+    refuse. `status` is what somebody runs to find out what is wrong, so it
+    reports an incomplete join and every receipt still refuses it.
+    """
+    if type(document) is not dict or set(document) != RECOVERY_PROJECTION_KEYS:
+        raise ValueError("recovery projection has an unsupported field set")
+    if document.get("schema") != RECOVERY_PROJECTION_SCHEMA:
+        raise ValueError("recovery projection has an unsupported schema")
+    step_number = document.get("step")
+    if (
+        isinstance(step_number, bool)
+        or type(step_number) is not int
+        or step_number <= 0
+    ):
+        raise ValueError("recovery projection has an invalid step number")
+    if document.get("phase") not in STEP_PHASES:
+        raise ValueError("recovery projection has an unsupported step phase")
+    phase = document["phase"]
+    for name in ("study_sha256", "runbook_sha256", "inventory_sha256"):
+        _recovery_digest(document.get(name), name)
+    _recovery_commit(document.get("step_parent"), "step_parent")
+    if capture is not None:
+        for name in ("study_sha256", "runbook_sha256", "inventory_sha256"):
+            if document[name] != capture.get(name):
+                raise ValueError(
+                    f"recovery projection does not bind its receipted {name}"
+                )
+    assigned_ids = _recovery_id_list(document.get("assigned_ids"), "assigned_ids")
+    completed_ids = _recovery_id_list(document.get("completed_ids"), "completed_ids")
+    remaining_ids = _recovery_id_list(document.get("remaining_ids"), "remaining_ids")
+    if set(completed_ids) - set(assigned_ids):
+        raise ValueError("recovery projection completed_ids leave the assigned set")
+    if remaining_ids != sorted(set(assigned_ids) - set(completed_ids)):
+        raise ValueError("recovery projection remaining_ids are not its open remainder")
+    _recovery_manifest_references(
+        document.get("guard_manifests"),
+        step_number=step_number,
+        kind="guard",
+        assigned_ids=assigned_ids,
+        completed_ids=completed_ids,
+    )
+    if (
+        require_phase_completeness
+        and phase in RECOVERY_PHASES_AFTER_INOCULATE
+        and remaining_ids
+    ):
+        raise ValueError(
+            "recovery projection has incomplete guard evidence for an opened "
+            "implementation"
+        )
+    final_green = document.get("final_green")
+    if type(final_green) is not dict or set(final_green) != RECOVERY_FINAL_GREEN_KEYS:
+        raise ValueError("recovery projection final_green has an unsupported field set")
+    green_completed = _recovery_id_list(
+        final_green.get("completed_ids"), "final_green completed_ids"
+    )
+    green_remaining = _recovery_id_list(
+        final_green.get("remaining_ids"), "final_green remaining_ids"
+    )
+    if set(green_completed) - set(completed_ids):
+        raise ValueError(
+            "recovery projection final-green evidence covers an unguarded finding"
+        )
+    if green_remaining != sorted(set(assigned_ids) - set(green_completed)):
+        raise ValueError(
+            "recovery projection final_green remaining_ids are not its open remainder"
+        )
+    _recovery_manifest_references(
+        final_green.get("manifests"),
+        step_number=step_number,
+        kind="final-green",
+        assigned_ids=assigned_ids,
+        completed_ids=green_completed,
+    )
+    suites = _recovery_suite_rows(final_green.get("suites"))
+    if require_phase_completeness and phase in RECOVERY_PHASES_AFTER_IMPLEMENT:
+        if green_remaining:
+            raise ValueError(
+                "recovery projection has incomplete final-green evidence for a "
+                "step past implementation"
+            )
+        if [row["check"] for row in suites] != sorted(FINAL_GREEN_SUITE_CHECKS):
+            raise ValueError(
+                "recovery projection has incomplete suite evidence for a step "
+                "past implementation"
+            )
+    claim = document.get("no_known_findings")
+    if assigned_ids:
+        if claim is not None:
+            raise ValueError("an assigned step cannot carry a no-known-findings claim")
+    elif claim is not None:
+        _recovery_no_known_findings(claim, document, step_number)
+    elif require_phase_completeness and phase in RECOVERY_PHASES_AFTER_INOCULATE:
+        # An open `inoculate` Step is the one place the claim may be absent:
+        # producing it is what the phase is for. Every later phase owes it,
+        # because an empty successful run is not an explicit emptiness claim.
+        raise ValueError("recovery projection has no bound no-known-findings claim")
+    return document
+
+
+def final_green_admission_counters(
+    report_format: str, raw_report: bytes, runner_exit
+) -> dict:
+    """Admit one fixed-tree runner result as this step's final-green evidence.
+
+    This is Fiat's own admission rather than an Elenchus verdict. The four
+    Elenchus verdicts all describe an unfixed parent tree, and none of them
+    says that a fixed tree came back green. Like the guard counterpart it
+    stays a ValueError API so the historical Step 4 guard can exercise it
+    without a controller.
+    """
+    if report_format not in FINAL_GREEN_REPORT_FORMATS:
+        raise ValueError("unsupported final-green report format")
+    if not isinstance(raw_report, bytes) or len(raw_report) > GUARD_REPORT_BYTES_MAX:
+        raise ValueError("final-green report bytes are invalid or oversized")
+    if type(runner_exit) is not int or runner_exit != 0:
+        raise ValueError("the final-green runner did not exit zero")
+    raw = _guard_json_document(raw_report, "unittest final-green report")
+    keys = {
+        "schema",
+        "complete",
+        "testsRun",
+        "failures",
+        "errors",
+        "skipped",
+        "expectedFailures",
+        "unexpectedSuccesses",
+    }
+    if type(raw) is not dict or set(raw) != keys:
+        raise ValueError("unittest final-green report has an unsupported field set")
+    if raw.get("schema") != "elenchus.unittest.v1" or raw.get("complete") is not True:
+        raise ValueError(
+            "unittest final-green report has an unsupported schema or state"
+        )
+    executed = _guard_exact_nonnegative_integer(raw.get("testsRun"), "testsRun")
+    rejected = [
+        _guard_exact_nonnegative_integer(raw.get(name), name)
+        for name in (
+            "failures",
+            "errors",
+            "skipped",
+            "expectedFailures",
+            "unexpectedSuccesses",
+        )
+    ]
+    if executed < 1 or any(rejected):
+        raise ValueError(
+            "the final-green report is not a positive assertion-free complete run"
+        )
+    return {
+        "complete": True,
+        "executed": executed,
+        "assertion_failures": 0,
+        "errors": 0,
+        "skipped": 0,
+    }
+
+
+def build_final_green_manifest(
+    *,
+    finding_id: str,
+    consuming_step: int,
+    controller_run_id: str,
+    worktree_identity: dict,
+    capture: dict,
+    final_commit: str,
+    green_command: str,
+    green_argv: list[str],
+    report_format: str,
+    report_file: str,
+    retained_report: dict,
+    runner_exit: int,
+    counters: dict,
+) -> dict:
+    """Construct the closed final-green manifest a Step receipt binds."""
+    return {
+        "schema": FINAL_GREEN_MANIFEST_SCHEMA,
+        "finding_id": finding_id,
+        "consuming_step": consuming_step,
+        "controller_run_id": controller_run_id,
+        "worktree_identity": worktree_identity,
+        "capture": capture,
+        "final_commit": final_commit,
+        "green_command": green_command,
+        "green_argv": green_argv,
+        "report_format": report_format,
+        "report_file": report_file,
+        "retained_report": retained_report,
+        "runner_exit": runner_exit,
+        "counters": counters,
+        "admission": FINAL_GREEN_ADMISSION,
+    }
+
+
+def _final_green_argv(command: str) -> tuple[list[str], str]:
+    """Split one declared green command and locate the report it names.
+
+    A green command names its own report, so unlike a guard command it
+    carries no `{report}` placeholder for Fiat to fill. The contract is
+    exactly one `--report <repository-relative-path>` pair; a second flag, a
+    missing value, an absolute or escaping path, or a placeholder refuses
+    rather than letting the controller guess where the runner wrote.
+    """
+    if (
+        not isinstance(command, str)
+        or not command
+        or len(command.encode("utf-8")) > GUARD_COMMAND_BYTES_MAX
+        or _contains_nonprinting_character(command)
+    ):
+        raise ValueError("green command is invalid or oversized")
+    try:
+        argv = shlex.split(command, posix=True)
+    except ValueError as exc:
+        raise ValueError("green command cannot be parsed") from exc
+    if (
+        not argv
+        or len(argv) > GUARD_COMMAND_ARGUMENTS_MAX
+        or any(not item or _contains_nonprinting_character(item) for item in argv)
+        or GUARD_REPORT_PLACEHOLDER in argv
+    ):
+        raise ValueError("green argv is invalid, oversized or templated")
+    if argv.count(FINAL_GREEN_REPORT_FLAG) != 1:
+        raise ValueError("green command does not name exactly one report path")
+    index = argv.index(FINAL_GREEN_REPORT_FLAG)
+    if index + 1 >= len(argv):
+        raise ValueError("green command has no report path after its flag")
+    report_file = argv[index + 1]
+    if not _known_failure_portable_path(report_file):
+        raise ValueError("green report path is not a safe relative path")
+    return argv, report_file
+
+
+def _final_green_executable(argv: list[str]) -> list[str]:
+    """Resolve a declared command's interpreter without any PATH lookup.
+
+    A caller-supplied `PATH` is an injection channel, and this controller
+    already runs the interpreter the repository pins. Substituting
+    `sys.executable` for the declared bare name removes the lookup rather
+    than trying to make it safe; anything but a supported bare interpreter
+    refuses.
+    """
+    if type(argv) is not list or not argv or argv[0] not in FINAL_GREEN_INTERPRETERS:
+        raise ValueError(
+            "a declared fixed-tree command must start with a supported interpreter"
+        )
+    return [sys.executable, *argv[1:]]
+
+
+def _final_green_run(
+    base_dir: str, argv: list[str], cwd: str, label: str
+) -> int:
+    """Run one declared fixed-tree command with no shell and a closed child."""
+    directory = scoped_path(base_dir, cwd, f"{label} working directory")
+    if not os.path.isdir(directory):
+        die(f"{label} working directory is not present")
+    environment = {
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_NO_LAZY_FETCH": "1",
+        "GIT_NO_REPLACE_OBJECTS": "1",
+        "GIT_TERMINAL_PROMPT": "0",
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.defpath,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONUTF8": "1",
+        "TZ": "UTC",
+    }
+    try:
+        completed = subprocess.run(
+            argv,
+            cwd=directory,
+            capture_output=True,
+            check=False,
+            env=environment,
+            timeout=FINAL_GREEN_RUNNER_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        die(
+            f"{label} did not finish inside its "
+            f"{FINAL_GREEN_RUNNER_TIMEOUT}-second budget"
+        )
+    except OSError:
+        die(f"{label} could not be started")
+    return completed.returncode
+
+
+def _final_green_suite_evidence(base_dir: str, step: dict) -> list[dict]:
+    """Run each declared repository suite and bind its successful exit.
+
+    Discovery is fail-open the way the audit-round directive's already is: a
+    repository that declares neither suite in its check map binds no suite
+    row, and a clean receipt then says nothing about a suite nobody
+    declared. It is not fail-open on the answer -- a declared suite that
+    cannot be run, or comes back non-zero, refuses before the receipt. A
+    capture-aware run that means to reach audit therefore owes those
+    declarations, because the strict read past implementation demands both.
+    """
+    del step
+    rows = []
+    for check in sorted(FINAL_GREEN_SUITE_CHECKS):
+        declared = repository_check_command(base_dir, check=check)
+        if declared is None:
+            continue
+        try:
+            executable = _final_green_executable(declared["argv"])
+        except ValueError as exc:
+            die(f"the declared {check} command is invalid: {exc}")
+        code = _final_green_run(
+            base_dir, executable, declared["cwd"], f"the declared {check}"
+        )
+        if code != 0:
+            die(f"the declared {check} exited {code}; the fixed tree is not green")
+        rows.append(
+            {
+                "check": check,
+                "argv": list(declared["argv"]),
+                "cwd": declared["cwd"],
+                "exit": 0,
+            }
+        )
+    try:
+        return _recovery_suite_rows(rows)
+    except ValueError as exc:
+        die(f"declared suite evidence is not admissible: {exc}")
+
+
+def _final_green_manifest_documents(
+    base_dir: str, state: dict, capture: dict, step: dict
+) -> list[dict]:
+    """Read the published final-green pairs for this step's assigned ids.
+
+    The manifest is published last with no replacement and binds the exact
+    retained report digest, so a manifest name is the completion point and a
+    report-only leaf is simply an id still owing evidence. Nothing here
+    compares the recorded worktree identity with the current one: a restored
+    capsule is a different physical directory, and refusing to read its
+    completed evidence would defeat the recovery this step exists for.
+    """
+    assigned = {
+        finding["id"]: finding for finding in _assigned_findings(capture, step["n"])
+    }
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _final_green_components(step, GUARD_MANIFEST_DIRECTORY),
+        "final-green manifest directory",
+        create=False,
+        missing_ok=True,
+    )
+    if manifest_directory is None:
+        return []
+    documents = []
+    try:
+        try:
+            names = os.listdir(manifest_directory)
+        except OSError:
+            die("final-green manifest directory cannot be listed stably")
+        expected = {f"{finding_id}.json" for finding_id in assigned}
+        foreign = sorted(
+            name
+            for name in names
+            if not name.startswith(".stage-") and name not in expected
+        )
+        if foreign:
+            die("final-green manifest directory contains a foreign leaf")
+        for finding_id in sorted(assigned):
+            name = f"{finding_id}.json"
+            first = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"final-green manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+                missing_ok=True,
+            )
+            if first is None:
+                continue
+            manifest_bytes, manifest_identity = first
+            if stat.S_IMODE(manifest_identity[2]) != 0o600:
+                die(f"final-green manifest {finding_id} does not retain mode 0600")
+            manifest = _guard_json_document(
+                manifest_bytes, f"final-green manifest {finding_id}"
+            )
+            if (
+                type(manifest) is not dict
+                or _guard_json_depth(manifest) > GUARD_MANIFEST_DEPTH_MAX
+            ):
+                die(f"final-green manifest {finding_id} is not one bounded object")
+            if _guard_canonical_manifest(manifest) != manifest_bytes:
+                die(f"final-green manifest {finding_id} is not canonical JSON")
+            report_directory = _guard_open_directory(
+                base_dir,
+                _final_green_components(step, GUARD_REPORT_DIRECTORY),
+                "final-green report directory",
+                create=False,
+            )
+            try:
+                report = _guard_read_leaf(
+                    report_directory,
+                    f"{finding_id}.report",
+                    f"final-green report {finding_id}",
+                    limit=GUARD_REPORT_BYTES_MAX,
+                )
+            finally:
+                os.close(report_directory)
+            assert report is not None
+            report_bytes, report_identity = report
+            if stat.S_IMODE(report_identity[2]) != 0o600:
+                die(f"final-green report {finding_id} does not retain mode 0600")
+            second = _guard_read_leaf(
+                manifest_directory,
+                name,
+                f"final-green manifest {finding_id}",
+                limit=GUARD_MANIFEST_BYTES_MAX,
+            )
+            if second != (manifest_bytes, manifest_identity):
+                die(
+                    f"final-green manifest {finding_id} changed during pair "
+                    "discovery"
+                )
+            documents.append(
+                {
+                    "finding": assigned[finding_id],
+                    "manifest": manifest,
+                    "manifest_bytes": manifest_bytes,
+                    "report_bytes": report_bytes,
+                }
+            )
+    except ValueError as exc:
+        die(str(exc))
+    finally:
+        os.close(manifest_directory)
+    return documents
+
+
+def _validate_published_final_green(
+    document: dict, *, state: dict, step: dict, final_commit: str | None
+) -> dict:
+    """Hold one published final-green pair to its writer's own contract."""
+    finding = document["finding"]
+    label = f"final-green manifest for {finding['id']}"
+    manifest = document["manifest"]
+    if type(manifest) is not dict or set(manifest) != FINAL_GREEN_MANIFEST_KEYS:
+        die(f"{label} has an unsupported field set")
+    worktree = manifest.get("worktree_identity")
+    if type(worktree) is not dict or set(worktree) != GUARD_WORKTREE_IDENTITY_KEYS:
+        die(f"{label} has an invalid worktree identity")
+    if any(
+        type(worktree.get(key)) is not int or worktree[key] < 0 for key in worktree
+    ):
+        die(f"{label} has an invalid worktree identity")
+    retained_report = manifest.get("retained_report")
+    if (
+        type(retained_report) is not dict
+        or set(retained_report) != GUARD_RETAINED_REPORT_KEYS
+    ):
+        die(f"{label} has an invalid retained report reference")
+    raw_report = document["report_bytes"]
+    if retained_report != {
+        "path": _final_green_report_relative(step, finding["id"]),
+        "bytes": len(raw_report),
+        "sha256": hashlib.sha256(raw_report).hexdigest(),
+    }:
+        die(f"{label} does not bind its exact retained report bytes")
+    recorded_commit = manifest.get("final_commit")
+    try:
+        _recovery_commit(recorded_commit, "final_commit")
+        argv, report_file = _final_green_argv(finding["green_command"])
+        counters = final_green_admission_counters(
+            finding["report_format"], raw_report, manifest.get("runner_exit")
+        )
+    except ValueError as exc:
+        die(f"{label} is not admissible: {exc}")
+    if final_commit is not None and recorded_commit != final_commit:
+        die(f"{label} was produced on another commit")
+    if manifest != build_final_green_manifest(
+        finding_id=finding["id"],
+        consuming_step=step["n"],
+        controller_run_id=controller_run_id(state),
+        worktree_identity=manifest["worktree_identity"],
+        capture=_guard_initial_capture(state),
+        final_commit=recorded_commit,
+        green_command=finding["green_command"],
+        green_argv=argv,
+        report_format=finding["report_format"],
+        report_file=report_file,
+        retained_report=retained_report,
+        runner_exit=0,
+        counters=counters,
+    ):
+        die(f"{label} does not match its immutable context")
+    return manifest
+
+
+def _retain_final_green(
+    base_dir: str,
+    state: dict,
+    step: dict,
+    finding: dict,
+    final_commit: str,
+    worktree_identity: dict,
+) -> dict:
+    """Run one assigned id's declared green command and publish its pair."""
+    try:
+        argv, report_file = _final_green_argv(finding["green_command"])
+        executable = _final_green_executable(argv)
+    except ValueError as exc:
+        die(f"the green command for {finding['id']} is invalid: {exc}")
+    target = scoped_path(base_dir, report_file, "final-green report path")
+    if os.path.lexists(target):
+        die(
+            f"the declared green report path for {finding['id']} is occupied; "
+            "remove it so the fixed-tree run writes a fresh report"
+        )
+    started_ns = time.time_ns()
+    runner_exit = _final_green_run(
+        base_dir, executable, ".", f"the green command for {finding['id']}"
+    )
+    raw_report = _read_stable_controller_file(
+        base_dir,
+        report_file,
+        f"the final-green report for {finding['id']}",
+        limit=GUARD_REPORT_BYTES_MAX,
+    )
+    try:
+        if os.stat(target).st_mtime_ns < started_ns:
+            die(f"the final-green report for {finding['id']} is stale")
+    except OSError:
+        die(f"the final-green report for {finding['id']} cannot be inspected")
+    try:
+        counters = final_green_admission_counters(
+            finding["report_format"], raw_report, runner_exit
+        )
+    except ValueError as exc:
+        die(f"final-green evidence for {finding['id']} is not admissible: {exc}")
+    retained_report = {
+        "path": _final_green_report_relative(step, finding["id"]),
+        "bytes": len(raw_report),
+        "sha256": hashlib.sha256(raw_report).hexdigest(),
+    }
+    manifest = build_final_green_manifest(
+        finding_id=finding["id"],
+        consuming_step=step["n"],
+        controller_run_id=controller_run_id(state),
+        worktree_identity=worktree_identity,
+        capture=_guard_initial_capture(state),
+        final_commit=final_commit,
+        green_command=finding["green_command"],
+        green_argv=argv,
+        report_format=finding["report_format"],
+        report_file=report_file,
+        retained_report=retained_report,
+        runner_exit=runner_exit,
+        counters=counters,
+    )
+    manifest_bytes = _guard_canonical_manifest(manifest)
+    report_directory = _guard_open_directory(
+        base_dir,
+        _final_green_components(step, GUARD_REPORT_DIRECTORY),
+        "final-green report directory",
+        create=True,
+    )
+    try:
+        # A report leaf carries no authority until the manifest published
+        # after it names this digest, so an orphan from an interrupted
+        # attempt is replaced rather than turned into an operator chore.
+        existing = _guard_read_leaf(
+            report_directory,
+            f"{finding['id']}.report",
+            f"final-green report {finding['id']}",
+            limit=GUARD_REPORT_BYTES_MAX,
+            missing_ok=True,
+        )
+        label = f"final-green report {finding['id']}"
+        if existing is None:
+            _guard_publish_leaf(
+                report_directory,
+                f"{finding['id']}.report",
+                raw_report,
+                label,
+                limit=GUARD_REPORT_BYTES_MAX,
+            )
+        elif existing[0] != raw_report:
+            _no_known_replace_leaf(
+                report_directory,
+                f"{finding['id']}.report",
+                existing,
+                raw_report,
+                label,
+            )
+    finally:
+        os.close(report_directory)
+    manifest_directory = _guard_open_directory(
+        base_dir,
+        _final_green_components(step, GUARD_MANIFEST_DIRECTORY),
+        "final-green manifest directory",
+        create=True,
+    )
+    try:
+        _guard_publish_leaf(
+            manifest_directory,
+            f"{finding['id']}.json",
+            manifest_bytes,
+            f"final-green manifest {finding['id']}",
+            limit=GUARD_MANIFEST_BYTES_MAX,
+        )
+    finally:
+        os.close(manifest_directory)
+    return {
+        "finding_id": finding["id"],
+        "path": _final_green_manifest_relative(step, finding["id"]),
+        "sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+    }
+
+
+def establish_final_green(
+    base_dir: str, state: dict, capture: dict, step: dict, final_commit: str
+) -> dict:
+    """Produce and bind this step's complete fixed-tree final-green evidence.
+
+    Discovery runs first, so an interrupted attempt resumes on the exact
+    published pairs instead of sampling a second execution for an id that
+    already has admissible evidence on this commit.
+    """
+    assigned = _assigned_findings(capture, step["n"])
+    worktree_identity = _guard_worktree_identity(base_dir, state)
+    published = {
+        document["finding"]["id"]: document
+        for document in _final_green_manifest_documents(
+            base_dir, state, capture, step
+        )
+    }
+    references = []
+    for finding in sorted(assigned, key=lambda item: item["id"]):
+        document = published.get(finding["id"])
+        if document is not None:
+            _validate_published_final_green(
+                document, state=state, step=step, final_commit=final_commit
+            )
+            references.append(
+                {
+                    "finding_id": finding["id"],
+                    "path": _final_green_manifest_relative(step, finding["id"]),
+                    "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+                }
+            )
+            continue
+        references.append(
+            _retain_final_green(
+                base_dir, state, step, finding, final_commit, worktree_identity
+            )
+        )
+    references.sort(key=lambda item: item["finding_id"])
+    suites = _final_green_suite_evidence(base_dir, step)
+    final = _final_green_manifest_documents(base_dir, state, capture, step)
+    for document in final:
+        _validate_published_final_green(
+            document, state=state, step=step, final_commit=final_commit
+        )
+    if sorted(document["finding"]["id"] for document in final) != sorted(
+        finding["id"] for finding in assigned
+    ):
+        die("final-green evidence is not complete for every assigned id")
+    return {
+        "final_commit": final_commit,
+        "manifests": references,
+        "suites": suites,
+    }
+
+
+def known_failure_recovery(
+    base_dir: str,
+    state: dict,
+    capture: dict,
+    step: dict,
+    *,
+    guard_state: dict | None = None,
+    strict: bool = True,
+) -> dict:
+    """Rebuild and validate this step's recovery projection from evidence.
+
+    `strict` is false only for a lock-free observer, which reports an
+    incomplete join rather than refusing to say anything at all.
+    """
+    assigned_ids = _assigned_ids(capture, step["n"])
+    step_parent = _inoculation_parent(base_dir, state, step)
+    if guard_state is None:
+        guard_state = _discover_guard_evidence(
+            base_dir, state, capture, step, recheck_state=False
+        )
+    guard_manifests = [
+        {
+            "finding_id": document["finding"]["id"],
+            "path": _guard_manifest_relative(step, document["finding"]["id"]),
+            "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+        }
+        for document in guard_state.get("documents") or []
+    ]
+    guard_manifests.sort(key=lambda item: item["finding_id"])
+    completed_ids = [item["finding_id"] for item in guard_manifests]
+    receipt = as_dict(as_dict(step.get("receipts")).get("implement"))
+    recorded = as_dict(receipt.get("final_green"))
+    final_commit = recorded.get("final_commit")
+    green_manifests = []
+    if assigned_ids:
+        for document in _final_green_manifest_documents(
+            base_dir, state, capture, step
+        ):
+            _validate_published_final_green(
+                document, state=state, step=step, final_commit=final_commit
+            )
+            green_manifests.append(
+                {
+                    "finding_id": document["finding"]["id"],
+                    "path": _final_green_manifest_relative(
+                        step, document["finding"]["id"]
+                    ),
+                    "sha256": hashlib.sha256(document["manifest_bytes"]).hexdigest(),
+                }
+            )
+    green_manifests.sort(key=lambda item: item["finding_id"])
+    green_completed = [item["finding_id"] for item in green_manifests]
+    suites = sorted(
+        (dict(row) for row in (recorded.get("suites") or []) if type(row) is dict),
+        key=lambda row: str(row.get("check")),
+    )
+    claim = None
+    if not assigned_ids:
+        claim = as_dict(as_dict(step.get("receipts")).get("inoculate")).get(
+            "no_known_findings"
+        )
+    projection = {
+        "schema": RECOVERY_PROJECTION_SCHEMA,
+        "step": step["n"],
+        "phase": step["phase"],
+        "study_sha256": capture["study_sha256"],
+        "runbook_sha256": capture["runbook_sha256"],
+        "inventory_sha256": capture["inventory_sha256"],
+        "step_parent": step_parent,
+        "assigned_ids": assigned_ids,
+        "completed_ids": completed_ids,
+        "remaining_ids": sorted(set(assigned_ids) - set(completed_ids)),
+        "guard_manifests": guard_manifests,
+        "final_green": {
+            "completed_ids": green_completed,
+            "remaining_ids": sorted(set(assigned_ids) - set(green_completed)),
+            "manifests": green_manifests,
+            "suites": suites,
+        },
+        "no_known_findings": claim,
+    }
+    try:
+        return validate_known_failure_recovery(
+            projection,
+            capture={
+                name: capture[name]
+                for name in ("study_sha256", "runbook_sha256", "inventory_sha256")
+            },
+            require_phase_completeness=strict,
+        )
+    except ValueError as exc:
+        die(f"known-failure recovery cannot be reconstructed: {exc}")
+
+
+def require_final_green_admission(base_dir: str, state: dict, action: str) -> dict | None:
+    """Refuse a post-implementation transition without fixed-tree evidence.
+
+    A red guard commit is contained inside its open step. Once the step is
+    past `implement`, the same projection every reader rebuilds has to carry
+    one final-green manifest per assigned id and both declared suite exits,
+    so audit, prose, push, step completion and a checkpoint boundary all
+    refuse through one contract rather than five approximations. A run with
+    no receipted capture keeps its recorded implementation-first path.
+    """
+    if state.get("phase") != "steps" or state.get("current_step") is None:
+        return None
+    step = current_step(state)
+    if step.get("phase") in ("pending", "issue", "inoculate", "implement"):
+        return None
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return None
+    recovery = known_failure_recovery(base_dir, state, capture, step)
+    remaining = recovery["final_green"]["remaining_ids"]
+    if remaining:
+        die(
+            f"{action} cannot proceed while step {step['n']} has "
+            f"{len(remaining)} finding(s) without fixed-tree final-green evidence"
+        )
+    return recovery
+
+
+def require_receipted_final_green(
+    base_dir: str, state: dict, step: dict, action: str
+) -> None:
+    """Refuse a later transition unless one Step's receipt bound final green.
+
+    This reads only the receipt, because by the time the stack is coming down
+    the current step has moved on and the completed evidence belongs to a
+    step that is no longer open. A run with no receipted capture keeps its
+    recorded implementation-first path.
+    """
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return
+    receipt = as_dict(as_dict(step.get("receipts")).get("implement"))
+    if not receipt:
+        die(f"{action} needs step {step['n']}'s implementation receipt first")
+    recorded = receipt.get("final_green")
+    if type(recorded) is not dict or set(recorded) != FINAL_GREEN_RECEIPT_KEYS:
+        die(
+            f"{action} refuses step {step['n']}: its implementation receipt "
+            "binds no closed final-green evidence"
+        )
+    assigned_ids = _assigned_ids(capture, step["n"])
+    try:
+        _recovery_commit(recorded.get("final_commit"), "final_commit")
+        _recovery_manifest_references(
+            recorded.get("manifests"),
+            step_number=step["n"],
+            kind="final-green",
+            assigned_ids=assigned_ids,
+            completed_ids=assigned_ids,
+        )
+        suites = _recovery_suite_rows(recorded.get("suites"))
+    except ValueError as exc:
+        die(f"{action} refuses step {step['n']}: {exc}")
+    if [row["check"] for row in suites] != sorted(FINAL_GREEN_SUITE_CHECKS):
+        die(
+            f"{action} refuses step {step['n']}: its receipt binds incomplete "
+            "suite evidence"
+        )
+
+
+def inoculation_status(
+    state: dict, capture: dict, base_dir: str | None = None
+) -> dict:
+    step = current_step(state)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    if assigned_ids and base_dir is not None:
+        discovered = _discover_guard_evidence(
+            base_dir, state, capture, step, recheck_state=True
+        )
+        return {
+            key: value
+            for key, value in discovered.items()
+            if key not in {"documents", "evidence"}
+        }
+    receipt = as_dict(as_dict(step.get("receipts")).get("inoculate"))
+    completed_ids = sorted(
+        item.get("finding_id")
+        for item in (receipt.get("guard_manifests") or [])
+        if isinstance(item, dict) and item.get("finding_id") in assigned_ids
+    )
+    result = {
+        "inventory_sha256": capture["inventory_sha256"],
+        "assigned_count": len(assigned_ids),
+        "completed_ids": completed_ids,
+        "remaining_ids": sorted(set(assigned_ids) - set(completed_ids)),
+    }
+    manifests = receipt.get("guard_manifests") or []
+    if manifests and base_dir is None:
+        # Compatibility for isolated historical callers. Live observers pass
+        # base_dir and derive this only from checked final manifest pairs.
+        result["guard_commit"] = None
+    return result
+
+
+def _refuse_inoculate_options(args) -> None:
+    allowed = {"cmd", "dir", "fn", "phase"}
+    supplied = []
+    for name, value in vars(args).items():
+        if name in allowed or name.startswith("_"):
+            continue
+        if value is not None and value is not False and value != []:
+            supplied.append("--" + name.replace("_", "-"))
+    if supplied:
+        die(
+            "done inoculate accepts no phase-specific options; remove "
+            + ", ".join(sorted(supplied))
+        )
+
+
+def _guard_same_evidence(left: dict, right: dict) -> bool:
+    keys = {
+        "worktree_identity",
+        "step_parent",
+        "guard_commit",
+        "changed_paths",
+        "guard_blobs",
+    }
+    return {key: left.get(key) for key in keys} == {
+        key: right.get(key) for key in keys
+    }
+
+
+def cmd_retain_guard(args) -> None:
+    """Retain one assigned finding's admitted detached-parent guard report."""
+    state = load_state(args.dir)
+    step = require_step_phase(state, "inoculate")
+    capture = receipted_known_failure_inventory(args.dir, state)
+    if capture is None:
+        die("pre-contract runbook receipts cannot retain guard evidence")
+    finding_id = args.finding_id
+    finding = next(
+        (
+            item
+            for item in _assigned_findings(capture, step["n"])
+            if item["id"] == finding_id
+        ),
+        None,
+    )
+    if finding is None:
+        die(f"finding id {finding_id!r} is not assigned to step {step['n']}")
+    try:
+        argv = _guard_test_argv(finding["test_command"])
+    except ValueError as exc:
+        die(str(exc))
+    if finding["report_format"] not in GUARD_REPORT_FORMATS:
+        die("assigned finding uses an unsupported report format")
+    if not _known_failure_portable_path(finding["report_file"]):
+        die("assigned finding uses an unsafe logical report path")
+
+    initial_state = state_fingerprint(state)
+    initial_capture = _guard_initial_capture(state)
+    evidence = _guard_commit_evidence(
+        args.dir, state, capture, step, args.guard_commit, writer=True
+    )
+
+    def revalidate() -> dict:
+        current_state = load_state(args.dir)
+        if state_fingerprint(current_state) != initial_state:
+            die("controller state changed during guard retention")
+        current_step = require_step_phase(current_state, "inoculate")
+        current_capture = receipted_known_failure_inventory(args.dir, current_state)
+        if current_capture is None or _guard_initial_capture(current_state) != initial_capture:
+            die("known-failure capture changed during guard retention")
+        current_evidence = _guard_commit_evidence(
+            args.dir,
+            current_state,
+            current_capture,
+            current_step,
+            args.guard_commit,
+            writer=True,
+        )
+        if not _guard_same_evidence(evidence, current_evidence):
+            die("guard commit evidence changed during retention")
+        return current_evidence
+
+    discovered = _discover_guard_evidence(
+        args.dir, state, capture, step, recheck_state=False
+    )
+    if finding_id in discovered["completed_ids"]:
+        document = next(
+            item
+            for item in discovered["documents"]
+            if item["finding"]["id"] == finding_id
+        )
+        if document["manifest"].get("guard_commit") != args.guard_commit:
+            die("completed guard evidence binds a different guard commit")
+        _validate_guard_manifest(
+            document["manifest"],
+            document["report_bytes"],
+            state=state,
+            capture=capture,
+            step=step,
+            finding=finding,
+            evidence=evidence,
+        )
+        revalidate()
+        print(
+            json.dumps(
+                _guard_result(
+                    step,
+                    finding_id,
+                    document["manifest_bytes"],
+                    document["report_bytes"],
+                    "already-retained",
+                ),
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return
+
+    resumed = _guard_resume_pending_publication(
+        args.dir,
+        state,
+        capture,
+        step,
+        finding,
+        evidence,
+        argv,
+        revalidate,
+    )
+    if resumed is not None:
+        manifest_bytes, raw_report = resumed
+        final = _discover_guard_evidence(
+            args.dir, state, capture, step, recheck_state=True
+        )
+        if finding_id not in final["completed_ids"]:
+            die("recovered guard evidence could not be rediscovered")
+        print(
+            json.dumps(
+                _guard_result(
+                    step, finding_id, manifest_bytes, raw_report, "created"
+                ),
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return
+
+    module = _elenchus_guard_module()
+    operation = getattr(module, "parent_guard_evidence")
+    try:
+        result = operation(
+            Path(args.dir),
+            evidence["step_parent"],
+            [dict(row) for row in evidence["supplied_blobs"]],
+            list(argv),
+            finding["report_format"],
+            finding["report_file"],
+            timeout=GUARD_RUNNER_TIMEOUT,
+        )
+    except (Exception, SystemExit):
+        die("Elenchus parent-guard execution failed")
+    revalidate()
+    expected_result_keys = {
+        "ref",
+        "status",
+        "tests",
+        "detail",
+        "report",
+        "raw_report",
+        "exit_code",
+        "output",
+    }
+    if type(result) is not dict or set(result) != expected_result_keys:
+        die("Elenchus returned an unsupported parent-guard result")
+    raw_report = result.get("raw_report")
+    runner_exit = result.get("exit_code")
+    if (
+        result.get("ref") != evidence["step_parent"]
+        or not isinstance(raw_report, bytes)
+        or len(raw_report) > GUARD_REPORT_BYTES_MAX
+        or type(runner_exit) is not int
+        or runner_exit < 0
+        or not isinstance(result.get("output"), str)
+        or len(result["output"]) > 4000
+    ):
+        die("Elenchus parent-guard result has invalid diagnostics or byte evidence")
+    try:
+        counters = _guard_admission_counters(
+            finding["report_format"], raw_report, result
+        )
+    except ValueError as exc:
+        die(f"guard evidence was not admitted: {exc}")
+    retained_report = {
+        "path": _guard_report_relative(step, finding_id),
+        "bytes": len(raw_report),
+        "sha256": hashlib.sha256(raw_report).hexdigest(),
+    }
+    manifest = _build_guard_manifest(
+        finding_id=finding_id,
+        consuming_step=step["n"],
+        controller_run_id=controller_run_id(state),
+        worktree_identity=evidence["worktree_identity"],
+        capture=initial_capture,
+        step_parent=evidence["step_parent"],
+        guard_commit=evidence["guard_commit"],
+        changed_paths=evidence["changed_paths"],
+        guard_blobs=evidence["guard_blobs"],
+        test_command=finding["test_command"],
+        test_argv=argv,
+        report_format=finding["report_format"],
+        report_file=finding["report_file"],
+        retained_report=retained_report,
+        runner_exit=runner_exit,
+        counters=counters,
+        verdict="guarded",
+    )
+    manifest_bytes = _guard_canonical_manifest(manifest)
+    _validate_guard_manifest(
+        manifest,
+        raw_report,
+        state=state,
+        capture=capture,
+        step=step,
+        finding=finding,
+        evidence=evidence,
+    )
+
+    publication_bytes = _guard_publication_bytes(
+        finding_id,
+        raw_report,
+        manifest_bytes,
+        runner_exit=runner_exit,
+        counters=counters,
+    )
+    _guard_preflight_existing_publication(
+        args.dir,
+        step,
+        finding_id,
+        raw_report,
+        manifest_bytes,
+        runner_exit,
+        counters,
+    )
+    report_directory = _guard_open_directory(
+        args.dir,
+        _guard_evidence_components(step, GUARD_REPORT_DIRECTORY),
+        "guard report directory",
+        create=True,
+    )
+    assert report_directory is not None
+    report_name = f"{finding_id}.report"
+    try:
+        orphan = _guard_read_leaf(
+            report_directory,
+            report_name,
+            f"guard report {finding_id}",
+            limit=GUARD_REPORT_BYTES_MAX,
+            missing_ok=True,
+        )
+        if orphan is not None and (
+            orphan[0] != raw_report
+            or stat.S_IMODE(orphan[1][2]) != 0o600
+        ):
+            revalidate()
+            _guard_remove_orphan(
+                report_directory,
+                report_name,
+                orphan,
+                f"guard report {finding_id}",
+            )
+            revalidate()
+            orphan = None
+        if orphan is None:
+            revalidate()
+            _guard_publish_leaf(
+                report_directory,
+                report_name,
+                raw_report,
+                f"guard report {finding_id}",
+                limit=GUARD_REPORT_BYTES_MAX,
+            )
+        else:
+            # Repair an exact report rename whose directory fsync failed.
+            _guard_fsync_directory(
+                report_directory, f"guard report {finding_id}"
+            )
+        revalidate()
+    finally:
+        os.close(report_directory)
+
+    # The durable report is first. The pending marker now gates the final
+    # manifest name until its own directory fsync has completed successfully.
+    manifest_directory = _guard_open_directory(
+        args.dir,
+        _guard_evidence_components(step, GUARD_MANIFEST_DIRECTORY),
+        "guard manifest directory",
+        create=True,
+    )
+    assert manifest_directory is not None
+    try:
+        revalidate()
+        _guard_ensure_publication(
+            manifest_directory, finding_id, publication_bytes
+        )
+        revalidate()
+        _guard_publish_manifest(
+            manifest_directory,
+            finding_id,
+            manifest_bytes,
+            revalidate,
+        )
+        revalidate()
+        _guard_finish_publication(
+            manifest_directory, finding_id, publication_bytes
+        )
+    finally:
+        os.close(manifest_directory)
+
+    final = _discover_guard_evidence(
+        args.dir, state, capture, step, recheck_state=True
+    )
+    if finding_id not in final["completed_ids"]:
+        die("published guard evidence could not be rediscovered")
+    print(
+        json.dumps(
+            _guard_result(
+                step, finding_id, manifest_bytes, raw_report, "created"
+            ),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    )
+
+
+def _link_gate_checker_path() -> str:
+    """The bundled Hypomnema checker, resolved from the plugin root."""
+    return os.path.realpath(
+        os.path.join(plugin_root(), "skills", "hypomnema", "scripts", "hypomnema.py")
+    )
+
+
+def link_gate_module(subject: str):
+    """Load the bundled Hypomnema parser the pointer rule reads, or refuse.
+
+    The rule calls that module's own patterns and span helpers rather than a
+    copy, so a missing file, a failed load or a missing name refuses the
+    receipt instead of falling back to a parser that could disagree with it.
+    """
+    global _LINK_GATE_CHECKER
+    if _LINK_GATE_CHECKER is not None:
+        return _LINK_GATE_CHECKER
+    source = _link_gate_checker_path()
+    try:
+        regular = stat.S_ISREG(os.stat(source).st_mode)
+    except OSError:
+        regular = False
+    if not regular:
+        die(
+            f"{subject}: pointer rule refused: the bundled Hypomnema checker "
+            "is unavailable"
+        )
+    prior_bytecode_policy = sys.dont_write_bytecode
+    try:
+        # A receipt reads the plugin tree; it does not write bytecode into it.
+        sys.dont_write_bytecode = True
+        specification = importlib.util.spec_from_file_location(
+            "fiat_link_gate_hypomnema", source
+        )
+        if specification is None or specification.loader is None:
+            raise ImportError("checker has no executable module specification")
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        interface = {
+            name: getattr(module, name, None) for name in LINK_GATE_INTERFACE
+        }
+    except (Exception, SystemExit):
+        die(
+            f"{subject}: pointer rule refused: the bundled Hypomnema checker "
+            "cannot be loaded"
+        )
+    finally:
+        sys.dont_write_bytecode = prior_bytecode_policy
+    for name in LINK_GATE_INTERFACE:
+        value = interface[name]
+        if name in ("LINK", "RUNBOOK"):
+            usable = isinstance(value, re.Pattern)
+        else:
+            usable = callable(value)
+        if not usable:
+            die(
+                f"{subject}: pointer rule refused: the bundled Hypomnema checker "
+                f"has no usable {name}"
+            )
+    _LINK_GATE_CHECKER = module
+    return module
+
+
+def _link_gate_fence_toggle(line: str) -> bool:
+    """Whether one line opens or closes a fence as the checker's `check()` reads it.
+
+    The checker exposes no fence reader, so this copies its toggle: a line whose
+    stripped text starts with three backticks opens or closes a fence, and a
+    `~~~` line does not, because the checker still resolves a pointer inside a
+    tilde block.
+    """
+    return line.lstrip().startswith("```")
+
+
+def _location_dependent_pointer(
+    checker, text: str, in_fence: bool = False
+) -> tuple[int, str] | None:
+    """Return the first recognised pointer whose target depends on where it sits.
+
+    Only an absolute URL with a scheme the checker skips, and an in-page
+    anchor, read the same from every directory, so any other recognised
+    Markdown link or `runbook:` pointer is refused, a `/`-rooted path
+    included. Recognition is the loaded checker's own: its patterns, code
+    spans and allow pragma, with its fence toggle copied. `in_fence` is the
+    toggle's state before the first line: open when the bytes are an
+    amendment whose receipted prefix leaves a fence open, because the checker
+    reads the appended lines inside that fence when it lints the amended file.
+    """
+    lines = text.splitlines()
+    for number, line in enumerate(lines, start=1):
+        if _link_gate_fence_toggle(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        links = list(checker.LINK.finditer(line))
+        pointers = list(checker.RUNBOOK.finditer(line))
+        if not (links or pointers) or checker.suppressed(lines, number):
+            continue
+        spans = checker._code_spans(line)
+        for match in links:
+            if checker._within(spans, match.start()):
+                continue
+            target = match.group("target")
+            if target.startswith("#") or checker._external(target):
+                continue
+            return number, target
+        for match in pointers:
+            if checker._within(spans, match.start()):
+                continue
+            target = match.group("path").strip("`\"'")
+            if checker._external(target):
+                continue
+            return number, target
+    return None
+
+
+def _link_gate_echo(value) -> str | None:
+    """Return text a refusal may print, or None when it must be withheld."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or _contains_nonprinting_character(value)
+        or len(value.encode("utf-8")) > LINK_GATE_TARGET_BYTES_MAX
+    ):
+        return None
+    return value
+
+
+class _LinkGateScanExpired(BaseException):
+    """The scan alarm fired; no `except Exception` on the scan path may absorb it."""
+
+
+def _link_gate_scan_expired(signum, frame) -> None:
+    raise _LinkGateScanExpired
+
+
+@contextlib.contextmanager
+def _link_gate_scan_bound(subject: str, seconds: int):
+    """Hold the in-process pointer scan to a real-time alarm, or refuse.
+
+    Hypomnema's `LINK` pattern backtracks quadratically on a line dense in `[`,
+    and `_within` scans every code span for each match, so the scan takes the
+    same bound as the checker subprocess. The interpreter runs a pending signal
+    handler inside a regular-expression match, which is what lets the alarm stop
+    one. Only the main thread can take the signal, and an alarm or handler that
+    another caller already holds is left untouched, so both cases refuse rather
+    than scan without a bound. The previous handler is restored and the timer
+    disarmed before this returns, including when the alarm fires as the scan
+    finishes.
+    """
+    unavailable = (
+        f"{subject}: pointer rule refused: the scan cannot be bounded in this "
+        "process"
+    )
+    if (
+        threading.current_thread() is not threading.main_thread()
+        or not hasattr(signal, "setitimer")
+        or not hasattr(signal, "getitimer")
+    ):
+        die(unavailable)
+    try:
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+    except (OSError, ValueError):
+        die(unavailable)
+    if previous_handler not in (signal.SIG_DFL, signal.SIG_IGN) or any(
+        value > 0 for value in previous_timer
+    ):
+        die(unavailable)
+    installed = False
+    try:
+        signal.signal(signal.SIGALRM, _link_gate_scan_expired)
+        installed = True
+        try:
+            signal.setitimer(signal.ITIMER_REAL, seconds)
+            yield
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+    finally:
+        while installed:
+            try:
+                # Changing a handler first runs any signal still pending, so an
+                # alarm that fired as the scan finished can land here once.
+                signal.signal(signal.SIGALRM, previous_handler)
+                installed = False
+            except _LinkGateScanExpired:
+                continue
+
+
+def _link_gate_subject(label: str, artifact) -> str:
+    shown = _link_gate_echo(artifact)
+    return label if shown is None else f"{label} {shown}"
+
+
+def _link_gate_line(preceding: str, text: str, number: int) -> int:
+    """Map one line of the checked text onto its line in the full candidate.
+
+    An amendment is checked without its receipted prefix, so the checker counts
+    lines from the first appended byte. The full candidate splits lines the same
+    way, except where the prefix ends in a carriage return and the appended
+    bytes begin with its line feed.
+    """
+    if not preceding:
+        return number
+    start = sum(
+        len(piece) for piece in text.splitlines(keepends=True)[: number - 1]
+    )
+    whole = preceding + text
+    offset = len(preceding) + start
+    pieces = whole[:offset].splitlines(keepends=True)
+    breaks = len(pieces)
+    if pieces and (
+        pieces[-1].splitlines() == [pieces[-1]]
+        or (pieces[-1].endswith("\r") and whole[offset:offset + 1] == "\n")
+    ):
+        breaks -= 1
+    return breaks + 1
+
+
+def _link_gate_checker_finding(
+    base_dir: str, data: bytes, subject: str, *, in_fence: bool = False
+) -> dict | None:
+    """Run the bundled checker over the captured bytes; return its first finding.
+
+    The copy sits in the run-state directory under a name no Hypomnema path rule
+    selects, and the child names it relative to the target directory it runs
+    from, so an ancestor directory called `decisions` or `runbooks` cannot
+    select the record or alert-runbook rules either. `docs/decisions` is in
+    scope when it exists, so a stable decision reference or superseding pointer
+    resolves; a finding on any other path does not count. When `in_fence` says
+    an amendment's receipted prefix leaves a fence open, the copy starts with
+    one fence line, so the checker reads the appended bytes inside that fence
+    as it does in the amended file, and each finding's line is counted from
+    the first appended byte again.
+    """
+    malformed = (
+        f"{subject}: checker refused: the bundled Hypomnema checker returned "
+        "malformed output"
+    )
+    root = state_root(base_dir)
+    try:
+        os.makedirs(root, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(
+            prefix="link-gate-", suffix=".md", dir=root
+        )
+    except OSError:
+        die(
+            f"{subject}: checker refused: the run-state directory cannot hold "
+            "the check copy"
+        )
+    relative = os.path.join(STATE_DIR_NAME, os.path.basename(temporary))
+    argv = [_link_gate_checker_path(), "--format", "json", relative]
+    if os.path.isdir(os.path.join(os.path.realpath(base_dir), "docs", "decisions")):
+        argv.append(os.path.join("docs", "decisions"))
+    try:
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(b"```\n" if in_fence else b"")
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except OSError:
+            die(f"{subject}: checker refused: the check copy cannot be written")
+        returncode, output, failure = bounded_probe(base_dir, sys.executable, argv)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
+    if failure is not None:
+        cause = {
+            "start": "could not start",
+            "timeout": f"timed out after {GIT_TIMEOUT} seconds",
+            "output-cap": f"exceeded its {GIT_OUTPUT_MAX}-byte output cap",
+        }.get(failure, "failed")
+        die(f"{subject}: checker refused: the bundled Hypomnema checker {cause}")
+    try:
+        payload = json.loads(
+            output.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError, RecursionError):
+        die(malformed)
+    if not isinstance(payload, list):
+        die(malformed)
+    expected = str(Path(relative))
+    own = []
+    for item in payload:
+        if not isinstance(item, dict) or set(item) != {
+            "path", "line", "code", "message"
+        }:
+            die(malformed)
+        line = item["line"]
+        if (
+            not isinstance(item["path"], str)
+            or not isinstance(line, int)
+            or isinstance(line, bool)
+            or line < 1
+            or not isinstance(item["code"], str)
+            or re.fullmatch(r"H[0-9]{3}", item["code"]) is None
+            or not isinstance(item["message"], str)
+        ):
+            die(malformed)
+        if item["path"] == expected:
+            own.append(item)
+    if returncode not in (0, 1) or (returncode == 0) != (not payload):
+        die(malformed)
+    if not own:
+        return None
+    first = min(own, key=lambda item: item["line"])
+    if not in_fence:
+        return first
+    if first["line"] < 2:
+        # The opening fence line is the controller's own and carries nothing.
+        die(malformed)
+    return {**first, "line": first["line"] - 1}
+
+
+def refuse_location_dependent_pointers(
+    base_dir: str, data: bytes, subject: str, *, preceding: str = ""
+) -> None:
+    """Refuse checked bytes before a receipt pins a digest over them.
+
+    `done study` and `done runbook` pass the whole captured artefact. An
+    amendment passes only the bytes it appends, since its receipted prefix
+    cannot change, with that prefix as `preceding` so a refusal names the line
+    of the full candidate and the appended lines start in the fence state the
+    prefix leaves. The pointer rule runs first, its scan held to `GIT_TIMEOUT`,
+    and the bundled checker second; each refusal exits 2 before any state,
+    ledger or artefact write, and none prints child output.
+    """
+    text = decoded_source(data, subject)
+    checker = link_gate_module(subject)
+    in_fence = sum(map(_link_gate_fence_toggle, preceding.splitlines())) % 2 == 1
+    try:
+        with _link_gate_scan_bound(subject, GIT_TIMEOUT):
+            try:
+                found = _location_dependent_pointer(checker, text, in_fence)
+            except (Exception, SystemExit):
+                die(
+                    f"{subject}: pointer rule refused: the bundled Hypomnema parser "
+                    "failed on these bytes"
+                )
+    except _LinkGateScanExpired:
+        die(
+            f"{subject}: pointer rule refused: the scan ran longer than "
+            f"{GIT_TIMEOUT} seconds"
+        )
+    if found is not None:
+        number, target = found
+        shown = _link_gate_echo(target)
+        pointer = (
+            f"pointer {shown}" if shown is not None
+            else "a pointer whose unprintable or oversized target is withheld"
+        )
+        die(
+            f"{subject} line {_link_gate_line(preceding, text, number)}: pointer "
+            f"rule refused {pointer}: its target depends on where the file sits; "
+            "cite a commit-pinned absolute URL, an in-page anchor or a path in a "
+            "code span"
+        )
+    finding = _link_gate_checker_finding(base_dir, data, subject, in_fence=in_fence)
+    if finding is None:
+        return
+    if finding["line"] > max(1, len(text.splitlines())):
+        die(
+            f"{subject}: checker refused: the bundled Hypomnema checker returned "
+            "malformed output"
+        )
+    quoted = re.search(r"`([^`]+)`", finding["message"])
+    shown = _link_gate_echo(quoted.group(1)) if quoted else None
+    pointer = f"pointer {shown}" if shown is not None else "this line"
+    die(
+        f"{subject} line {_link_gate_line(preceding, text, finding['line'])}: "
+        f"checker refused {pointer} with {finding['code']}"
+    )
+
+
+def _appended_amendment_bytes(
+    candidate: bytes, expected: str, subject: str
+) -> tuple[str, bytes]:
+    """Split an accepted amendment candidate at its receipted prefix."""
+    text = decoded_source(candidate, f"{subject} amendment candidate")
+    boundary, _, _ = _study_amendment_boundary(
+        text, expected, subject, shape_already_accepted=True
+    )
+    preceding = text[:boundary]
+    return preceding, candidate[len(preceding.encode("utf-8")):]
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
@@ -6993,6 +13940,9 @@ def done_study(args, state: dict) -> None:
         args.dir, artifact, "study artefact"
     )
     artifact = _portable_receipt_artifact(args.dir, artifact_path)
+    refuse_location_dependent_pointers(
+        args.dir, artifact_bytes, _link_gate_subject("study artefact", artifact)
+    )
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
     design = None
@@ -7035,6 +13985,9 @@ def done_runbook(args, state: dict) -> None:
     )
     artifact = _portable_receipt_artifact(args.dir, artifact_path)
     artifact_text = decoded_source(artifact_bytes, "runbook artefact")
+    refuse_location_dependent_pointers(
+        args.dir, artifact_bytes, _link_gate_subject("runbook artefact", artifact)
+    )
     design_lock = parse_design_lock_source(artifact_text)
     design_transition = None
     if design_evidence_required(state):
@@ -7084,6 +14037,33 @@ def done_runbook(args, state: dict) -> None:
             "runbook Step headings must exactly match steps-file titles, "
             "numbers, and order; edit the runbook or steps file, then retry"
         )
+    study_source = receipted_source(args.dir, state, "study")
+    if study_source is None:
+        die("runbook receipt requires one receipted study source", 1)
+    inventory_capture = _load_checked_inventory(
+        args.dir, study_source["path"], artifact_path
+    )
+    digest = hashlib.sha256(artifact_bytes).hexdigest()
+    if inventory_capture is not None:
+        if (
+            inventory_capture["study_sha256"] != study_source["sha256"]
+            or inventory_capture["runbook_sha256"] != digest
+        ):
+            die("known-failure capture source digests changed during runbook receipt")
+        invalid_steps = sorted(
+            {
+                assignment["step"]
+                for assignment in inventory_capture["assignments"]
+                if assignment["step"] > len(titles)
+            }
+        )
+        no_findings_step = as_dict(
+            inventory_capture.get("no_known_findings")
+        ).get("consuming_step")
+        if invalid_steps or (
+            no_findings_step is not None and no_findings_step > len(titles)
+        ):
+            die("known-failure capture names a Step outside the runbook topology", 1)
     if design_evidence_required(state):
         design_transition = _prepare_design_transition(args.dir, state, "step:1")
     state["steps"] = [
@@ -7097,17 +14077,22 @@ def done_runbook(args, state: dict) -> None:
         }
         for i, title in enumerate(titles)
     ]
-    state["steps"][0]["status"] = "open"
-    state["steps"][0]["phase"] = "implement"
+    if inventory_capture is None:
+        state["steps"][0]["status"] = "open"
+        state["steps"][0]["phase"] = "implement"
+    else:
+        _open_inoculation_step(args.dir, state, state["steps"][0])
     state["current_step"] = 1
     state["phase"] = "steps"
     receipt = {"artifact": artifact, "steps": titles}
-    digest = hashlib.sha256(artifact_bytes).hexdigest()
     state["receipts"]["runbook"] = {
         "artifact": artifact,
         "sha256": digest,
         "step_count": len(titles),
     }
+    if inventory_capture is not None:
+        state["receipts"]["runbook"]["known_failure_inventory"] = inventory_capture
+        receipt["known_failure_inventory"] = inventory_capture
     if design_lock is not None:
         state["receipts"]["runbook"]["design_lock"] = design_lock
         receipt["design_lock"] = design_lock
@@ -7119,7 +14104,254 @@ def done_runbook(args, state: dict) -> None:
         receipt["version_relations"] = version_relations
     receipt["sha256"] = digest
     commit(args.dir, state, "done:runbook", receipt)
-    print(f"runbook receipted; {len(titles)} steps registered; step 1 -> implement")
+    phase = "inoculate" if inventory_capture is not None else "implement"
+    print(f"runbook receipted; {len(titles)} steps registered; step 1 -> {phase}")
+
+
+def done_inoculate(args, state: dict) -> None:
+    """Receipt the pre-edit boundary for one capture-aware Step."""
+    _refuse_inoculate_options(args)
+    _guard_worktree_identity(args.dir, state)
+    pending_no_known = load_no_known_transaction(args.dir, state)
+    if pending_no_known is not None:
+        _finish_no_known_transaction(args.dir, state, pending_no_known)
+        print(
+            f"step {pending_no_known['step']} no-known-findings record "
+            "receipted; phase -> implement"
+        )
+        return
+    step = require_step_phase(state, "inoculate")
+    capture = receipted_known_failure_inventory(args.dir, state)
+    if capture is None:
+        die("pre-contract runbook receipts have no inoculation transition")
+    step_parent = _inoculation_parent(args.dir, state, step)
+    assigned_ids = _assigned_ids(capture, step["n"])
+    if assigned_ids:
+        initial_state = state_fingerprint(state)
+        discovered = _discover_guard_evidence(
+            args.dir, state, capture, step, recheck_state=False
+        )
+        if discovered["remaining_ids"]:
+            die(
+                f"step {step['n']} guard_manifests is empty or incomplete; remaining: "
+                + ", ".join(discovered["remaining_ids"])
+            )
+        guard_commit = discovered.get("guard_commit")
+        if not isinstance(guard_commit, str):
+            die(f"step {step['n']} has no common guard commit")
+        evidence = _guard_commit_evidence(
+            args.dir, state, capture, step, guard_commit, writer=True
+        )
+        if discovered["evidence"] != evidence:
+            die("guard evidence changed before inoculation receipt")
+        initial_pairs = [
+            (
+                document["finding"]["id"],
+                document["manifest_bytes"],
+                document["report_bytes"],
+            )
+            for document in discovered["documents"]
+        ]
+        references = []
+        for document in discovered["documents"]:
+            _validate_guard_manifest(
+                document["manifest"],
+                document["report_bytes"],
+                state=state,
+                capture=capture,
+                step=step,
+                finding=document["finding"],
+                evidence=evidence,
+            )
+            references.append(
+                {
+                    "finding_id": document["finding"]["id"],
+                    "path": _guard_manifest_relative(
+                        step, document["finding"]["id"]
+                    ),
+                    "sha256": hashlib.sha256(
+                        document["manifest_bytes"]
+                    ).hexdigest(),
+                }
+            )
+        references.sort(key=lambda item: item["finding_id"])
+        current_state = load_state(args.dir)
+        if state_fingerprint(current_state) != initial_state:
+            die("controller state changed before inoculation receipt")
+        current_capture = receipted_known_failure_inventory(args.dir, current_state)
+        current_step = require_step_phase(current_state, "inoculate")
+        final_evidence = _guard_commit_evidence(
+            args.dir,
+            current_state,
+            current_capture,
+            current_step,
+            guard_commit,
+            writer=True,
+        )
+        if not _guard_same_evidence(evidence, final_evidence):
+            die("guard evidence changed before inoculation receipt")
+        final_discovered = _discover_guard_evidence(
+            args.dir,
+            current_state,
+            current_capture,
+            current_step,
+            recheck_state=True,
+        )
+        if final_discovered["remaining_ids"]:
+            die("guard evidence changed before final inoculation discovery")
+        final_pairs = [
+            (
+                document["finding"]["id"],
+                document["manifest_bytes"],
+                document["report_bytes"],
+            )
+            for document in final_discovered["documents"]
+        ]
+        final_references = [
+            {
+                "finding_id": document["finding"]["id"],
+                "path": _guard_manifest_relative(
+                    current_step, document["finding"]["id"]
+                ),
+                "sha256": hashlib.sha256(
+                    document["manifest_bytes"]
+                ).hexdigest(),
+            }
+            for document in final_discovered["documents"]
+        ]
+        final_references.sort(key=lambda item: item["finding_id"])
+        if (
+            final_discovered.get("guard_commit") != guard_commit
+            or final_discovered["evidence"] != final_evidence
+            or final_evidence != evidence
+            or final_pairs != initial_pairs
+            or final_references != references
+        ):
+            die("guard evidence changed during final inoculation discovery")
+        references = final_references
+        receipt = {
+            "schema": INOCULATION_RECEIPT_SCHEMA,
+            "step": step["n"],
+            "study_sha256": capture["study_sha256"],
+            "runbook_sha256": capture["runbook_sha256"],
+            "inventory_sha256": capture["inventory_sha256"],
+            "step_parent": step_parent,
+            "assigned_ids": assigned_ids,
+            "source_views": capture["source_views"],
+            "no_known_findings": None,
+            "guard_manifests": references,
+        }
+        _validate_inoculation_receipt(
+            receipt, capture, step, step_parent, state=state
+        )
+        step["receipts"]["inoculate"] = receipt
+        step["phase"] = "implement"
+        commit(args.dir, state, "done:inoculate", receipt)
+        print(
+            f"step {step['n']} {len(references)} guard manifest(s) receipted; "
+            "phase -> implement"
+        )
+        return
+    initial_state = state_fingerprint(state)
+    boundary = _guard_no_known_boundary(args.dir, state, step)
+    no_known_findings, no_known_bytes = _no_known_findings_snapshot(
+        args.dir, capture, step
+    )
+    current_state = load_state(args.dir)
+    if state_fingerprint(current_state) != initial_state:
+        die("controller state changed during no-known inoculation")
+    current_step = require_step_phase(current_state, "inoculate")
+    current_capture = receipted_known_failure_inventory(args.dir, current_state)
+    if (
+        current_capture is None
+        or current_capture != capture
+        or _assigned_ids(current_capture, current_step["n"])
+    ):
+        die("known-failure capture changed during no-known inoculation")
+    final_boundary = _guard_no_known_boundary(
+        args.dir, current_state, current_step
+    )
+    final_record, final_bytes = _no_known_findings_snapshot(
+        args.dir, current_capture, current_step
+    )
+    last_state = load_state(args.dir)
+    last_step = require_step_phase(last_state, "inoculate")
+    last_capture = receipted_known_failure_inventory(args.dir, last_state)
+    # The final state/capture observation is not authoritative on its own: an
+    # external Git mutation can coincide with that read.  Close it immediately
+    # with the full native worktree/branch/tip/content/audit boundary, then take
+    # the final no-known leaf snapshot from those same state/capture objects.
+    last_boundary = _guard_no_known_boundary(args.dir, last_state, last_step)
+    if last_capture is None:
+        die("known-failure capture disappeared during no-known inoculation")
+    last_record, last_bytes = _no_known_findings_snapshot(
+        args.dir, last_capture, last_step
+    )
+    terminal_boundary = _guard_no_known_boundary(
+        args.dir, last_state, last_step
+    )
+    if (
+        state_fingerprint(last_state) != initial_state
+        or last_capture != capture
+        or _assigned_ids(last_capture, last_step["n"])
+        or boundary != final_boundary
+        or final_boundary != last_boundary
+        or last_boundary != terminal_boundary
+        or no_known_findings != final_record
+        or final_record != last_record
+        or no_known_bytes != final_bytes
+        or final_bytes != last_bytes
+    ):
+        die("no-known inoculation evidence changed before its receipt")
+    no_known_findings = last_record
+    receipt = {
+        "schema": INOCULATION_RECEIPT_SCHEMA,
+        "step": step["n"],
+        "study_sha256": capture["study_sha256"],
+        "runbook_sha256": capture["runbook_sha256"],
+        "inventory_sha256": capture["inventory_sha256"],
+        "step_parent": step_parent,
+        "assigned_ids": [],
+        "source_views": capture["source_views"],
+        "no_known_findings": no_known_findings,
+        "guard_manifests": [],
+    }
+    _validate_inoculation_receipt(receipt, capture, step, step_parent)
+    candidate = _state_with_no_known_receipt(state, receipt)
+    ledger_tail = _intact_ledger_entries(args.dir, "no-known inoculation")[-1]
+    if ledger_tail.get("state") != initial_state:
+        die("no-known inoculation state and ledger are not at one boundary", 1)
+    candidate_fingerprint = state_fingerprint(candidate)
+    ledger_entry = {
+        "ts": now(),
+        "event": "done:inoculate",
+        "data": receipt,
+        "prev": ledger_tail["hash"],
+        "state": candidate_fingerprint,
+    }
+    ledger_entry["hash"] = hashlib.sha256(
+        canonical(ledger_entry).encode()
+    ).hexdigest()
+    marker = {
+        "schema": NO_KNOWN_TRANSACTION_SCHEMA,
+        "step": step["n"],
+        "state_before_sha256": initial_state,
+        "state_after_sha256": candidate_fingerprint,
+        "ledger_head": ledger_tail["hash"],
+        "ledger_entry": ledger_entry,
+        "receipt_sha256": hashlib.sha256(canonical(receipt).encode()).hexdigest(),
+        "boundary": terminal_boundary,
+        "boundary_sha256": _no_known_boundary_sha256(terminal_boundary),
+        "no_known_text": last_bytes.decode("utf-8"),
+        "no_known_sha256": hashlib.sha256(last_bytes).hexdigest(),
+        "receipt": receipt,
+    }
+    _write_no_known_transaction(args.dir, marker)
+    _finish_no_known_transaction(args.dir, state, marker)
+    print(
+        f"step {step['n']} no-known-findings record receipted; "
+        "phase -> implement"
+    )
 
 
 def done_implement(args, state: dict) -> None:
@@ -7130,9 +14362,30 @@ def done_implement(args, state: dict) -> None:
     require_no_amendment_block(state)
     if state.get("halted"):
         die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
+    capture = receipted_known_failure_inventory(args.dir, state)
     if state["phase"] != "steps" or step["phase"] not in ("issue", "implement"):
+        if capture is not None and step.get("phase") == "inoculate":
+            die(
+                f"step {step['n']} cannot implement before a valid "
+                "inoculation receipt"
+            )
         require_step_phase(state, "implement")
     legacy_phase = step["phase"] == "issue"
+    inoculation_parent = None
+    guard_commit = None
+    if capture is not None:
+        inoculation_parent = _inoculation_parent(args.dir, state, step)
+        inoculation_receipt = _validate_inoculation_receipt(
+            as_dict(step.get("receipts")).get("inoculate"),
+            capture,
+            step,
+            inoculation_parent,
+            state=state,
+        )
+        checked_guard_state = _validate_receipted_guard_evidence(
+            args.dir, state, capture, step, inoculation_receipt
+        )
+        guard_commit = checked_guard_state.get("guard_commit")
     if not args.branch or not args.commit:
         die("--branch and --commit are required")
     if run_branch_of(state):
@@ -7142,7 +14395,11 @@ def done_implement(args, state: dict) -> None:
                 f"--branch must be '{expected}', chained off "
                 f"'{step_pr_base(state, step)}'; got '{args.branch}'"
             )
-    range_base = step_pr_base(state, step) if run_branch_of(state) else state["base"]
+    range_base = (
+        inoculation_parent
+        if inoculation_parent is not None
+        else step_pr_base(state, step) if run_branch_of(state) else state["base"]
+    )
     branch_tip = resolved_commit(
         args.dir, args.branch, f"step {step['n']} implementation branch"
     )
@@ -7151,28 +14408,67 @@ def done_implement(args, state: dict) -> None:
     )
     if branch_tip != supplied_head:
         die(f"step {step['n']} implementation head is not the declared branch tip")
+    if capture is not None:
+        current_branch = tool_text(
+            _guard_native_git(
+                args.dir,
+                ["symbolic-ref", "--quiet", "--short", "HEAD"],
+                "capture-aware implementation worktree is not on a branch",
+            ),
+            "capture-aware implementation branch",
+        ).strip()
+        current_head = tool_text(
+            _guard_native_git(
+                args.dir,
+                ["rev-parse", "--verify", "HEAD"],
+                "capture-aware implementation HEAD cannot be resolved",
+            ),
+            "capture-aware implementation HEAD",
+        ).strip()
+        if current_branch != args.branch or current_head != supplied_head:
+            die(
+                "capture-aware implementation requires the declared Step "
+                "branch checked out at its exact implementation head"
+            )
+    if guard_commit is not None and _native_ancestry_status(
+        args.dir, guard_commit, supplied_head
+    ) != 0:
+        die(
+            "step implementation head does not descend from the receipted "
+            "guard commit"
+        )
     verified_commits = verify_local_range(
         args.dir, range_base, args.commit, f"step {step['n']} implementation"
     )
+    final_green = None
+    if capture is not None:
+        # The red guard commit is inside this range, so the receipt cannot be
+        # the end of the step on the strength of the range alone. Every
+        # assigned id runs its declared command again on this exact commit and
+        # both declared repository suites have to come back clean before the
+        # step may leave `implement`.
+        final_green = establish_final_green(
+            args.dir, state, capture, step, supplied_head
+        )
     step["receipts"]["implement"] = {
         "branch": args.branch,
         "commit": args.commit,
         "tests": args.tests,
         "verified_commits": verified_commits,
     }
+    if final_green is not None:
+        step["receipts"]["implement"]["final_green"] = final_green
     step["phase"] = "audit"
-    commit(
-        args.dir,
-        state,
-        "done:implement",
-        {
-            "step": step["n"],
-            "branch": args.branch,
-            "commit": args.commit,
-            "verified_commits": verified_commits,
-            "legacy_issue_phase_skipped": legacy_phase,
-        },
-    )
+    event = {
+        "step": step["n"],
+        "branch": args.branch,
+        "commit": args.commit,
+        "verified_commits": verified_commits,
+        "legacy_issue_phase_skipped": legacy_phase,
+    }
+    if final_green is not None:
+        event["final_green"] = final_green
+    commit(args.dir, state, "done:implement", event)
     print(f"step {step['n']} implementation receipted; phase -> audit")
 
 
@@ -7537,6 +14833,7 @@ def validated_audit_record(
 def cmd_audit_round(args) -> None:
     state = load_state(args.dir)
     step = require_step_phase(state, "audit")
+    require_final_green_admission(args.dir, state, "an audit round")
     if args.audit_filter is None:
         die(
             "audit-round requires --audit-filter sapheneia:sapheneia; "
@@ -7639,6 +14936,7 @@ def cmd_audit_round(args) -> None:
 
 def done_audit(args, state: dict) -> None:
     step = require_step_phase(state, "audit")
+    require_final_green_admission(args.dir, state, "closing the audit")
     if "security_suite" not in state["receipts"]:
         die("no security_suite receipt; the audit phase never legitimately ran")
     rounds = step["audit"]["rounds"]
@@ -7711,6 +15009,7 @@ def done_audit(args, state: dict) -> None:
 
 def done_prose(args, state: dict) -> None:
     step = require_step_phase(state, "prose")
+    require_final_green_admission(args.dir, state, "the prose receipt")
     if args.files is None or args.files < 0:
         die("--files must be a non-negative integer")
     applied = {s for s in (args.skills or "").split(",") if s}
@@ -7734,6 +15033,7 @@ def done_prose(args, state: dict) -> None:
 
 def done_push(args, state: dict) -> None:
     step = require_step_phase(state, "push")
+    require_final_green_admission(args.dir, state, "the push receipt")
     if not args.pr_url:
         die("--pr-url is required")
     if not args.head_commit:
@@ -7862,10 +15162,18 @@ def done_push(args, state: dict) -> None:
     step["phase"] = "done"
     if remaining:
         nxt = remaining[0]
-        nxt["status"] = "open"
-        nxt["phase"] = "implement"
+        capture = receipted_known_failure_inventory(args.dir, state)
+        if capture is None:
+            nxt["status"] = "open"
+            nxt["phase"] = "implement"
+            next_phase = "implement"
+        else:
+            _open_inoculation_step(
+                args.dir, state, nxt, step_parent=supplied_head
+            )
+            next_phase = "inoculate"
         state["current_step"] = nxt["n"]
-        tail = f"step {nxt['n']} -> implement"
+        tail = f"step {nxt['n']} -> {next_phase}"
     else:
         state["current_step"] = None
         if stacked:
@@ -10264,6 +17572,7 @@ def done_merge_step(args, state: dict) -> None:
     refuse_unreceipted_run_branch_movement(args.dir, state, args.merge_commit)
     refuse_rewritten_stack(args.dir, state, args.step)
     step = state["steps"][args.step - 1]
+    require_receipted_final_green(args.dir, state, step, "merging a step")
     push_receipt = as_dict(step["receipts"].get("push"))
     # A step whose pull request merged before integrate was adopted at push,
     # with its merge already reachable from the base it targeted and already
@@ -10600,7 +17909,7 @@ def done_sync_run(args, state: dict) -> None:
 def version_resolution_event(receipt: dict) -> dict:
     """Bounded ledger projection of one full state receipt."""
     return {
-        "schema": VERSION_RESOLUTION_SCHEMA,
+        "schema": receipt["schema"],
         "sha256": hashlib.sha256(canonical(receipt).encode()).hexdigest(),
         "runbook_sha256": receipt["runbook_sha256"],
         "relations_sha256": receipt["relations_sha256"],
@@ -10759,7 +18068,20 @@ def done_resolve_versions(args, state: dict) -> None:
                 f"{recorded['base_commit']} and head {recorded['head_commit']}"
             )
             return
-    current = build_version_resolution(args.dir, state)
+    acceptance = getattr(args, "accept_evolution_base", None)
+    authority = getattr(args, "recovery_authority", None)
+    recovery = None
+    if acceptance is not None or authority is not None:
+        if acceptance is None or authority is None or not args.reason:
+            die("evolution recovery requires --accept-evolution-base, --recovery-authority and --reason")
+        sync = as_dict(as_dict(state.get("integrate")).get("sync"))
+        recovery = {
+            "authority": authority, "reason": args.reason,
+            "base_commit": acceptance, "head_commit": sync.get("commit"),
+        }
+    current = build_version_resolution(
+        args.dir, state, **({"evolution_recovery": recovery} if recovery else {})
+    )
     if pending is not None:
         state, recovered = recover_version_resolution(
             args.dir, state, pending, current
@@ -10927,7 +18249,7 @@ def done_integrate(args, state: dict) -> None:
     if filed_issue_faults:
         die(
             "a `filed` carryover issue does not satisfy the publication "
-            "contract: " + "; ".join(filed_issue_faults)
+            "contract: " + bounded_issue_fault_detail(filed_issue_faults)
         )
     remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
     final_step = state["steps"][-1]["n"]
@@ -11020,6 +18342,7 @@ def done_integrate(args, state: dict) -> None:
 DONE_HANDLERS = {
     "study": done_study,
     "runbook": done_runbook,
+    "inoculate": done_inoculate,
     "implement": done_implement,
     "audit": done_audit,
     "prose": done_prose,
@@ -11035,6 +18358,7 @@ def cmd_done(args) -> None:
     state = load_state(
         args.dir,
         allow_pending_resolution=args.phase == "resolve-versions",
+        allow_pending_no_known=args.phase == "inoculate",
     )
     handler = DONE_HANDLERS.get(args.phase)
     if handler is None:
@@ -11568,6 +18892,217 @@ def _replace_runbook_bytes(path: str, data: bytes) -> None:
         die(f"runbook artefact could not be replaced atomically: {exc}", 1)
 
 
+RUNBOOK_REBIND_DECISIONS = ("retained", "displaced")
+RUNBOOK_REBIND_KEYS = (
+    "amendment_sha256",
+    "from_study_sha256",
+    "to_study_sha256",
+    "decision",
+)
+
+
+def _runbook_rebind_index(study_amendments) -> list[dict | None]:
+    """Validate every recorded rebind once and index it by amendment digest.
+
+    One entry per study amendment, in history order: ``None`` for a legacy
+    entry without ``runbook_rebinds``, else a map from the runbook amendment
+    digest to its record. A malformed record dies naming the study amendment.
+    """
+    if study_amendments is None:
+        return []
+    if not isinstance(study_amendments, list):
+        die("study receipt amendments history must be an array", 1)
+    index = []
+    for position, raw in enumerate(study_amendments, 1):
+        entry = as_dict(raw)
+        if "runbook_rebinds" not in entry:
+            index.append(None)
+            continue
+        records = entry.get("runbook_rebinds")
+        if not isinstance(records, list):
+            die(f"study amendment {position} runbook_rebinds must be an array", 1)
+        by_amendment = {}
+        for record in records:
+            if not isinstance(record, dict) or any(
+                key not in record for key in RUNBOOK_REBIND_KEYS
+            ):
+                die(
+                    f"study amendment {position} has a malformed runbook "
+                    "rebind record",
+                    1,
+                )
+            for key in RUNBOOK_REBIND_KEYS[:3]:
+                value = record[key]
+                if not isinstance(value, str) or not re.fullmatch(
+                    r"[0-9a-f]{64}", value
+                ):
+                    die(
+                        f"study amendment {position} runbook rebind {key} "
+                        "is not a sha256 digest",
+                        1,
+                    )
+            if record["decision"] not in RUNBOOK_REBIND_DECISIONS:
+                die(
+                    f"study amendment {position} runbook rebind has an "
+                    "unknown decision",
+                    1,
+                )
+            if record["amendment_sha256"] in by_amendment:
+                die(
+                    f"study amendment {position} rebinds one runbook "
+                    "amendment twice",
+                    1,
+                )
+            by_amendment[record["amendment_sha256"]] = record
+        index.append(by_amendment)
+    return index
+
+
+def effective_study_sha256(
+    amendment: dict, study_amendments, *, index: list | None = None
+) -> str | None:
+    """Follow one runbook amendment's study binding through retained rebinds.
+
+    Start at the digest the amendment recorded and walk the study amendment
+    history in order. A ``retained`` record for this amendment whose
+    ``from_study_sha256`` is the digest reached so far advances the chain to
+    its ``to_study_sha256``; a ``displaced`` record stops the chain there; a
+    study amendment without ``runbook_rebinds`` leaves it untouched.
+    """
+    if index is None:
+        index = _runbook_rebind_index(study_amendments)
+    item = as_dict(amendment)
+    current = item.get("study_sha256")
+    target = item.get("amendment_sha256")
+    for by_amendment in index:
+        if not by_amendment:
+            continue
+        record = by_amendment.get(target)
+        if record is None or record["from_study_sha256"] != current:
+            continue
+        if record["decision"] == "displaced":
+            return current
+        current = record["to_study_sha256"]
+    return current
+
+
+def _runbook_rebinds(
+    runbook_amendments,
+    study_amendments,
+    prior_study_sha256: str,
+    new_study_sha256: str,
+    step_verdicts: list,
+) -> list[dict]:
+    """Decide retained or displaced for every runbook amendment effective now.
+
+    A runbook amendment is effective when its recorded study digest, followed
+    through the retained rebinds already in ``study_amendments``, reaches
+    ``prior_study_sha256``. It is retained when every step it touches reads
+    entry holds and exit holds in ``step_verdicts``; a step the verdicts do
+    not cover is a completed step and counts as holding.
+
+    A record names its amendment by content digest, so two history entries
+    with identical bytes are one amendment to the chain and take one record:
+    the rebind index refuses a digest recorded twice, and that refusal must
+    never fire on a list this function built.
+    """
+    if runbook_amendments is not None and not isinstance(runbook_amendments, list):
+        die("runbook receipt amendments history must be an array", 1)
+    index = _runbook_rebind_index(study_amendments)
+    verdict_by_step = {}
+    for verdict in step_verdicts:
+        item = as_dict(verdict)
+        verdict_by_step[item.get("step")] = item
+    records = []
+    recorded = set()
+    for raw in runbook_amendments or []:
+        item = as_dict(raw)
+        if effective_study_sha256(item, None, index=index) != prior_study_sha256:
+            continue
+        if item.get("amendment_sha256") in recorded:
+            continue
+        recorded.add(item.get("amendment_sha256"))
+        retained = all(
+            step not in verdict_by_step
+            or (
+                verdict_by_step[step].get("entry") == "holds"
+                and verdict_by_step[step].get("exit") == "holds"
+            )
+            for step in (item.get("steps_touched") or [])
+        )
+        records.append(
+            {
+                "amendment_sha256": item.get("amendment_sha256"),
+                "from_study_sha256": prior_study_sha256,
+                "to_study_sha256": new_study_sha256,
+                "decision": "retained" if retained else "displaced",
+            }
+        )
+    return records
+
+
+def _print_runbook_rebinds(records: list[dict], runbook_amendments) -> None:
+    """One line per decision: digests, step numbers and replaced field names only."""
+    by_digest = {}
+    for raw in runbook_amendments or []:
+        item = as_dict(raw)
+        by_digest[item.get("amendment_sha256")] = item
+    counts = {"retained": 0, "displaced": 0}
+    for record in records:
+        item = by_digest.get(record["amendment_sha256"], {})
+        steps = [
+            step for step in (item.get("steps_touched") or [])
+            if isinstance(step, int) and not isinstance(step, bool)
+        ]
+        fields = [
+            field for field in (item.get("replacement_fields") or [])
+            if field in RUNBOOK_FIELDS
+        ]
+        counts[record["decision"]] += 1
+        print(
+            f"runbook amendment {record['amendment_sha256']} "
+            f"{record['decision']}: steps [{', '.join(str(n) for n in steps)}]; "
+            f"fields [{', '.join(fields)}]"
+        )
+    if not records:
+        print("runbook rebinds: none")
+        return
+    print(
+        f"runbook rebinds: {counts['retained']} retained, "
+        f"{counts['displaced']} displaced"
+    )
+
+
+def _verify_runbook_rebinds(study_receipt: dict, runbook_receipt: dict) -> None:
+    """Recompute every recorded rebind list from the two receipt histories."""
+    study_amendments = study_receipt.get("amendments")
+    if study_amendments is None:
+        return
+    if not isinstance(study_amendments, list):
+        die("study receipt amendments history must be an array", 1)
+    runbook_amendments = runbook_receipt.get("amendments")
+    if runbook_amendments is not None and not isinstance(runbook_amendments, list):
+        die("runbook receipt amendments history must be an array", 1)
+    _runbook_rebind_index(study_amendments)
+    for position, raw in enumerate(study_amendments, 1):
+        entry = as_dict(raw)
+        if "runbook_rebinds" not in entry:
+            continue
+        expected = _runbook_rebinds(
+            runbook_amendments,
+            study_amendments[: position - 1],
+            entry.get("prior_sha256"),
+            entry.get("new_sha256"),
+            entry.get("step_verdicts") or [],
+        )
+        if entry.get("runbook_rebinds") != expected:
+            die(
+                f"study amendment {position} runbook_rebinds do not recompute "
+                "from the study and runbook histories",
+                1,
+            )
+
+
 def _study_amendment_record(
     state: dict, expected: str, candidate: bytes
 ) -> dict:
@@ -11580,13 +19115,24 @@ def _study_amendment_record(
     touched, verdicts = _study_step_verdicts(fields, state)
     prefix_bytes = text[:boundary].encode("utf-8")
     amendment_bytes = candidate[len(prefix_bytes):]
+    prior_sha256 = hashlib.sha256(prefix_bytes).hexdigest()
+    new_sha256 = hashlib.sha256(candidate).hexdigest()
+    receipts = as_dict(state.get("receipts"))
+    rebinds = _runbook_rebinds(
+        as_dict(receipts.get("runbook")).get("amendments"),
+        as_dict(receipts.get("study")).get("amendments"),
+        prior_sha256,
+        new_sha256,
+        verdicts,
+    )
     return {
         "date": date_text,
-        "prior_sha256": hashlib.sha256(prefix_bytes).hexdigest(),
-        "new_sha256": hashlib.sha256(candidate).hexdigest(),
+        "prior_sha256": prior_sha256,
+        "new_sha256": new_sha256,
         "amendment_sha256": hashlib.sha256(amendment_bytes).hexdigest(),
         "steps_touched": touched,
         "step_verdicts": verdicts,
+        "runbook_rebinds": rebinds,
     }
 
 
@@ -11722,6 +19268,9 @@ def _recover_study_amendment(
             or history[-1] != amendment
         ):
             die("pending study amendment disagrees with the committed receipt", 1)
+        _require_capture_aware_amendment_candidate(
+            base_dir, state, "study", canonical
+        )
         verify_run(base_dir, allow_pending_amendment=True)
         clear_study_amendment_pending(base_dir)
         print(f"study amendment recovered: committed {new}")
@@ -11743,8 +19292,17 @@ def _recover_study_amendment(
 
     _check_amended_study(base_dir, canonical)
     recovered = _study_amendment_record(state, prior, canonical)
+    if recovered.get("runbook_rebinds") != amendment.get("runbook_rebinds"):
+        die(
+            "pending study amendment runbook_rebinds do not recompute from the "
+            "receipt histories",
+            1,
+        )
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
+    _require_capture_aware_amendment_candidate(
+        base_dir, state, "study", canonical
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -11801,6 +19359,16 @@ def cmd_amend_study(args) -> None:
 
     _check_amended_study(args.dir, candidate)
     amendment = _study_amendment_record(state, expected, candidate)
+    _require_capture_aware_amendment_candidate(
+        args.dir, state, "study", candidate
+    )
+    preceding, appended = _appended_amendment_bytes(candidate, expected, "study")
+    refuse_location_dependent_pointers(
+        args.dir,
+        appended,
+        _link_gate_subject("study amendment to", artifact),
+        preceding=preceding,
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -11831,6 +19399,10 @@ def cmd_amend_study(args) -> None:
         f"study amended: prior {amendment['prior_sha256']}; "
         f"new {amendment['new_sha256']}; amendment "
         f"{amendment['amendment_sha256']}; step {current} {disposition}"
+    )
+    _print_runbook_rebinds(
+        amendment["runbook_rebinds"],
+        as_dict(as_dict(state.get("receipts")).get("runbook")).get("amendments"),
     )
 
 
@@ -11866,6 +19438,9 @@ def _recover_runbook_amendment(
             or history[-1] != amendment
         ):
             die("pending runbook amendment disagrees with the committed receipt", 1)
+        _require_capture_aware_amendment_candidate(
+            base_dir, state, "runbook", canonical
+        )
         verify_run(base_dir, allow_pending_amendment=True)
         clear_amendment_pending(base_dir, "runbook")
         print(f"runbook amendment recovered: committed {new}")
@@ -11889,6 +19464,9 @@ def _recover_runbook_amendment(
     _check_amended_runbook(base_dir, canonical)
     if recovered != amendment:
         die("pending runbook amendment metadata does not match candidate bytes", 1)
+    _require_capture_aware_amendment_candidate(
+        base_dir, state, "runbook", canonical
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("runbook receipt amendments history must be an array", 1)
@@ -11946,6 +19524,16 @@ def cmd_amend_runbook(args) -> None:
 
     amendment = _runbook_amendment_record(state, expected, candidate)
     _check_amended_runbook(args.dir, candidate)
+    _require_capture_aware_amendment_candidate(
+        args.dir, state, "runbook", candidate
+    )
+    preceding, appended = _appended_amendment_bytes(candidate, expected, "runbook")
+    refuse_location_dependent_pointers(
+        args.dir,
+        appended,
+        _link_gate_subject("runbook amendment to", artifact),
+        preceding=preceding,
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("runbook receipt amendments history must be an array", 1)
@@ -12041,11 +19629,18 @@ def source_runbook_step(
     step: dict,
     *,
     current_study_sha256: str | None = None,
+    study_amendments: list | None = None,
     version_relations: dict | None = None,
 ) -> dict:
-    """Carry one exact baseline step plus its current receipted amendments."""
+    """Carry one exact baseline step plus its current receipted amendments.
+
+    An amendment is current when the study digest it recorded, followed
+    through the retained rebinds in ``study_amendments``, reaches
+    ``current_study_sha256``.
+    """
     text = source["text"]
     amendments = _receipted_runbook_amendments(source)
+    rebind_index = _runbook_rebind_index(study_amendments)
     if amendments:
         baseline_bytes = text.encode("utf-8")[: amendments[0]["amendment_start"]]
         baseline_text = decoded_source(baseline_bytes, "runbook baseline")
@@ -12081,7 +19676,10 @@ def source_runbook_step(
     for amendment in amendments:
         if step["n"] not in (amendment.get("steps_touched") or []):
             continue
-        if amendment.get("study_sha256") != current_study_sha256:
+        if (
+            effective_study_sha256(amendment, None, index=rebind_index)
+            != current_study_sha256
+        ):
             continue
         applicable.append(
             {
@@ -12153,6 +19751,8 @@ def bounded_probe(
     extra_env: dict | None = None,
     *,
     environment: dict[str, str] | None = None,
+    output_max: int | None = None,
+    timeout: float | None = None,
 ) -> tuple[int | None, bytes, str | None]:
     """Run one fixed-argv tool and report failure instead of refusing.
 
@@ -12164,6 +19764,10 @@ def bounded_probe(
     failure); failure is None, "start", "timeout" or "output-cap", and the
     returncode is None whenever the child never finished cleanly.
     """
+    if output_max is None:
+        output_max = GIT_OUTPUT_MAX
+    if timeout is None:
+        timeout = GIT_TIMEOUT
     # `environment` replaces the child's environment outright; `extra_env`
     # layers over the parent's. The native relation readers need the first,
     # because inheriting GIT_* is exactly what they strip.
@@ -12188,7 +19792,7 @@ def bounded_probe(
     selector = selectors.DefaultSelector()
     selector.register(process.stdout, selectors.EVENT_READ)
     output = bytearray()
-    deadline = time.monotonic() + GIT_TIMEOUT
+    deadline = time.monotonic() + timeout
     try:
         while selector.get_map():
             remaining = deadline - time.monotonic()
@@ -12205,7 +19809,7 @@ def bounded_probe(
                     selector.unregister(key.fileobj)
                     continue
                 output.extend(chunk)
-                if len(output) > GIT_OUTPUT_MAX:
+                if len(output) > output_max:
                     process.kill()
                     process.wait()
                     return None, bytes(output), "output-cap"
@@ -12226,6 +19830,8 @@ def bounded_run(
     argv: list[str],
     *,
     environment: dict[str, str] | None = None,
+    output_max: int | None = None,
+    timeout: float | None = None,
 ) -> tuple[int, bytes]:
     """Run one fixed-argv tool and return its status and output.
 
@@ -12235,16 +19841,25 @@ def bounded_run(
     real answer, such as git declining to remove a tree holding modifications,
     read the status here.
     """
+    if output_max is None:
+        output_max = GIT_OUTPUT_MAX
+    if timeout is None:
+        timeout = GIT_TIMEOUT
     operation = f"{program} {argv[0]}" if argv else program
     returncode, output, failure = bounded_probe(
-        base_dir, program, argv, environment=environment
+        base_dir,
+        program,
+        argv,
+        environment=environment,
+        output_max=output_max,
+        timeout=timeout,
     )
     if failure == "start":
         die(f"{operation} could not start")
     if failure == "timeout":
-        die(f"{operation} timed out after {GIT_TIMEOUT} seconds")
+        die(f"{operation} timed out after {timeout} seconds")
     if failure == "output-cap":
-        die(f"{operation} exceeded {GIT_OUTPUT_MAX}-byte output cap")
+        die(f"{operation} exceeded {output_max}-byte output cap")
     return returncode, output
 
 
@@ -12255,10 +19870,21 @@ def bounded_tool(
     refusal: str | None = None,
     *,
     environment: dict[str, str] | None = None,
+    output_max: int | None = None,
+    timeout: float | None = None,
 ) -> bytes:
     """Run one fixed-argv tool without exposing its output in failures."""
+    if output_max is None:
+        output_max = GIT_OUTPUT_MAX
+    if timeout is None:
+        timeout = GIT_TIMEOUT
     returncode, output = bounded_run(
-        base_dir, program, argv, environment=environment
+        base_dir,
+        program,
+        argv,
+        environment=environment,
+        output_max=output_max,
+        timeout=timeout,
     )
     if returncode != 0:
         if refusal is not None:
@@ -12569,8 +20195,22 @@ def github_unreachable(label: str, path: str, detail: str) -> None:
     )
 
 
+def checked_github_object(payload: object, path: str, label: str) -> dict:
+    """One exact GitHub response supplied by an authenticated transport.
+
+    Local ``gh`` and a connected GitHub interface have the same standing once
+    the caller has bound the response to ``path``.  This checker deliberately
+    starts after authentication and transport: it accepts only the closed
+    object shape every downstream repository, SHA, pull-request, and
+    verification check already consumes.
+    """
+    if not isinstance(payload, dict):
+        github_unreachable(label, path, "returned a response that is not one object")
+    return payload
+
+
 def github_rest(base_dir: str, path: str, label: str) -> dict:
-    """One bounded REST read of the GitHub API, parsed as one JSON object.
+    """One bounded REST read through the local authenticated GitHub adapter.
 
     Every receipt reader goes over REST because that is the transport the
     checks need. `gh <command> --json` speaks GraphQL, and an environment
@@ -12598,16 +20238,19 @@ def github_rest(base_dir: str, path: str, label: str) -> dict:
         github_unreachable(label, path, "returned output that is not UTF-8")
     try:
         payload = json.loads(text)
-    except ValueError:
+    except (ValueError, RecursionError):
+        # `RecursionError` derives from `RuntimeError`, so a deeply nested
+        # array walked the caller off the interpreter's stack instead of
+        # refusing in the transport shape. This is the REST sibling of the
+        # GraphQL parser S3-R1-02 repaired, and step 3 gave it a second call
+        # site inside `filing_decision_divergence`. 400000 bytes of `[`
+        # reaches it, well inside `GIT_OUTPUT_MAX`, so the cap is not the
+        # bound and the parser has to say so itself (S3-R3-03).
         github_unreachable(label, path, "returned a response that is not JSON")
-    if not isinstance(payload, dict):
-        github_unreachable(label, path, "returned a response that is not one object")
-    return payload
+    return checked_github_object(payload, path, label)
 
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
-COAUTHOR_TRAILER = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
-ORIGIN_TRAILER = "Wildcat-Origin: shoggoth"
 # Long key ids GitHub signs with when it creates a commit itself: the web-flow
 # key, used by the merge button, the Contents API, and the rebase performed by
 # the native stacked-pull-request flow. A commit carrying one of these was
@@ -12633,6 +20276,12 @@ SIGNATURE_VERIFIER_CONFIG = (
 )
 
 
+# Runtime-host classification sets that nothing in this file reads. Fiat
+# refuses no commit on them. They stay because scripts/contributors.py:191
+# parses this declaration through the AST and stops when its own copy
+# differs, and the contributor-ranking promise at PROMISE_MACHINE.md:344 names
+# that parity check as its evidence. Deleting them as dead code would break
+# the check and falsify the promise, so change a set in both files together.
 HOST_IDENTITY_NAMES = frozenset(
     {
         "aider",
@@ -12666,14 +20315,7 @@ HOST_PR_LOGINS = frozenset(
         "copilot[bot]",
     }
 )
-"""Runtime host accounts, which ADR-016 forbids as an author.
 
-Membership is a refusal, so this set holds runtime hosts and nothing else. A
-delivery agent that opens its own pull requests under a GitHub App identity is
-the contributing actor rather than a host, and belongs nowhere near this set:
-adding it would refuse every pull request it opens. `GITHUB_LOGIN_RE` already
-accepts a `[bot]` login for that reason.
-"""
 COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,
@@ -12696,86 +20338,11 @@ because the trailer count is attacker-influenceable and a receipt is not the
 place to discover that.
 """
 
-HOST_BYLINE_RE = re.compile(
-    r"(?:generated\s+(?:by|with)|(?:co-)?authored\s+by)\s+"
-    r"(?:\[(?:claude(?: code)?|codex|chatgpt|copilot|gemini(?: code assist)?)\]"
-    r"\([^\)]+\)|claude(?: code)?|codex|chatgpt|copilot|gemini(?: code assist)?)",
-    re.IGNORECASE,
-)
-
-# Why a refusal names a cause. ADR-016 makes a runtime host execution metadata,
-# never an author, co-author, byline or generated-by footer, and the hosts most
-# contributors run Fiat through add exactly those by default: their own git
-# identity, a Co-Authored-By trailer naming themselves, an attribution line or
-# a session link. A refusal that only names the gate sends the operator to
-# guess; one that names the usual host default and its recovery does not. The
-# clauses are module constants so that no byte of a commit message or
-# pull-request body can steer what a refusal says. The evidence for each
-# "usual cause" is the measurement table in the committed study,
-# docs/fiat-host-byline-readback/study.md (section 1); the texts are its
-# section 4 table.
-
-# verify_local_commit author and commit_attribution (ADR-016; the study's
-# section 4 table).
-CAUSE_HOST_AUTHOR = (
-    "The usual cause is the host's default git identity, such as "
-    "Claude <noreply@anthropic.com>; set git user.name and user.email to the "
-    "contributing actor and recreate the commit."
-)
-# verify_local_commit committer and commit_attribution (ADR-052).
-CAUSE_HOST_COMMITTER = (
-    "The usual cause is the runtime host's default committer identity; use the "
-    "explicitly authorised publisher's own name, address and signing key, then "
-    "recreate the commit without changing its author."
-)
-# verify_local_commit co-author and message_coauthors (ADR-016; the study's
-# section 4 table).
-CAUSE_HOST_COAUTHOR = (
-    "The usual cause is the host's standing instruction to end every commit "
-    "with a Co-Authored-By trailer naming itself; the repository rule wins: "
-    "end the message with the two exact provenance trailers and nothing else, "
-    "and recreate the commit."
-)
-# verify_local_commit byline (ADR-016; the study's section 4 table).
-CAUSE_HOST_BYLINE = (
-    "The usual cause is the host's default attribution line (Generated with "
-    "or by Claude Code, Codex or another host) or its session link in the "
-    "message; remove it and recreate the commit."
-)
-# inspect_pull_request author (ADR-016; the study's section 4 table).
-CAUSE_HOST_PR_AUTHOR = (
-    "The pull request was opened under the host app's GitHub identity, such "
-    "as claude[bot]; open it from the human contributor's account, or from "
-    "the explicitly authorised publisher's account for Shoggoth work."
-)
-# inspect_pull_request byline (ADR-016; the study's section 4 table).
-CAUSE_HOST_PR_BYLINE = (
-    "The usual cause is the host appending its attribution line or claude.ai "
-    "session link to the description after gh pr create returned; edit the "
-    "body without it (gh pr edit <url> --body-file <file>), read it back over "
-    "REST, and rerun this receipt."
-)
-# checked_login (ADR-016; the study's section 4 table).
-CAUSE_HOST_ACCOUNT = (
-    "The GitHub response links this identity to a runtime host account; use "
-    "the human contributor's account for their work, or the explicitly "
-    "authorised publisher's account for Shoggoth work."
-)
-
-
 def tool_text(data: bytes, label: str) -> str:
     try:
         return data.decode("utf-8")
     except UnicodeDecodeError:
         die(f"{label} returned non-UTF-8 output")
-
-
-def is_host_identity(name: str, email: str) -> bool:
-    """Recognise known runtime identities without reclassifying human authors."""
-    return (
-        name.strip().casefold() in HOST_IDENTITY_NAMES
-        or email.strip().casefold() in HOST_IDENTITY_EMAILS
-    )
 
 
 def identity_digest(email: str) -> str:
@@ -12807,8 +20374,6 @@ def checked_login(value: object, label: str) -> str | None:
     login = value.get("login")
     if not isinstance(login, str):
         die(f"{label} account login is not a string")
-    if login.casefold() in HOST_PR_LOGINS:
-        die(f"{label} links the commit to a runtime host account. {CAUSE_HOST_ACCOUNT}")
     if not GITHUB_LOGIN_RE.fullmatch(login):
         die(f"{label} account login is malformed")
     return login
@@ -12839,10 +20404,8 @@ def checked_identity(value: object, label: str) -> tuple[str, str]:
 def message_coauthors(message: object, label: str) -> list[dict]:
     """Every exact co-author trailer on one commit message.
 
-    Parsed with the same expression the local range gate uses, so the two
-    cannot disagree about what a trailer is. A host identity in a trailer
-    refuses here as well as locally: the two views are read from different
-    places and either one seeing a host is enough.
+    Names are attribution evidence only. Signature admission is checked at the
+    commit boundary and does not depend on a co-author classification.
     """
     if not isinstance(message, str):
         die(f"{label} commit message is missing")
@@ -12852,8 +20415,6 @@ def message_coauthors(message: object, label: str) -> list[dict]:
         if match is None:
             continue
         name, email = match.group("name"), match.group("email")
-        if is_host_identity(name, email):
-            die(f"{label} names a runtime host as co-author. {CAUSE_HOST_COAUTHOR}")
         if len(name) > ATTRIBUTION_NAME_MAX or len(email) > ATTRIBUTION_EMAIL_MAX:
             die(f"{label} co-author identity is malformed")
         found.append({"name": name, "email_sha256": identity_digest(email)})
@@ -13140,7 +20701,7 @@ def verify_local_commit(
     *,
     native_relation: bool = False,
 ) -> str:
-    """Verify one exact locally created commit and its required trailers."""
+    """Verify one exact locally created commit's native signature."""
     commit_sha = require_full_sha(commit_sha, label)
     verification_argv = [
         item
@@ -13149,7 +20710,7 @@ def verify_local_commit(
     ]
     verification_argv.extend(["verify-commit", commit_sha])
     if native_relation:
-        _native_relation_git(
+        _native_signature_git(
             base_dir,
             verification_argv,
             f"{label} commit {commit_sha} has no valid native local signature",
@@ -13178,62 +20739,6 @@ def verify_local_commit(
                 f"(signed with key {key}, which this keyring cannot validate)"
             )
         die(f"{label} commit {commit_sha} has no valid local signature")
-    author_name, author_email = commit_author(
-        base_dir,
-        commit_sha,
-        label,
-        native_relation=native_relation,
-    )
-    if is_host_identity(author_name, author_email):
-        die(
-            f"{label} commit {commit_sha} uses a runtime host as author; "
-            f"use Shoggoth or preserve the human contributor. {CAUSE_HOST_AUTHOR}"
-        )
-    committer_name, committer_email = commit_committer(
-        base_dir,
-        commit_sha,
-        label,
-        native_relation=native_relation,
-    )
-    if is_host_identity(committer_name, committer_email):
-        die(
-            f"{label} commit {commit_sha} uses a runtime host as committer. "
-            f"{CAUSE_HOST_COMMITTER}"
-        )
-    body = tool_text(
-        _exact_commit_git(
-            base_dir,
-            ["show", "-s", "--no-show-signature", "--format=%B", commit_sha],
-            f"{label} commit {commit_sha} message cannot be read",
-            native_relation=native_relation,
-        ),
-        f"{label} commit message",
-    )
-    lines = body.splitlines()
-    for line in lines:
-        match = COAUTHOR_RE.fullmatch(line)
-        if match and is_host_identity(match.group("name"), match.group("email")):
-            die(
-                f"{label} commit {commit_sha} uses a runtime host as co-author. "
-                f"{CAUSE_HOST_COAUTHOR}"
-            )
-    if HOST_BYLINE_RE.search(body):
-        die(
-            f"{label} commit {commit_sha} carries a runtime-host byline. "
-            f"{CAUSE_HOST_BYLINE}"
-        )
-    coauthors = lines.count(COAUTHOR_TRAILER)
-    origins = lines.count(ORIGIN_TRAILER)
-    if coauthors != 1:
-        die(
-            f"{label} commit {commit_sha} has {coauthors} exact Shoggoth "
-            "co-author trailers; expected 1"
-        )
-    if origins != 1:
-        die(
-            f"{label} commit {commit_sha} has {origins} exact Wildcat-Origin "
-            "trailers; expected 1"
-        )
     return commit_sha
 
 
@@ -13619,20 +21124,28 @@ def inspect_pull_request(
     author_login = author.get("login") if isinstance(author, dict) else None
     if not isinstance(author_login, str):
         die("pull request topology is missing its author")
-    if author_login.casefold() in HOST_PR_LOGINS:
-        die(
-            "pull request uses a runtime host as author; hand off before "
-            f"publication. {CAUSE_HOST_PR_AUTHOR}"
-        )
+    if not GITHUB_LOGIN_RE.fullmatch(author_login):
+        die("pull request topology author login is malformed")
     if "body" not in payload:
         die("pull request topology is missing its body")
     # REST spells an empty body as null rather than as an empty string. There
     # is no byline in either, so the absence of text is not a missing field.
-    body = payload["body"] or ""
+    #
+    # `or ""` made the type check below unreachable for a falsy non-string, so
+    # a body of `[]`, `0`, `False` or `{}` was read as an empty body: the
+    # runtime-host byline gate searched the substitution rather than the
+    # response, returned no match and passed, and the closing-reference check
+    # told the operator to add `Closes #N` to a body this reader never read.
+    # It is S3-R6-01's reading reached through the pull request body rather
+    # than the issue body, and round 6 ruled it out of the class on the
+    # ground that no filing decision is read here, which is a statement about
+    # what the body is for and not about whether the reader read it
+    # (S3-R7-02).
+    body = payload["body"]
+    if body is None:
+        body = ""
     if not isinstance(body, str):
-        die("pull request topology is missing its body")
-    if HOST_BYLINE_RE.search(body):
-        die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
+        die("pull request topology returned a body that is not text")
     closing_issue = None
     if expected_closing_issue is not None:
         references = github_issue_closing_references(
@@ -13758,16 +21271,10 @@ def commit_attribution(payload: dict, commit_sha: str) -> dict:
     if not isinstance(commit, dict):
         die(f"{label} is missing its commit object")
     name, email = checked_identity(commit.get("author"), label)
-    if is_host_identity(name, email):
-        die(f"{label} names a runtime host as author. {CAUSE_HOST_AUTHOR}")
     committer_label = f"{label} committer"
     committer_name, committer_email = checked_identity(
         commit.get("committer"), committer_label
     )
-    if is_host_identity(committer_name, committer_email):
-        die(
-            f"{committer_label} names a runtime host. {CAUSE_HOST_COMMITTER}"
-        )
     return {
         "commit": commit_sha,
         "login": checked_login(payload.get("author"), label),
@@ -14015,18 +21522,184 @@ def scribe_files(base_dir: str, pr_base: str, branch: str) -> list[str]:
     return unique
 
 
+# ------------------------------------------------------------ task identity
+
+TASK_IDENTITY_SCHEMA = "fiat-task-identity/v1"
+TASK_IDENTITY_ROLES = ("surveyor", "mason", "warden", "scribe")
+TASK_HANDLE_PREFIX = "fiat"
+TASK_HANDLE_MAX_BYTES = 200
+TASK_HANDLE_FALLBACK_TASK = "run"
+TASK_HANDLE_TOPIC_PREFIX = "topic"
+
+
+def task_identity_task(state: dict) -> str:
+    """The `<task>` segment of a handle: the anchor's issue number, else the topic slug.
+
+    The run anchor's closed task vocabulary has three kinds (`run_anchor_task`),
+    and only `github-issue` carries a number this segment may use. `external`,
+    `none` and a state with no anchor at all fall back to the 48-character
+    topic slug, the same tail `init_preflight` gives the run branch, so a run
+    initialised without a task issue never acquires an issue number it was not
+    given. The slug's own fallback is the one the run branch uses too. A slug
+    of digits alone is prefixed `topic-`: bare, it would be the segment an
+    issue-backed run with that number derives, and that issue's handles would
+    pass this run's check.
+    """
+    anchor = as_dict(as_dict(state.get("receipts")).get(RUN_ANCHOR_RECEIPT))
+    task = as_dict(anchor.get("task"))
+    number = task.get("number")
+    if (
+        task.get("kind") == "github-issue"
+        and isinstance(number, int)
+        and not isinstance(number, bool)
+        and number > 0
+    ):
+        return str(number)
+    topic = state.get("topic")
+    topic_slug = slug(topic) if isinstance(topic, str) else ""
+    if topic_slug.isdigit():
+        return f"{TASK_HANDLE_TOPIC_PREFIX}-{topic_slug}"
+    return topic_slug or TASK_HANDLE_FALLBACK_TASK
+
+
+def task_identity(state: dict, role: str, *, step=None, round=None) -> dict:
+    """Derive the `fiat-task-identity/v1` object for one delegation.
+
+    Handle grammar is `fiat-<task>-<phase>-<role>`. `<task>` is the run anchor's
+    issue number or the topic slug (`task_identity_task`), so a handle from one
+    issue can never be read as another's. `<phase>` is `study` when `step` is
+    None and `step-<n>` otherwise, so the Surveyor's handle differs from every
+    step worker's and a step change changes the handle. `<role>` is one of the
+    four delegated agents, so a Mason and a Warden on the same step differ.
+    `round` is carried in the object and kept out of the handle on purpose: a
+    Warden continued across the rounds of one step (`warden_continuity` says
+    `same-agent`) must see the same handle, and a step change must not.
+
+    Everything here is a function of controller state and the directive: no
+    clock, pid, hostname or path enters, so identical state gives identical
+    bytes across processes, after compaction and after a checkpoint restore.
+    """
+    if role not in TASK_IDENTITY_ROLES:
+        raise ValueError("task identity role is not a delegated agent")
+    if step is None:
+        phase = "study"
+    elif isinstance(step, int) and not isinstance(step, bool) and step > 0:
+        phase = f"step-{step}"
+    else:
+        raise ValueError("task identity step is not a positive integer")
+    if round is not None and (
+        not isinstance(round, int) or isinstance(round, bool) or round < 1
+    ):
+        raise ValueError("task identity round is not a positive integer")
+    task = task_identity_task(state)
+    return {
+        "schema": TASK_IDENTITY_SCHEMA,
+        "handle": f"{TASK_HANDLE_PREFIX}-{task}-{phase}-{role}",
+        "task": task,
+        "step": step,
+        "round": round,
+        "role": role,
+    }
+
+
+def task_handle_refusal(observed, expected: str):
+    """Accept or refuse one observed handle against the handle state expects.
+
+    Returns None when `observed` equals `expected`, else one bounded diagnostic
+    that names which check failed: `length`, `character` or `equality`. The
+    observed value is host-supplied argv and is treated as hostile: it is
+    checked in that order, and the diagnostic never carries it until it has
+    passed the first two checks, so the only observed bytes a diagnostic can
+    echo are at most TASK_HANDLE_MAX_BYTES with no whitespace or non-printable
+    character among them. Non-printable covers every control, format,
+    surrogate, private-use and unassigned code point, so an echoed value can
+    neither hide a character nor reorder the line it is printed in. The length
+    refusal reports a byte count, and also covers a value that is not a string
+    or is empty; the character refusal reports one code point and its index.
+    Neither quotes the string. Comparison is exact equality, never prefix, case
+    or pattern.
+    """
+    if not isinstance(observed, str):
+        return "task handle refused (length): observed handle is not a string"
+    try:
+        size = len(observed.encode("utf-8", "surrogateescape"))
+    except UnicodeEncodeError:
+        # Only U+DC80..U+DCFF, the argv bytes that did not decode, round-trip
+        # through surrogateescape. A value holding any other lone surrogate is
+        # measured with surrogatepass, three bytes per surrogate, so it is
+        # refused on length or character rather than raising here.
+        size = len(observed.encode("utf-8", "surrogatepass"))
+    if size > TASK_HANDLE_MAX_BYTES:
+        return (
+            "task handle refused (length): observed handle is "
+            f"{size} bytes, above the {TASK_HANDLE_MAX_BYTES}-byte bound"
+        )
+    if not observed:
+        return "task handle refused (length): observed handle is empty"
+    for index, character in enumerate(observed):
+        if character.isspace() or not character.isprintable():
+            return (
+                "task handle refused (character): U+"
+                f"{ord(character):04X} at index {index} is a whitespace or "
+                "non-printable character"
+            )
+    if observed != expected:
+        return (
+            f"task handle refused (equality): expected {expected}, "
+            f"observed {observed}"
+        )
+    return None
+
+
+def next_task_handle_refusal(packet: dict, observed):
+    """Check the handle an orchestrator is about to continue against one packet.
+
+    Returns None when the packet names a delegate and `observed` is exactly its
+    `task_identity.handle`, else one bounded diagnostic for `next` to exit on.
+    A packet with no delegate is refused as `delegate` without the observed
+    value being read, because an inline directive names no handle that could
+    be continued. Every other refusal is `task_handle_refusal`'s and names the
+    expected handle: the equality refusal already does, and the length and
+    character refusals, which never echo what they refused, carry it as a
+    suffix.
+    """
+    identity = packet.get("task_identity")
+    if packet.get("agent") is None or not isinstance(identity, dict):
+        return (
+            f"task handle refused (delegate): the {packet.get('do')} directive "
+            "has no delegate, so no task handle applies"
+        )
+    expected = identity["handle"]
+    refusal = task_handle_refusal(observed, expected)
+    if refusal is None or "(equality)" in refusal:
+        return refusal
+    return f"{refusal}; expected {expected}"
+
+
 def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
     """Add the total packet envelope and build only the four delegated briefs."""
     packet = {
         **directive,
         "state_sha256": state_fingerprint(state),
         "agent": None,
+        # The task a delegation is named for sits beside `agent` and never in
+        # `brief`, so the four pinned brief shapes hold and `--brief-out` leaves
+        # it on the directive the orchestrator reads. It is null exactly when
+        # `agent` is: an inline directive has no delegate to name (issue 363).
+        "task_identity": None,
         "brief": {},
     }
+
+    def delegate(role: str, **position) -> None:
+        # Both fields in one place, so no envelope names a delegate without
+        # the task, step and role that delegate is spawned or continued for.
+        packet["agent"] = role
+        packet["task_identity"] = task_identity(state, role, **position)
+
     action = directive.get("do")
     root = os.path.realpath(base_dir)
     if action == "study":
-        packet["agent"] = "surveyor"
+        delegate("surveyor")
         packet["brief"] = {
             "topic": state["topic"],
             "target_dir": root,
@@ -14044,7 +21717,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         }
         return packet
 
-    if action not in ("implement", "audit-round", "prose"):
+    if action not in ("inoculate", "implement", "audit-round", "prose"):
         return packet
 
     if not run_branch_of(state):
@@ -14062,24 +21735,116 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
     step = current_step(state)
     plan = branch_plan(state, step)
     root_plugin = plugin_root()
+    if action == "inoculate":
+        capture = receipted_known_failure_inventory(
+            root, state, study=study, runbook=runbook
+        )
+        if capture is None:
+            die("inoculate directive has no receipted known-failure capture", 1)
+        all_assigned = _assigned_findings(capture, step["n"])
+        remaining_ids = directive.get("remaining_ids")
+        if not isinstance(remaining_ids, list):
+            remaining_ids = _assigned_ids(capture, step["n"])
+        assigned = [
+            finding for finding in all_assigned if finding["id"] in remaining_ids
+        ]
+        allowed_guard_paths = sorted(
+            {
+                path
+                for finding in all_assigned
+                for path in finding["guard_paths"]
+            },
+            key=lambda value: value.encode("utf-8"),
+        )
+        delegate("mason", step=step["n"])
+        packet["brief"] = {
+            "study_sha256": study["sha256"],
+            "runbook_sha256": runbook["sha256"],
+            "inventory_sha256": capture["inventory_sha256"],
+            "known_failure_inventory": capture,
+            "consuming_step": step["n"],
+            "assigned_findings": assigned,
+            "allowed_guard_paths": allowed_guard_paths,
+            "completed_ids": directive.get("completed_ids", []),
+            "remaining_ids": remaining_ids,
+            "reporter_contracts": [
+                {
+                    "finding_id": finding["id"],
+                    "test_command": finding["test_command"],
+                    "report_format": finding["report_format"],
+                    "report_file": finding["report_file"],
+                    "green_command": finding["green_command"],
+                }
+                for finding in assigned
+            ],
+            "branch": plan["branch"],
+            "branch_from": plan["branch_from"],
+            "step_parent": _inoculation_parent(root, state, step),
+            "evidence_directory": scoped_path(
+                root,
+                _inoculation_evidence_relative(step["n"]),
+                "inoculation evidence directory",
+            ),
+            "plugin_root": root_plugin,
+        }
+        if directive.get("guard_commit") is not None:
+            packet["brief"]["guard_commit"] = directive["guard_commit"]
+        if design_evidence is not None:
+            packet["brief"]["design_evidence"] = design_evidence
+        return packet
     if action == "implement":
-        packet["agent"] = "mason"
+        step_parent = None
+        guard_commit = None
+        capture = receipted_known_failure_inventory(
+            root, state, study=study, runbook=runbook
+        )
+        if capture is not None:
+            step_parent = _inoculation_parent(root, state, step)
+            inoculation_receipt = _validate_inoculation_receipt(
+                as_dict(step.get("receipts")).get("inoculate"),
+                capture,
+                step,
+                step_parent,
+                state=state,
+            )
+            checked_guard_state = _validate_receipted_guard_evidence(
+                root, state, capture, step, inoculation_receipt
+            )
+            guard_commit = checked_guard_state.get("guard_commit")
+        delegate("mason", step=step["n"])
         packet["brief"] = {
             "runbook_step": source_runbook_step(
                 runbook,
                 step,
                 current_study_sha256=study["sha256"],
+                study_amendments=as_dict(study.get("receipt")).get("amendments"),
                 version_relations=version_relations,
             ),
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
             "plugin_root": root_plugin,
         }
+        if step_parent is not None:
+            packet["brief"]["step_parent"] = step_parent
+        if capture is not None:
+            packet["brief"]["known_failure_recovery"] = known_failure_recovery(
+                root, state, capture, step
+            )
+        if guard_commit is not None:
+            guard_commit = require_full_sha(guard_commit, "receipted guard commit")
+            supplied_guard_commit = directive.get("guard_commit")
+            if supplied_guard_commit not in (None, guard_commit):
+                die("implement directive guard commit changed before delegation", 1)
+            packet["guard_commit"] = guard_commit
+            packet["brief"]["guard_commit"] = guard_commit
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
 
     if action == "audit-round":
+        audit_recovery = require_final_green_admission(
+            root, state, "a Warden audit packet"
+        )
         audit = as_dict(as_dict(state.get("config")).get("audit"))
         log = configured_audit_log(state)
         suffix = audit.get("stacked_suffix")
@@ -14091,7 +21856,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             ["check-ref-format", "--branch", stacked_branch],
             "stacked_branch is not a valid Git branch",
         )
-        packet["agent"] = "warden"
+        delegate("warden", step=step["n"], round=directive["round"])
         # Which Warden the controller delegates to, not what that Warden has
         # read. A step's first round has no earlier agent to continue, so it
         # says `new`; a later round of the same step says `same-agent`. The
@@ -14114,15 +21879,18 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
                 runbook,
                 step,
                 current_study_sha256=study["sha256"],
+                study_amendments=as_dict(study.get("receipt")).get("amendments"),
                 version_relations=version_relations,
             ),
         }
+        if audit_recovery is not None:
+            packet["brief"]["known_failure_recovery"] = audit_recovery
         if design_evidence is not None:
             packet["brief"]["design_evidence"] = design_evidence
         return packet
 
     pr_base = plan["pr_base"]
-    packet["agent"] = "scribe"
+    delegate("scribe", step=step["n"])
     packet["brief"] = {
         "files": scribe_files(root, pr_base, plan["branch"]),
         "pr_base": pr_base,
@@ -15601,6 +23369,7 @@ def _checkpoint_manifest(
     directive: dict,
     refs: dict[str, str],
     inventory: list[dict],
+    known_failures: dict | None = None,
 ) -> tuple[dict, bytes, str]:
     controller_root = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
     state_bytes = _checkpoint_read_staged(
@@ -15655,10 +23424,90 @@ def _checkpoint_manifest(
         },
         "files": inventory,
     }
+    if known_failures is not None:
+        # Present exactly when the captured state's open Step has a receipted
+        # capture. A pre-capture run's capsule keeps the shape it always had,
+        # so a legacy capsule stays readable without invented evidence.
+        manifest["known_failures"] = known_failures
     payload = canonical(manifest).encode("utf-8") + b"\n"
     if len(payload) > CHECKPOINT_MANIFEST_BYTES_MAX:
         die("checkpoint manifest exceeds the byte ceiling")
     return manifest, payload, hashlib.sha256(payload).hexdigest()
+
+
+def _checkpoint_known_failures(base_dir: str, state: dict) -> dict | None:
+    """Return the recovery projection a capsule carries, when one applies."""
+    if state.get("phase") != "steps" or state.get("current_step") is None:
+        return None
+    step = current_step(state)
+    if step.get("phase") == "pending":
+        return None
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return None
+    return known_failure_recovery(base_dir, state, capture, step)
+
+
+def _checkpoint_verify_known_failures(
+    manifest: dict, captured_state: dict, inventory: list[dict]
+) -> None:
+    """Revalidate a capsule's recovery projection against its own bytes.
+
+    Restore has no Git evidence yet, so the join it can check is the one
+    that matters here: the projection agrees with the captured state, and
+    every manifest digest it names is the digest of a file the capsule
+    actually carries.
+    """
+    projection = manifest.get("known_failures")
+    runbook_receipt = as_dict(as_dict(captured_state.get("receipts")).get("runbook"))
+    step = None
+    if (
+        captured_state.get("phase") == "steps"
+        and captured_state.get("current_step") is not None
+    ):
+        step = captured_state["steps"][captured_state["current_step"] - 1]
+    expects = (
+        step is not None
+        and step.get("phase") != "pending"
+        and "known_failure_inventory" in runbook_receipt
+    )
+    if not expects:
+        if projection is not None:
+            die("checkpoint manifest invents known-failure recovery evidence")
+        return
+    if projection is None:
+        die("checkpoint manifest omits its known-failure recovery evidence")
+    stored = _validate_known_failure_capture(
+        runbook_receipt.get("known_failure_inventory"),
+        "captured known-failure capture",
+    )
+    try:
+        validate_known_failure_recovery(
+            projection,
+            capture={
+                name: stored[name]
+                for name in ("study_sha256", "runbook_sha256", "inventory_sha256")
+            },
+        )
+    except ValueError as exc:
+        die(f"checkpoint known-failure recovery evidence is invalid: {exc}")
+    if projection["step"] != step.get("n") or projection["phase"] != step.get("phase"):
+        die("checkpoint known-failure recovery evidence names another step")
+    if projection["step_parent"] != step.get("inoculation_parent"):
+        die("checkpoint known-failure recovery evidence names another step parent")
+    digests = {item["path"]: item["sha256"] for item in inventory}
+    references = list(projection["guard_manifests"]) + list(
+        projection["final_green"]["manifests"]
+    )
+    for reference in references:
+        recorded = CHECKPOINT_CONTROLLER_DIR + "/" + reference["path"].removeprefix(
+            STATE_DIR_NAME + "/"
+        )
+        if digests.get(recorded) != reference["sha256"]:
+            die(
+                "checkpoint known-failure recovery evidence does not match the "
+                "capsule's own manifest bytes"
+            )
 
 
 def _checkpoint_write_manifest(stage: str, payload: bytes) -> None:
@@ -15742,6 +23591,7 @@ def cmd_checkpoint_export(args) -> None:
     state = load_state(base_dir)
     ledger = ledger_entries(base_dir)
     boundary, directive = _checkpoint_boundary(state, ledger)
+    require_final_green_admission(base_dir, state, "a checkpoint hand-off")
     if os.path.lexists(state_path(base_dir) + ".tmp"):
         die("checkpoint export refuses a pending controller transaction")
     destination, parent, parent_descriptor = _checkpoint_destination(
@@ -15813,7 +23663,13 @@ def cmd_checkpoint_export(args) -> None:
             ):
                 die("checkpoint private stage changed during capture")
             manifest, manifest_bytes, manifest_digest = _checkpoint_manifest(
-                stage, state, boundary, directive, refs, inventory
+                stage,
+                state,
+                boundary,
+                directive,
+                refs,
+                inventory,
+                _checkpoint_known_failures(base_dir, state),
             )
             if _checkpoint_snapshot(state_root(base_dir), None) != inventory:
                 die("checkpoint source changed before publication")
@@ -16018,11 +23874,17 @@ def _checkpoint_restore_capsule(
     if hashlib.sha256(manifest_bytes).hexdigest() != expected_digest:
         die("checkpoint manifest digest does not match --manifest-sha256")
     manifest = _checkpoint_json(manifest_bytes, "manifest")
-    manifest = _checkpoint_closed_object(
-        manifest,
-        {"schema", "controller", "boundary", "source", "resources", "files"},
-        "manifest",
-    )
+    manifest_fields = {
+        "schema",
+        "controller",
+        "boundary",
+        "source",
+        "resources",
+        "files",
+    }
+    if isinstance(manifest, dict) and "known_failures" in manifest:
+        manifest_fields = manifest_fields | {"known_failures"}
+    manifest = _checkpoint_closed_object(manifest, manifest_fields, "manifest")
     if (
         manifest.get("schema") != CHECKPOINT_SCHEMA
         or canonical(manifest).encode("utf-8") + b"\n" != manifest_bytes
@@ -16135,6 +23997,8 @@ def _checkpoint_restore_capsule(
         }
     ):
         die("checkpoint source identities do not match controller bytes")
+
+    _checkpoint_verify_known_failures(manifest, state, inventory)
 
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
@@ -18129,11 +25993,14 @@ def _checkpoint_archive_seed_keyring(
 
 
 def _checkpoint_archive_trailers(body: str) -> dict[str, int]:
-    """The two provenance trailer counts this run's commits owe, exactly once each."""
+    """The two provenance trailer counts one commit carries, recorded and never required.
+
+    Admission is signature-only, so a count of zero or two refuses nothing.
+    """
     lines = body.splitlines()
     return {
-        "coauthored_by_shoggoth": lines.count(COAUTHOR_TRAILER),
-        "wildcat_origin": lines.count(ORIGIN_TRAILER),
+        "coauthored_by_shoggoth": lines.count(CHECKPOINT_ARCHIVE_COAUTHOR_TRAILER),
+        "wildcat_origin": lines.count(CHECKPOINT_ARCHIVE_ORIGIN_TRAILER),
     }
 
 
@@ -18239,12 +26106,7 @@ def _checkpoint_archive_proof(base_dir: str, state: dict, step: dict, members: s
                 base_dir, commit_sha, environment, verifier
             )
             trailers = _checkpoint_archive_trailers(body)
-            if (
-                status != "G"
-                or fingerprint not in fingerprints
-                or trailers["coauthored_by_shoggoth"] != 1
-                or trailers["wildcat_origin"] != 1
-            ):
+            if status != "G" or fingerprint not in fingerprints:
                 _checkpoint_archive_refuse("signature-unverified")
             records.append(
                 {
@@ -19372,12 +27234,7 @@ def _checkpoint_inspect_signatures(
                 repo_dir, sha, environment, verifier
             )
             trailers = _checkpoint_archive_trailers(body)
-            if (
-                status != "G"
-                or fingerprint not in fingerprints
-                or trailers["coauthored_by_shoggoth"] != 1
-                or trailers["wildcat_origin"] != 1
-            ):
+            if status != "G" or fingerprint not in fingerprints:
                 _checkpoint_archive_refuse("signature-unverified")
             records.append(
                 {
@@ -19979,6 +27836,14 @@ def cmd_next(args) -> None:
         refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
     out = delegation_packet(args.dir, state, directive)
+    observed = getattr(args, "task_handle", None)
+    if observed is not None:
+        # Before `--brief-out` writes and before stdout: a handle that is
+        # refused never receives the brief it was about to be continued with.
+        # `next` holds no lock and writes no state or ledger entry either way.
+        refusal = next_task_handle_refusal(out, observed)
+        if refusal is not None:
+            die(refusal)
     brief_out = getattr(args, "brief_out", None)
     if brief_out is not None and out["brief"]:
         # The controller delegates this packet rather than reading it, so the
@@ -20008,22 +27873,35 @@ that does not keep one simply has no discoverable suite here.
 
 CHECK_MAP_SCHEMA = "wildcat.check-map.v1"
 CHECK_MAP_ROOT_CHECK = "root-suite"
+CHECK_MAP_KNOWN_CHECKS = frozenset({CHECK_MAP_ROOT_CHECK, *FINAL_GREEN_SUITE_CHECKS})
+"""The closed set of check ids this controller will read from the map.
+
+The map declares many more, and a check id arriving from anywhere other than
+this controller's own constants is not a name to look up.
+"""
+
 CHECK_MAP_BYTES_MAX = 1024 * 1024
 
 
-def repository_check_command(base_dir: str | None) -> dict | None:
-    """The repository's own declared suite, when one is discoverable.
+def repository_check_command(
+    base_dir: str | None, *, check: str = CHECK_MAP_ROOT_CHECK
+) -> dict | None:
+    """One declared repository check, when the run worktree declares it.
 
-    Reads the check map in the run worktree and returns its root check for
+    Reads the check map in the run worktree and returns the named check for
     the audit-round directive to carry beside the log path and the lint
     flags, so a round that owes the repository's suite hears about it from
     the directive rather than from memory (issue 1067). Discovery is
     informational and fail-open: no map, an oversized or unreadable file, a
-    foreign schema, or a root check without a usable argv all return None
+    foreign schema, or a check without a usable argv all return None
     without refusing the directive. Carriage does not assert the command
-    ran; the round's own record still owes that evidence.
+    ran; the round's own record still owes that evidence. Final-green suite
+    evidence is the one caller that refuses when a declaration is absent,
+    because there the missing command is the evidence it owes.
     """
     if base_dir is None:
+        return None
+    if check not in CHECK_MAP_KNOWN_CHECKS:
         return None
     path = os.path.join(base_dir, CHECK_MAP_RELPATH)
     try:
@@ -20043,20 +27921,20 @@ def repository_check_command(base_dir: str | None) -> dict | None:
     checks = document.get("checks")
     if not isinstance(checks, dict):
         return None
-    check = checks.get(CHECK_MAP_ROOT_CHECK)
-    if not isinstance(check, dict):
+    declared = checks.get(check)
+    if not isinstance(declared, dict):
         return None
-    argv = check.get("argv")
+    argv = declared.get("argv")
     if not isinstance(argv, list) or not argv:
         return None
     if not all(isinstance(part, str) and part for part in argv):
         return None
-    cwd = check.get("cwd", ".")
+    cwd = declared.get("cwd", ".")
     if not isinstance(cwd, str) or not cwd:
         return None
     return {
         "source": CHECK_MAP_RELPATH,
-        "check": CHECK_MAP_ROOT_CHECK,
+        "check": check,
         "argv": list(argv),
         "cwd": cwd,
     }
@@ -20149,9 +28027,100 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
         }
     if step["phase"] == "issue":
         return {**base, "do": "implement", "legacy_issue_phase_skipped": True}
+    if step["phase"] == "inoculate":
+        capture = _validate_known_failure_capture(
+            as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+                "known_failure_inventory"
+            ),
+            "receipted known-failure capture",
+        )
+        status = inoculation_status(state, capture, base_dir)
+        retain_work = [
+            {
+                "finding_id": finding_id,
+                "command": (
+                    "hexctl retain-guard --finding-id "
+                    f"{finding_id} --guard-commit <full-object-id>"
+                ),
+            }
+            for finding_id in status["remaining_ids"]
+        ]
+        return {
+            **base,
+            "do": "inoculate",
+            **branch_plan(state, step),
+            "step_parent": require_full_sha(
+                step.get("inoculation_parent"),
+                f"step {step['n']} inoculation parent",
+            ),
+            **status,
+            "retain_work": retain_work,
+            "then": "hexctl done inoculate",
+            **_next_recovery_field(base_dir, state, step),
+        }
     if step["phase"] in ("implement", "push"):
-        return {**base, "do": step["phase"], **branch_plan(state, step)}
-    return {**base, "do": step["phase"]}
+        directive = {**base, "do": step["phase"], **branch_plan(state, step)}
+        directive.update(_next_recovery_field(base_dir, state, step))
+        if (
+            step["phase"] == "implement"
+            and "known_failure_inventory"
+            in as_dict(as_dict(state.get("receipts")).get("runbook"))
+        ):
+            step_parent = require_full_sha(
+                step.get("inoculation_parent"),
+                f"step {step['n']} inoculation parent",
+            )
+            directive["step_parent"] = step_parent
+            if base_dir is not None:
+                capture = receipted_known_failure_inventory(base_dir, state)
+                if capture is None:
+                    die("implement directive has no receipted known-failure capture", 1)
+                inoculation_receipt = _validate_inoculation_receipt(
+                    as_dict(step.get("receipts")).get("inoculate"),
+                    capture,
+                    step,
+                    step_parent,
+                    state=state,
+                )
+                checked_guard_state = _validate_receipted_guard_evidence(
+                    base_dir, state, capture, step, inoculation_receipt
+                )
+                guard_commit = checked_guard_state.get("guard_commit")
+                if guard_commit is not None:
+                    directive["guard_commit"] = require_full_sha(
+                        guard_commit, "receipted guard commit"
+                    )
+        return directive
+    return {
+        **base,
+        "do": step["phase"],
+        **_next_recovery_field(base_dir, state, step),
+    }
+
+
+def _next_recovery_field(base_dir: str | None, state: dict, step: dict) -> dict:
+    """Carry the recovery projection on every source-bound step directive.
+
+    A delegate that lost its context after a compaction rebuilds the step
+    from the directive it is handed, so the remaining ids, phase, step
+    parent and evidence digests travel with the directive rather than
+    waiting to be asked for. A run with no receipted capture carries
+    nothing, which is what a pre-capture directive has always looked like.
+    """
+    if base_dir is None or step.get("phase") == "pending":
+        return {}
+    if "known_failure_inventory" not in as_dict(
+        as_dict(state.get("receipts")).get("runbook")
+    ):
+        return {}
+    capture = receipted_known_failure_inventory(base_dir, state)
+    if capture is None:
+        return {}
+    return {
+        "known_failure_recovery": known_failure_recovery(
+            base_dir, state, capture, step, strict=False
+        )
+    }
 
 
 CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
@@ -20185,11 +28154,13 @@ def cmd_status(args) -> None:
             assignment = replayed
     version_relations = None
     resolution_state = None
+    receipted_sources = {}
     for name in ("study", "runbook"):
         receipt = as_dict(as_dict(state.get("receipts")).get(name))
         if receipt.get("sha256") is None:
             continue
         source = receipted_source(args.dir, state, name)
+        receipted_sources[name] = source
         if name == "runbook":
             _receipted_runbook_amendments(source)
             version_relations = receipted_version_relations(
@@ -20197,12 +28168,61 @@ def cmd_status(args) -> None:
             )
             if version_relations is not None:
                 resolution_state = version_resolution_status(args.dir, state)
+    known_failure_capture = None
+    if "runbook" in receipted_sources:
+        known_failure_capture = receipted_known_failure_inventory(
+            args.dir,
+            state,
+            study=receipted_sources.get("study"),
+            runbook=receipted_sources["runbook"],
+        )
+    known_failure_state = None
+    known_failure_recovery_state = None
+    if (
+        known_failure_capture is not None
+        and state.get("phase") == "steps"
+        and state.get("current_step") is not None
+        and current_step(state).get("phase") != "pending"
+    ):
+        step = current_step(state)
+        step_parent = _inoculation_parent(args.dir, state, step)
+        if step.get("phase") != "inoculate":
+            inoculation_receipt = _validate_inoculation_receipt(
+                as_dict(step.get("receipts")).get("inoculate"),
+                known_failure_capture,
+                step,
+                step_parent,
+                state=state,
+            )
+            checked_guard_state = _validate_receipted_guard_evidence(
+                args.dir,
+                state,
+                known_failure_capture,
+                step,
+                inoculation_receipt,
+            )
+            known_failure_state = {
+                key: value
+                for key, value in checked_guard_state.items()
+                if key not in {"documents", "evidence"}
+            }
+        else:
+            known_failure_state = inoculation_status(
+                state, known_failure_capture, args.dir
+            )
+        known_failure_recovery_state = known_failure_recovery(
+            args.dir, state, known_failure_capture, step, strict=False
+        )
     field = getattr(args, "field", None)
     if args.json or field is not None:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
         if resolution_state is not None:
             payload["version_resolution_status"] = resolution_state
+        if known_failure_state is not None:
+            payload.update(known_failure_state)
+        if known_failure_recovery_state is not None:
+            payload["known_failure_recovery"] = known_failure_recovery_state
         if field is None:
             print(json.dumps(payload, indent=2))
             return
@@ -20272,6 +28292,28 @@ def cmd_status(args) -> None:
             f"product {assignment['product']}; candidate "
             f"{assignment['candidate']}; {len(assignment['mappings'])} "
             f"mapping(s); report {assignment['report_sha256']}"
+        )
+    if known_failure_state is not None:
+        print(
+            "known failures: inventory "
+            f"{known_failure_state['inventory_sha256']}; "
+            f"{known_failure_state['assigned_count']} assigned; "
+            f"{len(known_failure_state['completed_ids'])} completed; "
+            f"{len(known_failure_state['remaining_ids'])} remaining"
+        )
+    if known_failure_recovery_state is not None:
+        recovery_green = known_failure_recovery_state["final_green"]
+        print(
+            "known failures: recovery "
+            f"{known_failure_recovery_state['schema']}; step "
+            f"{known_failure_recovery_state['step']} parent "
+            f"{known_failure_recovery_state['step_parent'][:12]}; "
+            f"{len(known_failure_recovery_state['guard_manifests'])} guard "
+            f"manifest(s); {len(recovery_green['manifests'])} final-green "
+            f"manifest(s); {len(recovery_green['remaining_ids'])} awaiting "
+            f"final green; {len(recovery_green['suites'])} suite exit(s); "
+            "no-findings claim "
+            f"{'bound' if known_failure_recovery_state['no_known_findings'] else 'absent'}"
         )
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
@@ -20467,6 +28509,7 @@ def verify_run(
     last_state = None
     study_event = None
     runbook_event = None
+    inoculation_events = []
     design_transition_events = []
     resolution_events = []
     initial_entry = None
@@ -20496,6 +28539,8 @@ def verify_run(
                 runbook_event = entry.get("data")
             if entry.get("event") == "done:study":
                 study_event = entry.get("data")
+            if entry.get("event") == "done:inoculate":
+                inoculation_events.append(entry.get("data"))
             event_data = entry.get("data")
             if isinstance(event_data, dict) and "design_transition" in event_data:
                 design_transition_events.append(event_data.get("design_transition"))
@@ -20523,9 +28568,11 @@ def verify_run(
     )
     runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     version_relations = None
+    known_failure_capture = None
     if runbook_receipt.get("sha256") is not None:
         runbook = receipted_source(base_dir, state, "runbook")
         _receipted_runbook_amendments(runbook)
+        _verify_runbook_rebinds(study_receipt, runbook_receipt)
         version_relations = receipted_version_relations(
             base_dir, runbook, state=state
         )
@@ -20534,6 +28581,71 @@ def verify_run(
             die("done:runbook ledger event has an unreceipted version anchor", 1)
         if version_relations is not None and event_relations != version_relations:
             die("done:runbook ledger event does not match the version anchor", 1)
+        known_failure_capture = receipted_known_failure_inventory(
+            base_dir, state, study=receipted_source(base_dir, state, "study"), runbook=runbook
+        )
+        runbook_event_receipt = as_dict(runbook_event)
+        event_has_capture = "known_failure_inventory" in runbook_event_receipt
+        event_capture = runbook_event_receipt.get("known_failure_inventory")
+        state_has_capture = "known_failure_inventory" in runbook_receipt
+        if not state_has_capture:
+            if event_has_capture:
+                die(
+                    "done:runbook ledger event has an unreceipted "
+                    "known-failure capture",
+                    1,
+                )
+        elif event_capture != _validate_known_failure_capture(
+            runbook_receipt.get("known_failure_inventory"),
+            "initial receipted known-failure capture",
+        ):
+            die(
+                "done:runbook ledger event does not match the initial "
+                "known-failure capture",
+                1,
+            )
+    expected_inoculation_events = []
+    if known_failure_capture is not None:
+        for step in state.get("steps", []):
+            phase = step.get("phase")
+            status = step.get("status")
+            step_receipts = as_dict(step.get("receipts"))
+            if status == "pending":
+                if "inoculation_parent" in step or "inoculate" in step_receipts:
+                    die("pending Step carries premature inoculation state", 1)
+                continue
+            parent = require_full_sha(
+                step.get("inoculation_parent"),
+                f"step {step.get('n')} inoculation parent",
+            )
+            inoculation_receipt = step_receipts.get("inoculate")
+            if phase == "inoculate":
+                if "inoculate" in step_receipts:
+                    die("open inoculation Step already carries its phase receipt", 1)
+                continue
+            _validate_inoculation_receipt(
+                inoculation_receipt,
+                known_failure_capture,
+                step,
+                parent,
+                state=state,
+            )
+            expected_inoculation_events.append(inoculation_receipt)
+            _verify_step_final_green(base_dir, state, known_failure_capture, step)
+    else:
+        for step in state.get("steps", []):
+            if (
+                "inoculation_parent" in step
+                or "inoculate" in as_dict(step.get("receipts"))
+                or step.get("phase") == "inoculate"
+                or "final_green" in as_dict(as_dict(step.get("receipts")).get("implement"))
+            ):
+                die("legacy Step carries invented inoculation state", 1)
+    if inoculation_events != expected_inoculation_events:
+        die(
+            "inoculation receipt state does not match its controller ledger events",
+            1,
+        )
     integrate_state = as_dict(state.get("integrate"))
     bootstrap_assignment = as_dict(state.get("receipts")).get(
         DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
@@ -20599,8 +28711,245 @@ def verify_run(
     return count
 
 
+def _verify_step_final_green(
+    base_dir: str, state: dict, capture: dict, step: dict
+) -> None:
+    """Replay one Step's final-green receipt and name the first broken join.
+
+    Verification names the join rather than the field: an operator reading
+    this wants to know which of the receipt, the manifest bytes and the
+    published pair disagreed, not that something somewhere did not match.
+    """
+    receipt = as_dict(as_dict(step.get("receipts")).get("implement"))
+    recorded = receipt.get("final_green")
+    if step.get("phase") == "implement":
+        if recorded is not None:
+            die(
+                f"step {step.get('n')} carries final-green evidence before its "
+                "implementation receipt",
+                1,
+            )
+        return
+    if not receipt:
+        return
+    if type(recorded) is not dict or set(recorded) != FINAL_GREEN_RECEIPT_KEYS:
+        die(
+            f"step {step.get('n')} implementation receipt binds no closed "
+            "final-green evidence",
+            1,
+        )
+    assigned_ids = _assigned_ids(capture, step["n"])
+    try:
+        _recovery_commit(recorded.get("final_commit"), "final_commit")
+        references = _recovery_manifest_references(
+            recorded.get("manifests"),
+            step_number=step["n"],
+            kind="final-green",
+            assigned_ids=assigned_ids,
+            completed_ids=assigned_ids,
+        )
+        suites = _recovery_suite_rows(recorded.get("suites"))
+    except ValueError as exc:
+        die(f"step {step.get('n')} final-green receipt is invalid: {exc}", 1)
+    if recorded["final_commit"] != receipt.get("commit"):
+        die(
+            f"step {step.get('n')} final-green evidence names a commit its "
+            "implementation receipt does not",
+            1,
+        )
+    if [row["check"] for row in suites] != sorted(FINAL_GREEN_SUITE_CHECKS):
+        die(
+            f"step {step.get('n')} final-green receipt binds incomplete suite "
+            "evidence",
+            1,
+        )
+    if step.get("n") != state.get("current_step"):
+        # Only the open Step still has its evidence directory to replay. A
+        # merged Step's receipt stays checkable; its published leaves are not
+        # re-derived, and saying so is cheaper than pretending otherwise.
+        return
+    published = {
+        document["finding"]["id"]: document
+        for document in _final_green_manifest_documents(
+            base_dir, state, capture, step
+        )
+    }
+    for reference in references:
+        document = published.get(reference["finding_id"])
+        if document is None:
+            die(
+                f"step {step.get('n')} final-green manifest "
+                f"{reference['finding_id']} is missing from its evidence "
+                "directory",
+                1,
+            )
+        _validate_published_final_green(
+            document,
+            state=state,
+            step=step,
+            final_commit=recorded["final_commit"],
+        )
+        if hashlib.sha256(document["manifest_bytes"]).hexdigest() != reference[
+            "sha256"
+        ]:
+            die(
+                f"step {step.get('n')} final-green manifest "
+                f"{reference['finding_id']} does not match its receipted digest",
+                1,
+            )
+    if sorted(published) != assigned_ids:
+        die(
+            f"step {step.get('n')} final-green evidence directory does not "
+            "match its assigned id set",
+            1,
+        )
+
+
+def uncomparable_filing_field(was, now) -> str:
+    """Which side of one field could not be read, in the words a reader needs.
+
+    A field is not compared when either end is the `unknown` sentinel, so the
+    account has to say which end, or the reader learns only that something is
+    missing and not whose read failed.
+    """
+    was_unknown = was == FILING_PROVENANCE_UNKNOWN
+    now_unknown = now == FILING_PROVENANCE_UNKNOWN
+    if was_unknown and now_unknown:
+        return "neither this run's read nor the current one could read it"
+    if was_unknown:
+        return "this run recorded it as `unknown`, so it read no value to compare"
+    return "the current read returned `unknown`, so there is no value to compare"
+
+
+def filing_decision_divergence(
+    base_dir: str, state: dict
+) -> tuple[list, list, str]:
+    """What the issue says now, against what this run recorded when it started.
+
+    The receipt is what the run read, not what is true afterwards. A filing
+    decision can move under a run and the receipt cannot know, so this reads
+    the issue again and reports the difference rather than letting the
+    recorded value stand as the whole account.
+
+    Three lists come back, not two, because a field can also be uncomparable.
+    Reading the `unknown` sentinel as a value made a failed GraphQL read at
+    either end report a body edit that never happened, and made two failed
+    reads compare equal and report a history that "stands as recorded" when
+    neither end had ever been read -- the pass the `graphql-transport` line
+    refuses (S3-R2-01). A receipt written before this reader existed carries no
+    provenance block at all, and read the same way.
+
+    It refuses nothing. A run already under way cannot be un-started by a
+    divergence, and a gate here would be a second place to argue about a
+    decision the window gate already settled at `init`.
+    """
+    recorded = as_dict(as_dict(state.get("receipts")).get("task_issue_contract"))
+    issue_url = recorded.get("issue")
+    if not isinstance(issue_url, str) or not issue_url:
+        return [], [], "this run named no task issue, so there is nothing to compare"
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        return [], [], f"{issue_url} is not a GitHub issue this reader can re-read"
+    repository, number = identity
+    label = f"task issue {repository}#{number}"
+    payload = github_rest(base_dir, f"repos/{repository}/issues/{number}", label)
+    body = admitted_issue_body(payload, repository, number, label)
+    now_record, _faults = issue_contract_faults(body, label)
+    # Only the `Fiat-Required` fault, because this comparison is about the
+    # filing decision and a body can fail the carryover or status-block rule
+    # while declaring a decision perfectly well. `issue_contract_faults`
+    # returns `None` for a body it could not read one decision out of -- the
+    # line declared twice, or a value that is neither 0 nor 1 -- and the fault
+    # saying which was dropped, so the report read `fiat_required: recorded 1,
+    # now None`, which is a third thing the issue does not say (S3-R3-02).
+    _now_value, filing_faults = fiat_required_value(body, label)
+    filing_unreadable = None
+    if filing_faults:
+        # The fault embeds a value copied out of the issue body, so it is
+        # cleaned and bounded before it reaches stdout, on the same terms as
+        # the divergence rows below.
+        detail = bounded_issue_fault_detail(
+            filing_faults, UNREADABLE_DECISION_DETAIL_MAX
+        )
+        filing_unreadable = (
+            f"the issue's body does not declare one readable filing "
+            f"decision -- {detail}"
+        )
+    now_provenance = {
+        **rest_filing_stamps(payload),
+        **github_issue_edit_provenance(base_dir, repository, number),
+    }
+    was_provenance = as_dict(recorded.get("provenance"))
+    recorded_provenance = isinstance(recorded.get("provenance"), dict)
+    divergences: list = []
+    uncomparable: list = []
+    for field, was, now, from_provenance, unreadable in (
+        (
+            "fiat_required",
+            recorded.get("fiat_required"),
+            now_record["fiat_required"],
+            False,
+            filing_unreadable,
+        ),
+        ("sha256", recorded.get("sha256"), now_record["sha256"], False, None),
+        (
+            "updated_at",
+            was_provenance.get("updated_at"),
+            now_provenance["updated_at"],
+            True,
+            None,
+        ),
+        (
+            "edit_count",
+            was_provenance.get("edit_count"),
+            now_provenance["edit_count"],
+            True,
+            None,
+        ),
+        (
+            "last_edited_at",
+            was_provenance.get("last_edited_at"),
+            now_provenance["last_edited_at"],
+            True,
+            None,
+        ),
+    ):
+        if unreadable:
+            uncomparable.append({"field": field, "why": unreadable})
+            continue
+        if from_provenance and not recorded_provenance:
+            uncomparable.append({
+                "field": field,
+                "why": "this run's receipt carries no provenance block, so it "
+                       "recorded no value to compare",
+            })
+            continue
+        if FILING_PROVENANCE_UNKNOWN in (was, now):
+            uncomparable.append(
+                {"field": field, "why": uncomparable_filing_field(was, now)}
+            )
+            continue
+        if was != now:
+            divergences.append({"field": field, "recorded": was, "now": now})
+    return divergences, uncomparable, ""
+
+
+UNDISCRIMINATED_DIVERGENCE_FIELDS = frozenset({"updated_at"})
+"""Fields whose movement is not evidence that the body changed.
+
+`updated_at` moves on a comment and on a label, which
+`ISSUE_EDITS_QUERY`'s own docstring is the reason this reader asks GraphQL at
+all. Reporting it under "the filing decision has moved" named an
+undiscriminated read as a body edit, which is exactly what the
+`window-undiscriminated-read` line refuses at `init` (S3-R1-01). The two
+fields that do discriminate, `edit_count` and `last_edited_at`, are compared
+beside it.
+"""
+
+
 def cmd_verify(args) -> None:
     count = verify_run(args.dir)
+    reported = False
     if args.observations:
         state = load_state(args.dir)
         observation_count, tail_bytes = verify_observation_bindings(args.dir, state)
@@ -20612,12 +28961,84 @@ def cmd_verify(args) -> None:
             f"ok: {count} ledger entries, chain intact, state consistent; "
             f"{observation_count} observation {noun} verified{suffix}"
         )
+        # No `return` here. This branch used to end the command, so
+        # `--observations --check-filing-decision` printed the observation line
+        # and dropped the filing-decision comparison without saying so: exit 0
+        # over an issue whose body had moved (S3-R2-02).
+        reported = True
+    if getattr(args, "check_filing_decision", False):
+        state = load_state(args.dir)
+        divergences, uncomparable, skipped = filing_decision_divergence(
+            args.dir, state
+        )
+        if skipped:
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"filing decision not compared: {skipped}"
+            )
+            return
+        if divergences:
+            moved = [
+                entry for entry in divergences
+                if entry["field"] not in UNDISCRIMINATED_DIVERGENCE_FIELDS
+            ]
+            headline = (
+                "the filing decision has moved since this run read it:"
+                if moved
+                else "the issue has been touched since this run read it, and "
+                     "nothing that records the body has moved:"
+            )
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"{headline}"
+            )
+            for entry in divergences:
+                note = (
+                    " (a comment or a label moves this too, so on its own it "
+                    "is not a body edit)"
+                    if entry["field"] in UNDISCRIMINATED_DIVERGENCE_FIELDS
+                    else ""
+                )
+                print(
+                    f"  {entry['field']}: recorded "
+                    f"{clean(str(entry['recorded']))}, now "
+                    f"{clean(str(entry['now']))}{note}"
+                )
+            print_uncomparable_filing_fields(uncomparable)
+            sys.exit(1)
+        if uncomparable:
+            noun = "field" if len(uncomparable) == 1 else "fields"
+            print(
+                f"ok: {count} ledger entries, chain intact, state consistent; "
+                f"the filing decision stands as recorded on every field this "
+                f"run could compare, and {len(uncomparable)} {noun} could not "
+                f"be compared:"
+            )
+            print_uncomparable_filing_fields(uncomparable)
+            return
+        print(
+            f"ok: {count} ledger entries, chain intact, state consistent; "
+            f"the filing decision stands as recorded"
+        )
         return
-    print(f"ok: {count} ledger entries, chain intact, state consistent")
+    if not reported:
+        print(f"ok: {count} ledger entries, chain intact, state consistent")
+
+
+def print_uncomparable_filing_fields(uncomparable: list) -> None:
+    """Name every field the comparison could not reach, and why.
+
+    Printed beside a divergence as well as instead of one: a run that could
+    read two of the three body-recording fields has not established that the
+    third stands, and the line that says so is the whole difference between
+    reporting a read and reporting a pass.
+    """
+    for entry in uncomparable:
+        print(f"  {entry['field']}: not compared, because {entry['why']}")
 
 
 def cmd_reset(args) -> None:
-    """Archive a completed run, and retire the worktree it ran in.
+    """Archive a completed or halted run, and retire the worktree it ran in.
 
     Retirement belongs here rather than in `done integrate`, because the
     controller's own contract has the caller run `status` and `verify` after the
@@ -20629,14 +29050,36 @@ def cmd_reset(args) -> None:
     A run that lived in a worktree archives into the checkout it was started
     from, because archiving inside the tree and then removing the tree would
     destroy the archive in the same breath.
+
+    A halted run is the other run this command accepts. Its stop is already on
+    the ledger with a reason, and no phase command advances it until `resume`,
+    so clearing it discards no live delivery. Retirement appends one `retire`
+    entry naming the phase the run stopped in and the recorded reason before
+    anything moves, so the archived ledger ends with the retirement rather than
+    with a halt that reads as paused. A run that is merely incomplete has no
+    recorded stop and is still refused.
     """
     count = verify_run(args.dir)
     state = load_state(args.dir)
-    if state["phase"] != "done":
+    halted = state.get("halted")
+    if state["phase"] != "done" and not halted:
         die(
             f"refusing to reset an incomplete run in phase '{state['phase']}'; "
-            "resume it or halt it explicitly"
+            "resume it, or record the stop with `hexctl halt --reason ...` and "
+            "reset again to retire it"
         )
+    if halted:
+        commit(
+            args.dir,
+            state,
+            "retire",
+            {
+                "phase": state["phase"],
+                "reason": halted["reason"],
+                "halted_ts": halted["ts"],
+            },
+        )
+        count += 1
 
     root = state_root(args.dir)
     origin = configured_git_path(state, "origin")
@@ -20647,7 +29090,8 @@ def cmd_reset(args) -> None:
     os.makedirs(archive_root, exist_ok=True)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     topic = re.sub(r"[^a-z0-9]+", "-", state["topic"].lower()).strip("-")[:48]
-    name = f"{stamp}-{topic or 'completed-run'}"
+    kind = "halted" if halted else "completed"
+    name = f"{stamp}-{f'halted-{topic}' if halted and topic else topic or f'{kind}-run'}"
     destination = os.path.join(archive_root, name)
     suffix = 2
     while os.path.exists(destination):
@@ -20661,9 +29105,12 @@ def cmd_reset(args) -> None:
             continue
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
+    stopped = (
+        f", stopped in phase '{state['phase']}': {halted['reason']}" if halted else ""
+    )
     print(
-        f"archived verified completed run ({count} ledger entries) locally at "
-        f"{destination}; active state cleared"
+        f"archived verified {kind} run ({count} ledger entries{stopped}) locally "
+        f"at {destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):
@@ -20761,7 +29208,25 @@ def build_parser() -> argparse.ArgumentParser:
             "instead of printing its body"
         ),
     )
+    sp.add_argument(
+        "--task-handle",
+        metavar="HANDLE",
+        help=(
+            "check HANDLE, the name of a delegate about to be continued, "
+            "against task_identity.handle; a mismatch, a malformed HANDLE or "
+            "a directive with no delegate exits 2 before the directive is "
+            "printed"
+        ),
+    )
     sp.set_defaults(fn=cmd_next)
+
+    sp = sub.add_parser(
+        "retain-guard",
+        help="retain one assigned detached-parent guard report and manifest",
+    )
+    sp.add_argument("--finding-id", dest="finding_id", required=True)
+    sp.add_argument("--guard-commit", dest="guard_commit", required=True)
+    sp.set_defaults(fn=cmd_retain_guard)
 
     sp = sub.add_parser(
         "verify-decision-assignments",
@@ -20821,6 +29286,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--commit")
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
+    sp.add_argument("--accept-evolution-base", help="exact base SHA approved for cross-evolution version recovery")
+    sp.add_argument("--recovery-authority", help="operator who authorised this exact evolution recovery")
     sp.add_argument("--decision-assignments", dest="decision_assignments")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
     sp.add_argument(
@@ -20909,7 +29376,7 @@ def build_parser() -> argparse.ArgumentParser:
     restore.set_defaults(fn=cmd_checkpoint_restore)
 
     sp = sub.add_parser(
-        "reset", help="archive a completed run and clear its active state"
+        "reset", help="archive a completed or halted run and clear its active state"
     )
     sp.set_defaults(fn=cmd_reset)
 
@@ -20918,6 +29385,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--observations",
         action="store_true",
         help="also recompute every selected companion observation prefix",
+    )
+    sp.add_argument(
+        "--check-filing-decision",
+        action="store_true",
+        dest="check_filing_decision",
+        help=(
+            "also re-read the task issue and report any divergence from the "
+            "filing decision this run recorded; makes up to two network "
+            "requests, which plain verify never does"
+        ),
     )
     sp.set_defaults(fn=cmd_verify)
 

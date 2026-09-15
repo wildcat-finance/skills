@@ -1,0 +1,397 @@
+{
+  "candidates": [
+    {
+      "id": "rule-table",
+      "summary": "One artefact. A confirmed entry carries `confirmed_by`, a person, and may carry `rule`, an id into a set-level `rules` table that holds each rule's text and who stated it. The reconciler refuses a confirmed entry with no person, a rule id the table does not hold, and an unconfirmed entry carrying either field."
+    },
+    {
+      "id": "inline-attribution",
+      "summary": "One artefact. A confirmed entry carries `confirmed_by`, a person, and `rule_text`, the rule's wording written out on the entry itself. No table: every entry is self-contained and every entry confirmed under one rule repeats its text."
+    },
+    {
+      "id": "attestation-ledger",
+      "summary": "Two artefacts. Entries keep the `confirmed` boolean; a separate confirmations file holds attestations, each naming a person, a rule and the items it covers. The reconciler joins the two and refuses a confirmed entry no attestation names."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "no-attribution-drafted",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "vocabulary-unchanged",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "prior-sets-refuse-by-name",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "confirmed-entries-preserved",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "reviewer-actions-per-item",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "reviewer-artefacts",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "rule-statements-on-pinned-set",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "unattributed-confirmation-refused",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "attribution-preserved-on-regeneration",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "pinned-confirmations-attributed",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "rule-table",
+      "criterion": "no-attribution-drafted",
+      "report": {
+        "path": "reports/selection/rule-table-no-attribution-drafted.json",
+        "sha256": "01caf1c92c7bf9ddfe0684dd00a2dc793f55b763d0e2e4cd516c69ae9d51673a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "rule-table",
+      "criterion": "vocabulary-unchanged",
+      "report": {
+        "path": "reports/selection/rule-table-vocabulary-unchanged.json",
+        "sha256": "f6e78b5304499a3b8a38bcd5ceea59d73f9d9e2a835f53598b3694b1fe1e1618"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "rule-table",
+      "criterion": "prior-sets-refuse-by-name",
+      "report": {
+        "path": "reports/selection/rule-table-prior-sets-refuse-by-name.json",
+        "sha256": "80a9fff45017132f6475ed4e2464fd5b6ee517dff08e089dd2db49b5d2c23d0e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "rule-table",
+      "criterion": "confirmed-entries-preserved",
+      "report": {
+        "path": "reports/selection/rule-table-confirmed-entries-preserved.json",
+        "sha256": "f276052b912cbbb2e4867685a84d8db8e1c441994c4e46537b261239753421fa"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "rule-table",
+      "criterion": "reviewer-actions-per-item",
+      "report": {
+        "path": "reports/selection/rule-table-reviewer-actions-per-item.json",
+        "sha256": "275f9b74c4860c6ee23bd32996fb94c5063e44bcb3c5b0252143614229da61ae"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "rule-table",
+      "criterion": "reviewer-artefacts",
+      "report": {
+        "path": "reports/selection/rule-table-reviewer-artefacts.json",
+        "sha256": "842facb9260c3bd65af407d5aaa4673cae344a0362a9bc93efbbb25bf658b81e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "rule-table",
+      "criterion": "rule-statements-on-pinned-set",
+      "report": {
+        "path": "reports/selection/rule-table-rule-statements-on-pinned-set.json",
+        "sha256": "5f4ed19a82cba1e9a09c483bb3e6f6784fae965341ef98a361821ff52f6062fe"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "rule-table",
+      "criterion": "unattributed-confirmation-refused",
+      "report": "reports/conformance/rule-table-unattributed-confirmation-refused.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "rule-table",
+      "criterion": "attribution-preserved-on-regeneration",
+      "report": "reports/conformance/rule-table-attribution-preserved-on-regeneration.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "rule-table",
+      "criterion": "pinned-confirmations-attributed",
+      "report": "reports/conformance/rule-table-pinned-confirmations-attributed.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "no-attribution-drafted",
+      "report": {
+        "path": "reports/selection/inline-attribution-no-attribution-drafted.json",
+        "sha256": "ab7447907aaaeac9163a0edb2f7bba88ea559e255716d0f0d6cdd6d8f03244e0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "vocabulary-unchanged",
+      "report": {
+        "path": "reports/selection/inline-attribution-vocabulary-unchanged.json",
+        "sha256": "5bdf2baaeb586299d5a679ec2880cce1295fd2197107fb9a924a809e7d3a4024"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "prior-sets-refuse-by-name",
+      "report": {
+        "path": "reports/selection/inline-attribution-prior-sets-refuse-by-name.json",
+        "sha256": "da00fe5b5ea4381622e1e655106128cc5e2e81b5886a72a887ba420c6d0a4361"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "confirmed-entries-preserved",
+      "report": {
+        "path": "reports/selection/inline-attribution-confirmed-entries-preserved.json",
+        "sha256": "9a55355aac37bbe772225a659c308d31c3f629ece67f5a150159235359db2048"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "reviewer-actions-per-item",
+      "report": {
+        "path": "reports/selection/inline-attribution-reviewer-actions-per-item.json",
+        "sha256": "443bfcd06283ab865e8d5ceb11967366082f835b3bbe57a950d3533109fd3e44"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "reviewer-artefacts",
+      "report": {
+        "path": "reports/selection/inline-attribution-reviewer-artefacts.json",
+        "sha256": "b2911d7a4eebec0cab70774916ec123f6dcb7cbb27df59f5271af777ab97eaab"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-attribution",
+      "criterion": "rule-statements-on-pinned-set",
+      "report": {
+        "path": "reports/selection/inline-attribution-rule-statements-on-pinned-set.json",
+        "sha256": "905395ac4024796457d04c40d5374e8a494da1eeb9abb9a5fe85cf3e7855a8fc"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "inline-attribution",
+      "criterion": "unattributed-confirmation-refused",
+      "report": "reports/conformance/inline-attribution-unattributed-confirmation-refused.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "inline-attribution",
+      "criterion": "attribution-preserved-on-regeneration",
+      "report": "reports/conformance/inline-attribution-attribution-preserved-on-regeneration.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "inline-attribution",
+      "criterion": "pinned-confirmations-attributed",
+      "report": "reports/conformance/inline-attribution-pinned-confirmations-attributed.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "no-attribution-drafted",
+      "report": {
+        "path": "reports/selection/attestation-ledger-no-attribution-drafted.json",
+        "sha256": "3a5040d73309190379c0263990b84c6f2958002fcfb398a4df940d51ecc36ea2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "vocabulary-unchanged",
+      "report": {
+        "path": "reports/selection/attestation-ledger-vocabulary-unchanged.json",
+        "sha256": "5babe226da0177854137234b62c9c46bf3c44d335f970fcc9d58172fafe6ceb8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "prior-sets-refuse-by-name",
+      "report": {
+        "path": "reports/selection/attestation-ledger-prior-sets-refuse-by-name.json",
+        "sha256": "1b9f921d423e85d3b6647691b58d39295aebb83415e916b9089169aac1d3110c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "confirmed-entries-preserved",
+      "report": {
+        "path": "reports/selection/attestation-ledger-confirmed-entries-preserved.json",
+        "sha256": "31bde3c362ed4b710c2829da894f1f45f90f1684d1a65cc48c80bc9825519886"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "reviewer-actions-per-item",
+      "report": {
+        "path": "reports/selection/attestation-ledger-reviewer-actions-per-item.json",
+        "sha256": "d93ec909436759b39b5ae72e054f70f03292580f3512a152641b2ff42b58be49"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "reviewer-artefacts",
+      "report": {
+        "path": "reports/selection/attestation-ledger-reviewer-artefacts.json",
+        "sha256": "63869bb4faf02ef21f2fb4258a0907ee3ac9f31776d836af8eeafe184a77ca74"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "attestation-ledger",
+      "criterion": "rule-statements-on-pinned-set",
+      "report": {
+        "path": "reports/selection/attestation-ledger-rule-statements-on-pinned-set.json",
+        "sha256": "6420f9b13598e51ba67605b4d7026828ce18a206b2ef09df5c53eae55bcb6122"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "attestation-ledger",
+      "criterion": "unattributed-confirmation-refused",
+      "report": "reports/conformance/attestation-ledger-unattributed-confirmation-refused.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py reconcile --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "attestation-ledger",
+      "criterion": "attribution-preserved-on-regeneration",
+      "report": "reports/conformance/attestation-ledger-attribution-preserved-on-regeneration.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py propose --check",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "attestation-ledger",
+      "criterion": "pinned-confirmations-attributed",
+      "report": "reports/conformance/attestation-ledger-pinned-confirmations-attributed.json",
+      "resolver": "python3 plugins/dokimasia/scripts/dokimasia.py demonstrate --check",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "rule-table",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

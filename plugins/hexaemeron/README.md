@@ -7,9 +7,9 @@
 
 Hexaemeron carries an explicit, receipted delivery from study to one merged change while keeping every controller, worker, phase discipline, prose mask, and security tool inside its own authority.
 
-**Current frontier.** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
+**Current frontier.** every delegated next envelope carries a deterministic fiat-task-identity/v1 handle naming the run's task, phase and role, and next --task-handle refuses a stale, malformed or delegate-less handle before any packet is emitted; closed audit history still ships in the tree as frozen prose, and an audit round has no field for its evidence, which lands in Leads not pursued.
 
-**Next Fiat job.** Use /hexaemeron:fiat to complete skills#363 by binding every Fiat delegation task identity to the current issue or topic, step number and role, refusing or replacing a stale reused handle; accept it only when issue N cannot retain issue M in its visible name, all four workers expose current deterministic identities, resume and post-compaction reconstruction preserve them, and an executable regression rejects stale reuse. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to complete skills#1212 by moving closed audit history off the tree, keeping every moved file by SHA-256 with a per-run index, splitting an Evidence field out of Leads not pursued and making a study name what it read; accept it only when audit/ on main holds the manifest, the index and the open runs' logs only, every manifest entry verifies at its locator, audit_synopsis.py --check . exits 0 and renders every index deterministically, one Fiat run completes with Evidence records its receipts bind, and a study cites what it opened, searched and fetched. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 Let there be light.
@@ -18,8 +18,13 @@ Let there be light.
 
 Use Hexaemeron when you want one repository issue carried through the complete
 controlled delivery, not merely edited. Its Fiat controller orders study,
-runbook, implementation, audit, prose, push, and integration, and records each
-accepted transition in durable state.
+runbook, inoculation, implementation, audit, prose, push, and integration, and
+records each accepted transition in durable state.
+
+Inoculation is the boundary before any product edit. A step with a source-bound
+known failure assigned to it must retain that failure's guard evidence on the
+exact unfixed parent first, and a step with no assigned failure must record an
+explicit claim saying so. An empty list closes neither.
 
 Fiat is explicit-only. It does not start because a task sounds like delivery.
 Its checkpoints survive local context loss at completed boundaries; they are
@@ -45,10 +50,10 @@ report, and verify the path from the original inputs. It cannot select work,
 steer a worker, file an issue, or dispatch Fiat.
 
 One explicit Fiat request takes a topic through a study and runbook, then
-implements, audits, documents, pushes, and integrates each runbook step. The
-steps stack and the complete stack lands on the base in one merge. Every phase
-leaves a receipt in a hash-chained ledger inside a dedicated worktree, so the
-same local run can be verified and resumed after context loss.
+inoculates, implements, audits, documents, pushes, and integrates each runbook
+step. The steps stack and the complete stack lands on the base in one merge.
+Every phase leaves a receipt in a hash-chained ledger inside a dedicated
+worktree, so the same local run can be verified and resumed after context loss.
 
 Named for the six days of ordered creation from a void to finished work,
 then rest. The entry skill is `fiat`, so the invocation is
@@ -79,6 +84,7 @@ exactly one merge per run.
 - the [`imprimatur`](./skills/imprimatur) three-tier prose lint and the [`vulgate`](./skills/vulgate) voice mask, invokable on their own;
 - [`kronos`](./skills/kronos), which ranks eligible held frontier jobs and loops complete Fiat runs until none remain;
 - the phase disciplines, of which six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer and whether the evidence due for their chosen design is present, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
+- the inoculation contract that puts a source-bound guard before any product edit, with a disposable end-to-end demonstration of it ([`proof.py`](./docs/known-failure-inoculation/proof.py) and its checked [`proof.md`](./docs/known-failure-inoculation/proof.md)); that demonstration is the only evidence that the checked-in controller enforces the contract, because the delivery that built it ran on an older controller through a manual bootstrap procedure;
 - the Pashov Audit Group suite vendored verbatim (MIT; `LICENSE` and `NOTICE.md` in each skill directory);
 - Codex metadata for explicit or automatic invocation; and
 - the controller, contract, practice-check and lint test suite, plus a fuzz-audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) covering the controller's own surfaces.
@@ -151,7 +157,7 @@ hexctl done <phase> ...     # receipt a phase; validation lives here
 hexctl audit-round --audit-filter sapheneia:sapheneia ... # record one shaped security round
 hexctl record <key> <val>   # named receipts (resolved suite, run context)
 hexctl halt / resume        # put a stop itself on the ledger
-hexctl reset                # archive a completed run and clear active state
+hexctl reset                # archive a completed or halted run and clear active state
 hexctl verify               # check state shape, then prove chain and state integrity
 ```
 
@@ -170,9 +176,10 @@ checkout keeps one breadcrumb line per live run, and `status` or `next` there
 name the tree and the exact `--dir` to use. A target that is not a repository, an
 occupied or escaping path, a branch already checked out, or a failing
 `git worktree add` each refuse by name before anything is written; there is no
-in-place fallback. `reset` archives a completed run into the origin checkout and
-removes the tree when git can do it without force, keeping any tree that holds
-work.
+in-place fallback. `reset` archives a completed or halted run into the origin
+checkout and removes the tree when git can do it without force, keeping any tree
+that holds work. A halted run's archive carries a `retire` ledger entry with the
+phase and reason it stopped at.
 
 Mutating commands hold a kernel lock for their whole run. Separate runs get
 separate trees and separate state, so the lock only bites when a second agent
@@ -323,9 +330,10 @@ The four workers isolate bulky phases without inheriting controller authority:
   returns the file count and skill identities.
 
 Fiat can do the same packet inline when isolated workers are unavailable. It
-alone receipts their results and chooses the next directive. The current open
-frontier is the visible identity of a reused worker handle: callers must reject
-one that still names an older issue, step, or role.
+alone receipts their results and chooses the next directive. Every delegated
+envelope names its worker's handle, and before continuing an existing worker
+the orchestrator runs `next --task-handle`, which refuses a handle that names
+an older issue, step or role.
 
 ## TESTS
 
@@ -339,3 +347,10 @@ gating and round caps, fixes evidence, task-issue comment publication, prose
 skill enforcement, halt/resume, ledger
 tamper detection, concurrent writer exclusion, crash recovery, and the
 Wildcat marketplace boundary.
+
+## CHECKED GITHUB APP ISSUES
+
+Phylax ships the [bounded publisher](skills/phylax/references/github-issue-publisher-v1.md)
+and [macOS deployment kit](skills/phylax/deployment/macos/README.md). Its 32
+injected conformance cases retain the exact #855 refusal and separate component
+success from live installation and isolation, which remain unestablished.

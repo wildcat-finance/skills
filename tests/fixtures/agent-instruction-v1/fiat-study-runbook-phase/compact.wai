@@ -1,6 +1,6 @@
 WAI1
 D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
-  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:74963451a207ca7b9aeb9f025c5704e9c1ed3ac13070f56f948c78e2c71d5658
+  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:d5887bcb047a544f5620720f255e6f936ef58e5625449eff8f10834b0b5e83b7
   H i9:fiat-loop t8:The\sloop
     R i11:study-phase t115:Research\sthe\stopic\sand\swrite\sthe\sstudy\sand\schecked\sdesign\srecord\sunder\sProtasis,\sthen\sreceipt\sthem\swith\sdone\sstudy.
     R i24:marketplace-reassessment t306:After\sa\ssuccessful\sstudy\sreceipt,\sperform\sthe\spost-spec\smarketplace\sreassessment\sbefore\sasking\sfor\sthe\srunbook\sdirective.\sThis\sis\sthe\sfirst\spoint\sat\swhich\sa\smissing\smarketplace\splugin\smay\sbe\sinstalled.\sRefresh\sskills\sonly\safter\sselected\sinstalls\sfinish,\sand\sresume\sin\sa\snew\schat\swhen\sthe\shost\srequires\sone.
@@ -9,14 +9,19 @@ D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
       W t24:the\sstudy\sreceipt\sexists
     R i15:implement-phase t104:Build\sthe\sselected\sdesign\sfor\sthe\ssource-bound\srunbook\sstep,\sthen\sreceipt\sits\sbranch,\scommit,\sand\stests.
     X i16:receipt-boundary t120:A\sphase\swhose\sreceipt\scommand\sexits\snon-zero\sis\snot\sdone;\srepair\sthe\snamed\sfailure\sbefore\sasking\sfor\sthe\snext\sdirective.
+    R i15:inoculate-phase t216:For\sa\scapture-aware\sStep,\sretain\severy\sassigned\ssource-bound\sparent\sguard\sbefore\sproduct\sediting\sand\sreceipt\sthe\scomplete\sinoculation\sevidence;\sa\srunbook\sreceipt\swithout\sa\scapture\skeeps\sthe\simplementation-first\spath.
+      W t53:the\sreceipted\srunbook\scarries\sa\sknown-failure\scapture
+  < i15:inoculate-phase i15:implement-phase
   < i24:marketplace-reassessment i13:runbook-phase
-  < i13:runbook-phase i15:implement-phase
+  < i13:runbook-phase i15:inoculate-phase
   < i11:study-phase i24:marketplace-reassessment
   < i11:study-phase i13:runbook-phase
-  B i4:fiat i9:fiat-loop 18445 18456 i8:shoggoth
-  B i4:fiat i24:fiat-study-runbook-phase 18445 18456 i8:shoggoth
-  B i4:fiat i11:study-phase 18699 18857 i8:shoggoth
-  B i4:fiat i13:runbook-phase 18858 19000 i8:shoggoth
-  B i4:fiat i15:implement-phase 19001 19176 i8:shoggoth
-  B i4:fiat i16:receipt-boundary 22174 22315 i8:shoggoth
-  B i4:fiat i24:marketplace-reassessment 22317 22771 i8:shoggoth
+  B i4:fiat i9:fiat-loop 18784 18795 i8:shoggoth
+  B i4:fiat i24:fiat-study-runbook-phase 18784 18795 i8:shoggoth
+  B i4:fiat i11:study-phase 19038 19196 i8:shoggoth
+  B i4:fiat i13:runbook-phase 19197 19339 i8:shoggoth
+  B i4:fiat i15:inoculate-phase 19340 19542 i8:shoggoth
+  B i4:fiat i15:implement-phase 19543 19718 i8:shoggoth
+  B i4:fiat i16:receipt-boundary 22716 22857 i8:shoggoth
+  B i4:fiat i24:marketplace-reassessment 22859 23313 i8:shoggoth
+  B i4:fiat i15:inoculate-phase 28899 29736 i8:shoggoth

@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
+import posixpath
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -33,6 +35,12 @@ PACKAGE_AUTHORED = (
     Path(".agents/skills/promise-machine/scripts/verify_runtime.py"),
 )
 PORTABLE_BOUNDARY = ".horos/boundary.json"
+MAX_RUNTIME_BYTES = 25 * 1024 * 1024
+MIN_BYTE_HEADROOM = 5 * 1024 * 1024
+PORTRAIT_TRANSFORM = "remove-decorative-portrait-images/v1"
+EVALUATION_TRANSFORM = "replay-unchanged-evaluation-prompts/v1"
+EVALUATION_RUN = "docs/promise-machine/obligation-gates/evaluation-run.json"
+EVALUATION_ANSWERS = "docs/promise-machine/obligation-gates/evaluation-answers.json"
 
 ROOT_FILES = (
     Path(".python-version"),
@@ -46,9 +54,15 @@ ROOT_FILES = (
     Path("repo_contract.py"),
     Path("schemas/promise-machine-run-observation-capture-v1.schema.json"),
     Path("schemas/promise-machine-run-observation-v1.schema.json"),
+    Path("schemas/promise-machine-semantic-v1.schema.json"),
     Path("scripts/promise_machine.py"),
+    Path("scripts/verify_vendored_provenance.py"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
+    Path("tests/promise_evaluation_driver.py"),
+    Path("tests/promise_machine_coverage.json"),
+    Path("tests/promise_machine_obligations.json"),
+    Path("tests/promise_machine_id_history.json"),
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
     Path("docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md"),
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
@@ -56,9 +70,81 @@ ROOT_FILES = (
     Path("docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md"),
     Path("docs/decisions/ADR-078-echo-fiat-required-as-a-filer-set-label.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
+    Path("docs/promise-machine/obligation-gates/evaluation-answers.json"),
+    Path("docs/promise-machine/obligation-gates/evaluation-run.json"),
+)
+
+OBLIGATION_FIXTURE_FILES = (
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-contract-identity.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-declaration-fields.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-governing-principle.json"
+    ),
+    Path(
+        "tests/fixtures/promise-machine/obligations/law-required-sections.json"
+    ),
+)
+
+EVALUATION_FIXTURE_FILES = (
+    Path("tests/fixtures/promise-machine/evaluation/prompt-template.txt"),
+)
+
+SEMANTIC_FIXTURE_FILES = tuple(
+    Path(path)
+    for path in (
+        "tests/fixtures/promise-machine/consequences/authority.json",
+        "tests/fixtures/promise-machine/composition/cases.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
+        "tests/fixtures/promise-machine/consequences/declarations/level-3.json",
+        "tests/fixtures/promise-machine/consequences/evidence/content.json",
+        "tests/fixtures/promise-machine/consequences/evidence/independent.json",
+        "tests/fixtures/promise-machine/consequences/evidence/negative.json",
+        "tests/fixtures/promise-machine/consequences/evidence/provenance.json",
+        "tests/fixtures/promise-machine/consequences/evidence/recovery.json",
+        "tests/fixtures/promise-machine/consequences/evidence/structure.json",
+        "tests/fixtures/promise-machine/consequences/evidence/tests.json",
+        "tests/fixtures/promise-machine/consequences/level-0.json",
+        "tests/fixtures/promise-machine/consequences/level-1.json",
+        "tests/fixtures/promise-machine/consequences/level-2.json",
+        "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+        "tests/fixtures/promise-machine/consequences/level-3.json",
+        "tests/fixtures/promise-machine/consequences/unknown.json",
+        "tests/fixtures/promise-machine/exceptions/expired.json",
+        "tests/fixtures/promise-machine/exceptions/reason.md",
+        "tests/fixtures/promise-machine/exceptions/valid.json",
+        "tests/fixtures/promise-machine/findings/missing-recovery.json",
+        "tests/fixtures/promise-machine/imports/subprocess.json",
+        "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
+    )
 )
 
 PORTABLE_TEST_FILES = (
+    Path("plugins/alexandria/tests/test_release.py"),
+    Path("plugins/ariadne/tests/test_examples.py"),
+    Path("plugins/ariadne/tests/test_gates.py"),
+    Path("plugins/berean/tests/test_corpus.py"),
+    Path("plugins/berean/tests/test_examples.py"),
+    Path("plugins/berean/tests/test_promote.py"),
+    Path("plugins/hexaemeron/tests/test_hexctl.py"),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json"
+    ),
+    Path("plugins/hexaemeron/tests/test_run_observation_binding.py"),
+    Path("plugins/lazarus/tests/test_capture.py"),
+    Path("plugins/lazarus/tests/test_verifier.py"),
+    Path("plugins/lemma/tests/test_markdown.py"),
+    Path("plugins/sapheneia/tests/fixtures/promise-machine/cases.json"),
+    Path("plugins/synkrisis/tests/test_cohort.py"),
+    Path("plugins/synkrisis/tests/test_verify.py"),
     Path(
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json"
     ),
@@ -87,9 +173,27 @@ PORTABLE_TEST_FILES = (
     Path(
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     ),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/hostile-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-body.txt'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-source.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-title.txt'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/queue-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/rejection-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/runtime-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/valid-request.json'),
 )
 
 OMISSIONS = (
+    {
+        "pattern": "assets/characters/*.{png,webp}",
+        "reason": "decorative portraits remain in the source checkout",
+    },
+    {
+        "pattern": "plugins/*/assets/characters/*.{png,webp}",
+        "reason": "decorative portraits remain in the source checkout",
+    },
     {
         "pattern": "plugins/*/.claude-plugin/**",
         "reason": "host discovery manifests are not part of the portable runtime",
@@ -107,8 +211,8 @@ OMISSIONS = (
         "exceptions": [path.as_posix() for path in PORTABLE_TEST_FILES],
         "reason": (
             "development suites and other fixtures remain in the full source "
-            "checkout; the listed closed model-proxy-v1 fixture set closes the "
-            "portable commands and vectors advertised by the copied reference"
+            "checkout; the listed composition evidence sources and closed "
+            "model-proxy-v1 fixture set close the portable gates and commands"
         ),
     },
     {
@@ -185,9 +289,22 @@ def _omitted(relative: Path) -> bool:
     return example and len(parts) >= 5 and parts[4] in {"input", "release", "source"}
 
 
-def source_files(root: Path) -> list[Path]:
-    """Return the exact canonical files copied into the portable runtime."""
+def decorative_portrait(relative: Path) -> bool:
+    """Recognise only direct PNG/WebP children of the two portrait homes."""
+    parts = relative.parts
+    return relative.suffix in {".png", ".webp"} and (
+        len(parts) == 3 and parts[:2] == ("assets", "characters")
+        or len(parts) == 5 and parts[0] == "plugins"
+        and parts[2:4] == ("assets", "characters")
+    )
+
+
+def _source_candidates(root: Path) -> list[Path]:
+    """Return the previous package boundary before decorative omission."""
     selected = set(ROOT_FILES)
+    selected.update(OBLIGATION_FIXTURE_FILES)
+    selected.update(EVALUATION_FIXTURE_FILES)
+    selected.update(SEMANTIC_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
     selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
     ordered = sorted(selected, key=lambda path: path.as_posix())
@@ -200,8 +317,115 @@ def source_files(root: Path) -> list[Path]:
     return ordered
 
 
+def source_files(root: Path) -> list[Path]:
+    """Return authored inputs after the declared decorative omission."""
+    return [path for path in _source_candidates(root) if not decorative_portrait(path)]
+
+
+def transform_portrait_images(relative: Path, data: bytes, omitted: set[str]) -> tuple[bytes, list[dict]]:
+    """Remove only inline images resolving to an actually omitted portrait.
+
+    The recorded source byte ranges permit independent replay. Every byte
+    outside those ranges stays unchanged; remote images and ordinary links
+    are not this transform's input. See adr/omit-portable-decorative-portraits.
+    """
+    if relative.suffix != ".md":
+        return data, []
+    removed = []
+    pattern = re.compile(
+        rb"!\[[^\]\r\n]*\]\(([^)\r\n]+)\)|<img\b(?:[^>\"']|\"[^\"]*\"|'[^']*')*>",
+        re.IGNORECASE,
+    )
+    for match in pattern.finditer(data):
+        destination = match.group(1)
+        if destination is None:
+            attributes = re.finditer(
+                rb"\s+([A-Za-z_:][A-Za-z0-9_.:-]*)(?:\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+)))?",
+                match.group(0)[4:-1],
+            )
+            for attribute in attributes:
+                if attribute.group(1).lower() == b"src":
+                    destination = attribute.group(2) if attribute.group(2) is not None else attribute.group(3)
+                    break
+            if destination is None:
+                continue
+        try:
+            link = destination.decode("utf-8")
+        except UnicodeError:
+            continue
+        if ":" in link or link.startswith(("/", "#")) or "?" in link or "#" in link:
+            continue
+        target = posixpath.normpath(posixpath.join(relative.parent.as_posix(), link))
+        if target in omitted:
+            removed.append({"start": match.start(), "end": match.end(), "target": target})
+    result = data
+    for span in reversed(removed):
+        result = result[:span["start"]] + result[span["end"]:]
+    return result, removed
+
+
+def require_byte_headroom(total_bytes: int) -> None:
+    """Refuse a runtime that spends any of the reserved five MiB margin."""
+    if total_bytes > MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM:
+        raise PackageError(
+            f"portable runtime uses {total_bytes} bytes; maximum with "
+            f"{MIN_BYTE_HEADROOM} bytes headroom is {MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM}"
+        )
+
+
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def derive_portable_evaluation(root: Path, payload: dict[str, bytes]) -> tuple[bytes, dict]:
+    """Replay the owner tally only when every packaged prompt is unchanged."""
+    owner_path = root / "tests/promise_evaluation_driver.py"
+    spec = importlib.util.spec_from_file_location("portable_evaluation_owner", owner_path)
+    owner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(owner)
+    try:
+        with tempfile.TemporaryDirectory(prefix="promise-machine-evaluation.") as raw:
+            work = Path(raw).resolve()
+            candidate = work / "runtime"
+            candidate.mkdir()
+            inputs = {path.relative_to(root).as_posix() for path in owner.input_files(root)}
+            inputs.update((EVALUATION_RUN, EVALUATION_ANSWERS))
+            for name in sorted(inputs):
+                if name not in payload:
+                    raise PackageError(f"portable evaluation input is absent: {name}")
+                target = candidate / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(payload[name])
+            source_packet = work / "source-packet"
+            derived_packet = work / "derived-packet"
+            source_manifest = owner.emit(source_packet, root=root)
+            owner.verify(source_packet, root / EVALUATION_ANSWERS, root / EVALUATION_RUN, root=root)
+            derived_manifest = owner.emit(derived_packet, root=candidate)
+            if source_manifest["cases"] != derived_manifest["cases"]:
+                raise PackageError("portable evaluation prompts changed; historical answers cannot be replayed")
+            prompts = []
+            for case in source_manifest["cases"]:
+                source_prompt = (source_packet / case["prompt"]).read_bytes()
+                if source_prompt != (derived_packet / case["prompt"]).read_bytes():
+                    raise PackageError(f"portable evaluation prompt changed: {case['id']}")
+                prompts.append({"case": case["id"], "sha256": _digest(source_prompt)})
+            original = json.loads((root / EVALUATION_RUN).read_bytes())
+            output = work / "evaluation-run.json"
+            derived = owner.tally(
+                derived_packet, candidate / EVALUATION_ANSWERS, output,
+                original["model"], original["date"], root=candidate,
+            )
+            if any(original[key] != derived[key] for key in original if key != "tree_sha256"):
+                raise PackageError("portable evaluation tally changed more than the source tree binding")
+            return output.read_bytes(), {
+                "transform": EVALUATION_TRANSFORM,
+                "generated_by": "tests/promise_evaluation_driver.py",
+                "unchanged_prompts": prompts,
+                "answers_sha256": _digest((root / EVALUATION_ANSWERS).read_bytes()),
+                "new_model_observation": False,
+            }
+    except owner.DriverError as error:
+        raise PackageError(f"portable evaluation derivation refused: {error}") from error
 
 
 def _render_portable_boundary(root: Path, payload: dict[str, bytes]) -> bytes:
@@ -237,9 +461,16 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
     payload: dict[str, bytes] = {}
     rows = []
     total_bytes = 0
-    for relative in source_files(root):
-        data = (root / relative).read_bytes()
+    candidates = _source_candidates(root)
+    omitted = {path.as_posix() for path in candidates if decorative_portrait(path)}
+    omitted_files = []
+    for relative in candidates:
+        source = (root / relative).read_bytes()
         name = relative.as_posix()
+        if name in omitted:
+            omitted_files.append({"path": name, "bytes": len(source), "sha256": _digest(source)})
+            continue
+        data, removed = transform_portrait_images(relative, source, omitted)
         payload[name] = data
         total_bytes += len(data)
         rows.append(
@@ -250,6 +481,21 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
                 "source": name,
             }
         )
+        if removed:
+            rows[-1].update(
+                source_sha256=_digest(source), source_bytes=len(source),
+                transform=PORTRAIT_TRANSFORM, removed_images=removed,
+            )
+    source_evaluation = payload[EVALUATION_RUN]
+    evaluation, provenance = derive_portable_evaluation(root, payload)
+    payload[EVALUATION_RUN] = evaluation
+    total_bytes += len(evaluation) - len(source_evaluation)
+    evaluation_row = next(row for row in rows if row["path"] == EVALUATION_RUN)
+    evaluation_row.update(
+        bytes=len(evaluation), sha256=_digest(evaluation),
+        source_bytes=len(source_evaluation), source_sha256=_digest(source_evaluation),
+        **provenance,
+    )
     boundary = _render_portable_boundary(root, payload)
     payload[PORTABLE_BOUNDARY] = boundary
     total_bytes += len(boundary)
@@ -263,6 +509,7 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
         }
     )
     rows.sort(key=lambda row: row["path"])
+    require_byte_headroom(total_bytes)
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "contract": CONTRACT_ID,
@@ -270,6 +517,12 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
         "file_count": len(rows),
         "total_bytes": total_bytes,
         "omissions": list(OMISSIONS),
+        "omitted_files": omitted_files,
+        "byte_budget": {
+            "cap": MAX_RUNTIME_BYTES,
+            "minimum_headroom": MIN_BYTE_HEADROOM,
+            "headroom": MAX_RUNTIME_BYTES - total_bytes,
+        },
         "files": rows,
     }
     encoded = (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
@@ -567,7 +820,7 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
         source = root / relative
         if source.is_symlink() or not source.is_file():
             raise PackageError(f"authored package file is absent: {relative}")
-        files[relative.as_posix()] = source.read_bytes()
+        files[relative.as_posix()] = payload.get(relative.as_posix(), source.read_bytes())
         modes[relative.as_posix()] = source.stat().st_mode & 0o777
     runtime = PACKAGE_ROOT / "runtime"
     for relative, data in payload.items():
@@ -581,6 +834,7 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
     files[(runtime / "MANIFEST.json").as_posix()] = manifest
     files[SKILLS_CONFIG.as_posix()] = _package_config()
     files["README.md"] = _package_readme(commit)
+    require_byte_headroom(sum(len(data) for data in files.values()))
     return files, modes
 
 

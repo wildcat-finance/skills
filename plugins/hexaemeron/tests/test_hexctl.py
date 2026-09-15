@@ -69,6 +69,53 @@ except ImportError:
 
 
 class TestLifecycle(HexctlCase):
+    def test_inoculate_is_registered_before_implement(self):
+        controller = hexctl_module()
+
+        self.assertLess(
+            controller.STEP_PHASES.index("inoculate"),
+            controller.STEP_PHASES.index("implement"),
+        )
+        self.assertIs(
+            controller.DONE_HANDLERS["inoculate"], controller.done_inoculate
+        )
+
+    def test_retain_guard_is_a_writer_locked_command(self):
+        controller = hexctl_module()
+        parser = controller.build_parser()
+        args = parser.parse_args(
+            [
+                "retain-guard",
+                "--finding-id",
+                "kf-fixture-01",
+                "--guard-commit",
+                "a" * 40,
+            ]
+        )
+
+        self.assertIs(args.fn, controller.cmd_retain_guard)
+        self.assertIn("cmd_retain_guard", controller.MUTATING)
+        self.assertNotIn("cmd_status", controller.MUTATING)
+        self.assertNotIn("cmd_next", controller.MUTATING)
+
+    def test_guard_command_parser_requires_one_whole_report_argument(self):
+        controller = hexctl_module()
+        self.assertEqual(
+            ["python3", "guard.py", "--report", "{report}"],
+            controller._guard_test_argv(
+                "python3 guard.py --report {report}"
+            ),
+        )
+        for command in (
+            "python3 guard.py",
+            "python3 guard.py --report prefix-{report}",
+            "python3 guard.py {report} {report}",
+            "python3  guard.py --report {report}",
+        ):
+            with self.subTest(command=command):
+                with self.assertRaises(ValueError):
+                    controller._guard_test_argv(command)
+
     def test_init_creates_state_ledger_and_gitignore(self):
         self.init()
         root = os.path.join(self.target, ".hexaemeron")
@@ -1312,15 +1359,31 @@ class TestStudyAmendments(HexctlCase):
 try:
     from .host_identity_cases import build_host_identity_cases
     from .replacement_object_cases import build_replacement_object_cases
+    from .study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from .routed_filing_decision_cases import build_routed_filing_decision_cases
 except ImportError:
     from host_identity_cases import build_host_identity_cases
     from replacement_object_cases import build_replacement_object_cases
+    from study_amendment_rebind_cases import build_study_amendment_rebind_cases
+    from routed_filing_decision_cases import build_routed_filing_decision_cases
 
 
 HostIdentityRefusalCases, FooterReappearanceCases = build_host_identity_cases(
     globals()
 )
 (ReplacementObjectCases,) = build_replacement_object_cases(globals())
+(StudyAmendmentRebindCases,) = build_study_amendment_rebind_cases(globals())
+
+
+class StudyAmendmentRebindTests(StudyAmendmentRebindCases, HexctlCase):
+    """A study amendment rebinds or displaces each effective runbook amendment."""
+
+
+(RoutedFilingDecisionCases,) = build_routed_filing_decision_cases(globals())
+
+
+class RoutedFilingDecisionTests(RoutedFilingDecisionCases, HexctlCase):
+    """What `init` does when the issue already decided against a run."""
 
 
 class TestCommitVerification(
@@ -1330,9 +1393,7 @@ class TestCommitVerification(
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05
         for mode in (
-            "nonzero", "timeout", "overflow", "missing-trailer",
-            "duplicate-trailer", "host-author", "host-committer",
-            "host-coauthor", "host-byline", "range-confusion",
+            "nonzero", "timeout", "overflow", "range-confusion",
             "malformed-range", "missing-commit",
         ):
             with self.subTest(mode=mode):
@@ -1365,7 +1426,7 @@ class TestCommitVerification(
                 ("Laurence Day", "laurence@wildcat.finance"),
             )
 
-    def test_pull_request_refuses_host_author_and_byline(self):
+    def test_pull_request_accepts_attribution_author_and_byline(self):
         module = hexctl_module()
         url = "https://github.com/wildcat-finance/example/pull/1"
         branch = "fiat/run-step-1"
@@ -1374,7 +1435,6 @@ class TestCommitVerification(
         payload = self.fake_pr(url, branch, base, head)
         for mode in ("host-pr-author", "host-pr-byline"):
             with self.subTest(mode=mode):
-                error = StringIO()
                 with mock.patch.dict(
                     os.environ,
                     {
@@ -1382,17 +1442,16 @@ class TestCommitVerification(
                         "FAKE_GH_MODE": mode,
                         "FAKE_GH_PRS": json.dumps({url: payload}),
                     },
-                ), redirect_stderr(error):
-                    with self.assertRaises(SystemExit):
-                        module.inspect_pull_request(
-                            self.dir,
-                            url,
-                            expected_head=branch,
-                            expected_base=base,
-                            expected_head_sha=head,
-                            expected_merge_sha=None,
-                        )
-                self.assertIn("runtime", error.getvalue())
+                ):
+                    record = module.inspect_pull_request(
+                        self.dir,
+                        url,
+                        expected_head=branch,
+                        expected_base=base,
+                        expected_head_sha=head,
+                        expected_merge_sha=None,
+                    )
+                self.assertEqual(record["head_sha"], head)
 
     def test_local_success_checks_every_intermediate_commit(self):
         module = hexctl_module()
@@ -1517,13 +1576,9 @@ class TestMergedAttribution(HexctlCase):
     def test_attribution_negative_matrix_is_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         for mode, expected in (
-            ("attribution-host-account", "runtime host account"),
             ("attribution-account-not-object", "account is not an object"),
             ("attribution-null-account-object", "account login is not a string"),
             ("attribution-bad-login", "account login is malformed"),
-            ("attribution-host-author", "runtime host as author"),
-            ("attribution-host-committer-account", "runtime host account"),
-            ("attribution-host-committer", "runtime host"),
             ("attribution-missing-committer", "identity is not an object"),
             ("attribution-bad-committer-login", "account login is malformed"),
             ("attribution-missing-identity", "identity is not an object"),
@@ -1532,7 +1587,6 @@ class TestMergedAttribution(HexctlCase):
             ("attribution-spaced-email", "identity address is malformed"),
             ("attribution-long-email", "identity address is malformed"),
             ("attribution-missing-message", "commit message is missing"),
-            ("attribution-host-coauthor", "runtime host as co-author"),
             ("attribution-many-coauthors", "co-author trailers"),
         ):
             with self.subTest(mode=mode):
@@ -1888,6 +1942,14 @@ class TestMergedState(HexctlCase):
 
 
 class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
+    def setUp(self):
+        self.closed_process_environment = mock.patch.dict(os.environ, {}, clear=True)
+        self.closed_process_environment.start()
+        self.addCleanup(self.closed_process_environment.stop)
+        super().setUp()
+        fake_bin = self.env["PATH"].split(os.pathsep, 1)[0]
+        self.env["PATH"] = fake_bin + os.pathsep + os.defpath
+
     def to_push(self, base=None):
         self.to_steps(("Ship",), base=base)
         self.run_ctl(
@@ -2157,43 +2219,224 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("final recorded step merge", proc.stderr)
 
-    def prepare_run_sync(
-        self, sync_sha="7" * 40, base_sha="6" * 40, starting_base=None
-    ):
-        self.to_integrate(base=starting_base)
-        state = self.state()
-        final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
-        base_before = "4" * 40
-        self.fake_refs[state["run_branch"]] = sync_sha
-        self.fake_refs[self.integration_base(state)] = base_sha
-        self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_MERGE_BASE"] = base_before
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
-            {
-                f"{base_before}..{final_merge}": [
-                    "product.py",
-                    "shared.json",
-                ],
-                f"{base_before}..{base_sha}": [
-                    "shared.json",
-                    "upstream.py",
-                ],
-                f"{final_merge}..{sync_sha}": [
-                    "shared.json",
-                    "upstream.py",
-                ],
-            }
+    def native_git(self, *args, input_text=None, extra_env=None, cwd=None):
+        executable = shutil.which("git", path=os.defpath)
+        self.assertIsNotNone(executable)
+        proc = subprocess.run(
+            [executable, *args],
+            cwd=cwd or self.target,
+            input=input_text,
+            capture_output=True,
+            text=True,
+            env=dict(extra_env or {}),
         )
+        if proc.returncode:
+            self.fail(
+                f"native git {' '.join(args)} -> rc {proc.returncode}\n"
+                f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc.stdout.strip()
+
+    def native_commit(self, tree_parent, changes, *parents, message):
+        self.native_commit_number = getattr(self, "native_commit_number", 0) + 1
+        index = os.path.join(
+            self.dir, f"native-sync-index-{self.native_commit_number}"
+        )
+        index_environment = {"GIT_INDEX_FILE": index}
+        timestamp = 1000000000 + self.native_commit_number
+        identity_environment = {
+            "GIT_AUTHOR_NAME": "Fixture",
+            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+            "GIT_COMMITTER_NAME": "Fixture",
+            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            "GIT_AUTHOR_DATE": f"{timestamp} +0000",
+            "GIT_COMMITTER_DATE": f"{timestamp} +0000",
+        }
+        try:
+            self.native_git(
+                "read-tree", tree_parent, extra_env=index_environment
+            )
+            for path, content in sorted(changes.items()):
+                blob = self.native_git(
+                    "hash-object", "-w", "--stdin", input_text=content
+                )
+                self.native_git(
+                    "update-index",
+                    "--add",
+                    "--cacheinfo",
+                    "100644",
+                    blob,
+                    path,
+                    extra_env=index_environment,
+                )
+            tree = self.native_git(
+                "write-tree", extra_env=index_environment
+            )
+            parent_args = [
+                value for parent in parents for value in ("-p", parent)
+            ]
+            return self.native_git(
+                "commit-tree",
+                tree,
+                *parent_args,
+                input_text=message + "\n",
+                extra_env=identity_environment,
+            )
+        finally:
+            for suffix in ("", ".lock"):
+                try:
+                    os.unlink(index + suffix)
+                except FileNotFoundError:
+                    pass
+
+    def test_native_git_fixture_ignores_hostile_ambient_environment(self):
+        base = self.native_git("rev-parse", "HEAD")
+        objects = self.native_git("rev-parse", "--git-path", "objects")
+        if not os.path.isabs(objects):
+            objects = os.path.join(self.target, objects)
+        decoy = os.path.join(self.dir, "ambient-decoy.git")
+        origin = os.path.join(self.dir, "confined-origin.git")
+        self.native_git("init", "--bare", "--quiet", decoy)
+        hostile = {
+            "GIT_DIR": decoy,
+            "GIT_WORK_TREE": self.target,
+            "GIT_OBJECT_DIRECTORY": os.path.join(decoy, "objects"),
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES": objects,
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.hooksPath",
+            "GIT_CONFIG_VALUE_0": os.path.join(self.dir, "ambient-hooks"),
+            "GIT_REPLACE_REF_BASE": "refs/ambient-replace",
+            "GIT_NO_REPLACE_OBJECTS": "0",
+            "GIT_NO_LAZY_FETCH": "0",
+            "LD_PRELOAD": "",
+            "LD_LIBRARY_PATH": "",
+            "DYLD_INSERT_LIBRARIES": "",
+            "DYLD_LIBRARY_PATH": "",
+            "PYTHONPATH": os.path.join(self.dir, "ambient-python"),
+        }
+        calls = []
+        native_run = subprocess.run
+
+        def record_run(*args, **kwargs):
+            calls.append((args[0][1], dict(kwargs["env"])))
+            return native_run(*args, **kwargs)
+
+        with mock.patch.dict(os.environ, hostile, clear=False), \
+                mock.patch.object(subprocess, "run", side_effect=record_run):
+            commit = self.native_commit(
+                base,
+                {"confined.txt": "confined\n"},
+                base,
+                message="confined fixture commit",
+            )
+            self.native_git("init", "--bare", "--quiet", origin)
+            self.native_git(
+                "push", "--quiet", origin,
+                f"{commit}:refs/heads/confined",
+            )
+
+        index_keys = {"GIT_INDEX_FILE"}
+        identity_keys = {
+            "GIT_AUTHOR_NAME",
+            "GIT_AUTHOR_EMAIL",
+            "GIT_COMMITTER_NAME",
+            "GIT_COMMITTER_EMAIL",
+            "GIT_AUTHOR_DATE",
+            "GIT_COMMITTER_DATE",
+        }
+        expected_keys = {
+            "read-tree": index_keys,
+            "hash-object": set(),
+            "update-index": index_keys,
+            "write-tree": index_keys,
+            "commit-tree": identity_keys,
+            "init": set(),
+            "push": set(),
+        }
+        self.assertTrue(calls)
+        for command, environment in calls:
+            self.assertEqual(set(environment), expected_keys[command])
+        self.assertEqual(self.native_git("cat-file", "-t", commit), "commit")
+        self.assertEqual(
+            self.native_git(
+                "--git-dir", origin, "rev-parse", "refs/heads/confined"
+            ),
+            commit,
+        )
+        self.assertEqual(
+            self.native_git(
+                "--git-dir", decoy, "for-each-ref", "--format=%(refname)"
+            ),
+            "",
+        )
+
+    def publish_native_sync(self, state, sync_sha, base_sha):
+        run_branch = state["run_branch"]
+        integration_base = self.integration_base(state)
+        self.native_git(
+            "push",
+            "--quiet",
+            "--force",
+            "origin",
+            f"{sync_sha}:refs/heads/{run_branch}",
+            f"{base_sha}:refs/heads/{integration_base}",
+        )
+        self.fake_refs[run_branch] = sync_sha
+        self.fake_refs[integration_base] = base_sha
+        self.fake_parents[sync_sha] = [self.native_product_head, base_sha]
+
+    def prepare_run_sync(self, starting_base=None, *, wrong_parents=False):
+        self.to_merge_step(base=starting_base)
+        state = self.state()
+        self.native_base_before = self.native_git("rev-parse", "HEAD")
+        self.native_product_head = self.native_commit(
+            self.native_base_before,
+            {
+                "product.py": "product\n",
+                "shared.json": '{"side":"product"}\n',
+            },
+            self.native_base_before,
+            message="fixture product merge",
+        )
+        self.native_upstream_files = {
+            "shared.json": '{"side":"upstream"}\n',
+            "upstream.py": "upstream = True\n",
+        }
+        base_sha = self.native_commit(
+            self.native_base_before,
+            self.native_upstream_files,
+            self.native_base_before,
+            message="fixture upstream base",
+        )
+        sync_changes = dict(self.native_upstream_files)
+        sync_changes["shared.json"] = '{"side":"resolved"}\n'
+        first_parent = (
+            self.native_base_before if wrong_parents else self.native_product_head
+        )
+        sync_sha = self.native_commit(
+            self.native_product_head,
+            sync_changes,
+            first_parent,
+            base_sha,
+            message="fixture integration sync",
+        )
+
+        origin = os.path.join(self.dir, "native-origin.git")
+        self.native_git("init", "--bare", "--quiet", origin)
+        self.native_git("remote", "add", "origin", origin)
+        self.run_ctl(
+            "done", "merge-step", "--step", "1",
+            "--merge-commit", self.native_product_head,
+        )
+        self.write_run_pr()
+        state = self.state()
+        self.native_base_head = base_sha
+        self.native_replacement_number = 0
+        self.publish_native_sync(state, sync_sha, base_sha)
         return state, sync_sha, base_sha
 
     def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
-        starting_base = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=self.dir,
-            check=True,
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
+        starting_base = self.native_git("rev-parse", "HEAD", cwd=self.dir)
         _, sync_sha, base_sha = self.prepare_run_sync(
             starting_base=starting_base
         )
@@ -2270,34 +2513,35 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             ),
         )
 
-    def configure_sync_replacement(self, sync_sha, base_sha):
+    def configure_sync_replacement(self):
         state = self.state()
-        final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
-        base_before = "4" * 40
-        self.fake_refs[state["run_branch"]] = sync_sha
-        self.fake_refs[self.integration_base(state)] = base_sha
-        self.fake_parents[sync_sha] = [final_merge, base_sha]
-        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
-            {
-                f"{base_before}..{final_merge}": [
-                    "product.py",
-                    "shared.json",
-                ],
-                f"{base_before}..{base_sha}": [
-                    "controller.py",
-                    "shared.json",
-                    "upstream.py",
-                ],
-                f"{final_merge}..{sync_sha}": [
-                    "controller.py",
-                    "shared.json",
-                    "upstream.py",
-                ],
-            }
+        self.native_replacement_number += 1
+        base_changes = {}
+        if self.native_replacement_number == 1:
+            base_changes["controller.py"] = "controller = 1\n"
+            self.native_upstream_files.update(base_changes)
+        base_sha = self.native_commit(
+            self.native_base_head,
+            base_changes,
+            self.native_base_head,
+            message=f"fixture upstream advance {self.native_replacement_number}",
         )
-        return self.write_integration_revalidation(
-            affected_paths=["controller.py", "shared.json", "upstream.py"]
+        sync_changes = dict(self.native_upstream_files)
+        sync_changes["shared.json"] = '{"side":"resolved"}\n'
+        sync_sha = self.native_commit(
+            self.native_product_head,
+            sync_changes,
+            self.native_product_head,
+            base_sha,
+            message=f"fixture replacement sync {self.native_replacement_number}",
         )
+        self.native_base_head = base_sha
+        self.publish_native_sync(state, sync_sha, base_sha)
+        affected_paths = sorted(sync_changes)
+        revalidation = self.write_integration_revalidation(
+            affected_paths=affected_paths
+        )
+        return sync_sha, base_sha, revalidation
 
     def test_sync_run_receipts_exact_merge_and_allows_integration(self):
         state, sync_sha, base_sha = self.prepare_run_sync()
@@ -2310,8 +2554,12 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         after_sync = self.state()
         self.assertEqual(before["steps"], after_sync["steps"])
         sync = after_sync["integrate"]["sync"]
-        self.assertEqual(sync["product_evidence"]["head"], "e" * 40)
-        self.assertEqual(sync["revalidation"]["base_before"], "4" * 40)
+        self.assertEqual(
+            sync["product_evidence"]["head"], self.native_product_head
+        )
+        self.assertEqual(
+            sync["revalidation"]["base_before"], self.native_base_before
+        )
         self.assertEqual(sync["revalidation"]["product_paths"], [
             "product.py", "shared.json",
         ])
@@ -2335,7 +2583,9 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             },
         )
         status = self.run_ctl("status").stdout
-        self.assertIn("product eeeeeeeeeeee preserved", status)
+        self.assertIn(
+            f"product {self.native_product_head[:12]} preserved", status
+        )
         self.assertIn("1 integration revalidation check(s) recorded", status)
         self.write_run_pr()
         self.run_ctl(
@@ -2346,7 +2596,9 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         receipt = self.state()["receipts"]["integrate"]
         self.assertEqual(receipt["run_head"], sync_sha)
         self.assertEqual(receipt["sync"]["base_head"], base_sha)
-        self.assertEqual(receipt["sync"]["parents"], ["e" * 40, base_sha])
+        self.assertEqual(
+            receipt["sync"]["parents"], [self.native_product_head, base_sha]
+        )
 
     def test_sync_run_supersedes_one_failed_composition_without_reopening_product(self):
         _, first_sync, first_base = self.prepare_run_sync()
@@ -2358,11 +2610,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         product = self.state()["integrate"]["sync"]["product_evidence"]
 
-        replacement_sync = "8" * 40
-        replacement_base = "9" * 40
-        replacement_revalidation = self.configure_sync_replacement(
-            replacement_sync, replacement_base
-        )
+        (
+            replacement_sync,
+            replacement_base,
+            replacement_revalidation,
+        ) = self.configure_sync_replacement()
         proc = self.run_ctl(
             "done", "sync-run",
             "--commit", replacement_sync,
@@ -2483,15 +2735,11 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
 
         for number in range(8):
-            replacement_sync = hashlib.sha1(
-                f"replacement-sync-{number}".encode()
-            ).hexdigest()
-            replacement_base = hashlib.sha1(
-                f"replacement-base-{number}".encode()
-            ).hexdigest()
-            replacement_revalidation = self.configure_sync_replacement(
-                replacement_sync, replacement_base
-            )
+            (
+                replacement_sync,
+                replacement_base,
+                replacement_revalidation,
+            ) = self.configure_sync_replacement()
             self.run_ctl(
                 "done", "sync-run", "--commit", replacement_sync,
                 "--base-commit", replacement_base,
@@ -2640,9 +2888,8 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
 
     def test_sync_run_refuses_wrong_merge_parents(self):
-        _, sync_sha, base_sha = self.prepare_run_sync()
+        _, sync_sha, base_sha = self.prepare_run_sync(wrong_parents=True)
         revalidation = self.write_integration_revalidation()
-        self.fake_parents[sync_sha] = ["9" * 40, base_sha]
         proc = self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
             "--base-commit", base_sha, "--revalidation", revalidation,
@@ -3707,6 +3954,45 @@ class TestControls(HexctlCase):
 
     def test_reset_refuses_incomplete_run(self):
         self.init()
+        proc = self.run_ctl("reset", expect=2)
+        self.assertIn("refusing to reset an incomplete run", proc.stderr)
+        self.assertIn("hexctl halt --reason", proc.stderr)
+        self.assertEqual(self.next_json()["do"], "study")
+
+    def test_reset_retires_a_halted_run_and_records_the_retirement(self):
+        """A run started in error is halted, then cleared; nothing outside the
+        controller has to remove state by hand (skills#1411)."""
+        self.init()
+        self.run_ctl("halt", "--reason", "started against Fiat-Required: 0")
+        proc = self.run_ctl("reset")
+        self.assertIn("archived verified halted run", proc.stdout)
+        self.assertIn("stopped in phase 'study'", proc.stdout)
+        self.assertIn("started against Fiat-Required: 0", proc.stdout)
+
+        root = os.path.join(self.dir, ".hexaemeron")
+        self.assertFalse(os.path.exists(os.path.join(root, "state.json")))
+        archives = os.listdir(os.path.join(root, "archive"))
+        self.assertEqual(len(archives), 1)
+        self.assertIn("halted-", archives[0])
+        archived = os.path.join(root, "archive", archives[0])
+        with open(os.path.join(archived, "ledger.jsonl"), encoding="utf-8") as fh:
+            entries = [json.loads(line) for line in fh if line.strip()]
+        self.assertEqual([e["event"] for e in entries[-2:]], ["halt", "retire"])
+        with open(os.path.join(archived, "state.json"), encoding="utf-8") as fh:
+            halted = json.load(fh)["halted"]
+        self.assertEqual(entries[-1]["data"], {
+            "phase": "study",
+            "reason": "started against Fiat-Required: 0",
+            "halted_ts": halted["ts"],
+        })
+
+        self.init("next topic")
+        self.assertEqual(self.next_json()["do"], "study")
+
+    def test_reset_still_refuses_a_run_whose_halt_was_resumed(self):
+        self.init()
+        self.run_ctl("halt", "--reason", "second thoughts")
+        self.run_ctl("resume", "--note", "carrying on")
         proc = self.run_ctl("reset", expect=2)
         self.assertIn("refusing to reset an incomplete run", proc.stderr)
         self.assertEqual(self.next_json()["do"], "study")
@@ -5286,6 +5572,22 @@ class ResumeAndRetirementTests(HexctlCase):
         archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
         self.assertEqual(len(archives), 1)
 
+    def test_a_halted_run_retires_its_clean_tree_into_the_origin_archive(self):
+        self.init()
+        self.run_ctl("halt", "--reason", "cut from an unsynced base")
+        self.assertTrue(os.path.isdir(self.retired))
+        self.run_ctl("reset")
+        self.assertFalse(os.path.isdir(self.retired))
+        archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
+        self.assertEqual(len(archives), 1)
+        self.assertIn("halted-", archives[0])
+        archived = os.path.join(self.dir, ".hexaemeron", "archive", archives[0])
+        for name in ("state.json", "ledger.jsonl"):
+            self.assertTrue(os.path.exists(os.path.join(archived, name)), name)
+        with open(os.path.join(self.dir, ".hexaemeron", "worktree"),
+                  encoding="utf-8") as handle:
+            self.assertEqual(handle.read().strip(), "")
+
     def test_a_retired_run_drops_out_of_the_breadcrumb(self):
         self.land_a_run()
         self.integrate_run()
@@ -5523,8 +5825,8 @@ class GitHubSignerDiagnosis(unittest.TestCase):
         """The diagnosis must not turn a passing verification into a refusal.
 
         Checks which refusal, not whether one happened. A commit that verifies
-        still goes on to the author and trailer checks, and those refuse this
-        synthetic sha for reasons that have nothing to do with signing. What must
+        may return or exit; the test accepts either and reads only the error
+        output it captured. What must
         not appear is a signature complaint.
         """
         module = self.hexctl
@@ -5665,131 +5967,17 @@ class RewrittenStackRefusal(unittest.TestCase):
         self.assertIsNone(message)
 
 
-class WardenContinuityTests(HexctlCase):
-    """The audit-round brief says which Warden a round belongs to."""
+try:
+    from .task_continuity_cases import build_task_continuity_cases
+except ImportError:
+    from task_continuity_cases import build_task_continuity_cases
 
-    PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    WARDEN_DOC = os.path.join(PLUGIN, "agents", "warden.md")
-    LOOP_DOC = os.path.join(
-        PLUGIN, "skills", "fiat", "references", "audit-loop.md"
-    )
+WardenContinuityCases, TaskIdentityCases = build_task_continuity_cases(globals())
 
-    WAIVED = '"waived: prose-only repo"'
 
-    def to_ready_audit(self, titles=("Scaffold", "Core")):
-        self.to_steps(titles=titles)
-        self.run_ctl("record", "security_suite", self.WAIVED)
+class WardenContinuityTests(WardenContinuityCases, HexctlCase):
+    """Retain one reviewer identity across the step's audit rounds."""
 
-    def audit_brief(self):
-        directive = self.next_json()
-        self.assertEqual(directive["do"], "audit-round")
-        return directive["brief"]
 
-    def another_round(self):
-        self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
-
-    def close_step(self, number):
-        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
-        self.run_ctl("done", "audit", "--fixes-ref", "deadbeef")
-        self.run_ctl(
-            "done", "prose", "--files", "3",
-            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
-        )
-        self.run_ctl(
-            "done", "push",
-            "--pr-url",
-            f"https://github.com/wildcat-finance/example/pull/{number}",
-            "--head-commit", self.fake_sha(f"head{number}"),
-            "--pr-base", self.step_base(number),
-        )
-
-    def test_a_steps_first_round_starts_a_new_warden(self):
-        self.to_ready_audit()
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(1),
-            "--commit", "abc1",
-        )
-        brief = self.audit_brief()
-        self.assertEqual(brief["warden_continuity"], "new")
-        self.assertEqual(brief["step"], 1)
-        self.assertEqual(brief["round"], 1)
-
-    def test_later_rounds_of_one_step_continue_the_same_warden(self):
-        self.to_ready_audit()
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(1),
-            "--commit", "abc1",
-        )
-        self.another_round()
-        second = self.audit_brief()
-        self.assertEqual(second["round"], 2)
-        self.assertEqual(second["warden_continuity"], "same-agent")
-        self.another_round()
-        third = self.audit_brief()
-        self.assertEqual(third["round"], 3)
-        self.assertEqual(third["warden_continuity"], "same-agent")
-        self.assertEqual(third["step"], 1)
-
-    def test_a_new_step_starts_its_own_warden(self):
-        self.to_ready_audit()
-        self.finish_step(1)
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(2),
-            "--commit", "abc2",
-        )
-        brief = self.audit_brief()
-        self.assertEqual(brief["step"], 2)
-        self.assertEqual(brief["round"], 1)
-        self.assertEqual(brief["warden_continuity"], "new")
-
-    def test_four_steps_of_three_rounds_start_exactly_four_wardens(self):
-        titles = ("Scaffold", "Core", "Wire", "Polish")
-        self.to_ready_audit(titles=titles)
-        observed = []
-        for number in range(1, len(titles) + 1):
-            self.run_ctl(
-                "done", "implement", "--branch", self.step_branch(number),
-                "--commit", f"abc{number}",
-            )
-            observed.append(self.audit_brief())
-            self.another_round()
-            observed.append(self.audit_brief())
-            self.another_round()
-            observed.append(self.audit_brief())
-            self.close_step(number)
-        self.assertEqual(len(observed), 3 * len(titles))
-        fresh = [item for item in observed if item["warden_continuity"] == "new"]
-        self.assertEqual(len(fresh), len(titles))
-        self.assertEqual(
-            [item["step"] for item in fresh], list(range(1, len(titles) + 1))
-        )
-        self.assertEqual([item["round"] for item in fresh], [1] * len(titles))
-        for item in observed:
-            if item["round"] > 1:
-                self.assertEqual(item["warden_continuity"], "same-agent")
-
-    def test_the_field_never_claims_a_document_was_read(self):
-        self.to_ready_audit()
-        self.run_ctl(
-            "done", "implement", "--branch", self.step_branch(1),
-            "--commit", "abc1",
-        )
-        self.another_round()
-        brief = self.audit_brief()
-        self.assertEqual(brief["warden_continuity"], "same-agent")
-        self.assertNotIn("read", json.dumps(brief).lower())
-
-    @staticmethod
-    def flowed(path):
-        """The document as one line, so a wrapped sentence still matches."""
-        with open(path, encoding="utf-8") as handle:
-            return " ".join(handle.read().split())
-
-    def test_both_documents_keep_the_unreadable_host_fallback(self):
-        warden = self.flowed(self.WARDEN_DOC)
-        loop = self.flowed(self.LOOP_DOC)
-        self.assertIn("warden_continuity", warden)
-        self.assertIn("does not mean the suite documents are", warden)
-        self.assertIn("cannot keep an agent", loop)
-        self.assertIn("reads the suite documents in full", loop)
-        self.assertIn("still pays for the full read", loop)
+class TestTaskIdentity(TaskIdentityCases, HexctlCase):
+    """Bind delegated task identity across processes and checkpoint restore."""

@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "annotated_before_lint": {
+      "const": true
+    },
+    "decision": {
+      "enum": [
+        "actionable",
+        "signal_only",
+        "negative"
+      ]
+    },
+    "end_byte": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "family": {
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+      "type": "string"
+    },
+    "family_id": {
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+      "type": "string"
+    },
+    "origin": {
+      "enum": [
+        "human",
+        "model_assisted",
+        "unknown"
+      ]
+    },
+    "polarity": {
+      "enum": [
+        "positive",
+        "negative"
+      ]
+    },
+    "reason": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "repository": {
+      "pattern": "^wildcat-finance/",
+      "type": "string"
+    },
+    "rewrite": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "selection_rank_within_group": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "selection_seed": {
+      "const": "imprimatur-structural-family-evidence-v1"
+    },
+    "source_commit": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "source_end_line": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "source_group_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "source_object": {
+      "enum": [
+        "markdown_paragraph",
+        "commit_message",
+        "issue_body",
+        "issue_comment",
+        "pull_request_body",
+        "pull_request_comment"
+      ]
+    },
+    "source_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_start_line": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "source_url": {
+      "pattern": "^https://github.com/wildcat-finance/",
+      "type": "string"
+    },
+    "specimen_id": {
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*-(?:pos|neg)-[0-9]{2}$",
+      "type": "string"
+    },
+    "start_byte": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "text": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "text_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "tier": {
+      "const": "structural"
+    }
+  },
+  "required": [
+    "specimen_id",
+    "family_id",
+    "tier",
+    "family",
+    "polarity",
+    "decision",
+    "text",
+    "text_sha256",
+    "start_byte",
+    "end_byte",
+    "reason",
+    "rewrite",
+    "repository",
+    "source_url",
+    "source_commit",
+    "source_path",
+    "source_start_line",
+    "source_end_line",
+    "source_object",
+    "source_group_id",
+    "origin",
+    "annotated_before_lint",
+    "selection_seed",
+    "selection_rank_within_group"
+  ],
+  "title": "Imprimatur structural family evidence specimen",
+  "type": "object"
+}

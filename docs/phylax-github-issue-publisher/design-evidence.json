@@ -1,0 +1,480 @@
+{
+  "candidates": [
+    {
+      "id": "inline-helper-gates",
+      "summary": "Put the gates inside the sourceable helper."
+    },
+    {
+      "id": "watched-file-gate",
+      "summary": "Gate one watched candidate path and sidecar."
+    },
+    {
+      "id": "same-uid-broker",
+      "summary": "Broker publication under the agent's own OS identity."
+    },
+    {
+      "id": "isolated-publisher",
+      "summary": "Expose only checked issue creation from a distinct service identity."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "credential-unavailable-to-agent",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "all-agent-routes-gated",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "indeterminate-create-no-retry",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "privileged-deployment-actions",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "trusted-runtime-processes",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "ordered-admission-chain",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "request-work-bound",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 256,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "request-byte-bound",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": 1048576,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "signer-and-post-boundary",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "public-route-and-deployment-check",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "inline-helper-gates",
+      "criterion": "credential-unavailable-to-agent",
+      "report": {
+        "path": "design-reports/inline-helper-gates-credential-unavailable-to-agent.json",
+        "sha256": "9574831862ff32a502b1fbb299d3c4bc2457ab69e302be0b1dcbbae68b8f8ce3"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "inline-helper-gates",
+      "criterion": "all-agent-routes-gated",
+      "report": {
+        "path": "design-reports/inline-helper-gates-all-agent-routes-gated.json",
+        "sha256": "40a4b91e82966232db7c721a49ef526cae2fcf8b7c6f22e6106fc3b4b1d64357"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "inline-helper-gates",
+      "criterion": "indeterminate-create-no-retry",
+      "report": {
+        "path": "design-reports/inline-helper-gates-indeterminate-create-no-retry.json",
+        "sha256": "0c9239e8b4b27902ebf7b4c1b20bbc30ca8c2d628d412ed1bf7334c46bddc02f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-helper-gates",
+      "criterion": "privileged-deployment-actions",
+      "report": {
+        "path": "design-reports/inline-helper-gates-privileged-deployment-actions.json",
+        "sha256": "1a6ee07640fb344cb4ed9db0aa3c1ed1b23e7006aea284db3a38932e90680202"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "inline-helper-gates",
+      "criterion": "trusted-runtime-processes",
+      "report": {
+        "path": "design-reports/inline-helper-gates-trusted-runtime-processes.json",
+        "sha256": "e2ce077e3d66f0975fd2172ff3f5678b688f445033ad122def65b598bf26927b"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "inline-helper-gates",
+      "criterion": "ordered-admission-chain",
+      "report": "design-reports/inline-helper-gates-ordered-admission-chain.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate inline-helper-gates --design-criterion ordered-admission-chain --design-report .hexaemeron/design-reports/inline-helper-gates-ordered-admission-chain.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "inline-helper-gates",
+      "criterion": "request-work-bound",
+      "report": "design-reports/inline-helper-gates-request-work-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate inline-helper-gates --design-criterion request-work-bound --design-report .hexaemeron/design-reports/inline-helper-gates-request-work-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "inline-helper-gates",
+      "criterion": "request-byte-bound",
+      "report": "design-reports/inline-helper-gates-request-byte-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate inline-helper-gates --design-criterion request-byte-bound --design-report .hexaemeron/design-reports/inline-helper-gates-request-byte-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "inline-helper-gates",
+      "criterion": "signer-and-post-boundary",
+      "report": "design-reports/inline-helper-gates-signer-and-post-boundary.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate inline-helper-gates --design-criterion signer-and-post-boundary --design-report .hexaemeron/design-reports/inline-helper-gates-signer-and-post-boundary.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "inline-helper-gates",
+      "criterion": "public-route-and-deployment-check",
+      "report": "design-reports/inline-helper-gates-public-route-and-deployment-check.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate inline-helper-gates --design-criterion public-route-and-deployment-check --design-report .hexaemeron/design-reports/inline-helper-gates-public-route-and-deployment-check.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "watched-file-gate",
+      "criterion": "credential-unavailable-to-agent",
+      "report": {
+        "path": "design-reports/watched-file-gate-credential-unavailable-to-agent.json",
+        "sha256": "ca15e4e227a2fda5cdc57a47c2ffb6e7be8a187f428b3512a95bca905ab20430"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "watched-file-gate",
+      "criterion": "all-agent-routes-gated",
+      "report": {
+        "path": "design-reports/watched-file-gate-all-agent-routes-gated.json",
+        "sha256": "7ac5c29fc7b4a9ffea85bbf214f656cbd22588567bd697769c2ea979758c2449"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "watched-file-gate",
+      "criterion": "indeterminate-create-no-retry",
+      "report": {
+        "path": "design-reports/watched-file-gate-indeterminate-create-no-retry.json",
+        "sha256": "9301a4a653d1a865a55b664d09b55be46f873f88872f3265af25b7a362071d97"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "watched-file-gate",
+      "criterion": "privileged-deployment-actions",
+      "report": {
+        "path": "design-reports/watched-file-gate-privileged-deployment-actions.json",
+        "sha256": "14fa5da608f46e507d70f4eee80193f790804d781dcc48143a7bd88fa5d8558e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "watched-file-gate",
+      "criterion": "trusted-runtime-processes",
+      "report": {
+        "path": "design-reports/watched-file-gate-trusted-runtime-processes.json",
+        "sha256": "91ff1b5cb40e890ac063477bd4299a7e04a64d7f372e51e7de61e991afe45cd9"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "watched-file-gate",
+      "criterion": "ordered-admission-chain",
+      "report": "design-reports/watched-file-gate-ordered-admission-chain.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate watched-file-gate --design-criterion ordered-admission-chain --design-report .hexaemeron/design-reports/watched-file-gate-ordered-admission-chain.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "watched-file-gate",
+      "criterion": "request-work-bound",
+      "report": "design-reports/watched-file-gate-request-work-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate watched-file-gate --design-criterion request-work-bound --design-report .hexaemeron/design-reports/watched-file-gate-request-work-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "watched-file-gate",
+      "criterion": "request-byte-bound",
+      "report": "design-reports/watched-file-gate-request-byte-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate watched-file-gate --design-criterion request-byte-bound --design-report .hexaemeron/design-reports/watched-file-gate-request-byte-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "watched-file-gate",
+      "criterion": "signer-and-post-boundary",
+      "report": "design-reports/watched-file-gate-signer-and-post-boundary.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate watched-file-gate --design-criterion signer-and-post-boundary --design-report .hexaemeron/design-reports/watched-file-gate-signer-and-post-boundary.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "watched-file-gate",
+      "criterion": "public-route-and-deployment-check",
+      "report": "design-reports/watched-file-gate-public-route-and-deployment-check.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate watched-file-gate --design-criterion public-route-and-deployment-check --design-report .hexaemeron/design-reports/watched-file-gate-public-route-and-deployment-check.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "same-uid-broker",
+      "criterion": "credential-unavailable-to-agent",
+      "report": {
+        "path": "design-reports/same-uid-broker-credential-unavailable-to-agent.json",
+        "sha256": "46ff98cbf20f3a2be9d84b85b691299927a23055c8b131c533b06fce4250aa4f"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "same-uid-broker",
+      "criterion": "all-agent-routes-gated",
+      "report": {
+        "path": "design-reports/same-uid-broker-all-agent-routes-gated.json",
+        "sha256": "547c112cb71cb3346a2452f43562fc887386d56d7a1b173959749730b92a6925"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "same-uid-broker",
+      "criterion": "indeterminate-create-no-retry",
+      "report": {
+        "path": "design-reports/same-uid-broker-indeterminate-create-no-retry.json",
+        "sha256": "59f003e42590049745d4ef28ccd24bccd82fd779a6c03b1153df09ad090cf7e0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "same-uid-broker",
+      "criterion": "privileged-deployment-actions",
+      "report": {
+        "path": "design-reports/same-uid-broker-privileged-deployment-actions.json",
+        "sha256": "d7dbe2e816fc5f8593b76f7a6ee1f87dc20d4f42342144bf5329656a7e8a5c72"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "same-uid-broker",
+      "criterion": "trusted-runtime-processes",
+      "report": {
+        "path": "design-reports/same-uid-broker-trusted-runtime-processes.json",
+        "sha256": "656c5b9cbce1be036d65b49a5e2a90a05505a9f4622d8afee75346587dcb62ec"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "same-uid-broker",
+      "criterion": "ordered-admission-chain",
+      "report": "design-reports/same-uid-broker-ordered-admission-chain.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate same-uid-broker --design-criterion ordered-admission-chain --design-report .hexaemeron/design-reports/same-uid-broker-ordered-admission-chain.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "same-uid-broker",
+      "criterion": "request-work-bound",
+      "report": "design-reports/same-uid-broker-request-work-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate same-uid-broker --design-criterion request-work-bound --design-report .hexaemeron/design-reports/same-uid-broker-request-work-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "same-uid-broker",
+      "criterion": "request-byte-bound",
+      "report": "design-reports/same-uid-broker-request-byte-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate same-uid-broker --design-criterion request-byte-bound --design-report .hexaemeron/design-reports/same-uid-broker-request-byte-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "same-uid-broker",
+      "criterion": "signer-and-post-boundary",
+      "report": "design-reports/same-uid-broker-signer-and-post-boundary.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate same-uid-broker --design-criterion signer-and-post-boundary --design-report .hexaemeron/design-reports/same-uid-broker-signer-and-post-boundary.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "same-uid-broker",
+      "criterion": "public-route-and-deployment-check",
+      "report": "design-reports/same-uid-broker-public-route-and-deployment-check.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate same-uid-broker --design-criterion public-route-and-deployment-check --design-report .hexaemeron/design-reports/same-uid-broker-public-route-and-deployment-check.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "isolated-publisher",
+      "criterion": "credential-unavailable-to-agent",
+      "report": {
+        "path": "design-reports/isolated-publisher-credential-unavailable-to-agent.json",
+        "sha256": "cb25aa7dff6fa0a6573633c6a5724b6dc406f16324e0103ead8b3e7a2db30e3b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "isolated-publisher",
+      "criterion": "all-agent-routes-gated",
+      "report": {
+        "path": "design-reports/isolated-publisher-all-agent-routes-gated.json",
+        "sha256": "4c000dff45d3162a51934f7ec1843010affea27f92bc74b0a548434a705fec2e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "isolated-publisher",
+      "criterion": "indeterminate-create-no-retry",
+      "report": {
+        "path": "design-reports/isolated-publisher-indeterminate-create-no-retry.json",
+        "sha256": "a16d103c4d974897d57ffd0838e1e9a315727f15cfb43a68943e1a15e5737974"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "isolated-publisher",
+      "criterion": "privileged-deployment-actions",
+      "report": {
+        "path": "design-reports/isolated-publisher-privileged-deployment-actions.json",
+        "sha256": "3e9c02d7f39fb793318cd7dbfe7542626dc54c7753a77017abfdfd232aeb521a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "isolated-publisher",
+      "criterion": "trusted-runtime-processes",
+      "report": {
+        "path": "design-reports/isolated-publisher-trusted-runtime-processes.json",
+        "sha256": "7023bba33413b7efe0e219e4cd782e25d769036b317efef4cefb2f84c27ee24d"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "isolated-publisher",
+      "criterion": "ordered-admission-chain",
+      "report": "design-reports/isolated-publisher-ordered-admission-chain.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate isolated-publisher --design-criterion ordered-admission-chain --design-report .hexaemeron/design-reports/isolated-publisher-ordered-admission-chain.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "isolated-publisher",
+      "criterion": "request-work-bound",
+      "report": "design-reports/isolated-publisher-request-work-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate isolated-publisher --design-criterion request-work-bound --design-report .hexaemeron/design-reports/isolated-publisher-request-work-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "isolated-publisher",
+      "criterion": "request-byte-bound",
+      "report": "design-reports/isolated-publisher-request-byte-bound.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate isolated-publisher --design-criterion request-byte-bound --design-report .hexaemeron/design-reports/isolated-publisher-request-byte-bound.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "isolated-publisher",
+      "criterion": "signer-and-post-boundary",
+      "report": "design-reports/isolated-publisher-signer-and-post-boundary.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate isolated-publisher --design-criterion signer-and-post-boundary --design-report .hexaemeron/design-reports/isolated-publisher-signer-and-post-boundary.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "isolated-publisher",
+      "criterion": "public-route-and-deployment-check",
+      "report": "design-reports/isolated-publisher-public-route-and-deployment-check.json",
+      "resolver": "python3 plugins/hexaemeron/skills/phylax/scripts/github_issue_publisher.py conformance --manifest plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json --design-candidate isolated-publisher --design-criterion public-route-and-deployment-check --design-report .hexaemeron/design-reports/isolated-publisher-public-route-and-deployment-check.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "isolated-publisher",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

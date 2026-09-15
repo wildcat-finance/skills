@@ -590,8 +590,9 @@ def build_report(
     verify_tree_objects(repo, product_entries)
     base_state = decision_state(base_entries)
     product_state = decision_state(product_entries)
-    if base_state.drafts:
-        refuse("base-draft")
+    for slug, entry in base_state.drafts.items():
+        if product_state.drafts.get(slug) != entry:
+            refuse("inherited-draft-drift")
     for path, entry in base_state.records.items():
         if product_state.records.get(path) != entry:
             refuse("inherited-record-drift")

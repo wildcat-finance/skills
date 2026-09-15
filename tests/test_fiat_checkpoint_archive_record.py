@@ -1,8 +1,8 @@
-"""Keep the outer checkpoint archive decision in its draft record and ADR-028.
+"""Keep the archive decision linked to the unchanged inherited ADR-028.
 
 The study and runbook committed under `docs/` are run artefacts: they point at
-the record and are not it. ADR-028 gains one dated amendment that cites the
-record by its stable slug and changes no operative clause. The record states
+the record and are not it. The archive record carries the dated amendment;
+ADR-028 retains its inherited clauses and accepted status. The record states
 the three commands and the designs that lost with their measurements. It lives
 at `docs/decisions/drafts/<slug>.md` until the integration composer numbers it
 and at `docs/decisions/ADR-NNN-<slug>.md` afterwards, so every check here finds
@@ -128,31 +128,21 @@ class FiatCheckpointArchiveRecord(unittest.TestCase):
                 self.assertIn(NOT_THE_DECISION[path], " ".join(text.split()))
                 self.assertEqual([], dead_relative_links(path, text), f"dead relative links in {path.name}")
 
-    def test_adr_028_amendment_points_at_the_draft_record_and_stays_accepted(self):
+    def test_archive_record_preserves_the_inherited_adr_028_and_its_status(self):
         text = read(ADR)
         status = text.split("## Context", 1)[0]
-        self.assertIn("Accepted", status, "ADR-028's status no longer reads Accepted")
-
-        self.assertIn(AMENDMENT, text)
-        self.assertLess(text.index(PREVIOUS_AMENDMENT), text.index(AMENDMENT))
-        before = text.split(AMENDMENT, 1)[0]
+        self.assertIn("Accepted", status)
+        self.assertNotIn(AMENDMENT, text)
         headings = tuple(
-            line for line in before.splitlines() if line.startswith("## ") or line.startswith("### ")
+            line for line in text.splitlines() if line.startswith("## ") or line.startswith("### ")
         )
-        self.assertEqual(HEADINGS_BEFORE_AMENDMENT, headings, "a clause before the amendment moved")
-        self.assertIn(REJECTED_AUTOMATION, before, "the rejected alternative was rewritten")
-
-        amendment = text.split(AMENDMENT, 1)[1].split("\n## ", 1)[0]
-        self.assertIn("no operative clause", amendment)
-        self.assertIn("stays Accepted", amendment)
-        self.assertEqual(
-            1, amendment.count(STABLE_REFERENCE),
-            "the amendment must cite the record by its stable slug reference once",
-        )
-        self.assertEqual(
-            [], [link for link in RELATIVE_LINK.findall(amendment) if SLUG in link],
-            "a relative link to the record dies when the composer renames it",
-        )
+        self.assertEqual(HEADINGS_BEFORE_AMENDMENT, headings)
+        self.assertIn(REJECTED_AUTOMATION, text)
+        record = read(record_path())
+        self.assertIn("ADR-028 stays Accepted and its inherited bytes stay unchanged", record)
+        self.assertIn("amendment prepared on 2026-09-07", record)
+        self.assertIn("mandatory local hand-off", record)
+        self.assertIn("posts, commits or pushes all stand", record)
         self.assertEqual([], dead_relative_links(ADR, text))
 
     def test_draft_record_states_the_three_commands_and_the_rejected_designs(self):

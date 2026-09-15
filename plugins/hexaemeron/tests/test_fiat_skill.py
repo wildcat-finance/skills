@@ -194,11 +194,14 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Acknowledge that this is a Wildcat Labs run", self.marketplace)
         self.assertIn("List every other available plugin separately", self.marketplace)
 
-    def test_authenticated_github_does_not_require_a_connector(self):
-        self.assertIn("Do not require a connector", self.marketplace)
-        self.assertIn("already-authenticated local GitHub account", self.marketplace)
-        self.assertIn("under-permissioned\nconnector is not itself a failed check", self.marketplace)
-        self.assertIn("a GitHub connector is optional", self.fiat)
+    def test_authenticated_github_transports_have_equal_standing(self):
+        self.assertIn("authenticated local GitHub", self.marketplace)
+        self.assertIn("authenticated connector have equal standing", self.marketplace)
+        self.assertIn("other authenticated transport", self.marketplace)
+        self.assertIn(
+            "Local GitHub and connector authentication have equal standing",
+            self.fiat,
+        )
         self.assertTrue(CONTRIBUTOR_CHECK.is_file())
 
     def test_private_discovery_does_not_fetch_or_disclose_references(self):
@@ -223,38 +226,23 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Never record the account email, name, login, or matching evidence", self.marketplace)
         self.assertIn("hexctl record labs_marketplace", self.marketplace)
 
-    def test_ai_origin_markers_are_required_for_delivery_artifacts(self):
+    def test_ai_origin_markers_are_not_commit_admission_requirements(self):
         self.assertIn("`origin:ai`", self.push_discipline)
         self.assertIn("<!-- wildcat-origin: shoggoth -->", self.push_discipline)
-        self.assertIn(
-            "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>",
-            self.push_discipline,
-        )
-        self.assertIn("Wildcat-Origin: shoggoth", self.push_discipline)
+        self.assertIn("Neither provenance trailer is mandatory", self.push_discipline)
 
-    def test_runtime_hosts_are_not_governed_authors(self):
+    def test_valid_signatures_admit_all_attribution_shapes(self):
         flat = " ".join(self.push_discipline.split())
-        self.assertIn("Authorship follows the contributing actor", flat)
-        self.assertIn("Attribute Shoggoth's own agent-produced run work to `Shoggoth", flat)
-        self.assertIn("Preserve a human contributor as Git author and signer", flat)
-        self.assertIn("publish through their own GitHub account", flat)
-        self.assertIn("Never ask for, copy, upload, configure or use the Shoggoth private signing key", flat)
-        self.assertIn("Publication is a separate role", flat)
-        self.assertIn("explicitly authorises a human publisher", flat)
-        self.assertIn("Record both roles", flat)
-        self.assertIn("is neither author, committer nor co-author", flat)
-        self.assertIn("Without explicit authority", flat)
-        self.assertIn("known host account as pull-request author", flat)
+        self.assertIn("repository-valid signing identity", flat)
+        self.assertIn("recorded attribution, not admission classes", flat)
+        self.assertIn("Neither provenance trailer is mandatory", flat)
+        self.assertIn("publication authority separate", flat)
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
             "surveyor": (
                 "`topic`, `target_dir`, `base_ref`, `output_path`, "
                 "`design_output_path`, and `plugin_root`"
-            ),
-            "mason": (
-                "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
-                "and `plugin_root`"
             ),
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
@@ -268,6 +256,176 @@ class FiatSkillContractTests(unittest.TestCase):
             with self.subTest(role=role):
                 contract = " ".join(AGENTS[role].split())
                 self.assertIn(f"one `brief` object with exactly {clause}", contract)
+
+        mason = " ".join(AGENTS["mason"].split())
+        implementation = (
+            "`runbook_step`, `design_evidence`, `branch`, `branch_from`, "
+            "and `plugin_root`"
+        )
+        self.assertIn(
+            f"An `implement` directive gives you one `brief` object with "
+            f"{implementation}",
+            mason,
+        )
+        self.assertIn(
+            "A capture-aware implementation brief also carries `step_parent`. "
+            "An assigned-finding receipt adds the immutable `guard_commit`; "
+            "a zero-assigned receipt omits it",
+            mason,
+        )
+        self.assertIn(
+            "Never recreate either branch or resolve `branch_from` again",
+            mason,
+        )
+        for field in (
+            "study_sha256",
+            "runbook_sha256",
+            "inventory_sha256",
+            "known_failure_inventory",
+            "consuming_step",
+            "assigned_findings",
+            "allowed_guard_paths",
+            "reporter_contracts",
+            "branch",
+            "branch_from",
+            "step_parent",
+            "evidence_directory",
+            "plugin_root",
+        ):
+            self.assertIn(f"`{field}`", mason)
+
+    def test_inoculation_contract_is_one_source_bound_loop_directive(self):
+        loop = self.fiat.split("## The loop", 1)[1].split("## ", 1)[0]
+        inoculation = self.fiat.split("**Inoculation.**", 1)[1].split(
+            "**Implementation.**", 1
+        )[0]
+        fiat = " ".join(self.fiat.split())
+        mason = " ".join(AGENTS["mason"].split())
+
+        self.assertIn("| `inoculate` |", loop)
+        self.assertIn(
+            "That loader/capture rule and the loop's existing Step action are one\n"
+            "`inoculate-phase` directive, not two independent instructions.",
+            self.fiat,
+        )
+        self.assertIn("`load_checked_inventory` operation is the sole ingestion path", self.fiat)
+        self.assertIn("`done inoculate` takes no phase-specific options", inoculation)
+        self.assertIn("fiat-known-failure-inoculation/v1", inoculation)
+        self.assertIn("fiat-no-known-findings/v1", inoculation)
+        self.assertIn("no-known-findings-for-step", inoculation)
+        self.assertIn("opens `implement` on that same branch", inoculation)
+        self.assertIn("also carries the full `step_parent`", fiat)
+        self.assertIn(
+            "assigned-finding receipt adds its exact guard commit", fiat
+        )
+        self.assertIn("`step_parent` for a zero-assigned Step", fiat)
+        self.assertIn(
+            "Do not recreate it from the parent or resolve a symbolic ref again",
+            fiat,
+        )
+        self.assertIn("the orchestrator calls `hexctl retain-guard`", mason)
+        self.assertIn("`completed_ids`, `remaining_ids`", mason)
+        self.assertIn("When `guard_commit` is present", mason)
+        self.assertIn(
+            "atomic create-only creation of the exact `branch` from `step_parent`",
+            mason,
+        )
+        self.assertIn("If that branch already exists at any tip", mason)
+        self.assertIn(
+            "make no edit, reset, repoint or checkout and request a fresh `next` packet",
+            mason,
+        )
+        self.assertIn(
+            "A packet without `guard_commit` authorises only atomic create-only creation",
+            fiat,
+        )
+        self.assertIn(
+            "current immutable context before loading or calling the runner",
+            fiat,
+        )
+        self.assertIn("it never samples a second execution", fiat)
+        self.assertIn("current live Step 3 is explicitly pre-contract", mason)
+        self.assertIn("No product path may ride along", mason)
+
+    def test_task_identity_check_is_unconditional_before_any_continuation(self):
+        # Issue 363: an orchestrator continued a Mason under a handle left from
+        # another issue. `next --task-handle` refuses only a handle it is shown,
+        # so this section is what makes showing it unconditional, and neither a
+        # refused handle nor a brief an earlier call left behind reaches a
+        # delegate. The paragraph is pinned sentence for sentence and must be the
+        # section's only paragraph naming a handle, so a dropped sentence, such
+        # as the visible-name requirement, or an exception written beside the
+        # unconditional one fails here (issue 363 S3-R1-01).
+        section = self.fiat.split("\n## Delegation and context\n", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        paragraphs = [" ".join(block.split()) for block in section.split("\n\n")]
+        handle_paragraphs = [text for text in paragraphs if "handle" in text]
+        self.assertEqual(1, len(handle_paragraphs))
+        sentences = re.split(r"(?<=\.) (?=[A-Z])", handle_paragraphs[0])
+        self.assertEqual(
+            [
+                "A delegated envelope also carries `task_identity`, whose `handle` "
+                "is `fiat-<task>-<phase>-<role>`: the run's task, `study` or "
+                "`step-<n>`, and the delegate's role.",
+                "The round is not in the handle, so a Warden keeps one handle across "
+                "a step's rounds.",
+                "Give each spawned delegate that handle as its visible name.",
+                "The handle check is unconditional.",
+                "Before continuing any existing agent handle, for any directive, "
+                "round or reason, run `hexctl next --task-handle <observed>` with "
+                "that handle.",
+                "Exit 0 prints the same directive.",
+                "Exit 2 prints no directive and writes no state, ledger entry or brief.",
+                "Never continue a refused handle: spawn a fresh delegate under the "
+                "`task_identity.handle` that `next` prints without `--task-handle`.",
+                "A `delegate` refusal means the directive has no delegate and runs "
+                "in this session.",
+                "A brief file left at a `--brief-out` path by an earlier call is not "
+                "the current directive's, so pass `--brief-out` and `--task-handle` in "
+                "one call and hand a delegate only a brief path named by a `next` call "
+                "that exited 0.",
+            ],
+            sentences,
+        )
+
+    def test_task_identity_each_agent_names_the_handle_it_is_spawned_under(self):
+        # Each file names the handle the controller derives for its role, so the
+        # prose cannot keep a grammar `task_identity` has stopped emitting.
+        spawned = {
+            "surveyor": ("study", "`fiat-<task>-study-surveyor`", None),
+            "mason": ("implement", "`fiat-<task>-step-<n>-mason`", 3),
+            "warden": ("audit-round", "`fiat-<task>-step-<n>-warden`", 3),
+            "scribe": ("prose", "`fiat-<task>-step-<n>-scribe`", 3),
+        }
+        controller = hexctl_module()
+        state = {
+            "topic": "bind delegated task identity to step and role",
+            "receipts": {
+                controller.RUN_ANCHOR_RECEIPT: {
+                    "task": {"kind": "github-issue", "number": 363}
+                }
+            },
+        }
+        for role, (directive, handle, step) in spawned.items():
+            with self.subTest(role=role):
+                contract = " ".join(AGENTS[role].split())
+                self.assertIn(
+                    f"Fiat spawns you under the handle {handle}, the "
+                    f"`task_identity.handle` of the `{directive}` directive",
+                    contract,
+                )
+                self.assertIn("where `<task>` names the run's task issue or topic.", contract)
+                concrete = handle.strip("`").replace("<task>", "363").replace("<n>", "3")
+                derived = controller.task_identity(
+                    state, role, step=step, round=2 if role == "warden" else None
+                )
+                self.assertEqual(concrete, derived["handle"])
+        self.assertIn(
+            "The round is not in the handle, so a later round of one step may "
+            "continue the same Warden, and a round of another step never does.",
+            " ".join(AGENTS["warden"].split()),
+        )
 
     def test_audit_fix_receipts_bind_the_closed_elenchus_verdict(self):
         fiat = " ".join(self.fiat.split())
@@ -740,67 +898,30 @@ class BodyReadBackTests(unittest.TestCase):
     def test_a_failed_read_is_not_a_clean_body(self):
         self.assertIn("A failed read is not a clean body", self.flat)
 
-    def test_the_recovery_edits_the_stashed_body_and_reads_it_again(self):
+    def test_the_body_and_topology_are_read_at_later_receipts(self):
         self.assertIn("gh pr edit <url> --body-file .hexaemeron/steps/<n>/pr.md", self.flat)
         self.assertIn("read it back again", self.flat)
-        self.assertIn("`done push`, `done merge-step` and `done integrate`", self.flat)
+        self.assertIn("same exact body and topology at later receipts", self.flat)
 
-    def test_the_repository_rule_wins_over_the_host_trailer_instruction(self):
-        self.assertIn("cannot both be satisfied, and the repository rule wins", self.flat)
+    def test_attribution_footers_are_permitted(self):
+        self.assertIn("Attribution footers are permitted", self.flat)
 
-    def test_the_settings_file_is_named_and_is_not_evidence(self):
-        self.assertIn("`.claude/settings.json`", self.flat)
-        self.assertIn("a setting is not evidence", self.flat)
+    def test_the_settings_file_has_no_admission_role(self):
+        self.assertNotIn("HOST_BYLINE_RE", self.flat)
 
-    def test_the_listed_footer_is_named_by_where_it_was_seen(self):
-        # The study records the #615 footer as having the documented session
-        # link's shape and declines to claim it is that link (skills#617 audit
-        # S2-R1-02); the list says the same rather than more.
-        self.assertIn("the footer that reached pull request #615", self.flat)
-        self.assertIn("it has the shape of the session link", self.flat)
+    def test_readback_compares_exact_prepared_bytes(self):
+        self.assertIn("differs from the exact prepared bytes", self.flat)
 
-    def test_the_skill_push_note_points_at_the_section(self):
-        self.assertIn(
-            "`Read the body back` section of [push-discipline.md](references/push-discipline.md)",
-            self.fiat,
-        )
+    def test_the_skill_requires_exact_body_and_topology_readback(self):
+        self.assertIn("exact pull-request body and topology", self.fiat)
 
 
 class HostGuidanceTests(unittest.TestCase):
-    """The contributor guide promises no refusal the byline expression does not make.
-
-    The guide's attribution paragraph once said a `Generated with` or
-    `Generated by` line "naming Claude Code, Codex or another host" is refused,
-    in the paragraph that sends Cursor, Windsurf and GitHub Copilot contributors
-    to remove such lines by hand; `HOST_BYLINE_RE` names six hosts and passes a
-    line naming any other (skills#617 audit S2-R1-01). The guard reads the hosts
-    the sentence names and drives each through the expression the controller
-    applies, so the list can widen only together with the expression.
-    """
-
-    HOST_LIST_RE = re.compile(r"line naming (.+?), refused as a runtime-host byline")
-
-    @classmethod
-    def setUpClass(cls):
-        cls.flat = " ".join(GUIDE.read_text(encoding="utf-8").split())
-        cls.byline = hexctl_module().HOST_BYLINE_RE
-
-    def test_every_host_the_guide_names_is_one_the_expression_reads(self):
-        match = self.HOST_LIST_RE.search(self.flat)
-        self.assertIsNotNone(match, "the guide no longer lists the hosts the byline gate reads")
-        hosts = re.split(r", | or ", match.group(1))
-        self.assertGreaterEqual(len(hosts), 2)
-        for host in hosts:
-            for verb in ("Generated with", "Generated by"):
-                with self.subTest(host=host, verb=verb):
-                    self.assertIsNotNone(self.byline.search(f"{verb} {host}"))
-
-    def test_the_guide_promises_no_refusal_for_an_unnamed_host(self):
-        self.assertNotIn("or another host, refused", self.flat)
-        self.assertIn(
-            "a line naming any other host passes the gate and still has to go",
-            self.flat,
-        )
+    def test_the_guide_states_signature_only_transport_neutral_policy(self):
+        flat = " ".join(GUIDE.read_text(encoding="utf-8").split())
+        self.assertIn("Fiat admits a commit by its valid signature", flat)
+        self.assertIn("authenticated connector have equal standing", flat)
+        self.assertIn("Publication authority stays separate", flat)
 
 
 class BaseSyncTests(unittest.TestCase):

@@ -1,0 +1,1146 @@
+{
+  "dispositions": [
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "excluded",
+      "item": "action:src/actions/update-market.ts",
+      "reason": "the action is exercised only through the routes above"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "api:src/app/api/health/route.ts",
+      "oracle": "M2-03"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "api:src/app/api/markets/[marketId]/route.ts",
+      "oracle": "ADM-04"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:ADM-01",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:ADM-02",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:ADM-04",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer Two",
+      "disposition": "manual",
+      "item": "case:M2-03",
+      "reason": "the row is owned by the reviewer who wrote it",
+      "rule": "row-owner-walks-it"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "manual",
+      "item": "guard:src/components/RequireAuth.tsx",
+      "reason": "the gate is checked by a person against the access matrix"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "manual",
+      "item": "guard:src/middleware.ts",
+      "reason": "the gate is checked by a person against the access matrix"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "route:src/app/(marketing)/about/page.tsx",
+      "oracle": "ADM-01"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "route:src/app/@modal/login/page.tsx",
+      "oracle": "M2-03"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "route:src/app/docs/[...slug]/page.tsx",
+      "oracle": "ADM-04"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "route:src/app/markets/[marketId]/lenders/page.tsx",
+      "oracle": "ADM-01"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "route:src/app/markets/[marketId]/page.tsx",
+      "oracle": "M2-03"
+    },
+    {
+      "confirmed": true,
+      "confirmed_by": "Reviewer One",
+      "disposition": "covered",
+      "item": "route:src/app/page.tsx",
+      "oracle": "ADM-04"
+    }
+  ],
+  "inventory_sha256": "130675b93b92e29657b6564faf53d54d07ed9c0f65b2a56b12181f89492cac6a",
+  "rules": {
+    "row-owner-walks-it": {
+      "stated_by": "Reviewer Two",
+      "text": "the reviewer who wrote a row walks it"
+    },
+    "rule-0000": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 0"
+    },
+    "rule-0001": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 1"
+    },
+    "rule-0002": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 2"
+    },
+    "rule-0003": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 3"
+    },
+    "rule-0004": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 4"
+    },
+    "rule-0005": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 5"
+    },
+    "rule-0006": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 6"
+    },
+    "rule-0007": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 7"
+    },
+    "rule-0008": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 8"
+    },
+    "rule-0009": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 9"
+    },
+    "rule-0010": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 10"
+    },
+    "rule-0011": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 11"
+    },
+    "rule-0012": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 12"
+    },
+    "rule-0013": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 13"
+    },
+    "rule-0014": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 14"
+    },
+    "rule-0015": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 15"
+    },
+    "rule-0016": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 16"
+    },
+    "rule-0017": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 17"
+    },
+    "rule-0018": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 18"
+    },
+    "rule-0019": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 19"
+    },
+    "rule-0020": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 20"
+    },
+    "rule-0021": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 21"
+    },
+    "rule-0022": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 22"
+    },
+    "rule-0023": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 23"
+    },
+    "rule-0024": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 24"
+    },
+    "rule-0025": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 25"
+    },
+    "rule-0026": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 26"
+    },
+    "rule-0027": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 27"
+    },
+    "rule-0028": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 28"
+    },
+    "rule-0029": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 29"
+    },
+    "rule-0030": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 30"
+    },
+    "rule-0031": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 31"
+    },
+    "rule-0032": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 32"
+    },
+    "rule-0033": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 33"
+    },
+    "rule-0034": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 34"
+    },
+    "rule-0035": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 35"
+    },
+    "rule-0036": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 36"
+    },
+    "rule-0037": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 37"
+    },
+    "rule-0038": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 38"
+    },
+    "rule-0039": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 39"
+    },
+    "rule-0040": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 40"
+    },
+    "rule-0041": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 41"
+    },
+    "rule-0042": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 42"
+    },
+    "rule-0043": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 43"
+    },
+    "rule-0044": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 44"
+    },
+    "rule-0045": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 45"
+    },
+    "rule-0046": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 46"
+    },
+    "rule-0047": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 47"
+    },
+    "rule-0048": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 48"
+    },
+    "rule-0049": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 49"
+    },
+    "rule-0050": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 50"
+    },
+    "rule-0051": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 51"
+    },
+    "rule-0052": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 52"
+    },
+    "rule-0053": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 53"
+    },
+    "rule-0054": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 54"
+    },
+    "rule-0055": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 55"
+    },
+    "rule-0056": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 56"
+    },
+    "rule-0057": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 57"
+    },
+    "rule-0058": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 58"
+    },
+    "rule-0059": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 59"
+    },
+    "rule-0060": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 60"
+    },
+    "rule-0061": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 61"
+    },
+    "rule-0062": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 62"
+    },
+    "rule-0063": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 63"
+    },
+    "rule-0064": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 64"
+    },
+    "rule-0065": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 65"
+    },
+    "rule-0066": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 66"
+    },
+    "rule-0067": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 67"
+    },
+    "rule-0068": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 68"
+    },
+    "rule-0069": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 69"
+    },
+    "rule-0070": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 70"
+    },
+    "rule-0071": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 71"
+    },
+    "rule-0072": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 72"
+    },
+    "rule-0073": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 73"
+    },
+    "rule-0074": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 74"
+    },
+    "rule-0075": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 75"
+    },
+    "rule-0076": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 76"
+    },
+    "rule-0077": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 77"
+    },
+    "rule-0078": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 78"
+    },
+    "rule-0079": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 79"
+    },
+    "rule-0080": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 80"
+    },
+    "rule-0081": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 81"
+    },
+    "rule-0082": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 82"
+    },
+    "rule-0083": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 83"
+    },
+    "rule-0084": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 84"
+    },
+    "rule-0085": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 85"
+    },
+    "rule-0086": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 86"
+    },
+    "rule-0087": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 87"
+    },
+    "rule-0088": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 88"
+    },
+    "rule-0089": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 89"
+    },
+    "rule-0090": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 90"
+    },
+    "rule-0091": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 91"
+    },
+    "rule-0092": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 92"
+    },
+    "rule-0093": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 93"
+    },
+    "rule-0094": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 94"
+    },
+    "rule-0095": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 95"
+    },
+    "rule-0096": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 96"
+    },
+    "rule-0097": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 97"
+    },
+    "rule-0098": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 98"
+    },
+    "rule-0099": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 99"
+    },
+    "rule-0100": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 100"
+    },
+    "rule-0101": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 101"
+    },
+    "rule-0102": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 102"
+    },
+    "rule-0103": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 103"
+    },
+    "rule-0104": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 104"
+    },
+    "rule-0105": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 105"
+    },
+    "rule-0106": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 106"
+    },
+    "rule-0107": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 107"
+    },
+    "rule-0108": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 108"
+    },
+    "rule-0109": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 109"
+    },
+    "rule-0110": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 110"
+    },
+    "rule-0111": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 111"
+    },
+    "rule-0112": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 112"
+    },
+    "rule-0113": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 113"
+    },
+    "rule-0114": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 114"
+    },
+    "rule-0115": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 115"
+    },
+    "rule-0116": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 116"
+    },
+    "rule-0117": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 117"
+    },
+    "rule-0118": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 118"
+    },
+    "rule-0119": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 119"
+    },
+    "rule-0120": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 120"
+    },
+    "rule-0121": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 121"
+    },
+    "rule-0122": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 122"
+    },
+    "rule-0123": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 123"
+    },
+    "rule-0124": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 124"
+    },
+    "rule-0125": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 125"
+    },
+    "rule-0126": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 126"
+    },
+    "rule-0127": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 127"
+    },
+    "rule-0128": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 128"
+    },
+    "rule-0129": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 129"
+    },
+    "rule-0130": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 130"
+    },
+    "rule-0131": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 131"
+    },
+    "rule-0132": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 132"
+    },
+    "rule-0133": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 133"
+    },
+    "rule-0134": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 134"
+    },
+    "rule-0135": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 135"
+    },
+    "rule-0136": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 136"
+    },
+    "rule-0137": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 137"
+    },
+    "rule-0138": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 138"
+    },
+    "rule-0139": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 139"
+    },
+    "rule-0140": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 140"
+    },
+    "rule-0141": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 141"
+    },
+    "rule-0142": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 142"
+    },
+    "rule-0143": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 143"
+    },
+    "rule-0144": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 144"
+    },
+    "rule-0145": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 145"
+    },
+    "rule-0146": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 146"
+    },
+    "rule-0147": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 147"
+    },
+    "rule-0148": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 148"
+    },
+    "rule-0149": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 149"
+    },
+    "rule-0150": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 150"
+    },
+    "rule-0151": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 151"
+    },
+    "rule-0152": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 152"
+    },
+    "rule-0153": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 153"
+    },
+    "rule-0154": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 154"
+    },
+    "rule-0155": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 155"
+    },
+    "rule-0156": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 156"
+    },
+    "rule-0157": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 157"
+    },
+    "rule-0158": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 158"
+    },
+    "rule-0159": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 159"
+    },
+    "rule-0160": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 160"
+    },
+    "rule-0161": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 161"
+    },
+    "rule-0162": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 162"
+    },
+    "rule-0163": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 163"
+    },
+    "rule-0164": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 164"
+    },
+    "rule-0165": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 165"
+    },
+    "rule-0166": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 166"
+    },
+    "rule-0167": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 167"
+    },
+    "rule-0168": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 168"
+    },
+    "rule-0169": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 169"
+    },
+    "rule-0170": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 170"
+    },
+    "rule-0171": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 171"
+    },
+    "rule-0172": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 172"
+    },
+    "rule-0173": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 173"
+    },
+    "rule-0174": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 174"
+    },
+    "rule-0175": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 175"
+    },
+    "rule-0176": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 176"
+    },
+    "rule-0177": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 177"
+    },
+    "rule-0178": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 178"
+    },
+    "rule-0179": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 179"
+    },
+    "rule-0180": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 180"
+    },
+    "rule-0181": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 181"
+    },
+    "rule-0182": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 182"
+    },
+    "rule-0183": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 183"
+    },
+    "rule-0184": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 184"
+    },
+    "rule-0185": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 185"
+    },
+    "rule-0186": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 186"
+    },
+    "rule-0187": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 187"
+    },
+    "rule-0188": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 188"
+    },
+    "rule-0189": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 189"
+    },
+    "rule-0190": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 190"
+    },
+    "rule-0191": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 191"
+    },
+    "rule-0192": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 192"
+    },
+    "rule-0193": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 193"
+    },
+    "rule-0194": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 194"
+    },
+    "rule-0195": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 195"
+    },
+    "rule-0196": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 196"
+    },
+    "rule-0197": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 197"
+    },
+    "rule-0198": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 198"
+    },
+    "rule-0199": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 199"
+    },
+    "rule-0200": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 200"
+    },
+    "rule-0201": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 201"
+    },
+    "rule-0202": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 202"
+    },
+    "rule-0203": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 203"
+    },
+    "rule-0204": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 204"
+    },
+    "rule-0205": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 205"
+    },
+    "rule-0206": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 206"
+    },
+    "rule-0207": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 207"
+    },
+    "rule-0208": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 208"
+    },
+    "rule-0209": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 209"
+    },
+    "rule-0210": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 210"
+    },
+    "rule-0211": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 211"
+    },
+    "rule-0212": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 212"
+    },
+    "rule-0213": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 213"
+    },
+    "rule-0214": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 214"
+    },
+    "rule-0215": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 215"
+    },
+    "rule-0216": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 216"
+    },
+    "rule-0217": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 217"
+    },
+    "rule-0218": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 218"
+    },
+    "rule-0219": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 219"
+    },
+    "rule-0220": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 220"
+    },
+    "rule-0221": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 221"
+    },
+    "rule-0222": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 222"
+    },
+    "rule-0223": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 223"
+    },
+    "rule-0224": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 224"
+    },
+    "rule-0225": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 225"
+    },
+    "rule-0226": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 226"
+    },
+    "rule-0227": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 227"
+    },
+    "rule-0228": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 228"
+    },
+    "rule-0229": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 229"
+    },
+    "rule-0230": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 230"
+    },
+    "rule-0231": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 231"
+    },
+    "rule-0232": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 232"
+    },
+    "rule-0233": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 233"
+    },
+    "rule-0234": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 234"
+    },
+    "rule-0235": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 235"
+    },
+    "rule-0236": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 236"
+    },
+    "rule-0237": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 237"
+    },
+    "rule-0238": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 238"
+    },
+    "rule-0239": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 239"
+    },
+    "rule-0240": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 240"
+    },
+    "rule-0241": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 241"
+    },
+    "rule-0242": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 242"
+    },
+    "rule-0243": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 243"
+    },
+    "rule-0244": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 244"
+    },
+    "rule-0245": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 245"
+    },
+    "rule-0246": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 246"
+    },
+    "rule-0247": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 247"
+    },
+    "rule-0248": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 248"
+    },
+    "rule-0249": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 249"
+    },
+    "rule-0250": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 250"
+    },
+    "rule-0251": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 251"
+    },
+    "rule-0252": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 252"
+    },
+    "rule-0253": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 253"
+    },
+    "rule-0254": {
+      "stated_by": "Reviewer One",
+      "text": "rule number 254"
+    },
+    "stated-and-applied-to-nothing": {
+      "stated_by": "Reviewer One",
+      "text": "a rule the table holds and no entry names"
+    }
+  },
+  "schema": "dokimasia-dispositions/v1",
+  "workbook_sha256": "9ff1e5c476ad150598c29f0121a6b81d3c0b553cfffcb7d20f724852802898a8"
+}

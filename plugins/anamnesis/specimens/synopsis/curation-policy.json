@@ -1,0 +1,34 @@
+{
+  "version": "synopsis-2026-09-08",
+  "mapper": {
+    "name": "fiat-audit-synopsis",
+    "version": "1"
+  },
+  "taxonomy": {
+    "name": "warden-severity",
+    "version": "1",
+    "severities": [
+      "high",
+      "medium",
+      "low"
+    ]
+  },
+  "disclosure": {
+    "derived_text": [
+      "public"
+    ]
+  },
+  "scope": {
+    "id": "warden-synopsis-rendering",
+    "preserves": "The same three audit records the pilot preserves, for Hexaemeron, Pandects and Tabularium, rendered as fiat-audit-synopsis/v1: a second format over the pilot's findings, and not a second producer of them.",
+    "sources": [
+      "hexaemeron-audit-synopsis",
+      "pandects-audit-synopsis",
+      "tabularium-audit-synopsis"
+    ],
+    "records": {
+      "minimum": 25,
+      "maximum": 50
+    }
+  }
+}

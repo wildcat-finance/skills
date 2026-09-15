@@ -40,7 +40,7 @@
     "kind": "severity",
     "value": "high"
   },
-  "release_id": "079ed18d172d6031551cbda55d25a2c064d255186cd8e27a62e90d26da06ae56",
+  "release_id": "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf",
   "schema": "anamnesis-elenchus-analogue/v1",
   "verdict": null
 }

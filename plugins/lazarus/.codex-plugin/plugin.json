@@ -1,6 +1,6 @@
 {
   "name": "lazarus",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Proof-checked historical Ethereum fixtures with exact-request replay, no live fallback, and preservation releases a stranger can check.",
   "author": {
     "name": "Wildcat Labs",
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Lazarus",
     "shortDescription": "Proof-checked historical Ethereum fixtures with exact-request replay, no live fallback, and preservation releases a stranger can check.",
-    "longDescription": "Lazarus captures the finite historical Ethereum state and exact JSON-RPC exchange one application test needs, checks supported account and storage claims through EIP-1186, and reconstructs a declared receipt trie against the named header's receiptsRoot. Only the scoped consensus receipt payload and log projection enter the proved class; transaction hashes, calls, traces, and unrelated fields remain recorded. Fixtures replay exact requests over loopback with no live fallback. Empty blocks do not yet have a receipt-witness representation.",
+    "longDescription": "Lazarus captures the finite historical Ethereum state and exact JSON-RPC exchange one application test needs, checks supported account and storage claims through EIP-1186, and reconstructs a declared receipt trie against the named header's receiptsRoot. A scoped witness proves one consensus receipt payload and log projection. An empty witness is accepted only at Ethereum's empty trie root and proves zero relations. Transaction hashes, calls, traces, and unrelated fields remain recorded. Fixtures replay exact requests over loopback with no live fallback.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],
