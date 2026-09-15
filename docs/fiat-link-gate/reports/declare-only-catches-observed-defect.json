@@ -1,0 +1,9 @@
+{
+  "candidate": "declare-only",
+  "command": "python3 resolve.py --candidate declare-only --criterion catches-observed-defect",
+  "criterion": "catches-observed-defect",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
