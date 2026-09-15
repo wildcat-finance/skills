@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.58.1"
+  version: "6.59.1"
 ---
 
 <p align="center">
@@ -488,6 +488,12 @@ disabled. The bound measurement and parity artefacts are frozen historical
 bytes only, not current evidence. Never run `agent_instruction.py measure`,
 `agent_instruction.py parity`, a tokenizer, a recorded-family adapter, Ollama
 or a model process for this corpus.
+
+`done study` and `done runbook` refuse a Markdown link or `runbook:` pointer
+that is not an absolute URL or an in-page anchor, then run the bundled
+Hypomnema check and refuse any finding, before the digest is pinned;
+`amend study` and `amend runbook` check the bytes an amendment appends the
+same way. Cite a repository path in a code span or pin it to a commit.
 
 **Amending receipted specifications.** After the study and runbook receipts exist,
 and only while build steps are active, append one final dated Protasis

@@ -385,11 +385,35 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("fiat-audit-record", latest["change"])
         self.assertIn("Next Fiat job remain byte-identical", latest["change"])
 
+    def test_fiat_link_gate_generation_holds_the_audit_history_successor(self):
+        ledger = (
+            PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.59.1")
+        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
+        self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
+        self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "fiat-v6.59.1")
+        self.assertEqual(latest["axis"], "generation")
+        self.assertEqual(latest["revision"], "delegated-task-identity")
+        self.assertEqual(
+            latest["digest"],
+            "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
+        )
+        self.assertIn("skills#1086", latest["evidence"])
+        self.assertIn(
+            "`adr/refuse-location-dependent-pointers-before-a-receipt-pins-a-digest`",
+            latest["evidence"],
+        )
+        self.assertIn("checked over the bytes it appends", latest["change"])
+        self.assertIn("held target are unchanged", latest["change"])
+
     def test_fiat_task_identity_frontier_holds_the_audit_history_successor(self):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.58.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -405,9 +429,12 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("skills#363", latest["evidence"])
         self.assertIn("`next --task-handle` refuses", latest["change"])
         self.assertIn("skills#1212", latest["change"])
-        # The signature-only generation landed under this frontier and is the
-        # newest row; it moves neither the revision nor the held job.
-        signature_only = history_rows(ledger)[-1]
+        # The signature-only generation landed under this frontier and was the
+        # newest row until the link-gate generation; it moves neither the revision
+        # nor the held job.
+        signature_only = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.58.1"
+        )
         self.assertEqual(signature_only["version"], "fiat-v6.58.1")
         self.assertEqual(signature_only["axis"], "generation")
         self.assertEqual(signature_only["revision"], "delegated-task-identity")
