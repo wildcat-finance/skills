@@ -1102,11 +1102,12 @@ class TimeCommandTests(TempFiles):
         pid_file = Path(self.tmp.name) / "escapee.pid"
         try:
             escaped = metron.time_once(list(self.python(
-                "import os, sys, time; "
+                "import os, sys, time; ready_r, ready_w = os.pipe(); "
                 "child = os.fork() == 0; "
-                f"(os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
-                "time.sleep(30), os._exit(0)) if child else "
-                "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+                f"(os.close(ready_r), os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
+                "os.write(ready_w, b'1'), os.close(ready_w), time.sleep(30), os._exit(0)) if child else "
+                "(os.close(ready_w), os.read(ready_r, 1) == b'1' or os._exit(72), "
+                "os.close(ready_r), print('parent-done'), sys.stdout.flush(), os._exit(0))"
             )), os.getcwd(), 30000)
             self.assertTrue(escaped["escaped"])
             self.assertEqual(len(self.open_descriptors() - held), 2)
@@ -1121,6 +1122,23 @@ class TimeCommandTests(TempFiles):
             except (OSError, ValueError):
                 pass
 
+
+    def test_escaped_reader_waits_for_a_delayed_session_change(self):
+        """Delay setsid so parent exit cannot race the escape fixture's setup."""
+        prefix = (
+            "import os, time\n"
+            "real_setsid = os.setsid\n"
+            "def delayed_setsid():\n"
+            "    time.sleep(0.25)\n"
+            "    return real_setsid()\n"
+            "os.setsid = delayed_setsid\n"
+        )
+        plain_python = self.python
+        self.python = lambda source: plain_python(prefix + source)
+        try:
+            self.test_an_escaped_reader_keeps_its_pipe_descriptors()
+        finally:
+            self.python = plain_python
 
     def spread(self, path):
         return json.loads(path.read_text(encoding="utf-8"))["recorder"]["spread"]
