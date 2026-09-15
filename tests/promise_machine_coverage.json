@@ -5731,16 +5731,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "negative",
-        "sha256": "da1fd41fa9d065e37e76b5ff453290fc01f86749516a684be0619892ff95577d"
+        "sha256": "26295df099c7c09c9e020834cfde9695caa4fca68864116b8f66cb2c9ecfd263"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "positive",
-        "sha256": "da1fd41fa9d065e37e76b5ff453290fc01f86749516a684be0619892ff95577d"
+        "sha256": "26295df099c7c09c9e020834cfde9695caa4fca68864116b8f66cb2c9ecfd263"
       },
       "reader": "native-json-v1",
       "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
-      "sha256": "e8c0a5554b999b58cede4a3e9948d652f98e1bcd530516250aa0063c7f2e5688",
+      "sha256": "29d53f95cd30b29423aacf17fa850e64c6d0d754c8ec69a2e89f8df139c0ac67",
       "source": "plugins/hexaemeron/tests/test_metron_check.py"
     },
     "pandects-search-record": {
