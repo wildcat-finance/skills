@@ -67,6 +67,7 @@ for a shape finding on the record's first line or the status heading.
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import os
 import re
@@ -76,6 +77,11 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 LINK = re.compile(r"(?<!!)\[(?P<text>[^\]]*)\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")
+# The part of `LINK` after its `](`, in the two halves `_links` reads apart:
+# where a target's characters stop, and whether a `)`, or a quoted title and a
+# `)`, closes the link from there.
+LINK_TARGET_STOP = re.compile(r"[)\s]")
+LINK_CLOSE = re.compile(r"\)|\s+\"[^\"]*\"\)")
 SUPERSEDE = re.compile(r"superseded\s+by\s+(?P<ref>ADR-\d+)", re.IGNORECASE)
 ADR_NUMBER = re.compile(r"ADR-(\d+)", re.IGNORECASE)
 # A bounded keyword and a path, not a word suffix or whatever follows a colon.
@@ -766,8 +772,54 @@ def _yaml_target(value: str) -> str:
     return value
 
 
+def _links(line: str) -> list[re.Match]:
+    """The matches `LINK.finditer` yields on one line, found in linear time.
+
+    `finditer` retries `LINK` at every `[`, and each retry reads on to the
+    first `]` and through the target after it, so a line of openers that never
+    close, or of targets that never end, takes time quadratic in its length.
+    An attempt's outcome depends only on the `!` before its `[`, the first `]`
+    after it, and what follows that `]`. Every `[` before that `]` therefore
+    shares the outcome, and a target starting inside the run of target
+    characters last read stops where that run stops. Skipping to that `]` and
+    remembering that stop reads each character a bounded number of times, and
+    `LINK.match` still decides and builds every match returned.
+    """
+    found: list[re.Match] = []
+    position = 0
+    run_stop = closed_at = -1
+    closes = False
+    while True:
+        opener = line.find("[", position)
+        if opener < 0:
+            return found
+        if opener and line[opener - 1] == "!":
+            position = opener + 1
+            continue
+        closer = line.find("]", opener + 1)
+        if closer < 0:
+            return found
+        position = closer + 1
+        if not line.startswith("(", closer + 1):
+            continue
+        target = closer + 2
+        if target >= run_stop:
+            stop = LINK_TARGET_STOP.search(line, target)
+            run_stop = stop.start() if stop else len(line)
+        if target == run_stop:
+            continue
+        if closed_at != run_stop:
+            closed_at = run_stop
+            closes = LINK_CLOSE.match(line, run_stop) is not None
+        if closes:
+            match = LINK.match(line, opener)
+            if match is not None:
+                found.append(match)
+                position = match.end()
+
+
 def _code_spans(line: str) -> list[tuple[int, int]]:
-    """Half-open offsets of every inline code span on one line.
+    """Half-open offsets covering every inline code span on one line, in order.
 
     CommonMark pairs a backtick run with the next run of the same length and
     leaves an unmatched run as literal text, so an odd backtick cannot open a
@@ -780,6 +832,12 @@ def _code_spans(line: str) -> list[tuple[int, int]]:
     starts one character later, because that backtick is literal text. Without
     it an escaped pair would open a span and hide a live pointer, which is the
     one direction this check must not fail in.
+
+    Runs of different lengths pair independently, so two spans can overlap.
+    The result is their union as disjoint spans sorted by start, which lets
+    `_within` settle each offset with one binary search. Reading every span for
+    each offset was quadratic on a line of quoted links, which asks about as
+    many offsets as it holds spans.
     """
     pending: dict[int, int] = {}
     spans: list[tuple[int, int]] = []
@@ -803,12 +861,28 @@ def _code_spans(line: str) -> list[tuple[int, int]]:
             pending[length] = start
         else:
             spans.append((opened, end))
-    return spans
+    return _disjoint_spans(spans)
+
+
+def _disjoint_spans(spans) -> list[tuple[int, int]]:
+    """The offsets any of the half-open spans cover, as disjoint sorted spans."""
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(spans):
+        if merged and start < merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def _within(spans, index: int) -> bool:
-    """Whether one offset falls inside any span."""
-    return any(start <= index < end for start, end in spans)
+    """Whether one offset falls inside any span.
+
+    `spans` is `_code_spans` output, disjoint and sorted by start, so the last
+    span starting at or before the offset is the only one that can hold it.
+    """
+    position = bisect.bisect_right(spans, index, key=lambda span: span[0])
+    return position > 0 and index < spans[position - 1][1]
 
 
 def _relative_markdown(value: str) -> bool:
@@ -1220,7 +1294,7 @@ def check(
         if in_fence:
             continue
 
-        links = list(LINK.finditer(line))
+        links = _links(line)
         # A link inside an inline code span is a quoted specimen, the reading
         # H003 gives a `runbook:` keyword there. Only a line carrying a link
         # pays for the span scan.
