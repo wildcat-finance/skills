@@ -29734,7 +29734,13 @@ def main() -> None:
             args._init_preflight = init_preflight(args)
         with held_lock(args.dir, args.fn.__name__):
             if args.fn.__name__ not in ("cmd_init", "cmd_halt", "cmd_resume", "cmd_reset", "cmd_amend_runbook"):
-                candidate_state = load_state(args.dir, allow_pending_replacement=True, allow_pending_amendment=True, allow_pending_resolution=True)
+                candidate_state = load_state(
+                    args.dir,
+                    allow_pending_replacement=True,
+                    allow_pending_amendment=True,
+                    allow_pending_resolution=True,
+                    allow_pending_no_known=True,
+                )
                 gate_recovery_preflight(args.dir, candidate_state, allow_source_drift=False)
             args.fn(args)
         return
