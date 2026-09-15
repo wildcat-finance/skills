@@ -1,4 +1,4 @@
-"""Exact evidence contract for retiring the hosted identity status."""
+"""Exact evidence contract for retiring the required identity context."""
 
 from copy import deepcopy
 import json
@@ -96,8 +96,8 @@ class RetiredSurfaceTests(unittest.TestCase):
         self.assertTrue((ROOT / ".github/workflows/identity.yml").exists())
         self.assertTrue((ROOT / "scripts/check_commit_identity.py").exists())
 
-    def test_claude_attribution_override_is_absent(self):
-        self.assertFalse((ROOT / ".claude/settings.json").exists())
+    def test_claude_attribution_override_is_present(self):
+        self.assertTrue((ROOT / ".claude/settings.json").exists())
 
     def test_contributor_ranking_keeps_the_host_set_parity_names(self):
         source = (ROOT / "scripts/contributors.py").read_text(encoding="utf-8")
