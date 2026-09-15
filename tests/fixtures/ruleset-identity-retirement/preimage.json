@@ -1,0 +1,48 @@
+{
+  "_links": {
+    "html": {
+      "href": "https://github.com/wildcat-finance/skills/rules/21830871"
+    },
+    "self": {
+      "href": "https://api.github.com/repos/wildcat-finance/skills/rulesets/21830871"
+    }
+  },
+  "bypass_actors": [],
+  "conditions": {
+    "ref_name": {
+      "exclude": [],
+      "include": [
+        "~DEFAULT_BRANCH"
+      ]
+    }
+  },
+  "created_at": "2026-08-30T02:00:10.739+01:00",
+  "current_user_can_bypass": "never",
+  "enforcement": "evaluate",
+  "id": 21830871,
+  "name": "Required CI",
+  "node_id": "RRS_lACqUmVwb3NpdG9yec5Pj7q0zgFNHNc",
+  "rules": [
+    {
+      "parameters": {
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "identity",
+            "integration_id": 15368
+          },
+          {
+            "context": "invariants",
+            "integration_id": 15368
+          }
+        ],
+        "strict_required_status_checks_policy": false
+      },
+      "type": "required_status_checks"
+    }
+  ],
+  "source": "wildcat-finance/skills",
+  "source_type": "Repository",
+  "target": "branch",
+  "updated_at": "2026-08-31T00:37:07.253+01:00"
+}

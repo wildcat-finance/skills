@@ -118,13 +118,13 @@ Each digest is checked byte for byte by the currency guard.
 
 - `PROMISE_MACHINE.md`, SHA-256 `74b35742ffad37a442d7204c2b9b60ed87776884245c52eddbc79ac889d292b7`, 31943 bytes
 - `tests/promise_machine_obligations.json`, SHA-256 `384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f`, 9630 bytes
-- `tests/promise_machine_coverage.json`, SHA-256 `d07b13f957f4e0ae143e497db5b6b56f7a104beb501f615f343fbd104dd8a278`, 274116 bytes
-- `tests/promise_machine_id_history.json`, SHA-256 `5b2aa6527205d5fa7f150fcdcd65540108f1da0be55881b8194f64f512b961e6`, 52900 bytes
-- `tests/fixtures/promise-machine/composition/cases.json`, SHA-256 `d4981a119aee8942e3105c8cec936094b1556efd2c79a41242af34f8ea7d9298`, 26778 bytes
+- `tests/promise_machine_coverage.json`, SHA-256 `aa4a35137e389aa0f8fae196c3ff640a761dbeb45c64841ebe492d876e7544d5`, 274116 bytes
+- `tests/promise_machine_id_history.json`, SHA-256 `5bb96be5c6862a6d5ee0ffad788fe297a9a660d3f6acc2bd8716086030d47e01`, 52900 bytes
+- `tests/fixtures/promise-machine/composition/cases.json`, SHA-256 `d4a0292390df02a283727d06a32b0e34b36c9955abeb3ccbb01c47662ebad629`, 26778 bytes
 - `tests/fixtures/promise-machine/history/cases.json`, SHA-256 `9051ac6c291330f527705177bffa70985657ec7f96707b7a9349d4e574cfc3f0`, 685 bytes
 - `tests/fixtures/promise-machine/upstream-provenance/cases.json`, SHA-256 `f60821b1edf450d47a581f12562c13e1931c2b09c960bce2fb8a0b1767c154cf`, 935 bytes
 - `docs/promise-machine/obligation-gates/evaluation-answers.json`, SHA-256 `3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855`, 1911 bytes
-- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `1c07f76d3725d8213287ad85a219f7bac6777540d78a1a96a14d636bb2e74b15`, 3231 bytes
+- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `946d67ddcd2ffd5381cec84f227cd6a3c24f4a57a2ac60a2fc783e782256a9ae`, 3231 bytes
 
 ## When a gate stops the line
 
