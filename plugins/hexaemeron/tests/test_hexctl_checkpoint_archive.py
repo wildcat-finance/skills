@@ -69,6 +69,7 @@ from the whole file until the step that owns it.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import importlib.util
 import inspect
@@ -785,6 +786,70 @@ def study_fixture_ids(study: str) -> set[str]:
     raise AssertionError("the study's risk register has no hostile-fixture-set line")
 
 
+def hexctl_tree() -> ast.Module:
+    """`hexctl.py` parsed, for the enumeration proofs that read structure."""
+    return ast.parse(Path(HEXCTL).read_text(encoding="utf-8"))
+
+
+def module_functions(tree: ast.Module) -> dict:
+    return {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+
+def called_names(node) -> set:
+    names = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            function = child.func
+            if isinstance(function, ast.Name):
+                names.add(function.id)
+            elif isinstance(function, ast.Attribute):
+                names.add(function.attr)
+    return names
+
+
+def refusal_literals(node) -> set:
+    """Every refusal class named by a literal reaching the two entry points.
+
+    A class forwarded as a variable is not counted, which bounds this to the
+    literals: the only such forward is `_checkpoint_archive_guarded` handing
+    its own parameter to `_checkpoint_archive_refuse`, and that parameter's
+    values are the literals its call sites already supply.
+    """
+    classes = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            function = child.func
+            name = (
+                function.id
+                if isinstance(function, ast.Name)
+                else getattr(function, "attr", None)
+            )
+            if name in ("_checkpoint_archive_refuse", "_checkpoint_archive_guarded"):
+                if child.args and isinstance(child.args[0], ast.Constant):
+                    classes.add(child.args[0].value)
+    return classes
+
+
+def manifest_closed_fields(tree: ast.Module) -> set:
+    """`checkpoint.json`'s top-level field set, as the inspector closes it."""
+    shape = module_functions(tree)["_checkpoint_inspect_manifest_shape"]
+    for child in ast.walk(shape):
+        if (
+            isinstance(child, ast.Call)
+            and getattr(child.func, "id", None) == "_checkpoint_inspect_closed"
+            and len(child.args) == 3
+            and isinstance(child.args[2], ast.Constant)
+            and child.args[2].value == "manifest"
+            and isinstance(child.args[1], ast.Set)
+        ):
+            return {element.value for element in child.args[1].elts}
+    raise AssertionError("the inspector closes no manifest field set")
+
+
 def load_metron():
     spec = importlib.util.spec_from_file_location("metron_budget_loader", METRON)
     module = importlib.util.module_from_spec(spec)
@@ -1280,6 +1345,437 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertEqual(entry["unit"], fields.group("unit"))
                 self.assertEqual(entry["limit"], int(fields.group("limit")))
 
+    def test_refusal_classes_after_git_init_are_the_four_the_reference_qualifies(self):
+        """S4-R5-01: the post-`git init` class set, computed rather than read.
+
+        Study section 11 says any section-4 refusal class exits 1 before the
+        destination repository exists. Four classes cannot hold that clause,
+        and the qualification the reference owes has to name exactly those
+        four -- rounds 1 to 3 each enumerated them by reading the restore
+        path, and each enumeration was short: round 3 named three where there
+        were four, and round 4 named four where `trailing-data` made five.
+
+        So this computes the set instead. It takes every call `checkpoint
+        restore --archive` makes at or after its `git init`, closes over
+        every module function those calls can reach, and collects every
+        refusal class named by a literal anywhere in that closure. The
+        closure follows attribute calls by bare name as well as direct ones,
+        so it over-approximates: a class it does not report is unreachable
+        after `git init`, which is the direction this guard needs.
+
+        A fifth class appearing here is not necessarily a defect in the code.
+        It is a statement in the study that has stopped being true, and the
+        two have to be repaired together.
+        """
+        tree = hexctl_tree()
+        functions = module_functions(tree)
+        restore = functions["_checkpoint_restore_from_archive"]
+        git_init = min(
+            node.lineno
+            for node in ast.walk(restore)
+            if isinstance(node, ast.Constant) and node.value == "init"
+        )
+
+        seeds = set()
+        after = [
+            node
+            for node in ast.walk(restore)
+            if isinstance(node, ast.Call) and node.lineno >= git_init
+        ]
+        for call in after:
+            function = call.func
+            if isinstance(function, ast.Name):
+                seeds.add(function.id)
+            elif isinstance(function, ast.Attribute):
+                seeds.add(function.attr)
+            for argument in call.args:
+                seeds |= called_names(argument)
+
+        reached, pending = set(), list(seeds)
+        while pending:
+            name = pending.pop()
+            if name in reached or name not in functions:
+                continue
+            reached.add(name)
+            pending.extend(called_names(functions[name]))
+
+        classes = set()
+        for call in after:
+            classes |= refusal_literals(call)
+        for name in reached:
+            classes |= refusal_literals(functions[name])
+
+        self.assertEqual(
+            {
+                "manifest-mismatch",
+                "ref-disagreement",
+                "identity-mismatch",
+                "identity-unavailable",
+            },
+            classes,
+            "the set of refusal classes reachable once the destination "
+            "repository exists has changed, so study section 11's "
+            "qualification names the wrong classes",
+        )
+
+    def test_controller_constants_carry_the_study_enumerations(self):
+        """S4-R5-01: the study's closed lists, joined to the code that runs.
+
+        `test_archive_reference_names_every_refusal_class_and_fixture_id`
+        above holds the reference document to the study. Nothing held either
+        document to the controller, so a class, field, ceiling or pattern
+        could drift in `hexctl.py` alone and both documents would still agree
+        with each other. These are the same five enumerations, read from the
+        module and from the test module's own methods.
+        """
+        study = read(STUDY)
+        module = hexctl_module()
+
+        classes = set(module.CHECKPOINT_ARCHIVE_REFUSALS)
+        self.assertEqual(24, len(classes))
+        self.assertEqual(study_refusal_classes(study), classes)
+
+        methods = {
+            name
+            for name in dir(CheckpointArchiveInspectTests)
+            if name.startswith("test_hostile_")
+        }
+        self.assertEqual(35, len(methods))
+        self.assertEqual(
+            {"test_hostile_" + fixture.replace("-", "_")
+             for fixture in study_fixture_ids(study)},
+            methods,
+        )
+
+        fields = manifest_closed_fields(hexctl_tree())
+        self.assertEqual(13, len(fields))
+        self.assertEqual(set(EXPECTED_MANIFEST_FIELDS), fields)
+
+        self.assertEqual(
+            EXPECTED_CEILINGS,
+            (
+                module.CHECKPOINT_ARCHIVE_ENTRIES_MAX,
+                module.CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX // (1024 * 1024),
+                module.CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX // (1024 * 1024 * 1024),
+                module.CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX // (1024 * 1024),
+                module.CHECKPOINT_ARCHIVE_NAME_BYTES_MAX,
+                module.CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX,
+                module.CHECKPOINT_ARCHIVE_ACCEPTANCE_MAX,
+            ),
+        )
+
+        patterns = module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS
+        self.assertEqual(6, len(patterns))
+        sources = [pattern.pattern.decode("ascii") for pattern in patterns]
+        self.assertEqual(list(EXPECTED_AMENDED_SECRET_SPANS[1:]), sources[2:])
+        self.assertEqual(ADDED_PATTERN_SPAN, sources[1])
+        # The amendment's own reason for dropping the OpenSSH header: the PEM
+        # pattern before it already matches that header.
+        self.assertIsNotNone(
+            patterns[0].search(SUBSUMED_PATTERN_SPAN.encode("ascii"))
+        )
+
+    def test_capsule_extraction_diagnoses_a_captured_copy_read_failure_as_itself(self):
+        """S4-R5-01: a short read of the scratch copy is not `trailing-data`.
+
+        Capsule extraction reads the inspector's captured copy after `git
+        init` has filled the destination. Every member it reads was digested
+        and accepted against the central directory before that, so a short
+        read or an `OSError` at this point is a fact about this process's own
+        scratch file and not about the archive's byte layout -- which is what
+        `trailing-data` asserts, and what the risk register defines it as.
+
+        The condition is driven directly rather than through the command,
+        because inducing it through `checkpoint restore --archive` means
+        changing the scratch copy inside the window between the inspector
+        returning and extraction reading, and that window has no command-line
+        surface. The bound is worth stating: this establishes the diagnosis
+        at the extraction site, not the residue an operator meeting it finds.
+        """
+        module = hexctl_module()
+        scratch = tempfile.mkdtemp(prefix="fiat861-r5-extract-")
+        self.addCleanup(shutil.rmtree, scratch, ignore_errors=True)
+        local = os.path.join(scratch, "captured.zip")
+        with open(local, "wb") as handle:
+            handle.write(b"short")
+        destination = os.path.join(scratch, "destination")
+        os.makedirs(destination, 0o700)
+        physical = [
+            {
+                "name": module.CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/MANIFEST.json",
+                "data_offset": 0,
+                "size": 4096,
+            }
+        ]
+
+        captured = StringIO()
+        with redirect_stderr(captured):
+            with self.assertRaises(SystemExit) as stopped:
+                module._checkpoint_restore_archive_extract_capsule(
+                    local, physical, destination, "0" * 64
+                )
+
+        self.assertEqual(
+            2,
+            stopped.exception.code,
+            "a failed read of this process's own captured copy exited as a "
+            "bounded archive refusal, which states something about the "
+            "archive that the inspector already accepted",
+        )
+        self.assertNotIn("trailing-data", captured.getvalue())
+        self.assertIn("capsule member could not be read", captured.getvalue())
+
+    def test_source_verification_does_not_echo_the_producers_own_path(self):
+        """S4-R6-01: a receipt outside `.hexaemeron/` printed the producer's path.
+
+        `_checkpoint_restore_verify_source` derives one sanitised, portable
+        relative path from the receipt and then, for an artefact outside the
+        controller directory, handed the whole state to `receipted_source`.
+        That reader re-reads the receipt's own `artifact` field rather than
+        the derived path, and that field is still the producer's: for a run
+        whose receipt recorded an absolute path it resolves outside the
+        restored worktree every time, so `scoped_path` refuses it by printing
+        the path it was handed. The refusal therefore carried the producer's
+        home directory, account name and project name to stderr, out of a
+        command whose whole purpose is to keep the archive's bytes inside its
+        stage, and after `git init` has already filled the destination.
+
+        Driven directly, for the reason the sibling above states: the value
+        reaching this reader is the relocated state's, and there is no
+        command-line surface that supplies one receipt path without supplying
+        a whole archive built around it.
+
+        The bound is worth stating: this establishes what the refusal prints,
+        not that any particular archive reaches this branch.
+        """
+        module = hexctl_module()
+        origin = "/Users/victim/secret-client-engagement"
+        branch = "fiat/861-source-leak"
+        producer_worktree = os.path.join(
+            origin, *module.WORKTREE_HOME, branch.replace("/", "-")
+        )
+        artifact = os.path.join(producer_worktree, "docs", "study.md")
+        state = {
+            "run_branch": branch,
+            "config": {"git": {"origin": origin, "worktree": producer_worktree}},
+            "receipts": {
+                "study": {
+                    "sha256": hashlib.sha256(b"study bytes").hexdigest(),
+                    "artifact": artifact,
+                }
+            },
+        }
+        scratch = tempfile.mkdtemp(prefix="fiat861-r6-source-")
+        self.addCleanup(shutil.rmtree, scratch, ignore_errors=True)
+        destination = os.path.join(scratch, "worktree")
+        stage = os.path.join(scratch, "stage")
+        os.makedirs(destination, 0o700)
+        os.makedirs(stage, 0o700)
+
+        captured = StringIO()
+        with redirect_stderr(captured):
+            with self.assertRaises(SystemExit) as stopped:
+                module._checkpoint_restore_verify_source(
+                    destination, stage, state, "study"
+                )
+
+        diagnosis = captured.getvalue()
+        self.assertEqual(2, stopped.exception.code)
+        self.assertNotIn(
+            origin,
+            diagnosis,
+            "the refusal carried the producer's home directory and project "
+            "name to stderr, which is the source-path leak the register's "
+            "`diagnostic-leak` row refuses",
+        )
+        self.assertNotIn(
+            artifact,
+            diagnosis,
+            "the refusal echoed the receipt's own archive-supplied path",
+        )
+        self.assertNotIn("escapes target directory", diagnosis)
+
+    def test_every_checkpoint_call_to_the_path_echoing_reader_is_sanitised(self):
+        """S4-R6-01: the containment exists; pin that every call site uses it.
+
+        `receipted_source` refuses through `scoped_path`, which prints the path
+        it was handed. The module already states the remedy: the docstring of
+        `_checkpoint_identity_sanitized` is "Run a legacy verifier without
+        letting its path-bearing errors escape", and the identity route wraps
+        this exact reader in it. The restore route called the same reader on
+        the same archive-derived state and did not, which is the leak the
+        sibling above drives.
+
+        The repair removed that call rather than wrapping it, because reading
+        the receipt's own pre-relocation path in the restored worktree could
+        never have succeeded. This pins the resulting property structurally,
+        so a later call site added without the containment is caught here
+        rather than by the next enumeration: every `receipted_source` call
+        inside a checkpoint function is lexically inside a
+        `_checkpoint_identity_sanitized` call.
+
+        The bound: this reads call sites, not reachability, so it says nothing
+        about which of them an archive can drive.
+        """
+        module = hexctl_module()
+        tree = ast.parse(
+            pathlib.Path(inspect.getsourcefile(module)).read_text(encoding="utf-8")
+        )
+        parents = {}
+        for node in ast.walk(tree):
+            for child in ast.iter_child_nodes(node):
+                parents[child] = node
+
+        def sanitised(node):
+            while node in parents:
+                node = parents[node]
+                if (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "_checkpoint_identity_sanitized"
+                ):
+                    return True
+            return False
+
+        unsanitised = []
+        for owner in tree.body:
+            if not isinstance(owner, ast.FunctionDef):
+                continue
+            if not owner.name.startswith("_checkpoint_"):
+                continue
+            for sub in ast.walk(owner):
+                if (
+                    isinstance(sub, ast.Call)
+                    and isinstance(sub.func, ast.Name)
+                    and sub.func.id == "receipted_source"
+                    and not sanitised(sub)
+                ):
+                    unsanitised.append(f"{owner.name}:{sub.lineno}")
+
+        self.assertEqual(
+            [],
+            unsanitised,
+            "a checkpoint reader calls `receipted_source` without the "
+            "containment `_checkpoint_identity_sanitized` exists for, so its "
+            "refusal prints the receipt's own path",
+        )
+
+
+class RunAnchorRepositoryAdmissionTests(unittest.TestCase):
+    """S4-R7-01: what the restore may interpolate into `remote.origin.url`.
+
+    `_checkpoint_restore_from_archive` writes the destination's origin from
+    `receipts.run_anchor.repository`, and `validate_run_anchor_shape` is the
+    only gate between the archive's bytes and that write. Before this round
+    that gate was the bare `REPOSITORY_RE` pattern plus a lowercase rule,
+    while `target_repository_binding` -- the one function that ever mints a
+    repository, and the one that reads the written URL back -- additionally
+    refuses a `.` or `..` segment. These two cases hold the accepting
+    validator to the minting one.
+    """
+
+    # Owner/name forms a hostile archive can put in its anchor. The first is
+    # the honest shape; the six after it are the relative-segment family.
+    HONEST = "wildcat-finance/skills"
+    RELATIVE_SEGMENT = (
+        "./skills",
+        "../skills",
+        "wildcat-finance/.",
+        "wildcat-finance/..",
+        "../..",
+        "./.",
+    )
+    # Admitted, and each must survive the round trip unchanged.
+    ADMITTED = (
+        HONEST,
+        ".../skills",
+        ".git/skills",
+        "wildcat-finance/.git",
+        "wildcat-finance/skills.git",
+        "wildcat-finance.git/skills",
+        "wildcat-finance/skills.",
+        "wildcat-finance/skills.git.git",
+        "-upload-pack/skills",
+        "wildcat-finance/-o",
+    )
+
+    def anchor(self, repository):
+        module = hexctl_module()
+        return {
+            "schema": module.RUN_ANCHOR_SCHEMA,
+            "controller": {
+                "name": "hexctl",
+                "state_version": 1,
+                "version": "fiat-v5.53.1",
+            },
+            "initial_base_sha": "0" * 40,
+            "integration_branch": "main",
+            "repository": repository,
+            "run_branch": "fiat/861-anchor-admission",
+            "run_id": "fiat-" + ("0" * 64),
+            "task": dict(module.RUN_ANCHOR_TASK_NONE),
+        }
+
+    def test_run_anchor_repository_refuses_a_relative_path_segment(self):
+        module = hexctl_module()
+        self.assertEqual(
+            self.anchor(self.HONEST),
+            module.validate_run_anchor_shape(self.anchor(self.HONEST)),
+        )
+        for repository in self.RELATIVE_SEGMENT:
+            with self.subTest(repository=repository):
+                self.assertIsNotNone(
+                    module.REPOSITORY_RE.fullmatch(repository),
+                    "the bare pattern is what makes this case worth guarding",
+                )
+                with redirect_stderr(StringIO()) as captured:
+                    with self.assertRaises(SystemExit) as raised:
+                        module.validate_run_anchor_shape(self.anchor(repository))
+                self.assertEqual(1, raised.exception.code)
+                self.assertEqual(
+                    "hexctl: error: run anchor repository identity is malformed\n",
+                    captured.getvalue(),
+                )
+                self.assertNotIn(repository, captured.getvalue())
+
+    def test_every_repository_the_anchor_admits_survives_the_minting_validator(self):
+        """The property, not the six specimens: anything this gate admits must
+        read back out of the URL the restore builds as the same repository."""
+        module = hexctl_module()
+        root = tempfile.mkdtemp(prefix="fiat861-anchor-")
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        for index, repository in enumerate(self.ADMITTED + self.RELATIVE_SEGMENT):
+            with self.subTest(repository=repository):
+                try:
+                    with redirect_stderr(StringIO()):
+                        module.validate_run_anchor_shape(self.anchor(repository))
+                except SystemExit:
+                    continue
+                # exactly the interpolation `_checkpoint_restore_from_archive`
+                # performs when it records the origin remote
+                url = f"https://github.com/{repository}.git"
+                work = os.path.join(root, str(index))
+                subprocess.run(
+                    ["git", "init", "-q", work], check=True, capture_output=True
+                )
+                subprocess.run(
+                    ["git", "-C", work, "config", "remote.origin.url", url],
+                    check=True,
+                    capture_output=True,
+                )
+                with redirect_stderr(StringIO()) as captured:
+                    try:
+                        read_back = module.target_repository_binding(work)
+                    except SystemExit:
+                        read_back = f"refused: {captured.getvalue().strip()}"
+                self.assertEqual(
+                    repository,
+                    read_back,
+                    "the anchor gate admitted a repository the minting "
+                    "validator will not read back, so the restore writes an "
+                    "origin its own `verify` refuses",
+                )
+
 
 class SignedRunFixture(HexctlCase):
     """One real, really signed run, shared by every test that needs its archive.
@@ -1488,6 +1984,68 @@ class SignedRunFixture(HexctlCase):
         found = sorted(self.store_root().glob("*/*/checkpoint.zip"))
         self.assertEqual(1, len(found), found)
         return found[0]
+
+    def good_archive(self):
+        """One real, published archive from one really signed, receipted run."""
+        self.to_post_push()
+        self.archive()
+        return self.published()
+
+    def good_members(self, path=None):
+        with zipfile.ZipFile(path or self.good_archive()) as container:
+            return {
+                info.filename: container.read(info.filename)
+                for info in container.infolist()
+            }
+
+    def outer_sha256(self, path):
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+    def manifest(self, members):
+        return json.loads(members["checkpoint.json"])
+
+    def set_manifest(self, members, manifest_obj):
+        module = hexctl_module()
+        members["checkpoint.json"] = (
+            module.canonical(manifest_obj).encode("utf-8") + b"\n"
+        )
+
+    def retarget(self, members, manifest_obj, path, new_bytes):
+        """Change one member's bytes and its own manifest record together,
+        so only the check under test is left disagreeing with the rest.
+        """
+        members[path] = new_bytes
+        for entry in manifest_obj["archive"]["entries"]:
+            if entry["path"] == path:
+                entry["bytes"] = len(new_bytes)
+                entry["sha256"] = hashlib.sha256(new_bytes).hexdigest()
+                if path == "git/repository.bundle":
+                    # `checkpoint.json` records the bundle in its own block as
+                    # well, and since S3-R3-01 `inspect` joins the two, so a
+                    # specimen meant to disagree elsewhere keeps them equal.
+                    manifest_obj["bundle"]["bytes"] = entry["bytes"]
+                    manifest_obj["bundle"]["sha256"] = entry["sha256"]
+                return
+        raise AssertionError(f"{path} is not a manifest entry")
+
+    def specimen_path(self, name="specimen.zip"):
+        return os.path.join(self.dir, name)
+
+    def write_specimen(self, members, overrides=None, *, path=None):
+        """Pack `members` (name -> bytes), sorted by UTF-8 bytes, with any
+        named entry's mode, method, flags, extra field or declared central-
+        directory size overridden by `overrides`.
+        """
+        overrides = overrides or {}
+        names = sorted(members, key=lambda item: item.encode("utf-8"))
+        entries = []
+        for name in names:
+            entry = {"name": name.encode("utf-8"), "data": members[name]}
+            entry.update(overrides.get(name, {}))
+            entries.append(entry)
+        target = path or self.specimen_path()
+        write_raw_zip(target, entries)
+        return target
 
     def controller_bytes(self):
         root = Path(self.target) / ".hexaemeron"
@@ -2646,69 +3204,6 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
 
     # -- fixture plumbing -------------------------------------------------
 
-    def good_archive(self):
-        """One real, published archive from one really signed, receipted run."""
-        self.to_post_push()
-        self.archive()
-        return self.published()
-
-    def good_members(self):
-        path = self.good_archive()
-        with zipfile.ZipFile(path) as container:
-            return {
-                info.filename: container.read(info.filename)
-                for info in container.infolist()
-            }
-
-    def manifest(self, members):
-        return json.loads(members["checkpoint.json"])
-
-    def set_manifest(self, members, manifest_obj):
-        module = hexctl_module()
-        members["checkpoint.json"] = (
-            module.canonical(manifest_obj).encode("utf-8") + b"\n"
-        )
-
-    def retarget(self, members, manifest_obj, path, new_bytes):
-        """Change one member's bytes and its own manifest record together,
-        so only the check under test is left disagreeing with the rest.
-        """
-        members[path] = new_bytes
-        for entry in manifest_obj["archive"]["entries"]:
-            if entry["path"] == path:
-                entry["bytes"] = len(new_bytes)
-                entry["sha256"] = hashlib.sha256(new_bytes).hexdigest()
-                if path == "git/repository.bundle":
-                    # `checkpoint.json` records the bundle in its own block as
-                    # well, and since S3-R3-01 `inspect` joins the two, so a
-                    # specimen meant to disagree elsewhere keeps them equal.
-                    manifest_obj["bundle"]["bytes"] = entry["bytes"]
-                    manifest_obj["bundle"]["sha256"] = entry["sha256"]
-                return
-        raise AssertionError(f"{path} is not a manifest entry")
-
-    def specimen_path(self, name="specimen.zip"):
-        return os.path.join(self.dir, name)
-
-    def write_specimen(self, members, overrides=None, *, path=None):
-        """Pack `members` (name -> bytes), sorted by UTF-8 bytes, with any
-        named entry's mode, method, flags, extra field or declared central-
-        directory size overridden by `overrides`.
-        """
-        overrides = overrides or {}
-        names = sorted(members, key=lambda item: item.encode("utf-8"))
-        entries = []
-        for name in names:
-            entry = {"name": name.encode("utf-8"), "data": members[name]}
-            entry.update(overrides.get(name, {}))
-            entries.append(entry)
-        target = path or self.specimen_path()
-        write_raw_zip(target, entries)
-        return target
-
-    def outer_sha256(self, path):
-        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
     def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1):
         args = [
             sys.executable,
@@ -3112,11 +3607,15 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             self.assertEqual(original, handle.read())
         self.assertEqual(len(original), size)
 
-        # And nothing downstream reads the supplied path again: inside
-        # `_checkpoint_inspect_archive` the parameter appears only in its own
-        # signature and in the capture call. A later reopen would put the
-        # fork back without failing anything else here.
-        body = inspect.getsource(module._checkpoint_inspect_archive)
+        # And nothing downstream reads the supplied path again. The parse
+        # logic itself lives in `_checkpoint_inspect_archive_verified` --
+        # `_checkpoint_inspect_archive` is a thin wrapper `checkpoint restore
+        # --archive` also calls, so it can read the same verified manifest,
+        # captured file and parsed central directory this test's own
+        # docstring already names -- and inside it the parameter appears only
+        # in its own signature and in the capture call. A later reopen would
+        # put the fork back without failing anything else here.
+        body = inspect.getsource(module._checkpoint_inspect_archive_verified)
         mentions = [
             line.strip()
             for line in body.splitlines()
@@ -3127,6 +3626,21 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             mentions,
             "the supplied path is read outside the capture, so the digest no "
             "longer covers everything the inspector parses",
+        )
+        # The wrapper itself forwards `archive_path` on to the verified
+        # reader above and nowhere else.
+        wrapper_body = inspect.getsource(module._checkpoint_inspect_archive)
+        wrapper_mentions = [
+            line.strip()
+            for line in wrapper_body.splitlines()
+            if "archive_path" in line and not line.strip().startswith("#")
+        ]
+        self.assertEqual(
+            [
+                "archive_path: str,",
+                "archive_path, expected_sha256, scratch, existing_repo=existing_repo",
+            ],
+            wrapper_mentions,
         )
 
     def test_inspect_refuses_a_current_acceptance_anywhere_under_its_root(self):
@@ -3432,6 +3946,705 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         self.set_manifest(members, manifest)
         path = self.write_specimen(members)
         self.assert_refuses(path, "ref-disagreement")
+
+
+class CheckpointArchiveRestoreTests(SignedRunFixture):
+    """`checkpoint restore --archive` over one real, really signed archive.
+
+    Every case here restores into a fresh destination this process controls
+    directly (never `self.target`, the fixture's own worktree), over a plain
+    subprocess with no `FAKE_GIT_*` environment: the destination's Git history
+    is whatever `git init` and the archive's own bundle actually produce, and
+    `merge-base`, `rev-parse` and the rest resolve for real against it.
+    """
+
+    # -- fixture plumbing --------------------------------------------------
+
+    def restore_destination(self, name="restore-dest"):
+        root = tempfile.mkdtemp(prefix="fiat861-restore-")
+        return os.path.join(root, name)
+
+    def run_restore(self, archive_path, sha256, destination, *, expect=0, env=None):
+        args = [
+            sys.executable,
+            HEXCTL,
+            "--dir",
+            str(destination),
+            "checkpoint",
+            "restore",
+            "--archive",
+            str(archive_path),
+            "--sha256",
+            sha256,
+        ]
+        proc = subprocess.run(args, capture_output=True, text=True, env=env)
+        if proc.returncode != expect:
+            raise AssertionError(
+                f"checkpoint restore --archive -> rc {proc.returncode} "
+                f"(expected {expect})\nstdout: {proc.stdout}\nstderr: {proc.stderr}"
+            )
+        return proc
+
+    def assert_restore_refuses(self, archive_path, refusal, destination=None, *, sha256=None):
+        digest = sha256 if sha256 is not None else self.outer_sha256(archive_path)
+        destination = destination or self.restore_destination()
+        proc = self.run_restore(archive_path, digest, destination, expect=1)
+        self.assertEqual(f"{refusal}\n", proc.stderr)
+        self.assertEqual("", proc.stdout)
+
+    def hexctl_status_json(self, worktree):
+        proc = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", str(worktree), "status", "--json"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        payload = json.loads(proc.stdout)
+        payload.pop("observation_run_id", None)
+        payload.pop("version_resolution_status", None)
+        return payload
+
+    def hostile_identity_internally_consistent(self, members, manifest):
+        """Tamper the identity claim so its two copies still agree.
+
+        Unlike `test_hostile_identity_mismatch` above, which leaves the
+        member's own recorded `snapshot_id` disagreeing with `checkpoint.json`'s
+        copy -- a defect `checkpoint inspect` already catches on its own --
+        this changes the identity object itself and re-derives both copies
+        from the new, false content. `checkpoint inspect` sees two
+        self-consistent copies and passes; only a mint from the real
+        restored state, ledger and Git evidence can tell the claim is wrong.
+        """
+        target = "identity/checkpoint-identity.json"
+        payload = json.loads(members[target])
+        module = hexctl_module()
+        tampered_identity = dict(payload["identity"])
+        tampered_identity["restore_test_marker"] = "tampered"
+        recomputed = hashlib.sha256(
+            module.CHECKPOINT_IDENTITY_DOMAIN
+            + module.canonical(tampered_identity).encode("utf-8")
+        ).hexdigest()
+        payload["identity"] = tampered_identity
+        payload["snapshot_id"] = recomputed
+        new_bytes = module.canonical(payload).encode("utf-8") + b"\n"
+        self.retarget(members, manifest, target, new_bytes)
+        manifest["identity"]["snapshot_id"] = recomputed
+        self.set_manifest(members, manifest)
+
+    # -- cases --------------------------------------------------------------
+
+    def test_restore_from_archive_recreates_repository_and_controller_state(self):
+        archive = self.good_archive()
+        producer_state = self.state()
+        producer_ledger = (
+            Path(self.target) / ".hexaemeron" / "ledger.jsonl"
+        ).read_bytes()
+        digest = self.outer_sha256(archive)
+        manifest = self.manifest(self.good_members(archive))
+        destination = self.restore_destination()
+
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+        self.assertEqual(digest, payload["outer_sha256"])
+        worktree = payload["restore"]["worktree"]
+
+        verify_proc = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", worktree, "verify"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, verify_proc.returncode, verify_proc.stderr)
+
+        restored_state = self.hexctl_status_json(worktree)
+        for owned in (("config", "git", "worktree"), ("config", "git", "origin")):
+            producer_node, restored_node = producer_state, restored_state
+            for key in owned[:-1]:
+                producer_node, restored_node = producer_node[key], restored_node[key]
+            self.assertNotEqual(producer_node[owned[-1]], restored_node[owned[-1]])
+            producer_node.pop(owned[-1])
+            restored_node.pop(owned[-1])
+        self.assertEqual(producer_state, restored_state)
+
+        for name, expected_sha in manifest["refs"].items():
+            rev = subprocess.run(
+                ["git", "-C", destination, "rev-parse", "--verify", f"{name}^{{commit}}"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(0, rev.returncode, rev.stderr)
+            self.assertEqual(expected_sha, rev.stdout.strip())
+
+        restored_ledger = (Path(worktree) / ".hexaemeron" / "ledger.jsonl").read_bytes()
+        self.assertTrue(restored_ledger.startswith(producer_ledger))
+        appended = restored_ledger[len(producer_ledger):].decode("utf-8").splitlines()
+        self.assertEqual(1, len(appended))
+        self.assertEqual("checkpoint:restore", json.loads(appended[0])["event"])
+
+    def test_restore_from_archive_offline_after_source_clone_removed(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        portable_root = tempfile.mkdtemp(prefix="fiat861-portable-")
+        portable_archive = os.path.join(portable_root, "checkpoint.zip")
+        shutil.copyfile(archive, portable_archive)
+        shutil.copyfile(f"{archive}.sha256", f"{portable_archive}.sha256")
+
+        # The fixture's own worktree is the "source clone" the archive was
+        # built from. Destroying it before restoring proves the restore below
+        # reads only the portable archive copy above.
+        shutil.rmtree(self.target, ignore_errors=True)
+
+        scratch_home = tempfile.mkdtemp(prefix="fiat861-home-")
+        env = os.environ.copy()
+        env["HOME"] = scratch_home
+        env["GIT_CONFIG_GLOBAL"] = os.path.join(scratch_home, "gitconfig")
+        env.pop("GIT_CONFIG_SYSTEM", None)
+        destination = self.restore_destination()
+
+        proc = self.run_restore(portable_archive, digest, destination, env=env)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+
+        remote = subprocess.run(
+            ["git", "-C", destination, "config", "--get", "remote.origin.url"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, remote.returncode, remote.stderr)
+        self.assertEqual("https://github.com/wildcat-finance/example.git\n", remote.stdout)
+
+    def test_restore_from_archive_reverifies_signatures_receipts_identity_and_ancestry(
+        self,
+    ):
+        archive = self.good_archive()
+
+        # A proof status flipped from `G`: the same construction
+        # `test_hostile_signature_proof_mismatch` uses, over this archive.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        proof = json.loads(members["proof/signatures.json"])
+        original = proof["signer"]["fingerprints"][0]
+        bogus = ("0" if original[0] != "0" else "1") + original[1:]
+        proof["signer"]["fingerprints"] = [bogus]
+        module = hexctl_module()
+        proof_bytes = module.canonical(proof).encode("utf-8") + b"\n"
+        self.retarget(members, manifest, "proof/signatures.json", proof_bytes)
+        manifest["proof"]["sha256"] = hashlib.sha256(proof_bytes).hexdigest()
+        manifest["signer"]["fingerprints"] = [bogus]
+        self.set_manifest(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-signature.zip"))
+        self.assert_restore_refuses(specimen, "signature-unverified")
+
+        # A ledger byte changed inside the capsule: the outer manifest's own
+        # digest join for that member is kept consistent by `retarget`, but
+        # the capsule's own inner `MANIFEST.json` still names the original
+        # ledger bytes and size, so the existing capsule reader -- reused
+        # unchanged -- refuses once it re-verifies the capsule's file
+        # inventory after extraction.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        target = "controller-capsule/controller/ledger.jsonl"
+        tampered_ledger = members[target] + b'{"tampered": true}\n'
+        self.retarget(members, manifest, target, tampered_ledger)
+        self.set_manifest(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-ledger.zip"))
+        digest = self.outer_sha256(specimen)
+        destination = self.restore_destination()
+        proc = self.run_restore(specimen, digest, destination, expect=2)
+        self.assertIn("hexctl: error:", proc.stderr)
+        self.assertIn("checkpoint manifest inventory does not match controller bytes", proc.stderr)
+
+        # A snapshot_id changed: internally consistent, so only a fresh mint
+        # from the restored state, ledger and Git evidence exposes it.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        self.hostile_identity_internally_consistent(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-identity.zip"))
+        self.assert_restore_refuses(specimen, "identity-mismatch")
+
+        # A working commit outside the anchor's descendants: point
+        # `run.initial_base_sha` at a real commit this repository holds --
+        # the run branch's own tip -- which is a descendant of the base, not
+        # an ancestor of it, so the ancestry check refuses.
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        run_branch_sha = manifest["refs"][self.run_branch()]
+        manifest["run"] = {**manifest["run"], "initial_base_sha": run_branch_sha}
+        self.set_manifest(members, manifest)
+        specimen = self.write_specimen(members, path=self.specimen_path("bad-ancestry.zip"))
+        self.assert_restore_refuses(specimen, "ref-disagreement")
+
+    def test_restore_from_archive_refuses_non_empty_destination(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        occupied = self.restore_destination("occupied")
+        os.makedirs(occupied)
+        with open(os.path.join(occupied, "keep.txt"), "w", encoding="utf-8") as handle:
+            handle.write("not empty\n")
+        self.assert_restore_refuses(archive, "destination-occupied", occupied, sha256=digest)
+
+        elsewhere = self.restore_destination("elsewhere")
+        os.makedirs(elsewhere)
+        symlinked = os.path.join(os.path.dirname(elsewhere), "symlinked")
+        os.symlink(elsewhere, symlinked)
+        self.assert_restore_refuses(archive, "destination-occupied", symlinked, sha256=digest)
+
+    def test_restore_from_archive_executes_no_directive(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination()
+
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        worktree = payload["restore"]["worktree"]
+
+        ledger_path = Path(worktree) / ".hexaemeron" / "ledger.jsonl"
+        before = ledger_path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual("checkpoint:restore", json.loads(before[-1])["event"])
+        state_before = self.hexctl_status_json(worktree)
+
+        next_proc = subprocess.run(
+            [sys.executable, HEXCTL, "--dir", worktree, "next"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, next_proc.returncode, next_proc.stderr)
+        directive = json.loads(next_proc.stdout)
+        self.assertEqual(payload["next"]["do"], directive["do"])
+
+        after = ledger_path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(before, after)
+        self.assertEqual(state_before, self.hexctl_status_json(worktree))
+
+    def test_restore_from_archive_after_main_advances_stays_anchored(self):
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        # Advance the real "main" branch elsewhere, simulating upstream
+        # having moved on since the archive was built. Restore reads only
+        # the bundle already frozen inside the archive and never this
+        # checkout, so this must not matter.
+        advanced = os.path.join(self.dir, "advanced.txt")
+        with open(advanced, "w", encoding="utf-8") as handle:
+            handle.write("main moved on after the archive was built\n")
+        subprocess.run(
+            ["git", "add", "advanced.txt"], cwd=self.dir, check=True, capture_output=True
+        )
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "commit.gpgsign=false",
+                "commit",
+                "-q",
+                "-m",
+                "main advances after the archive was built",
+            ],
+            cwd=self.dir,
+            check=True,
+            capture_output=True,
+        )
+
+        destination = self.restore_destination()
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+
+    # -- step 4, round 2 guards ---------------------------------------------
+    #
+    # Named `test_archive_restore_*` rather than `test_restore_from_archive_*`
+    # on purpose: Step 4's Exit pins `-k restore_from_archive` at exactly six
+    # tests, and these four are audit guards rather than that clause's cases.
+    # The module canonicalises TMPDIR at import (see the note beside
+    # `tempfile.tempdir` above), which is why the first guard below builds its
+    # own symlink instead of relying on the platform's.
+
+    def test_archive_restore_accepts_a_symlinked_destination_parent(self):
+        """S4-R1-05: a symlinked *parent* is not an occupied destination.
+
+        The destination here is absent, is no symlink and holds nothing; only
+        the directory it is reached through is a link. On macOS this is every
+        `/tmp` path, which is the ordinary staging location for a command whose
+        whole purpose is restoring onto another machine.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+
+        real_parent = tempfile.mkdtemp(prefix="fiat861-restore-real-")
+        link_root = tempfile.mkdtemp(prefix="fiat861-restore-link-")
+        linked_parent = os.path.join(link_root, "via-symlink")
+        os.symlink(real_parent, linked_parent)
+        self.assertNotEqual(
+            os.path.realpath(linked_parent),
+            linked_parent,
+            "the guard needs a parent that is genuinely reached through a link",
+        )
+
+        destination = os.path.join(linked_parent, "restore-dest")
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("fiat-checkpoint-archive-restore/v1", payload["schema"])
+        self.assertEqual("ok", payload["verify"])
+
+        # The run lands on the resolved path, which is the directory the
+        # operator named, reached by its real name.
+        self.assertTrue(os.path.isdir(os.path.join(real_parent, "restore-dest", ".git")))
+
+    def test_archive_restore_removes_the_capsule_stage_once_it_completes(self):
+        """S4-R1-03: the disposable root does not outlive a completed restore.
+
+        The capsule is relocated into active controller state and re-verified
+        from there, so leaving the staged copy under `.git/` duplicates the
+        whole capsule -- state, ledger, receipts and every carried acceptance
+        receipt -- for the life of the clone.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination()
+
+        proc = self.run_restore(archive, digest, destination)
+        payload = json.loads(proc.stdout)
+        self.assertEqual("ok", payload["verify"])
+
+        module = hexctl_module()
+        stage = os.path.join(destination, ".git", module.CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR)
+        self.assertFalse(
+            os.path.exists(stage),
+            f"the capsule stage survived a completed restore at {stage}",
+        )
+
+    def test_archive_restore_removes_a_destination_it_created_when_it_refuses(self):
+        """S4-R1-04: a refused restore leaves no path hexctl created.
+
+        The destination is admitted, and an absent one created, before the
+        inspector runs. A refusal after that point must not reclassify the
+        path for the next attempt from absent to empty and admit it again.
+        """
+        archive = self.good_archive()
+        destination = self.restore_destination("never-made")
+        self.assertFalse(os.path.exists(destination))
+
+        wrong_digest = "0" * 64
+        proc = self.run_restore(archive, wrong_digest, destination, expect=1)
+        self.assertEqual("outer-digest-mismatch\n", proc.stderr)
+        self.assertFalse(
+            os.path.exists(destination),
+            "a refused restore left behind the directory it created",
+        )
+
+    def test_archive_restore_diagnoses_its_own_scratch_failure_as_itself(self):
+        """S4-R1-07: the process's scratch root is not the operator's destination.
+
+        Reporting a failure to create this process's own temporary directory as
+        `destination-occupied` tells the operator a false fact about a path that
+        is absent, empty and entirely usable.
+
+        The failure is driven in process rather than over the command line:
+        `tempfile` falls through TMPDIR to `/tmp` and the rest of its candidate
+        list, so an unusable TMPDIR in the child's environment never reaches
+        this code path at all.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination("scratchless")
+        module = hexctl_module()
+
+        captured = StringIO()
+        with mock.patch.object(
+            module.tempfile, "mkdtemp", side_effect=OSError("no scratch here")
+        ):
+            with redirect_stderr(captured):
+                with self.assertRaises(SystemExit) as stopped:
+                    module._checkpoint_restore_from_archive(
+                        destination, str(archive), digest
+                    )
+
+        self.assertEqual(2, stopped.exception.code)
+        diagnosis = captured.getvalue()
+        self.assertIn("hexctl: error:", diagnosis)
+        self.assertIn("scratch directory could not be created", diagnosis)
+        self.assertNotIn("destination-occupied", diagnosis)
+
+        # S4-R1-04 again, on the same path: the destination this call created
+        # before it refused is not left behind.
+        self.assertFalse(os.path.exists(destination))
+
+    # -- step 4, round 3 guards ---------------------------------------------
+    #
+    # Both apply a rule round 2 established at a site round 2's repair did not
+    # reach, so they keep that round's naming and stay outside the Exit's
+    # `-k restore_from_archive` clause for the same reason.
+
+    def test_archive_restore_removes_a_destination_it_created_when_admission_refuses(self):
+        """S4-R3-03: the admission's own refusals leave nothing it created.
+
+        `_checkpoint_restore_archive_destination` creates an absent
+        destination and can then refuse inside itself, below that `os.mkdir`.
+        Those refusals return nothing to `_checkpoint_restore_from_archive`,
+        so its `finally` never runs and the S4-R1-04 removal never reaches
+        them: the path stayed behind, reclassified for the next attempt from
+        absent to empty and admitted again.
+        """
+        destination = self.restore_destination("admission-refused")
+        self.assertFalse(os.path.exists(destination))
+        module = hexctl_module()
+
+        captured = StringIO()
+        with mock.patch.object(
+            module.os, "fstat", side_effect=OSError("destination changed under us")
+        ):
+            with redirect_stderr(captured):
+                with self.assertRaises(SystemExit) as stopped:
+                    module._checkpoint_restore_archive_destination(destination)
+
+        self.assertEqual(1, stopped.exception.code)
+        self.assertEqual("destination-occupied\n", captured.getvalue())
+        self.assertFalse(
+            os.path.exists(destination),
+            "the admission refused and left behind the directory it created",
+        )
+
+    def test_archive_restore_diagnoses_its_own_identity_scratch_failure_as_itself(self):
+        """S4-R3-02: the identity scratch is the process's own, like the outer one.
+
+        S4-R1-07 separated the outer scratch root's failure from
+        `destination-occupied`. The identity scratch under it was left
+        unguarded, and `main` carries no catch-all, so an `OSError` there
+        reached the operator as a traceback carrying local absolute paths out
+        of a command whose refusals are one bounded line.
+
+        Driven in process for S4-R1-07's reason: `tempfile` falls through an
+        unusable TMPDIR to `/tmp`, so this failure has no command-line surface.
+
+        The escaping `OSError` is caught here and turned into a failure rather
+        than left to propagate. The defect this guard names *is* an uncaught
+        exception, so on the unfixed parent an `assertRaises(SystemExit)` alone
+        never sees it: the `OSError` is not that type, it escapes the test, and
+        unittest records an error. Elenchus reads any error as an
+        infrastructure failure and returns `inconclusive` for the whole run, so
+        a guard shaped that way cannot report what it proved. Catching it
+        states the same property as an assertion and leaves the verdict
+        readable.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination("identity-scratchless")
+        module = hexctl_module()
+        real_mkdtemp = module.tempfile.mkdtemp
+
+        def refuse_only_the_identity_scratch(*args, **kwargs):
+            prefix = kwargs.get("prefix", "")
+            if prefix.startswith(".fiat-checkpoint-restore-identity-"):
+                raise OSError("no identity scratch here")
+            return real_mkdtemp(*args, **kwargs)
+
+        captured = StringIO()
+        code = None
+        with mock.patch.object(
+            module.tempfile, "mkdtemp", side_effect=refuse_only_the_identity_scratch
+        ):
+            with redirect_stderr(captured):
+                try:
+                    module._checkpoint_restore_from_archive(
+                        destination, str(archive), digest
+                    )
+                except SystemExit as stopped:
+                    code = stopped.code
+                except OSError as escaped:
+                    self.fail(
+                        "the identity scratch failure escaped as an uncaught "
+                        f"OSError ({escaped!r}) instead of one bounded refusal; "
+                        "hexctl installs no excepthook and `main` has no "
+                        "catch-all, so this reaches the operator as a traceback"
+                    )
+                else:
+                    self.fail(
+                        "the restore completed where the identity scratch "
+                        "failure should have refused"
+                    )
+
+        self.assertEqual(2, code)
+        diagnosis = captured.getvalue()
+        self.assertIn("hexctl: error:", diagnosis)
+        self.assertIn("scratch directory could not be created", diagnosis)
+        self.assertNotIn("identity-mismatch", diagnosis)
+        self.assertNotIn("Traceback", diagnosis)
+
+    def test_archive_restore_keeps_its_marker_when_identity_refuses(self):
+        """S4-R4-02: a refusal decided from relocated state keeps its marker.
+
+        `identity-mismatch` is recomputed from the relocated state, so it can
+        only fire once `_checkpoint_restore_relocate` has completed -- and
+        that transaction used to complete by retiring its own marker. The
+        refusal therefore left the destination holding active controller
+        state with no marker beside it, which is a residue the reference
+        describes nowhere: study section 11 and the risk register's
+        `interrupted-restore` row between them cover a destination without
+        active state, and a destination carrying the marker the existing
+        retry rules resume or refuse, and neither is this.
+
+        Both halves are asserted here, because the repair is a deferral and
+        a deferral that never fires would leak a marker into every successful
+        restore instead. So: the refusal keeps the marker, and the success
+        retires it.
+        """
+        module = hexctl_module()
+        marker_name = os.path.join(
+            module.STATE_DIR_NAME, module.CHECKPOINT_RESTORE_MARKER_FILE
+        )
+
+        archive = self.good_archive()
+        members = self.good_members(archive)
+        manifest = self.manifest(members)
+        self.hostile_identity_internally_consistent(members, manifest)
+        specimen = self.write_specimen(
+            members, path=self.specimen_path("r4-identity-marker.zip")
+        )
+        refused = self.restore_destination("r4-identity-refused")
+        self.assert_restore_refuses(specimen, "identity-mismatch", destination=refused)
+        self.assertTrue(
+            os.path.isfile(os.path.join(refused, marker_name)),
+            "identity-mismatch left active controller state with no relocation "
+            "marker, so the existing retry rules have nothing to resume or "
+            "refuse and the residue matches no rule the reference writes",
+        )
+
+        completed = self.restore_destination("r4-identity-completed")
+        self.run_restore(archive, self.outer_sha256(archive), completed, expect=0)
+        self.assertFalse(
+            os.path.exists(os.path.join(completed, marker_name)),
+            "a completed restore left its relocation marker behind, so the "
+            "deferred retirement never ran",
+        )
+
+    def test_relocation_transaction_retires_in_place_for_its_native_caller(self):
+        """S4-R4-02: `--from` keeps the retirement point it always had.
+
+        `_checkpoint_restore_relocate` is shared with `checkpoint restore
+        --from`, which is audited and receipted in an earlier step. The
+        deferral above is opt-in precisely so that path is untouched: the
+        parameter defaults to `None`, and the native caller passes nothing,
+        so the `None` branch runs the same retirement at the same point.
+
+        This pins that arrangement rather than the behaviour it produces, and
+        the bound is worth stating: it establishes that the native caller has
+        not been switched onto the deferred path, not that a successful
+        `--from` restore retires its marker. Nothing in either suite asserts
+        that today -- every native marker assertion in
+        `test_hexctl_checkpoint.py` pins the marker *surviving* a refusal or
+        an interrupted run -- so this guard closes the regression that the
+        shared transaction newly makes possible and leaves that older gap
+        visible instead of implying a green suite covered it.
+        """
+        module = hexctl_module()
+        parameters = inspect.signature(
+            module._checkpoint_restore_relocate
+        ).parameters
+        # Asserted rather than subscripted: on a tree without the repair this
+        # name is absent, and a `KeyError` here would leave the test as an
+        # error rather than a failure. Elenchus reads any error as an
+        # infrastructure failure and returns `inconclusive` for the whole
+        # run, which is how round 3's first check was lost.
+        self.assertIn(
+            "deferred_marker",
+            parameters,
+            "the relocation transaction takes no deferral parameter, so a "
+            "refusal decided from relocated state cannot keep its marker",
+        )
+        self.assertIsNone(
+            parameters["deferred_marker"].default,
+            "the relocation transaction now defers by default; "
+            "`checkpoint restore --from` would stop retiring its own marker",
+        )
+
+        native = inspect.getsource(module.cmd_checkpoint_restore)
+        archive_branch, _, capsule_branch = native.partition(
+            "if source is None or manifest_sha256 is None:"
+        )
+        self.assertIn("_checkpoint_restore_relocate", capsule_branch)
+        self.assertNotIn(
+            "deferred_marker",
+            capsule_branch,
+            "the native `--from` caller now passes a deferral, which moves "
+            "marker retirement on a path audited and receipted in an earlier "
+            "step",
+        )
+        self.assertNotIn("_checkpoint_restore_relocate", archive_branch)
+
+    def test_archive_restore_keeps_its_marker_when_identity_cannot_be_minted(self):
+        """S4-R4-01: `identity-unavailable` is the fourth post-`git init` class.
+
+        Rounds 1 to 3 enumerated three refusal classes that can fire after the
+        destination repository exists: `ref-disagreement`, the capsule stage's
+        `manifest-mismatch`, and `identity-mismatch`. That enumeration was
+        incomplete. `_checkpoint_archive_identity` mints under
+        `_checkpoint_archive_guarded("identity-unavailable", mint)`, so any
+        failure inside the mint refuses with `identity-unavailable` rather
+        than `identity-mismatch`, from the same call site and therefore from
+        the same position: after the relocation transaction has completed.
+
+        The class is established here by observation rather than by reading,
+        because an enumeration that names three of four classes makes any
+        section 11 amendment wrong on the day it lands. The mint is failed at
+        `_checkpoint_identity_verify_observations`, which is reached only from
+        inside `mint`, and the archive is built before the patch so that
+        export's own identity member is minted normally.
+
+        It also pins that the S4-R4-02 deferral covers both identity classes,
+        not just the one that named it.
+        """
+        archive = self.good_archive()
+        digest = self.outer_sha256(archive)
+        destination = self.restore_destination("r4-identity-unavailable")
+        module = hexctl_module()
+        marker_name = os.path.join(
+            module.STATE_DIR_NAME, module.CHECKPOINT_RESTORE_MARKER_FILE
+        )
+
+        captured = StringIO()
+        code = None
+        with mock.patch.object(
+            module,
+            "_checkpoint_identity_verify_observations",
+            side_effect=OSError("the restored tree cannot answer an observation"),
+        ):
+            with redirect_stdout(StringIO()):
+                with redirect_stderr(captured):
+                    try:
+                        module._checkpoint_restore_from_archive(
+                            destination, str(archive), digest
+                        )
+                    except SystemExit as stopped:
+                        code = stopped.code
+                    except OSError as escaped:
+                        self.fail(
+                            "the mint failure escaped as an uncaught OSError "
+                            f"({escaped!r}) instead of one bounded refusal"
+                        )
+                    else:
+                        self.fail(
+                            "the restore completed where the mint failure "
+                            "should have refused"
+                        )
+
+        self.assertEqual(1, code)
+        self.assertEqual(
+            "identity-unavailable\n",
+            captured.getvalue(),
+            "the fourth post-`git init` refusal class is not the one the "
+            "reference's closed table names for a mint that cannot complete",
+        )
+        self.assertTrue(
+            os.path.isfile(os.path.join(destination, marker_name)),
+            "`identity-unavailable` left active controller state with no "
+            "relocation marker, so the S4-R4-02 deferral covers only one of "
+            "the two classes decided from relocated state",
+        )
 
 
 if __name__ == "__main__":

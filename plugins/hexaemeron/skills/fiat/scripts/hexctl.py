@@ -624,15 +624,38 @@ CHECKPOINT_ARCHIVE_REFUSALS = frozenset(
         "schema-unsupported",
         "identity-mismatch",
         "acceptance-self-reference",
+        "destination-occupied",
     }
 )
-"""The classes `checkpoint archive` and `checkpoint inspect` may print. One
-name, exit 1, nothing else.
+"""The reference's closed table of refusal classes: one name, exit 1, no more.
 
 Closed here so a new refusal site cannot invent a class the reference does not
 name, and so the inspector reads the same vocabulary the exporter already
 does. The eleven added for Step 3 are the ones only `inspect`'s central
-directory, manifest, bundle and identity checks can raise.
+directory, manifest, bundle and identity checks can raise. `destination-occupied`
+is Step 4's one addition, for the one check only a restore into a fresh or
+empty directory has to make.
+
+What this set governs is every refusal these commands raise *themselves*,
+through `_checkpoint_archive_refuse`. It is not the whole of what they can
+print (S4-R1-02). `checkpoint restore --archive` calls existing controller
+readers -- the capsule reader, the relocation transaction, `load_state`,
+`integration_base_of`, `validate_run_anchor_shape` and `bounded_git` -- and
+each keeps its own `die` diagnosis and exit 2 wherever
+`_checkpoint_archive_guarded` does not wrap it. The reference intends that
+rather than tolerating it: the archive study's section 4 leaves the relocation
+transaction "to the existing code including its marker, retry and refusal
+rules", section 11 repeats it for the marker the retry rules resume or refuse,
+and `controller-checkpoint.md`, which owns those readers, fixes no exit status
+or vocabulary for them at all. The reference does not go on to say which of
+the *other* reused readers, if any, owe translation; that question is open and
+the code's present answer is the one stated here.
+
+What holds across both is the `diagnostic-leak` rule, which is about content
+rather than status: every message either kind of refusal can print is a fixed
+literal, a structural JSON path built from literals and integer indices, or a
+local path the operator supplied. No entry name, entry content, `gpg` line or
+archive-supplied JSON value reaches stderr from either.
 """
 CHECKPOINT_ARCHIVE_SECRET_LABEL = rb"[A-Z0-9]{1,16}(?: [A-Z0-9]{1,16}){0,3}"
 """The PEM armour label the pattern below admits: up to four words of up to 16.
@@ -836,6 +859,20 @@ operator's explicit `hexctl next`.
 
 
 CHECKPOINT_ARCHIVE_INSPECT_SCHEMA = "fiat-checkpoint-inspect/v1"
+CHECKPOINT_ARCHIVE_RESTORE_SCHEMA = "fiat-checkpoint-archive-restore/v1"
+CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR = "fiat-checkpoint-restore"
+"""Where `checkpoint restore --archive` extracts the capsule: under `.git/`,
+so it sits inside a path every ordinary Git and controller reader already
+ignores, named by the archive's own outer SHA-256 so an interrupted restore's
+residue says which archive left it.
+
+S4-R1-03: the collision this name was first said to prevent cannot arise,
+because the destination is admitted only when it holds nothing, so no earlier
+restore's root can be there. The digest earns its place as the label on what a
+killed run leaves behind, which the reference's fail-closed posture expects to
+find. A completed restore removes this root; only an interrupted or refused one
+leaves it, beside the relocation marker the existing retry rules read.
+"""
 CHECKPOINT_INSPECT_CAPSULE_MANIFEST_ENTRY = (
     CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/" + CHECKPOINT_MANIFEST_FILE
 )
@@ -13333,6 +13370,18 @@ def validate_run_anchor_shape(anchor) -> dict:
             isinstance(repository, str)
             and REPOSITORY_RE.fullmatch(repository) is not None
             and repository == repository.lower()
+            # S4-R7-01: `REPOSITORY_RE`'s segment class admits `.` and `..`,
+            # so this gate alone was weaker than `target_repository_binding`,
+            # the only function that ever mints a repository, which refuses a
+            # relative segment here for the reason `target_repository` states
+            # beside its own copy. No honest anchor can carry one. An archive
+            # can, and since Step 4 this gate decides what
+            # `_checkpoint_restore_from_archive` interpolates into
+            # `remote.origin.url`, so the accepting validator is held to the
+            # minting one rather than to the bare pattern.
+            and not any(
+                segment in (".", "..") for segment in repository.split("/")
+            )
         )
         or repository == RUN_ANCHOR_REPOSITORY_UNBOUND
     ):
@@ -16571,7 +16620,21 @@ def _checkpoint_restore_verify_source(
     artifact, expected = source_receipt
     prefix = STATE_DIR_NAME + "/"
     if not artifact.startswith(prefix):
-        receipted_source(worktree, state, name)
+        # S4-R6-01: `receipted_source` re-reads the receipt's own `artifact`
+        # field rather than the relocated path this reader just derived, and
+        # that field is still the producer's. An absolute one therefore
+        # resolves outside the restored worktree every time, and `scoped_path`
+        # refuses it by printing the path it was handed -- carrying the
+        # producer's home directory, account name and project out of a command
+        # whose refusals are one bounded line. Read the relocated location
+        # instead and diagnose a mismatch as this reader's own, exactly as the
+        # staged branch below already does. The sanitised relative path is the
+        # one `_checkpoint_restore_source_receipt` has already proved portable.
+        data = _checkpoint_read_staged(
+            os.path.join(worktree, *artifact.split("/")), SOURCE_BYTES_MAX
+        )
+        if hashlib.sha256(data).hexdigest() != expected:
+            die(f"checkpoint {name} artefact does not match its receipt")
         return
     relative = artifact[len(prefix):]
     data = _checkpoint_read_staged(
@@ -16810,18 +16873,45 @@ def _checkpoint_restore_result(
     }
 
 
-def cmd_checkpoint_restore(args) -> None:
-    """Restore one verified capsule into a fresh, separately restored Git tree."""
-    origin = _checkpoint_restore_origin(args.dir)
-    capsule, manifest, imported, _, ledger_prefix, inventory = (
-        _checkpoint_restore_capsule(args.source, args.manifest_sha256)
-    )
+def _checkpoint_restore_relocate(
+    origin: str,
+    capsule: str,
+    manifest: dict,
+    imported: dict,
+    ledger_prefix: bytes,
+    inventory: list[dict],
+    manifest_sha256: str,
+    deferred_marker: list[str] | None = None,
+) -> dict:
+    """Relocate one verified capsule into a fresh, separately restored Git tree.
+
+    The transaction `checkpoint restore --from` has always run, factored out
+    unchanged so `checkpoint restore --archive` can call the exact same
+    marker, retry and refusal rules once it has built `origin` itself and
+    extracted its own capsule under `.git/`. Every name below that used to
+    read `manifest_sha256` or `args.source` now reads the parameter a
+    caller supplies instead; nothing else moved.
+
+    S4-R4-02: `deferred_marker` is the one exception to that, and it is
+    `None` for `--from`, which therefore retires the marker exactly where it
+    always did. A caller that still has a refusal to decide *after* this
+    transaction returns passes a list instead, and the marker path this
+    transaction would have retired is appended to it rather than retired.
+    The caller owns it from there: it must call
+    `_checkpoint_restore_retire_marker` with the same `origin`, `state` and
+    `digest` once its own checks pass, and must leave the marker in place
+    when they do not. That keeps a refusal decided from relocated state
+    inside the rule the reference already writes for this directory -- a
+    destination holding the relocation marker, which the existing retry
+    rules resume or refuse -- instead of active state with no marker beside
+    it, which no rule describes.
+    """
     refs = _checkpoint_refs(origin, imported)
     if refs != manifest["boundary"]["refs"]:
         die("checkpoint restored Git refs do not match the manifest")
 
     worktree, stage, marker = _checkpoint_restore_marker_paths(
-        origin, imported, args.manifest_sha256
+        origin, imported, manifest_sha256
     )
     if os.path.realpath(os.path.dirname(worktree)) != os.path.dirname(worktree):
         die("checkpoint restore derived worktree path crosses a symlink")
@@ -16831,7 +16921,7 @@ def cmd_checkpoint_restore(args) -> None:
         check_worktree_path(origin, worktree)
         refuse_checked_out_branch(origin, run_branch_of(imported))
     worktree, stage, marker, resumed = _checkpoint_restore_marker(
-        origin, imported, args.manifest_sha256
+        origin, imported, manifest_sha256
     )
 
     final_root = state_root(worktree)
@@ -16853,7 +16943,7 @@ def cmd_checkpoint_restore(args) -> None:
             imported,
             origin,
             manifest,
-            args.manifest_sha256,
+            manifest_sha256,
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -16868,7 +16958,7 @@ def cmd_checkpoint_restore(args) -> None:
             imported,
             origin,
             manifest,
-            args.manifest_sha256,
+            manifest_sha256,
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -16883,7 +16973,7 @@ def cmd_checkpoint_restore(args) -> None:
             imported,
             origin,
             manifest,
-            args.manifest_sha256,
+            manifest_sha256,
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -16891,27 +16981,24 @@ def cmd_checkpoint_restore(args) -> None:
         _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
-        _checkpoint_restore_retire_marker(
-            origin, imported, args.manifest_sha256, marker
-        )
-        print(
-            json.dumps(
-                _checkpoint_restore_result(
-                    manifest=manifest,
-                    digest=args.manifest_sha256,
-                    worktree=worktree,
-                    ledger=ledger,
-                    ledger_tail=ledger_tail,
-                    verify_count=verify_count,
-                    directive=directive,
-                    status_sha256=status_digest,
-                    state_fingerprint_value=state_fingerprint(state),
-                    recovery="finalized-interrupted-publication",
-                ),
-                sort_keys=True,
+        if deferred_marker is None:
+            _checkpoint_restore_retire_marker(
+                origin, imported, manifest_sha256, marker
             )
+        else:
+            deferred_marker.append(marker)
+        return _checkpoint_restore_result(
+            manifest=manifest,
+            digest=manifest_sha256,
+            worktree=worktree,
+            ledger=ledger,
+            ledger_tail=ledger_tail,
+            verify_count=verify_count,
+            directive=directive,
+            status_sha256=status_digest,
+            state_fingerprint_value=state_fingerprint(state),
+            recovery="finalized-interrupted-publication",
         )
-        return
     if resumed and (os.path.lexists(worktree) or os.path.lexists(stage)):
         die(
             "checkpoint restore transaction was interrupted before active state; "
@@ -16959,7 +17046,7 @@ def cmd_checkpoint_restore(args) -> None:
         _checkpoint_restore_verify_source(worktree, stage, imported, name)
 
     relocated, receipt = _checkpoint_restore_state(
-        imported, origin, worktree, manifest, args.manifest_sha256
+        imported, origin, worktree, manifest, manifest_sha256
     )
     ledger, ledger_tail = _checkpoint_restore_write_files(
         stage, relocated, ledger_prefix, receipt
@@ -17031,7 +17118,7 @@ def cmd_checkpoint_restore(args) -> None:
         imported,
         origin,
         manifest,
-        args.manifest_sha256,
+        manifest_sha256,
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -17046,7 +17133,7 @@ def cmd_checkpoint_restore(args) -> None:
         imported,
         origin,
         manifest,
-        args.manifest_sha256,
+        manifest_sha256,
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
@@ -17054,35 +17141,521 @@ def cmd_checkpoint_restore(args) -> None:
     _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
-    _checkpoint_restore_retire_marker(
-        origin, imported, args.manifest_sha256, marker
-    )
-    print(
-        json.dumps(
-            _checkpoint_restore_result(
-                manifest=manifest,
-                digest=args.manifest_sha256,
-                worktree=worktree,
-                ledger=ledger,
-                ledger_tail=ledger_tail,
-                verify_count=verify_count,
-                directive=directive,
-                status_sha256=status_digest,
-                state_fingerprint_value=state_fingerprint(relocated),
-                recovery="new",
-            ),
-            sort_keys=True,
+    if deferred_marker is None:
+        _checkpoint_restore_retire_marker(
+            origin, imported, manifest_sha256, marker
         )
+    else:
+        deferred_marker.append(marker)
+    return _checkpoint_restore_result(
+        manifest=manifest,
+        digest=manifest_sha256,
+        worktree=worktree,
+        ledger=ledger,
+        ledger_tail=ledger_tail,
+        verify_count=verify_count,
+        directive=directive,
+        status_sha256=status_digest,
+        state_fingerprint_value=state_fingerprint(relocated),
+        recovery="new",
     )
+
+
+def cmd_checkpoint_restore(args) -> None:
+    """Restore one verified capsule, from a capsule directory or one archive."""
+    source = getattr(args, "source", None)
+    manifest_sha256 = getattr(args, "manifest_sha256", None)
+    archive = getattr(args, "archive", None)
+    sha256 = getattr(args, "sha256", None)
+    capsule_mode = source is not None or manifest_sha256 is not None
+    archive_mode = archive is not None or sha256 is not None
+    if capsule_mode and archive_mode:
+        die(
+            "checkpoint restore accepts --from/--manifest-sha256 or "
+            "--archive/--sha256, not both"
+        )
+    if archive_mode:
+        if archive is None or sha256 is None:
+            die("checkpoint restore --archive requires --sha256")
+        result = _checkpoint_restore_from_archive(
+            os.path.abspath(args.dir), archive, sha256
+        )
+        print(canonical(result))
+        return
+    if source is None or manifest_sha256 is None:
+        die(
+            "checkpoint restore requires --from and --manifest-sha256, or "
+            "--archive and --sha256"
+        )
+    origin = _checkpoint_restore_origin(args.dir)
+    capsule, manifest, imported, _, ledger_prefix, inventory = (
+        _checkpoint_restore_capsule(source, manifest_sha256)
+    )
+    result = _checkpoint_restore_relocate(
+        origin, capsule, manifest, imported, ledger_prefix, inventory,
+        manifest_sha256,
+    )
+    print(json.dumps(result, sort_keys=True))
+
+
+def _checkpoint_restore_archive_destination(base_dir: str) -> tuple[str, int, bool]:
+    """Admit an absent-or-empty, non-symlink destination; return it open.
+
+    Unlike `_checkpoint_destination` (export's sibling publish target, which
+    must be entirely absent), a restore destination may already exist as long
+    as it holds nothing: an operator's own empty staging directory is the
+    ordinary case.
+
+    The parent is resolved rather than required to be its own `realpath`.
+    S4-R1-05: requiring it refused every destination reached through a
+    symlinked parent, which on macOS is every `/tmp` path, under a class name
+    asserting the destination was occupied when it was absent, was no symlink
+    and held nothing. The reference conditions `destination-occupied` on the
+    destination -- absent or an empty directory, checked through an opened
+    descriptor and never a symlink -- and says nothing about its parent, so
+    resolving once and admitting the resolved path is what it asks for.
+
+    The returned descriptor pins the *inode* this function admitted, not the
+    name it was reached by. S4-R1-06: every later operation resolves
+    `destination` by path and no `dir_fd` is passed anywhere, so a writer on
+    the parent can still replace the name between this admission and
+    `git init`. What the descriptor establishes is that the `fstat` and
+    `scandir` below read the directory that the `O_NOFOLLOW` open reached, and
+    that the emptiness they found is that inode's rather than a later
+    replacement's. The third return value says whether this function created
+    the destination, so a refusal after this point can remove what it made.
+
+    S4-R3-03: the refusals raised *below* the `os.mkdir` return nothing to the
+    caller, so the caller's `finally` never runs and cannot remove that
+    directory. They remove it themselves, on the caller's own bound: `rmdir`
+    only, and only when this call created it, so a directory the operator
+    already had and one a racing writer has filled are both left alone.
+    """
+    supplied = os.path.abspath(base_dir)
+    name = os.path.basename(supplied)
+    if not name:
+        _checkpoint_archive_refuse("destination-occupied")
+    destination = os.path.join(os.path.realpath(os.path.dirname(supplied)), name)
+    created = False
+    try:
+        initial = os.lstat(destination)
+    except FileNotFoundError:
+        try:
+            os.mkdir(destination, 0o700)
+        except OSError:
+            _checkpoint_archive_refuse("destination-occupied")
+        created = True
+    except OSError:
+        _checkpoint_archive_refuse("destination-occupied")
+    else:
+        if stat.S_ISLNK(initial.st_mode) or not stat.S_ISDIR(initial.st_mode):
+            _checkpoint_archive_refuse("destination-occupied")
+    try:
+        descriptor = os.open(
+            destination,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+    except OSError:
+        if created:
+            with contextlib.suppress(OSError):
+                os.rmdir(destination)
+        _checkpoint_archive_refuse("destination-occupied")
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISDIR(opened.st_mode) or os.path.realpath(destination) != destination:
+            raise OSError("checkpoint restore destination changed kind")
+        with os.scandir(descriptor) as iterator:
+            for _entry in iterator:
+                raise OSError("checkpoint restore destination is occupied")
+    except OSError:
+        os.close(descriptor)
+        if created:
+            with contextlib.suppress(OSError):
+                os.rmdir(destination)
+        _checkpoint_archive_refuse("destination-occupied")
+    return destination, descriptor, created
+
+
+def _checkpoint_restore_archive_read_member(
+    local: str, offset: int, length: int
+) -> bytes:
+    """One capsule member's bytes from this process's own captured copy.
+
+    S4-R5-01. `_checkpoint_inspect_read_slice` reads the same bytes and
+    refuses `trailing-data`, which is the right diagnosis where the inspector
+    uses it: there the read is testing the archive's own central directory
+    against the file it describes, and a short read is a fact about the
+    archive. Extraction reads the same captured copy after `git init`, with
+    every member already digested and accepted against that directory, so a
+    short read or an `OSError` there is a fact about this process's scratch
+    file instead -- the same distinction S4-R1-07 and S4-R3-02 already drew
+    for the two scratch directories this path creates, and the one the
+    `os.makedirs`, `os.open`, write and `fsync` failures beside this call
+    already draw. Diagnosing it as itself also keeps `trailing-data` out of
+    the set of section-4 classes reachable once the destination repository
+    exists, which study section 11 has to qualify class by class.
+
+    The message is a fixed literal carrying no path, member name or content,
+    so the `diagnostic-leak` rule holds exactly as it does for the refusals.
+    """
+    try:
+        with open(local, "rb") as handle:
+            handle.seek(offset)
+            data = handle.read(length)
+    except OSError:
+        die("checkpoint restore capsule member could not be read")
+    if len(data) != length:
+        die("checkpoint restore capsule member could not be read")
+    return data
+
+
+def _checkpoint_restore_archive_extract_capsule(
+    local: str, physical: list[dict], destination: str, outer_sha256: str
+) -> str:
+    """Extract the archived capsule under `.git/`, from the captured local copy.
+
+    `local` and `physical` are the inspector's own captured file and parsed
+    central directory, already fully verified by
+    `_checkpoint_inspect_archive_verified`; this reads no byte the inspector
+    did not already digest and accept. The capsule lands at exactly the
+    directory shape `_checkpoint_restore_capsule` already requires --
+    `MANIFEST.json` and `controller/` -- so that existing reader verifies it
+    completely a second time, hostile-fixture rules unchanged.
+    """
+    prefix = CHECKPOINT_ARCHIVE_CAPSULE_DIR + "/"
+    restore_root = os.path.join(
+        destination, ".git", CHECKPOINT_ARCHIVE_RESTORE_STAGE_DIR, outer_sha256
+    )
+    try:
+        os.makedirs(restore_root, 0o700)
+    except OSError:
+        die("checkpoint restore capsule stage could not be created")
+    wrote_any = False
+    for item in physical:
+        name = item["name"]
+        if not name.startswith(prefix):
+            continue
+        relative = name[len(prefix):]
+        if not relative:
+            _checkpoint_archive_refuse("manifest-mismatch")
+        parts = tuple(relative.split("/"))
+        if _checkpoint_safe_relative(parts) != relative:
+            _checkpoint_archive_refuse("manifest-mismatch")
+        target = os.path.join(restore_root, *parts)
+        parent = os.path.dirname(target)
+        try:
+            os.makedirs(parent, 0o700, exist_ok=True)
+        except OSError:
+            die("checkpoint restore capsule stage could not be created")
+        data = _checkpoint_restore_archive_read_member(
+            local, item["data_offset"], item["size"]
+        )
+        try:
+            descriptor = os.open(
+                target,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+            try:
+                _checkpoint_write_all(descriptor, data)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        except OSError:
+            die("checkpoint restore capsule member could not be written")
+        wrote_any = True
+    if not wrote_any:
+        _checkpoint_archive_refuse("manifest-mismatch")
+    return restore_root
+
+
+def _checkpoint_restore_from_archive(
+    base_dir: str, archive_path: str, expected_sha256: str
+) -> dict:
+    """Restore one run from a verified archive into a fresh or empty directory.
+
+    Order matters and is fixed here. The destination is admitted first, then
+    the whole Step 3 inspector runs to completion against the archive alone
+    -- untouched by anything this function later creates -- and any finding
+    anywhere in that reader still refuses before any archive byte reaches the
+    destination. Admission itself is the one exception, and it is one inode:
+    an absent destination is created, mode 0700 and empty, before the
+    inspector runs (S4-R1-04). The `finally` below removes it again, and
+    `_checkpoint_restore_archive_destination` removes it on the refusals it
+    raises inside itself (S4-R3-03), but both by `rmdir` alone. So the
+    reach of that removal is exact: a refusal raised while the destination is
+    still empty leaves the tree as it was found, and one raised after
+    `git init` has filled it leaves the repository behind. S4-R2-01 records
+    which classes are on which side of that line, and why neither this
+    function nor the reference tears an operator-named destination down.
+    Only then does `git init` run, the bundle member is fetched
+    into it (never the network), the capsule is extracted under `.git/` and
+    re-verified by the existing capsule reader, and the base branch it names
+    is checked out. The ancestry and ref join happen once that working
+    commit exists, against the archive's own outer manifest. The existing
+    relocation transaction then runs entirely unchanged. Identity is
+    reminted from the relocated state last, because it is the one property
+    the relocation transaction itself cannot corrupt but a hostile archive's
+    claimed `unavailable` could still misstate. The transaction runs
+    unchanged in every step it takes and in the order it takes them; the one
+    thing this caller moves is *when* its marker is retired, which S4-R4-02
+    defers past the identity check so a refusal there leaves the marker the
+    reference's residue rule names. `--from` is untouched by that.
+    """
+    destination, destination_descriptor, created_destination = (
+        _checkpoint_restore_archive_destination(base_dir)
+    )
+    completed = False
+    scratch = None
+    try:
+        # S4-R1-07: this is the process's own scratch root, not the operator's
+        # destination, so its failure is diagnosed as itself. The sibling
+        # `_checkpoint_inspect_scratch` already separates the identical case.
+        try:
+            scratch = tempfile.mkdtemp(prefix=".fiat-checkpoint-restore-inspect-")
+            os.chmod(scratch, 0o700)
+        except OSError:
+            die("checkpoint restore scratch directory could not be created")
+        result, context = _checkpoint_inspect_archive_verified(
+            archive_path, expected_sha256, scratch
+        )
+        manifest = context["manifest"]
+        local = context["local"]
+        physical = context["physical"]
+        outer_sha256 = result["outer_sha256"]
+
+        bundle_path = os.path.join(scratch, "repository.bundle")
+        if not os.path.isfile(bundle_path):
+            _checkpoint_archive_refuse("manifest-mismatch")
+
+        bounded_git(
+            destination,
+            ["init", "--quiet"],
+            refusal="checkpoint restore could not initialise the destination",
+        )
+        bounded_git(
+            destination,
+            [
+                "fetch",
+                "--quiet",
+                bundle_path,
+                "+refs/heads/*:refs/heads/*",
+                "--no-tags",
+            ],
+            refusal="checkpoint restore could not fetch the archived bundle",
+        )
+
+        restore_root = _checkpoint_restore_archive_extract_capsule(
+            local, physical, destination, outer_sha256
+        )
+        capsule, capsule_manifest, imported, _, ledger_prefix, inventory = (
+            _checkpoint_restore_capsule(
+                restore_root, manifest["controller_capsule"]["manifest_sha256"]
+            )
+        )
+
+        # The bundle's own heads are `refs/heads/<name>` for every *named* ref
+        # the archive recorded -- the run branch and each step branch -- and
+        # never `config.git.base` itself when the run's base is the immutable
+        # commit `cmd_init` always records: that commit travelled as a bare
+        # revision so its objects are packed, but `git bundle` names no ref
+        # for it. So the fetch above may have left `config.git.base` with an
+        # unreferenced but present commit, and checking it out means making
+        # the local branch, exactly as an original clone already has one. A
+        # pre-3.4 run recorded its base as the branch name itself, which the
+        # fetch already created as an ordinary named ref, and checking that
+        # out takes the plain form.
+        base_branch = integration_base_of(imported)
+        base_commit = imported.get("base")
+        already_named = (
+            bounded_run(
+                destination,
+                "git",
+                ["rev-parse", "--verify", "--quiet", f"refs/heads/{base_branch}"],
+            )[0]
+            == 0
+        )
+        if already_named:
+            bounded_git(
+                destination,
+                ["checkout", "--quiet", base_branch],
+                refusal="checkpoint restore could not check out the run's base branch",
+            )
+        elif isinstance(base_commit, str) and COMMIT_RE.fullmatch(base_commit):
+            bounded_git(
+                destination,
+                ["checkout", "--quiet", "-b", base_branch, base_commit],
+                refusal="checkpoint restore could not check out the run's base branch",
+            )
+        else:
+            die("checkpoint restore could not resolve the run's base branch")
+
+        anchor_receipt = as_dict(imported.get("receipts")).get(RUN_ANCHOR_RECEIPT)
+        if anchor_receipt is not None:
+            anchor = validate_run_anchor_shape(anchor_receipt)
+            repository = anchor["repository"]
+            if isinstance(repository, str):
+                bounded_git(
+                    destination,
+                    [
+                        "config",
+                        "remote.origin.url",
+                        f"https://github.com/{repository}.git",
+                    ],
+                    refusal="checkpoint restore could not record the origin remote",
+                )
+
+        initial_base_sha = manifest["run"]["initial_base_sha"]
+        if (
+            not isinstance(initial_base_sha, str)
+            or COMMIT_RE.fullmatch(initial_base_sha) is None
+        ):
+            _checkpoint_archive_refuse("ref-disagreement")
+        working_commit = _checkpoint_archive_guarded(
+            "ref-disagreement",
+            lambda: resolved_commit(destination, "HEAD", "checkpoint restore"),
+        )
+        if not commit_is_ancestor(
+            destination, initial_base_sha, working_commit, "checkpoint restore"
+        ):
+            _checkpoint_archive_refuse("ref-disagreement")
+        computed_refs = _checkpoint_archive_guarded(
+            "ref-disagreement", lambda: _checkpoint_refs(destination, imported)
+        )
+        if computed_refs != manifest["refs"]:
+            _checkpoint_archive_refuse("ref-disagreement")
+
+        # S4-R4-02: the identity check below is decided from the relocated
+        # state, so it can only run once this transaction has completed --
+        # and until round 4 it completed by retiring its own marker, leaving
+        # an `identity-mismatch` or `identity-unavailable` refusal holding
+        # active controller state with no marker beside it. That is a state
+        # the reference writes no rule for. Deferring the retirement to this
+        # caller puts both refusals back inside the rule it does write: the
+        # destination keeps the relocation marker, and the existing retry
+        # rules resume or refuse it. Nothing about the transaction's own
+        # ordering changes, and `--from`, which passes no list, retires the
+        # marker at the same point it always did.
+        deferred_marker: list[str] = []
+        relocated = _checkpoint_restore_relocate(
+            destination,
+            capsule,
+            capsule_manifest,
+            imported,
+            ledger_prefix,
+            inventory,
+            manifest["controller_capsule"]["manifest_sha256"],
+            deferred_marker=deferred_marker,
+        )
+
+        worktree = relocated["worktree"]
+        # S4-R3-02: the separation S4-R1-07 made at the outer scratch root,
+        # applied to the second one. This directory is the process's own, under
+        # its own scratch root, so a failure to create it is neither a fact
+        # about the operator's destination nor an identity mismatch. It has to
+        # be caught here: `main` has no catch-all, so an escaping OSError would
+        # reach the operator as a traceback carrying local absolute paths, out
+        # of a command whose refusals are one bounded line.
+        try:
+            identity_scratch = tempfile.mkdtemp(
+                prefix=".fiat-checkpoint-restore-identity-", dir=scratch
+            )
+            os.chmod(identity_scratch, 0o700)
+        except OSError:
+            die("checkpoint restore scratch directory could not be created")
+        relocated_state = load_state(worktree)
+        recomputed_status, recomputed_snapshot = _checkpoint_archive_identity(
+            worktree, relocated_state, identity_scratch
+        )
+        archived_identity = manifest["identity"]
+        if archived_identity.get("status") == "bound":
+            if (
+                recomputed_status.get("status") != "bound"
+                or recomputed_status.get("snapshot_id")
+                != archived_identity.get("snapshot_id")
+            ):
+                _checkpoint_archive_refuse("identity-mismatch")
+        elif recomputed_status.get("status") == "bound":
+            _checkpoint_archive_refuse("identity-mismatch")
+
+        # S4-R4-02: every refusal decided from relocated state is now behind
+        # us, so the transaction's marker is retired here instead of inside
+        # it. `_checkpoint_restore_retire_marker` re-derives the marker path
+        # from the same `origin`, state and digest and verifies the exact
+        # bytes it wrote before unlinking, so running it here checks the same
+        # things it checked in place. A kill in the window this opens leaves
+        # the marker, which is the residue the reference already describes.
+        for pending_marker in deferred_marker:
+            _checkpoint_restore_retire_marker(
+                destination,
+                imported,
+                manifest["controller_capsule"]["manifest_sha256"],
+                pending_marker,
+            )
+
+        # S4-R1-03: the capsule has been relocated into active controller state
+        # and re-verified from it, so the disposable root the glossary names has
+        # nothing left to serve. Removing it here rather than in the `finally`
+        # leaves a killed restore exactly as the reference fixes it: this root
+        # and the relocation marker, for the existing retry rules to resume or
+        # refuse.
+        #
+        # S4-R3-04 bounds that to a *killed* restore, and S4-R4-02 settles
+        # what the two identity refusals above leave. Both are decided from
+        # the relocated state, so both refuse after the relocation
+        # transaction has completed, and the destination they leave holds
+        # active controller state -- `verify`, `status` and `next` all
+        # succeed against it -- with this root beside it. Since round 4 it
+        # also keeps the relocation marker, because the retirement is
+        # deferred to the loop below and never reached on a refusal. So the
+        # residue is the one the reference describes and the existing retry
+        # rules govern, rather than active state with nothing to pair with.
+        # The refusal still says only that the archive's identity claim was
+        # wrong: it does not undo a transaction the existing code completed,
+        # and this function tears no operator-named destination down.
+        shutil.rmtree(restore_root, ignore_errors=True)
+        with contextlib.suppress(OSError):
+            os.rmdir(os.path.dirname(restore_root))
+
+        completed = True
+        return {
+            "schema": CHECKPOINT_ARCHIVE_RESTORE_SCHEMA,
+            "restore": relocated,
+            "verify": relocated["verify"],
+            "status_sha256": relocated["status_sha256"],
+            "next": relocated["next"],
+            "outer_sha256": outer_sha256,
+            "snapshot_id": recomputed_snapshot,
+        }
+    finally:
+        os.close(destination_descriptor)
+        if scratch is not None:
+            shutil.rmtree(scratch, ignore_errors=True)
+        # S4-R1-04: the destination is admitted before the inspector runs, so a
+        # refusal can reach here having created a directory the operator did
+        # not. `rmdir` removes only an empty one, so nothing this function did
+        # not make, and nothing `git init` has since filled, is ever removed.
+        if created_destination and not completed:
+            with contextlib.suppress(OSError):
+                os.rmdir(destination)
 
 
 def _checkpoint_archive_refuse(refusal: str) -> None:
     """Exit on one bounded class name, with no path, member or tool output.
 
-    Every archive refusal is a name from the reference's closed table. The
-    diagnosis a reader needs is which check said no; anything more would carry
-    an entry name, an entry's content or `gpg` output out of a command whose
-    whole purpose is to keep hostile bytes inside its stage.
+    Every refusal raised *through here* is a name from the reference's closed
+    table; the reused controller readers this path also calls keep their own
+    `die`, which `CHECKPOINT_ARCHIVE_REFUSALS` above bounds. The diagnosis a
+    reader needs is which check said no; anything more would carry an entry
+    name, an entry's content or `gpg` output out of a command whose whole
+    purpose is to keep hostile bytes inside its stage.
     """
     if refusal not in CHECKPOINT_ARCHIVE_REFUSALS:
         refusal = "manifest-mismatch"
@@ -17095,8 +17668,13 @@ def _checkpoint_archive_guarded(refusal: str, operation):
 
     The readers this reuses -- the boundary rule, the ref set, the capsule
     exporter, the identity -- all refuse through `die`, which prints a path-
-    bearing sentence and exits 2. The archive owes one class name and exit 1,
-    so their stream is captured and their exit is translated here.
+    bearing sentence and exits 2. Where a reader's refusal is one the
+    reference's closed table already names, translating it here is what keeps
+    the two spellings of one class from both reaching an operator.
+
+    This wraps the call sites that have such a name to translate to, and only
+    those. It is not applied to every reused reader on the restore path, and
+    `CHECKPOINT_ARCHIVE_REFUSALS` above records why (S4-R1-02).
     """
     try:
         with contextlib.redirect_stderr(io.StringIO()):
@@ -18888,6 +19466,27 @@ def _checkpoint_inspect_archive(
 ) -> dict:
     """Read one outer checkpoint archive from outside the process that built it.
 
+    Thin wrapper over `_checkpoint_inspect_archive_verified`, for the two
+    callers -- `checkpoint inspect` and `checkpoint archive`'s own self-check
+    -- that want only the printed result and never the manifest, the captured
+    local copy or the parsed central directory `checkpoint restore --archive`
+    goes on to read.
+    """
+    result, _context = _checkpoint_inspect_archive_verified(
+        archive_path, expected_sha256, scratch, existing_repo=existing_repo
+    )
+    return result
+
+
+def _checkpoint_inspect_archive_verified(
+    archive_path: str,
+    expected_sha256: str,
+    scratch: str,
+    *,
+    existing_repo: str | None = None,
+) -> tuple[dict, dict]:
+    """Read one outer checkpoint archive from outside the process that built it.
+
     Every check the reference names, in its exact order, stopping at the
     first refusal: the outer digest and sidecar; the central directory under
     the ceilings, the name policy and both uniqueness rules, entry mode,
@@ -18969,7 +19568,7 @@ def _checkpoint_inspect_archive(
     if secret_found:
         _checkpoint_archive_refuse("secret-shaped-member")
 
-    return {
+    result = {
         "schema": CHECKPOINT_ARCHIVE_INSPECT_SCHEMA,
         "outer_sha256": outer_digest,
         "entries": len(physical),
@@ -18980,6 +19579,7 @@ def _checkpoint_inspect_archive(
         "identity": manifest["identity"],
         "refs": manifest["refs"],
     }
+    return result, {"manifest": manifest, "local": local, "physical": physical}
 
 
 
@@ -20297,9 +20897,13 @@ def build_parser() -> argparse.ArgumentParser:
     restore = checkpoint.add_parser(
         "restore", help="relocate one verified controller capsule"
     )
-    restore.add_argument("--from", dest="source", required=True, metavar="DIRECTORY")
+    restore.add_argument("--from", dest="source", metavar="DIRECTORY")
+    restore.add_argument("--manifest-sha256", metavar="SHA256")
     restore.add_argument(
-        "--manifest-sha256", required=True, metavar="SHA256"
+        "--archive", metavar="ZIP", help="restore from one outer checkpoint archive"
+    )
+    restore.add_argument(
+        "--sha256", metavar="SHA256", help="the archive's out-of-band outer SHA-256"
     )
     restore.set_defaults(fn=cmd_checkpoint_restore)
 
