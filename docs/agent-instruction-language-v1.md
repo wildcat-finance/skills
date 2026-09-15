@@ -24,27 +24,18 @@ fragments use a smaller deterministic representation without changing their
 canonical models or the declared answers to nine closed questions? It does not
 translate arbitrary English and it is not a migration tool.
 
-From the repository root, run:
+From the repository root, run the deterministic structural check:
 
 ```bash
 python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json
-python3 scripts/agent_instruction.py measure --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-measurement.json
-python3 scripts/agent_instruction.py parity --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-parity.json
 ```
 
-The checked 2026-08-30 run binds three round trips, 15 reviewed source
-bindings, nine questions, and 14 hostile mutations. The source corpus is
-11,170 bytes and 2,528 tokens. The compact corpus is 6,069 bytes and 2,086
-tokens; its complete 932-byte, 277-token decoder bootstrap makes the compared
-total 7,001 bytes and 2,363 tokens, saving 4,169 bytes and 165 tokens on this
-three-document cohort. The token counts were re-measured on 2026-09-04 against
-the same tokenizer profile after the Fiat source digest changed; the parity
-record carries the recorded family runs. Both recorded model families returned the required
-answer for all 18 source-versus-compact pairs, across 36 isolated calls.
-
-Those figures apply only to the bound files, profiles, prompt, runtimes, and
-date. They do not establish losslessness for arbitrary English, better general
-model behaviour, repository-wide migration safety, or Shoggoth readiness.
+The structurally checked corpus binds three round trips, 17 reviewed source
+bindings, nine questions, and 14 hostile mutations. Its
+`model_evidence_status` is `disabled`: the bound measurement and parity bytes
+are a frozen historical record of the earlier corpus, not evidence about this
+17-binding corpus. The checker reports that status and does not admit the old
+counts or model answers as current.
 
 ## What version 1 carries
 
@@ -327,9 +318,9 @@ Its closed machine-readable shape is declared by the digest-bound
 [`manifest.schema.json`](../tests/fixtures/agent-instruction-v1/manifest.schema.json).
 The manifest names exactly `fiat-study-runbook-phase`, `horos-boundary-check`,
 and `promise-machine-router-selection`, in that canonical order. It fixes the
-source identity and path for each row, `15` reviewed bindings, `9` closed
-questions, and `14` hostile mutations; each row carries its own fixed counts.
-A fixture
+source identity and path for each row, `17` reviewed bindings, including
+`9` Fiat bindings, `9` closed questions, and `14` hostile mutations; each
+row carries its own fixed counts. A fixture
 directory contains exactly `model.json`, `compact.wai`, `questions.json`,
 `mutations.json`, and `source-spans.json`; an absent, additional, linked, or
 special entry refuses.
@@ -387,26 +378,18 @@ source fragments, prompts, model responses, credentials, or hidden reasoning.
 The manifest also binds exactly six regular files in
 [`evidence/`](../tests/fixtures/agent-instruction-v1/evidence/): the complete
 decoder bootstrap, tokenizer profile, two-family profile record, parity prompt,
-measurement report, and parity report. Missing, additional, linked, stale, or
-internally inconsistent evidence refuses before a runtime is launched. The two
-commands are:
+measurement report, and parity report. With `model_evidence_status` set to
+`disabled`, all six files remain digest-bound, the two historical reports must
+retain their exact frozen digests, and the structural checker validates the
+fixtures without treating those reports as current. The `measure` operation
+refuses with `WAI-E-MEASURE.DISABLED` and `parity` refuses with
+`WAI-E-PARITY.DISABLED` before profile identity, tokenizer, recorded-family
+adapter, Ollama, output, or report-writing work.
+Changing the status to `active` restores the existing full evidence validation
+and generator contract; it requires separate authority and newly issued
+evidence, neither of which this corpus claims.
 
-```bash
-python3 scripts/agent_instruction.py measure --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-measurement.json
-python3 scripts/agent_instruction.py parity --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-parity.json
-```
-
-Both commands re-run the fixture and mutation checks, verify every selected
-profile, write one canonical report by atomic replacement, and emit its bounded
-`run.summary`. A refusal still writes the complete bounded report when the
-failure occurs after report construction. Counts and answers are observations;
-they do not change source, canonical-model, or compact instruction authority.
-Each generator verifies the manifest digest of every existing evidence file,
-but does not require the old measurement or parity report to describe the new
-bound inputs before producing its replacement. The ordinary `check` command
-does require both reports to be current and internally consistent.
-
-### Token measurement
+### Frozen historical token measurement
 
 The checked tokenizer profile is `gptoss-120b-ollama-0.32.15`, model
 `gpt-oss:120b`, vocabulary and model-blob SHA-256
@@ -450,19 +433,21 @@ it names the stream that was put to the model.
 
 The consequence a reader needs: a `canonical_model.sha256` or `compact.sha256`
 in the measurement report is **not** the digest of the file on disk, and the
-manifest's own `artifacts.*.sha256` is. Both are checked on every `check` run,
-against different bytes, and neither substitutes for the other. A record whose
-`projection` names a rule this version does not define refuses with
-`WAI-E-MEASURE.PROJECTION` or `WAI-E-PARITY.PROJECTION`.
+manifest's own `artifacts.*.sha256` is. In active mode both are checked against
+their respective bytes, and neither substitutes for the other. A current
+active record whose `projection` names a rule this version does not define
+refuses with `WAI-E-MEASURE.PROJECTION` or `WAI-E-PARITY.PROJECTION`. Disabled
+mode admits neither record as current and instead requires its whole frozen
+file digest.
 
 The rule is versioned because it identifies what a count means. Widening or
 narrowing what the projection substitutes requires a new projection name, so a
 record written under one rule cannot read as though it were written under
 another.
 
-The baseline is the three source spans under that profile. The comparison then
-counts the canonical models, compact documents, and the complete 932-byte
-decoder bootstrap under the same profile. The checked report records:
+The frozen historical run used three source spans under that profile. It then
+counted the canonical models, compact documents, and the complete 932-byte
+decoder bootstrap under the same profile. Its report records:
 
 | material | bytes | tokens |
 | --- | ---: | ---: |
@@ -473,23 +458,21 @@ decoder bootstrap under the same profile. The checked report records:
 | compact corpus plus bootstrap | 7,001 | 2,363 |
 | compact-plus-bootstrap minus source | -4,169 | -165 |
 
-The strict three-document gate passes because `2,363 < 2,528`. The report also
+The historical three-document gate passed because `2,363 < 2,528`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
 not assumed to save tokens: the Fiat fixture reports `-122`, Horos reports
 `+705`, and Promise Machine reports `-194` after adding the entire bootstrap.
 The two-document prefix reports `+306`; only the declared three-document cohort
 is the acceptance cohort.
 
-Those figures are copied from `evidence/measurement.json`, which holds one run:
-the reissue made after the corpus subject and the measured streams moved onto
-the projection described above. Its `observed_on` of `2026-08-30` is the pinned
-tokenizer profile's observation date, carried into the record and checked
-against it on every `check` run, so it dates the profile and not the run. Every
-token column counts a projected stream; the byte columns are unchanged either
-way, because the projection preserves length. No count here was written by
-hand.
+Those archival figures are copied from `evidence/measurement.json`, which
+holds one earlier run. Its `observed_on` of `2026-08-30` was the pinned
+tokenizer profile's observation date. Every token column describes that run's
+projected stream; the byte columns were unchanged because the projection
+preserved length. The current disabled checker preserves the report by exact
+file digest and makes no count claim for the 17-binding corpus.
 
-### Isolated family parity
+### Frozen historical isolated-family parity
 
 The family record names two distinct local identities:
 
@@ -521,21 +504,19 @@ Secret-shaped response text and unlisted answer ids are redacted; if those
 replacements would exceed the 512-byte record limit, the report stores one
 fixed bounded redaction marker.
 
-The checked run contains 18 source-versus-compact pairs and 36 isolated model
-calls. All 18 pairs returned the declared required answer from both forms; the
-summary reports 18 passed, zero failed, zero refused, and zero unknown. This is
-evidence for these fixture bytes, profiles, and local runtime only. It does not
-show parity for another model build, another prompt, arbitrary English, tools,
-conversation history, or a deployed agent.
+The frozen report describes 18 source-versus-compact pairs and 36 isolated
+model calls. It records 18 passed, zero failed, zero refused, and zero unknown
+for its earlier corpus. Disabled status preserves those bytes as history; it
+does not establish parity for the current corpus, another model build, another
+prompt, arbitrary English, tools, conversation history, or a deployed agent.
 
 ### Adapter trust boundary and recovery
 
 Ollama, curl, their outputs, and model responses are untrusted external
-adapters. The checked profiles make their identity and launch contract
-reproducible, but neither adapter interprets instruction authority. The Python
-validator alone decides whether a bound profile, count, response, and report
-fit this evidence contract. It never executes a source command or acts on a
-model answer.
+adapters. Active mode's checked profiles make their identity and launch
+contract reproducible, but neither adapter interprets instruction authority.
+Disabled mode refuses before identity or adapter execution. The Python
+validator never executes a source command or acts on a model answer.
 
 The validator also fixes the SHA-256 of both checked profile records in its
 source. A manifest can bind a report produced by those profiles, but rebinding
@@ -551,8 +532,10 @@ unavailable runtime, cap breach, changed identity, reused context, model
 refusal, required-answer mismatch, or unknown answer remains visible and
 refuses the run.
 
-Recovery is to restore the recorded local identity or create a newly reviewed
-profile and rerun the complete cohort. Do not edit a digest, hide a bounded
+Active-mode recovery is to restore the recorded local identity or create a
+newly reviewed profile and rerun the complete cohort. Disabled-mode recovery is
+inspection or restoration of the exact frozen bytes; activation requires new
+authority and evidence. Do not edit a digest, hide a bounded
 response, collapse two model aliases into two families, substitute bytes or a
 heuristic for tokenizer output, or widen an answer set after seeing a result.
 Adding a dependency, downloading a model, contacting a credentialed or paid

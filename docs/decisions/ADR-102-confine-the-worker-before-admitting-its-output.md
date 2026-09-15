@@ -1,4 +1,4 @@
-# Decision: Confine the worker before admitting its output
+# ADR-102: Confine the worker before admitting its output
 
 ## Status
 

@@ -34,6 +34,7 @@ PYTHON_WORKFLOWS = {
     "adr-assignments.yml",
     "contributors.yml",
     "dead-code.yml",
+    "hexaemeron-forge.yml",
     "identity.yml",
     "janus.yml",
     "lazarus.yml",
@@ -55,6 +56,13 @@ BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "pandects-forge.yml",
 }
 PLUGIN_WORKFLOW_PATHS = {
+    "hexaemeron-forge.yml": {
+        "plugins/hexaemeron/harness/**",
+        "plugins/hexaemeron/tests/test_harness_*.py",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/hexaemeron-forge.yml",
+    },
     "janus.yml": {
         "plugins/janus/**",
         ".python-version",

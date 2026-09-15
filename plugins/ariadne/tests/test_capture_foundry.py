@@ -284,6 +284,24 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("--deployment needs", err)
 
+    def test_a_deployment_naming_a_key_twice_is_refused_by_the_parser(self):
+        code, _, err = run(
+            [
+                "capture",
+                "solidity-release",
+                "--project",
+                V2,
+                "--repository",
+                REPOSITORY,
+                "--commit",
+                COMMIT,
+                "--deployment",
+                "chain_id=1,address=0x01,creation_tx=0x02,address=0x03",
+            ]
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("--deployment repeats address", err)
+
 
 class FixtureHygieneTests(unittest.TestCase):
     def test_no_committed_fixture_carries_a_local_path(self):

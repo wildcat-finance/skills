@@ -157,6 +157,19 @@ class ParentRedGuard(RunnerCase):
 
 
 class ManifestAndWorkerProtocol(RunnerCase):
+    def test_repository_manifest_fits_its_declared_byte_budget(self):
+        try:
+            tests, identifiers, digest = runner.discover_manifest(
+                RUNNER.parent, loader=unittest.TestLoader()
+            )
+        except runner.SchedulerError as error:
+            self.fail(str(error))
+        self.assertEqual(len(tests), len(identifiers))
+        self.assertLessEqual(
+            len(runner.manifest_bytes(identifiers)), runner.MAX_MANIFEST_BYTES
+        )
+        self.assertEqual(digest, runner.manifest_digest(identifiers))
+
     def test_test_id_failure_is_a_structured_scheduler_refusal(self):
         fixture = self.fixture({
             "test_broken_id.py": """

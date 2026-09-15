@@ -1,0 +1,8 @@
+{
+  "target": "wildcat-v2-ethereum-mainnet",
+  "generation": "V2",
+  "chain_id": 1,
+  "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+  "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+  "note": "the 730-day FixedTermHooks template carrying the 365-day template's code hash; expected rejected on code hash"
+}

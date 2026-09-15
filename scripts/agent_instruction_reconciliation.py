@@ -663,7 +663,9 @@ def dependencies(manifest, candidate, baseline_manifest):
         if kind in {"measurement_record", "parity_record"}:
             observed = codec.load_canonical_record(body, allow_integers=True)
             item["corpus_sha256"] = observed.get("corpus_sha256")
-            if item["corpus_sha256"] != corpus:
+            if manifest["model_evidence_status"] == "disabled":
+                item["state"] = "disabled"
+            elif item["corpus_sha256"] != corpus:
                 item["state"] = "needs-evidence"
         states[kind] = item
     return {"corpus": {"state": "ready", "sha256": corpus,
@@ -683,7 +685,7 @@ def measured_streams(manifest, candidate):
         for role in ("model", "compact"):
             materials[role] = codec.digest_neutral_projection(manifest, candidate[fixture["artifacts"][role]["path"]])
         streams[fixture["id"]] = {
-            role: {"state": "ready" if documents[fixture["id"]]["canonical_model" if role == "model" else role]["sha256"] == sha(body) else "needs-evidence",
+            role: {"state": "disabled" if manifest["model_evidence_status"] == "disabled" else "ready" if documents[fixture["id"]]["canonical_model" if role == "model" else role]["sha256"] == sha(body) else "needs-evidence",
                    "sha256": sha(body), "bytes": len(body), "recorded_sha256": documents[fixture["id"]]["canonical_model" if role == "model" else role]["sha256"],
                    "projection": codec.MEASURED_PROJECTION_NONE if role == "source" else codec.MEASURED_PROJECTION_DIGEST_NEUTRAL}
             for role, body in materials.items()}
@@ -740,7 +742,8 @@ def prepare(root: Path | str, *, baseline: str, source: str, stage: str):
         work = stage + "/work"
         commands = [["python3", CHECKER, verb, "--root", work, "--manifest", MANIFEST,
                      "--output", f"acquisitions/{filename}.json"]
-                    for verb, filename in [("measure", "measurement"), ("parity", "parity")]]
+                    for verb, filename in [("measure", "measurement"), ("parity", "parity")]
+                    if updated["model_evidence_status"] == "active"]
         commands.append(["python3", CHECKER, "check", "--root", stage + "/accepted", "--manifest", MANIFEST])
         return {"schema": RESULT_SCHEMA, "operation": "prepare", "outcome": outcome,
                 "baseline": baseline, "source": source, "stage": stage, "plan_sha256": sha(raw),
@@ -1092,8 +1095,65 @@ BOUNDARY_TESTS = {
 }
 
 
+# The recorded 15-binding demonstration predates the 17-binding inoculation
+# corpus. Its three owner implementations are preserved on main by these exact
+# digests; historical verification must not reinterpret it with a newer codec.
+HISTORICAL_DEMONSTRATION_OWNERS = {
+    "agent_instruction": "3c5fabf3510e449b0476de4a7ecb6c2bd4909c5b65c7a10ecdaef5e86ec923f2",
+    "prove_agent_instruction_reconciliation": "e4c396ce502e9c97f75d5d9be2ff885ef236b6aa91ea80da24eef5ccef323c53",
+    "agent_instruction_reconciliation": "84632d90863afe513293779d7dd1241bac2aa3c5e63e1303aaebf5bc1e953093",
+}
+
+
+def verify_historical_demonstration(root: Path | str, path: str):
+    """Replay the fixed recorded owners, without claiming a current-code run."""
+    import builtins
+    import importlib.util
+
+    frozen = {}
+    with Root(Path(root).resolve()) as repository:
+        for name, digest in HISTORICAL_DEMONSTRATION_OWNERS.items():
+            source = "docs/agent-instruction-reconciliation/demonstration-evidence/" + digest + ".bin"
+            data, _ = repository.read(source)
+            if sha(data) != digest:
+                fail("AIR-E-DEMO.BOUNDARY", "recorded owner differs from its pinned implementation")
+            frozen[name] = data
+    with tempfile.TemporaryDirectory(prefix="air-recorded-owners-") as scratch:
+        scripts = Path(scratch) / "scripts"
+        scripts.mkdir()
+        modules = {}
+        def owner_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if level == 0 and name in modules:
+                return modules[name]
+            return builtins.__import__(name, globals, locals, fromlist, level)
+        for name, data in frozen.items():
+            source = scripts / (name + ".py")
+            source.write_bytes(data)
+            spec = importlib.util.spec_from_file_location("recorded_" + name, source)
+            module = importlib.util.module_from_spec(spec)
+            module.__dict__["__builtins__"] = dict(vars(builtins), __import__=owner_import)
+            spec.loader.exec_module(module)
+            modules[name] = module
+        owner = modules["agent_instruction_reconciliation"]
+        # No command or model is part of this replay, including a future
+        # accidental call from a historical reader.
+        def refuse_command(*args, **kwargs):
+            fail("AIR-E-DEMO.COMMAND", "historical verification cannot start a command")
+        owner.bounded_command = refuse_command
+        try:
+            result = owner.verify_demonstration(root, path)
+        except owner.ReconciliationError as error:
+            fail(error.code, error.detail)
+        except modules["agent_instruction"].CodecError as error:
+            fail("AIR-E-CHECK", str(error))
+    return {**result, "implementation_scope": "recorded-implementation",
+            "owner_sha256": dict(HISTORICAL_DEMONSTRATION_OWNERS)}
+
+
 def verify_demonstration(root: Path | str, path: str):
     """Recheck preserved Git objects, relocated bytes and owner report semantics offline."""
+    if sha(Path(codec.__file__).read_bytes()) != HISTORICAL_DEMONSTRATION_OWNERS["agent_instruction"]:
+        return verify_historical_demonstration(root, path)
     with Root(root) as repository:
         raw, _ = repository.read(relative(path)); value = record(raw)
         fields(value, {"schema", "baseline", "dependencies", "cases", "boundary", "acquisitions", "counterfactual", "limits"}, DEMONSTRATION_SCHEMA)

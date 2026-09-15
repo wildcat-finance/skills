@@ -1,0 +1,55 @@
+{
+  "schema": "issue-453-path-boundary-fixture/v1",
+  "allowed_paths": [
+    "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+    "plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json",
+    "plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json",
+    "plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json",
+    "plugins/hexaemeron/tests/test_issue_453_guard_evidence.py",
+    "plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py"
+  ],
+  "valid_rows": [
+    {
+      "path": "plugins/hexaemeron/tests/emit_issue_453_guard_report.py",
+      "status": "M",
+      "old_mode": "100644",
+      "new_mode": "100644"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/fixtures/issue-453/guard-evidence.json",
+      "status": "A",
+      "old_mode": "000000",
+      "new_mode": "100644"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/fixtures/issue-453/guard-outcomes.json",
+      "status": "A",
+      "old_mode": "000000",
+      "new_mode": "100644"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/fixtures/issue-453/path-boundary.json",
+      "status": "A",
+      "old_mode": "000000",
+      "new_mode": "100644"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_issue_453_guard_evidence.py",
+      "status": "A",
+      "old_mode": "000000",
+      "new_mode": "100644"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_issue_453_inoculation_lifecycle.py",
+      "status": "A",
+      "old_mode": "000000",
+      "new_mode": "100644"
+    }
+  ],
+  "invalid_extra": {
+    "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "status": "M",
+    "old_mode": "100644",
+    "new_mode": "100644"
+  }
+}

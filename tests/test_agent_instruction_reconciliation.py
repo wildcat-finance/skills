@@ -77,10 +77,13 @@ class ReconciliationTests(unittest.TestCase):
                     stage = "tmp/" + fixture["id"] + "-" + placement
                     result = air.prepare(self.root, baseline=self.commit, source=source, stage=stage)
                     self.assertEqual(result["affected_fixtures"], [fixture["id"]])
-                    self.assertEqual(result["outcome"], "needs-evidence" if placement == "before" else "ready")
-                    self.assertEqual(result["measured_streams"][fixture["id"]]["source"]["state"], "ready")
+                    self.assertEqual(result["outcome"], "ready")
+                    self.assertEqual(result["dependencies"]["measurement_record"]["state"], "disabled")
+                    self.assertEqual(result["dependencies"]["parity_record"]["state"], "disabled")
+                    self.assertEqual(len(result["owner_commands"]), 1)
+                    self.assertEqual(result["measured_streams"][fixture["id"]]["source"]["state"], "disabled")
                     self.assertEqual(result["measured_streams"][fixture["id"]]["model"]["state"],
-                                     "needs-evidence" if placement == "before" else "ready")
+                                     "disabled")
                     plan = json.loads((self.root / stage / "plan.json").read_bytes())
                     offsets = plan["offsets"][fixture["id"]]
                     self.assertEqual(offsets["delta"], delta if placement == "before" else 0)
@@ -168,13 +171,15 @@ class ReconciliationTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(air.apply(self.root, stage="tmp/retry", plan_sha256=result["plan_sha256"])["outcome"], "accepted")
 
-    def test_stale_reports_do_not_earn_apply_and_no_journal_or_live_write_occurs(self):
+    def test_disabled_reports_remain_frozen_when_structural_reconciliation_applies(self):
         result, source, edited, _ = self.prepare("promise-machine-router-selection", "before")
-        with self.assertRaisesRegex(air.ReconciliationError, "AIR-E-CHECK"):
-            air.apply(self.root, stage="tmp/stage", plan_sha256=result["plan_sha256"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            accepted = air.apply(self.root, stage="tmp/stage", plan_sha256=result["plan_sha256"])
+        self.assertEqual(accepted["outcome"], "accepted")
         self.assertFalse((self.root / air.ACTIVE).exists())
-        for path, body in self.files.items():
-            self.assertEqual((self.root / path).read_bytes(), edited if path == source else body)
+        for kind in ("measurement_record", "parity_record"):
+            path = self.manifest["evidence"][kind]["path"]
+            self.assertEqual((self.root / path).read_bytes(), self.files[path])
 
     def test_stage_mutation_live_identity_race_and_partial_evidence_pair_refuse(self):
         result, _, _, _ = self.prepare()
@@ -575,7 +580,10 @@ class DemonstrationVerificationTests(unittest.TestCase):
         with mock.patch.object(air, "bounded_command", side_effect=AssertionError("offline verifier started a subprocess")):
             result = air.verify_demonstration(self.root, self.RECORD)
         self.assertEqual(set(result), {"schema", "outcome", "record_sha256", "structural_placements",
-                                     "complete_law_repairs", "unchanged_reviewed_bindings", "verified_dependencies"})
+                                     "complete_law_repairs", "unchanged_reviewed_bindings", "verified_dependencies",
+                                     "implementation_scope", "owner_sha256"})
+        self.assertEqual(result["implementation_scope"], "recorded-implementation")
+        self.assertEqual(result["owner_sha256"], air.HISTORICAL_DEMONSTRATION_OWNERS)
         self.assertEqual(result["structural_placements"], 6)
         self.assertEqual(result["complete_law_repairs"], 1)
         self.assertEqual(result["unchanged_reviewed_bindings"], 15)

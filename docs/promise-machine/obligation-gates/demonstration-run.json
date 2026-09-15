@@ -93,22 +93,22 @@
   ],
   "contract": "promise-machine/v1",
   "counts": {
-    "active_history_ids": 101,
+    "active_history_ids": 99,
     "composition_relations": 7,
-    "coverage_rows": 101,
+    "coverage_rows": 99,
     "evaluation_cases": 11,
     "evaluation_outcomes": 55,
     "gate_classes": 10,
     "history_cases": 9,
-    "history_rows": 101,
+    "history_rows": 99,
     "negative_specimens": 12,
     "obligation_markers": 18,
-    "promises": 101,
+    "promises": 99,
     "provenance_rows": 12,
     "registry_rows": 18,
-    "repository_checks": 35,
+    "repository_checks": 37,
     "repository_scopes": 27,
-    "runtime_rows": 49
+    "runtime_rows": 48
   },
   "date": "2026-09-02",
   "evidence_classes": {
@@ -131,7 +131,7 @@
       "issue_obligation": "result binding",
       "marker_backed": true,
       "negative_cases": {
-        "count": 49,
+        "count": 48,
         "kind": "runtime binding rows"
       },
       "network_findings": [],
@@ -580,19 +580,19 @@
       "sha256": "384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f"
     },
     {
-      "bytes": 270022,
+      "bytes": 264156,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "1ddf87269f7345a5349c182b4617f7309933d2e32babe20f07f974692406445e"
+      "sha256": "298a1403c335d3309013639bf70bd8650ae6a66cc6d5bc05652632204a0fa739"
     },
     {
-      "bytes": 52506,
+      "bytes": 51722,
       "path": "tests/promise_machine_id_history.json",
-      "sha256": "41ffacc5a284690e197ebba84ecf1d7f9f8c331426bf821be5d8ce7b97570e43"
+      "sha256": "fb8ced627567f25de78bc16d5a790c292a8db0f0268105a262aee943a6816d9e"
     },
     {
       "bytes": 26778,
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "f06c0cd0bd593578eeb4c2498dc4acc6cab45ecb6cd6e434832d2cc84e624243"
+      "sha256": "a2df1c836f34fad4732373802380f434d7d8162f953b8795c424fefd39914e1c"
     },
     {
       "bytes": 685,
@@ -612,7 +612,7 @@
     {
       "bytes": 3231,
       "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
-      "sha256": "3faaac5c7736ae95982510cfe6d2e7ed3e37ff0ee9eb3a3b5903a6d2beeb1148"
+      "sha256": "403de4bdb4082367a8dda13a9dd754e744e5995aae8864fe061b1c9ef3b77b3e"
     }
   ],
   "issue": "wildcat-finance/skills#884",

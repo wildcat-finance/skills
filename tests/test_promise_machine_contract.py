@@ -2947,6 +2947,19 @@ class PromiseInventoryTests(unittest.TestCase):
 
 
 class PromiseStructureTests(unittest.TestCase):
+    def test_brevitas_fiat_audit_record_mode_stays_inside_structure_promise(self):
+        text = (
+            ROOT / "plugins" / "brevitas" / "skills" / "brevitas" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        contract = text.split("### brevitas-structure-check", 1)[1].split(
+            "\n### ", 1
+        )[0]
+        self.assertIn("`--mode fiat-audit-record`", text)
+        self.assertIn("`audit_synopsis.py --check .`", text)
+        self.assertIn("suppresses only B010 and B011", contract)
+        self.assertIn("does not parse or establish the audit schema", contract)
+        self.assertNotIn("### brevitas-fiat-audit-record", text)
+
     def test_standalone_contract_population_is_complete(self):
         expected = {
             "plugins/alexandria/skills/alexandria/SKILL.md": {
@@ -3056,14 +3069,19 @@ class PromiseStructureTests(unittest.TestCase):
 
     def test_hexaemeron_contract_population_is_complete(self):
         expected = {
-            "elenchus": {"elenchus-fixed-and-guarded"},
+            "elenchus": {
+                "elenchus-fixed-and-guarded",
+                "elenchus-parent-guard-evidence",
+            },
             "ephoros": {"ephoros-mechanical-gate", "ephoros-observability-review"},
             "fiat": {
                 "fiat-replacement-admission",
                 "fiat-cumulative-carryover-custody",
                 "fiat-controller-checkpoint",
+                "fiat-checkpoint-archive",
                 "fiat-decision-assignment-composition",
                 "fiat-design-evidence",
+                "fiat-known-failure-inoculation",
                 "fiat-study-amendment",
                 "fiat-runbook-amendment",
                 "fiat-run-observation-binding",
@@ -3084,8 +3102,13 @@ class PromiseStructureTests(unittest.TestCase):
                 "kronos-parked-lane",
             },
             "metron": {"metron-budget-verdict", "metron-change-decision"},
-            "phylax": {"phylax-mechanical-gate", "phylax-boundary-review"},
-            "protasis": {"protasis-study-readiness", "protasis-runbook-readiness", "protasis-gate-command-validation"},
+            "phylax": {"phylax-mechanical-gate", "phylax-boundary-review", "phylax-github-issue-publisher"},
+            "protasis": {
+                "protasis-known-failure-inventory",
+                "protasis-gate-command-validation",
+                "protasis-study-readiness",
+                "protasis-runbook-readiness",
+            },
             "vulgate": {"vulgate-register-rewrite"},
         }
         for skill, promise_ids in expected.items():
@@ -3577,15 +3600,15 @@ class PromiseHistoryTests(unittest.TestCase):
         document = json.loads(PROMISE_ID_HISTORY.read_text(encoding="utf-8"))
         self.assertEqual(document["entry_ref"], FIAT_ENTRY_REF)
         self.assertEqual(document["entry_count"], 80)
-        self.assertEqual(len(document["entries"]), 101)
+        self.assertEqual(len(document["entries"]), 106)
         self.assertEqual(
-            len({row["promise_id"] for row in document["entries"]}), 101
+            len({row["promise_id"] for row in document["entries"]}), 106
         )
         completed = run_cli("check", "--only", "history", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["history_entries"], 101)
-        self.assertEqual(report["counts"]["active_history_ids"], 101)
+        self.assertEqual(report["counts"]["history_entries"], 106)
+        self.assertEqual(report["counts"]["active_history_ids"], 106)
 
     def test_deleted_or_duplicated_history_id_is_refused(self):
         for name in ("deleted", "duplicated"):
@@ -4370,7 +4393,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "source_digest",
         }
         level_three_fields = {"authority", "inspectable_evidence"}
-        self.assertEqual(len(records), 49)
+        self.assertEqual(len(records), 53)
         self.assertEqual(set(coverage["runtime"]), set(records))
         native_maps = set()
         for promise_id, binding in coverage["runtime"].items():
@@ -4455,7 +4478,7 @@ class PromiseCoverageTests(unittest.TestCase):
                     completed.returncode, 0, completed.stdout + completed.stderr
                 )
                 self.assertEqual(report["findings"], [])
-                self.assertEqual(report["counts"]["runtime_bindings"], 49)
+                self.assertEqual(report["counts"]["runtime_bindings"], 53)
 
     def test_repository_runtime_specimens_use_the_production_reader(self):
         coverage = json.loads(
