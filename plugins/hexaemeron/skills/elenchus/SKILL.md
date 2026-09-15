@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.6.0"
+  version: "1.7.0"
 ---
 
 <p align="center">
@@ -325,6 +325,24 @@ infrastructure errors and skips. An assertion with no infrastructure error is
 oversized, incomplete or zero-test report is `inconclusive`, as are mixed
 assertion/error reports, timeouts, interrupted commands and unsafe report
 paths. A commit changing no tests remains `unguarded`.
+
+For the commit-based CLI check, `digest_rebinds` records changed JSON
+`path`/`sha256` bindings whose old and new digests match regular Git blobs in
+the parent and fix. Each row names `register`, `path`, `parent_sha256`,
+`rebound_sha256`, and `target_overlaid`. A false `target_overlaid` means the
+new pin expects changed bytes while the test overlay retains the parent
+bytes; `detail` qualifies the verdict and leaves assertion attribution
+unknown. Keep these rows with the audit result. The classifier preserves
+runner counts and verdicts: a binding mismatch may coexist with a real
+regression. Empty rows cover only inspected JSON bindings, excluding pins in
+code, ambiguous bindings, and other digest formats. Inspection reads at most
+2 MiB per blob and 16 MiB in total; exceeding either limit is `inconclusive`.
+The fixed-and-guarded emitter accepts these optional rows after checking
+their shape, paths, digests and agreement with `tests`. Its nine-field record
+keeps the qualified verdict detail; retain the original JSON result for the
+individual rebind rows.
+This diagnostic belongs to the commit-based CLI; the separate caller-bound
+`parent_guard_evidence` operation retains its exact blob and report contract.
 
 Stdout, stderr and ordinary exit codes are retained as bounded diagnostics for
 a person. They never classify the result. A legacy invocation that omits

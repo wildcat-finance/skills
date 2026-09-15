@@ -705,14 +705,17 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "elenchus" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.6.0")
+        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.7.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(
             field(ledger, "Frontier revision"), "observed-failure-root-cause"
         )
         self.assertEqual(field(ledger, "Current frontier"), ELENCHUS_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), "None -- mature")
-        latest = history_rows(ledger)[-1]
+        latest = next(
+            row for row in history_rows(ledger)
+            if row["version"] == "elenchus-v1.6.0"
+        )
         self.assertEqual(latest["version"], "elenchus-v1.6.0")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "observed-failure-root-cause")
