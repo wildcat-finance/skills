@@ -1,14 +1,16 @@
 """Hold the contributor generator's host-identity set equal to Fiat's.
 
-ADR-016 names one mechanical set of runtime host identities and Fiat's
-controller owns it. scripts/contributors.py keeps a copy so it stays a
-standalone root script with no cross-plugin import. A copy that nothing checks
-stops agreeing, so these tests read the frozensets straight out of hexctl.py's
-syntax tree and compare them. Either side edited alone fails here.
+hexctl.py still declares the runtime host identities, though Fiat refuses no
+commit on them, because the contributor-ranking promise names this parity check
+as evidence. scripts/contributors.py keeps a copy so it stays a standalone root
+script with no cross-plugin import. A copy that nothing checks stops agreeing,
+so these tests read the frozensets straight out of hexctl.py's syntax tree and
+compare them. Either side edited alone fails here.
 """
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 from pathlib import Path
@@ -87,6 +89,33 @@ class HostSetParity(unittest.TestCase):
         self.assertFalse(contributors.is_host_identity("Dave Coleman", "dave@example.com"))
         self.assertFalse(contributors.is_host_identity("Radu P", "radu@example.com"))
         self.assertFalse(contributors.is_host_identity("", ""))
+
+    def test_contributor_classification_does_not_reach_fiat_admission(self):
+        """hexctl.py declares the sets for this parity check and nothing in it reads them.
+
+        Fiat refuses no commit on runtime-host identity. A reader of any of the
+        three sets, or the return of a withdrawn host or trailer rule, would make
+        this classification a Fiat admission gate again.
+        """
+        tree = ast.parse(HEXCTL.read_text(encoding="utf-8"), filename=str(HEXCTL))
+        readers = sorted(
+            f"{node.id}:{node.lineno}"
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name)
+            and node.id in SET_NAMES
+            and not isinstance(node.ctx, ast.Store)
+        )
+        self.assertEqual(readers, [], "hexctl.py reads a runtime-host set")
+        withdrawn = {"is_host_identity", "HOST_BYLINE_RE", "COAUTHOR_TRAILER", "ORIGIN_TRAILER"}
+        names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
+        names.update(
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        )
+        self.assertEqual(
+            sorted(names & withdrawn), [], "hexctl.py names a withdrawn host or trailer rule"
+        )
 
 
 class LoginGrammar(unittest.TestCase):
@@ -326,6 +355,17 @@ class RecordedDecisions(unittest.TestCase):
         block = text.split("promise-machine-contributor-ranking", 1)[1]
         for field in ("- Promise:", "- Evidence:", "- Boundary:", "- Refuses:", "- Recovery:"):
             self.assertIn(field, block.split("## ", 1)[0])
+
+    def test_the_contributor_promise_keeps_its_hexctl_parity_check(self):
+        text = (REPOSITORY_ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        block = text.split("promise-machine-contributor-ranking", 1)[1].split("## ", 1)[0]
+        self.assertIn("the host-set parity check against `hexctl.py`'s declaration", block)
+        self.assertIn("a host set diverged from `hexctl.py` in either direction", block)
+
+    def test_the_guide_does_not_make_account_matching_an_admission_rule(self):
+        text = self.GUIDE.read_text(encoding="utf-8")
+        self.assertNotIn("author address must be one GitHub can match", text)
+        self.assertNotRegex(text, r"under your human\s+identity")
 
     def test_the_guide_says_what_the_list_does_not_establish(self):
         text = self.GUIDE.read_text(encoding="utf-8")
@@ -719,6 +759,97 @@ class RequiresSymbol:
             )
         else:
             self.fail(f"expected a Stop naming {contains!r}; nothing was raised")
+
+
+class HostSetParityDirections(RequiresSymbol, unittest.TestCase):
+    """The parity check stops on drift in either direction, and says which.
+
+    The contributor-ranking promise refuses a host set diverged from hexctl.py
+    in either direction. Each case writes a stand-in hexctl.py that differs
+    from this module's copy in one way and requires the Stop to name that
+    difference and its side. Every symbol is required rather than dereferenced,
+    so a tree without the parity check fails these cases instead of erroring.
+    """
+
+    SETS = ("HOST_IDENTITY_NAMES", "HOST_IDENTITY_EMAILS", "HOST_PR_LOGINS")
+    EXTRA = {
+        "HOST_IDENTITY_NAMES": "newhost",
+        "HOST_IDENTITY_EMAILS": "noreply@newhost.example",
+        "HOST_PR_LOGINS": "newhost[bot]",
+    }
+
+    def ours(self):
+        return {
+            name: self.require(name, "the ranking has no host set to hold in parity")
+            for name in self.SETS
+        }
+
+    def parity_against(self, sets):
+        """A call running the parity check on a stand-in declaring exactly `sets`."""
+        check = self.require(
+            "verify_host_set_parity",
+            "the contributor-ranking promise names a parity check that is gone",
+        )
+        work = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(work, ignore_errors=True))
+        declaration = work / "hexctl.py"
+        declaration.write_text(
+            "".join(
+                f"{name} = frozenset({{{', '.join(map(repr, sorted(members)))}}})\n"
+                for name, members in sets.items()
+            ),
+            encoding="utf-8",
+        )
+        return lambda: check(declaration)
+
+    def test_a_stand_in_equal_to_this_module_passes(self):
+        """The control: each stop below comes from the one drift it introduces."""
+        call = self.parity_against(self.ours())
+        try:
+            call()
+        except contributors.Stop as stop:
+            self.fail(f"a declaration equal to this module's copy stopped: {stop}")
+
+    def test_stops_on_a_member_in_hexctl_that_is_absent_here(self):
+        for name in self.SETS:
+            with self.subTest(set=name):
+                sets = self.ours()
+                extra = self.EXTRA[name]
+                sets[name] = sets[name] | {extra}
+                self.assert_stops(
+                    self.parity_against(sets),
+                    f"{name} differs from hexctl.py (only here: none; only there: {[extra]!r})",
+                )
+
+    def test_stops_on_a_member_here_that_is_absent_from_hexctl(self):
+        for name in self.SETS:
+            with self.subTest(set=name):
+                sets = self.ours()
+                removed = sorted(sets[name])[0]
+                sets[name] = sets[name] - {removed}
+                self.assert_stops(
+                    self.parity_against(sets),
+                    f"{name} differs from hexctl.py (only here: {[removed]!r}; only there: none)",
+                )
+
+    def test_stops_on_a_set_in_hexctl_with_no_counterpart_here(self):
+        sets = self.ours()
+        sets["HOST_FUTURE_LOGINS"] = frozenset({"future[bot]"})
+        self.assert_stops(
+            self.parity_against(sets),
+            "(missing there: none; present there and unaccounted for here: "
+            "['HOST_FUTURE_LOGINS'])",
+        )
+
+    def test_stops_on_a_set_here_with_no_counterpart_in_hexctl(self):
+        for name in self.SETS:
+            with self.subTest(set=name):
+                sets = self.ours()
+                del sets[name]
+                self.assert_stops(
+                    self.parity_against(sets),
+                    f"(missing there: {[name]!r}; present there and unaccounted for here: none)",
+                )
 
 
 class NetworkBoundary(RequiresSymbol, unittest.TestCase):

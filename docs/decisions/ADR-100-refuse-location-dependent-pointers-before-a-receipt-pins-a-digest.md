@@ -1,4 +1,4 @@
-# Decision: Refuse location-dependent pointers before a receipt pins a digest
+# ADR-100: Refuse location-dependent pointers before a receipt pins a digest
 
 ## Status
 

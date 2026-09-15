@@ -173,6 +173,16 @@ PORTABLE_TEST_FILES = (
     Path(
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     ),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/hostile-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-body.txt'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-source.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/issue-855-title.txt'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/manifest.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/queue-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/rejection-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/runtime-cases.json'),
+    Path('plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/valid-request.json'),
 )
 
 OMISSIONS = (

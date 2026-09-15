@@ -49,6 +49,11 @@ PROTASIS_FRONTIER = (
     "relations through one bounded scanner."
 )
 PROTASIS_NEXT_JOB = "None -- mature"
+ELENCHUS_FRONTIER = (
+    "A check overlays a fix's changed tests onto the parent and classifies "
+    "unittest, Forge and Node guards from fresh runner-owned reports, while "
+    "diagnostics remain inert evidence."
+)
 
 # VERSIONING.md's optional declared-inputs block. The definition lives there;
 # these constants are that definition made executable over every ledger.
@@ -353,17 +358,44 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("every piece of prose the agent writes", latest["change"])
         self.assertIn("Next Fiat job stay unchanged", latest["change"])
 
+    def test_brevitas_fiat_audit_record_mode_keeps_held_frontier(self):
+        ledger = (
+            PLUGINS / "brevitas" / "skills" / "brevitas" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "brevitas-v0.4.0")
+        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Frontier revision"), "held-engineering-corpus")
+        self.assertEqual(
+            field(ledger, "Current frontier"),
+            "The linter has not been forward-tested across a held cross-model corpus of engineering reviews, and preservation of counterexamples and reproduction steps remains agent-checked.",
+        )
+        self.assertEqual(
+            field(ledger, "Next Fiat job"),
+            "Forward-test Brevitas across held x-ray, Solidity-auditor, gas, invariant and diff-review outputs, then add every confirmed structural bypass to the corpus without weakening evidence precedence. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.",
+        )
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "brevitas-v0.4.0")
+        self.assertEqual(latest["axis"], "generation")
+        self.assertEqual(latest["revision"], "held-engineering-corpus")
+        self.assertEqual(
+            latest["digest"],
+            "dcff4f6b1397570468dedb18a1ebaa5f45377272bcd2f71cd69ad6818eeb0b62",
+        )
+        self.assertIn("skills#453", latest["evidence"])
+        self.assertIn("fiat-audit-record", latest["change"])
+        self.assertIn("Next Fiat job remain byte-identical", latest["change"])
+
     def test_fiat_link_gate_generation_holds_the_audit_history_successor(self):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.57.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.59.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v6.57.1")
+        self.assertEqual(latest["version"], "fiat-v6.59.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
@@ -382,19 +414,43 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        by_version = {row["version"]: row for row in history_rows(ledger)}
-        # The task-identity evolution was the newest row until the link-gate
-        # generation landed, and keeps its own coverage.
-        evolution = by_version["fiat-v6.56.1"]
-        self.assertEqual(evolution["axis"], "evolution")
-        self.assertEqual(evolution["revision"], "delegated-task-identity")
+        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
+        self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
+        self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
+        latest = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.56.1")
+        self.assertEqual(latest["version"], "fiat-v6.56.1")
+        self.assertEqual(latest["axis"], "evolution")
+        self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
-            evolution["digest"],
+            latest["digest"],
             "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
         )
-        self.assertIn("skills#363", evolution["evidence"])
-        self.assertIn("`next --task-handle` refuses", evolution["change"])
-        self.assertIn("skills#1212", evolution["change"])
+        self.assertIn("skills#363", latest["evidence"])
+        self.assertIn("`next --task-handle` refuses", latest["change"])
+        self.assertIn("skills#1212", latest["change"])
+        # The signature-only generation landed under this frontier and was the
+        # newest row until the link-gate generation; it moves neither the revision
+        # nor the held job.
+        signature_only = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.58.1"
+        )
+        self.assertEqual(signature_only["version"], "fiat-v6.58.1")
+        self.assertEqual(signature_only["axis"], "generation")
+        self.assertEqual(signature_only["revision"], "delegated-task-identity")
+        self.assertEqual(
+            signature_only["digest"],
+            "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
+        )
+        self.assertIn("skills#1135", signature_only["evidence"])
+        self.assertIn("signature-only", signature_only["change"])
+        self.assertIn("parity anchor", signature_only["change"])
+        self.assertIn("inoculation guard commit", signature_only["change"])
+        self.assertIn("web-flow refusal is unchanged", signature_only["change"])
+        self.assertIn(
+            "authenticated connector the same standing", signature_only["change"]
+        )
+        self.assertIn("Frontier unchanged", signature_only["change"])
 
     def test_fiat_state_shape_frontier_holds_the_task_identity_successor(self):
         ledger = (
@@ -590,27 +646,69 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.10.0")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v5.11.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "protasis-v5.10.0")
+        self.assertEqual(latest["version"], "protasis-v5.11.0")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "amendment-block-check")
         self.assertEqual(
             latest["digest"],
             "ca34e050ea7b11b33b1fa1f9575e398f481e20a6e33c7f4edc85cad0d19d5299",
         )
-        self.assertIn("skills#1000", latest["evidence"])
-        self.assertIn("ADR-061", latest["evidence"])
-        self.assertIn("protasis-design-evidence/v1", latest["change"])
-        prior = history_rows(ledger)[-2]
+        self.assertIn("known-failure-inoculation-study.md", latest["evidence"])
+        self.assertIn("known-failure-inoculation/runbook.md", latest["evidence"])
+        self.assertIn("protasis-known-failure-inventory/v1", latest["change"])
+        self.assertIn("known-failure-inoculation/proof.md", latest["evidence"])
+        self.assertIn("manual bootstrap procedure", latest["change"])
+        prior_generation = history_rows(ledger)[-2]
+        self.assertEqual(prior_generation["version"], "protasis-v5.10.0")
+        self.assertEqual(prior_generation["axis"], "generation")
+        self.assertIn("skills#1000", prior_generation["evidence"])
+        self.assertIn("ADR-061", prior_generation["evidence"])
+        self.assertIn("protasis-design-evidence/v1", prior_generation["change"])
+        prior = history_rows(ledger)[-3]
         self.assertEqual(prior["version"], "protasis-v5.9.0")
         self.assertEqual(prior["axis"], "evolution")
         self.assertIn("skills#497", prior["evidence"])
         self.assertIn("S008", prior["change"])
+
+    def test_elenchus_parent_guard_generation_stays_inside_its_mature_frontier(self):
+        """The third ledger this run declares, and the only one Fiat calls into.
+
+        Elenchus runs the guard; Fiat owns the Git binding, the numeric
+        admission and the receipt. A row that let those drift into Elenchus
+        would move the boundary the guard contract rests on, so the mature
+        frontier fields are asserted beside the candidate row rather than
+        left to the ledger's own header.
+        """
+        ledger = (
+            PLUGINS / "hexaemeron" / "skills" / "elenchus" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.6.0")
+        self.assertEqual(field(ledger, "Frontier status"), "mature")
+        self.assertEqual(
+            field(ledger, "Frontier revision"), "observed-failure-root-cause"
+        )
+        self.assertEqual(field(ledger, "Current frontier"), ELENCHUS_FRONTIER)
+        self.assertEqual(field(ledger, "Next Fiat job"), "None -- mature")
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "elenchus-v1.6.0")
+        self.assertEqual(latest["axis"], "generation")
+        self.assertEqual(latest["revision"], "observed-failure-root-cause")
+        self.assertEqual(
+            latest["digest"],
+            "08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b",
+        )
+        self.assertIn("known-failure-inoculation-study.md", latest["evidence"])
+        self.assertIn("test_guard_evidence.py", latest["evidence"])
+        self.assertIn("known-failure-inoculation/proof.md", latest["evidence"])
+        self.assertIn("elenchus-parent-guard-evidence", latest["change"])
+        self.assertIn("Fiat retains ownership", latest["change"])
+        self.assertIn("manual bootstrap procedure", latest["change"])
 
     def test_history_rows_accept_compact_list(self):
         digest = "a" * 64

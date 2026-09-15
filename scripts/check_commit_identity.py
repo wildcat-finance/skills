@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Reject runtime-host attribution in one bounded pull-request commit range."""
+"""Check that one pull-request commit range is bounded and its identities parse.
+
+A pass establishes that the commits from the exact base to the exact head
+stayed inside COMMIT_COUNT_MAX, COMMIT_BYTES_MAX and COMMIT_TOTAL_BYTES_MAX,
+and that each commit's author and committer identities parsed. It establishes
+nothing about who authored a commit.
+"""
 
 from __future__ import annotations
 
@@ -11,8 +17,6 @@ import re
 import stat
 import subprocess
 import sys
-
-import contributors
 
 
 SCHEMA = "wildcat-commit-identity-check/v1"
@@ -29,17 +33,6 @@ COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,
 )
-HOST_BYLINE_RE = re.compile(
-    r"(?:generated\s+(?:by|with)|(?:co-)?authored\s+by)\s+"
-    r"(?:\[(?:claude(?: code)?|codex|chatgpt|copilot|gemini(?: code assist)?)\]"
-    r"\([^\)]+\)|claude(?: code)?|codex|chatgpt|copilot|gemini(?: code assist)?)",
-    re.IGNORECASE,
-)
-
-SHOGGOTH_NAME = "Shoggoth"
-SHOGGOTH_EMAIL = "shoggoth@wildcat.finance"
-COAUTHOR_TRAILER = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
-ORIGIN_TRAILER = "Wildcat-Origin: shoggoth"
 
 COMMIT_COUNT_MAX = 1024
 COMMIT_BYTES_MAX = 128 * 1024
@@ -50,7 +43,7 @@ COAUTHOR_COUNT_MAX = 32
 
 
 class Refusal(Exception):
-    """An identity result that must keep the required check red."""
+    """An identity result that must keep the `identity` status red."""
 
 
 def _repository_path(value: str) -> Path:
@@ -204,15 +197,6 @@ def _identity(line: str, commit_sha: str, role: str) -> tuple[str, str]:
     email = match.group("email")
     if not name or name != match.group("name"):
         raise Refusal(f"commit {commit_sha} has malformed {role} identity")
-    exact_shoggoth = name == SHOGGOTH_NAME and email == SHOGGOTH_EMAIL
-    partial_shoggoth = (
-        name.casefold() == SHOGGOTH_NAME.casefold()
-        or email.casefold() == SHOGGOTH_EMAIL.casefold()
-    )
-    if partial_shoggoth and not exact_shoggoth:
-        raise Refusal(f"commit {commit_sha} has ambiguous Shoggoth {role} identity")
-    if contributors.is_host_identity(name, email):
-        raise Refusal(f"commit {commit_sha} names a runtime host as {role}")
     return name, email
 
 
@@ -239,9 +223,7 @@ def _parsed_commit(data: bytes, commit_sha: str) -> tuple[tuple[str, str], tuple
     )
 
 
-def _message_policy(message: str, commit_sha: str, author: tuple[str, str]) -> None:
-    if HOST_BYLINE_RE.search(message):
-        raise Refusal(f"commit {commit_sha} carries a runtime-host generated-by byline")
+def _message_policy(message: str, commit_sha: str) -> None:
     coauthor_count = 0
     for line in message.splitlines():
         match = COAUTHOR_RE.fullmatch(line)
@@ -255,24 +237,6 @@ def _message_policy(message: str, commit_sha: str, author: tuple[str, str]) -> N
         name, email = match.group("name"), match.group("email")
         if len(name) > 256 or len(email) > 320:
             raise Refusal(f"commit {commit_sha} has malformed co-author identity")
-        if contributors.is_host_identity(name, email):
-            raise Refusal(f"commit {commit_sha} names a runtime host as co-author")
-        partial_shoggoth = (
-            name.strip().casefold() == SHOGGOTH_NAME.casefold()
-            or email.strip().casefold() == SHOGGOTH_EMAIL.casefold()
-        )
-        if partial_shoggoth and line != COAUTHOR_TRAILER:
-            raise Refusal(f"commit {commit_sha} has ambiguous Shoggoth co-author identity")
-    if author == (SHOGGOTH_NAME, SHOGGOTH_EMAIL):
-        lines = message.splitlines()
-        if lines.count(COAUTHOR_TRAILER) != 1:
-            raise Refusal(
-                f"commit {commit_sha} does not carry one exact Shoggoth co-author trailer"
-            )
-        if lines.count(ORIGIN_TRAILER) != 1:
-            raise Refusal(
-                f"commit {commit_sha} does not carry one exact Wildcat-Origin trailer"
-            )
 
 
 def evaluate(repository_value: str, base_value: str, head_value: str, login: str) -> dict:
@@ -303,14 +267,11 @@ def evaluate(repository_value: str, base_value: str, head_value: str, login: str
     head = _full_sha(head_value, "head SHA", object_format)
     if not isinstance(login, str):
         raise Refusal("pull-request login is malformed")
-    if contributors.is_host_login(login):
-        raise Refusal("pull request was opened by a runtime-host account")
     if GITHUB_LOGIN_RE.fullmatch(login) is None:
         raise Refusal("pull-request login is malformed")
 
     commits = _commit_range(repository, base, head)
     total_bytes = 0
-    shoggoth_authors = 0
     for commit_sha in commits:
         data = _commit_bytes(repository, commit_sha)
         total_bytes += len(data)
@@ -318,10 +279,8 @@ def evaluate(repository_value: str, base_value: str, head_value: str, login: str
             raise Refusal(
                 f"pull-request commit objects exceed {COMMIT_TOTAL_BYTES_MAX} bytes"
             )
-        author, _committer, message = _parsed_commit(data, commit_sha)
-        _message_policy(message, commit_sha, author)
-        if author == (SHOGGOTH_NAME, SHOGGOTH_EMAIL):
-            shoggoth_authors += 1
+        _author, _committer, message = _parsed_commit(data, commit_sha)
+        _message_policy(message, commit_sha)
     return {
         "schema": SCHEMA,
         "status": "passed",
@@ -329,14 +288,12 @@ def evaluate(repository_value: str, base_value: str, head_value: str, login: str
         "head": head,
         "pull_request_login": login,
         "commit_count": len(commits),
-        "shoggoth_author_count": shoggoth_authors,
-        "human_author_count": len(commits) - shoggoth_authors,
     }
 
 
 def parser() -> argparse.ArgumentParser:
     command = argparse.ArgumentParser(
-        description="Reject runtime-host attribution in a pull-request commit range."
+        description="Check that a pull-request commit range is bounded and its identities parse."
     )
     command.add_argument("--repository", required=True, help="bare Git object database")
     command.add_argument("--base", required=True, help="exact protected base SHA")

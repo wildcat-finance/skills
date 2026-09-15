@@ -325,6 +325,8 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
                 extra_env=None,
                 *,
                 environment=None,
+                output_max=self.module.GIT_OUTPUT_MAX,
+                timeout=self.module.GIT_TIMEOUT,
             ):
                 nonlocal config_probes, installed
                 is_status = program == "git" and "status" in argv
@@ -335,6 +337,8 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
                         argv,
                         extra_env,
                         environment=environment,
+                        output_max=output_max,
+                        timeout=timeout,
                     )
                 finally:
                     if is_status and installed:

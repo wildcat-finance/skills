@@ -2,13 +2,13 @@
   "agent_instruction": {
     "checker": {
       "path": "scripts/agent_instruction.py",
-      "sha256": "3c5fabf3510e449b0476de4a7ecb6c2bd4909c5b65c7a10ecdaef5e86ec923f2"
+      "sha256": "4b3776370341656d46a1ab3dd2b363d8771493d630795538e27ec5c3fd163289"
     },
     "contract": "wildcat-agent-instruction/v1",
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "eb6a948898585fc14072917998f13e2f12b7dfd222abfceb9717ea6858e31731"
+        "sha256": "2493317728d3d77041c20a33a3c6069b7bc66411a1a322dd11c796f7f4f9cea1"
       },
       {
         "path": "docs/decisions/ADR-062-encode-a-closed-agent-instruction-model.md",
@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "fad6160f09d1aa4939368683a495fe8834901ec287b9d832cd1e5c6c0d6e28b8"
+        "sha256": "1f00f58654d5318801b221767cb1b3ac09ccb720821039d30aa120218536762d"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "836f9bb2cca4bbcafcb795f989029681f107e380a067e0cb9200a36a6ea9cd93"
+        "sha256": "e602b9bd80ca4b901607be190b36ae680b2be7df005641a18ad04eb8a4beed47"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "a0dfe78db8fc31da07879b97f7f0c2d28963ad45ca8ec35992852a76ab9f55fb"
+        "sha256": "d9b0dddd5398f7f848adab3a4f0d09189316172ec9583609c8c77359ee84712c"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -88,11 +88,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "5a7b4f780cec2dcdae29ef41a090dc7553f15fdb438cea708bbc3b6f967dab74"
+        "sha256": "8d407b886b65138158a380e0eb3c08280244022d4c442e409a2adc3a44e1999f"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "5b31373f0c5d25c2ffb212961cb2d8309a37b041d17e3b688a74d49b946d30a8"
+        "sha256": "db2ce1b1412cdf6189d605fa86f7419cac83e8192d0eb1b8b5bb320643915077"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -104,30 +104,30 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "039fabe6b13b1c2f0ca012ae861be67de925a05e7fa9b88804d4e7d729479a45"
+        "sha256": "af314b115d8fc22b6987080141af35c5a4ac6777534b75c18f7ad03c10b85269"
       }
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "a896ce8de7552d921084009dda27d52baea25c4e1dbc0cc543aea98bf1a5fcf8"
+      "sha256": "feaac97fc90dd4c646881094ec8055c542794adc9be5588ff03a7db6b5d6c776"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
       "path": "scripts/prove_agent_instruction_reconciliation.py",
-      "sha256": "e4c396ce502e9c97f75d5d9be2ff885ef236b6aa91ea80da24eef5ccef323c53"
+      "sha256": "9cdf91978c5fba65a0b2c8fdb3ec2e99e5ee6e6b3676c674434643662cbd64fc"
     },
     "prover_tests": {
       "path": "tests/test_agent_instruction_corpus.py",
-      "sha256": "98de5696079ad66ea74bef77472c31f58251e11082ff5d214e18bf0b9f9df097"
+      "sha256": "6bf0515ad2bfbf8fa123602a7eba34dcf40519aaeebc460560c48b53624d21c3"
     },
     "staged_reconciliation": {
       "helper": {
         "path": "scripts/agent_instruction_reconciliation.py",
-        "sha256": "84632d90863afe513293779d7dd1241bac2aa3c5e63e1303aaebf5bc1e953093"
+        "sha256": "944e7a895788e01d0d1cf9c388e6a0d201f21d500c0de2828694a1cb8d78441c"
       },
       "tests": {
         "path": "tests/test_agent_instruction_reconciliation.py",
-        "sha256": "d3ff51761363afe4833167b8163efbf5021726aeb29d29d2607e53bf3b05dc3c"
+        "sha256": "4c17ecb714b911f7bf2f8921b055e2d3e736516efae040dccc90e80026a60feb"
       }
     },
     "tests": {
@@ -136,6 +136,8 @@
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
+        "test_manifest_and_schema_pin_exact_fixture_reviews",
+        "test_manifest_refuses_review_provenance_drift_per_fixture",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
         "test_specialised_coverage_binds_the_reconciliation_prover",
         "test_specialised_coverage_binds_focused_tests",
@@ -152,14 +154,14 @@
         "test_an_edited_token_count_refuses_on_its_own",
         "test_a_consistent_token_count_edit_is_not_detected"
       ],
-      "sha256": "fa266a0fb9b2bd366984c81262918ec2e84347eca090c70e49872c459a68d139"
+      "sha256": "f43d3afdd733d16ebabe556c8e49a3b3c1e68e71c35a78b932d28f68f31ecc58"
     },
-    "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
+    "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the current three-round-trip, 17-binding, nine-Fiat-binding, nine-question, 14-mutation structural result and disabled model-evidence status without treating or rerunning frozen historical measurement or parity bytes as current evidence"
   },
   "composition": {
     "fixture": {
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "a2df1c836f34fad4732373802380f434d7d8162f953b8795c424fefd39914e1c"
+      "sha256": "d4a0292390df02a283727d06a32b0e34b36c9955abeb3ccbb01c47662ebad629"
     },
     "relations": [
       {
@@ -369,7 +371,7 @@
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "4b04d98ccee2f530e9d301144a45cdac34f4f7c19ece5fdabe06ab909ff8827a"
+      "sha256": "f53d219fcf0d3bf4bcc66a2a070a2da35d649a06deb0f31c7ead23043d32cd08"
     },
     "tests": {
       "path": "tests/test_contributors.py",
@@ -412,7 +414,7 @@
         "test_wave_atlas_pull_requests_read_every_page",
         "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "70574968f3134ca8ea7822ba9c81991e34237b603b42c8dfa77eecef22f57008"
+      "sha256": "89f0a98a6b00ee285e8aa5c546a2fe8874768a7d373f1df501e03db33e33aaee"
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
@@ -836,10 +838,10 @@
       "selector": "test_source_subject_mismatch_is_refused"
     },
     "brevitas-structure-m": {
-      "claim": "An over-budget finding is refused.",
+      "claim": "Ordinary modes do not select the Fiat audit-record exemption.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_over_budget_finding"
+      "selector": "test_ordinary_modes_do_not_select_the_fiat_audit_exemption"
     },
     "brevitas-structure-o": {
       "claim": "A structurally clean draft does not establish factual accuracy.",
@@ -848,22 +850,22 @@
       "selector": "test_clean_structure_does_not_establish_factual_accuracy"
     },
     "brevitas-structure-p": {
-      "claim": "A valid finding satisfies the mechanical structure budget.",
+      "claim": "The explicit Fiat audit-record mode suppresses only the two schema-owned cardinalities.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_valid_finding"
+      "selector": "test_fiat_audit_record_suppresses_only_small_schema_structure"
     },
     "brevitas-structure-r": {
-      "claim": "Removing the excess connective line clears the same structure check.",
+      "claim": "The parser admits the exact explicit Fiat audit-record mode.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_over_budget_finding_recovers_after_compression"
+      "selector": "test_parser_accepts_the_explicit_fiat_audit_record_mode"
     },
     "brevitas-structure-s": {
-      "claim": "A report whose structure disagrees with the selected mode is refused.",
+      "claim": "The Fiat audit-record mode retains every non-schema structural rule.",
       "evidence_class": "checked",
       "path": "plugins/brevitas/tests/test_brevitas.py",
-      "selector": "test_two_sections"
+      "selector": "test_fiat_audit_record_retains_non_schema_rules"
     },
     "chunk-markdown-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -941,154 +943,154 @@
       "selector": "test_source_path_canonicality"
     },
     "dokimasia-closure-m": {
-      "claim": "The covered state is driven against an oracle nobody has acted on and must refuse, so a closure ratio cannot be reached by citing cases that were never run.",
       "path": "plugins/dokimasia/tests/test_reconcile.py",
-      "selector": "test_an_unreviewed_oracle_refuses"
+      "selector": "test_an_unreviewed_oracle_refuses",
+      "claim": "The covered state is driven against an oracle nobody has acted on and must refuse, so a closure ratio cannot be reached by citing cases that were never run."
     },
     "dokimasia-closure-o": {
-      "claim": "The nearest overclaim is inferred coverage: with no disposition declared, the reconciler must report none covered rather than matching the two sides itself.",
       "path": "plugins/dokimasia/tests/test_reconcile.py",
-      "selector": "test_an_empty_set_covers_nothing_rather_than_inferring_a_match"
+      "selector": "test_an_empty_set_covers_nothing_rather_than_inferring_a_match",
+      "claim": "The nearest overclaim is inferred coverage: with no disposition declared, the reconciler must report none covered rather than matching the two sides itself."
     },
     "dokimasia-closure-p": {
-      "claim": "Positive evidence reaches a closure ratio of one over a fully answered scoped set, with the numerator and denominator asserted as separate fields.",
       "path": "plugins/dokimasia/tests/test_reconcile.py",
-      "selector": "test_one_is_reached_only_when_nothing_is_unanswered"
+      "selector": "test_one_is_reached_only_when_nothing_is_unanswered",
+      "claim": "Positive evidence reaches a closure ratio of one over a fully answered scoped set, with the numerator and denominator asserted as separate fields."
     },
     "dokimasia-closure-r": {
-      "claim": "Recovery evidence requires a stale refusal to name the digest field that moved, so the caller can recompile the record rather than guess which side drifted.",
       "path": "plugins/dokimasia/tests/test_reconcile.py",
-      "selector": "test_a_moved_inventory_digest_refuses_as_stale"
+      "selector": "test_a_moved_inventory_digest_refuses_as_stale",
+      "claim": "Recovery evidence requires a stale refusal to name the digest field that moved, so the caller can recompile the record rather than guess which side drifted."
     },
     "dokimasia-closure-s": {
-      "claim": "Two dispositions on one item are refused, so nothing can be recorded as both decided and undecided.",
       "path": "plugins/dokimasia/tests/test_reconcile.py",
-      "selector": "test_two_dispositions_on_one_item_refuse"
+      "selector": "test_two_dispositions_on_one_item_refuse",
+      "claim": "Two dispositions on one item are refused, so nothing can be recorded as both decided and undecided."
     },
     "dokimasia-inventory-m": {
-      "claim": "Each declared path rule and cap is driven against a tree that breaches it and must refuse by name, so a cap that never fires cannot pass as a guarantee.",
       "path": "plugins/dokimasia/tests/test_inventory.py",
-      "selector": "test_every_declared_rule_and_cap_refuses_by_name"
+      "selector": "test_every_declared_rule_and_cap_refuses_by_name",
+      "claim": "Each declared path rule and cap is driven against a tree that breaches it and must refuse by name, so a cap that never fires cannot pass as a guarantee."
     },
     "dokimasia-inventory-o": {
-      "claim": "The nearest overclaim is an item that does not exist: a commented or quoted export must never reach the inventory, because it would inflate the denominator every disposition is measured against.",
       "path": "plugins/dokimasia/tests/test_inventory.py",
-      "selector": "test_a_commented_or_quoted_method_is_not_recorded"
+      "selector": "test_a_commented_or_quoted_method_is_not_recorded",
+      "claim": "The nearest overclaim is an item that does not exist: a commented or quoted export must never reach the inventory, because it would inflate the denominator every disposition is measured against."
     },
     "dokimasia-inventory-p": {
-      "claim": "Positive evidence compiles the committed fixture and requires the record to carry exactly the keys the inventory schema declares.",
       "path": "plugins/dokimasia/tests/test_inventory.py",
-      "selector": "test_the_record_carries_exactly_the_declared_keys"
+      "selector": "test_the_record_carries_exactly_the_declared_keys",
+      "claim": "Positive evidence compiles the committed fixture and requires the record to carry exactly the keys the inventory schema declares."
     },
     "dokimasia-inventory-r": {
-      "claim": "Recovery evidence requires the refusal to name the cap and the path that breached it, so the caller can correct the input rather than guess.",
       "path": "plugins/dokimasia/tests/test_paths.py",
-      "selector": "test_an_oversized_file_refuses_by_name"
+      "selector": "test_an_oversized_file_refuses_by_name",
+      "claim": "Recovery evidence requires the refusal to name the cap and the path that breached it, so the caller can correct the input rather than guess."
     },
     "dokimasia-inventory-s": {
-      "claim": "A compile whose two runs disagree is refused, so a digest cannot be recorded against a tree that does not reproduce.",
       "path": "plugins/dokimasia/tests/test_inventory.py",
-      "selector": "test_two_compiles_agree_byte_for_byte"
+      "selector": "test_two_compiles_agree_byte_for_byte",
+      "claim": "A compile whose two runs disagree is refused, so a digest cannot be recorded against a tree that does not reproduce."
     },
     "dokimasia-propose-m": {
-      "claim": "The misuse driven is drafting the one state ADR-001 reserves to a person: the executable source is required to carry no covered literal and the draftable pair is asserted, so the absence is a property of the code rather than a filter that could be removed.",
       "path": "plugins/dokimasia/tests/test_propose.py",
-      "selector": "test_the_module_holds_no_covered_branch_at_all"
+      "selector": "test_the_module_holds_no_covered_branch_at_all",
+      "claim": "The misuse driven is drafting the one state ADR-001 reserves to a person: the executable source is required to carry no covered literal and the draftable pair is asserted, so the absence is a property of the code rather than a filter that could be removed."
     },
     "dokimasia-propose-o": {
-      "claim": "The boundary on what a draft establishes is asserted directly: a complete drafted set answers for nothing until a person confirms it, so drafting cannot move a coverage figure.",
       "path": "plugins/dokimasia/tests/test_propose.py",
-      "selector": "test_a_drafted_set_closes_the_ratio_at_zero"
+      "selector": "test_a_drafted_set_closes_the_ratio_at_zero",
+      "claim": "The boundary on what a draft establishes is asserted directly: a complete drafted set answers for nothing until a person confirms it, so drafting cannot move a coverage figure."
     },
     "dokimasia-propose-p": {
-      "claim": "Positive evidence drafts an entry for every scoped item exactly once, so the reviewer is handed a complete set rather than a partial one they must finish by hand.",
       "path": "plugins/dokimasia/tests/test_propose.py",
-      "selector": "test_every_scoped_item_gets_exactly_one_entry"
+      "selector": "test_every_scoped_item_gets_exactly_one_entry",
+      "claim": "Positive evidence drafts an entry for every scoped item exactly once, so the reviewer is handed a complete set rather than a partial one they must finish by hand."
     },
     "dokimasia-propose-r": {
-      "claim": "Recovery evidence requires a set answering for one item twice to refuse by naming the item, so the caller repairs the duplicate rather than the generator picking a copy.",
       "path": "plugins/dokimasia/tests/test_propose.py",
-      "selector": "test_an_existing_set_answering_twice_refuses"
+      "selector": "test_an_existing_set_answering_twice_refuses",
+      "claim": "Recovery evidence requires a set answering for one item twice to refuse by naming the item, so the caller repairs the duplicate rather than the generator picking a copy."
     },
     "dokimasia-propose-s": {
-      "claim": "The declared write boundary is driven with a label carrying a separator and parent references, which must refuse and leave nothing outside the evidence root.",
       "path": "plugins/dokimasia/tests/test_propose.py",
-      "selector": "test_a_label_carrying_a_separator_refuses_and_writes_nothing"
+      "selector": "test_a_label_carrying_a_separator_refuses_and_writes_nothing",
+      "claim": "The declared write boundary is driven with a label carrying a separator and parent references, which must refuse and leave nothing outside the evidence root."
     },
     "dokimasia-scaffold-m": {
-      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
-      "selector": "test_a_drifted_installed_root_law_copy_is_detected"
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
     },
     "dokimasia-scaffold-o": {
-      "claim": "The nearest overclaim is a verb that answers with coverage: every unbuilt verb is required to leave standard output empty, so no caller can read a closure ratio off this version.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
-      "selector": "test_no_unbuilt_verb_prints_anything_on_standard_output"
+      "selector": "test_no_unbuilt_verb_prints_anything_on_standard_output",
+      "claim": "The nearest overclaim is a verb that answers with coverage: every unbuilt verb is required to leave standard output empty, so no caller can read a closure ratio off this version."
     },
     "dokimasia-scaffold-p": {
-      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
-      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace"
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
     },
     "dokimasia-scaffold-r": {
-      "claim": "Recovery evidence requires the ledger to declare the same version every other surface declares, so a version disagreement names the file to restore rather than leaving the caller to search.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
-      "selector": "test_the_ledger_declares_the_version_every_other_surface_declares"
+      "selector": "test_the_ledger_declares_the_version_every_other_surface_declares",
+      "claim": "Recovery evidence requires the ledger to declare the same version every other surface declares, so a version disagreement names the file to restore rather than leaving the caller to search."
     },
     "dokimasia-scaffold-s": {
-      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
-      "selector": "test_the_canonical_skill_states_the_declared_version"
+      "selector": "test_the_canonical_skill_states_the_declared_version",
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
     },
     "dokimasia-scrutiny-m": {
-      "claim": "A coverage digest is moved with all three identities held fixed, and the comparison must report the move as unattributed rather than returning no cause.",
       "path": "plugins/dokimasia/tests/test_demonstration.py",
-      "selector": "test_a_result_that_moved_with_nothing_moved_is_reported_not_hidden"
+      "selector": "test_a_result_that_moved_with_nothing_moved_is_reported_not_hidden",
+      "claim": "A coverage digest is moved with all three identities held fixed, and the comparison must report the move as unattributed rather than returning no cause."
     },
     "dokimasia-scrutiny-o": {
-      "claim": "The nearest overclaim is a target reported as an observation: the recorded duration must be measured and must not equal the declared budget.",
       "path": "plugins/dokimasia/tests/test_demonstration.py",
-      "selector": "test_the_record_states_a_measured_duration_and_not_the_budget"
+      "selector": "test_the_record_states_a_measured_duration_and_not_the_budget",
+      "claim": "The nearest overclaim is a target reported as an observation: the recorded duration must be measured and must not equal the declared budget."
     },
     "dokimasia-scrutiny-p": {
-      "claim": "Positive evidence runs two scrutinies of the same pinned inputs and requires one digest and no reported cause.",
       "path": "plugins/dokimasia/tests/test_demonstration.py",
-      "selector": "test_two_scrutinies_of_the_same_inputs_agree"
+      "selector": "test_two_scrutinies_of_the_same_inputs_agree",
+      "claim": "Positive evidence runs two scrutinies of the same pinned inputs and requires one digest and no reported cause."
     },
     "dokimasia-scrutiny-r": {
-      "claim": "Recovery evidence requires an abbreviated commit to refuse by naming the full object name a scrutiny must pin, so the caller can repin rather than guess.",
       "path": "plugins/dokimasia/tests/test_demonstration.py",
-      "selector": "test_an_application_commit_that_is_not_pinned_refuses"
+      "selector": "test_an_application_commit_that_is_not_pinned_refuses",
+      "claim": "Recovery evidence requires an abbreviated commit to refuse by naming the full object name a scrutiny must pin, so the caller can repin rather than guess."
     },
     "dokimasia-scrutiny-s": {
-      "claim": "A moved application commit is reported as exactly one named cause with its before and after values, so a moved number is never left unexplained.",
       "path": "plugins/dokimasia/tests/test_demonstration.py",
-      "selector": "test_a_moved_application_commit_is_reported_as_its_own_cause"
+      "selector": "test_a_moved_application_commit_is_reported_as_its_own_cause",
+      "claim": "A moved application commit is reported as exactly one named cause with its before and after values, so a moved number is never left unexplained."
     },
     "dokimasia-workbook-m": {
-      "claim": "The round-trip check is driven against cases that disagree about their source row and must refuse, so a passing round trip is not a trivial pass.",
       "path": "plugins/dokimasia/tests/test_workbook.py",
-      "selector": "test_halves_that_disagree_about_their_row_refuse"
+      "selector": "test_halves_that_disagree_about_their_row_refuse",
+      "claim": "The round-trip check is driven against cases that disagree about their source row and must refuse, so a passing round trip is not a trivial pass."
     },
     "dokimasia-workbook-o": {
-      "claim": "The nearest overclaim is a computed value presented as a recorded one: a formula whose cached value differs from its evaluation must read as cached, and never as evaluated.",
       "path": "plugins/dokimasia/tests/test_xlsx.py",
-      "selector": "test_a_cached_formula_value_is_read_and_nothing_is_evaluated"
+      "selector": "test_a_cached_formula_value_is_read_and_nothing_is_evaluated",
+      "claim": "The nearest overclaim is a computed value presented as a recorded one: a formula whose cached value differs from its evaluation must read as cached, and never as evaluated."
     },
     "dokimasia-workbook-p": {
-      "claim": "Positive evidence rebuilds every source row from the imported cases alone and requires each to match the row it came from.",
       "path": "plugins/dokimasia/tests/test_workbook.py",
-      "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone"
+      "selector": "test_every_source_row_is_rebuilt_from_the_cases_alone",
+      "claim": "Positive evidence rebuilds every source row from the imported cases alone and requires each to match the row it came from."
     },
     "dokimasia-workbook-r": {
-      "claim": "Recovery evidence requires the refusal to name the member that breached the boundary, so the caller can correct the archive rather than guess.",
       "path": "plugins/dokimasia/tests/test_xlsx.py",
-      "selector": "test_a_traversal_member_name_refuses_by_name"
+      "selector": "test_a_traversal_member_name_refuses_by_name",
+      "claim": "Recovery evidence requires the refusal to name the member that breached the boundary, so the caller can correct the archive rather than guess."
     },
     "dokimasia-workbook-s": {
-      "claim": "An identifier appearing twice is refused, so a disposition can never be attached to two rows at once.",
       "path": "plugins/dokimasia/tests/test_workbook.py",
-      "selector": "test_an_identifier_used_twice_refuses"
+      "selector": "test_an_identifier_used_twice_refuses",
+      "claim": "An identifier appearing twice is refused, so a disposition can never be attached to two rows at once."
     },
     "elenchus-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -1104,6 +1106,31 @@
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
       "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
       "selector": "test_runner_categories_distinguish_all_three_outcomes"
+    },
+    "elenchus-parent-guard-m": {
+      "claim": "Missing or malformed raw blob evidence is refused before it can become a parent-guard result.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_blob_shape_mode_digest_object_parent_and_order_fail_closed"
+    },
+    "elenchus-parent-guard-o": {
+      "claim": "Runner failures remain inconclusive diagnostics and are not promoted to parent-guard evidence.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_timeout_start_failure_and_signal_are_distinct_inconclusive_results"
+    },
+    "elenchus-parent-guard-p": {
+      "claim": "Exact raw blobs and modes are overlaid on the parent and the exact fresh report is returned before cleanup.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup"
+    },
+    "elenchus-parent-guard-r": {
+      "claim": "Unsafe, linked or oversized reports stay contained as inconclusive results that can be repaired and rerun.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_report_symlink_hardlink_and_cap_are_inconclusive"
+    },
+    "elenchus-parent-guard-s": {
+      "claim": "Replacement objects cannot change the exact supplied native blob evidence.",
+      "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "selector": "test_git_replacement_objects_do_not_change_supplied_blob_evidence"
     },
     "elenchus-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
@@ -1269,6 +1296,31 @@
       "claim": "Changed report bytes cannot inherit an earlier transition receipt during final replay.",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_verify_replays_report_receipts_and_detects_tampering"
+    },
+    "fiat-inoculation-m": {
+      "claim": "An assigned Step with no guard-manifest set refuses before state, ledger or checkpoint mutation.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_assigned_declaration_without_manifests_refuses_unchanged"
+    },
+    "fiat-inoculation-o": {
+      "claim": "Status and delegation expose bounded digest and count metadata without printing or promoting unreceipted report content.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_status_and_next_do_not_print_declared_report_content"
+    },
+    "fiat-inoculation-p": {
+      "claim": "A zero-assigned Step receipts the exact source-bound no-known record, opens only that Step's implementation and verifies.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_zero_assigned_record_receipts_the_closed_shape"
+    },
+    "fiat-inoculation-r": {
+      "claim": "Source drift names the checked failure and preserves controller bytes for restoration of the receipted source and retry.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_source_drift_refuses_next_without_controller_mutation"
+    },
+    "fiat-inoculation-s": {
+      "claim": "A changed parent after receipt cannot inherit authority to delegate implementation and leaves controller bytes unchanged.",
+      "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
+      "selector": "test_post_receipt_parent_drift_refuses_implementation_delegation"
     },
     "fiat-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -1496,54 +1548,54 @@
       "selector": "test_labelled_subject_mismatch_cases"
     },
     "homologia-provenance-m": {
-      "claim": "A proved label with no Lazarus artefact reference refuses before a checked record is written.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_proved_answer_requires_a_lazarus_artefact"
+      "selector": "test_proved_answer_requires_a_lazarus_artefact",
+      "claim": "A proved label with no Lazarus artefact reference refuses before a checked record is written."
     },
     "homologia-provenance-o": {
-      "claim": "The checked record contains no verdict, agreement or correctness claim, preserving the nearest tempting overclaim as unavailable.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_checked_record_is_not_a_verdict"
+      "selector": "test_checked_record_is_not_a_verdict",
+      "claim": "The checked record contains no verdict, agreement or correctness claim, preserving the nearest tempting overclaim as unavailable."
     },
     "homologia-provenance-p": {
-      "claim": "A closed proved expected answer with one safe Lazarus artefact reference is admitted into the source-bound checked record.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_proved_answer_with_a_safe_lazarus_artefact_is_admitted"
+      "selector": "test_proved_answer_with_a_safe_lazarus_artefact_is_admitted",
+      "claim": "A closed proved expected answer with one safe Lazarus artefact reference is admitted into the source-bound checked record."
     },
     "homologia-provenance-r": {
-      "claim": "Repair and rerun remain available because a refused input leaves an existing checked-record destination byte-identical.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_refusal_preserves_existing_output"
+      "selector": "test_refusal_preserves_existing_output",
+      "claim": "Repair and rerun remain available because a refused input leaves an existing checked-record destination byte-identical."
     },
     "homologia-provenance-s": {
-      "claim": "A vector set for a different scale subject refuses rather than inheriting the mirror's scale identity.",
       "path": "plugins/homologia/tests/test_check.py",
-      "selector": "test_unequal_scale_id_refuses"
+      "selector": "test_unequal_scale_id_refuses",
+      "claim": "A vector set for a different scale subject refuses rather than inheriting the mirror's scale identity."
     },
     "homologia-scaffold-m": {
-      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_drifted_installed_root_law_copy_is_detected"
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
     },
     "homologia-scaffold-o": {
-      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_no_verb_prints_a_verdict_on_standard_output"
+      "selector": "test_no_verb_prints_a_verdict_on_standard_output",
+      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version."
     },
     "homologia-scaffold-p": {
-      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace"
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
     },
     "homologia-scaffold-r": {
-      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from"
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
+      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go."
     },
     "homologia-scaffold-s": {
-      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest.",
       "path": "plugins/homologia/tests/test_scaffold.py",
-      "selector": "test_the_canonical_skill_states_the_declared_version"
+      "selector": "test_the_canonical_skill_states_the_declared_version",
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
     },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -2000,6 +2052,31 @@
       "path": "plugins/probitas/tests/test_statement.py",
       "selector": "test_stale_case_changes_only_the_mutated_input_digest"
     },
+    "protasis-inventory-m": {
+      "claim": "An inventory with a missing required field is refused instead of treated as complete.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_top_level_shape_and_schema_are_closed"
+    },
+    "protasis-inventory-o": {
+      "claim": "An empty finding list remains unavailable as readiness without a digest-bound no-known-findings claim.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_empty_inventory_requires_the_closed_digest_bound_claim"
+    },
+    "protasis-inventory-p": {
+      "claim": "The committed study inventory equals its fixture and the exact seven-id checker command accepts current sources and runbook steps.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_committed_study_fixture_and_exact_checker_command_have_parity"
+    },
+    "protasis-inventory-r": {
+      "claim": "Unreadable and oversized inputs refuse with one bounded code and remain repairable by replacing the named input and rerunning.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_unreadable_or_oversized_inputs_refuse"
+    },
+    "protasis-inventory-s": {
+      "claim": "Changed source or synopsis digests cannot inherit an earlier inventory result.",
+      "path": "plugins/hexaemeron/tests/test_known_failure_inventory.py",
+      "selector": "test_source_and_view_digest_drift_refuse_separately"
+    },
     "protasis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/hexaemeron/tests/test_protasis_checker.py",
@@ -2054,6 +2131,31 @@
       "evidence_class": "recorded",
       "path": "plugins/hexaemeron/tests/test_promise_cases.py",
       "selector": "test_protasis_study_subject_mismatch"
+    },
+    "publisher-m": {
+      "claim": "Missing deployment identities and paths refuse the dependent publication transition.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_deployment_missing_identity_or_path_refuses"
+    },
+    "publisher-o": {
+      "claim": "The consequence-3 declaration retains judgement and live-deployment limits.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_publisher_promise_keeps_publication_and_component_distinct"
+    },
+    "publisher-p": {
+      "claim": "Positive evidence exercises the closed injected component cases without claiming live publication.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_positive_manifest_executes_every_study_risk"
+    },
+    "publisher-r": {
+      "claim": "Restoring the exact failed predicate permits a new metadata check.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_refusal_recovers_when_exact_predicate_is_restored"
+    },
+    "publisher-s": {
+      "claim": "A reviewed release digest cannot authorise a different deployed program.",
+      "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+      "selector": "test_digest_mutation_is_a_subject_mismatch"
     },
     "sapheneia-eval-m": {
       "claim": "Sapheneia records refusal when activation, state, an explicit stop instruction or a durable-record evidence inventory is missing.",
@@ -2667,100 +2769,100 @@
       "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
     },
     {
-      "cases": {
-        "M": "dokimasia-closure-m",
-        "O": "dokimasia-closure-o",
-        "P": "dokimasia-closure-p",
-        "R": "dokimasia-closure-r",
-        "S": "dokimasia-closure-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "group": "executable",
       "promise_id": "dokimasia-disposition-closure",
-      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
-    },
-    {
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "dokimasia-propose-m",
-        "O": "dokimasia-propose-o",
-        "P": "dokimasia-propose-p",
-        "R": "dokimasia-propose-r",
-        "S": "dokimasia-propose-s",
+        "P": "dokimasia-closure-p",
+        "M": "dokimasia-closure-m",
+        "S": "dokimasia-closure-s",
+        "O": "dokimasia-closure-o",
+        "R": "dokimasia-closure-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
+      }
+    },
+    {
       "promise_id": "dokimasia-drafted-dispositions",
-      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
-    },
-    {
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "dokimasia-scrutiny-m",
-        "O": "dokimasia-scrutiny-o",
-        "P": "dokimasia-scrutiny-p",
-        "R": "dokimasia-scrutiny-r",
-        "S": "dokimasia-scrutiny-s",
+        "P": "dokimasia-propose-p",
+        "M": "dokimasia-propose-m",
+        "S": "dokimasia-propose-s",
+        "O": "dokimasia-propose-o",
+        "R": "dokimasia-propose-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
+      }
+    },
+    {
       "promise_id": "dokimasia-pinned-scrutiny",
-      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
-    },
-    {
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "dokimasia-scaffold-m",
-        "O": "dokimasia-scaffold-o",
-        "P": "dokimasia-scaffold-p",
-        "R": "dokimasia-scaffold-r",
-        "S": "dokimasia-scaffold-s",
+        "P": "dokimasia-scrutiny-p",
+        "M": "dokimasia-scrutiny-m",
+        "S": "dokimasia-scrutiny-s",
+        "O": "dokimasia-scrutiny-o",
+        "R": "dokimasia-scrutiny-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
+      }
+    },
+    {
       "promise_id": "dokimasia-scaffold-identity",
-      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
-    },
-    {
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "dokimasia-inventory-m",
-        "O": "dokimasia-inventory-o",
-        "P": "dokimasia-inventory-p",
-        "R": "dokimasia-inventory-r",
-        "S": "dokimasia-inventory-s",
+        "P": "dokimasia-scaffold-p",
+        "M": "dokimasia-scaffold-m",
+        "S": "dokimasia-scaffold-s",
+        "O": "dokimasia-scaffold-o",
+        "R": "dokimasia-scaffold-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
+      }
+    },
+    {
       "promise_id": "dokimasia-source-inventory",
-      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
-    },
-    {
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "dokimasia-workbook-m",
-        "O": "dokimasia-workbook-o",
-        "P": "dokimasia-workbook-p",
-        "R": "dokimasia-workbook-r",
-        "S": "dokimasia-workbook-s",
+        "P": "dokimasia-inventory-p",
+        "M": "dokimasia-inventory-m",
+        "S": "dokimasia-inventory-s",
+        "O": "dokimasia-inventory-o",
+        "R": "dokimasia-inventory-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
+      }
+    },
+    {
       "promise_id": "dokimasia-workbook-lineage",
-      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
+      "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "dokimasia-workbook-p",
+        "M": "dokimasia-workbook-m",
+        "S": "dokimasia-workbook-s",
+        "O": "dokimasia-workbook-o",
+        "R": "dokimasia-workbook-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
     },
     {
       "cases": {
@@ -2776,6 +2878,22 @@
       },
       "group": "executable",
       "promise_id": "elenchus-fixed-and-guarded",
+      "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "elenchus-parent-guard-m",
+        "O": "elenchus-parent-guard-o",
+        "P": "elenchus-parent-guard-p",
+        "R": "elenchus-parent-guard-r",
+        "S": "elenchus-parent-guard-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "elenchus-parent-guard-evidence",
       "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md"
     },
     {
@@ -2872,6 +2990,22 @@
       },
       "group": "executable",
       "promise_id": "fiat-final-integration",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-inoculation-m",
+        "O": "fiat-inoculation-o",
+        "P": "fiat-inoculation-p",
+        "R": "fiat-inoculation-r",
+        "S": "fiat-inoculation-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-known-failure-inoculation",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -3165,36 +3299,36 @@
       "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
     },
     {
+      "promise_id": "homologia-expected-answer-provenance",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "homologia-provenance-m",
-        "O": "homologia-provenance-o",
         "P": "homologia-provenance-p",
-        "R": "homologia-provenance-r",
+        "M": "homologia-provenance-m",
         "S": "homologia-provenance-s",
+        "O": "homologia-provenance-o",
+        "R": "homologia-provenance-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
-      "promise_id": "homologia-expected-answer-provenance",
-      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
+      }
     },
     {
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
+      "group": "executable",
       "cases": {
-        "M": "homologia-scaffold-m",
-        "O": "homologia-scaffold-o",
         "P": "homologia-scaffold-p",
-        "R": "homologia-scaffold-r",
+        "M": "homologia-scaffold-m",
         "S": "homologia-scaffold-s",
+        "O": "homologia-scaffold-o",
+        "R": "homologia-scaffold-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
-      },
-      "group": "executable",
-      "promise_id": "homologia-scaffold-identity",
-      "skill_path": "plugins/homologia/skills/homologia/SKILL.md"
+      }
     },
     {
       "cases": {
@@ -3737,6 +3871,22 @@
     },
     {
       "cases": {
+        "M": "publisher-m",
+        "O": "publisher-o",
+        "P": "publisher-p",
+        "R": "publisher-r",
+        "S": "publisher-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "phylax-github-issue-publisher",
+      "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "phylax-m",
         "O": "phylax-o",
         "P": "phylax-p",
@@ -3830,6 +3980,22 @@
       "group": "executable",
       "promise_id": "probitas-statement-emission",
       "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "protasis-inventory-m",
+        "O": "protasis-inventory-o",
+        "P": "protasis-inventory-p",
+        "R": "protasis-inventory-r",
+        "S": "protasis-inventory-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "protasis-known-failure-inventory",
+      "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
     },
     {
       "cases": {
@@ -4156,7 +4322,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4b1c9b1496962d7385fb264edbb20b318708df3222295be65ac6c6a501ea0cec"
+      "sha256": "6b346757f0c43ebf02ba247cd4182e9155e7c2b82bfa4af6a5745235573af2e9"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4507,12 +4673,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
-        "sha256": "295e6efa6f34f7faf813f1647f7009ba9ee5bee6cba99b06b3b4fdedcdeb8ba7"
+        "sha256": "5f1b56da92d7a1e1516527d860a3a4df246199b77ede64cdc26415390f30d50d"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "295e6efa6f34f7faf813f1647f7009ba9ee5bee6cba99b06b3b4fdedcdeb8ba7"
+        "sha256": "5f1b56da92d7a1e1516527d860a3a4df246199b77ede64cdc26415390f30d50d"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",
@@ -4712,16 +4878,45 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "negative",
-        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
+        "sha256": "b1393bd5fa92e7e82e40894a144b13510476fa3d65747bb576cef87f559548be"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "positive",
-        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
+        "sha256": "b1393bd5fa92e7e82e40894a144b13510476fa3d65747bb576cef87f559548be"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_runner_categories_distinguish_all_three_outcomes",
-      "sha256": "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44",
+      "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492",
+      "source": "plugins/hexaemeron/tests/test_elenchus_checker.py"
+    },
+    "elenchus-parent-guard-evidence": {
+      "bindings": {
+        "evidence_classes": "adapter_output.elenchus_parent_guard_evidence.classes",
+        "evidence_references": "adapter_output.elenchus_parent_guard_evidence.references",
+        "exception": "adapter_output.elenchus_parent_guard_evidence.exception",
+        "promise_id": "adapter_output.elenchus_parent_guard_evidence.binding.promise_id",
+        "scope": "adapter_output.elenchus_parent_guard_evidence.binding.scope",
+        "source_digest": "adapter_output.elenchus_parent_guard_evidence.source_digest",
+        "subject": "adapter_output.elenchus_parent_guard_evidence.binding.subject",
+        "transition": "adapter_output.elenchus_parent_guard_evidence.transition",
+        "unknowns": "adapter_output.elenchus_parent_guard_evidence.unresolved"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/elenchus-parent-guard-evidence.json",
+        "selector": "negative",
+        "sha256": "fd4327edc02cc144fc33f262776d3894e0d921d718e1a12be1266cb43830e27d"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/elenchus-parent-guard-evidence.json",
+        "selector": "positive",
+        "sha256": "fd4327edc02cc144fc33f262776d3894e0d921d718e1a12be1266cb43830e27d"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup",
+      "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492",
       "source": "plugins/hexaemeron/tests/test_elenchus_checker.py"
     },
     "ephoros-observability-review": {
@@ -4770,16 +4965,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "negative",
-        "sha256": "f98d3f871dc65cbac96a02f0c7a842394c3f9874e0a78f8372f092b3ea740482"
+        "sha256": "9b80892c3a8f312f29392eb328377e2f00d4877e35c3d6d39de5f648453f63df"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "positive",
-        "sha256": "f98d3f871dc65cbac96a02f0c7a842394c3f9874e0a78f8372f092b3ea740482"
+        "sha256": "9b80892c3a8f312f29392eb328377e2f00d4877e35c3d6d39de5f648453f63df"
       },
       "reader": "native-json-v1",
       "selector": "test_restore_after_source_clone_loss",
-      "sha256": "5ae0b020bef6c375e018fd7cbb47593a7fee5e1409e50605f6fa46e96c5a968f",
+      "sha256": "3fc856bedff0f73c8a4805f6a4b7c9d05eba1bdbe7fcbcb8ee1c7258d3717c8c",
       "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py"
     },
     "fiat-decision-assignment-composition": {
@@ -4799,16 +4994,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-decision-assignment-composition.json",
         "selector": "negative",
-        "sha256": "930ba8a32437df715c2b0d2ab635c2ab072b9b13b8f2c5151cbbe986650c0de8"
+        "sha256": "b195f86bca136c6a42909f56f8f6262a70b51e2ca3ce19460762775db086f644"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-decision-assignment-composition.json",
         "selector": "positive",
-        "sha256": "930ba8a32437df715c2b0d2ab635c2ab072b9b13b8f2c5151cbbe986650c0de8"
+        "sha256": "b195f86bca136c6a42909f56f8f6262a70b51e2ca3ce19460762775db086f644"
       },
       "reader": "native-json-v1",
       "selector": "test_exact_report_candidate_and_ordered_trailers_are_receipted",
-      "sha256": "87f8bfea7f78f9090322121d69fc803561a1e2ecad447929d74fa5429e4aedb8",
+      "sha256": "b7c12fed5b3d69a5b25dea52bc1d458de4ce68e89b0c376a4784322399b64f48",
       "source": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py"
     },
     "fiat-design-evidence": {
@@ -4859,17 +5054,46 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "9c7371488965da8bc30a1a2aefef7150971ea372aeb2d2589bb7c7eefb383113"
+        "sha256": "584879d41ff084cadf7cb82740bfef88261c2e8a0240c6ee648ffb9871698fbb"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "9c7371488965da8bc30a1a2aefef7150971ea372aeb2d2589bb7c7eefb383113"
+        "sha256": "584879d41ff084cadf7cb82740bfef88261c2e8a0240c6ee648ffb9871698fbb"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
-      "sha256": "b90edd0e49ac92f335c34c9ecf661137eadd726fcfc1dc6b2b83dc40f852e0d2",
+      "sha256": "5997b1ab0f1cd64cdd96263f13a73319bf248c9aa8b7f9c1fa737a4f2bbc186e",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
+    },
+    "fiat-known-failure-inoculation": {
+      "bindings": {
+        "evidence_classes": "adapter_output.fiat_known_failure_inoculation.classes",
+        "evidence_references": "adapter_output.fiat_known_failure_inoculation.references",
+        "exception": "adapter_output.fiat_known_failure_inoculation.exception",
+        "promise_id": "adapter_output.fiat_known_failure_inoculation.binding.promise_id",
+        "scope": "adapter_output.fiat_known_failure_inoculation.binding.scope",
+        "source_digest": "adapter_output.fiat_known_failure_inoculation.source_digest",
+        "subject": "adapter_output.fiat_known_failure_inoculation.binding.subject",
+        "transition": "adapter_output.fiat_known_failure_inoculation.transition",
+        "unknowns": "adapter_output.fiat_known_failure_inoculation.unresolved"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-known-failure-inoculation.json",
+        "selector": "negative",
+        "sha256": "6435bcff9c42e271523b72fc35143f4685346c0b09c96eaf36b669e75cf48a0d"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-known-failure-inoculation.json",
+        "selector": "positive",
+        "sha256": "6435bcff9c42e271523b72fc35143f4685346c0b09c96eaf36b669e75cf48a0d"
+      },
+      "reader": "python-result-adapter-v1",
+      "selector": "test_zero_assigned_record_receipts_the_closed_shape",
+      "sha256": "34dfb7365fe0ae94efbc30be76539b0e3578db8816e195c83ab366ad0f5a3a29",
+      "source": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py"
     },
     "fiat-local-retirement": {
       "bindings": {
@@ -4917,16 +5141,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "negative",
-        "sha256": "3f9db4c41696347b0537e8b9adad6716b355321f1f262a1bbbd17d45df7b0726"
+        "sha256": "961623b422993e86a9598daf23df6a9a8879664c9743bf0175acafca2e6d2836"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "positive",
-        "sha256": "3f9db4c41696347b0537e8b9adad6716b355321f1f262a1bbbd17d45df7b0726"
+        "sha256": "961623b422993e86a9598daf23df6a9a8879664c9743bf0175acafca2e6d2836"
       },
       "reader": "native-json-v1",
       "selector": "test_push_advances_steps_then_the_stack_integrates",
-      "sha256": "b90edd0e49ac92f335c34c9ecf661137eadd726fcfc1dc6b2b83dc40f852e0d2",
+      "sha256": "5997b1ab0f1cd64cdd96263f13a73319bf248c9aa8b7f9c1fa737a4f2bbc186e",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -4975,16 +5199,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
-        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
+        "sha256": "4dd215cc32c67e0eadb66706ff53c4247a7cf356ea6fc663731f6dee9c80281f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "80f7291a1104c9175ec8d55f79e019c4ebcf0d4033408cc98347ff56b6b10713"
+        "sha256": "4dd215cc32c67e0eadb66706ff53c4247a7cf356ea6fc663731f6dee9c80281f"
       },
       "reader": "native-json-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
-      "sha256": "f3ad1c188e8d76f27167b665dbaa0ac85baf36c015c437521bc7cc123f70d561",
+      "sha256": "bafa5d053c38a751456080aba2b93410556f6fd17ed18e8f2c81a61e46049564",
       "source": "plugins/hexaemeron/tests/test_fiat_skill.py"
     },
     "fiat-study-amendment": {
@@ -5004,16 +5228,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "negative",
-        "sha256": "43b5d7983a9d27697d7a67ac9bd1293be0122079e7c0440f6d5c491bacb29a5a"
+        "sha256": "f8019e59d8254e63ac46d82b7c63cd08a4242cbd7d0f029ce45bf706907e7e39"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "positive",
-        "sha256": "43b5d7983a9d27697d7a67ac9bd1293be0122079e7c0440f6d5c491bacb29a5a"
+        "sha256": "f8019e59d8254e63ac46d82b7c63cd08a4242cbd7d0f029ce45bf706907e7e39"
       },
       "reader": "native-json-v1",
       "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
-      "sha256": "b90edd0e49ac92f335c34c9ecf661137eadd726fcfc1dc6b2b83dc40f852e0d2",
+      "sha256": "5997b1ab0f1cd64cdd96263f13a73319bf248c9aa8b7f9c1fa737a4f2bbc186e",
       "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-version-resolution": {
@@ -5033,16 +5257,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "negative",
-        "sha256": "3cdfb92379fb6b5256d7614db4df7b031547921b20bc70e9addaf17696fe4639"
+        "sha256": "31afce9de2914ac5e49426b087c3639a6e544fbe5c1fcaa482732bc310ba951f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "positive",
-        "sha256": "3cdfb92379fb6b5256d7614db4df7b031547921b20bc70e9addaf17696fe4639"
+        "sha256": "31afce9de2914ac5e49426b087c3639a6e544fbe5c1fcaa482732bc310ba951f"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
-      "sha256": "02bef552c86d8e53b9a3cda14bf520b025a4530ea3172eb73e951a3653eccfc7",
+      "sha256": "8cc533044d6eed5758d517aa5962374a10c9b5cc9afccb6d36059906fa050b54",
       "source": "plugins/hexaemeron/tests/test_version_relations.py"
     },
     "hermes-baseline-promotion": {
@@ -5507,16 +5731,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "negative",
-        "sha256": "8c377f6b89bead883ae3d66841e8213ce8dc9862ec7bf0ea125409faad91574f"
+        "sha256": "26295df099c7c09c9e020834cfde9695caa4fca68864116b8f66cb2c9ecfd263"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "positive",
-        "sha256": "8c377f6b89bead883ae3d66841e8213ce8dc9862ec7bf0ea125409faad91574f"
+        "sha256": "26295df099c7c09c9e020834cfde9695caa4fca68864116b8f66cb2c9ecfd263"
       },
       "reader": "native-json-v1",
       "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
-      "sha256": "f1684c58fa887ce697a6c6416e0e9851a0d1b4a808ad24d51b0cdb2f8fa123fa",
+      "sha256": "29d53f95cd30b29423aacf17fa850e64c6d0d754c8ec69a2e89f8df139c0ac67",
       "source": "plugins/hexaemeron/tests/test_metron_check.py"
     },
     "pandects-search-record": {
@@ -5578,6 +5802,37 @@
       "selector": "test_phylax_review_positive",
       "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
       "source": "plugins/hexaemeron/tests/test_promise_cases.py"
+    },
+    "phylax-github-issue-publisher": {
+      "bindings": {
+        "authority": "native_document.phylax_github_issue_publisher.authority",
+        "evidence_classes": "native_document.phylax_github_issue_publisher.evidence.classes",
+        "evidence_references": "native_document.phylax_github_issue_publisher.evidence.references",
+        "exception": "native_document.phylax_github_issue_publisher.exception_state",
+        "inspectable_evidence": "native_document.phylax_github_issue_publisher.independent_evidence",
+        "promise_id": "native_document.phylax_github_issue_publisher.promise",
+        "scope": "native_document.phylax_github_issue_publisher.target.scope",
+        "source_digest": "native_document.phylax_github_issue_publisher.source.sha256",
+        "subject": "native_document.phylax_github_issue_publisher.target.subject",
+        "transition": "native_document.phylax_github_issue_publisher.authorised_transition",
+        "unknowns": "native_document.phylax_github_issue_publisher.open_unknowns"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/phylax-github-issue-publisher.json",
+        "selector": "negative",
+        "sha256": "876f83b4793c190f242e2020779e1466eaa938138c21ab810f3000ad3ebf4aa9"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/phylax-github-issue-publisher.json",
+        "selector": "positive",
+        "sha256": "876f83b4793c190f242e2020779e1466eaa938138c21ab810f3000ad3ebf4aa9"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_positive_manifest_executes_every_study_risk",
+      "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8",
+      "source": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py"
     },
     "probitas-dossier-verification": {
       "bindings": {

@@ -885,7 +885,10 @@ class PointerRuleSourceTests(unittest.TestCase):
     def test_the_phase_note_names_the_four_receipts_and_the_appended_bytes_check(self):
         text = FIAT_SKILL.read_text(encoding="utf-8")
         start = text.index("**Study and runbook.**")
-        paragraph = " ".join(text[start:text.index("\n\n", start)].split())
+        # The note runs to the next phase heading; the rule sits after the span
+        # the agent-instruction fixture governs, so it is not in the first paragraph.
+        end = text.index("**Amending receipted specifications.**", start)
+        paragraph = " ".join(text[start:end].split())
         for receipt in ("`done study`", "`done runbook`", "`amend study`", "`amend runbook`"):
             self.assertIn(receipt, paragraph)
         self.assertIn("absolute URL", paragraph)

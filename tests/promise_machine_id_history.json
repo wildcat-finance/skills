@@ -305,13 +305,13 @@
     },
     {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
       },
       "current": {
-        "semantic_sha256": "9649a4db53a07aa8483da261c52b9eb5072764e7f0c867b5dfb812714c657997",
-        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
+        "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md",
+        "semantic_sha256": "d77ac89ff0b73833ceee161c1dd192bcd62fbf610c8a0b0061b3ecc5c8afb968"
       },
       "entry": {
         "semantic_sha256": "9649a4db53a07aa8483da261c52b9eb5072764e7f0c867b5dfb812714c657997",
@@ -590,8 +590,8 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "15385a36136466bb3914b856ecae3f8fe39392e48d514cbfd693b93655e6d34b",
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+        "semantic_sha256": "65ef2218a15b4769918c6c9c05b9116e65c51213c4b26aa8ed2c86b20c7be2d0"
       },
       "entry": {
         "semantic_sha256": "0173f94bf221e6286b8156402b113bd23d5dfe096d9a89c11e15c31c09f2def5",
@@ -856,8 +856,8 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "eab249d86f3539c98f24ad280503668f40d15bab40df7af9898359f6b119e334",
-        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+        "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
+        "semantic_sha256": "64f83c52288066edb3577c5804a27d41cd12ea4410f1e16eb7a141bcf9a11366"
       },
       "entry": {
         "semantic_sha256": "c91e610498d9c1c6dcabf48f203d3242721fc38973d8033753eeddf3a45c65e8",
@@ -1235,6 +1235,19 @@
     },
     {
       "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "ad929e49bbc3030ed5117ff7f637981d015c0da5f6020df7c545fe9474c4c64a",
+        "skill_path": "plugins/hexaemeron/skills/phylax/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "phylax-github-issue-publisher"
+    },
+    {
+      "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
@@ -1330,8 +1343,8 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "febc32f7f25e7a740a5464ef2e69b763921c667dc36460368c1fa41197e2ee9b",
-        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
+        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md",
+        "semantic_sha256": "6525231b67c929d61c63573274bb188d598f66a3df4342dfc97ecf3760d4631d"
       },
       "entry": {
         "semantic_sha256": "0c03beb871896a094ff78981a8c647dc6536894b257f7c93600f0ca87fd58fd4",
@@ -1514,6 +1527,45 @@
         "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
       },
       "promise_id": "vulgate-register-rewrite"
+    },
+    {
+      "promise_id": "elenchus-parent-guard-evidence",
+      "entry": null,
+      "current": {
+        "skill_path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
+        "semantic_sha256": "c017307be97adc71272d3eb18460dbc02c739109f625fcdbeb5e0e11782e6fb5"
+      },
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      }
+    },
+    {
+      "promise_id": "fiat-known-failure-inoculation",
+      "entry": null,
+      "current": {
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+        "semantic_sha256": "0053f4c5fc0e169c8d9e7465974f7c0a6c575d1d0a7808b165bd8265d725698d"
+      },
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      }
+    },
+    {
+      "promise_id": "protasis-known-failure-inventory",
+      "entry": null,
+      "current": {
+        "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md",
+        "semantic_sha256": "83100e5d414e9df53788652d2ed358f835d17e85b1db8d167869cb41ebdd7f1e"
+      },
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      }
     }
   ],
   "entry_count": 80,

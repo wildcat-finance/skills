@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23638619,
+    "bytes_blob": 24276805,
     "bytes_generated": 98
   },
   "entries": [
@@ -40,6 +40,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
+    },
+    {
+      "bytes": 125807,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 123759",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1135-retire-the-shoggoth-cosignature-and-host-au.md"
+    },
+    {
+      "bytes": 126458,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1135-retire-the-shoggoth-cosignature-and-host-au.synopsis.md"
     },
     {
       "bytes": 26945,
@@ -273,6 +287,20 @@
       "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
     },
     {
+      "bytes": 70302,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 35151 of 70302 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-453-inject-known-failure-guards-before-productio.md"
+    },
+    {
+      "bytes": 70988,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-453-inject-known-failure-guards-before-productio.synopsis.md"
+    },
+    {
       "bytes": 70765,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 68717",
@@ -453,6 +481,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
+    },
+    {
+      "bytes": 112036,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 109988",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.md"
+    },
+    {
+      "bytes": 112838,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-925-app-publisher-recovery-r3.synopsis.md"
     },
     {
       "bytes": 17050,
@@ -833,16 +875,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 70861,
+      "bytes": 74337,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 35430",
+      "evidence": "mean line length above 400 in a window at offset 37168",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 80869,
+      "bytes": 97150,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 78821",
+      "evidence": "mean line length above 400 in a window at offset 95102",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

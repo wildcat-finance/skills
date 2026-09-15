@@ -166,6 +166,17 @@ prompts byte-identical and changed only `tree_sha256`. It retains the original
 uv run --no-project --python "$(cat .python-version)" python scripts/prove_agent_instruction_reconciliation.py demonstrate --root . --verify docs/agent-instruction-reconciliation/demonstration.json
 ```
 
+Verification replays the three digest-pinned producer implementations preserved
+with this historical record. Its result reports
+`implementation_scope: recorded-implementation` and the three owner digests.
+It makes no claim that this demonstration exercised the current implementation.
+Replay refuses changed producer bytes and runs no subprocess or model command.
+
+The current corpus disables model evidence. Preparation therefore reports
+measurement, parity and measured streams as `disabled`, retains the frozen
+reports unchanged, and emits no acquisition commands. Structural reconciliation
+still requires the current corpus checker to accept the staged bytes.
+
 The record preserves six structural placements. Its before-span law case
 completed measurement in 63.551 seconds and parity in 201.785 seconds on the
 first acquisition attempt, then applied seven targets and passed the full
@@ -198,6 +209,16 @@ replacement, and refuse a conflict arising during recovery. The recorded
 boundary run passed all 26 named tests. A separate development attempt caught a wrong
 `canonical_model` field lookup in measured-stream reporting; its two errors
 are preserved and do not count as behavioral counterfactual proof.
+
+## Command cleanup
+
+The current helper incorporates the cleanup repair from
+[PR #1587](https://github.com/wildcat-finance/skills/pull/1587), commit
+`c8754c7c7d79cec1eb4153a43fa5ae0e84d948db`. When Darwin refuses a signal to an
+exited process group, it reaps the leader and accepts only a confirmed absent
+group. A live leader, surviving group or denied probe still refuses. Both
+output pipes close even when cleanup fails, and no terminating signal follows
+reaping. The original demonstration above remains a historical replay.
 
 ## Fixture isolation evidence
 

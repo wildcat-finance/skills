@@ -77,10 +77,13 @@ class ReconciliationTests(unittest.TestCase):
                     stage = "tmp/" + fixture["id"] + "-" + placement
                     result = air.prepare(self.root, baseline=self.commit, source=source, stage=stage)
                     self.assertEqual(result["affected_fixtures"], [fixture["id"]])
-                    self.assertEqual(result["outcome"], "needs-evidence" if placement == "before" else "ready")
-                    self.assertEqual(result["measured_streams"][fixture["id"]]["source"]["state"], "ready")
+                    self.assertEqual(result["outcome"], "ready")
+                    self.assertEqual(result["dependencies"]["measurement_record"]["state"], "disabled")
+                    self.assertEqual(result["dependencies"]["parity_record"]["state"], "disabled")
+                    self.assertEqual(len(result["owner_commands"]), 1)
+                    self.assertEqual(result["measured_streams"][fixture["id"]]["source"]["state"], "disabled")
                     self.assertEqual(result["measured_streams"][fixture["id"]]["model"]["state"],
-                                     "needs-evidence" if placement == "before" else "ready")
+                                     "disabled")
                     plan = json.loads((self.root / stage / "plan.json").read_bytes())
                     offsets = plan["offsets"][fixture["id"]]
                     self.assertEqual(offsets["delta"], delta if placement == "before" else 0)
@@ -168,13 +171,15 @@ class ReconciliationTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(air.apply(self.root, stage="tmp/retry", plan_sha256=result["plan_sha256"])["outcome"], "accepted")
 
-    def test_stale_reports_do_not_earn_apply_and_no_journal_or_live_write_occurs(self):
+    def test_disabled_reports_remain_frozen_when_structural_reconciliation_applies(self):
         result, source, edited, _ = self.prepare("promise-machine-router-selection", "before")
-        with self.assertRaisesRegex(air.ReconciliationError, "AIR-E-CHECK"):
-            air.apply(self.root, stage="tmp/stage", plan_sha256=result["plan_sha256"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            accepted = air.apply(self.root, stage="tmp/stage", plan_sha256=result["plan_sha256"])
+        self.assertEqual(accepted["outcome"], "accepted")
         self.assertFalse((self.root / air.ACTIVE).exists())
-        for path, body in self.files.items():
-            self.assertEqual((self.root / path).read_bytes(), edited if path == source else body)
+        for kind in ("measurement_record", "parity_record"):
+            path = self.manifest["evidence"][kind]["path"]
+            self.assertEqual((self.root / path).read_bytes(), self.files[path])
 
     def test_stage_mutation_live_identity_race_and_partial_evidence_pair_refuse(self):
         result, _, _, _ = self.prepare()
@@ -453,6 +458,86 @@ a.apply(sys.argv[2],stage='tmp/stage',plan_sha256=sys.argv[3])
             self.assertEqual((self.root / path).read_bytes(), edited if path == source else body)
         self.assertTrue((self.root / air.ACTIVE).exists())
 
+    def test_exited_command_keeps_its_output_refusal_and_closes_pipes(self):
+        """An unreaped child reproduces Darwin's zombie-group EPERM."""
+        real_popen, real_killpg = air.subprocess.Popen, air.os.killpg
+        children, signals = [], []
+
+        def launch(*args, **kwargs):
+            child = real_popen(*args, **kwargs)
+            children.append(child)
+            return child
+
+        def signal_group(pid, sig):
+            signals.append(sig)
+            if sig == air.signal.SIGKILL:
+                deadline = air.time.monotonic() + 5
+                while not os.waitid(os.P_PID, pid, os.WEXITED | os.WNOWAIT | os.WNOHANG):
+                    self.assertLess(air.time.monotonic(), deadline, "child did not exit")
+                    air.time.sleep(0.005)
+                if sys.platform != "darwin":
+                    raise PermissionError(1, "Darwin zombie-group specimen")
+            return real_killpg(pid, sig)
+
+        try:
+            with mock.patch.object(air.subprocess, "Popen", side_effect=launch), \
+                    mock.patch.object(air.os, "killpg", side_effect=signal_group):
+                try:
+                    air.bounded_command([sys.executable, "-c",
+                                         "import sys;sys.stdout.buffer.write(b'x'*(2**20+1))"], self.root)
+                except air.ReconciliationError as error:
+                    self.assertEqual(error.code, "AIR-E-COMMAND.OUTPUT")
+                except PermissionError as error:
+                    self.fail(f"cleanup replaced the output refusal: {error}")
+                else:
+                    self.fail("oversized output was accepted")
+            self.assertTrue(children[0].stdout.closed)
+            self.assertTrue(children[0].stderr.closed)
+            self.assertIsNotNone(children[0].returncode)
+            self.assertEqual(signals[0], air.signal.SIGKILL)
+            self.assertTrue(all(sig == 0 for sig in signals[1:]))
+        finally:
+            for child in children:
+                if child.poll() is None:
+                    child.kill()
+                child.wait(timeout=5)
+                child.stdout.close(); child.stderr.close()
+
+    def test_cleanup_permission_denial_stays_visible_and_closes_pipes(self):
+        """Neither a live leader nor a surviving group counts as cleaned up."""
+        for leader_exited, group_result in ((False, None), (True, None),
+                                            (True, PermissionError(1, "group denied"))):
+            with self.subTest(leader_exited=leader_exited, group_result=group_result):
+                child = mock.Mock(pid=12345, stdout=io.BytesIO(), stderr=io.BytesIO())
+                child.poll.return_value = 0 if leader_exited else None
+                denial = PermissionError(1, "cleanup denied")
+                with mock.patch.object(air.subprocess, "Popen", return_value=child), \
+                        mock.patch.object(air.os, "killpg", side_effect=[denial, group_result]) as killpg:
+                    # Fail before pipe registration; exercise cleanup with a live
+                    # leader or a group that still exists after the leader is reaped.
+                    with self.assertRaises(PermissionError):
+                        air.bounded_command(["unused"], self.root)
+                self.assertTrue(child.stdout.closed)
+                self.assertTrue(child.stderr.closed)
+                expected = [mock.call(child.pid, air.signal.SIGKILL)]
+                if leader_exited:
+                    expected.append(mock.call(child.pid, 0))
+                self.assertEqual(killpg.call_args_list, expected)
+                child.wait.assert_not_called()
+
+    def test_cleanup_signals_the_group_before_checking_the_leader(self):
+        """An exited leader does not justify leaving its descendants running."""
+        child = mock.Mock(pid=12345, stdout=io.BytesIO(), stderr=io.BytesIO())
+        with mock.patch.object(air.subprocess, "Popen", return_value=child), \
+                mock.patch.object(air.os, "killpg") as killpg:
+            with self.assertRaises(io.UnsupportedOperation):
+                air.bounded_command(["unused"], self.root)
+        killpg.assert_called_once_with(child.pid, air.signal.SIGKILL)
+        child.poll.assert_not_called()
+        child.wait.assert_called_once_with()
+        self.assertTrue(child.stdout.closed)
+        self.assertTrue(child.stderr.closed)
+
     def test_output_and_wall_time_limits_kill_the_bounded_command(self):
         with self.assertRaisesRegex(air.ReconciliationError, "AIR-E-COMMAND.OUTPUT"):
             air.bounded_command([sys.executable, "-c", "import sys;sys.stdout.buffer.write(b'x'*(2**20+1))"], self.root)
@@ -495,7 +580,10 @@ class DemonstrationVerificationTests(unittest.TestCase):
         with mock.patch.object(air, "bounded_command", side_effect=AssertionError("offline verifier started a subprocess")):
             result = air.verify_demonstration(self.root, self.RECORD)
         self.assertEqual(set(result), {"schema", "outcome", "record_sha256", "structural_placements",
-                                     "complete_law_repairs", "unchanged_reviewed_bindings", "verified_dependencies"})
+                                     "complete_law_repairs", "unchanged_reviewed_bindings", "verified_dependencies",
+                                     "implementation_scope", "owner_sha256"})
+        self.assertEqual(result["implementation_scope"], "recorded-implementation")
+        self.assertEqual(result["owner_sha256"], air.HISTORICAL_DEMONSTRATION_OWNERS)
         self.assertEqual(result["structural_placements"], 6)
         self.assertEqual(result["complete_law_repairs"], 1)
         self.assertEqual(result["unchanged_reviewed_bindings"], 15)
