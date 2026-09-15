@@ -18333,7 +18333,7 @@ def verify_run(
     if "replacement_admission" in state["receipts"]:
         backend = replacement_backend()
         try:
-            backend.verify_receipt(sys.modules[__name__], base_dir, state)
+            backend.verify_receipt(sys.modules[__name__], os.path.abspath(base_dir), state)
         except (backend.Refusal, OSError, ValueError, KeyError, TypeError):
             die("replacement admission receipt does not replay", 1)
     return count
