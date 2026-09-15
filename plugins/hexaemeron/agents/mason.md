@@ -159,3 +159,59 @@ that. In inoculation mode, report the exact no-known record path and SHA-256 or
 the assigned signed guard commit for controller retention. In implementation
 mode, report the branch, head commit SHA, test command and its pass count, and
 anything the step asked for that you deliberately deferred (with why).
+
+## Declared native workers
+
+The controller offers `worker-exec --request <json>` and
+`worker-admit --receipt <absolute-path> --sha256 <digest>`, with an absolute
+`--dir` before the subcommand. These commands capture and promote report files;
+they do not advance a Fiat phase, sign a commit or publish anything. The
+orchestrator retains those actions. This conversation's tools remain outside
+the native worker policy.
+
+### Request
+
+The closed request schema is `fiat-worker-request/v1`. It requires `root`,
+literal `argv`, `tools` in the exact order `["patch", "python", "shell"]`,
+`deadline_seconds`, `output_cap_bytes`, `reports`, and `origin`. Each report
+declares its argv `index`, original `source` operand and relative `output`
+name. The source must name one file under `.hexaemeron/reports/`. The controller
+preserves that declaration and substitutes an absolute scratch-output operand
+only for execution. No shell expression is rewritten or evaluated by the
+controller. `origin` names an absolute `root` and a bounded list of relative
+regular-file `paths` to observe; it grants no origin writes.
+
+Only the declared Python, shell and patch executables and their recorded
+runtime dependencies are enabled. Network, host IPC, external MCP and app
+services, nested policy executors, live Git metadata and live controller files
+remain unavailable to the worker. The existing native metadata-read allowance
+and literal `/dev/null` data-write exception still apply.
+
+### Admission and recovery
+
+Retain the returned launch receipt path and digest. Admission checks them,
+the controller and supervisor bytes, executable identities, policy, exact
+resolved argv, limits, origin snapshot and private artifact hashes. It creates
+each destination exclusively. Existing files are preserved; an interrupted
+multi-file promotion may leave a visible partial result and its start marker.
+Inspect it before preparing a new request; replay never overwrites it.
+
+The receipt also binds the device and inode of the root, `.hexaemeron`,
+`worker-launches` and `reports` directories. Admission keeps their descriptors
+open and checks the namespace links around writes. These checks detect
+observed substitutions; they do not make concurrent renames atomic. A rename
+after a pre-check can leave partial output in the held, moved directory. The
+post-check refuses completion and preserves the independent replacement
+directory. The final marker records `reports-written`; only a successful
+subsequent link check permits the command to return `admitted`.
+
+Admission compares the declared origin inventory before and after report
+promotion and before returning success. Observed drift refuses admission without
+rollback or attribution to the worker. These checks do not lock origin files;
+a concurrent edit after the final check remains outside the observation.
+Preserve independent edits and any partial reports, then start a fresh launch
+to resnapshot the declared paths. The snapshot covers only that inventory. Worker streams remain bounded,
+untrusted observations; their contents do not establish syscall attribution.
+Scratch stays retired even after capture. Detached descendants are not proved
+dead, and the output cap does not establish a total scratch-disk or aggregate
+descendant resource limit.

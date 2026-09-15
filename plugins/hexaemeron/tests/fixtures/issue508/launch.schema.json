@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "issue508-launch-fixture/v1"
+    },
+    "execution_root": {
+      "type": "string"
+    },
+    "argv": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "executable_sha256": {
+      "type": "string"
+    },
+    "policy_sha256": {
+      "type": "string"
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "deadline_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "output_cap_bytes": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "schema",
+    "execution_root",
+    "argv",
+    "executable_sha256",
+    "policy_sha256",
+    "tools",
+    "deadline_seconds",
+    "output_cap_bytes"
+  ],
+  "additionalProperties": false
+}

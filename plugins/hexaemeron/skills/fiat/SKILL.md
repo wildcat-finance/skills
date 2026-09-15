@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.60.1"
+  version: "6.61.1"
 ---
 
 <p align="center">
@@ -956,6 +956,66 @@ closing-comment bytes, read the comment and issue state back from GitHub, and
 report only that remote evidence. The controller's closure receipt does not
 attest the comment's semantic passes or bytes.
 
+## Cumulative carryover custody
+
+At an exhausted `audit-verdict` boundary, Step 4 can export and validate inert
+cumulative evidence, then bind an already uploaded attachment by exact readback.
+Read [carryover-packet.md](references/carryover-packet.md) before using
+`carryover-export --request <path>`, `carryover-validate --packet <path> --sha256
+<digest>` or `carryover-bind --request <path>`. Each command also accepts the
+controller's preceding `--dir <run-worktree>` option.
+
+Archive the exact controller boundary with `checkpoint export` before exporting
+the packet. Preserve every prior pass, raw finding occurrence, unknown legacy
+field and complete file disposition. The export digest and later provider
+identity live in detached receipts. Binding performs a GET; uploading remains
+a separate operator action. An interrupted export can leave an unreceipted
+output, which must be inspected before retrying.
+
+An export may name an optional absolute `proof_repository` prepared separately
+with the required native objects and signed refs. Its receipt then binds that
+repository's path, device and inode for replay. Omitting it preserves the original
+source-root behavior and receipt shape. Export does not fetch or import refs.
+
+These operations preserve open findings and the exhausted audit verdict.
+Replacement admission is a separate operation; the existing `audit-verdict`
+decision and stop rules still apply to custody commands. The reference records the
+packet, native Git and provider byte limits, ASCII path rules, drift refusals
+and readback timing limits.
+
+## Replacement reconstruction and inoculation
+
+Read [carryover-packet.md](references/carryover-packet.md) before using
+`replacement-begin --request <path>` or `replacement-resume`, with the
+controller's preceding `--dir <new-run-worktree>` option. Begin with a fresh,
+already initialized run at the exact current base and one complete cumulative
+packet. The begin command records the request and attachment readback;
+resume reconstructs, executes the mapped guards and resumes recorded promotion. Name the read-only native
+`proof_repository`; the packet embeds controller evidence, not a Git bundle.
+Reconstruct every supported tracked current-base file and apply every carried
+file disposition before candidate guard execution.
+
+Map every raw finding occurrence by its exact identity tuple, offset, ordinal
+and raw digest. Retain historical unknown guard and family values. Explicit
+current mappings may name current coverage; they do not establish historical
+guard execution. The fixed adapter executes unchanged, source-bound bodies
+within its restricted Python form and requires actual assertion observations.
+Unsupported arbitrary unittest behavior refuses.
+
+Preserve partial stages and originals when admission is pending. The complete
+image and originals live in bound private storage outside `.hexaemeron`; the
+controller archive retains bounded custody evidence. Replay still needs that
+storage and the native proof repository. Resume only against the recorded source
+and destination identities. Promotion preserves actual displaced files and installs
+candidates exclusively. Refusal can leave a destination absent; inspect the
+retained bytes and restore them or clear retired temporaries when required before
+resume. This is not atomic rollback. Inspection and halt remain available while
+acceptance is blocked; clear a halt with ordinary `resume` before
+`replacement-resume`. A replacement earns a
+fresh independent audit; neither a custody receipt nor the old run's verdict
+can supply it. The reference owns the request fields, copy and proof limits,
+refusal codes and recovery instructions.
+
 ## Delegation and context
 
 Every `next` envelope carries `state_sha256`, an explicit `agent`, and a
@@ -1083,6 +1143,32 @@ where the study and runbook live. After a successful verification, run
 and say if a dirty worktree was retained. The next run should not have to
 retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
+## Runbook command evidence
+
+New initialization records `contracts.gate_commands` as
+`protasis-gate-commands/v1` in state and the immutable init event. Runbook and
+amendment receipts for those runs consume Protasis's
+[command-interface result](../protasis/references/gate-commands.md). It binds
+raw command bytes and offsets, the captured source root, effective replacements,
+argv and report substitutions, full CLI and adapter sources, and interface validity. The
+result's `operation_ran:false` cannot stand in for a test report or audit verdict.
+
+Verification compares the marker and stored evidence with the ledger. It
+preserves historical raw commands and rechecks the latest effective result
+against current source. Source drift requires a newly checked append-only
+runbook amendment through the owning repair path; never rewrite an earlier
+receipt. Runs initialized without the marker retain their legacy contract and
+cannot acquire fabricated gate evidence by changing state. Plain `status` and
+`status --field gate_command_status` expose current, stale, legacy or pending
+command evidence without advancing the run. A pending amendment remains
+incomplete until its existing recovery transition finishes.
+
+Checkpoint restoration keeps the original gate receipt, including its captured
+root and absolute report operand. Replay checks that historical derivation and
+separately validates the relative report declaration under the restored root.
+The operand authorizes no command execution at the old root; existing checkpoint
+identity and ledger checks remain the relocation authority.
+
 ## Promise Machine contract
 
 ### fiat-design-evidence
@@ -1145,6 +1231,30 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
 - Exceptions: none
 
+### fiat-cumulative-carryover-custody
+
+- Promise: Successful `carryover-export`, `carryover-validate` and, when requested, `carryover-bind` establish the checked cumulative packet, source relationships and detached custody observations each command reports.
+- Evidence: Exact packet and archive digests, replayed controller and ledger bytes, native local Git objects and the proof-repository identity when explicitly supplied, verified signed fixed commit and tree, complete inherited and changed-file dispositions, raw finding occurrences and explicit unknowns, reconstructed lineage prefixes, derived export receipt and ledger entry, and a separate attachment size and digest readback receipt when binding succeeds.
+- Evidence classes: checked, recorded
+- Boundary: Evidence remains inert. The commands do not establish audit judgement or model-answer truth, continued attachment availability, issue-comment placement, atomic namespace protection or a hard readback return time. Packet, decoded, native Git and provider limits are separate; their exact bounds and refusals are in the carryover reference.
+- Authorises: Exporting and replaying the complete bounded packet at the exhausted audit boundary and recording a provider identity only after exact byte readback, while retaining open findings and the audit verdict. These custody commands do not admit a replacement; their historical unavailable-admission results stay unchanged.
+- Consequence: 2
+- Refuses: A non-exhausted or mismatched archive, missing source objects, moved or unverified fixed ref, incomplete or altered lineage, producer or payload drift, duplicate source pass, unsafe path or mode, resource-cap breach, occupied output, observed controller drift, duplicate export or binding, or mismatched attachment identity, transport result, size or digest.
+- Recovery: Preserve the archived controller, packet and independent edits, inspect the refusal and any unreceipted exclusive output, repair the evidence without rewriting receipt history, and retry the named command.
+- Exceptions: none
+
+### fiat-replacement-admission
+
+- Promise: Successful replacement admission establishes complete private reconstruction against one exact current base and cumulative packet, source-bound execution of every mapped current guard, and recorded coverage for every raw finding occurrence and declared family before a fresh independent audit.
+- Evidence: The exact request and packet digests, explicit native proof repository and verified signed source refs, current base and reconstructed file inventories, complete file and raw-occurrence mappings, unchanged guard and dependency source digests, fixed assertion observations, native worker input and output captures, pending recovery records, derived admission receipt and ledger binding.
+- Evidence classes: checked, recorded
+- Boundary: Historical missing guard or family values remain unknown; current mapping and execution do not prove historical execution or audit judgement. Restricted Python source support does not admit arbitrary unittest behavior. The packet contains no Git bundle and does not embed the external reconstruction storage. The 256 MiB active reservation covers twice the image bytes, twice the original backup bytes and the largest live candidate temporary. Independently grown destinations moved into preserved custody are distinct from those copies; retired attempts, retired temporaries and displaced bytes have no total-history or global disk quota. Byte budgets, namespace observations and retained partial stages do not establish atomic rollback, detached-descendant death or aggregate resource quotas. Admission carries no clean audit verdict and is distinct from checkpoint restoration.
+- Authorises: Continuing the reconstructed replacement through a fresh independent audit after every required current guard and occurrence mapping is checked and recorded.
+- Consequence: 2
+- Refuses: A non-fresh or wrong-base run, unavailable native proof, incomplete cumulative lineage or raw producer evidence, missing or duplicate occurrence mapping, partial or conflicting file reconstruction, unsupported or altered guard bodies, missing family coverage, skipped or unexecuted assertions, failed worker capture, source drift or inconsistent pending recovery evidence.
+- Recovery: Preserve the original run, packet, native source objects, partial staging and reports; inspect the named refusal, restore exact evidence and resume only the recorded pending transition without rewriting historical receipts.
+- Exceptions: none
+
 ### fiat-checkpoint-archive
 
 - Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
@@ -1172,7 +1282,7 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-receipted-delivery
 
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
-- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
+- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, marked-run command evidence and its init-event binding, step branches and locally verified commit ranges, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
 - Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, the recorded local and GitHub signature checks, and the author and committer identities GitHub returned. Waiting-head ancestry establishes topology only; it does not establish a signature, trailer, GitHub identity, author, committer, publisher, or cause for a moved branch. Verification also does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer or publisher authority beyond those checks, identify the actor who pushed the bytes, or turn user authority merely written into a receipt into evidence.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.

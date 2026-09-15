@@ -157,7 +157,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                 process.wait(timeout=5)
         self.tmp.cleanup()
 
-    def run_ctl(self, *args, expect=0, audit_filter=True):
+    def run_ctl(self, *args, expect=0, audit_filter=True, historical_init=False):
         if (
             args
             and args[0] == "audit-round"
@@ -248,8 +248,31 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
         env["FAKE_GIT_PARENTS"] = json.dumps(pending_parents)
         env["FAKE_GH_PRS"] = json.dumps(pending_prs)
+        command = [sys.executable, HEXCTL, *args]
+        if historical_init or (args[:1] == ("init",) and getattr(self, "_historical_fixture_init", False)):
+            if not args or args[0] != "init":
+                raise AssertionError("historical construction applies only before init")
+            wrapper = """import importlib.util, os, sys
+source = sys.argv[1]
+spec = importlib.util.spec_from_file_location('historical_fixture_controller', source)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+original = module.commit
+def historical_first_commit(base_dir, state, event, data):
+    if event != 'init' or os.path.exists(module.ledger_path(base_dir)):
+        raise AssertionError('historical fixture cannot rewrite an existing run')
+    if data.get('contracts') != state.get('contracts'):
+        raise AssertionError('initial contract declarations disagree')
+    state['contracts'].pop('gate_commands')
+    data['contracts'] = dict(state['contracts'])
+    return original(base_dir, state, event, data)
+module.commit = historical_first_commit
+sys.argv = [source, *sys.argv[2:]]
+module.main()
+"""
+            command = [sys.executable, "-c", wrapper, HEXCTL, *args]
         proc = subprocess.run(
-            [sys.executable, HEXCTL, *args],
+            command,
             cwd=self.target,
             capture_output=True,
             text=True,
@@ -789,7 +812,14 @@ print(json.dumps(payload))
             args += ["--task-issue", task_issue]
         if base is not None:
             args += ["--base", base]
-        self.run_ctl(*args)
+        # These shared fixtures describe the pre-gate lifecycle. Real run_ctl
+        # init calls remain strict and are exercised by current gate tests.
+        previous = getattr(self, "_historical_fixture_init", False)
+        self._historical_fixture_init = True
+        try:
+            self.run_ctl(*args)
+        finally:
+            self._historical_fixture_init = previous
         self.write_design_evidence()
 
     def write_design_evidence(self, target=None):

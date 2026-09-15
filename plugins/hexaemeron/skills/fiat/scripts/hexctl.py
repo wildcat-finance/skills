@@ -496,6 +496,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.58.1",
         "fiat-v6.59.1",
         "fiat-v6.60.1",
+        "fiat-v6.61.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -2375,10 +2376,12 @@ def validate_state_shape(state) -> dict:
     contracts = root.get("contracts")
     if contracts is not None:
         contracts = require_state_container(contracts, "contracts", dict)
-        if set(contracts) != DESIGN_CONTRACT_KEYS:
+        if set(contracts) not in (DESIGN_CONTRACT_KEYS, DESIGN_CONTRACT_KEYS | {"gate_commands"}):
             die("state key 'contracts' has an unsupported field set", 1)
         if contracts.get("design_evidence") != DESIGN_EVIDENCE_SCHEMA:
             die("state key 'contracts.design_evidence' is not supported", 1)
+        if "gate_commands" in contracts and contracts["gate_commands"] != "protasis-gate-commands/v1":
+            die("unsupported gate command contract", 1)
     config = require_state_container(root.get("config"), "config", dict)
     for section in ("skills", "audit", "git"):
         require_state_container(
@@ -2748,6 +2751,7 @@ def load_state(
     *,
     allow_pending_amendment: bool = False,
     allow_pending_resolution: bool = False,
+    allow_pending_replacement: bool = False,
     allow_pending_no_known: bool = False,
 ) -> dict:
     path = state_path(base_dir)
@@ -2778,6 +2782,8 @@ def load_state(
     except (ValueError, OSError) as exc:
         die(f"state file unreadable at {path}: {exc}", 1)
     state = validate_state_shape(state)
+    if state['receipts'].get('replacement_pending') and not allow_pending_replacement:
+        die('replacement transaction is pending; run replacement-resume before ordinary acceptance')
     amendments = pending_amendments(base_dir)
     resolution = load_version_resolution_pending(base_dir)
     no_known = load_no_known_transaction(base_dir, state)
@@ -2825,6 +2831,10 @@ MUTATING = frozenset(
         "cmd_resume",
         "cmd_reset",
         "cmd_checkpoint_export",
+        "cmd_carryover_export",
+        "cmd_carryover_bind",
+        "cmd_replacement_begin",
+        "cmd_replacement_resume",
         "cmd_checkpoint_archive",
         "cmd_retain_guard",
     }
@@ -3505,7 +3515,7 @@ def cmd_init(args) -> None:
     state = {
         "version": 1,
         "controller": "hexctl",
-        "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA},
+        "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA, "gate_commands": "protasis-gate-commands/v1"},
         "topic": args.topic,
         "base": starting_commit,
         "run_branch": run_branch,
@@ -13977,6 +13987,116 @@ def done_study(args, state: dict) -> None:
     print("study receipted; phase -> runbook")
 
 
+def gate_commands_module():
+    """Load only the controller distribution's fixed validation adapter."""
+    source = Path(__file__).resolve().parents[2] / "protasis" / "scripts" / "gate_commands.py"
+    specification = importlib.util.spec_from_file_location("fiat_gate_commands", source)
+    if specification is None or specification.loader is None:
+        die("gate command adapter unavailable", 1)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+def gate_contract(state: dict) -> bool:
+    return as_dict(state.get("contracts")).get("gate_commands") == "protasis-gate-commands/v1"
+
+
+def capture_gate_commands(base_dir: str, state: dict, data: bytes) -> dict | None:
+    if not gate_contract(state):
+        return None
+    adapter = gate_commands_module()
+    try:
+        return adapter.validate(Path(base_dir).resolve(), data)
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"gate command validation refused: {exc}", 1)
+
+
+def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
+                         runbook_event: dict | None, amendment_events: list,
+                         *, allow_source_drift: bool = False, historical_source: bytes | None = None) -> None:
+    """Keep legacy custody separate and replay only the current CLI interface."""
+    marker = as_dict(state.get("contracts")).get("gate_commands")
+    original = as_dict(as_dict(as_dict(initial_entry).get("data")).get("contracts")).get("gate_commands")
+    if marker != original:
+        die("gate command contract differs from immutable init event", 1)
+    receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    history = receipt.get("amendments") or []
+    records = [as_dict(runbook_event).get("gate_commands")] + [as_dict(e).get("gate_commands") for e in amendment_events]
+    stored = [receipt.get("gate_commands")] + [as_dict(e).get("gate_commands") for e in history]
+    if not marker:
+        if any(item is not None for item in records + stored):
+            die("legacy run has fabricated gate command evidence", 1)
+        return
+    if not receipt:
+        if any(item is not None for item in records):
+            die("gate receipt precedes runbook", 1)
+        return
+    if stored != records or any(not isinstance(item, dict) for item in stored):
+        die("gate receipts disagree with immutable ledger records", 1)
+    if historical_source is None:
+        source = receipted_source(base_dir, state, "runbook")
+        data = source["text"].encode()
+    else:
+        data = historical_source
+        if hashlib.sha256(data).hexdigest() != receipt.get("sha256"):
+            die("gate recovery prefix does not match receipt", 1)
+    _receipted_runbook_amendments({"text": data.decode(), "receipt": receipt, "sha256": receipt.get("sha256")})
+    ends = [history[0]["amendment_start"] if history else len(data)] + [a["amendment_end"] for a in history]
+    adapter = gate_commands_module()
+    for record, end in zip(stored, ends):
+        prefix = data[:end]
+        if record.get("schema") != adapter.SCHEMA or record.get("artifact_sha256") != hashlib.sha256(prefix).hexdigest() or record.get("operation_ran") is not False:
+            die("gate receipt source identity drift", 1)
+        # Historical source commands stay byte-bound even after interface changes.
+        for command in record.get("commands", []):
+            raw = command.get("command", "").encode()
+            offset = command.get("offset")
+            if (not isinstance(offset, int) or isinstance(offset, bool) or offset < 0
+                    or prefix[offset:offset + len(raw)] != raw
+                    or command.get("sha256") != hashlib.sha256(raw).hexdigest()):
+                die("historical gate command bytes drift", 1)
+    if not allow_source_drift:
+        try:
+            adapter.replay(Path(base_dir).resolve(), data, stored[-1])
+        except (adapter.Refusal, OSError, ValueError) as exc:
+            die(f"gate source stale or invalid: {exc}; submit a freshly validated runbook amendment", 1)
+
+
+def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: bool = True) -> None:
+    """Allow only current interface drift while checking preserved recovery custody."""
+    with open(ledger_path(base_dir), encoding="utf-8") as handle:
+        first = next((json.loads(line) for line in handle if line.strip()), {})
+    marker = as_dict(state.get("contracts")).get("gate_commands")
+    original = as_dict(as_dict(first.get("data")).get("contracts")).get("gate_commands")
+    if marker is None and original is None:
+        return
+    entries = _intact_ledger_entries(base_dir, "gate recovery")
+    if state_fingerprint(state) != entries[-1]["state"]:
+        die("gate recovery state differs from ledger", 1)
+    marker = as_dict(state.get("contracts")).get("gate_commands")
+    original = as_dict(as_dict(entries[0].get("data")).get("contracts")).get("gate_commands")
+    if marker != original:
+        die("gate command contract differs from immutable init event", 1)
+    if not marker:
+        return
+    verify_run_anchor(base_dir, state, entries[0])
+    study = as_dict(as_dict(state.get("receipts")).get("study"))
+    if study.get("sha256"):
+        receipted_source(base_dir, state, "study")
+    receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    if not receipt:
+        return
+    _, data = read_bounded_source(base_dir, receipt["artifact"], "runbook recovery source")
+    if hashlib.sha256(data).hexdigest() != receipt.get("sha256"):
+        amendment = _runbook_amendment_record(state, receipt["sha256"], data)
+        data = data[:amendment["amendment_start"]]
+    events = [e["data"] for e in entries if e["event"] == "done:runbook"]
+    amendments = [e["data"] for e in entries if e["event"] == "amend:runbook"]
+    verify_gate_commands(base_dir, state, entries[0], events[-1] if events else None,
+                         amendments, allow_source_drift=allow_source_drift, historical_source=data)
+
+
 def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
@@ -14002,6 +14122,7 @@ def done_runbook(args, state: dict) -> None:
             die("runbook design-lock does not match the receipted design evidence")
     elif design_lock is not None:
         die("runbook declares a design-lock without a receipted design record")
+    gate_receipt = capture_gate_commands(args.dir, state, artifact_bytes)
     relation_source = parse_version_relation_source(artifact_text)
     version_relations = None
     if relation_source is not None:
@@ -14103,6 +14224,9 @@ def done_runbook(args, state: dict) -> None:
         state["receipts"]["runbook"]["version_relations"] = version_relations
         receipt["version_relations"] = version_relations
     receipt["sha256"] = digest
+    if gate_receipt is not None:
+        state["receipts"]["runbook"]["gate_commands"] = gate_receipt
+        receipt["gate_commands"] = gate_receipt
     commit(args.dir, state, "done:runbook", receipt)
     phase = "inoculate" if inventory_capture is not None else "implement"
     print(f"runbook receipted; {len(titles)} steps registered; step 1 -> {phase}")
@@ -19461,6 +19585,9 @@ def _recover_runbook_amendment(
         )
 
     recovered = _runbook_amendment_record(state, prior, canonical)
+    gate_receipt = capture_gate_commands(base_dir, state, canonical)
+    if gate_receipt is not None:
+        recovered["gate_commands"] = gate_receipt
     _check_amended_runbook(base_dir, canonical)
     if recovered != amendment:
         die("pending runbook amendment metadata does not match candidate bytes", 1)
@@ -19483,6 +19610,7 @@ def _recover_runbook_amendment(
 def cmd_amend_runbook(args) -> None:
     """Receipt one append-only Protasis runbook amendment during build steps."""
     state = load_state(args.dir, allow_pending_amendment=True)
+    gate_recovery_preflight(args.dir, state)
     pending_by_subject = pending_amendments(args.dir)
     if pending_by_subject:
         if "runbook" not in pending_by_subject:
@@ -19523,6 +19651,9 @@ def cmd_amend_runbook(args) -> None:
             )
 
     amendment = _runbook_amendment_record(state, expected, candidate)
+    gate_receipt = capture_gate_commands(args.dir, state, candidate)
+    if gate_receipt is not None:
+        amendment["gate_commands"] = gate_receipt
     _check_amended_runbook(args.dir, candidate)
     _require_capture_aware_amendment_candidate(
         args.dir, state, "runbook", candidate
@@ -27825,7 +27956,12 @@ def cmd_checkpoint_inspect(args) -> None:
 
 
 def cmd_next(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
+    if state["receipts"].get("replacement_pending"):
+        print(json.dumps({"do": "resume" if state.get("halted") else "replacement-resume",
+                          "replacement_pending": state["receipts"]["replacement_pending"],
+                          "acceptance_available": False}))
+        return
     directive = _next_directive(state, args.dir)
     if directive["do"] == "merge-step":
         # While the stack is still coming down the run branch has to be where the
@@ -28131,7 +28267,25 @@ def clean(text: str) -> str:
 
 
 def cmd_status(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True, allow_pending_amendment=True, allow_pending_resolution=True)
+    gate_status = {"status": "legacy", "validation": "not-recorded"}
+    with open(ledger_path(args.dir), encoding="utf-8") as handle:
+        initial = next((json.loads(line) for line in handle if line.strip()), {})
+    initial_gate = as_dict(as_dict(initial.get("data")).get("contracts")).get("gate_commands")
+    if not gate_contract(state) and initial_gate is None:
+        state = load_state(args.dir, allow_pending_replacement=True)
+    if gate_contract(state) or initial_gate is not None:
+        try:
+            gate_recovery_preflight(args.dir, state, allow_source_drift=False)
+            gate_status = {"status": "current" if as_dict(state.get("receipts")).get("runbook") else "awaiting-runbook", "validation": "interface-only"}
+        except SystemExit:
+            gate_status = {"status": "stale-or-invalid", "recovery": "inspect verify output; submit a freshly validated runbook amendment"}
+    pending = pending_amendments(args.dir)
+    if gate_contract(state) and pending:
+        gate_status = {"status": "pending-amendment", "validation": "not-complete", "recovery": "recover the exact pending amendment"}
+    if getattr(args, "field", None) == "gate_command_status":
+        print(json.dumps(gate_status, sort_keys=True))
+        return
     assignment = as_dict(state.get("receipts")).get(
         DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
     )
@@ -28158,6 +28312,8 @@ def cmd_status(args) -> None:
     for name in ("study", "runbook"):
         receipt = as_dict(as_dict(state.get("receipts")).get(name))
         if receipt.get("sha256") is None:
+            continue
+        if gate_contract(state) and name in pending:
             continue
         source = receipted_source(args.dir, state, name)
         receipted_sources[name] = source
@@ -28237,6 +28393,9 @@ def cmd_status(args) -> None:
             node = node[part]
         print(json.dumps(node))
         return
+    if state["receipts"].get("replacement_pending"):
+        print("PENDING: replacement admission; inspect status --json, halt safely, or run replacement-resume")
+    print("gate commands: " + json.dumps(gate_status, sort_keys=True))
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
@@ -28387,7 +28546,7 @@ def cmd_status(args) -> None:
 
 
 def cmd_halt(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
     if not args.reason:
         die("--reason is required")
     state["halted"] = {"reason": args.reason, "ts": now()}
@@ -28396,7 +28555,7 @@ def cmd_halt(args) -> None:
 
 
 def cmd_resume(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(args.dir, allow_pending_replacement=True)
     if not state.get("halted"):
         die("run is not halted")
     note = args.note or ""
@@ -28495,11 +28654,14 @@ def verify_run(
     *,
     allow_pending_amendment: bool = False,
     allow_pending_resolution: bool = False,
+    allow_pending_replacement: bool = False,
+    allow_gate_source_drift: bool = False,
 ) -> int:
     state = load_state(
         base_dir,
         allow_pending_amendment=allow_pending_amendment,
         allow_pending_resolution=allow_pending_resolution,
+        allow_pending_replacement=allow_pending_replacement,
     )
     path = ledger_path(base_dir)
     if not os.path.exists(path):
@@ -28509,6 +28671,7 @@ def verify_run(
     last_state = None
     study_event = None
     runbook_event = None
+    gate_amendment_events = []
     inoculation_events = []
     design_transition_events = []
     resolution_events = []
@@ -28537,6 +28700,8 @@ def verify_run(
                 die(f"ledger chain broken at line {i}", 1)
             if entry.get("event") == "done:runbook":
                 runbook_event = entry.get("data")
+            if entry.get("event") == "amend:runbook":
+                gate_amendment_events.append(entry.get("data"))
             if entry.get("event") == "done:study":
                 study_event = entry.get("data")
             if entry.get("event") == "done:inoculate":
@@ -28557,6 +28722,7 @@ def verify_run(
             "state.json was edited outside hexctl", 1
         )
     verify_run_anchor(base_dir, state, initial_entry)
+    verify_gate_commands(base_dir, state, initial_entry, runbook_event, gate_amendment_events, allow_source_drift=allow_gate_source_drift)
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
@@ -28708,6 +28874,18 @@ def verify_run(
         step = current_step(state)
         if step["status"] != "open" or step["phase"] not in STEP_PHASES:
             die("state inconsistent: current step is not open", 1)
+    if "carryover_exports" in state["receipts"]:
+        backend = carryover_backend()
+        try:
+            backend.verify_receipts(sys.modules[__name__], base_dir, state)
+        except (backend.Refusal, OSError, ValueError, KeyError, TypeError):
+            die("carryover export receipt does not replay", 1)
+    if "replacement_admission" in state["receipts"]:
+        backend = replacement_backend()
+        try:
+            backend.verify_receipt(sys.modules[__name__], os.path.abspath(base_dir), state)
+        except (backend.Refusal, OSError, ValueError, KeyError, TypeError):
+            die("replacement admission receipt does not replay", 1)
     return count
 
 
@@ -28948,10 +29126,10 @@ beside it.
 
 
 def cmd_verify(args) -> None:
-    count = verify_run(args.dir)
+    count = verify_run(args.dir, allow_pending_replacement=True)
     reported = False
     if args.observations:
-        state = load_state(args.dir)
+        state = load_state(args.dir, allow_pending_replacement=True)
         observation_count, tail_bytes = verify_observation_bindings(args.dir, state)
         suffix = (
             f"; unbound tail: {tail_bytes} bytes" if tail_bytes else ""
@@ -28967,7 +29145,7 @@ def cmd_verify(args) -> None:
         # over an issue whose body had moved (S3-R2-02).
         reported = True
     if getattr(args, "check_filing_decision", False):
-        state = load_state(args.dir)
+        state = load_state(args.dir, allow_pending_replacement=True)
         divergences, uncomparable, skipped = filing_decision_divergence(
             args.dir, state
         )
@@ -29124,12 +29302,160 @@ def cmd_reset(args) -> None:
         write_breadcrumbs(origin)
 
 
+def worker_backend():
+    """Load the controller-owned native backend, never a worker-selected module."""
+    source = Path(__file__).resolve().with_name("worker_exec.py")
+    spec = importlib.util.spec_from_file_location("fiat_native_worker", source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def gate_existing_run(base_dir: str) -> None:
+    """Standalone worker fixtures have no run; initialized runs retain their gate."""
+    if os.path.exists(state_path(base_dir)):
+        state = load_state(base_dir)
+        gate_recovery_preflight(base_dir, state, allow_source_drift=False)
+
+
+def cmd_worker_exec(args) -> None:
+    gate_existing_run(args.dir)
+    backend = worker_backend()
+    try:
+        root = backend._absolute_directory(args.dir)
+        request_path = Path(args.request)
+        parent = backend._open_dir(request_path.parent.resolve(strict=True))
+        try:
+            data, _ = backend._read_regular(parent, request_path.name, 65536)
+        finally:
+            os.close(parent)
+        def unique(pairs):
+            result = {}
+            for key, value in pairs:
+                if key in result:
+                    raise backend.Refusal("duplicate-request-key")
+                result[key] = value
+            return result
+        request = json.loads(data, object_pairs_hook=unique)
+        result = backend.controller_launch(root, request, Path(__file__))
+    except (backend.Refusal, OSError, ValueError, TypeError) as exc:
+        die("worker-exec refused: " + (exc.code if isinstance(exc, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+    if result["record"]["status"] != "ready":
+        raise SystemExit(1)
+
+
+def cmd_worker_admit(args) -> None:
+    gate_existing_run(args.dir)
+    backend = worker_backend()
+    try:
+        result = backend.controller_admit(args.dir, args.receipt, args.sha256, Path(__file__))
+    except (backend.Refusal, OSError, ValueError, TypeError, KeyError) as exc:
+        die("worker-admit refused: " + (exc.code if isinstance(exc, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+
+
+def carryover_backend():
+    """Load the fixed controller-owned packet codec."""
+    source = Path(__file__).resolve().with_name("carryover.py")
+    spec = importlib.util.spec_from_file_location("fiat_carryover", source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def cmd_carryover_export(args) -> None:
+    backend = carryover_backend()
+    try:
+        request = backend.load(backend.read_regular(args.request, 65536))
+        result = backend.export(sys.modules[__name__], args.dir, request)
+    except (backend.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die("carryover-export refused: " + (str(error) if isinstance(error, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+
+
+def cmd_carryover_bind(args) -> None:
+    backend = carryover_backend()
+    try:
+        request = backend.load(backend.read_regular(args.request, 65536))
+        result = backend.bind_attachment(sys.modules[__name__], args.dir, request)
+    except (backend.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die("carryover-bind refused: " + (str(error) if isinstance(error, backend.Refusal) else "invalid-input"))
+    print(json.dumps(result, sort_keys=True))
+
+
+def cmd_carryover_validate(args) -> None:
+    backend = carryover_backend()
+    try:
+        packet = backend.validate(sys.modules[__name__], args.dir,
+                                  backend.read_regular(args.packet), args.sha256)
+    except (backend.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die("carryover-validate refused: " + (str(error) if isinstance(error, backend.Refusal) else "invalid-input"))
+    print(json.dumps({"status": "validated", "sequence": packet["sequence"],
+                      "packet_sha256": args.sha256, "replacement_admission": "unavailable"}, sort_keys=True))
+
+
 # ---------------------------------------------------------------------- cli
+
+def replacement_backend():
+    source = Path(__file__).resolve().with_name('replacement.py')
+    spec = importlib.util.spec_from_file_location('fiat_replacement', source)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def cmd_replacement_begin(args) -> None:
+    backend = replacement_backend()
+    try:
+        request = backend.packet.load(backend.packet.read_regular(args.request))
+        result = backend.begin(sys.modules[__name__], args.dir, request)
+    except (backend.Refusal, backend.worker.Refusal, OSError, ValueError, KeyError, TypeError) as error:
+        die('replacement-begin refused: ' + (str(error) if isinstance(error, backend.Refusal) else 'invalid-input'))
+    print(json.dumps(result, sort_keys=True))
+
+
+def cmd_replacement_resume(args) -> None:
+    backend = replacement_backend()
+    try:
+        result = backend.resume(sys.modules[__name__], args.dir)
+    except (backend.Refusal, backend.worker.Refusal, backend.adapter.Refusal,
+            OSError, ValueError, KeyError, TypeError) as error:
+        die('replacement-resume refused: ' + (str(error) if isinstance(error, backend.Refusal) else 'invalid-input'))
+    print(json.dumps(result, sort_keys=True))
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="hexctl", description=__doc__)
     p.add_argument("--dir", default=".", help="directory holding the state dir")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    sp = sub.add_parser('replacement-begin', help='bind a fresh run to a complete replacement request')
+    sp.add_argument('--request', required=True)
+    sp.set_defaults(fn=cmd_replacement_begin)
+    sp = sub.add_parser('replacement-resume', help='reconstruct, execute guards and recover pending admission')
+    sp.set_defaults(fn=cmd_replacement_resume)
+
+    sp = sub.add_parser("carryover-export", help="export inert cumulative evidence at exhausted audit")
+    sp.add_argument("--request", required=True)
+    sp.set_defaults(fn=cmd_carryover_export)
+    sp = sub.add_parser("carryover-bind", help="bind a published attachment by exact packet readback")
+    sp.add_argument("--request", required=True)
+    sp.set_defaults(fn=cmd_carryover_bind)
+    sp = sub.add_parser("carryover-validate", help="replay cumulative packet evidence without admission")
+    sp.add_argument("--packet", required=True)
+    sp.add_argument("--sha256", required=True)
+    sp.set_defaults(fn=cmd_carryover_validate)
+
+    sp = sub.add_parser("worker-exec", help="capture one declared native worker in retired scratch")
+    sp.add_argument("--request", required=True)
+    sp.set_defaults(fn=cmd_worker_exec)
+    sp = sub.add_parser("worker-admit", help="promote reports from one pinned private capture")
+    sp.add_argument("--receipt", required=True)
+    sp.add_argument("--sha256", required=True)
+    sp.set_defaults(fn=cmd_worker_admit)
 
     sp = sub.add_parser("init", help="start a run")
     sp.add_argument("--topic", required=True)
@@ -29407,6 +29733,9 @@ def main() -> None:
         if args.fn.__name__ == "cmd_init":
             args._init_preflight = init_preflight(args)
         with held_lock(args.dir, args.fn.__name__):
+            if args.fn.__name__ not in ("cmd_init", "cmd_halt", "cmd_resume", "cmd_reset", "cmd_amend_runbook"):
+                candidate_state = load_state(args.dir, allow_pending_replacement=True, allow_pending_amendment=True, allow_pending_resolution=True)
+                gate_recovery_preflight(args.dir, candidate_state, allow_source_drift=False)
             args.fn(args)
         return
     args.fn(args)

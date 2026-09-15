@@ -7,13 +7,14 @@ description: >-
   steps that are discrete, green at both ends, sized for the audit loop and
   explicit about the gates they incur, including a source-bound known-failure
   inventory when audit history names one. Use when a topic is about to enter
-  the study or runbook phase, when a requirement arrives vague or bundles
-  several capabilities, or when deciding whether a runbook is ready to build from. Do
+  the study or runbook phase, when a requirement arrives vague or bundles several
+  capabilities, when deciding whether a runbook is ready to build from, or when
+  checking declared commands against source interfaces without executing them. Do
   not use it to run the controller or write a receipt, which belong to fiat,
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "5.11.0"
+  version: "5.12.0"
 ---
 
 <p align="center">
@@ -48,7 +49,9 @@ Its version, held frontier, next job, and maturity state live in
 **Current state.** Protasis checks the fixed mechanical shape of study and
 runbook prose, one source-bound known-failure inventory, and one closed
 candidate-by-criterion design record at the transition where each item of
-evidence becomes due.
+evidence becomes due. The optional command check validates literal arguments
+and finite per-file loops against registered source interfaces without
+executing the declared commands.
 
 ## Refuse these six
 
@@ -510,6 +513,21 @@ state a reason:
 Presence and shape are all the parser settles; whether an answer is any good
 stays with the reviewer and the rest of this contract.
 
+## Check declared command interfaces
+
+Use `--gate-root <target-root>` with the runbook checker to validate the
+effective Exit and Elenchus commands against registered local CLI sources.
+Unsupported shell evaluation, argument shapes, report substitutions and source
+adapters refuse with P008. The separate
+[command reference](references/gate-commands.md) names the grammar, source
+bindings, report format, limits and replay rules.
+
+The result is `protasis-gate-commands/v1` with `operation_ran:false`. It binds
+raw commands, the captured source root, original and substituted argv, full CLI
+and adapter digests, and interface results. It establishes no execution, test success or audit verdict.
+Fiat owns receipt storage, the new-init marker, legacy compatibility and the
+append-only amendment that refreshes stale evidence.
+
 ## The spec stays alive
 
 When a decision changes, change the study first and the code second. When scope
@@ -712,4 +730,16 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 - Consequence: 1
 - Refuses: A missing or mismatched design lock, a step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design, receipt language with no evidence command, an applicable inventory without a clean joined result, or a malformed, ambiguous or concretely contradicted version relation.
 - Recovery: Split or reorder the failing step, supply its exact evidence and rerun both the mechanical check and the full content review.
+- Exceptions: none
+
+### protasis-gate-command-validation
+
+- Promise: A successful command check establishes that each effective declared invocation fits the registered CLI interface, with exact source and report bindings, without executing the declared commands or importing their target modules.
+- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
+- Evidence classes: checked, recorded
+- Boundary: Interface validity establishes supported argument and source shape. It does not establish command execution, executable behavior, test success, report truth, audit judgement or atomic protection against later source changes. Historical absolute argv records nonexecuted derivation and grants no authority to execute at an old root; checkpoint relocation belongs to Fiat. This Consequence 1 operation has no native runtime binding. Its actual interface result retains operation_ran:false because the declared commands were not executed.
+- Authorises: Supplying the exact interface result to Fiat as command-validation evidence for its separately governed runbook or amendment receipt.
+- Consequence: 1
+- Refuses: Unregistered commands, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, source drift, bound violations or replay mismatch.
+- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a receipted run, use Fiat's permitted append-only amendment rather than editing earlier evidence.
 - Exceptions: none

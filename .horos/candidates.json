@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 25034416,
+    "bytes_blob": 25344997,
     "bytes_generated": 98
   },
   "entries": [
@@ -320,6 +320,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-503-imprimatur-1-read-comment-spans-in-source-fi.synopsis.md"
+    },
+    {
+      "bytes": 33391,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-508-restudy-residual-carryover-confinement-and-g.synopsis.md"
     },
     {
       "bytes": 57473,
@@ -735,6 +742,20 @@
       "path": "docs/agent-instruction-reconciliation/fixture-isolation/step-1-checks.json"
     },
     {
+      "bytes": 96519,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 96519 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/history/demonstration-before-command-cleanup.json"
+    },
+    {
+      "bytes": 97912,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 97912 bytes",
+      "grade": "candidate",
+      "path": "docs/agent-instruction-reconciliation/history/demonstration-issue508-command-cleanup.json"
+    },
+    {
       "bytes": 67355,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -747,6 +768,13 @@
       "evidence": "mean line length above 400 in a window at offset 39524",
       "grade": "candidate",
       "path": "docs/commit-gate/runbook.md"
+    },
+    {
+      "bytes": 70890,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 35445",
+      "grade": "candidate",
+      "path": "docs/fiat-508-residual/amended-runbook.md"
     },
     {
       "bytes": 459957,
@@ -889,16 +917,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 75266,
+      "bytes": 77252,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 37633",
+      "evidence": "mean line length above 400 in a window at offset 38626",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 98875,
+      "bytes": 108758,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 96827",
+      "evidence": "mean line length above 400 in a window at offset 106710",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

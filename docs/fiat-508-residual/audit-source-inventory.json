@@ -1,0 +1,214 @@
+{
+  "schema": "issue-508-study-reading/v1",
+  "sources": [
+    {
+      "path": "audit/rounds/fiat-560-bind-portable-runs-to-an-immutable-base-and.synopsis.md",
+      "sha256": "27e236513f8e99d270e5a11db27c42160c21a833ab5563a09448fc6ff1faec31",
+      "read_lines": [
+        [
+          1,
+          6
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-860-restore-identity-continuation-r2.synopsis.md",
+      "sha256": "c8fec9f8aa3e59ac88e07eb48ea2407b6ba76fc2b3b13a06be199aab88bdaff4",
+      "read_lines": [
+        [
+          1,
+          4
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-576-give-each-fiat-run-its-own-audit-log-path.synopsis.md",
+      "sha256": "98f073960bfcbb22a0072269798e666fe1f975df4760dac7d0747db6a92411b3",
+      "read_lines": [
+        [
+          1,
+          10
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-369-read-audit-synopsis-resigned.synopsis.md",
+      "sha256": "f6a9c8c82d4eeaefd6c836f574d6497611a3bed40baa72bc5e10d049b4ab90a6",
+      "read_lines": [
+        [
+          1,
+          2
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-429-recover-issue-429-from-pull-request-552.synopsis.md",
+      "sha256": "6bb3c81d841bc54adac3678f567393b92adc9596614057022601afc94968a548",
+      "read_lines": [
+        [
+          1,
+          5
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-608-bind-the-integrate-gate-to-the-sync-receipt.synopsis.md",
+      "sha256": "ab553a1949acbde3a9bcf25359df3648a5260f391cf0de818730e1b31df3f2ec",
+      "read_lines": [
+        [
+          1,
+          4
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-774-bound-integration-revalidation-separately-fr.synopsis.md",
+      "sha256": "69c236b731f1de3ca68e6ee8c3fdf61795c79fae8eacccfa3d9fbe9f672dcaa3",
+      "read_lines": [
+        [
+          1,
+          4
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-557-portable-run-state-recovery-r2.synopsis.md",
+      "sha256": "ad3e99dea0f914cebb2a1891be5c4db0bb63dcd8327d50240f84fc88435fbb20",
+      "read_lines": [
+        [
+          1,
+          11
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-622-carryover-inoculate-affected-scope-runner.synopsis.md",
+      "sha256": "9b1c59980503166fd2442ce68ea79a29ff7161140d967d5447d8919b720f9b35",
+      "read_lines": [
+        [
+          1,
+          9
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-1318-elenchus-binds-guard-test-and-repair-files.synopsis.md",
+      "sha256": "6b1013f2f13f11d1f0dfbe1b77b263755f5f98b9bbcc149f54dc4bcc5a23a869",
+      "read_lines": [
+        [
+          1,
+          4
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-622-carryover-2-implementation-continuation.synopsis.md",
+      "sha256": "f22c42288bfc88018f50d66302960f08c071e39fcd9444d3890775a463613579",
+      "read_lines": [
+        [
+          1,
+          9
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "plugins/hexaemeron/audit/AUDIT_SYNOPSIS.md",
+      "sha256": "2e919d920cd952a837bee6069251b710a9543df37514d7248a996d61766138cd",
+      "read_lines": [
+        [
+          1,
+          3
+        ]
+      ],
+      "scope": "complete"
+    },
+    {
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.synopsis.md",
+      "sha256": "d4777ec378045842c520599a9345a231cba50fba997a5dcf2b684f571240ac3f",
+      "read_lines": [
+        [
+          2,
+          2
+        ]
+      ],
+      "scope": "named mechanism excerpts only"
+    },
+    {
+      "path": "audit/AUDIT_SYNOPSIS.md",
+      "sha256": "82dc1d43e0fa9ee7a4cd7044aadeeb4049a1980e57943486809bc1d14533d0ee",
+      "read_lines": [
+        [
+          7,
+          8
+        ],
+        [
+          90,
+          91
+        ],
+        [
+          107,
+          114
+        ],
+        [
+          163,
+          172
+        ],
+        [
+          240,
+          248
+        ],
+        [
+          254,
+          255
+        ],
+        [
+          275,
+          288
+        ],
+        [
+          300,
+          303
+        ],
+        [
+          322,
+          332
+        ],
+        [
+          346,
+          348
+        ],
+        [
+          355,
+          355
+        ],
+        [
+          362,
+          362
+        ],
+        [
+          364,
+          369
+        ]
+      ],
+      "scope": "named mechanism excerpts only"
+    }
+  ],
+  "exclusions": [
+    "Unrelated skill audit corpora",
+    "Issue 1098 instruction reconciliation; truncated reading not used",
+    "Carryover-3 runner Steps 2 and 3; only reconstruction Step 1 used",
+    "Other root synopsis records; no complete-root claim"
+  ],
+  "producer_preservation": "Source files remain unchanged; cited missing fields and historical not-checked boundaries remain unknown."
+}

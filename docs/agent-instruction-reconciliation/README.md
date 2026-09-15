@@ -156,7 +156,7 @@ composition. Historical evaluation answers may be replayed only after every
 corresponding prompt is proven byte-identical, retaining the original model
 and date with explicit replay status.
 
-The [current owner replay](evaluation-replay/replay-after-exchange.json) proved all 11 historical
+The [earlier owner replay](evaluation-replay/replay-after-exchange.json) proved all 11 historical
 prompts byte-identical and changed only `tree_sha256`. It retains the original
 2026-08-31 model, date and answers; it is not a new model observation.
 
@@ -219,6 +219,15 @@ exited process group, it reaps the leader and accepts only a confirmed absent
 group. A live leader, surviving group or denied probe still refuses. Both
 output pipes close even when cleanup fails, and no terminating signal follows
 reaping. The original demonstration above remains a historical replay.
+
+The [prior command-cleanup record](history/demonstration-before-command-cleanup.json)
+and its evidence objects remain preserved. The [cleanup replay](evaluation-replay/replay-command-cleanup.json)
+and [#508 transfer replay](evaluation-replay/replay-508-cleanup.json)
+retain the model, date and answers after checking all 11 prompts. Their recorded
+source identities remain historical.
+The [#508 command-cleanup demonstration](history/demonstration-issue508-command-cleanup.json)
+is also preserved unchanged; the current historical verifier continues to read
+the original record paired with its pinned owners.
 
 ## Fixture isolation evidence
 

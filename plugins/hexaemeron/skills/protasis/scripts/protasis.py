@@ -689,8 +689,8 @@ def _amendment_findings(
     return findings
 
 
-def check(path: Path) -> list[Finding]:
-    lines = _read(path)
+def check(path: Path, *, captured: bytes | None = None) -> list[Finding]:
+    lines = _read(path) if captured is None else captured.decode("utf-8", errors="replace").splitlines()
     if lines is None:
         return [Finding(path, 1, "P000", "cannot be read as a runbook")]
 
@@ -898,12 +898,25 @@ def main(argv: list[str] | None = None) -> int:
                         help="check studies against the twelve-item contract "
                              "instead of runbooks against the step schema")
     parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--gate-root", help="validate registered runbook commands without executing them")
     args = parser.parse_args(argv)
 
+    if args.study and args.gate_root:
+        parser.error("--gate-root applies only to runbooks")
     checker = check_study if args.study else check
     findings: list[Finding] = []
     for name in args.paths:
-        findings.extend(checker(Path(name)))
+        if args.gate_root:
+            import gate_commands
+            try:
+                source = Path(name)
+                captured = gate_commands.read_source(source.absolute().parent, source.name, gate_commands.MAX_DOCUMENT)
+                findings.extend(check(source, captured=captured))
+                gate_commands.validate(Path(args.gate_root).resolve(), captured)
+            except (gate_commands.Refusal, OSError) as exc:
+                findings.append(Finding(Path(name), 1, "P008", str(exc)))
+        else:
+            findings.extend(checker(Path(name)))
 
     if args.format == "json":
         print(json.dumps([f.as_dict() for f in findings], indent=2))

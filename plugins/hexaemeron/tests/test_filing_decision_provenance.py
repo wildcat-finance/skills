@@ -645,18 +645,27 @@ class VerifyFlagCompositionTests(unittest.TestCase):
                          "verify_observation_bindings",
                          "filing_decision_divergence")
         }
-        module.verify_run = lambda base_dir: 1
-        module.load_state = lambda base_dir: {"receipts": {}}
-        module.verify_observation_bindings = lambda base_dir, state: (1, 0)
+        def verify_run(base_dir, *, allow_pending_replacement):
+            self.assertIs(allow_pending_replacement, True)
+            return 1
+
+        def load_state(base_dir, *, allow_pending_replacement):
+            self.assertIs(allow_pending_replacement, True)
+            return {"receipts": {}}
+
+        module.verify_run = verify_run
+        module.load_state = load_state
+        module.verify_observation_bindings = (
+            lambda base_dir, state: (calls.append("observations"), (1, 0))[1])
         module.filing_decision_divergence = (
-            lambda base_dir, state: (calls.append(1), ([], [], ""))[1])
+            lambda base_dir, state: (calls.append("filing"), ([], [], ""))[1])
         try:
             module.cmd_verify(argparse.Namespace(
                 dir=".", observations=True, check_filing_decision=True))
         finally:
             for name, value in originals.items():
                 setattr(module, name, value)
-        self.assertEqual(len(calls), 1, "the filing decision was never compared")
+        self.assertEqual(calls, ["observations", "filing"])
 
 
 

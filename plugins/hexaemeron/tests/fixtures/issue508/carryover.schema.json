@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "const": "issue508-carryover-fixture/v1"
+    },
+    "source_run": {
+      "type": "string"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "attachment_url": {
+      "type": "string"
+    },
+    "packet_sha256": {
+      "type": "string"
+    },
+    "archive_sha256": {
+      "type": "string"
+    },
+    "signed_fixed_ref": {
+      "type": "string"
+    },
+    "original_tree": {
+      "type": "string"
+    },
+    "fixed_tree": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "mode": {
+            "enum": [
+              "100644",
+              "100755",
+              "delete"
+            ]
+          },
+          "payload_base64": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "mode",
+          "payload_base64"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "guards": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "families": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schema",
+    "source_run",
+    "sequence",
+    "attachment_url",
+    "packet_sha256",
+    "archive_sha256",
+    "signed_fixed_ref",
+    "original_tree",
+    "fixed_tree",
+    "files",
+    "findings",
+    "guards",
+    "families"
+  ],
+  "additionalProperties": false
+}

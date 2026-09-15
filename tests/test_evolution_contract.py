@@ -415,12 +415,17 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.60.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.61.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
-        archive = history_rows(ledger)[-1]
+        current = history_rows(ledger)[-1]
+        self.assertEqual(current["version"], "fiat-v6.61.1")
+        self.assertIn("skills#508", current["evidence"])
+        self.assertIn("native macOS worker supervisor", current["change"])
+        self.assertIn("held target stay unchanged", current["change"])
+        archive = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.60.1")
         self.assertEqual(archive["version"], "fiat-v6.60.1")
         self.assertEqual(archive["axis"], "generation")
         self.assertIn("skills#861", archive["evidence"])
@@ -654,12 +659,16 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.11.0")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v5.12.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
-        latest = history_rows(ledger)[-1]
+        by_version = {row["version"]: row for row in history_rows(ledger)}
+        current = by_version["protasis-v5.12.0"]
+        self.assertIn("skills#508", current["evidence"])
+        self.assertIn("inert command-interface", current["change"])
+        latest = by_version["protasis-v5.11.0"]
         self.assertEqual(latest["version"], "protasis-v5.11.0")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "amendment-block-check")
@@ -672,13 +681,13 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("protasis-known-failure-inventory/v1", latest["change"])
         self.assertIn("known-failure-inoculation/proof.md", latest["evidence"])
         self.assertIn("manual bootstrap procedure", latest["change"])
-        prior_generation = history_rows(ledger)[-2]
+        prior_generation = by_version["protasis-v5.10.0"]
         self.assertEqual(prior_generation["version"], "protasis-v5.10.0")
         self.assertEqual(prior_generation["axis"], "generation")
         self.assertIn("skills#1000", prior_generation["evidence"])
         self.assertIn("ADR-061", prior_generation["evidence"])
         self.assertIn("protasis-design-evidence/v1", prior_generation["change"])
-        prior = history_rows(ledger)[-3]
+        prior = by_version["protasis-v5.9.0"]
         self.assertEqual(prior["version"], "protasis-v5.9.0")
         self.assertEqual(prior["axis"], "evolution")
         self.assertIn("skills#497", prior["evidence"])
