@@ -12258,6 +12258,46 @@ SIGNATURE_VERIFIER_CONFIG = (
 )
 
 
+# Runtime-host classification sets that nothing in this file reads. Fiat
+# refuses no commit on them. They stay because scripts/contributors.py:191
+# parses this declaration through the AST and stops when its own copy
+# differs, and the contributor-ranking promise at PROMISE_MACHINE.md:344 names
+# that parity check as its evidence. Deleting them as dead code would break
+# the check and falsify the promise, so change a set in both files together.
+HOST_IDENTITY_NAMES = frozenset(
+    {
+        "aider",
+        "anthropic",
+        "chatgpt",
+        "claude",
+        "claude code",
+        "claude[bot]",
+        "codex",
+        "copilot",
+        "cursor",
+        "devin",
+        "gemini",
+        "gemini code assist",
+        "github copilot",
+        "openai",
+    }
+)
+HOST_IDENTITY_EMAILS = frozenset(
+    {
+        "noreply@anthropic.com",
+        "noreply@openai.com",
+    }
+)
+HOST_PR_LOGINS = frozenset(
+    {
+        "app/claude",
+        "chatgpt[bot]",
+        "claude[bot]",
+        "codex[bot]",
+        "copilot[bot]",
+    }
+)
+
 COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,

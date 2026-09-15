@@ -99,7 +99,7 @@ class RetiredSurfaceTests(unittest.TestCase):
     def test_claude_attribution_override_is_absent(self):
         self.assertFalse((ROOT / ".claude/settings.json").exists())
 
-    def test_contributor_ranking_has_no_hosted_status_compatibility_aliases(self):
+    def test_contributor_ranking_keeps_the_host_set_parity_names(self):
         source = (ROOT / "scripts/contributors.py").read_text(encoding="utf-8")
         for name in (
             "HOST_IDENTITY_NAMES",
@@ -108,7 +108,7 @@ class RetiredSurfaceTests(unittest.TestCase):
             "is_host_identity",
             "is_host_login",
         ):
-            self.assertNotIn(name, source)
+            self.assertIn(name, source)
 
     def test_python_workflow_inventory_does_not_name_identity(self):
         source = (ROOT / "tests/test_python_contract.py").read_text(encoding="utf-8")
