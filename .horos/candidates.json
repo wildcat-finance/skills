@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 20893414,
+    "bytes_blob": 20909892,
     "bytes_generated": 98
   },
   "entries": [
@@ -89,6 +89,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 16478,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
     },
     {
       "bytes": 173841,
