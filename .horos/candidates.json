@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 21146564,
+    "bytes_blob": 21180386,
     "bytes_generated": 98
   },
   "entries": [
@@ -35,14 +35,14 @@
       "path": "audit/rounds/fiat-1098-make-a-bound-instruction-document-editable.synopsis.md"
     },
     {
-      "bytes": 99251,
+      "bytes": 116140,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 97203",
+      "evidence": "no newline in a 2048-byte window at offset 58070 of 116140 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1135-retire-the-shoggoth-cosignature-and-host-au.md"
     },
     {
-      "bytes": 99816,
+      "bytes": 116749,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
