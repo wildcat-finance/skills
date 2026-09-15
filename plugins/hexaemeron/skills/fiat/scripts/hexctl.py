@@ -50,10 +50,12 @@ import os
 import re
 import selectors
 import shutil
+import signal
 import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 from pathlib import Path
@@ -435,6 +437,13 @@ OBSERVATION_CAPTURE_STATUSES = (
 OBSERVATION_REDACTION_STATUSES = ("passed", "failed", "unknown")
 OBSERVATION_REASON_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 _OBSERVATION_VALIDATOR = None
+# The names the study and runbook pointer rule reads from the bundled Hypomnema
+# checker, so the pointers it recognises cannot drift from the ones it resolves.
+LINK_GATE_INTERFACE = (
+    "LINK", "RUNBOOK", "suppressed", "_external", "_code_spans", "_within"
+)
+LINK_GATE_TARGET_BYTES_MAX = 256
+_LINK_GATE_CHECKER = None
 
 CHECKPOINT_SCHEMA = "fiat-controller-checkpoint/v1"
 CHECKPOINT_RESULT_SCHEMA = "fiat-controller-checkpoint-export/v1"
@@ -476,6 +485,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.55.1",
         "fiat-v5.56.1",
         "fiat-v6.56.1",
+        "fiat-v6.57.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -7399,6 +7409,398 @@ def _append_design_transition(state: dict, transition: dict | None) -> None:
     design["transitions"].append(transition)
 
 
+def _link_gate_checker_path() -> str:
+    """The bundled Hypomnema checker, resolved from the plugin root."""
+    return os.path.realpath(
+        os.path.join(plugin_root(), "skills", "hypomnema", "scripts", "hypomnema.py")
+    )
+
+
+def link_gate_module(subject: str):
+    """Load the bundled Hypomnema parser the pointer rule reads, or refuse.
+
+    The rule calls that module's own patterns and span helpers rather than a
+    copy, so a missing file, a failed load or a missing name refuses the
+    receipt instead of falling back to a parser that could disagree with it.
+    """
+    global _LINK_GATE_CHECKER
+    if _LINK_GATE_CHECKER is not None:
+        return _LINK_GATE_CHECKER
+    source = _link_gate_checker_path()
+    try:
+        regular = stat.S_ISREG(os.stat(source).st_mode)
+    except OSError:
+        regular = False
+    if not regular:
+        die(
+            f"{subject}: pointer rule refused: the bundled Hypomnema checker "
+            "is unavailable"
+        )
+    prior_bytecode_policy = sys.dont_write_bytecode
+    try:
+        # A receipt reads the plugin tree; it does not write bytecode into it.
+        sys.dont_write_bytecode = True
+        specification = importlib.util.spec_from_file_location(
+            "fiat_link_gate_hypomnema", source
+        )
+        if specification is None or specification.loader is None:
+            raise ImportError("checker has no executable module specification")
+        module = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(module)
+        interface = {
+            name: getattr(module, name, None) for name in LINK_GATE_INTERFACE
+        }
+    except (Exception, SystemExit):
+        die(
+            f"{subject}: pointer rule refused: the bundled Hypomnema checker "
+            "cannot be loaded"
+        )
+    finally:
+        sys.dont_write_bytecode = prior_bytecode_policy
+    for name in LINK_GATE_INTERFACE:
+        value = interface[name]
+        if name in ("LINK", "RUNBOOK"):
+            usable = isinstance(value, re.Pattern)
+        else:
+            usable = callable(value)
+        if not usable:
+            die(
+                f"{subject}: pointer rule refused: the bundled Hypomnema checker "
+                f"has no usable {name}"
+            )
+    _LINK_GATE_CHECKER = module
+    return module
+
+
+def _link_gate_fence_toggle(line: str) -> bool:
+    """Whether one line opens or closes a fence as the checker's `check()` reads it.
+
+    The checker exposes no fence reader, so this copies its toggle: a line whose
+    stripped text starts with three backticks opens or closes a fence, and a
+    `~~~` line does not, because the checker still resolves a pointer inside a
+    tilde block.
+    """
+    return line.lstrip().startswith("```")
+
+
+def _location_dependent_pointer(
+    checker, text: str, in_fence: bool = False
+) -> tuple[int, str] | None:
+    """Return the first recognised pointer whose target depends on where it sits.
+
+    Only an absolute URL with a scheme the checker skips, and an in-page
+    anchor, read the same from every directory, so any other recognised
+    Markdown link or `runbook:` pointer is refused, a `/`-rooted path
+    included. Recognition is the loaded checker's own: its patterns, code
+    spans and allow pragma, with its fence toggle copied. `in_fence` is the
+    toggle's state before the first line: open when the bytes are an
+    amendment whose receipted prefix leaves a fence open, because the checker
+    reads the appended lines inside that fence when it lints the amended file.
+    """
+    lines = text.splitlines()
+    for number, line in enumerate(lines, start=1):
+        if _link_gate_fence_toggle(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        links = list(checker.LINK.finditer(line))
+        pointers = list(checker.RUNBOOK.finditer(line))
+        if not (links or pointers) or checker.suppressed(lines, number):
+            continue
+        spans = checker._code_spans(line)
+        for match in links:
+            if checker._within(spans, match.start()):
+                continue
+            target = match.group("target")
+            if target.startswith("#") or checker._external(target):
+                continue
+            return number, target
+        for match in pointers:
+            if checker._within(spans, match.start()):
+                continue
+            target = match.group("path").strip("`\"'")
+            if checker._external(target):
+                continue
+            return number, target
+    return None
+
+
+def _link_gate_echo(value) -> str | None:
+    """Return text a refusal may print, or None when it must be withheld."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or _contains_nonprinting_character(value)
+        or len(value.encode("utf-8")) > LINK_GATE_TARGET_BYTES_MAX
+    ):
+        return None
+    return value
+
+
+class _LinkGateScanExpired(BaseException):
+    """The scan alarm fired; no `except Exception` on the scan path may absorb it."""
+
+
+def _link_gate_scan_expired(signum, frame) -> None:
+    raise _LinkGateScanExpired
+
+
+@contextlib.contextmanager
+def _link_gate_scan_bound(subject: str, seconds: int):
+    """Hold the in-process pointer scan to a real-time alarm, or refuse.
+
+    Hypomnema's `LINK` pattern backtracks quadratically on a line dense in `[`,
+    and `_within` scans every code span for each match, so the scan takes the
+    same bound as the checker subprocess. The interpreter runs a pending signal
+    handler inside a regular-expression match, which is what lets the alarm stop
+    one. Only the main thread can take the signal, and an alarm or handler that
+    another caller already holds is left untouched, so both cases refuse rather
+    than scan without a bound. The previous handler is restored and the timer
+    disarmed before this returns, including when the alarm fires as the scan
+    finishes.
+    """
+    unavailable = (
+        f"{subject}: pointer rule refused: the scan cannot be bounded in this "
+        "process"
+    )
+    if (
+        threading.current_thread() is not threading.main_thread()
+        or not hasattr(signal, "setitimer")
+        or not hasattr(signal, "getitimer")
+    ):
+        die(unavailable)
+    try:
+        previous_handler = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+    except (OSError, ValueError):
+        die(unavailable)
+    if previous_handler not in (signal.SIG_DFL, signal.SIG_IGN) or any(
+        value > 0 for value in previous_timer
+    ):
+        die(unavailable)
+    installed = False
+    try:
+        signal.signal(signal.SIGALRM, _link_gate_scan_expired)
+        installed = True
+        try:
+            signal.setitimer(signal.ITIMER_REAL, seconds)
+            yield
+        finally:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+    finally:
+        while installed:
+            try:
+                # Changing a handler first runs any signal still pending, so an
+                # alarm that fired as the scan finished can land here once.
+                signal.signal(signal.SIGALRM, previous_handler)
+                installed = False
+            except _LinkGateScanExpired:
+                continue
+
+
+def _link_gate_subject(label: str, artifact) -> str:
+    shown = _link_gate_echo(artifact)
+    return label if shown is None else f"{label} {shown}"
+
+
+def _link_gate_line(preceding: str, text: str, number: int) -> int:
+    """Map one line of the checked text onto its line in the full candidate.
+
+    An amendment is checked without its receipted prefix, so the checker counts
+    lines from the first appended byte. The full candidate splits lines the same
+    way, except where the prefix ends in a carriage return and the appended
+    bytes begin with its line feed.
+    """
+    if not preceding:
+        return number
+    start = sum(
+        len(piece) for piece in text.splitlines(keepends=True)[: number - 1]
+    )
+    whole = preceding + text
+    offset = len(preceding) + start
+    pieces = whole[:offset].splitlines(keepends=True)
+    breaks = len(pieces)
+    if pieces and (
+        pieces[-1].splitlines() == [pieces[-1]]
+        or (pieces[-1].endswith("\r") and whole[offset:offset + 1] == "\n")
+    ):
+        breaks -= 1
+    return breaks + 1
+
+
+def _link_gate_checker_finding(
+    base_dir: str, data: bytes, subject: str, *, in_fence: bool = False
+) -> dict | None:
+    """Run the bundled checker over the captured bytes; return its first finding.
+
+    The copy sits in the run-state directory under a name no Hypomnema path rule
+    selects, and the child names it relative to the target directory it runs
+    from, so an ancestor directory called `decisions` or `runbooks` cannot
+    select the record or alert-runbook rules either. `docs/decisions` is in
+    scope when it exists, so a stable decision reference or superseding pointer
+    resolves; a finding on any other path does not count. When `in_fence` says
+    an amendment's receipted prefix leaves a fence open, the copy starts with
+    one fence line, so the checker reads the appended bytes inside that fence
+    as it does in the amended file, and each finding's line is counted from
+    the first appended byte again.
+    """
+    malformed = (
+        f"{subject}: checker refused: the bundled Hypomnema checker returned "
+        "malformed output"
+    )
+    root = state_root(base_dir)
+    try:
+        os.makedirs(root, exist_ok=True)
+        descriptor, temporary = tempfile.mkstemp(
+            prefix="link-gate-", suffix=".md", dir=root
+        )
+    except OSError:
+        die(
+            f"{subject}: checker refused: the run-state directory cannot hold "
+            "the check copy"
+        )
+    relative = os.path.join(STATE_DIR_NAME, os.path.basename(temporary))
+    argv = [_link_gate_checker_path(), "--format", "json", relative]
+    if os.path.isdir(os.path.join(os.path.realpath(base_dir), "docs", "decisions")):
+        argv.append(os.path.join("docs", "decisions"))
+    try:
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(b"```\n" if in_fence else b"")
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except OSError:
+            die(f"{subject}: checker refused: the check copy cannot be written")
+        returncode, output, failure = bounded_probe(base_dir, sys.executable, argv)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
+    if failure is not None:
+        cause = {
+            "start": "could not start",
+            "timeout": f"timed out after {GIT_TIMEOUT} seconds",
+            "output-cap": f"exceeded its {GIT_OUTPUT_MAX}-byte output cap",
+        }.get(failure, "failed")
+        die(f"{subject}: checker refused: the bundled Hypomnema checker {cause}")
+    try:
+        payload = json.loads(
+            output.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda token: (_ for _ in ()).throw(
+                ValueError(f"non-finite number {token}")
+            ),
+        )
+    except (UnicodeDecodeError, ValueError, TypeError, RecursionError):
+        die(malformed)
+    if not isinstance(payload, list):
+        die(malformed)
+    expected = str(Path(relative))
+    own = []
+    for item in payload:
+        if not isinstance(item, dict) or set(item) != {
+            "path", "line", "code", "message"
+        }:
+            die(malformed)
+        line = item["line"]
+        if (
+            not isinstance(item["path"], str)
+            or not isinstance(line, int)
+            or isinstance(line, bool)
+            or line < 1
+            or not isinstance(item["code"], str)
+            or re.fullmatch(r"H[0-9]{3}", item["code"]) is None
+            or not isinstance(item["message"], str)
+        ):
+            die(malformed)
+        if item["path"] == expected:
+            own.append(item)
+    if returncode not in (0, 1) or (returncode == 0) != (not payload):
+        die(malformed)
+    if not own:
+        return None
+    first = min(own, key=lambda item: item["line"])
+    if not in_fence:
+        return first
+    if first["line"] < 2:
+        # The opening fence line is the controller's own and carries nothing.
+        die(malformed)
+    return {**first, "line": first["line"] - 1}
+
+
+def refuse_location_dependent_pointers(
+    base_dir: str, data: bytes, subject: str, *, preceding: str = ""
+) -> None:
+    """Refuse checked bytes before a receipt pins a digest over them.
+
+    `done study` and `done runbook` pass the whole captured artefact. An
+    amendment passes only the bytes it appends, since its receipted prefix
+    cannot change, with that prefix as `preceding` so a refusal names the line
+    of the full candidate and the appended lines start in the fence state the
+    prefix leaves. The pointer rule runs first, its scan held to `GIT_TIMEOUT`,
+    and the bundled checker second; each refusal exits 2 before any state,
+    ledger or artefact write, and none prints child output.
+    """
+    text = decoded_source(data, subject)
+    checker = link_gate_module(subject)
+    in_fence = sum(map(_link_gate_fence_toggle, preceding.splitlines())) % 2 == 1
+    try:
+        with _link_gate_scan_bound(subject, GIT_TIMEOUT):
+            try:
+                found = _location_dependent_pointer(checker, text, in_fence)
+            except (Exception, SystemExit):
+                die(
+                    f"{subject}: pointer rule refused: the bundled Hypomnema parser "
+                    "failed on these bytes"
+                )
+    except _LinkGateScanExpired:
+        die(
+            f"{subject}: pointer rule refused: the scan ran longer than "
+            f"{GIT_TIMEOUT} seconds"
+        )
+    if found is not None:
+        number, target = found
+        shown = _link_gate_echo(target)
+        pointer = (
+            f"pointer {shown}" if shown is not None
+            else "a pointer whose unprintable or oversized target is withheld"
+        )
+        die(
+            f"{subject} line {_link_gate_line(preceding, text, number)}: pointer "
+            f"rule refused {pointer}: its target depends on where the file sits; "
+            "cite a commit-pinned absolute URL, an in-page anchor or a path in a "
+            "code span"
+        )
+    finding = _link_gate_checker_finding(base_dir, data, subject, in_fence=in_fence)
+    if finding is None:
+        return
+    if finding["line"] > max(1, len(text.splitlines())):
+        die(
+            f"{subject}: checker refused: the bundled Hypomnema checker returned "
+            "malformed output"
+        )
+    quoted = re.search(r"`([^`]+)`", finding["message"])
+    shown = _link_gate_echo(quoted.group(1)) if quoted else None
+    pointer = f"pointer {shown}" if shown is not None else "this line"
+    die(
+        f"{subject} line {_link_gate_line(preceding, text, finding['line'])}: "
+        f"checker refused {pointer} with {finding['code']}"
+    )
+
+
+def _appended_amendment_bytes(
+    candidate: bytes, expected: str, subject: str
+) -> tuple[str, bytes]:
+    """Split an accepted amendment candidate at its receipted prefix."""
+    text = decoded_source(candidate, f"{subject} amendment candidate")
+    boundary, _, _ = _study_amendment_boundary(
+        text, expected, subject, shape_already_accepted=True
+    )
+    preceding = text[:boundary]
+    return preceding, candidate[len(preceding.encode("utf-8")):]
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
@@ -7406,6 +7808,9 @@ def done_study(args, state: dict) -> None:
         args.dir, artifact, "study artefact"
     )
     artifact = _portable_receipt_artifact(args.dir, artifact_path)
+    refuse_location_dependent_pointers(
+        args.dir, artifact_bytes, _link_gate_subject("study artefact", artifact)
+    )
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
     design = None
@@ -7448,6 +7853,9 @@ def done_runbook(args, state: dict) -> None:
     )
     artifact = _portable_receipt_artifact(args.dir, artifact_path)
     artifact_text = decoded_source(artifact_bytes, "runbook artefact")
+    refuse_location_dependent_pointers(
+        args.dir, artifact_bytes, _link_gate_subject("runbook artefact", artifact)
+    )
     design_lock = parse_design_lock_source(artifact_text)
     design_transition = None
     if design_evidence_required(state):
@@ -12442,6 +12850,13 @@ def cmd_amend_study(args) -> None:
 
     _check_amended_study(args.dir, candidate)
     amendment = _study_amendment_record(state, expected, candidate)
+    preceding, appended = _appended_amendment_bytes(candidate, expected, "study")
+    refuse_location_dependent_pointers(
+        args.dir,
+        appended,
+        _link_gate_subject("study amendment to", artifact),
+        preceding=preceding,
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -12591,6 +13006,13 @@ def cmd_amend_runbook(args) -> None:
 
     amendment = _runbook_amendment_record(state, expected, candidate)
     _check_amended_runbook(args.dir, candidate)
+    preceding, appended = _appended_amendment_bytes(candidate, expected, "runbook")
+    refuse_location_dependent_pointers(
+        args.dir,
+        appended,
+        _link_gate_subject("runbook amendment to", artifact),
+        preceding=preceding,
+    )
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("runbook receipt amendments history must be an array", 1)

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.56.1"
+  version: "6.57.1"
 ---
 
 <p align="center">
@@ -388,8 +388,13 @@ first. Fiat keeps the mechanics. The study goes to `.hexaemeron/study.md` and
 the runbook to `.hexaemeron/runbook.md` beside `.hexaemeron/steps.json`, a JSON
 list with one entry per step in order, as strings or `{"title": ...}` objects.
 Run the `imprimatur` lint on each artefact before receipting it, and pass the
-skills that ran to the receipt. Repo copies are committed later, in step 1 of
-the runbook, after the prose pass.
+skills that ran to the receipt. `done study` and `done runbook` refuse a
+Markdown link or `runbook:` pointer that is not an absolute URL or an in-page
+anchor, then run the bundled Hypomnema check and refuse any finding, before the
+digest is pinned; `amend study` and `amend runbook` check the bytes an
+amendment appends the same way. Cite a repository path in a code span or pin
+it to a commit. Repo copies are committed later, in step 1 of the runbook,
+after the prose pass.
 
 Every newly initialised run records `contracts.design_evidence` and owes
 `.hexaemeron/design-evidence.json`. Surveyor writes that closed Protasis record

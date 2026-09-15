@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 23592507,
+    "bytes_blob": 23627356,
     "bytes_generated": 98
   },
   "entries": [
@@ -19,6 +19,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1021-adopt-an-early-step-merge.synopsis.md"
+    },
+    {
+      "bytes": 33290,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1086-gate-study-and-runbook-links-before-their-d.synopsis.md"
     },
     {
       "bytes": 199627,
@@ -826,16 +833,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 69665,
+      "bytes": 70861,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 34832",
+      "evidence": "mean line length above 400 in a window at offset 35430",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 80506,
+      "bytes": 80869,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 78458",
+      "evidence": "mean line length above 400 in a window at offset 78821",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
