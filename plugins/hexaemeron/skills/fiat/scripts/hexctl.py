@@ -305,6 +305,7 @@ INTEGRATION_PATHS_MAX = 4096
 # because the two surfaces answer to different work and may diverge.
 PROSE_PATHS_MAX = 4096
 GIT_TIMEOUT = 30
+GIT_MATERIALIZE_TIMEOUT = 6 * 60 * 60
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
 INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
 INTEGRATION_REVALIDATION_FILE = os.path.join(
@@ -497,6 +498,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.59.1",
         "fiat-v6.60.1",
         "fiat-v6.61.1",
+        "fiat-v6.62.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -832,6 +834,11 @@ CHECKPOINT_ARCHIVE_ACCEPTANCE_CURRENT = "outside"
 CHECKPOINT_ARCHIVE_ENTRIES_MAX = 4200
 CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX = 1300 * 1024 * 1024
 CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX = 1024 * 1024 * 1024
+CHECKPOINT_DIRECTORY_SCHEMA = "fiat-checkpoint-directory/v1"
+CHECKPOINT_DIRECTORY_FILE = "checkpoint.directory"
+CHECKPOINT_DIRECTORY_BUNDLE_BYTES_MAX = 256 * 1024 * 1024 * 1024
+CHECKPOINT_DIRECTORY_EXPANDED_BYTES_MAX = CHECKPOINT_DIRECTORY_BUNDLE_BYTES_MAX + 300 * 1024 * 1024
+CHECKPOINT_DIRECTORY_TOOL_TIMEOUT = 6 * 60 * 60
 CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX = 64 * 1024 * 1024
 CHECKPOINT_ARCHIVE_NAME_BYTES_MAX = 1024
 CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX = 255
@@ -3480,6 +3487,7 @@ def cmd_init(args) -> None:
     bounded_git(
         args.dir,
         ["worktree", "add", "-b", run_branch, worktree, starting_commit],
+        timeout=GIT_MATERIALIZE_TIMEOUT,
         refusal=(
             f"could not create the run worktree at {worktree} "
             f"for '{run_branch}' off '{starting_commit}'"
@@ -20043,8 +20051,10 @@ def bounded_tool_status(base_dir: str, program: str, argv: list[str]) -> int:
     return bounded_run(base_dir, program, argv)[0]
 
 
-def bounded_git(base_dir: str, argv: list[str], refusal: str | None = None) -> bytes:
-    return bounded_tool(base_dir, "git", argv, refusal)
+def bounded_git(
+    base_dir: str, argv: list[str], refusal: str | None = None, *, timeout: float | None = None
+) -> bytes:
+    return bounded_tool(base_dir, "git", argv, refusal, timeout=timeout)
 
 
 WORKTREE_HOME = ("tmp", "fiat")
@@ -20957,14 +20967,16 @@ def run_anchor_task(task_issue, repository, *, exit_code: int = 2):
     if not isinstance(task_issue, str):
         die("run anchor task receipt is malformed", exit_code)
     match = GITHUB_ISSUE_RE.fullmatch(task_issue)
-    if match is None or not isinstance(repository, str):
+    # A number alone identifies a task only inside the delivery repository.
+    # Other trackers, including another GitHub repository, bind the exact URL
+    # under the existing external-task vocabulary. Filing and closure still
+    # consume receipts.task_issue through the ordinary GitHub checks.
+    if (match is None or not isinstance(repository, str)
+            or match.group("repo").casefold() != repository.casefold()):
         return {
             "kind": "external",
             "sha256": hashlib.sha256(task_issue.encode("utf-8")).hexdigest(),
         }
-    issue_repository = match.group("repo")
-    if isinstance(repository, str) and issue_repository.casefold() != repository.casefold():
-        die("task issue repository does not match target origin", exit_code)
     return {"kind": "github-issue", "number": int(match.group("number"))}
 
 
@@ -21092,6 +21104,8 @@ def verify_run_anchor(base_dir: str, state: dict, initial_entry: dict | None) ->
     if not isinstance(origin, str) or not origin:
         die("run anchor cannot verify the target origin", 1)
     repository = target_repository_binding(origin)
+    if anchor["repository"] != repository:
+        die("run anchor does not match the target origin", 1)
     expected = build_run_anchor(state, repository, controller, exit_code=1)
     if anchor != expected:
         die("run anchor does not match controller state, origin, or task", 1)
@@ -25018,6 +25032,7 @@ def _checkpoint_restore_relocate(
     bounded_git(
         origin,
         ["worktree", "add", worktree, run_branch_of(imported)],
+        timeout=GIT_MATERIALIZE_TIMEOUT,
         refusal="checkpoint restore could not create its derived worktree",
     )
     try:
@@ -25360,7 +25375,8 @@ def _checkpoint_restore_archive_extract_capsule(
         except OSError:
             die("checkpoint restore capsule stage could not be created")
         data = _checkpoint_restore_archive_read_member(
-            local, item["data_offset"], item["size"]
+            os.path.join(local, *name.split("/")) if os.path.isdir(local) else local,
+            item["data_offset"], item["size"]
         )
         try:
             descriptor = os.open(
@@ -25432,7 +25448,7 @@ def _checkpoint_restore_from_archive(
             os.chmod(scratch, 0o700)
         except OSError:
             die("checkpoint restore scratch directory could not be created")
-        result, context = _checkpoint_inspect_archive_verified(
+        result, context = _checkpoint_inspect_carrier_verified(
             archive_path, expected_sha256, scratch
         )
         manifest = context["manifest"]
@@ -25440,26 +25456,31 @@ def _checkpoint_restore_from_archive(
         physical = context["physical"]
         outer_sha256 = result["outer_sha256"]
 
-        bundle_path = os.path.join(scratch, "repository.bundle")
-        if not os.path.isfile(bundle_path):
-            _checkpoint_archive_refuse("manifest-mismatch")
-
-        bounded_git(
-            destination,
-            ["init", "--quiet"],
-            refusal="checkpoint restore could not initialise the destination",
-        )
-        bounded_git(
-            destination,
-            [
-                "fetch",
-                "--quiet",
-                bundle_path,
-                "+refs/heads/*:refs/heads/*",
-                "--no-tags",
-            ],
-            refusal="checkpoint restore could not fetch the archived bundle",
-        )
+        if "directory_repository" in context:
+            # The inspector has already reconstructed and checked this object
+            # store. Local clone retains its objects without another bundle
+            # transfer; ordinary hard links survive removal of private scratch.
+            bounded_tool(destination, "git", [
+                "clone", "--quiet", "--bare", "--local",
+                context["directory_repository"], os.path.join(destination, ".git"),
+            ], refusal="checkpoint restore could not copy the verified repository",
+                timeout=CHECKPOINT_DIRECTORY_TOOL_TIMEOUT)
+            bounded_git(destination, ["config", "core.bare", "false"])
+            bounded_git(destination, ["config", "remote.origin.fetch", "+refs/heads/*:refs/remotes/origin/*"])
+        else:
+            bundle_path = os.path.join(scratch, "repository.bundle")
+            if not os.path.isfile(bundle_path):
+                _checkpoint_archive_refuse("manifest-mismatch")
+            bounded_git(
+                destination,
+                ["init", "--quiet"],
+                refusal="checkpoint restore could not initialise the destination",
+            )
+            bounded_git(
+                destination,
+                ["fetch", "--quiet", bundle_path, "+refs/heads/*:refs/heads/*", "--no-tags"],
+                refusal="checkpoint restore could not fetch the archived bundle",
+            )
 
         restore_root = _checkpoint_restore_archive_extract_capsule(
             local, physical, destination, outer_sha256
@@ -25495,12 +25516,14 @@ def _checkpoint_restore_from_archive(
             bounded_git(
                 destination,
                 ["checkout", "--quiet", base_branch],
+                timeout=GIT_MATERIALIZE_TIMEOUT,
                 refusal="checkpoint restore could not check out the run's base branch",
             )
         elif isinstance(base_commit, str) and COMMIT_RE.fullmatch(base_commit):
             bounded_git(
                 destination,
                 ["checkout", "--quiet", "-b", base_branch, base_commit],
+                timeout=GIT_MATERIALIZE_TIMEOUT,
                 refusal="checkpoint restore could not check out the run's base branch",
             )
         else:
@@ -25933,7 +25956,8 @@ def _checkpoint_archive_bundle_header(path: str):
     return heads, prerequisites, algorithm
 
 
-def _checkpoint_archive_bundle(base_dir: str, refs: dict[str, str], path: str):
+def _checkpoint_archive_bundle(base_dir: str, refs: dict[str, str], path: str,
+                               *, directory: bool = False):
     """Build and join one single-threaded complete-history bundle of exactly `refs`.
 
     `pack.threads=1` is study section 2's measured determinism rule: default
@@ -25955,11 +25979,13 @@ def _checkpoint_archive_bundle(base_dir: str, refs: dict[str, str], path: str):
         base_dir,
         "git",
         ["-c", "pack.threads=1", "bundle", "create", path, *revisions, *anchored],
+        **({"timeout": CHECKPOINT_DIRECTORY_TOOL_TIMEOUT} if directory else {}),
     )
     if status != 0 or not os.path.isfile(path):
         _checkpoint_archive_refuse("bundle-incomplete")
     size = os.path.getsize(path)
-    if size > CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX:
+    ceiling = CHECKPOINT_DIRECTORY_BUNDLE_BYTES_MAX if directory else CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX
+    if size > ceiling:
         _checkpoint_archive_refuse("bundle-oversized")
     heads, prerequisites, algorithm = _checkpoint_archive_bundle_header(path)
     if prerequisites or algorithm != "sha1":
@@ -26860,7 +26886,7 @@ def _checkpoint_inspect_name_policy_die(name: str) -> None:
         die("checkpoint inspect manifest entry path is unsafe")
 
 
-def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
+def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes, *, directory: bool = False) -> dict:
     """Parse and close `checkpoint.json` to exactly the fields the study fixes.
 
     Bounded at `CHECKPOINT_JSON_DEPTH_MAX` by the same reader every other
@@ -26890,7 +26916,7 @@ def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
         "manifest",
     )
     if (
-        manifest.get("schema") != CHECKPOINT_ARCHIVE_SCHEMA
+        manifest.get("schema") != (CHECKPOINT_DIRECTORY_SCHEMA if directory else CHECKPOINT_ARCHIVE_SCHEMA)
         or canonical(manifest).encode("utf-8") + b"\n" != manifest_bytes
     ):
         die("checkpoint inspect manifest is not canonical or has the wrong schema")
@@ -26898,7 +26924,7 @@ def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
     archive_block = _checkpoint_inspect_closed(
         manifest["archive"], {"format", "compression", "entries"}, "archive"
     )
-    if archive_block["format"] != "zip" or archive_block["compression"] != "stored":
+    if archive_block["format"] != ("directory" if directory else "zip") or archive_block["compression"] != "stored":
         die("checkpoint inspect manifest archive block is unsupported")
     entries = archive_block["entries"]
     if not isinstance(entries, list) or len(entries) > CHECKPOINT_ARCHIVE_ENTRIES_MAX:
@@ -27041,8 +27067,8 @@ def _checkpoint_inspect_manifest_shape(manifest_bytes: bytes) -> dict:
     if canonical(manifest["limits"]) != canonical(
         {
             "entries": CHECKPOINT_ARCHIVE_ENTRIES_MAX,
-            "expanded_bytes": CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX,
-            "bundle_bytes": CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX,
+            "expanded_bytes": CHECKPOINT_DIRECTORY_EXPANDED_BYTES_MAX if directory else CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX,
+            "bundle_bytes": CHECKPOINT_DIRECTORY_BUNDLE_BYTES_MAX if directory else CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX,
             "entry_bytes": CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX,
             "name_bytes": CHECKPOINT_ARCHIVE_NAME_BYTES_MAX,
             "component_bytes": CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX,
@@ -27198,7 +27224,7 @@ def _checkpoint_inspect_refs(manifest: dict, capsule_manifest: dict, heads: dict
         _checkpoint_archive_refuse("ref-disagreement")
 
 
-def _checkpoint_inspect_clone(scratch: str, bundle_path: str) -> str:
+def _checkpoint_inspect_clone(scratch: str, bundle_path: str, *, directory: bool = False) -> str:
     """One disposable `git init` root, fetched to complete history from the bundle."""
     repo_dir = os.path.join(scratch, "repo")
     try:
@@ -27212,6 +27238,7 @@ def _checkpoint_inspect_clone(scratch: str, bundle_path: str) -> str:
             repo_dir,
             "git",
             ["fetch", "--quiet", bundle_path, "+refs/heads/*:refs/heads/*", "--no-tags"],
+            **({"timeout": CHECKPOINT_DIRECTORY_TOOL_TIMEOUT} if directory else {}),
         )[0]
         != 0
     ):
@@ -27267,6 +27294,8 @@ def _checkpoint_inspect_bundle_completeness(
     repo_dir: str,
     prerequisites: int,
     algorithm: str,
+    *,
+    directory: bool = False,
 ) -> None:
     """The size ceiling and the bundle's independent `verify`, after the ref join.
 
@@ -27276,7 +27305,8 @@ def _checkpoint_inspect_bundle_completeness(
     """
     if prerequisites or algorithm != manifest["bundle"]["hash_algorithm"]:
         _checkpoint_archive_refuse("bundle-incomplete")
-    if os.path.getsize(bundle_path) > CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX:
+    ceiling = CHECKPOINT_DIRECTORY_BUNDLE_BYTES_MAX if directory else CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX
+    if os.path.getsize(bundle_path) > ceiling:
         _checkpoint_archive_refuse("bundle-oversized")
     if bounded_run(repo_dir, "git", ["bundle", "verify", bundle_path])[0] != 0:
         _checkpoint_archive_refuse("bundle-incomplete")
@@ -27459,6 +27489,15 @@ def _checkpoint_inspect_acceptance(manifest: dict, names: list[str]) -> None:
         _checkpoint_archive_refuse("acceptance-self-reference")
 
 
+def _checkpoint_directory_module():
+    """Load the directory carrier from this controller's own source tree."""
+    path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "checkpoint_directory.py")
+    spec = importlib.util.spec_from_file_location("fiat_checkpoint_directory", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _checkpoint_inspect_archive(
     archive_path: str,
     expected_sha256: str,
@@ -27474,10 +27513,28 @@ def _checkpoint_inspect_archive(
     local copy or the parsed central directory `checkpoint restore --archive`
     goes on to read.
     """
-    result, _context = _checkpoint_inspect_archive_verified(
+    result, _context = _checkpoint_inspect_carrier_verified(
         archive_path, expected_sha256, scratch, existing_repo=existing_repo
     )
     return result
+
+
+def _checkpoint_inspect_carrier_verified(
+    archive_path: str,
+    expected_sha256: str,
+    scratch: str,
+    *,
+    existing_repo: str | None = None,
+) -> tuple[dict, dict]:
+    """Select a carrier; each reader captures every byte before parsing it."""
+    if os.path.isdir(archive_path):
+        return _checkpoint_directory_module().inspect(
+            argparse.Namespace(**globals()),
+            archive_path, expected_sha256, scratch, existing_repo=existing_repo,
+        )
+    return _checkpoint_inspect_archive_verified(
+        archive_path, expected_sha256, scratch, existing_repo=existing_repo
+    )
 
 
 def _checkpoint_inspect_archive_verified(
@@ -27602,6 +27659,7 @@ def _checkpoint_archive_manifest(
     signer: dict,
     proof: dict,
     version: str,
+    directory: bool = False,
 ) -> tuple[dict, bytes]:
     """Compose the closed content manifest, written after every other member."""
     boundary_record = {
@@ -27613,9 +27671,9 @@ def _checkpoint_archive_manifest(
     if loop is not None:
         boundary_record["loop"] = loop
     manifest = {
-        "schema": CHECKPOINT_ARCHIVE_SCHEMA,
+        "schema": CHECKPOINT_DIRECTORY_SCHEMA if directory else CHECKPOINT_ARCHIVE_SCHEMA,
         "archive": {
-            "format": "zip",
+            "format": "directory" if directory else "zip",
             "compression": "stored",
             "entries": entries,
         },
@@ -27643,8 +27701,8 @@ def _checkpoint_archive_manifest(
         "controller": {"name": "hexctl", "version": version},
         "limits": {
             "entries": CHECKPOINT_ARCHIVE_ENTRIES_MAX,
-            "expanded_bytes": CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX,
-            "bundle_bytes": CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX,
+            "expanded_bytes": CHECKPOINT_DIRECTORY_EXPANDED_BYTES_MAX if directory else CHECKPOINT_ARCHIVE_EXPANDED_BYTES_MAX,
+            "bundle_bytes": CHECKPOINT_DIRECTORY_BUNDLE_BYTES_MAX if directory else CHECKPOINT_ARCHIVE_BUNDLE_BYTES_MAX,
             "entry_bytes": CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX,
             "name_bytes": CHECKPOINT_ARCHIVE_NAME_BYTES_MAX,
             "component_bytes": CHECKPOINT_ARCHIVE_COMPONENT_BYTES_MAX,
@@ -27734,6 +27792,7 @@ def cmd_checkpoint_archive(args) -> None:
     directory appears complete or not at all.
     """
     started = time.monotonic()
+    directory = getattr(args, "format", "zip") == "directory"
     timing: dict[str, int] = {}
     base_dir = os.path.abspath(args.dir)
     verify_run(base_dir)
@@ -27815,7 +27874,7 @@ def cmd_checkpoint_archive(args) -> None:
                 members, CHECKPOINT_ARCHIVE_BUNDLE_ENTRY
             )
             bundle_bytes, algorithm = _checkpoint_archive_bundle(
-                base_dir, refs, bundle_path
+                base_dir, refs, bundle_path, **({"directory": True} if directory else {})
             )
             timing["bundle"] = _checkpoint_archive_elapsed_ms(marker)
 
@@ -27826,7 +27885,10 @@ def cmd_checkpoint_archive(args) -> None:
             _checkpoint_archive_write_member(
                 members,
                 CHECKPOINT_ARCHIVE_README_ENTRY,
-                CHECKPOINT_ARCHIVE_README.encode("utf-8"),
+                ((CHECKPOINT_ARCHIVE_README.replace("checkpoint.zip", "checkpoint.directory")
+                  + "\nFor this directory carrier, outer_sha256 is SHA-256 of the exact\n"
+                    "checkpoint.json bytes. That manifest binds every other member.\n")
+                 if directory else CHECKPOINT_ARCHIVE_README).encode("utf-8"),
             )
 
             for name in (STATE_FILE, LEDGER_FILE):
@@ -27868,6 +27930,7 @@ def cmd_checkpoint_archive(args) -> None:
                 signer=signer,
                 proof=proof,
                 version=version,
+                directory=directory,
             )
             if _checkpoint_archive_secret_shaped(manifest_bytes):
                 _checkpoint_archive_refuse("secret-shaped-member")
@@ -27882,13 +27945,22 @@ def cmd_checkpoint_archive(args) -> None:
                     key=lambda value: value.encode("utf-8"),
                 )
             ]
-            archive_path = os.path.join(stage, CHECKPOINT_ARCHIVE_FILE)
-            _checkpoint_archive_pack(order, manifest_bytes, archive_path)
-            shutil.rmtree(members, ignore_errors=True)
+            archive_name = CHECKPOINT_DIRECTORY_FILE if directory else CHECKPOINT_ARCHIVE_FILE
+            archive_path = os.path.join(stage, archive_name)
+            if directory:
+                _checkpoint_archive_write_member(members, CHECKPOINT_ARCHIVE_MANIFEST_ENTRY, manifest_bytes)
+                os.rename(members, archive_path)
+            else:
+                _checkpoint_archive_pack(order, manifest_bytes, archive_path)
+                shutil.rmtree(members, ignore_errors=True)
             timing["pack"] = _checkpoint_archive_elapsed_ms(marker)
 
             marker = time.monotonic()
-            archive_bytes, outer = _checkpoint_archive_digest(archive_path)
+            if directory:
+                archive_bytes = sum(item["bytes"] for item in entries) + len(manifest_bytes)
+                outer = hashlib.sha256(manifest_bytes).hexdigest()
+            else:
+                archive_bytes, outer = _checkpoint_archive_digest(archive_path)
             inspect_scratch = tempfile.mkdtemp(prefix=".fiat-checkpoint-inspect-")
             os.chmod(inspect_scratch, 0o700)
             try:
@@ -27900,13 +27972,14 @@ def cmd_checkpoint_archive(args) -> None:
             timing["inspect"] = _checkpoint_archive_elapsed_ms(marker)
 
             marker = time.monotonic()
-            sidecar_path = os.path.join(stage, CHECKPOINT_ARCHIVE_SIDECAR_FILE)
+            sidecar_name = archive_name + ".sha256"
+            sidecar_path = os.path.join(stage, sidecar_name)
             try:
                 with open(sidecar_path, "wb") as handle:
-                    handle.write(f"{outer}  {CHECKPOINT_ARCHIVE_FILE}\n".encode("utf-8"))
+                    handle.write(f"{outer}  {archive_name}\n".encode("utf-8"))
                     handle.flush()
                     os.fsync(handle.fileno())
-                os.chmod(archive_path, 0o600)
+                os.chmod(archive_path, 0o700 if directory else 0o600)
                 os.chmod(sidecar_path, 0o600)
             except OSError:
                 die("checkpoint archive sidecar could not be written")
@@ -27920,9 +27993,9 @@ def cmd_checkpoint_archive(args) -> None:
             published = True
             timing["publish"] = _checkpoint_archive_elapsed_ms(marker)
             result = {
-                "schema": CHECKPOINT_ARCHIVE_EXPORT_SCHEMA,
-                "archive": os.path.join(destination, CHECKPOINT_ARCHIVE_FILE),
-                "sidecar": os.path.join(destination, CHECKPOINT_ARCHIVE_SIDECAR_FILE),
+                "schema": "fiat-checkpoint-directory-export/v1" if directory else CHECKPOINT_ARCHIVE_EXPORT_SCHEMA,
+                "archive": os.path.join(destination, archive_name),
+                "sidecar": os.path.join(destination, sidecar_name),
                 "outer_sha256": outer,
                 "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
                 "snapshot_id": snapshot_id,
@@ -29688,11 +29761,13 @@ def build_parser() -> argparse.ArgumentParser:
     archive = checkpoint.add_parser(
         "archive", help="publish one outer checkpoint archive at this boundary"
     )
+    archive.add_argument("--format", choices=("zip", "directory"), default="zip",
+                         help="directory retains a complete bundle up to 256 GiB")
     archive.set_defaults(fn=cmd_checkpoint_archive)
     inspect = checkpoint.add_parser(
         "inspect", help="verify one outer checkpoint archive without extracting it"
     )
-    inspect.add_argument("--archive", required=True, metavar="ZIP")
+    inspect.add_argument("--archive", required=True, metavar="CARRIER")
     inspect.add_argument("--sha256", required=True, metavar="SHA256")
     inspect.add_argument("--scratch", default=None, metavar="DIRECTORY")
     inspect.set_defaults(fn=cmd_checkpoint_inspect)
@@ -29707,7 +29782,7 @@ def build_parser() -> argparse.ArgumentParser:
     restore.add_argument("--from", dest="source", metavar="DIRECTORY")
     restore.add_argument("--manifest-sha256", metavar="SHA256")
     restore.add_argument(
-        "--archive", metavar="ZIP", help="restore from one outer checkpoint archive"
+        "--archive", metavar="CARRIER", help="restore from one ZIP or directory checkpoint"
     )
     restore.add_argument(
         "--sha256", metavar="SHA256", help="the archive's out-of-band outer SHA-256"

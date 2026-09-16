@@ -145,3 +145,25 @@ ledger row, version and compatibility-set entry land with the last step of the
 delivering run, and the tracked study `docs/fiat-checkpoint-archive-study.md`
 and runbook `docs/fiat-checkpoint-archive-runbook.md` are run artefacts that
 point here rather than a second home for this decision.
+
+## Amendment: 2026-09-16, directory carrier for large Git history
+
+Issue [skills#1356](https://github.com/wildcat-finance/skills/issues/1356)
+requires delivery in an archive repository whose complete history exceeds
+the native ZIP carrier's 1 GiB bundle limit. The maintainer authorised the
+Fiat repair before that delivery. A thin bundle would lose the source-free
+restore property; increasing the ZIP limit would contradict its ZIP64 refusal.
+
+Add `checkpoint archive --format directory` with a complete-history bundle
+limit of 256 GiB. Its closed `fiat-checkpoint-directory/v1` manifest binds every
+member by path, size and SHA-256. The out-of-band digest names that exact
+manifest. The reader captures each member privately before consuming it and
+reuses the existing ref, signature, capsule, identity and relocation checks.
+ZIP remains the default and its existing schema and limits stay fixed.
+The directory reference records temporary storage costs and clone fallback.
+
+This generation also permits a GitHub task tracker outside the delivery
+repository: the existing external-task anchor hashes its exact URL, while
+`receipts.task_issue` retains the URL for normal filing and closure checks.
+Neither the delivery origin nor a prior anchor is rewritten. This is a
+compatible generation change, with Fiat's held frontier unchanged.
