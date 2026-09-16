@@ -1,0 +1,30 @@
+{
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "tests"
+  ],
+  "environment": {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/bin:/usr/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONUTF8": "1",
+    "TZ": "UTC"
+  },
+  "started_at": "2026-09-16T09:17:53.788145+00:00",
+  "finished_at": "2026-09-16T09:24:58.652582+00:00",
+  "elapsed_seconds": 424.856,
+  "exit_code": 1,
+  "log_sha256": "cc13780efcf40015edfed2b9490350c7dc861b5f71bd7a1556540ed704d8fb07",
+  "scope": "Diagnostic of the other suite required by the same admission gate; first controller refusal occurred before root ran."
+}

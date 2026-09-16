@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -116,7 +117,7 @@ class AssignmentRepository:
     def plan(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ALLOCATOR),
                 "plan",
                 "--repo",
@@ -141,7 +142,7 @@ class AssignmentRepository:
     def materialize_result_tree(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ALLOCATOR),
                 "apply",
                 "--repo",

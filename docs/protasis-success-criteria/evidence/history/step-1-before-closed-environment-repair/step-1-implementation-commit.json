@@ -1,0 +1,10 @@
+{
+  "branch": "fiat/1273-settle-declared-study-criteria-with-recorde-step-1-scaffold-the-declared-contract-a",
+  "head": "84859f22bf3f1d446f6c8c93310757f40b9b42f0",
+  "tree": "ac5ef69b093a409f421dc31177f92df68b31f7ca",
+  "parents": [
+    "eaab110104d186bdd0b1d362dd583a2e72ecc21a"
+  ],
+  "signature": "G 3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A laurence.e.day (github-signer) <laurence@wildcat.finance>",
+  "clean": true
+}

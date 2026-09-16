@@ -51,10 +51,11 @@ selection replay. Step 1 makes no feature-completion claim.
 [design-evidence.json](design-evidence.json) retain their accepted bytes.
 The runbook names the opening accepted study; [opening-study.md](evidence/opening-study.md)
 is that exact prefix of the current study, before its accepted operating-boundaries
-amendment. Copied historical `.hexaemeron/evidence/` sources retain their filenames
-under [evidence](evidence/), except `step-1-prose-source-README.md.txt`, which
-preserves the README source as archival text. The provenance inventory records
-the copied paths and digests; it includes issue and PR sources, bounded audit-reading evidence,
+amendment. The [provenance inventory](evidence/provenance.json) maps historical
+`.hexaemeron/evidence/` sources to their copied paths and digests under
+[evidence](evidence/). Archived prose and code copies use `.txt` suffixes where
+listed, including `step-1-prose-source-README.md.txt`. The inventory includes issue
+and PR sources, bounded audit-reading evidence,
 selection executions and the prose checks needed to interpret the accepted text.
 The prepared decision remains in [prepared-decision-draft.md](evidence/prepared-decision-draft.md);
 [decision-publication.json](evidence/decision-publication.json) records its single
@@ -92,6 +93,21 @@ The [later history](evidence/history/step-1-before-evaluation-projection/history
 preserves the next unconsumed design-home output and its inputs before the
 evaluation-projection amendment. The scaffold fixtures resolve the actual
 decision home, so they remain usable after its number is assigned.
+
+The [restricted-environment history](evidence/history/step-1-before-closed-environment-repair/history.json)
+preserves the signed candidate's ordinary green checks, refused controller
+admission and diagnostic failures. The affected fixtures now select the declared
+Python and real signing tools explicitly. Their temporary launchers restore the
+incoming environment; an empty search path exposes only the selected launchers.
+The two ordinary-Git control observations enable replacement objects only within
+their own scope. Native verification and refusal checks retain their controls.
+
+The [current evaluation projection](evidence/evaluation-projection/closed-environment-applied.json)
+refreshes the source binding after these repairs and preserves the same prompts,
+answers, model, date and outcomes. Each earlier projection remains in evidence.
+
+The fixture checks run real signatures and offline demonstrations. They do not
+replace the full suites or the controller's separate implementation receipt.
 
 Run the owning cases with `python3 -m unittest tests.test_success_criteria_scaffold -v`.
 The checked repository runner includes that module through the root suite.

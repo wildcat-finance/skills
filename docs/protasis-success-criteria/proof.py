@@ -32,7 +32,7 @@ DRAFT = "docs/decisions/drafts/" + SLUG + ".md"
 DECISION_SHA256 = "a6ec5f13bbdba6e96fea4025b5aa80f707d9285b809ccae12e7420a96b1f9c7b"
 FROZEN = {
     "study.md": "3b15af2f2137075ee5c265cff385f25f966d2f47e77f06d3104ce00a494b7be4",
-    "runbook.md": "0b4534a3903f2d3e093e7b059c429b9e3afd64f5ea0d599e487c40e1fa1fa787",
+    "runbook.md": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
     "design-evidence.json": "89938e2d649d73c98298ea70823282ed83d397b2e21c9b79cdd01e35184944f7",
     "selection_probe.py": "3f4b3c3de29084aa0accb047919cbfc7f7c4cb12c2d7118d3490cb48dac2bc8b",
     "evidence/opening-study.md": "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92",

@@ -1,0 +1,30 @@
+{
+  "final_imprimatur_log_sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+  "protected": [
+    "commands and named refusal reasons",
+    "input bounds and concurrent-writer limitation",
+    "selection evidence, measurements and exclusions",
+    "source paths, status repair and all prior history links",
+    "eleven prompts and fifty-five outcomes with no new model observation",
+    "original and prior projection preservation",
+    "numbered decision home support",
+    "restricted environment, real signing and demonstration observations",
+    "separate full suites and implementation receipt"
+  ],
+  "schema": "step-1-prose-review/v1",
+  "sequence": [
+    "Sapheneia protected-content shape",
+    "Imprimatur zero defects before Vulgate",
+    "Vulgate surface review without further changes",
+    "protected content comparison",
+    "final Imprimatur zero defects"
+  ],
+  "source": {
+    "path": ".hexaemeron/evidence/step-1-closed-environment-prose-source-README.md.txt",
+    "sha256": "d7950448c39ab255cc9e763085b9d17ac5a7dbc135dc3149f9cb03b4ec000605"
+  },
+  "subject": {
+    "path": "docs/protasis-success-criteria/README.md",
+    "sha256": "07fb198fdc28d5554b92749015adb45466b962a75fe99bc3850bee3c077d2ab6"
+  }
+}

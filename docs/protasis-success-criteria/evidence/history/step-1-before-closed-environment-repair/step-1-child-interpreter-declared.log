@@ -1,0 +1,76 @@
+test_cli_refuses_absent_surfaces_with_nonempty_expected_ids (test_known_failure_inventory.KnownFailureInventoryTests.test_cli_refuses_absent_surfaces_with_nonempty_expected_ids) ... CAPTURED CHILD STDERR: Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py", line 131, in <module>
+    @dataclass(frozen=True, slots=True)
+TypeError: dataclass() got an unexpected keyword argument 'slots'
+
+ERROR
+test_committed_study_fixture_and_exact_checker_command_have_parity (test_known_failure_inventory.KnownFailureInventoryTests.test_committed_study_fixture_and_exact_checker_command_have_parity) ... CAPTURED CHILD STDERR: Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py", line 131, in <module>
+    @dataclass(frozen=True, slots=True)
+TypeError: dataclass() got an unexpected keyword argument 'slots'
+
+FAIL
+test_exact_report_candidate_and_ordered_trailers_are_receipted (test_fiat_decision_assignments.FiatDecisionAssignmentTests.test_exact_report_candidate_and_ordered_trailers_are_receipted) ... CAPTURED CHILD STDERR: {"code":"internal","outcome":"failed","schema":"fiat-decision-assignment-refusal/v1"}
+
+ERROR
+
+======================================================================
+ERROR: test_cli_refuses_absent_surfaces_with_nonempty_expected_ids (test_known_failure_inventory.KnownFailureInventoryTests.test_cli_refuses_absent_surfaces_with_nonempty_expected_ids)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_known_failure_inventory.py", line 309, in test_cli_refuses_absent_surfaces_with_nonempty_expected_ids
+    report = json.loads(completed.stdout)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+======================================================================
+ERROR: test_exact_report_candidate_and_ordered_trailers_are_receipted (test_fiat_decision_assignments.FiatDecisionAssignmentTests.test_exact_report_candidate_and_ordered_trailers_are_receipted)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_fiat_decision_assignments.py", line 207, in setUp
+    self.repo = AssignmentRepository()
+                ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_fiat_decision_assignments.py", line 102, in __init__
+    self.plan()
+    ~~~~~~~~~^^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_fiat_decision_assignments.py", line 117, in plan
+    subprocess.run(
+    ~~~~~~~~~~~~~~^
+        [
+        ^
+    ...<16 lines>...
+        text=True,
+        ^^^^^^^^^^
+    )
+    ^
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-child-interpreter-probe.py", line 20, in observe
+    result = native_run(*args, **kwargs)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['python3', '/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py', 'plan', '--repo', '/private/tmp/tmp6zdpntzb', '--base', 'a310967a98621de7365ceacc4993187c32cfc8ce', '--base-ref', 'refs/heads/main', '--product', '82967e3f81f8e0ea63fc2df46f0af3668b4bcac1', '--report', '.hexaemeron/assignments.json']' returned non-zero exit status 1.
+
+======================================================================
+FAIL: test_committed_study_fixture_and_exact_checker_command_have_parity (test_known_failure_inventory.KnownFailureInventoryTests.test_committed_study_fixture_and_exact_checker_command_have_parity)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/tests/test_known_failure_inventory.py", line 408, in test_committed_study_fixture_and_exact_checker_command_have_parity
+    self.assertEqual(0, completed.returncode, completed.stdout + completed.stderr)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1 : Traceback (most recent call last):
+  File "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py", line 131, in <module>
+    @dataclass(frozen=True, slots=True)
+TypeError: dataclass() got an unexpected keyword argument 'slots'
+
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.041s
+
+FAILED (failures=1, errors=2)

@@ -285,7 +285,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
             study_path.write_text("# Study without an inventory\n", encoding="utf-8")
             runbook_path.write_text(NO_FINDINGS_RUNBOOK, encoding="utf-8")
             command = [
-                "python3",
+                sys.executable,
                 str(SCRIPT),
                 str(study_path),
                 str(runbook_path),
@@ -388,7 +388,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
         self.assertEqual(inventory_object(), self.checker._json(body))
 
         command = [
-            "python3",
+            sys.executable,
             SCRIPT.relative_to(REPOSITORY_ROOT).as_posix(),
             COMMITTED_STUDY.relative_to(REPOSITORY_ROOT).as_posix(),
             COMMITTED_RUNBOOK.relative_to(REPOSITORY_ROOT).as_posix(),

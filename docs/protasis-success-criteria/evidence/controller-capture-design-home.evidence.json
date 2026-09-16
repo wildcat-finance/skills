@@ -267,7 +267,7 @@
     {
       "bytes": 12573,
       "path": "docs/protasis-success-criteria/proof.py",
-      "sha256": "6f2287c53e34cc7df4d1aa4185e4b82f0bf78b1c8766fa6bddc9496e094c2b45"
+      "sha256": "0272737d0cd224589f0ce5646518340295944274da6ee9c01587afbf7809bc24"
     },
     {
       "bytes": 361,
@@ -360,9 +360,9 @@
       "sha256": "1f0f2ce7a32a441d7c4591a97e353a9ed13183d2cd5923921c6d99af7efdd525"
     },
     {
-      "bytes": 32289,
+      "bytes": 41070,
       "path": "docs/protasis-success-criteria/runbook.md",
-      "sha256": "0b4534a3903f2d3e093e7b059c429b9e3afd64f5ea0d599e487c40e1fa1fa787"
+      "sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97"
     },
     {
       "bytes": 6301,

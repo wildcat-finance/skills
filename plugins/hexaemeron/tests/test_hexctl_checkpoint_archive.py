@@ -105,6 +105,7 @@ os.environ["TMPDIR"] = tempfile.tempdir
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from test_hexctl import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module  # noqa: E402
+from fixture_tools import native_signing_tools  # noqa: E402
 
 ORIGIN_URL = "https://github.com/wildcat-finance/example.git"
 COAUTHOR = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
@@ -1801,19 +1802,26 @@ class SignedRunFixture(HexctlCase):
 
     @classmethod
     def setUpClass(cls):
-        if shutil.which("gpg") is None:
+        cls.key_home = None
+        cls.fingerprint = None
+        tool_context = native_signing_tools()
+        try:
+            cls.tool_paths = tool_context.__enter__()
+        except FileNotFoundError:
             return
+        cls.addClassCleanup(tool_context.__exit__, None, None, None)
         # A gpg-agent's socket lives in its home and AF_UNIX paths are capped
         # near 104 bytes, so the names below stay short. The system temporary
         # root, canonicalised above, leaves room; a name under the tree would
         # not, and `tests/test_scratch_quiescence.py` forbids anchoring there
         # anyway.
         cls.key_root = tempfile.mkdtemp(prefix="fiat861-")
+        cls.addClassCleanup(shutil.rmtree, cls.key_root, ignore_errors=True)
         cls.key_home = os.path.join(cls.key_root, "h")
         os.mkdir(cls.key_home, 0o700)
         generated = subprocess.run(
             [
-                "gpg",
+                cls.tool_paths["gpg"],
                 "--batch",
                 "--quiet",
                 "--pinentry-mode",
@@ -1834,7 +1842,7 @@ class SignedRunFixture(HexctlCase):
             cls.key_home = None
             return
         listed = subprocess.run(
-            ["gpg", "--batch", "--with-colons", "--list-secret-keys"],
+            [cls.tool_paths["gpg"], "--batch", "--with-colons", "--list-secret-keys"],
             env={**os.environ, "GNUPGHOME": cls.key_home},
             capture_output=True,
             text=True,
@@ -1851,10 +1859,9 @@ class SignedRunFixture(HexctlCase):
         if getattr(cls, "key_home", None) is None:
             return
         subprocess.run(
-            ["gpgconf", "--homedir", cls.key_home, "--kill", "all"],
+            [cls.tool_paths["gpgconf"], "--homedir", cls.key_home, "--kill", "all"],
             capture_output=True,
         )
-        shutil.rmtree(cls.key_root, ignore_errors=True)
 
     def setUp(self):
         if self.key_home is None:
@@ -1863,7 +1870,7 @@ class SignedRunFixture(HexctlCase):
         self.env["GNUPGHOME"] = self.key_home
         self.git("remote", "add", "origin", ORIGIN_URL)
         self.git("config", "user.signingkey", self.fingerprint)
-        self.git("config", "gpg.program", "gpg")
+        self.git("config", "gpg.program", self.tool_paths["gpg"])
         self.fake_refs["main"] = self.head_sha()
 
     # -- fixture ---------------------------------------------------------
@@ -1881,7 +1888,7 @@ class SignedRunFixture(HexctlCase):
                 "-c",
                 f"user.signingkey={self.fingerprint}",
                 "-c",
-                "gpg.program=gpg",
+                f"gpg.program={self.tool_paths['gpg']}",
                 "commit",
                 "-q",
                 *(("--amend",) if amend else ()),
