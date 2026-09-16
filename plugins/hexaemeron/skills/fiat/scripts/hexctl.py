@@ -499,6 +499,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.60.1",
         "fiat-v6.61.1",
         "fiat-v6.62.1",
+        "fiat-v6.63.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -4971,6 +4972,8 @@ def _require_resolution_sync(
     base_commit: str,
     head_commit: str,
     relations: dict,
+    *,
+    verify_base_ref: bool = True,
 ) -> None:
     """Recheck the active signed composition and its target-path coverage."""
     if not _sync_field_set_is_supported(sync):
@@ -5114,6 +5117,7 @@ def _require_resolution_sync(
         base_dir,
         sync,
         previous_sync=sync_history,
+        verify_base_ref=verify_base_ref,
     )
 
 
@@ -5142,6 +5146,7 @@ def build_version_resolution(
     exact_base: str | None = None,
     exact_head: str | None = None,
     evolution_recovery: dict | None = None,
+    verify_base_ref: bool = True,
 ) -> dict:
     """Build one atomic resolution from stable refs or exact terminal parents."""
     runbook = receipted_source(base_dir, state, "runbook")
@@ -5212,6 +5217,7 @@ def build_version_resolution(
             base_commit,
             head_commit,
             relations,
+            verify_base_ref=verify_base_ref,
         )
     if evolution_recovery is None:
         history = integrate.get("version_resolutions") or []
@@ -18319,11 +18325,15 @@ def terminal_version_resolution(
             "integration merge parents do not replay the resolved "
             "[base, candidate] pair"
         )
+    # Fetching the merged base moves an assignment report's local base ref onto
+    # this merge. The exact parents already bind the base, so replay against a
+    # private pin, as status and verify do (skills#1665).
     replay = build_version_resolution(
         base_dir,
         state,
         exact_base=parents[0],
         exact_head=parents[1],
+        verify_base_ref=False,
     )
     if _resolution_without_timestamp(active) != _resolution_without_timestamp(replay):
         die("integration merge parents do not replay the active resolution")

@@ -415,16 +415,19 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.62.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.63.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.62.1")
-        self.assertIn("skills#1356", current["evidence"])
-        self.assertIn("native directory checkpoint", current["change"])
+        self.assertEqual(current["version"], "fiat-v6.63.1")
+        self.assertIn("skills#1665", current["evidence"])
+        self.assertIn("terminal replay pins that ref privately", current["change"])
         self.assertIn("held target stay unchanged", current["change"])
+        directory = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.62.1")
+        self.assertIn("skills#1356", directory["evidence"])
+        self.assertIn("native directory checkpoint", directory["change"])
         supervisor = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.61.1")
         self.assertIn("skills#508", supervisor["evidence"])
         self.assertIn("native macOS worker supervisor", supervisor["change"])
