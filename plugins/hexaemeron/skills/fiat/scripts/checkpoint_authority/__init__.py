@@ -1,1 +1,1 @@
-"""Checkpoint authority implementation; no authority operation is released yet."""
+"""Closed authority records and exact signatures; later admission gates remain pending."""

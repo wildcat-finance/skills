@@ -1,12 +1,313 @@
 {
-  "schema": "checkpoint-authority-conformance-corpus/v1",
   "candidate": "ordered-replay",
+  "cases": [
+    "test_checkpoint_authority_records.AuthenticatedHostileTests.test_all_predecessors_are_checked_after_authentication",
+    "test_checkpoint_authority_records.AuthenticatedHostileTests.test_challenge_is_one_use_and_requires_operator_role",
+    "test_checkpoint_authority_records.AuthenticatedHostileTests.test_enrollment_requires_exact_challenge_actor_key_proof_and_expiry",
+    "test_checkpoint_authority_records.AuthenticatedHostileTests.test_revocation_grant_scope_and_validity_block_endorsements",
+    "test_checkpoint_authority_records.AuthenticatedHostileTests.test_signed_noncanonical_unknown_statement_and_subject_swap_refuse",
+    "test_checkpoint_authority_records.BindingTests.test_acceptance_domain_is_external_and_not_an_envelope_digest",
+    "test_checkpoint_authority_records.BindingTests.test_aggregate_budgets_have_named_refusals",
+    "test_checkpoint_authority_records.BindingTests.test_digest_roles_copy_evidence_and_native_order",
+    "test_checkpoint_authority_records.BindingTests.test_protocol_type_scope_and_real_calendar",
+    "test_checkpoint_authority_records.BindingTests.test_reference_self_cycle_missing_and_wrong_type",
+    "test_checkpoint_authority_records.BoundaryTests.test_noncanonical_native_public_keys_and_wrong_fingerprints",
+    "test_checkpoint_authority_records.BoundaryTests.test_public_verification_subprocess_output_and_time_caps",
+    "test_checkpoint_authority_records.BoundaryTests.test_published_hostile_vectors",
+    "test_checkpoint_authority_records.BoundaryTests.test_reference_pair_types_and_external_inventory",
+    "test_checkpoint_authority_records.CanonicalTests.test_canonical_and_depth_byte_boundaries",
+    "test_checkpoint_authority_records.CanonicalTests.test_duplicate_trailing_unicode_and_numbers",
+    "test_checkpoint_authority_records.CanonicalTests.test_exact_encoding",
+    "test_checkpoint_authority_records.RecordTests.test_container_record_tags_are_typed_refusals",
+    "test_checkpoint_authority_records.SchemaTests.test_all_tagged_variants",
+    "test_checkpoint_authority_records.SchemaTests.test_every_required_field_missing_unknown_and_wrong_type",
+    "test_checkpoint_authority_records.SchemaTests.test_every_schema_is_closed_and_matches_its_published_bytes",
+    "test_checkpoint_authority_records.SchemaTests.test_mandatory_schema_tool_versions",
+    "test_checkpoint_authority_records.SchemaTests.test_scalar_and_boundary_types_agree",
+    "test_checkpoint_authority_records.SignatureTests.test_base64_alphabets_padding_and_pad_bits",
+    "test_checkpoint_authority_records.SignatureTests.test_der_scalar_minimality_bounds_and_trailing_bytes",
+    "test_checkpoint_authority_records.SignatureTests.test_envelope_field_signature_count_and_hint_closure",
+    "test_checkpoint_authority_records.SignatureTests.test_hostile_signature_byte_changes",
+    "test_checkpoint_authority_records.SignatureTests.test_native_proof_and_upload_formats",
+    "test_checkpoint_authority_records.SignatureTests.test_pae_literal_vector",
+    "test_checkpoint_authority_records.SignatureTests.test_real_cosign_pinned_interoperability",
+    "test_checkpoint_authority_records.SignatureTests.test_real_p256_exact_payload_and_randomized_equivalence",
+    "test_checkpoint_authority_records.SignatureTests.test_tool_missing_changed_and_symlink_are_refused",
+    "test_checkpoint_authority_records.TrustTests.test_every_trust_transition_and_original_keys_are_retained",
+    "test_checkpoint_authority_records.TrustTests.test_no_carried_key_bootstrap_or_test_root_in_production",
+    "test_checkpoint_authority_records.TrustTests.test_omission_order_duplicates_and_foreign_scope",
+    "test_checkpoint_authority_records.TrustTests.test_refusal_does_not_advance_prefix"
+  ],
   "criteria": [
     "records-and-signatures",
     "native-boundary-coverage",
     "authority-replay",
     "released-interoperability"
   ],
-  "cases": [],
-  "implemented_criteria": []
+  "files": [
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/acceptance.json",
+      "sha256": "91521fda4f48863ce8e1e2f7ac479c7fdabc7c7c4de8e5e91cc9dc69d5e6ae10"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/alternate-envelope.json",
+      "sha256": "c501e213c3a809db9ee7f5b5e46284ec3172ddec36766a7193225d6a0b3fb8cb"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/authority-head.json",
+      "sha256": "9948646a8fc07f4414d504df06c86e03d46c3dc240674dd19c6aebf71abf7e15"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/authority-policy.json",
+      "sha256": "f6d61eb0ada2dd623ffbd44364eb6ad8cdbacb839f405e6c26c5031e9afd5285"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/authorized-removal.json",
+      "sha256": "4d7945a5225fec75f311b97d6588f1f48c7979759982b3ec4b4b13ce342b29a4"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/bootstrap.json",
+      "sha256": "a0256f73a56a85da70a413cb89f32c0bc5d2c0c51e51bd385e73d95cc784db62"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/cancellation.json",
+      "sha256": "f84d06069f131c0cd51d64e0ba05c8d757047ba604a7df9fc447e6de734981e6"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/cosign-double-hashed-envelope.json",
+      "sha256": "5ddebd15031fd43551ef48e0f3217356035ae962e2a12cc48de237c89f0a0cae"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/cosign-envelope.json",
+      "sha256": "833490ea337c9dfde4e202d7cdd85c9b656ad62b3cc211b80197dfa1de0be12b"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/denial.json",
+      "sha256": "3ba2ca56d1c69611c1179931c35be6603b08d90509c15cbdccd3543c2e7a6b90"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/double-hashed-envelope.json",
+      "sha256": "54429bb014c986dd8d8cff2ffb43e3eb215be4fcd376d1b1d789697698b62ea0"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/enrollment-challenge.json",
+      "sha256": "229b13fc140fc39718229f5b6223281e0ce22e6cfa9349d5e83ac3c5f96e7ddb"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/hostile-records.json",
+      "sha256": "1128640b295d531dc4401cc375d94fc2c253dd1603502b142219b2f0005299de"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/journal-entry.json",
+      "sha256": "6e7d176fed26f8bb03d6d2596fcebc381ac423c7073877be0fce5e4d335902d3"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/key-enrollment.json",
+      "sha256": "2a4205ed8f9b90134f2d05e4c8a2e7e988adc83f0556606ac827aaca3e078081"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/key-revocation.json",
+      "sha256": "28a41dd4164c4329ee5581ceec9fb26d053b44f0840db3a85049c0c2858ed8cd"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/key-rotation.json",
+      "sha256": "4c7d2eac6bdacb303d57cc723925a0ad493904b1e3307a171deb8ceb87f78ddc"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/openpgp-v4-endorsement.json",
+      "sha256": "697748f12824ee632d8befb0dce27ff5fbba05ff9e15d34e574e5fa15ccb898d"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/openpgp-v4-public.json",
+      "sha256": "a10149e03b7c67a14107aecefedb16f40f04f7158473af5432a59fbd536ea993"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/openpgp-v4-trust-prefix.json",
+      "sha256": "7489e39034eaf29b5caddce8358d9f411e76aa06418b12ea2ee80ad66bc6ad25"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/other-public.json",
+      "sha256": "73c56153d74d992b15de8f996454d2d460cb58ec33bb90a535d98a3335173a0b"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/other-public.pem",
+      "sha256": "d216365c535132d15c3a06328c7f3e03790f6ee645377665283578be56987649"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/parent-link.json",
+      "sha256": "69554e34d021ea708cfa7c84d0143b0e861db78ad4d762e212c3993af11ce0c9"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/publication-finalization.json",
+      "sha256": "fc73adfa5c94be72d1d199c915d2375478d3d7c6ce14fdf7cb7aae6f9b99e2b5"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/root-public.json",
+      "sha256": "7135aa3899cd3cb081f3a239cea207474e7ec348427f311e011c1628423b8429"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/root-public.pem",
+      "sha256": "156d95e60f42ae623f43ea2fc6eb1d931a694a41cc04e8af22fd6c4178d7a37b"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/run-grant.json",
+      "sha256": "548a1606844ca891fcc85e189b1e435b2da2ba1c408a9ca4c9a8001e4eb6ae79"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/run-registration.json",
+      "sha256": "faf40bfc2ecb81cfd34696bed459d50077e66e8d9a025428f5dde05ae7e7aa1d"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/semantic-specimen",
+      "sha256": "5228e2f0ab8b44b59cae46907388b32d2525cdeed5634358a5f0d2e24b887e99"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/ssh-ed25519-endorsement.json",
+      "sha256": "8c5ab725856658c05f34fd5059ae42e851e7751df83887709ca9a510ee36cfcc"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/ssh-ed25519-public.json",
+      "sha256": "92d00639479cb938740606502f617519a2689dd45fcfc3e332f90de5419937c0"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/ssh-ed25519-trust-prefix.json",
+      "sha256": "c4471251772c7aee73f2d4e851efee1dda2602c9e2bcaafc6377b32ea7180c88"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/ssh-p256-endorsement.json",
+      "sha256": "2d59cc779dfd15f4f7e4ad85727ee3764720bd030a150984ddcecc76efdfffd0"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/ssh-p256-public.json",
+      "sha256": "11aea751678cc099875e8a5f2635f7de2c6cbd59f42a975d00e5dcd27bd980a6"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/ssh-p256-trust-prefix.json",
+      "sha256": "c82c221df8ea7eb480ee38736e1f11b6049f40156571ffdf27d6104d913305a6"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/storage-copy.json",
+      "sha256": "5228a80945222e65ca70db5b5617f252829ef69350a02a975a426c8bb5b82703"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/stream-permit.json",
+      "sha256": "9a9c75139279ee2851f09febc8815fff392e150d689176f9669ee62db0d1c3c2"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/trust-prefix.json",
+      "sha256": "d1c3693197622244a1c37f5c214517df900a23c9f99702cba735f856e4149cff"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/upload-endorsement.json",
+      "sha256": "ef800ce391098a9cd3736a83b60105f7407b49d9be354e0b185d8226ce3bd929"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/valid-envelope.json",
+      "sha256": "150c9d4ff63caff89b9211a53281d0faa0c2db1b1d798c8470814bd25c1e7a06"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/validation.json",
+      "sha256": "4d5e0d10b4214822528188f48f00a5f7202e2071d57eb9ed629dcb8fcbebc7e3"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/wrong-public.json",
+      "sha256": "b1df7aab52903d7412811ac175587a2265ad35fab53a7bae1328fc0f62b0e396"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/wrong-public.pem",
+      "sha256": "1509008ede7f6d27ce3fd04eae7b9a5216e3b43262a682eb40294305d071d0c0"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/wrongcurve-public.json",
+      "sha256": "c616f9c9c82096ea97f9ca4d183b4f5e3c4c1bfcd0de2f3d5fb7a09d71d3bedc"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/wrongcurve-public.pem",
+      "sha256": "2817f3fa66f83408800d3b2e00a9b778f74a5d5e579220be8f0eeb19d5000a47"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/acceptance.schema.json",
+      "sha256": "7d42cb67fe8b9b9134545d6f2aa0d2a60c5eac3fc09b4662862c8241e3b5c072"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/authority-head.schema.json",
+      "sha256": "d287239aca1c26710900e58db6871a819c42dfa3aaf3755296cc84d6ef857564"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/authority-policy.schema.json",
+      "sha256": "36f28f0a901de1bb32a93fc2a1f388726f8da04b1e73fa1da61b431f3b0148c0"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/authorized-removal.schema.json",
+      "sha256": "4db2ee5a901836a4400c7717fa0762be11c87525f859f643fe8b335289c8b832"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/cancellation.schema.json",
+      "sha256": "0bf59491f631a73390c2126f8bb870ad29703963a23acf1853703c829e1f6135"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/denial.schema.json",
+      "sha256": "33c2ae55b35dfb9f40b5b34930b8bda67db17296af77adae62c60510fcc33ddb"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/enrollment-challenge.schema.json",
+      "sha256": "fd5475dd3dbf82a9bef0a9993b5b49cb19e55b102b76c30988007629a74357f4"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/journal-entry.schema.json",
+      "sha256": "f8a6181460e2edecee509e940cdc61f57ed6d62c4f7c7eb67eca2ceca102713a"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/key-enrollment.schema.json",
+      "sha256": "bcb0e8b0b1490a8c7a62891871842d322108289b145e734c92cd81071da4068a"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/key-revocation.schema.json",
+      "sha256": "12af93293236b2a0ebed386b7b911f456becf92539090fb18768af4781376988"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/key-rotation.schema.json",
+      "sha256": "fcaec11eb1af834693f34d4b6aeaa33f757233ce466216730fa268709d4d5706"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/parent-link.schema.json",
+      "sha256": "685bf861269c5597ca80507bb51692e25cc5b4c3d95bd8e68f4c007299425d12"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/publication-finalization.schema.json",
+      "sha256": "97f70c43122e64ecca29693d6c13d10b8f4f0ccc74e8d372533ae4a86cb2c3df"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/run-grant.schema.json",
+      "sha256": "5c9e301ed1f90da11a9c155897b5d80b942ce67eea4b59ada0c3f667e5fc5183"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/run-registration.schema.json",
+      "sha256": "7257627647746db29e6f2378fd87fa8d698c7049540aaa3354bc44fe3c599779"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/storage-copy.schema.json",
+      "sha256": "04767a8508dd28862c7b66c122219070bf0039f2fe3d2e22bdaff6b2904da43c"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/stream-permit.schema.json",
+      "sha256": "e2c129df7aa6169109ab2332e40baaf11795f84e003c1ef9b06e097081b48a76"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/upload-endorsement.schema.json",
+      "sha256": "f40eca6d9ad76b0c90acc8fddaff0f2f08d79524119a33d3197e20c274d77d84"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/schemas/validation.schema.json",
+      "sha256": "212fe22175810d9b01d448dc74a9857972898ad46367d0685dd378c5945d6f74"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/tool-profile.json",
+      "sha256": "dc504adff3ae7c72b2f515c3dfafa4d5d0add9bbcd7a73aa5843c7cdf872bfa1"
+    }
+  ],
+  "implemented_criteria": [
+    "records-and-signatures"
+  ],
+  "schema": "checkpoint-authority-conformance-corpus/v1"
 }

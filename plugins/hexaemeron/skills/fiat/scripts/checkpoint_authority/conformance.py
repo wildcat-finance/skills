@@ -1,4 +1,4 @@
-"""Write bounded, non-success evidence for protocol gates awaiting implementation."""
+"""Run records/signatures and retain bounded evidence; later gates refuse."""
 
 from __future__ import annotations
 
@@ -7,9 +7,14 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import stat
 import sys
+import subprocess
+import tempfile
+import time
 from pathlib import Path
+from .schema import RECORD_TYPES
 
 
 CANDIDATE = "ordered-replay"
@@ -23,7 +28,36 @@ SOURCE_PATHS = (
     "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/__init__.py",
     "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/conformance.py",
     "plugins/hexaemeron/tests/checkpoint_authority_conformance.py",
+    "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/canonical.py",
+    "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/schema.py",
+    "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/records.py",
+    "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/signatures.py",
+    "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/trust.py",
+    "plugins/hexaemeron/tests/test_checkpoint_authority_records.py",
+    "plugins/hexaemeron/tests/checkpoint_authority_record_suite.py",
+    "plugins/hexaemeron/tests/checkpoint_authority_corpus.py",
+    "plugins/hexaemeron/tests/requirements.lock",
 )
+TOOLCHAIN_PATHS = (
+    ".python-version",
+    ".github/workflows/plugins.yml",
+)
+CORPUS_ROOT = "plugins/hexaemeron/skills/fiat/checkpoint-authority/"
+PUBLIC_SPECIMENS = (
+    "alternate-envelope.json", "bootstrap.json", "cosign-double-hashed-envelope.json",
+    "cosign-envelope.json", "double-hashed-envelope.json", "hostile-records.json",
+    "other-public.json", "other-public.pem", "root-public.json", "root-public.pem",
+    "semantic-specimen", "trust-prefix.json", "valid-envelope.json", "wrong-public.json",
+    "wrong-public.pem", "wrongcurve-public.json", "wrongcurve-public.pem",
+    *(name + suffix for name in ("ssh-ed25519", "ssh-p256", "openpgp-v4")
+      for suffix in ("-public.json", "-endorsement.json", "-trust-prefix.json")),
+)
+CORPUS_FILES = tuple(sorted((
+    *(CORPUS_ROOT + "fixtures/" + kind + ".json" for kind in RECORD_TYPES),
+    *(CORPUS_ROOT + "schemas/" + kind + ".schema.json" for kind in RECORD_TYPES),
+    *(CORPUS_ROOT + "fixtures/" + name for name in PUBLIC_SPECIMENS),
+    CORPUS_ROOT + "tool-profile.json",
+)))
 MANIFEST_PATH = (
     "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/manifest.json"
 )
@@ -138,18 +172,39 @@ def _inputs(root: Path) -> dict:
         manifest = json.loads(data, object_pairs_hook=_unique_object)
     except (ValueError, RecursionError, UnicodeError):
         raise Refusal("invalid-manifest") from None
-    if manifest != {
-        "schema": "checkpoint-authority-conformance-corpus/v1",
-        "candidate": CANDIDATE,
-        "criteria": list(CRITERIA),
-        "cases": [],
-        "implemented_criteria": [],
-    }:
-        raise Refusal("unsupported-manifest")
+    scaffold = {
+        "schema": "checkpoint-authority-conformance-corpus/v1", "candidate": CANDIDATE,
+        "criteria": list(CRITERIA), "cases": [], "implemented_criteria": [],
+    }
+    implemented = manifest != scaffold
+    if implemented:
+        if (type(manifest) is not dict or set(manifest) != set(scaffold) | {"files"}
+            or manifest["schema"] != scaffold["schema"] or manifest["candidate"] != CANDIDATE
+            or manifest["criteria"] != list(CRITERIA)
+            or manifest["implemented_criteria"] != ["records-and-signatures"]
+            or type(manifest["cases"]) is not list or not 1 <= len(manifest["cases"]) <= 100
+            or type(manifest["files"]) is not list or not 1 <= len(manifest["files"]) <= 128):
+            raise Refusal("unsupported-manifest")
+        if (any(type(case) is not str or not re.fullmatch(r"test_checkpoint_authority_records\.[A-Za-z]+\.test_[a-z0-9_]+", case) for case in manifest["cases"])
+            or manifest["cases"] != sorted(set(manifest["cases"]))):
+            raise Refusal("unsupported-manifest")
+        paths = []
+        for row in manifest["files"]:
+            if type(row) is not dict or set(row) != {"path", "sha256"} or type(row["path"]) is not str or type(row["sha256"]) is not str:
+                raise Refusal("unsupported-manifest")
+            path = row["path"]
+            if not re.fullmatch(r"plugins/hexaemeron/skills/fiat/checkpoint-authority/(?:fixtures|schemas)/[a-z0-9.-]+|plugins/hexaemeron/skills/fiat/checkpoint-authority/tool-profile.json", path) or path == MANIFEST_PATH:
+                raise Refusal("unsupported-manifest")
+            if hashlib.sha256(_read(root,path)).hexdigest() != row["sha256"]:
+                raise Refusal("fixture-drift")
+            paths.append(path)
+        if tuple(paths) != CORPUS_FILES:
+            raise Refusal("unsupported-manifest")
     return {
+        "implemented": implemented, "cases": manifest["cases"],
         "source": [
             {"path": path, "sha256": hashlib.sha256(_read(root, path)).hexdigest()}
-            for path in SOURCE_PATHS
+            for path in (*SOURCE_PATHS, *(TOOLCHAIN_PATHS if implemented else ()))
         ],
         "fixture_manifest": {
             "path": MANIFEST_PATH, "sha256": hashlib.sha256(data).hexdigest(),
@@ -187,13 +242,68 @@ def _write(root: Path, name: str, report: dict, evidence: dict) -> None:
         check()
 
 
-def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
-    """Return 3 for an unimplemented gate, or 2 for an invalid/unsafe request.
+def _execute(root):
+    command = [sys.executable, str(root / "plugins/hexaemeron/tests/checkpoint_authority_record_suite.py")]
+    with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
+        process = subprocess.Popen(command, cwd=root, stdout=stdout, stderr=stderr,
+                                   stdin=subprocess.DEVNULL, start_new_session=True)
+        deadline = time.monotonic() + 120
+        try:
+            while process.poll() is None:
+                if time.monotonic() > deadline or os.fstat(stdout.fileno()).st_size > 65536 or os.fstat(stderr.fileno()).st_size > 16384:
+                    raise Refusal("execution-limit")
+                time.sleep(0.02)
+        finally:
+            if process.poll() is None:
+                import signal
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+        stdout.seek(0); stderr.seek(0)
+        out, err = stdout.read(65537), stderr.read(16385)
+        if len(out) > 65536 or len(err) > 16384:
+            raise Refusal("execution-limit")
+        try:
+            value = json.loads(out, object_pairs_hook=_unique_object)
+        except (ValueError, UnicodeError, RecursionError):
+            raise Refusal("execution-report") from None
+        _validate_execution(value, root)
+        return value, process.returncode, hashlib.sha256(out).hexdigest(), hashlib.sha256(err).hexdigest()
 
-    Output contains fixed diagnostic codes. Each admitted invocation writes one
-    closed Protasis report with value false and exit 3, plus its evidence file.
-    Neither result establishes protocol conformance or authority.
-    """
+
+def _validate_execution(value, root):
+    counters = ("tests_run", "subtests_run", "failures", "errors", "skips",
+                "expected_failures", "unexpected_successes", "output_bytes")
+    fields = {"schema", "complete", "passed", "started", "completed", "output_sha256",
+              "tools", "python", "schema_tools", "failure_cases", "error_cases", *counters}
+    if (type(value) is not dict or set(value) != fields
+        or value["schema"] != "checkpoint-authority-record-execution/v1"
+        or any(type(value[field]) is not bool for field in ("complete", "passed"))
+        or any(type(value[field]) is not int or not 0 <= value[field] <= 1000000 for field in counters)
+        or type(value["output_sha256"]) is not str or not re.fullmatch(r"[0-9a-f]{64}", value["output_sha256"])):
+        raise Refusal("execution-report")
+    for field in ("started", "completed", "failure_cases", "error_cases"):
+        if type(value[field]) is not list or len(value[field]) > 100 or any(
+            type(case) is not str or not re.fullmatch(r"test_checkpoint_authority_records\.[A-Za-z]+\.test_[a-z0-9_]+", case)
+            for case in value[field]):
+            raise Refusal("execution-report")
+    for field, counter in (("failure_cases", "failures"), ("error_cases", "errors")):
+        if (value[field] != sorted(set(value[field])) or len(value[field]) > value[counter]
+            or bool(value[field]) != bool(value[counter]) or not set(value[field]).issubset(value["started"])):
+            raise Refusal("execution-report")
+    rows = value["tools"]
+    if type(rows) is not list or len(rows) != 4:
+        raise Refusal("execution-report")
+    for row, name in zip(rows, ("openssl", "ssh-keygen", "gpg", "cosign")):
+        if (type(row) is not dict or set(row) != {"name", "sha256"} or row["name"] != name
+            or type(row["sha256"]) is not str or not re.fullmatch(r"[0-9a-f]{64}", row["sha256"])):
+            raise Refusal("execution-report")
+    profile = json.loads(_read(root, CORPUS_ROOT + "tool-profile.json"))
+    if value["schema_tools"] != profile["schema_tools"] or value["python"] != _read(root, ".python-version").decode().strip():
+        raise Refusal("execution-toolchain")
+
+
+def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
+    """Return 0 only for complete passing cases; later criteria retain exit 3."""
     parser = Parser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--candidate", required=True)
     parser.add_argument("--criterion", required=True)
@@ -238,6 +348,26 @@ def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
             "design_report_sha256": hashlib.sha256(_json_bytes(report)).hexdigest(),
             **inputs,
         }
+        if inputs["implemented"] and args.criterion == "records-and-signatures":
+            execution, runner_exit, stdout_hash, stderr_hash = _execute(root)
+            passed = (runner_exit == 0 and execution.get("complete") is True
+                      and execution.get("passed") is True
+                      and sorted(execution.get("started", [])) == inputs["cases"]
+                      and execution.get("started") == execution.get("completed")
+                      and execution.get("tests_run") == len(inputs["cases"])
+                      and all(type(execution.get(field)) is int and execution[field] == 0
+                              for field in ("failures", "errors", "skips", "expected_failures", "unexpected_successes")))
+            if _inputs(root) != inputs:
+                raise Refusal("source-changed")
+            report["value"], report["exit"] = passed, 0 if passed else 1
+            event.update(event="checkpoint_authority_conformance_complete" if passed else "checkpoint_authority_conformance_refused",
+                         stage="records-and-signatures", code="cases-passed" if passed else "cases-failed",
+                         status="passed" if passed else "failed", complete=passed,
+                         executed_cases=execution.get("completed", []), exit=report["exit"],
+                         execution={key:value for key,value in execution.items() if key not in ("started", "completed")},
+                         runner_exit=runner_exit, stdout_sha256=stdout_hash, stderr_sha256=stderr_hash,
+                         design_report_sha256=hashlib.sha256(_json_bytes(report)).hexdigest())
+        event.pop("implemented"); event.pop("cases")
         _write(root, name, report, event)
     except (Refusal, OSError) as error:
         code = str(error) if isinstance(error, Refusal) else "unsafe-or-unavailable-file"
@@ -247,4 +377,4 @@ def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
         }, sort_keys=True))
         return 2
     print(json.dumps(event, sort_keys=True))
-    return REFUSED_EXIT
+    return report["exit"]
