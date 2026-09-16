@@ -14,7 +14,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "5.12.0"
+  version: "5.12.1"
 ---
 
 <p align="center">

@@ -659,12 +659,22 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.12.0")
-        self.assertEqual(field(ledger, "Frontier status"), "mature")
-        self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
-        self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
-        self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
+        self.assertEqual(field(ledger, "Current version"), "protasis-v5.12.1")
+        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Frontier revision"), "success-criteria-evidence-join")
+        self.assertIn("skills#1273", field(ledger, "Next Fiat job"))
         by_version = {row["version"]: row for row in history_rows(ledger)}
+        reopened = by_version["protasis-v5.12.1"]
+        self.assertEqual(reopened["axis"], "epoch")
+        self.assertIn("skills/issues/1273", reopened["evidence"])
+        self.assertIn("2026-09-15", reopened["evidence"])
+        self.assertIn("Reopens", reopened["change"])
+        self.assertNotEqual(reopened["digest"], by_version["protasis-v5.12.0"]["digest"])
+        prior_line = f"mature|amendment-block-check|{PROTASIS_FRONTIER}|{PROTASIS_NEXT_JOB}\n"
+        self.assertEqual(
+            by_version["protasis-v5.12.0"]["digest"],
+            hashlib.sha256(prior_line.encode("utf-8")).hexdigest(),
+        )
         current = by_version["protasis-v5.12.0"]
         self.assertIn("skills#508", current["evidence"])
         self.assertIn("inert command-interface", current["change"])
