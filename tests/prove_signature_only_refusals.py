@@ -32,12 +32,10 @@ This prover holds three specimens against it and requires the exact message
 Removing any one of the three refusals in ``hexctl.py`` makes its specimen
 report a different message, or none, and this prover exits non-zero.
 
-The GitHub branch runs only after ``git verify-commit`` fails, so it can be
-reached only under a keyring that cannot validate a GitHub web-flow key. A
-keyring that can is the known kf-1660-prover-keyring-precondition failure this
-guard preserves: when ``git verify-commit`` accepts the web-flow specimen, or
-the harvested commit is signed with a key in ``GITHUB_SIGNING_KEYS``, the
-prover names that cause and exits 3 without writing a report.
+The GitHub key is identified from the exact commit object before verification,
+so the web-flow refusal remains required when the active keyring trusts
+GitHub's public key as well as when it does not. The guard for
+kf-1660-prover-keyring-precondition preserves that current-keyring boundary.
 
 Boundaries. Every ``git`` call is a fixed argument list with no shell and a
 hard timeout. Standard output is read as it arrives and the child is killed
@@ -54,8 +52,8 @@ leaves no partial object.
 
 Exit 0 writes the closed ``protasis-design-report/v1`` object. Exit 1 is a
 specimen that was accepted or refused with something else, 2 a bad invocation,
-and 3 a precondition this prover could not establish, including a keyring that
-validates a GitHub web-flow key.
+and 3 a precondition this prover could not establish, such as the absence of a
+reachable locally verified commit from which to build the altered specimen.
 """
 
 from pathlib import Path
@@ -198,15 +196,6 @@ def keyring_accepts(hexctl, commit: str) -> bool:
     return status == 0
 
 
-def github_keyring(key: str, commit: str) -> Unproven:
-    """The precondition failure for a keyring that validates a GitHub key."""
-    return Unproven(
-        f"this keyring validates GitHub web-flow key {key}: git verify-commit "
-        f"accepts {commit}, so hexctl's GitHub-signed refusal cannot run here; "
-        "rerun under a GNUPGHOME that holds no GitHub signing key"
-    )
-
-
 def locally_verified_commit(hexctl):
     """One reachable commit whose signature this keyring validates."""
     listed = git_text(
@@ -218,7 +207,7 @@ def locally_verified_commit(hexctl):
             continue
         key = hexctl.signing_key(str(REPO_ROOT), commit).upper()
         if key in hexctl.GITHUB_SIGNING_KEYS:
-            raise github_keyring(key, commit)
+            continue
         return commit
     raise Unproven(
         "no commit in the last "
@@ -376,8 +365,6 @@ def prove(hexctl, harness) -> None:
             f"{WEB_FLOW_COMMIT} reports signing key {key or 'none'}, "
             f"not {WEB_FLOW_KEY}"
         )
-    if keyring_accepts(hexctl, WEB_FLOW_COMMIT):
-        raise github_keyring(WEB_FLOW_KEY, WEB_FLOW_COMMIT)
     require(
         label,
         refusal(hexctl, str(REPO_ROOT), WEB_FLOW_COMMIT, label),

@@ -20821,21 +20821,45 @@ def adopted_merge_base_tip(base_dir: str, merge_sha: str, base_ref: str) -> str:
     return tip
 
 
-def signing_key(base_dir: str, commit_sha: str) -> str:
-    """The long key id a commit was signed with, or the empty string.
+def signing_key(
+    base_dir: str,
+    commit_sha: str,
+    *,
+    native_relation: bool = False,
+) -> str:
+    """The long key id embedded in a commit, or the empty string.
 
-    Used only to explain a failed verification. A missing or unreadable value
-    is reported as unknown rather than treated as an answer.
+    A missing or unreadable value is reported as unknown rather than treated as
+    an answer. Native relation callers use the same isolated Git reader as
+    their other exact-object checks.
+
+    The key is read from the exact commit object before signature verification
+    so a trusted GitHub key cannot turn a rewritten commit into a local one.
     """
+    reader = _native_relation_git if native_relation else bounded_git
+    argv = ["log", "-n1", "--pretty=%GK", commit_sha]
+    if not native_relation:
+        argv.insert(0, "--no-replace-objects")
     try:
-        data = bounded_git(
-            base_dir,
-            ["--no-replace-objects", "log", "-n1", "--pretty=%GK", commit_sha],
-            f"signing key for {commit_sha} could not be read",
-        )
+        data = reader(base_dir, argv, f"signing key for {commit_sha} could not be read")
     except SystemExit:
         return ""
     return tool_text(data, "signing key").strip()
+
+
+def _refuse_github_signature(label: str, commit_sha: str, key: str) -> None:
+    """Refuse a GitHub-created commit before local keyring trust can matter."""
+    die(
+        f"{label} commit {commit_sha} is signed by GitHub "
+        f"(key {key}), not locally. GitHub rewrote this commit: its merge "
+        "button, its Contents API and the rebase its native stacked "
+        "pull-request flow performs all re-sign with that key, and the "
+        "author and provenance trailers survive while the local signature "
+        "does not. The range being receipted is therefore not the range "
+        "that was pushed. Land the run from a branch holding the original "
+        "unrebased commits. Do not import GitHub's public key to make this "
+        "check pass; that removes the guarantee the check exists for."
+    )
 
 
 def verify_local_commit(
@@ -20847,6 +20871,11 @@ def verify_local_commit(
 ) -> str:
     """Verify one exact locally created commit's native signature."""
     commit_sha = require_full_sha(commit_sha, label)
+    key = signing_key(
+        base_dir, commit_sha, native_relation=native_relation
+    ).upper()
+    if key in GITHUB_SIGNING_KEYS:
+        _refuse_github_signature(label, commit_sha, key)
     verification_argv = [
         item
         for setting in SIGNATURE_VERIFIER_CONFIG
@@ -20864,19 +20893,6 @@ def verify_local_commit(
         "git",
         ["--no-replace-objects", *verification_argv],
     ) != 0:
-        key = signing_key(base_dir, commit_sha).upper()
-        if key in GITHUB_SIGNING_KEYS:
-            die(
-                f"{label} commit {commit_sha} is signed by GitHub "
-                f"(key {key}), not locally. GitHub rewrote this commit: its merge "
-                "button, its Contents API and the rebase its native stacked "
-                "pull-request flow performs all re-sign with that key, and the "
-                "author and provenance trailers survive while the local signature "
-                "does not. The range being receipted is therefore not the range "
-                "that was pushed. Land the run from a branch holding the original "
-                "unrebased commits. Do not import GitHub's public key to make this "
-                "check pass; that removes the guarantee the check exists for."
-            )
         if key:
             die(
                 f"{label} commit {commit_sha} has no valid local signature "
