@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 26990873,
+    "bytes_blob": 27617850,
     "bytes_generated": 98
   },
   "entries": [
@@ -817,6 +817,20 @@
       "evidence": "no newline in a 2048-byte window at offset 189584 of 379168 bytes",
       "grade": "candidate",
       "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3.log"
+    },
+    {
+      "bytes": 247161,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123580 of 247161 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-checked.json"
+    },
+    {
+      "bytes": 379816,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 189908 of 379816 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4.log"
     },
     {
       "bytes": 381805,

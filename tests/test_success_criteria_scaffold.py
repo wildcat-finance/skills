@@ -101,7 +101,7 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(opening).hexdigest(),
                          "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92")
         self.assertEqual(hashlib.sha256(current).hexdigest(),
-                         "3b15af2f2137075ee5c265cff385f25f966d2f47e77f06d3104ce00a494b7be4")
+                         "2ff25685ea7e4f0c00b27f529ce901886156d46a5582ab7987c126105c64f3d4")
         self.assertTrue(current.startswith(opening))
         self.assertIn(b"operating boundaries", current[len(opening):])
 

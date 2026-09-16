@@ -1,0 +1,32 @@
+{
+  "operation": "read-only unpublished-candidate compatibility probe",
+  "adoption": false,
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-1273-audit-custody-current/plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "--dir",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+    "verify"
+  ],
+  "exit": 1,
+  "wall_seconds": 0.5865692499792203,
+  "before": {
+    "files": {
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/state.json": "934844e555d5aec1dc923371e38fb58b89fec82abc685eb7d465234f3639437c",
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/ledger.jsonl": "ce64875910b7eddecd68858b515fa3252ee9888c9a3d4c965d9093685eb57c36",
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/plugins/hexaemeron/skills/fiat/scripts/hexctl.py": "326817a508a2d0be382e8e44071ec1d5957411a9cb6091764d7a33e9e032ff30"
+    },
+    "head": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "status": ""
+  },
+  "after": {
+    "files": {
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/state.json": "934844e555d5aec1dc923371e38fb58b89fec82abc685eb7d465234f3639437c",
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/ledger.jsonl": "ce64875910b7eddecd68858b515fa3252ee9888c9a3d4c965d9093685eb57c36",
+      "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/plugins/hexaemeron/skills/fiat/scripts/hexctl.py": "326817a508a2d0be382e8e44071ec1d5957411a9cb6091764d7a33e9e032ff30"
+    },
+    "head": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "status": ""
+  },
+  "bytes_unchanged": true
+}

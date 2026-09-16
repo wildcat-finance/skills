@@ -1,0 +1,21 @@
+{
+  "after": {
+    "head": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "index_entries_sha256": "4b7bb499743edc23e2397fcc8928c79bd6ec22d6d6b0033112ac9a4dd4a69277"
+  },
+  "argv": [
+    "python3",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-1273-controller-c572009b/plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+    ".hexaemeron/evidence/warden-step-1-round-1/README-candidate.md"
+  ],
+  "before": {
+    "head": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "index_entries_sha256": "4b7bb499743edc23e2397fcc8928c79bd6ec22d6d6b0033112ac9a4dd4a69277"
+  },
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "elapsed_seconds": 0.08699679200071841,
+  "exit": 0,
+  "log": ".hexaemeron/evidence/warden-step-1-round-1/README-imprimatur-initial.log",
+  "log_sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+  "started_at": "2026-09-16T12:50:08.811027+00:00"
+}

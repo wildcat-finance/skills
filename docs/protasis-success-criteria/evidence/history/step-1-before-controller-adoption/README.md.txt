@@ -109,27 +109,5 @@ answers, model, date and outcomes. Each earlier projection remains in evidence.
 The fixture checks run real signatures and offline demonstrations. They do not
 replace the full suites or the controller's separate implementation receipt.
 
-## Adopted controller and audit repair
-
-The admitted study permits one published external-controller replacement.
-[PR #1698](https://github.com/wildcat-finance/skills/pull/1698) supplies signed
-commit `c572009b7922b4b7b9400893c5adc6d4df641a72`. The
-[adoption record](evidence/controller-adoption/adoption-record.json) binds its
-source, signature, publication and adapter readbacks. The original source stays
-unchanged; this Step 1 repair leaves the target controller unchanged too.
-
-The [pre-adoption history](evidence/history/step-1-before-controller-adoption/history.json)
-preserves the reports, inputs and implementation admission from
-`d230b3ac07158bd5786a5c58539e6999ed3dda54`. The current design-home companion
-binds the admitted study and runbook amendments. The path-escape fixture now
-owns its temporary parent, still refuses the symlink and preserves an occupied
-sibling. Its isolated collision failed twice before this repair and passed
-afterwards.
-
-The [evaluation recheck](evidence/controller-adoption/evaluation-unchanged.json)
-reproduced the current record byte for byte with the owning producer: eleven
-prompts and fifty-five outcomes remain unchanged. No source projection changed
-and no new model observation occurred.
-
 Run the owning cases with `python3 -m unittest tests.test_success_criteria_scaffold -v`.
 The checked repository runner includes that module through the root suite.
