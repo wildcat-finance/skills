@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.42",
+      "version": "1.6.48",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -162,7 +162,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty dossiers and repeat-run comparisons.",
-      "version": "0.2.1",
+      "version": "0.2.3",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -184,7 +184,7 @@
       "displayName": "Lemma",
       "source": "./plugins/lemma",
       "description": "Source-linked JSONL chunks from Solidity compiler inputs and Markdown documents.",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -227,7 +227,7 @@
       "displayName": "Pandects",
       "source": "./plugins/pandects",
       "description": "Executable credit laws with broken specimens and reduced counterexamples.",
-      "version": "0.1.1",
+      "version": "1.2.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -271,7 +271,7 @@
       "displayName": "Tabularium",
       "source": "./plugins/tabularium",
       "description": "Venue-qualified credit-event releases rebuilt from preserved source records.",
-      "version": "0.3.1",
+      "version": "0.3.3",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -291,8 +291,8 @@
       "name": "alexandria",
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
-      "description": "Digest-bound lending-data releases with a resumable Ethereum USDC interval collector proven against live providers, unsigned evidence statements, reviewed credit views and address queries.",
-      "version": "0.6.0",
+      "description": "Digest-bound lending-data releases with a resumable Ethereum USDC interval collector proven against live providers and attributing proxy logs by transaction position, unsigned evidence statements, reviewed credit views and address queries.",
+      "version": "0.7.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -336,7 +336,7 @@
       "displayName": "Berean",
       "source": "./plugins/berean",
       "description": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
-      "version": "0.1.2",
+      "version": "0.1.4",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

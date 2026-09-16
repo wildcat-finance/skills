@@ -28,6 +28,33 @@ Built-in integer and floating-point conversion use the local built-in operations
 
 ## Source and report evidence
 
+A target repository may add reviewed local interfaces through one
+`command-interfaces` fence before Step 1. Its first line is exactly
+`schema | protasis-command-interfaces/v1`. Each following line has three fields:
+`<relative Python path> | <parser-builder name> | <complete source SHA-256>`.
+There are at most 32 entries. Paths use portable ASCII components and end in
+`.py`; absolute paths, empty or dot components, `.git`, duplicates and built-in
+registry overrides refuse. Every declared source is checked, including one
+that no current command invokes.
+
+The runbook review owns acceptance of each complete source, including its
+module bindings and behavior outside the parser declaration. A digest is a
+source identity, not evidence of that review or of safe execution. The adapter
+checks the declared digest before parsing the same captured bytes. The builder
+must use the local name `parser` and the same closed declaration prefix as the
+built-in interfaces. Local `str` and `pathlib.Path` conversion are also admitted;
+they use the validator's scalar operations and do not access the filesystem.
+Unsupported converters still refuse. The adapter never imports the source.
+
+A dated runbook amendment may contain one replacement registration fence. The
+latest complete set governs all effective commands. A schema-only fence
+retires the set; it does not make an unregistered command valid. Earlier
+declarations stay in the preserved document and receipt prefixes. A second
+fence in one region or a baseline fence after Step 1 refuses. Protasis's
+runbook check and Fiat still own amendment shape, chronology and receipt
+acceptance. Changing a source requires a reviewed registration update through
+that append-only process.
+
 The closed result schema is `protasis-gate-commands/v1`. It binds the complete captured runbook digest, captured `source_root` and full adapter digest. Each command retains its source text, UTF-8 byte offset and digest. Each expanded invocation records the original `argv`, the substituted `execution_argv`, the CLI path, full CLI digest, declaration digest and `interface-valid` result.
 
 The source-owned Elenchus declaration supplies the exact command, report format and report file. Its format is `unittest-json-v1`; the normalized Elenchus verdict and raw producer report remain separate artifacts. Exactly one whole `{report}` argument binds to the declared report path. Unbound or partial substitutions, unsupported formats and escaping report paths refuse. Constructing `execution_argv` does not run it or create its report.

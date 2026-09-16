@@ -1114,6 +1114,212 @@ class VersionRelationTests(HexctlCase):
                 module.terminal_version_resolution(self.target, state, merge_commit)
         self.assertIn("base branch moved again", stderr.getvalue())
 
+    def _tree_with(self, commit, *, remove=(), add=()):
+        environment = {
+            name: value
+            for name, value in os.environ.items()
+            if not name.startswith("GIT_")
+        }
+        with tempfile.TemporaryDirectory() as scratch:
+            environment["GIT_INDEX_FILE"] = os.path.join(scratch, "index")
+
+            def run(*args):
+                return subprocess.run(
+                    ["git", *args],
+                    cwd=self.target,
+                    env=environment,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+
+            run("read-tree", commit)
+            for path in remove:
+                run("update-index", "--force-remove", "--", path)
+            for path, blob in add:
+                run("update-index", "--add", "--cacheinfo", f"100644,{blob},{path}")
+            return run("write-tree")
+
+    def _assignment_sync_fixture(self):
+        """A resolved run whose signed base sync numbers one decision draft."""
+        anchor_commit, _, state = self._relation_run_with_candidate()
+        module = hexctl_module()
+        draft = "docs/decisions/drafts/alpha-choice.md"
+        final = "docs/decisions/ADR-061-alpha-choice.md"
+        report = ".hexaemeron/assignments.json"
+        self.write(draft, "# Decision: Alpha choice\n\nStatus: proposed\n")
+        self.git("add", "-A")
+        self.git("commit", "-m", "draft decision")
+        product = self.git("rev-parse", "HEAD").stdout.strip()
+        state = self.integrate_state(state, product)
+        existing = self.hash_object("# ADR-060: Existing\n\nStatus: accepted\n")
+        base = self.git(
+            "commit-tree",
+            self._tree_with(
+                anchor_commit,
+                add=[("docs/decisions/ADR-060-existing.md", existing)],
+            ),
+            "-p",
+            anchor_commit,
+            "-m",
+            "upstream decision",
+        ).stdout.strip()
+        self.git("update-ref", "refs/remotes/origin/main", base)
+        merged_tree = self.git(
+            "merge-tree", "--write-tree", product, base
+        ).stdout.splitlines()[0]
+        unnumbered = self.git(
+            "commit-tree", merged_tree, "-p", product, "-p", base, "-m", "sync"
+        ).stdout.strip()
+        subprocess.run(
+            [
+                sys.executable,
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    "..",
+                    "skills",
+                    "hypomnema",
+                    "scripts",
+                    "decision_assignments.py",
+                ),
+                "plan",
+                "--repo",
+                self.target,
+                "--base",
+                base,
+                "--base-ref",
+                "refs/remotes/origin/main",
+                "--product",
+                unnumbered,
+                "--report",
+                report,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        with open(os.path.join(self.target, report), encoding="ascii") as handle:
+            result_tree = json.load(handle)["result_tree"]
+        numbered = self.hash_object("# ADR-061: Alpha choice\n\nStatus: proposed\n")
+        self.assertEqual(
+            self._tree_with(unnumbered, remove=[draft], add=[(final, numbered)]),
+            result_tree,
+        )
+        candidate = self.git(
+            "commit-tree",
+            result_tree,
+            "-p",
+            product,
+            "-p",
+            base,
+            "-m",
+            "Assign decision records\n\n"
+            f"ADR-Assignment-Base: {base}\n"
+            "ADR-Assignment: adr/alpha-choice=ADR-061",
+        ).stdout.strip()
+        base_before = module._native_relation_merge_base(self.target, product, base)
+        paths = {
+            "product_paths": module._native_relation_diff_paths(
+                self.target, base_before, product
+            ),
+            "upstream_paths": module._native_relation_diff_paths(
+                self.target, base_before, base
+            ),
+            "composition_paths": module._native_relation_diff_paths(
+                self.target, product, candidate
+            ),
+        }
+        paths["overlap_paths"] = sorted(
+            set(paths["product_paths"]) & set(paths["upstream_paths"])
+        )
+        paths["affected_paths"] = sorted(
+            set(paths["composition_paths"]) | set(paths["overlap_paths"])
+        )
+        with mock.patch.object(
+            module, "verify_local_commit", return_value=candidate
+        ):
+            assignment = module.decision_assignment_receipt(
+                self.target,
+                report,
+                candidate,
+                expected_base=base,
+                expected_sync_parents=[product, base],
+            )
+            state["integrate"]["sync"] = {
+                "commit": candidate,
+                "base": "main",
+                "starting_base": state["base"],
+                "base_head": base,
+                "parents": [product, base],
+                "github_verified": [candidate],
+                "product_evidence": module.product_evidence_record(state, product),
+                "revalidation": {
+                    "schema": module.INTEGRATION_REVALIDATION_SCHEMA,
+                    "artifact": ".hexaemeron/integration-revalidation.json",
+                    "sha256": "d" * 64,
+                    "base_before": base_before,
+                    "base_after": base,
+                    **paths,
+                    "checks": [
+                        {
+                            "id": "composition",
+                            "command": "python3 -m unittest",
+                            "paths": paths["affected_paths"],
+                            "exit": 0,
+                        }
+                    ],
+                },
+                "resolution_guard": module.sync_resolution_guard_record(
+                    self.target,
+                    product,
+                    base,
+                    candidate,
+                    current_sync=None,
+                    acknowledgements=[],
+                ),
+                module.DECISION_ASSIGNMENT_SYNC_KEY: assignment,
+            }
+            resolution = module.build_version_resolution(
+                self.target, state, exact_base=base, exact_head=candidate
+            )
+        state["integrate"]["version_resolutions"] = [resolution]
+        merge = self.git(
+            "commit-tree",
+            f"{candidate}^{{tree}}",
+            "-p",
+            base,
+            "-p",
+            candidate,
+            "-m",
+            "integration merge",
+        ).stdout.strip()
+        # What `git fetch origin main` does once the integration merge lands.
+        self.git("update-ref", "refs/remotes/origin/main", merge)
+        return module, state, resolution, base, candidate, merge
+
+    def test_terminal_resolution_replays_an_assignment_sync_after_the_merge_is_fetched(
+        self,
+    ):
+        # skills#1665: done integrate refused here, after an irreversible merge.
+        module, state, resolution, base, candidate, merge = (
+            self._assignment_sync_fixture()
+        )
+        stderr = io.StringIO()
+        with (
+            mock.patch.object(module, "verify_local_commit", return_value=candidate),
+            mock.patch.object(module, "remote_branch_tip", return_value=merge),
+        ):
+            replayed = module.terminal_version_resolution(self.target, state, merge)
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+                module.build_version_resolution(
+                    self.target, state, exact_base=base, exact_head=candidate
+                )
+        self.assertEqual(replayed, resolution)
+        self.assertIn(
+            "decision assignment base ref moved during evidence collection",
+            stderr.getvalue(),
+        )
+
     def test_next_withholds_integration_until_a_resolution_exists(self):
         _, _, state = self._relation_run_with_candidate()
         module = hexctl_module()
