@@ -149,12 +149,21 @@ def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
             finally:
                 # An exited leader can leave descendants holding output pipes.
                 try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait()
-                process.stdout.close()
-                process.stderr.close()
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    except PermissionError:
+                        # Darwin can reject a group containing only an unreaped leader.
+                        process.wait(timeout=max(0.0, deadline - time.monotonic()))
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                    process.wait()
+                finally:
+                    process.stdout.close()
+                    process.stderr.close()
         pin.check()
         return exit_code, bytes(buffers["stdout"]), bytes(buffers["stderr"])
     except subprocess.TimeoutExpired:

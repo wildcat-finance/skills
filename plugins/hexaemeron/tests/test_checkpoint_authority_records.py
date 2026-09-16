@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import contextlib
 import fcntl
 import hashlib
 import importlib.metadata
@@ -592,6 +593,28 @@ class BoundaryTests(unittest.TestCase):
         with mock.patch.object(records,'MAX_ENTRIES',1):
             with self.assertRaisesRegex(Refusal,'aggregate-limit'):
                 records.check_reference_order([('b'*64,data)],external=[('a'*64,'authority-policy')])
+
+    def test_group_permission_after_exit_is_retried_without_ignoring_denial(self):
+        executable = str(Path(sys.executable).resolve())
+        pin = signatures.ToolPin('openssl', executable, digest(Path(executable).read_bytes()))
+        popen = subprocess.Popen
+        for second_error, expected in (
+            (ProcessLookupError(3, 'group gone'), 'tool-output-limit'),
+            (PermissionError(1, 'signal denied'), 'tool-unavailable'),
+        ):
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as temporary:
+                with contextlib.ExitStack() as children:
+                    def start(*args, **kwargs):
+                        return children.enter_context(popen(*args, **kwargs))
+                    with mock.patch.object(signatures.subprocess, 'Popen', side_effect=start), \
+                            mock.patch.object(signatures.os, 'killpg', side_effect=[
+                                PermissionError(1, 'unreaped leader'), second_error,
+                            ]) as signalling:
+                        with self.assertRaisesRegex(Refusal, expected):
+                            signatures._run(pin, ['-c', 'import os; os.write(1, b"x" * 70000)'],
+                                            Path(temporary), timeout=10)
+                        if expected == 'tool-output-limit':
+                            self.assertEqual(signalling.call_count, 2)
 
     def test_public_verification_subprocess_output_and_time_caps(self):
         key=specimen('root-public')

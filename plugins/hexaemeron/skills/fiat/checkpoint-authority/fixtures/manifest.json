@@ -11,6 +11,7 @@
     "test_checkpoint_authority_records.BindingTests.test_digest_roles_copy_evidence_and_native_order",
     "test_checkpoint_authority_records.BindingTests.test_protocol_type_scope_and_real_calendar",
     "test_checkpoint_authority_records.BindingTests.test_reference_self_cycle_missing_and_wrong_type",
+    "test_checkpoint_authority_records.BoundaryTests.test_group_permission_after_exit_is_retried_without_ignoring_denial",
     "test_checkpoint_authority_records.BoundaryTests.test_noncanonical_native_public_keys_and_wrong_fingerprints",
     "test_checkpoint_authority_records.BoundaryTests.test_public_verification_subprocess_output_and_time_caps",
     "test_checkpoint_authority_records.BoundaryTests.test_published_hostile_vectors",
