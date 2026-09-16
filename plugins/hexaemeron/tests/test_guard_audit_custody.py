@@ -46,8 +46,13 @@ class NativeGuardAuditPairTests(unittest.TestCase):
         self.state = {'config': {'audit': {'log_path': LOG}}, 'steps': []}
 
     def git(self, *args):
+        # A Git-spawned test must not redirect fixture writes into its caller.
+        environment = {key: value for key, value in os.environ.items()
+                       if not key.startswith('GIT_')}
+        environment.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM='1',
+                           GIT_TERMINAL_PROMPT='0', GIT_NO_REPLACE_OBJECTS='1')
         return subprocess.run(['git', *args], cwd=self.root, capture_output=True,
-                              check=True, timeout=20).stdout
+                              check=True, timeout=20, env=environment).stdout
 
     def pair(self, raw=RAW, *, commit=False):
         rendered = CANDIDATE._guard_audit_synopsis_module().render_source(LOG, raw)
@@ -74,6 +79,21 @@ class NativeGuardAuditPairTests(unittest.TestCase):
     def refused(self):
         code, _, error = self.outcome()
         self.assertEqual(code, 2, error)
+
+    def test_fixture_git_ignores_an_inherited_repository(self):
+        with tempfile.TemporaryDirectory(prefix='audit-custody-foreign-') as temporary:
+            foreign = Path(temporary) / 'foreign.git'
+            self.git('init', '--bare', '--quiet', str(foreign))
+            with mock.patch.dict(os.environ, {'GIT_DIR': str(foreign)}):
+                actual = self.git('rev-parse', '--absolute-git-dir').decode().strip()
+            self.assertEqual(Path(actual).resolve(), self.root / '.git')
+
+    def test_fixture_git_does_not_write_an_inherited_index(self):
+        with tempfile.TemporaryDirectory(prefix='audit-custody-index-') as temporary:
+            foreign = Path(temporary) / 'foreign.index'
+            with mock.patch.dict(os.environ, {'GIT_INDEX_FILE': str(foreign)}):
+                self.git('add', 'baseline')
+            self.assertFalse(foreign.exists())
 
     def test_fresh_absent_pair_still_passes(self):
         self.assertEqual(self.outcome()[0], 0)
