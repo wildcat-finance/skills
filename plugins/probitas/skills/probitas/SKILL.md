@@ -10,7 +10,7 @@ description: >
   about a single market's own numbers, and never to work out which individual
   controls an address.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <p align="center">

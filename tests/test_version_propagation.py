@@ -51,7 +51,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "lazarus": "1.1.3",
     "lemma": "0.1.4",
     "pandects": "1.2.1",
-    "probitas": "0.2.3",
+    "probitas": "0.2.4",
     "sapheneia": "0.2.0",
     "synkrisis": "0.5.1",
     "tabularium": "0.3.3",

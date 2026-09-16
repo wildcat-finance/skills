@@ -71,7 +71,7 @@ Five gates decide whether a dossier is honest enough to hand to a lender:
 2. Every venue in the registry gets a coverage row, and a venue that was queried says over what block range. Silence about a venue would read as a clean record.
 3. Every assertion carries a citation, and every figure in the document traces back to a record.
 4. What could not be established gets its own section, ahead of anything that reads like a conclusion.
-5. No score without a rubric printed beside it. <!-- front-door:status skill="probitas" version="probitas-v1.4.0" -->This version emits none.
+5. No score without a rubric printed beside it. <!-- front-door:status skill="probitas" version="probitas-v1.5.0" -->This version emits none.
 
 Gate 3 is the one that does the work. It rebuilds, from the evidence alone, every number and hash a truthful dossier could carry, then fails the document on any figure that is not in that set. An invented transaction hash, an amount rounded in the retelling, a market that was never there: each fails the run rather than shipping in it.
 
@@ -268,7 +268,7 @@ which individual controls an address. A dossier that starts profiling people is
 a different product and a worse one, and that line sits in the tool rather than
 in whoever is operating it at two in the morning.
 
-<!-- front-door:status skill="probitas" version="probitas-v1.4.0" -->
+<!-- front-door:status skill="probitas" version="probitas-v1.5.0" -->
 No score, in this version. The specification leaves the question open and leans
 toward evidence without a rating, because a rating invites people to lean on it
 harder than the data can bear. Gate 5 is implemented anyway, so whoever adds a

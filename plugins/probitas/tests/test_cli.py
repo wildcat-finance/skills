@@ -449,6 +449,96 @@ class TestTheWholeSequence(unittest.TestCase):
         )
 
 
+class TestProvenanceTheDossierCannotPlace(unittest.TestCase):
+    """The demo evidence edits skills#1693 reproduced, run the way an operator would.
+
+    Before the refusal each one rendered with exit 0 and, apart from the
+    address given two tiers, passed all five gates while the dossier left a
+    finding out or filed it on the wrong side of the inferred line.
+    """
+
+    address = "0x" + "a1" * 20
+    stranger = "0x" + "b2" * 20
+
+    @classmethod
+    def setUpClass(cls):
+        cls.directory = tempfile.TemporaryDirectory()
+        cls.evidence = os.path.join(cls.directory.name, "evidence.json")
+        cls.dossier = os.path.join(cls.directory.name, "dossier.md")
+        for step in (
+            (
+                "collect", "--entity", "Acme Trading Ltd", "--address", cls.address,
+                "--fixtures", os.path.join(FIXTURES, "demo"), "--run-id", "demo",
+                "--out", cls.evidence,
+            ),
+            ("render", cls.evidence, "--out", cls.dossier),
+        ):
+            result = run(*step)
+            if result.returncode != 0:
+                cls.directory.cleanup()
+                raise AssertionError(f"{step[0]} failed: {result.stderr}")
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.directory.cleanup()
+
+    def edited(self, name, edit):
+        with open(self.evidence, encoding="utf-8") as handle:
+            payload = json.load(handle)
+        edit(payload)
+        path = os.path.join(self.directory.name, f"{name}.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, indent=2)
+        return path
+
+    def assert_refused(self, path, named):
+        for command in (("render", path, "--out", "-"), ("verify", self.dossier, path)):
+            with self.subTest(command=command[0]):
+                result = run(*command)
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn(named, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_the_unedited_demo_evidence_still_passes_every_gate(self):
+        result = run("verify", self.dossier, self.evidence)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(result.stdout.count(": pass --"), 5)
+
+    def test_every_tier_set_to_one_nobody_defined_is_refused(self):
+        for tier in ("protocol-observed", "declaredx"):
+            with self.subTest(tier=tier):
+
+                def edit(payload, tier=tier):
+                    for item in payload["subject"]["addresses"] + payload["records"]:
+                        item["provenance"] = tier
+
+                self.assert_refused(self.edited(tier, edit), f"tier '{tier}'")
+
+    def test_a_record_against_an_address_that_is_not_a_subject_is_refused(self):
+        def edit(payload):
+            payload["records"][0]["address"] = self.stranger
+
+        path = self.edited("stranger", edit)
+        self.assert_refused(path, f"record 0 cites '{self.stranger}'")
+
+    def test_an_inferred_record_against_a_declared_address_is_refused(self):
+        def edit(payload):
+            payload["records"][0]["provenance"] = "inferred"
+
+        path = self.edited("misfiled", edit)
+        self.assert_refused(path, "record 0 carries the provenance tier 'inferred'")
+
+    def test_an_address_given_two_tiers_is_refused(self):
+        def edit(payload):
+            payload["subject"]["addresses"].append(
+                {"address": self.address, "provenance": "inferred"}
+            )
+
+        path = self.edited("two-tiers", edit)
+        self.assert_refused(path, "both declared and inferred")
+
+
 class TestDiffCommand(unittest.TestCase):
     """Two verified fixture runs become one offline change artifact."""
 

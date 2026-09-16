@@ -162,7 +162,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty dossiers and repeat-run comparisons.",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

@@ -6104,12 +6104,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "negative",
-        "sha256": "4be8d2252c75ca2dbde8aa2965247f2d5b127a768b1e23e20c4bcbd567a7c6b9"
+        "sha256": "79685c401b385478981159667fe396b4ef23c91998d108e429a704ab437f4134"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "positive",
-        "sha256": "4be8d2252c75ca2dbde8aa2965247f2d5b127a768b1e23e20c4bcbd567a7c6b9"
+        "sha256": "79685c401b385478981159667fe396b4ef23c91998d108e429a704ab437f4134"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_it_exits_zero",
