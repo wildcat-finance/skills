@@ -2,15 +2,18 @@
 from __future__ import annotations
 
 import copy
+import fcntl
 import hashlib
 import importlib.metadata
 import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -55,6 +58,48 @@ def bootstrap():
 
 def chain(name='trust-prefix'):
     return [canonical(value, limit=128*1024) for value in json.loads((FIXTURES / (name + '.json')).read_bytes())]
+
+
+DESCENDANT_PROBE = '''import fcntl, os, time
+ready_read, ready_write = os.pipe()
+child = os.fork()
+if child:
+    os.close(ready_write)
+    assert os.read(ready_read, 1) == b"1"
+    with open("descendant.pid", "w") as output:
+        output.write(str(child))
+    print("{}", flush=True)
+    os._exit(0)
+os.close(ready_read)
+with open("descendant.lock", "w") as held:
+    fcntl.flock(held, fcntl.LOCK_EX)
+    os.write(ready_write, b"1")
+    time.sleep(60)
+'''
+
+
+def assert_descendant_stopped(case, directory):
+    """A released lock observes process exit even when an orphan remains a zombie."""
+    case.assertTrue((directory / 'descendant.pid').is_file())
+    deadline = time.monotonic() + 2
+    with (directory / 'descendant.lock').open('rb') as held:
+        while True:
+            try:
+                fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    case.fail('verifier descendant survived cleanup after its parent exited')
+                time.sleep(0.01)
+
+
+def cleanup_descendant(directory):
+    path = directory / 'descendant.pid'
+    if path.is_file():
+        try:
+            os.kill(int(path.read_text()), signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 class CanonicalTests(unittest.TestCase):
@@ -517,6 +562,18 @@ class AuthenticatedHostileTests(unittest.TestCase):
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_timeout_reaps_descendants_after_verifier_parent_exits(self):
+        executable = str(Path(sys.executable).resolve())
+        pin = signatures.ToolPin('openssl', executable, digest(Path(executable).read_bytes()))
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            try:
+                with self.assertRaisesRegex(Refusal, 'tool-timeout'):
+                    signatures._run(pin, ['-c', DESCENDANT_PROBE], directory, timeout=2)
+                assert_descendant_stopped(self, directory)
+            finally:
+                cleanup_descendant(directory)
+
     def test_published_hostile_vectors(self):
         corpus=json.loads((FIXTURES/'hostile-records.json').read_bytes())
         self.assertEqual(corpus['schema'],'checkpoint-authority-hostile-records/v1')

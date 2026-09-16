@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import stat
 import sys
 import subprocess
@@ -254,10 +255,12 @@ def _execute(root):
                     raise Refusal("execution-limit")
                 time.sleep(0.02)
         finally:
-            if process.poll() is None:
-                import signal
+            # Reporter exit does not establish that its descendants stopped.
+            try:
                 os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
+            except ProcessLookupError:
+                pass
+            process.wait()
         stdout.seek(0); stderr.seek(0)
         out, err = stdout.read(65537), stderr.read(16385)
         if len(out) > 65536 or len(err) > 16384:

@@ -15,6 +15,7 @@
     "test_checkpoint_authority_records.BoundaryTests.test_public_verification_subprocess_output_and_time_caps",
     "test_checkpoint_authority_records.BoundaryTests.test_published_hostile_vectors",
     "test_checkpoint_authority_records.BoundaryTests.test_reference_pair_types_and_external_inventory",
+    "test_checkpoint_authority_records.BoundaryTests.test_timeout_reaps_descendants_after_verifier_parent_exits",
     "test_checkpoint_authority_records.CanonicalTests.test_canonical_and_depth_byte_boundaries",
     "test_checkpoint_authority_records.CanonicalTests.test_duplicate_trailing_unicode_and_numbers",
     "test_checkpoint_authority_records.CanonicalTests.test_exact_encoding",

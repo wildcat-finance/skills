@@ -147,9 +147,12 @@ def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
                                 raise Refusal("tool-output-limit", "signature")
                     exit_code = process.wait(timeout=max(0.001, deadline - time.monotonic()))
             finally:
-                if process.poll() is None:
+                # An exited leader can leave descendants holding output pipes.
+                try:
                     os.killpg(process.pid, signal.SIGKILL)
-                    process.wait()
+                except ProcessLookupError:
+                    pass
+                process.wait()
                 process.stdout.close()
                 process.stderr.close()
         pin.check()

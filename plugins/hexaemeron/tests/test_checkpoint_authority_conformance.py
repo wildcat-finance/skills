@@ -112,5 +112,19 @@ class ImplementedConformanceTests(unittest.TestCase):
         with mock.patch.object(subject,'_execute',side_effect=changed):status,event=self.invoke()
         self.assertEqual(status,2);self.assertEqual(event['code'],'source-changed')
 
+    def test_execution_reaps_descendants_after_reporter_parent_exits(self):
+        from plugins.hexaemeron.tests.test_checkpoint_authority_records import (
+            DESCENDANT_PROBE, assert_descendant_stopped, cleanup_descendant,
+        )
+        runner = self.root / 'plugins/hexaemeron/tests/checkpoint_authority_record_suite.py'
+        runner.write_text(DESCENDANT_PROBE)
+        try:
+            with mock.patch.object(subject, '_validate_execution'):
+                result, exit_code, _, _ = subject._execute(self.root)
+            self.assertEqual((result, exit_code), ({}, 0))
+            assert_descendant_stopped(self, self.root)
+        finally:
+            cleanup_descendant(self.root)
+
 
 if __name__=='__main__':unittest.main()
