@@ -104,7 +104,7 @@ class DecisionState:
     records: dict[bytes, TreeEntry]
     # Final slugs carried by more than one numbered record. Legacy history may
     # hold such pairs; they are tolerated only when every copy is inherited
-    # unchanged from the base, which the inherited-record checks establish.
+    # with its original bytes and mode, which the inherited-record checks establish.
     duplicate_finals: frozenset[bytes]
     # Markdown files directly under docs/decisions that are neither numbered
     # records nor drafts. Legacy history may hold such a file; it is tolerated
@@ -594,7 +594,15 @@ def build_report(
         if product_state.drafts.get(slug) != entry:
             refuse("inherited-draft-drift")
     for path, entry in base_state.records.items():
-        if product_state.records.get(path) != entry:
+        current = product_state.records.get(path)
+        if current == entry:
+            continue
+        if current is None or (current.mode, current.kind) != (entry.mode, entry.kind):
+            refuse("inherited-record-drift")
+        # Assignment owns draft renaming; an inherited record may acquire an
+        # amendment only after every original byte. Read both through the same
+        # bounded native-object path used for drafts, without text normalisation.
+        if not read_blob(repo, current).startswith(read_blob(repo, entry)):
             refuse("inherited-record-drift")
     if set(product_state.drafts) & set(product_state.finals):
         refuse("identity-duplicate")

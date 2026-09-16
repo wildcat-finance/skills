@@ -5216,16 +5216,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-decision-assignment-composition.json",
         "selector": "negative",
-        "sha256": "b195f86bca136c6a42909f56f8f6262a70b51e2ca3ce19460762775db086f644"
+        "sha256": "0fe879598bdacc3ae488c84b3b798e7e4b5708c158e6c8a972b9db12069ee461"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-decision-assignment-composition.json",
         "selector": "positive",
-        "sha256": "b195f86bca136c6a42909f56f8f6262a70b51e2ca3ce19460762775db086f644"
+        "sha256": "0fe879598bdacc3ae488c84b3b798e7e4b5708c158e6c8a972b9db12069ee461"
       },
       "reader": "native-json-v1",
       "selector": "test_exact_report_candidate_and_ordered_trailers_are_receipted",
-      "sha256": "b7c12fed5b3d69a5b25dea52bc1d458de4ce68e89b0c376a4784322399b64f48",
+      "sha256": "507e89fc37cf5fff0806263c16395bd87e1823f8bca61f231c1808289b21b8e9",
       "source": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py"
     },
     "fiat-design-evidence": {
@@ -5744,16 +5744,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-decision-assignment.json",
         "selector": "negative",
-        "sha256": "60c74fbec02b66ecb67d94786b32cabfe12ba99e6a708744fcb2732583143555"
+        "sha256": "0e5bce37fdac1fc4ae12a16897ac66274e726750d0cbc17e4829c67787b056f6"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-decision-assignment.json",
         "selector": "positive",
-        "sha256": "60c74fbec02b66ecb67d94786b32cabfe12ba99e6a708744fcb2732583143555"
+        "sha256": "0e5bce37fdac1fc4ae12a16897ac66274e726750d0cbc17e4829c67787b056f6"
       },
       "reader": "native-json-v1",
       "selector": "test_plan_and_replay_emit_the_same_canonical_report",
-      "sha256": "d8cfa0ce6088108f8ba05f5da1592444f89b844fdca25f9d9ff26ef46c7e7c0d",
+      "sha256": "80845792a5bb0e173720d80c8f3ce3c7161bbad125faf76096c63b385463d448",
       "source": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py"
     },
     "hypomnema-record-placement": {
