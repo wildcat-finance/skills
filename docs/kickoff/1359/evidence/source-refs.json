@@ -1,0 +1,96 @@
+{
+  "schema": "wildcat.kickoff-source-refs.v1",
+  "checked_on": "2026-09-13",
+  "evidence_class": "recorded",
+  "method": "gh api repos/OWNER/REPO/commits/REF; successful response SHA and native tree recorded; this checks retrievability, not deployed identity",
+  "sources": {
+    "wildcat-v1-ethereum-mainnet": {
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "requested_ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "sha": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "tree": "ecd4a7c146f5ffcaf9be9144921501b26a9f4759",
+      "url": "https://github.com/wildcat-finance/wildcat-protocol/commit/da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "commit_date": "2023-11-30T16:38:32Z"
+    },
+    "wildcat-v2-ethereum-mainnet": {
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "requested_ref": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "sha": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "tree": "0bfd98ed7a475fa0e6ef6b0268212cf5ca4782a2",
+      "url": "https://github.com/wildcat-finance/v2-protocol/commit/a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "commit_date": "2026-03-16T19:50:00Z"
+    },
+    "aave-v3": {
+      "repository": "https://github.com/aave-dao/aave-v3-origin",
+      "requested_ref": "8305565ae342f1773c42cd2e4593f175fe5968a0",
+      "sha": "8305565ae342f1773c42cd2e4593f175fe5968a0",
+      "tree": "7c8f767eba4efdb96b31b9e86c4b6ff6c77c9af5",
+      "url": "https://github.com/aave-dao/aave-v3-origin/commit/8305565ae342f1773c42cd2e4593f175fe5968a0",
+      "commit_date": "2026-09-09T11:04:12Z"
+    },
+    "euler-v1": {
+      "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+      "requested_ref": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "sha": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "tree": "9e842a736d18c3864262d080e2aec16d02f5d527",
+      "url": "https://github.com/euler-legacy-xyz/euler-contracts/commit/24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "commit_date": "2024-05-24T14:49:54Z"
+    },
+    "euler-v2": {
+      "repository": "https://github.com/euler-xyz/euler-vault-kit",
+      "requested_ref": "bfb325a6e6ca09613d940b46f72ccfe017353933",
+      "sha": "bfb325a6e6ca09613d940b46f72ccfe017353933",
+      "tree": "95381009730d55b438a28798593bed4891db9663",
+      "url": "https://github.com/euler-xyz/euler-vault-kit/commit/bfb325a6e6ca09613d940b46f72ccfe017353933",
+      "commit_date": "2026-09-01T11:48:48Z"
+    },
+    "maple-v1": {
+      "repository": "https://github.com/maple-labs/maple-core",
+      "requested_ref": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+      "sha": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+      "tree": "3ab2f51902c9f2ef024b378f7047307b5d42e1b8",
+      "url": "https://github.com/maple-labs/maple-core/commit/4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+      "commit_date": "2021-05-18T15:02:13Z"
+    },
+    "maple-v2": {
+      "repository": "https://github.com/maple-labs/maple-core-v2",
+      "requested_ref": "f59f30c691fa0b831426d15832ee642f5ce38a42",
+      "sha": "f59f30c691fa0b831426d15832ee642f5ce38a42",
+      "tree": "4574f4f7944a7982b43ef0bb63710c35d5a830ea",
+      "url": "https://github.com/maple-labs/maple-core-v2/commit/f59f30c691fa0b831426d15832ee642f5ce38a42",
+      "commit_date": "2025-11-27T14:19:22Z"
+    },
+    "centrifuge-v3": {
+      "repository": "https://github.com/centrifuge/protocol",
+      "requested_ref": "48f7dff6ec83b2f7c044d35139084fb501da5f9a",
+      "sha": "48f7dff6ec83b2f7c044d35139084fb501da5f9a",
+      "tree": "905aa553d8736e554020ab9173256ad7f0e425f1",
+      "url": "https://github.com/centrifuge/protocol/commit/48f7dff6ec83b2f7c044d35139084fb501da5f9a",
+      "commit_date": "2026-09-12T05:40:00Z"
+    },
+    "maple-fixed-term": {
+      "repository": "https://github.com/maple-labs/fixed-term-loan",
+      "requested_ref": "main",
+      "sha": "8fb3675288897cb0b5748a5bbe90a12055bf9fa1",
+      "tree": "9d269185f4e93c9fa1a2ef75be318080874f31cc",
+      "url": "https://github.com/maple-labs/fixed-term-loan/commit/8fb3675288897cb0b5748a5bbe90a12055bf9fa1",
+      "commit_date": "2025-05-25T08:34:58Z"
+    },
+    "maple-open-term": {
+      "repository": "https://github.com/maple-labs/open-term-loan",
+      "requested_ref": "main",
+      "sha": "453cfb0e48b2db22727d901b5340e56f0e41ea26",
+      "tree": "08a9b4d4fb179849fe3fab1a2db309135b84a20d",
+      "url": "https://github.com/maple-labs/open-term-loan/commit/453cfb0e48b2db22727d901b5340e56f0e41ea26",
+      "commit_date": "2025-05-25T09:02:00Z"
+    },
+    "euler-evc": {
+      "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+      "requested_ref": "master",
+      "sha": "838e5f72eaea25fab7d242760245244226096054",
+      "tree": "b02614bf59b839b7f945f1704cfd9d201cba81d5",
+      "url": "https://github.com/euler-xyz/ethereum-vault-connector/commit/838e5f72eaea25fab7d242760245244226096054",
+      "commit_date": "2026-09-01T11:19:48Z"
+    }
+  }
+}

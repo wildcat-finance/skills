@@ -1,0 +1,129 @@
+{
+  "schema": "issue508-conformance-fixtures/v1",
+  "candidate": "whole-worker-sandbox",
+  "criteria": [
+    {
+      "id": "whole-launch-dispatch",
+      "blocks": "step:4",
+      "specimens": [
+        "inside-shell-python-patch",
+        "outside-shell-python-patch",
+        "symlink-escape",
+        "live-git-and-controller-metadata",
+        "external-deputy-unavailable",
+        "inherited-descriptor-closed",
+        "host-ipc-denied",
+        "nested-policy-loosening-denied",
+        "detached-writer-private-snapshot"
+      ]
+    },
+    {
+      "id": "worker-deadline",
+      "blocks": "step:3",
+      "specimens": [
+        "two-second-deadline",
+        "ten-second-return-bound",
+        "timeout-admission-refused",
+        "uncertain-cleanup-no-reuse"
+      ]
+    },
+    {
+      "id": "worker-output-cap",
+      "blocks": "step:3",
+      "specimens": [
+        "one-mib-stream",
+        "first-stream-excess",
+        "one-mib-artifact",
+        "first-artifact-excess",
+        "bounded-retained-buffer"
+      ]
+    },
+    {
+      "id": "origin-drift-recovery",
+      "blocks": "step:4",
+      "specimens": [
+        "denied-origin-write-unchanged",
+        "independent-drift-preserved",
+        "no-invented-attribution",
+        "resnapshot"
+      ]
+    },
+    {
+      "id": "single-cumulative-reconstruction",
+      "blocks": "step:6",
+      "specimens": [
+        "two-exhausted-passes-one-packet",
+        "current-base-complete-reconstruction",
+        "omitted-payload-refused",
+        "partial-mapping-refused",
+        "no-gate-before-completion"
+      ]
+    },
+    {
+      "id": "executed-inoculation-guards",
+      "blocks": "step:6",
+      "specimens": [
+        "discovery-only-refused",
+        "skipped-guard-refused",
+        "replaced-guard-refused",
+        "executed-passes-all-families",
+        "new-independent-audit-after-guards"
+      ]
+    },
+    {
+      "id": "carryover-lineage-recovery",
+      "blocks": "step:6",
+      "specimens": [
+        "stale-source-refused",
+        "duplicate-sequence-refused",
+        "interrupted-admission-preserved",
+        "missing-occurrence-refused",
+        "attachment-digest-mismatch",
+        "signed-fixed-tree-ref-required"
+      ]
+    },
+    {
+      "id": "source-owned-report-compatibility",
+      "blocks": "step:7",
+      "specimens": [
+        "relative-source-declaration-preserved",
+        "absolute-execution-destination",
+        "report-bytes-preserved",
+        "report-escape-refused"
+      ]
+    },
+    {
+      "id": "gate-parser-no-execution",
+      "blocks": "step:7",
+      "specimens": [
+        "malformed-fence",
+        "four-draft-brevitas",
+        "unsupported-substitution",
+        "injected-command-no-side-effect"
+      ]
+    },
+    {
+      "id": "gate-receipt-replay",
+      "blocks": "step:7",
+      "specimens": [
+        "finite-per-file-command",
+        "command-drift",
+        "cli-source-drift",
+        "adapter-drift",
+        "report-source-drift"
+      ]
+    },
+    {
+      "id": "whole-path-demonstration",
+      "blocks": "integration",
+      "specimens": [
+        "exhaust-export-retire",
+        "complete-reconstruction",
+        "executed-inoculation",
+        "independent-audit",
+        "matching-launch-and-gate-evidence",
+        "integration-refuses-mismatch"
+      ]
+    }
+  ]
+}

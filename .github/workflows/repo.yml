@@ -28,8 +28,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version-file: ".python-version"
+      - name: Changed plugins carry newer package versions
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$BASE_SHA" ]; then
+            test "$GITHUB_EVENT_NAME" = workflow_dispatch
+            if [ "$GITHUB_REF" = refs/heads/main ]; then
+              BASE_SHA="$(git rev-parse HEAD^)"
+            else
+              git fetch --no-tags --depth=1 origin main
+              BASE_SHA="$(git rev-parse FETCH_HEAD)"
+            fi
+          fi
+          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "plugin-release: invalid base commit" >&2
+            exit 2
+          fi
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          python3 scripts/plugin_release.py --base "$BASE_SHA" --head "$GITHUB_SHA"
       - name: Repository-wide invariant suite
         run: python3 -m unittest discover -s tests -v

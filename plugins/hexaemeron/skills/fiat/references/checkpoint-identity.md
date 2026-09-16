@@ -9,6 +9,13 @@ This identity names checkpoint meaning. The native checkpoint manifest names
 the exact controller capsule from `checkpoint export`. A future archive digest
 may name exact carrier bytes. None can stand in for another.
 
+The run anchor distinguishes the delivery repository from its task tracker.
+A GitHub issue in that repository keeps `{kind: github-issue, number: N}`.
+An issue elsewhere uses `{kind: external, sha256: SHA256(exact URL)}` under
+the existing anchor schema. The full URL remains in `receipts.task_issue` for
+filing and closure checks. Substituting either the delivery origin or tracker
+changes the anchor and refuses verification.
+
 ## Accepted boundary
 
 The command accepts only a run created with a bound `fiat-run-anchor/v1`
@@ -183,6 +190,7 @@ sha256(
 The hashed canonical identity has no trailing newline. The wrapper and display
 newline are outside it.
 
+The native carrier contract is [checkpoint-archive.md](checkpoint-archive.md).
 Carrier filename, compression, file order, timestamp, permission, proposed
 archive digest, native capsule-manifest digest and current branch tips do not
 enter `identity`. Absolute paths and source text do not appear in the result.

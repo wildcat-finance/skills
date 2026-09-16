@@ -1,0 +1,219 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "phylax_github_issue_publisher": {
+          "authorised_transition": {
+            "action": "structurally bind phylax-github-issue-publisher without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:phylax-github-issue-publisher",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
+              "sha256": "ad69b19b91e42c77b22375a7207b438a4087cfa67a98c441a3b61ecea7246b53"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+                "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+                "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "phylax-github-issue-publisher",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for phylax-github-issue-publisher",
+            "subject": "runtime source plugins/hexaemeron/tests/test_phylax_publisher_deployment.py#test_positive_manifest_executes_every_study_risk"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:phylax-github-issue-publisher",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
+            "sha256": "ad69b19b91e42c77b22375a7207b438a4087cfa67a98c441a3b61ecea7246b53"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+          "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+        },
+        "promise_id": "phylax-github-issue-publisher",
+        "scope": "structural binding for phylax-github-issue-publisher",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/hexaemeron/tests/test_phylax_publisher_deployment.py#test_positive_manifest_executes_every_study_risk",
+        "transition": {
+          "action": "structurally bind phylax-github-issue-publisher without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "phylax_github_issue_publisher": {
+          "authorised_transition": {
+            "action": "structurally bind phylax-github-issue-publisher without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "authority": {
+            "id": "promise-owner:phylax-github-issue-publisher",
+            "reference": {
+              "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
+              "sha256": "ad69b19b91e42c77b22375a7207b438a4087cfa67a98c441a3b61ecea7246b53"
+            }
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+                "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+                "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "independent_evidence": {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "phylax-github-issue-publisher",
+          "source": {
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          },
+          "target": {
+            "scope": "structural binding for phylax-github-issue-publisher",
+            "subject": "runtime source plugins/hexaemeron/tests/test_phylax_publisher_deployment.py#test_positive_manifest_executes_every_study_risk"
+          }
+        }
+      },
+      "promise_machine": {
+        "authority": {
+          "id": "promise-owner:phylax-github-issue-publisher",
+          "reference": {
+            "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
+            "sha256": "ad69b19b91e42c77b22375a7207b438a4087cfa67a98c441a3b61ecea7246b53"
+          }
+        },
+        "evidence_classes": [
+          "checked",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+            "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "inspectable_evidence": {
+          "evidence_class": "checked",
+          "path": "plugins/hexaemeron/tests/test_phylax_publisher_deployment.py",
+          "sha256": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8"
+        },
+        "promise_id": "phylax-github-issue-publisher",
+        "scope": "structural binding for phylax-github-issue-publisher",
+        "source_digest": "cd2a12943ebd8749737af9db4b085c5db35a790fa2ba3a1da8f3ac8a8d0a48f8",
+        "subject": "runtime source plugins/hexaemeron/tests/test_phylax_publisher_deployment.py#test_positive_manifest_executes_every_study_risk",
+        "transition": {
+          "action": "structurally bind phylax-github-issue-publisher without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

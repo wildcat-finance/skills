@@ -7,9 +7,9 @@
 
 Anamnesis keeps audit findings and the changes that answered them as a source-bound corpus, admitted against an explicit rights basis and released as read-only projections.
 
-**Current frontier.** What a corpus preserves is declared in the curation policy the release manifest records and the release id hashes. Two corpora ship under their own declared scopes, the pilot's 41 Warden findings and 17 findings the capture estate recorded about itself, and neither builds under the other's scope.
+**Current frontier.** The curation policy's declared mapper is resolved through a registry keyed by name and version: an unresolved name refuses before any record is written, every assertion records the entry that read the source, and three corpora ship, the third preserving the pilot's same 41 findings read from their synopsis rendering under a second registered implementation.
 
-**Next Fiat job.** Use /hexaemeron:fiat to make the declared mapper select the implementation that reads a source. The curation policy declares a mapper name and version, the resolver always runs `warden-audit-round-markdown`, and every assertion records the declared name, so a policy naming a mapper that does not exist still produces a release whose assertions attest that mapper. Accepted when an unknown mapper refuses at curation rather than being recorded, and a source in a second producer's format is admitted under a mapper the policy selects, with the release naming the mapper that actually read it. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to admit a corpus whose findings a party other than this repository produced, under a per-source mapper declaration so one corpus can hold both formats. Every source admitted so far was produced here, and the mapper is declared once for the whole curation policy, so one corpus cannot hold a second producer's format beside an existing one. Accepted when the mapper is declared per admitted source rather than once per policy, one corpus admits two sources in different formats under an explicit rights basis for each, and each assertion names the implementation that read its own source. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## CHARACTER
@@ -103,12 +103,16 @@ The design behind the member is in [docs/study.md](docs/study.md), the build
 order in [docs/runbook.md](docs/runbook.md), and the decisions that were
 expensive to reverse in [docs/decisions/](docs/decisions/).
 
-<!-- front-door:status skill="anamnesis" version="anamnesis-v4.1.0" -->
+<!-- front-door:status skill="anamnesis" version="anamnesis-v5.1.0" -->
 This version admits sources, curates them into a finding graph, builds and
 verifies a release, and reads that release back through the Elenchus and
-Synkrisis projections. Each corpus declares in its policy what it preserves and
-which sources it admits, and two ship: the Warden seed pilot and the capture
-estate's own findings. What the declared mapper selects is the question its
+Synkrisis projections. Each corpus declares in its policy what it preserves,
+which sources it admits and which mapper reads them; that mapper is resolved
+through a registry before any record is written, and three corpora ship: the
+Warden seed pilot, the capture estate's own findings, and the pilot's same
+three records read from their synopsis rendering under a second registered
+mapper. Whether one corpus can hold a second producer's findings beside a
+format it already reads is the question its
 [ledger](skills/anamnesis/EVOLUTION.md) now holds open.
 
 ## LICENCE

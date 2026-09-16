@@ -56,9 +56,9 @@ A `manual` or `excluded` entry naming an oracle refuses. Such a row would read
 as decided by a person and held to a case at once, which are two different
 claims about the same item.
 
-The reconciler reads the disposition set, checks it and reports. The separate
-`propose` operation drafts unconfirmed `manual` and `excluded` entries for a
-person to review; it never drafts `covered` or confirms an entry.
+No code path proposes a disposition. The reconciler reads the set, checks it,
+and reports. An agent may draft a disposition set for a person to review, and
+it cannot mark anything covered by running this tool.
 
 ## Confirmation
 

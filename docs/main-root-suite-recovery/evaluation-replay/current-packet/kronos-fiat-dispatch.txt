@@ -1,0 +1,36 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is kronos-fiat-dispatch. Its source path is plugins/hexaemeron/skills/kronos/SKILL.md.
+The exact declaration is:
+
+### kronos-fiat-dispatch
+
+- Promise: A full or phase-only loop dispatches the selected held job to Fiat only when the user explicitly authorised Kronos execution and the candidate remains eligible and unparked at dispatch.
+- Evidence: The user's explicit Kronos request, current ranking record, selected ledger and held-job digest, empty standing park for that job and the newly initialised Fiat run receipt. For any dispatch after a completed iteration, evidence also includes that iteration's terminal state and an exit-0 `hexctl currency` fleet report before the next rescan.
+- Evidence classes: checked, recorded, inferred
+- Boundary: Dispatch establishes why this eligible job entered Fiat; it does not prove the ranking globally optimal, the job complete, Fiat's later receipts true or the fleet current after the named report.
+- Authorises: Starting one Fiat delivery for the selected held job and reranking from disk only after that run reaches a terminal recorded state and the fleet report exits 0.
+- Consequence: 3
+- Refuses: Implicit activation, self-selection, a mature or vendored frontier, a standing park, a lower-ranked skip with no park, continuation after no eligible frontier remains, or treating a currency refusal or unrecognised status as a fleet with nothing behind.
+- Recovery: Return to rank-only output, correct scope or eligibility, obtain explicit authority, park the exact Fiat blocker, or record and repair the exact controller-currency refusal before rerunning the fleet report.
+- Exceptions: none
+
+The evaluation request is:
+
+Decide whether a ranked Kronos job may enter Fiat under the canonical authority boundary.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A successful dispatch is presented as proof that the job is complete or the ranking was globally optimal.
+E02. The user explicitly authorised Kronos execution, the selected job remains current and unparked, and Fiat returned a new init receipt.
+E03. After `hexctl currency` exits 1, record its exact refusal and status, repair the registry route or run the installed controller, and repeat the fleet report before reranking.
+E04. A valid ranking exists but no explicit user instruction authorises Kronos execution.
+E05. The selected ledger or held-job digest changed after ranking and before dispatch.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

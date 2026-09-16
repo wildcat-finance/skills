@@ -1,6 +1,6 @@
 """The Metron budget check reads its three files, and refuses what it cannot read.
 
-The refusals matter more than the happy path here. All three files arrive from outside
+The refusals matter more than acceptance here. All three files arrive from outside
 the process, and the fault this marketplace keeps producing is a field that satisfies a
 presence check while carrying nothing a comparison can use.
 """
@@ -29,7 +29,7 @@ spec.loader.exec_module(metron)
 
 
 def budget(**overrides):
-    """One well-formed budget, with fields replaced or removed by the caller.
+    """One valid budget, with fields replaced or removed by the caller.
 
     A field set to the sentinel is dropped, which is how the absent-field tests reach
     every required key without writing nine near-identical literals.
@@ -938,17 +938,62 @@ class TimeCommandTests(TempFiles):
         outlives the run that started it."""
         pid_file = Path(self.tmp.name) / "grandchild.pid"
         proc, path = self.time(command=self.python(
-            "import os, sys, time; "
-            "child = os.fork() == 0; "
-            f"(open({str(pid_file)!r}, 'w').write(str(os.getpid())), time.sleep(30), "
-            "os._exit(0)) if child else "
-            "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+            "import os, sys, time\n"
+            "child_pid = os.fork()\n"
+            "if child_pid == 0:\n"
+            "    time.sleep(30)\n"
+            "    os._exit(0)\n"
+            # The parent owns the PID record: cleanup may kill its child before
+            # the child can write, or while the file is still empty.
+            f"with open({str(pid_file)!r}, 'w') as stream:\n"
+            "    stream.write(str(child_pid))\n"
+            "print('parent-done')\n"
+            "sys.stdout.flush()\n"
+            "os._exit(0)\n"
         ))
         self.assertEqual(proc.returncode, 0, proc.stderr)
         document = json.loads(path.read_text(encoding="utf-8"))
         self.assertLess(document["recorder"]["repetitions"][0]["wall_clock_ms"], 4000)
         pid = int(pid_file.read_text(encoding="utf-8"))
         self.assertTrue(self.wait_gone(pid, 5), f"grandchild {pid} survived the run")
+
+    def test_grandchild_cleanup_keeps_a_pid_when_its_write_is_delayed(self):
+        """Hold the PID file empty while the old fixture's parent exits.
+
+        The recorder may kill the grandchild as soon as its parent exits. Its
+        cleanup assertion must therefore consume a PID published by the parent,
+        even when writing that PID takes longer than the recorder's polling.
+        """
+        pid_file = str(Path(self.tmp.name) / "grandchild.pid")
+        prefix = (
+            "import builtins, os, time\n"
+            "fixture_parent = os.getpid()\n"
+            "real_open, real_exit = builtins.open, os._exit\n"
+            "class SlowPidFile:\n"
+            "    def __init__(self, stream): self.stream = stream\n"
+            "    def write(self, value):\n"
+            "        time.sleep(0.25)\n"
+            "        return self.stream.write(value)\n"
+            "    def __enter__(self): return self\n"
+            "    def __exit__(self, *args): self.stream.close()\n"
+            "    def __del__(self): self.stream.close()\n"
+            "def delayed_open(path, *args, **kwargs):\n"
+            "    stream = real_open(path, *args, **kwargs)\n"
+            f"    return SlowPidFile(stream) if path == {pid_file!r} else stream\n"
+            "def parent_exit(code):\n"
+            "    if os.getpid() == fixture_parent:\n"
+            "        deadline = time.monotonic() + 2\n"
+            f"        while not os.path.exists({pid_file!r}) and time.monotonic() < deadline:\n"
+            "            time.sleep(0.001)\n"
+            "    real_exit(code)\n"
+            "builtins.open, os._exit = delayed_open, parent_exit\n"
+        )
+        plain_python = self.python
+        self.python = lambda source: plain_python(prefix + source)
+        try:
+            self.test_a_grandchild_does_not_outlive_a_command_that_exits_zero()
+        finally:
+            self.python = plain_python
 
     def test_a_grandchild_that_leaves_the_process_group_is_refused(self):
         """A process group teardown cannot reach a grandchild that called `setsid`. It
@@ -957,11 +1002,12 @@ class TimeCommandTests(TempFiles):
         than recorded with an inflated duration."""
         pid_file = Path(self.tmp.name) / "escapee.pid"
         proc, path = self.time(command=self.python(
-            "import os, sys, time; "
+            "import os, sys, time; ready_r, ready_w = os.pipe(); "
             "child = os.fork() == 0; "
-            f"(os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
-            "time.sleep(30), os._exit(0)) if child else "
-            "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+            f"(os.close(ready_r), os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
+            "os.write(ready_w, b'1'), os.close(ready_w), time.sleep(30), os._exit(0)) if child else "
+            "(os.close(ready_w), os.read(ready_r, 1) == b'1' or os._exit(72), "
+            "os.close(ready_r), print('parent-done'), sys.stdout.flush(), os._exit(0))"
         ))
         try:
             self.assertEqual(proc.returncode, 1)
@@ -1056,11 +1102,12 @@ class TimeCommandTests(TempFiles):
         pid_file = Path(self.tmp.name) / "escapee.pid"
         try:
             escaped = metron.time_once(list(self.python(
-                "import os, sys, time; "
+                "import os, sys, time; ready_r, ready_w = os.pipe(); "
                 "child = os.fork() == 0; "
-                f"(os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
-                "time.sleep(30), os._exit(0)) if child else "
-                "(print('parent-done'), sys.stdout.flush(), os._exit(0))"
+                f"(os.close(ready_r), os.setsid(), open({str(pid_file)!r}, 'w').write(str(os.getpid())), "
+                "os.write(ready_w, b'1'), os.close(ready_w), time.sleep(30), os._exit(0)) if child else "
+                "(os.close(ready_w), os.read(ready_r, 1) == b'1' or os._exit(72), "
+                "os.close(ready_r), print('parent-done'), sys.stdout.flush(), os._exit(0))"
             )), os.getcwd(), 30000)
             self.assertTrue(escaped["escaped"])
             self.assertEqual(len(self.open_descriptors() - held), 2)
@@ -1075,6 +1122,23 @@ class TimeCommandTests(TempFiles):
             except (OSError, ValueError):
                 pass
 
+
+    def test_escaped_reader_waits_for_a_delayed_session_change(self):
+        """Delay setsid so parent exit cannot race the escape fixture's setup."""
+        prefix = (
+            "import os, time\n"
+            "real_setsid = os.setsid\n"
+            "def delayed_setsid():\n"
+            "    time.sleep(0.25)\n"
+            "    return real_setsid()\n"
+            "os.setsid = delayed_setsid\n"
+        )
+        plain_python = self.python
+        self.python = lambda source: plain_python(prefix + source)
+        try:
+            self.test_an_escaped_reader_keeps_its_pipe_descriptors()
+        finally:
+            self.python = plain_python
 
     def spread(self, path):
         return json.loads(path.read_text(encoding="utf-8"))["recorder"]["spread"]

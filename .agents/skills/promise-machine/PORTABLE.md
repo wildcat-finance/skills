@@ -51,3 +51,21 @@ example's explanation and rebuild entrypoint remain present, but they do not
 make the offline demonstration runnable. If a selected operation needs one of
 the omitted surfaces, stop and use a full checkout of
 `wildcat-finance/skills`; absence does not authorise a substitute claim.
+
+Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
+directories also remain in the source checkout. Their inline Markdown images
+and quoted HTML `img` references are removed only from packaged copies. The
+manifest records the omitted files and each transformed file's original
+digest, original byte length and removed byte ranges, beside its output digest
+and length. Other Markdown content remains byte-identical to its source. Generation
+requires at least 5,242,880 bytes of headroom below the 26,214,400-byte ceiling;
+the complete package count includes the runtime manifest and outer files.
+The installed verifier checks the resulting output manifest.
+
+Portrait removal changes the whole-file identities used by the evaluation
+record. The generator verifies the canonical record, emits all eleven source
+and packaged prompts through the evaluation owner, and refuses if any prompt
+differs. Only then does it replay the unchanged historical answers through
+the owner's tally for the packaged record. Its manifest row binds the original
+and derived bytes, unchanged prompt digests and answer identity. The original
+model and date remain fixed; this derivation makes no new model observation.

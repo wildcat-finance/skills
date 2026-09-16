@@ -23,6 +23,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "check-runner"
+sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import run_checks  # noqa: E402
@@ -117,6 +118,55 @@ class CheckMapContractTests(unittest.TestCase):
         finally:
             if created:
                 report.unlink()
+
+    def test_the_recorded_report_path_survives_the_parse_time_precondition(self) -> None:
+        """The runbook's own ``--report`` target must be a path the runner accepts.
+
+        ``run_checks.py`` resolves ``--report`` through
+        ``require_ignored_report_path`` while parsing arguments, before any plan
+        exists, and refuses an un-ignored target with ``unsafe-report-path``.
+        This is the precondition that actually gates the Step 7 exit clause's
+        command: without ``/.reports/`` in ``.gitignore`` the invocation is
+        refused outright and no report is ever written.  The case below holds
+        the downstream rule; this one holds the gate that runs first.
+        """
+        target = ".reports/issue-884-full.json"
+        try:
+            resolved = run_checks.require_ignored_report_path(REPO_ROOT, target)
+        except run_checks.PlanError as exc:
+            # A failure, not an error: a mixed report classifies inconclusive
+            # instead of naming the missing ignore rule.
+            self.fail(f"the exit clause's own report path is refused: {exc}")
+        self.assertEqual(resolved, target)
+
+    def test_a_written_run_report_does_not_refuse_the_next_plan(self) -> None:
+        """A written run report must not read as a source change.
+
+        ``run_checks.py --report .reports/<name>.json`` writes its run report
+        after the plan is built.  Once one exists, an unignored
+        ``.reports/<name>.json`` is a relevant untracked path with no declared
+        owner, so the planner refuses with ``unknown-ownership`` before
+        starting a single check and the tree it was asked to prove clean is no
+        longer clean.  This is the same class the ``.elenchus`` case above
+        records, reached through the runner's own reporting flag rather than
+        through Elenchus.
+        """
+        report = REPO_ROOT / ".reports" / "probe.json"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        created = not report.exists()
+        if created:
+            report.write_text("{}\n", encoding="utf-8")
+        try:
+            observed = run_checks.changed_paths(REPO_ROOT, None)
+            self.assertNotIn(
+                ".reports/probe.json", observed,
+                "a run report must not look like a source change",
+            )
+        finally:
+            if created:
+                report.unlink()
+                if not any(report.parent.iterdir()):
+                    report.parent.rmdir()
 
     def test_relevant_untracked_paths_also_resolve_to_an_owner(self) -> None:
         """Totality over ``git ls-files`` alone does not cover what the planner reads.
@@ -687,7 +737,7 @@ class ReportTests(unittest.TestCase):
             proc = helper.run_cli(
                 root, "--format", "json", "--report", "out/nothing-selected.json"
             )
-            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            self.assertEqual(proc.returncode, 4, proc.stdout + proc.stderr)
             emitted = json.loads(proc.stdout)
             self.assertEqual(emitted["outcome"], "nothing-selected")
             target = root / "out" / "nothing-selected.json"
@@ -1068,6 +1118,7 @@ class TemporaryRepositoryMixin:
             ("user.name", "Fixture"),
             ("commit.gpgsign", "false"),
             ("tag.gpgsign", "false"),
+            ("core.hooksPath", ".githooks"),
         ):
             subprocess.run(
                 ["git", "config", key, value], cwd=str(root), check=True, shell=False
@@ -1102,6 +1153,36 @@ class TemporaryRepositoryMixin:
             text=True,
             shell=False,
         )
+
+
+class EmptySelectionTests(TemporaryRepositoryMixin, unittest.TestCase):
+    def test_clean_committed_tree_cannot_return_a_passing_run(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "print('executed probe')"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            (root / "src" / "kept.txt").write_text("changed\n")
+            self.git(root, "commit", "--quiet", "-am", "change")
+            for output_format in ("human", "json"):
+                with self.subTest(output_format=output_format):
+                    proc = self.run_cli(root, "--format", output_format)
+                    self.assertEqual(proc.returncode, 4, proc.stdout + proc.stderr)
+                    self.assertIn("nothing-selected", proc.stdout)
+                    if output_format == "json":
+                        self.assertEqual(json.loads(proc.stdout)["checks"], [])
+            plan = self.run_cli(root, "--plan", "--format", "json")
+            self.assertEqual(plan.returncode, 0, plan.stdout + plan.stderr)
+            self.assertEqual(json.loads(plan.stdout)["selected_checks"], [])
+            for selection in (("--base", "HEAD~1"), ("--scope", "one"), ("--full",)):
+                with self.subTest(selection=selection):
+                    proc = self.run_cli(root, *selection, "--format", "json")
+                    self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+                    report = json.loads(proc.stdout)
+                    self.assertEqual(report["outcome"], "green")
+                    self.assertEqual(len(report["checks"]), 1)
 
 
 class DiffCaptureTests(TemporaryRepositoryMixin, unittest.TestCase):
@@ -3155,3 +3236,116 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
                 (root / "out").glob(".*.partial")
             )
             self.assertEqual(leftovers, [])
+
+
+class CheckoutActivationPreflightTests(TemporaryRepositoryMixin, unittest.TestCase):
+    """Check the source checkout before disposable checks can hide its config."""
+
+    def test_containment_does_not_hide_an_unactivated_source_checkout(self):
+        import tempfile
+        from unittest import mock
+
+        for configured in (None, ".git/hooks", "/another/tree/.githooks"):
+            with self.subTest(configured=configured), tempfile.TemporaryDirectory() as tmp:
+                root = self.make_repo(tmp)
+                if configured is None:
+                    subprocess.run(["git", "config", "--unset-all", "core.hooksPath"],
+                                   cwd=root, capture_output=True, check=False)
+                else:
+                    self.git(root, "config", "core.hooksPath", configured)
+                self.write_map(root, [sys.executable, "-c", "print('probe-ran')"])
+                self.git(root, "add", "-A")
+                self.git(root, "commit", "--quiet", "-m", "base")
+                environment = dict(os.environ)
+                environment.pop("GITHUB_ACTIONS", None)
+                environment.pop("WILDCAT_CHECK_SNAPSHOT_ROOT", None)
+                environment["WILDCAT_CHECK_CONTAINMENT"] = "outer-attempt"
+                with mock.patch.dict(os.environ, environment, clear=True):
+                    proc = self.run_cli(root, "--scope", "one", "--format", "json")
+                self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+                payload = json.loads(proc.stdout)
+                self.assertEqual(payload["code"], "commit-gate-not-activated")
+                self.assertIn("git config core.hooksPath .githooks", payload["message"])
+                self.assertNotIn("probe-ran", proc.stdout)
+
+    def test_containment_alone_does_not_skip_the_checkout_case(self):
+        from unittest import mock
+        from tests import test_commit_gate
+
+        case = test_commit_gate.ActivationTests("test_this_checkout_has_the_gate_activated")
+        result = unittest.TestResult()
+        with (
+            mock.patch.dict(os.environ, {"WILDCAT_CHECK_CONTAINMENT": "outer-attempt"}, clear=True),
+            mock.patch.object(test_commit_gate, "configured_hooks_path", return_value="/another/tree/.githooks"),
+        ):
+            case.run(result)
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.skipped, [])
+        self.assertEqual(result.errors, [])
+
+
+    def test_snapshot_declaration_applies_only_to_its_named_directory(self):
+        from unittest import mock
+        from tests import test_commit_gate
+
+        for marker, skipped in ((str(REPO_ROOT.resolve()), True), ("/another/snapshot", False)):
+            with self.subTest(marker=marker):
+                case = test_commit_gate.ActivationTests("test_this_checkout_has_the_gate_activated")
+                result = unittest.TestResult()
+                with (
+                    mock.patch.dict(os.environ, {"WILDCAT_CHECK_SNAPSHOT_ROOT": marker}, clear=True),
+                    mock.patch.object(test_commit_gate, "configured_hooks_path", return_value=None),
+                ):
+                    case.run(result)
+                self.assertEqual(len(result.skipped), int(skipped))
+                self.assertEqual(len(result.failures), int(not skipped))
+                self.assertEqual(result.errors, [])
+
+    def test_an_activated_checkout_checks_inside_a_separately_named_snapshot(self):
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            probe = (
+                "import json, os; from pathlib import Path; "
+                "print(json.dumps({'root': str(Path.cwd().resolve()), "
+                "'snapshot': os.environ.get('WILDCAT_CHECK_SNAPSHOT_ROOT'), "
+                "'containment': os.environ.get('WILDCAT_CHECK_CONTAINMENT')}))"
+            )
+            self.write_map(root, [sys.executable, "-c", probe])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            environment = dict(os.environ)
+            environment.pop("GITHUB_ACTIONS", None)
+            environment["WILDCAT_CHECK_SNAPSHOT_ROOT"] = "/another/snapshot"
+            environment["WILDCAT_CHECK_CONTAINMENT"] = "outer-attempt"
+            with mock.patch.dict(os.environ, environment, clear=True):
+                proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            record = json.loads(proc.stdout)
+            observed = json.loads(record["checks"][0]["output"]["head"])
+            self.assertEqual(observed["snapshot"], observed["root"])
+            self.assertNotEqual(observed["root"], str(root.resolve()))
+            self.assertTrue(observed["containment"])
+            self.assertNotEqual(observed["containment"], "outer-attempt")
+
+    def test_no_selected_checks_still_refuses_an_unactivated_checkout(self):
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, [sys.executable, "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            self.git(root, "config", "--unset", "core.hooksPath")
+            environment = dict(os.environ)
+            environment.pop("GITHUB_ACTIONS", None)
+            environment.pop("WILDCAT_CHECK_SNAPSHOT_ROOT", None)
+            with mock.patch.dict(os.environ, environment, clear=True):
+                planned = self.run_cli(root, "--plan", "--format", "json")
+                checked = self.run_cli(root, "--format", "json")
+            self.assertEqual(planned.returncode, 0, planned.stderr)
+            self.assertEqual(checked.returncode, 2, checked.stdout + checked.stderr)
+            self.assertEqual(json.loads(checked.stdout)["code"], "commit-gate-not-activated")

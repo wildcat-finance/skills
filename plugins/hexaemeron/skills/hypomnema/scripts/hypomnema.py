@@ -38,6 +38,10 @@ directories relative to the walked root, because a specimen documenting a
 fault is not a record and a preserved source carries its origin's links;
 naming either path directly still reads it.
 
+Directory walks also skip `.agents/skills/promise-machine/runtime`, whose
+generated copies retain links relative to their source files. Naming that
+runtime directory or one of its files directly still reads it.
+
 In Markdown, a `runbook:` keyword inside an inline code span is a quoted
 specimen rather than a live pointer, so H003 passes over it. The keyword's
 own position decides that: `runbook: ` followed by a backticked path is
@@ -63,6 +67,7 @@ for a shape finding on the record's first line or the status heading.
 from __future__ import annotations
 
 import argparse
+import bisect
 import json
 import os
 import re
@@ -72,6 +77,11 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 LINK = re.compile(r"(?<!!)\[(?P<text>[^\]]*)\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")
+# The part of `LINK` after its `](`, in the two halves `_links` reads apart:
+# where a target's characters stop, and whether a `)`, or a quoted title and a
+# `)`, closes the link from there.
+LINK_TARGET_STOP = re.compile(r"[)\s]")
+LINK_CLOSE = re.compile(r"\)|\s+\"[^\"]*\"\)")
 SUPERSEDE = re.compile(r"superseded\s+by\s+(?P<ref>ADR-\d+)", re.IGNORECASE)
 ADR_NUMBER = re.compile(r"ADR-(\d+)", re.IGNORECASE)
 # A bounded keyword and a path, not a word suffix or whatever follows a colon.
@@ -114,6 +124,7 @@ DESIGN_EVIDENCE_SCHEMA = "protasis-design-evidence/v1"
 MAX_STUDY_BYTES = 2 * 1024 * 1024
 MAX_DESIGN_BYTES = 2 * 1024 * 1024
 MAX_RECORD_BYTES = 2 * 1024 * 1024
+MAX_RECORD_DIRECTORY_ENTRIES = 4096
 MAX_JSON_DEPTH = 64
 MAX_PORTABLE_PATH_BYTES = 4096
 MAX_CANDIDATES = 4
@@ -260,6 +271,135 @@ def _read_repo_file(
             os.close(file_descriptor)
         for descriptor in reversed(descriptors):
             os.close(descriptor)
+
+
+def _stable_adr_candidates(
+    root: Path,
+    slug: str,
+) -> tuple[list[Path] | None, str | None]:
+    """Inspect only the one draft slot and fixed three-digit final namespace."""
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    descriptors: list[int] = []
+    try:
+        current = os.open(root, directory_flags)
+        descriptors.append(current)
+        try:
+            current = os.open("docs", directory_flags, dir_fd=current)
+            descriptors.append(current)
+            current = os.open("decisions", directory_flags, dir_fd=current)
+            descriptors.append(current)
+        except FileNotFoundError:
+            return [], None
+        except OSError:
+            return None, "has an unavailable or unsafe decision-directory component"
+
+        try:
+            with os.scandir(current) as entries:
+                final_entries = set()
+                for entry in entries:
+                    if len(final_entries) >= MAX_RECORD_DIRECTORY_ENTRIES:
+                        return None, "canonical final namespace exceeds its entry limit"
+                    final_entries.add(entry.name)
+        except OSError:
+            return None, "cannot inspect the canonical final namespace"
+        candidates: list[Path] = []
+
+        try:
+            drafts = os.open("drafts", directory_flags, dir_fd=current)
+        except FileNotFoundError:
+            drafts = None
+        except OSError:
+            return None, "has an unavailable or unsafe draft-directory component"
+        if drafts is not None:
+            descriptors.append(drafts)
+            draft_name = f"{slug}.md"
+            try:
+                with os.scandir(drafts) as entries:
+                    draft_entries = set()
+                    for entry in entries:
+                        if len(draft_entries) >= MAX_RECORD_DIRECTORY_ENTRIES:
+                            return None, "canonical draft namespace exceeds its entry limit"
+                        draft_entries.add(entry.name)
+            except OSError:
+                return None, "cannot inspect the canonical draft namespace"
+            if draft_name not in draft_entries:
+                draft_name = ""
+        if drafts is not None and draft_name:
+            try:
+                found = os.stat(draft_name, dir_fd=drafts, follow_symlinks=False)
+            except FileNotFoundError:
+                pass
+            except OSError:
+                return None, "has an unreadable canonical draft candidate"
+            else:
+                if stat.S_ISLNK(found.st_mode) or not stat.S_ISREG(found.st_mode):
+                    return None, "has a canonical draft that is not an ordinary non-symlink file"
+                if found.st_size > MAX_RECORD_BYTES:
+                    return None, f"has a canonical draft exceeding the {MAX_RECORD_BYTES}-byte input limit"
+                candidates.append(Path("docs/decisions/drafts") / draft_name)
+
+        for number in range(1000):
+            final_name = f"ADR-{number:03d}-{slug}.md"
+            if final_name not in final_entries:
+                continue
+            try:
+                found = os.stat(final_name, dir_fd=current, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            except OSError:
+                return None, "has an unreadable canonical final candidate"
+            if stat.S_ISLNK(found.st_mode) or not stat.S_ISREG(found.st_mode):
+                return None, "has a canonical final that is not an ordinary non-symlink file"
+            if found.st_size > MAX_RECORD_BYTES:
+                return None, f"has a canonical final exceeding the {MAX_RECORD_BYTES}-byte input limit"
+            candidates.append(Path("docs/decisions") / final_name)
+        return candidates, None
+    except OSError:
+        return None, "cannot be inspected below the supplied repository root"
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
+def _read_stable_adr(
+    root: Path,
+    selector: str,
+) -> tuple[bytes | None, Path | None, str | None]:
+    """Resolve one stable identity to exactly one bounded canonical ADR file."""
+    slug = selector[len(STABLE_PREFIX):]
+    try:
+        encoded = slug.encode("ascii")
+    except UnicodeEncodeError:
+        return None, None, "is not a lowercase ASCII kebab-case stable ADR selector"
+    if (
+        not slug
+        or len(encoded) > MAX_SLUG_BYTES
+        or STABLE_SLUG.fullmatch(slug) is None
+    ):
+        return None, None, "is not a lowercase ASCII kebab-case stable ADR selector"
+
+    candidates, error = _stable_adr_candidates(root, slug)
+    if candidates is None:
+        return None, None, error
+    if not candidates:
+        return None, None, "names no canonical draft or numbered final"
+    if len(candidates) != 1:
+        return None, None, "names more than one canonical draft or numbered final"
+
+    data, relative, error = _read_repo_file(root, candidates[0], MAX_RECORD_BYTES)
+    if data is None:
+        return None, relative, error
+    checked, checked_error = _stable_adr_candidates(root, slug)
+    if checked is None:
+        return None, relative, checked_error
+    if checked != candidates:
+        return None, relative, "candidate set changed while being read"
+    return data, relative, None
 
 
 def _json_depth_within_limit(data: bytes) -> bool:
@@ -488,7 +628,17 @@ def check_design_bridge(
         )]
 
     record = bridge["record"]
-    record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
+    if record.startswith(STABLE_PREFIX):
+        record_data, record_relative, error = _read_stable_adr(root, record)
+        if record_data is None:
+            return [Finding(
+                root / study_relative,
+                int(bridge["record_line"]),
+                "H008",
+                f"record `{record}` {error}",
+            )]
+    else:
+        record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
     record_line = int(bridge["record_line"])
     if record_data is None:
         return [Finding(
@@ -622,8 +772,54 @@ def _yaml_target(value: str) -> str:
     return value
 
 
+def _links(line: str) -> list[re.Match]:
+    """The matches `LINK.finditer` yields on one line, found in linear time.
+
+    `finditer` retries `LINK` at every `[`, and each retry reads on to the
+    first `]` and through the target after it, so a line of openers that never
+    close, or of targets that never end, takes time quadratic in its length.
+    An attempt's outcome depends only on the `!` before its `[`, the first `]`
+    after it, and what follows that `]`. Every `[` before that `]` therefore
+    shares the outcome, and a target starting inside the run of target
+    characters last read stops where that run stops. Skipping to that `]` and
+    remembering that stop reads each character a bounded number of times, and
+    `LINK.match` still decides and builds every match returned.
+    """
+    found: list[re.Match] = []
+    position = 0
+    run_stop = closed_at = -1
+    closes = False
+    while True:
+        opener = line.find("[", position)
+        if opener < 0:
+            return found
+        if opener and line[opener - 1] == "!":
+            position = opener + 1
+            continue
+        closer = line.find("]", opener + 1)
+        if closer < 0:
+            return found
+        position = closer + 1
+        if not line.startswith("(", closer + 1):
+            continue
+        target = closer + 2
+        if target >= run_stop:
+            stop = LINK_TARGET_STOP.search(line, target)
+            run_stop = stop.start() if stop else len(line)
+        if target == run_stop:
+            continue
+        if closed_at != run_stop:
+            closed_at = run_stop
+            closes = LINK_CLOSE.match(line, run_stop) is not None
+        if closes:
+            match = LINK.match(line, opener)
+            if match is not None:
+                found.append(match)
+                position = match.end()
+
+
 def _code_spans(line: str) -> list[tuple[int, int]]:
-    """Half-open offsets of every inline code span on one line.
+    """Half-open offsets covering every inline code span on one line, in order.
 
     CommonMark pairs a backtick run with the next run of the same length and
     leaves an unmatched run as literal text, so an odd backtick cannot open a
@@ -636,6 +832,12 @@ def _code_spans(line: str) -> list[tuple[int, int]]:
     starts one character later, because that backtick is literal text. Without
     it an escaped pair would open a span and hide a live pointer, which is the
     one direction this check must not fail in.
+
+    Runs of different lengths pair independently, so two spans can overlap.
+    The result is their union as disjoint spans sorted by start, which lets
+    `_within` settle each offset with one binary search. Reading every span for
+    each offset was quadratic on a line of quoted links, which asks about as
+    many offsets as it holds spans.
     """
     pending: dict[int, int] = {}
     spans: list[tuple[int, int]] = []
@@ -659,12 +861,28 @@ def _code_spans(line: str) -> list[tuple[int, int]]:
             pending[length] = start
         else:
             spans.append((opened, end))
-    return spans
+    return _disjoint_spans(spans)
+
+
+def _disjoint_spans(spans) -> list[tuple[int, int]]:
+    """The offsets any of the half-open spans cover, as disjoint sorted spans."""
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(spans):
+        if merged and start < merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    return merged
 
 
 def _within(spans, index: int) -> bool:
-    """Whether one offset falls inside any span."""
-    return any(start <= index < end for start, end in spans)
+    """Whether one offset falls inside any span.
+
+    `spans` is `_code_spans` output, disjoint and sorted by start, so the last
+    span starting at or before the offset is the only one that can hold it.
+    """
+    position = bisect.bisect_right(spans, index, key=lambda span: span[0])
+    return position > 0 and index < spans[position - 1][1]
 
 
 def _relative_markdown(value: str) -> bool:
@@ -1076,7 +1294,7 @@ def check(
         if in_fence:
             continue
 
-        links = list(LINK.finditer(line))
+        links = _links(line)
         # A link inside an inline code span is a quoted specimen, the reading
         # H003 gives a `runbook:` keyword there. Only a line carrying a link
         # pays for the span scan.
@@ -1181,8 +1399,14 @@ def walk(paths: list[str], include_vendored: bool = False) -> list[Path]:
         root = Path(raw)
         if root.is_dir():
             suffixes = (".md", *COMMENT_MARKERS, *sorted(YAML_SUFFIXES))
-            found = (child for suffix in suffixes
-                     for child in root.rglob(f"*{suffix}"))
+            found = []
+            for directory, names, files in os.walk(root):
+                parent = Path(directory)
+                names[:] = [name for name in names
+                            if (parent / name).absolute().parts[-4:] != (
+                                ".agents", "skills", "promise-machine", "runtime")]
+                found.extend(parent / name for name in files
+                             if name.endswith(suffixes))
             for child in sorted(set(found)):
                 if not child.is_file():
                     continue

@@ -1,0 +1,41 @@
+from pathlib import Path
+import contextlib,io,json,shutil,sys
+ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'scripts'))
+import agent_instruction_reconciliation as a
+BUILD=ROOT/'.hexaemeron/demo-build';OUT=BUILD/'publication-attempt-2';OUT.mkdir()
+rows=json.loads((BUILD/'cases.json').read_bytes())
+row=next(row for row in rows['cases'] if row['id']=='promise-machine-router-selection-before')
+old=Path(row['root']);root=OUT/'root';root.mkdir()
+manifest=json.loads((old/'tmp/stage/baseline'/a.MANIFEST).read_bytes());paths=a.closure(manifest)
+for name in paths:
+ target=root/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes((old/'tmp/stage/baseline'/name).read_bytes())
+shutil.copytree(old/'.git',root/'.git',copy_function=shutil.copy2)
+source=next(f['source']['path'] for f in manifest['fixtures'] if f['id']==row['fixture'])
+(root/source).write_bytes((old/source).read_bytes())
+prepared=a.prepare(root,baseline=rows['baseline'],source=source,stage='tmp/stage')
+(OUT/'prepare.json').write_bytes(a.encoded(prepared))
+inputs=[]
+for name in sorted(paths):
+ previous=(old/'tmp/stage/work'/name).read_bytes();current=(root/'tmp/stage/work'/name).read_bytes()
+ assert previous==current,name
+ inputs.append({'path':name,'sha256':a.sha(current),'bytes':len(current)})
+for name in ['measurement.json','parity.json']:
+ body=(BUILD/'acquisition-attempt-1'/name).read_bytes()
+ (root/'tmp/stage/work/acquisitions'/name).write_bytes(body)
+reuse={'operation':'reuse-unchanged-acquisition-inputs','new_model_observation':False,'previous_root':str(old),'current_root':str(root),'unchanged_inputs':inputs,'source_attempt':'acquisition-attempt-1','reason':'Only the reconciliation helper publication mechanism changed; all source, manifest, report, profile and measured-stream inputs are byte-identical.'}
+(OUT/'acquisition-reuse.json').write_bytes(a.encoded(reuse))
+checked=a.apply(root,stage='tmp/stage',plan_sha256=prepared['plan_sha256'],check_only=True)
+(OUT/'law-full-staged-check.json').write_bytes(a.encoded(checked))
+events=io.StringIO()
+with contextlib.redirect_stdout(events):
+ applied=a.apply(root,stage='tmp/stage',plan_sha256=prepared['plan_sha256'])
+(OUT/'law-apply.events.jsonl').write_text(events.getvalue());(OUT/'law-apply.json').write_bytes(a.encoded(applied))
+records=a.check_corpus(root);(OUT/'law-final-check.json').write_bytes(a.encoded({'records':records}))
+journal=json.loads((root/'tmp/stage/publication/journal.json').read_bytes())
+for entry in journal['targets']:
+ assert (root/entry['publish_slot']).read_bytes()==(root/entry['old']).read_bytes()
+ assert (root/entry['restore_slot']).read_bytes()==(root/entry['old']).read_bytes()
+row['root']=str(root);row['prepare']=prepared
+(BUILD/'cases-exchange.json').write_bytes(a.encoded(rows))
+print(json.dumps({'outcome':applied['outcome'],'targets':len(applied['targets']),'journal_sha256':applied['journal_sha256'],'final':records[-1],'reused_exact_input_count':len(inputs)}))

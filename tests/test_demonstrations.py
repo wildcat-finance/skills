@@ -1765,13 +1765,21 @@ class RunnerExecutionBoundaryTests(RunnerHarness):
         # is both a boundary the runner claims and the number `metron` reads.
         # The grip on the pipes is the evidence, so the command is refused
         # rather than recorded as a clean exit with an inflated duration.
+        # Wait for the child to acknowledge setsid before the parent exits,
+        # or teardown can kill the child before it leaves the group.
         code, payload, _events_seen, _target = self.run_argv(
             [
                 "python3", "-c",
                 "import os, sys, time;"
+                " ready_read, ready_write = os.pipe();"
                 " child = os.fork() == 0;"
-                " (os.setsid(), time.sleep(30), os._exit(0)) if child else"
-                " (print('parent-done'), sys.stdout.flush(), os._exit(0))",
+                " (os.close(ready_read), os.setsid(),"
+                " os.write(ready_write, b'R'), os.close(ready_write),"
+                " time.sleep(30), os._exit(0)) if child else"
+                " (os.close(ready_write),"
+                " os.read(ready_read, 1) == b'R' or os._exit(1),"
+                " os.close(ready_read), print('parent-done'),"
+                " sys.stdout.flush(), os._exit(0))",
             ],
             ['run: line "parent-done"'],
         )

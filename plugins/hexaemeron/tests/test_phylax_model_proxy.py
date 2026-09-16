@@ -2119,6 +2119,11 @@ class LifecycleTests(unittest.TestCase):
 
     START_MONOTONIC_NS = 1_000_000_000
     START_WALL_NS = 1_787_918_401 * NANOSECONDS_PER_SECOND
+    # A woken worker still has to be scheduled, take the runtime's locks and
+    # write its terminal receipt before it exits. Under suite load that took
+    # longer than a one-second join (skills#1657), so a join whose outcome a
+    # test asserts waits this long and fails only for a worker that never wakes.
+    WAKE_JOIN_SECONDS = 30
 
     def setUp(self):
         self.policy = compile_policy((FIXTURES / "accepted-job.json").read_bytes())
@@ -3380,7 +3385,7 @@ class LifecycleTests(unittest.TestCase):
                 worker.start()
                 self.assertTrue(second_receipted.wait(5))
                 monotonic.set(runtime._controller.elapsed_deadline_ns)
-                worker.join(1)
+                worker.join(self.WAKE_JOIN_SECONDS)
                 finished_at_deadline = not worker.is_alive()
                 if worker.is_alive():
                     runtime.cancel()
@@ -3455,7 +3460,7 @@ class LifecycleTests(unittest.TestCase):
                 worker.start()
                 self.assertTrue(second_receipted.wait(5))
                 runtime.cancel()
-                worker.join(1)
+                worker.join(self.WAKE_JOIN_SECONDS)
                 woke_after_cancellation = not worker.is_alive()
                 if worker.is_alive():
                     with runtime._provider_turn_condition:
@@ -5621,8 +5626,8 @@ class ConformanceTests(unittest.TestCase):
         skill_root = PLUGIN_ROOT / "skills" / "phylax"
         skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
         evolution = (skill_root / "EVOLUTION.md").read_text(encoding="utf-8")
-        self.assertIn('metadata:\n  version: "1.5.0"', skill)
-        self.assertIn("- Current version: `phylax-v1.5.0`", evolution)
+        self.assertIn('metadata:\n  version: "1.6.0"', skill)
+        self.assertIn("- Current version: `phylax-v1.6.0`", evolution)
         for unchanged in (
             "- Frontier status: `mature`",
             "- Frontier revision: `off-chain-boundary-controls`",
@@ -5676,7 +5681,7 @@ class ConformanceTests(unittest.TestCase):
             for entry in agents_marketplace["plugins"]
             if entry["name"] == "hexaemeron"
         )
-        self.assertEqual({"1.6.31"}, set(package_versions.values()))
+        self.assertEqual({"1.6.46"}, set(package_versions.values()))
         self.assertNotEqual("1.4.0", package_versions["claude_manifest"])
 
         coverage = json.loads(
@@ -5684,9 +5689,15 @@ class ConformanceTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        phylax_binding = coverage["runtime"]["phylax-boundary-review"]
+        phylax_source = Path("plugins/hexaemeron/tests/test_promise_cases.py")
+        self.assertEqual(phylax_binding["source"], phylax_source.as_posix())
         self.assertEqual(
-            hashlib.sha256((skill_root / "SKILL.md").read_bytes()).hexdigest(),
-            coverage["runtime"]["phylax-boundary-review"]["sha256"],
+            phylax_binding["selector"], "test_phylax_review_positive"
+        )
+        self.assertEqual(
+            phylax_binding["sha256"],
+            hashlib.sha256((repository / phylax_source).read_bytes()).hexdigest(),
         )
 
         copied = (
@@ -5735,16 +5746,50 @@ class ConformanceTests(unittest.TestCase):
                 (runtime / "MANIFEST.json").read_text(encoding="utf-8")
             )
             manifested = {row["path"]: row for row in portable_manifest["files"]}
+            portrait_images = {
+                "README.md": (
+                    b"![Hexaemeron](./assets/characters/hexaemeron.png)",
+                    "plugins/hexaemeron/assets/characters/hexaemeron.png",
+                ),
+                "skills/phylax/SKILL.md": (
+                    b'<img src="../../assets/characters/phylax.png" width="1200">',
+                    "plugins/hexaemeron/assets/characters/phylax.png",
+                ),
+            }
             for relative in copied:
                 with self.subTest(portable=relative):
                     canonical = (PLUGIN_ROOT / relative).read_bytes()
-                    self.assertEqual(
-                        canonical, (portable_root / relative).read_bytes()
-                    )
                     path = f"plugins/hexaemeron/{relative}"
+                    entry = manifested[path]
+                    expected = canonical
+                    if relative in portrait_images:
+                        image, target = portrait_images[relative]
+                        self.assertEqual(canonical.count(image), 1)
+                        start = canonical.index(image)
+                        expected = canonical[:start] + canonical[start + len(image):]
+                        self.assertEqual(
+                            entry["transform"], "remove-decorative-portrait-images/v1"
+                        )
+                        self.assertEqual(entry["source_bytes"], len(canonical))
+                        self.assertEqual(
+                            entry["source_sha256"], hashlib.sha256(canonical).hexdigest()
+                        )
+                        self.assertEqual(entry["removed_images"], [{
+                            "start": start, "end": start + len(image), "target": target,
+                        }])
+                        self.assertIn(target, {
+                            row["path"] for row in portable_manifest["omitted_files"]
+                        })
+                        self.assertFalse((runtime / target).exists())
+                        self.assertTrue((repository / target).is_file())
+                    else:
+                        self.assertNotIn("transform", entry)
+                    self.assertEqual(
+                        expected, (portable_root / relative).read_bytes()
+                    )
                     self.assertEqual(path, manifested[path]["source"])
                     self.assertEqual(
-                        hashlib.sha256(canonical).hexdigest(),
+                        hashlib.sha256(expected).hexdigest(),
                         manifested[path]["sha256"],
                     )
 

@@ -49,9 +49,10 @@ No local harness holds a checked one-click Atlas launcher. The probe recorded ev
 Each harness carries the exact reason it stopped there in [the harness table](./docs/how-to-help-shoggoth.md#local-harnesses) and in [`docs/harness-classification.json`](./docs/harness-classification.json), which both surfaces are generated from.
 <!-- harness-roster:end -->
 
-You are the external contributor, not Shoggoth. Keep your own Git author,
-signing identity, and GitHub account. Shoggoth provenance supplements that
-authorship; it never authorises use of a private Shoggoth identity.
+Use any repository-valid signing identity for commits. Fiat admits valid
+signatures rather than a named author, trailer, runtime, or GitHub transport.
+Publication authority remains separate and must come from the repository or
+the user's explicit instruction.
 
 A daily job rebuilds [`CONTRIBUTORS.md`](./CONTRIBUTORS.md) and the thanks
 below from public history. Delivery records whether a pushed commit's author
@@ -73,9 +74,12 @@ command writes a report to a path that must not already exist.
 
 ### ANAMNESIS REBUILDS A PRESERVED AUDIT CORPUS
 
-<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="0a28ca71b97a7a2465ce65280679bb1cc43ec38e3f926b2ddbaa0980b76c62fa" -->
-[Anamnesis](./plugins/anamnesis) admits, curates and projects the pilot audit
-specimen from the producer's own bytes.
+<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="a862e3b018241f9e30f45404d1a83957a9185fa3fc1ed540b042baa7c9448a07" -->
+[Anamnesis](./plugins/anamnesis) admits, curates and projects preserved audit
+specimens from the producer's own bytes, and the mapper a curation policy
+declares now selects the implementation that reads each source rather than
+naming the only one there was. Admitting findings a party outside this
+repository produced, under a mapper declared per source, is the held job.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/anamnesis/skills/anamnesis --report tmp/demo/anamnesis.json

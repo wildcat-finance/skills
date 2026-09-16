@@ -330,6 +330,50 @@ class HexctlCheckpointTests(HexctlCase):
             expected_mode = 0o700 if record[1] == "directory" else 0o600
             self.assertEqual(expected_mode, record[2], record[0])
 
+    def test_restore_refuses_invented_known_failure_evidence(self):
+        """A pre-capture capsule cannot acquire recovery evidence in transit."""
+        self.to_post_push()
+        capsule, _, _ = self.export("capsule")
+        manifest_path = capsule / "MANIFEST.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        self.assertNotIn("known_failures", manifest)
+
+        controller = hexctl_module()
+        manifest["known_failures"] = {
+            "schema": controller.RECOVERY_PROJECTION_SCHEMA,
+            "step": 1,
+            "phase": "push",
+            "study_sha256": "1" * 64,
+            "runbook_sha256": "2" * 64,
+            "inventory_sha256": "3" * 64,
+            "step_parent": "4" * 40,
+            "assigned_ids": [],
+            "completed_ids": [],
+            "remaining_ids": [],
+            "guard_manifests": [],
+            "final_green": {
+                "completed_ids": [],
+                "remaining_ids": [],
+                "manifests": [],
+                "suites": [],
+            },
+            "no_known_findings": None,
+        }
+        payload = (
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        manifest_path.write_bytes(payload)
+        origin, _ = self.fresh_origin_for(capsule)
+
+        result = self.restore_into(
+            origin,
+            capsule,
+            hashlib.sha256(payload).hexdigest(),
+            expect=2,
+        )
+        self.assertIn("invents known-failure recovery evidence", result.stderr)
+
     def test_export_is_deterministic_at_both_boundaries(self):
         self.to_post_push()
         before = self.state_ledger_bytes()
@@ -2052,6 +2096,24 @@ class HexctlCheckpointTests(HexctlCase):
             origin.joinpath(
                 ".hexaemeron", "checkpoint-restore.json"
             ).is_file()
+        )
+
+    def test_native_restore_retires_the_relocation_marker_on_success(self):
+        # Every other marker assertion in this module pins the marker
+        # surviving a refusal or an interrupted run.  This one pins the
+        # opposite end: a native `checkpoint restore --from` that runs to
+        # completion retires its own relocation marker in place, which is
+        # the branch the archive path defers instead of taking.
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+
+        result = self.restore_into(origin, capsule, exported["manifest_sha256"])
+        self.assertEqual("new", json.loads(result.stdout)["recovery"])
+        marker = origin / ".hexaemeron" / "checkpoint-restore.json"
+        self.assertFalse(
+            marker.exists(),
+            "a completed native restore must leave no relocation marker",
         )
 
     def test_restore_replaced_marker_is_not_deleted(self):

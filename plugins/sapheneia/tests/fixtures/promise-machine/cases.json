@@ -1,8 +1,8 @@
 {
-  "schema": "promise-machine-labelled-cases/v1",
+  "schema": "promise-machine-evaluation-cases/v1",
   "cases": {
     "sapheneia-session-shape": {
-      "evaluation": {"model": "not-run", "prompt": "Shape an active Sapheneia reply under the canonical interaction contract.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; cross-model behaviour remains unknown."},
+      "request": "Shape an active Sapheneia reply under the canonical interaction contract.",
       "P": {"disposition": "accept", "scenario": "The reply names the immediate action, literal ask, boundary, working state, evidence and one next action while respecting the reader's stated preference.", "boundary": "Acceptance covers the exact reply and active session state."},
       "M": {"disposition": "refuse", "scenario": "The reply hides the working state or leaves an implied obligation and no next action while work remains.", "boundary": "Missing interaction-state evidence blocks the shaped reply."},
       "S": {"disposition": "refuse", "scenario": "The activation and preference record belongs to another user session.", "boundary": "Sapheneia state does not transfer between subjects."},
@@ -10,7 +10,7 @@
       "R": {"disposition": "recover", "scenario": "Restate the action, boundary, evidence and next step, apply the reader's correction and check the revised reply.", "boundary": "Recovery revises the exact reply without changing another skill's facts."}
     },
     "sapheneia-deactivation": {
-      "evaluation": {"model": "not-run", "prompt": "Decide whether Sapheneia may deactivate under its canonical stop contract.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; cross-model behaviour remains unknown."},
+      "request": "Decide whether Sapheneia may deactivate under its canonical stop contract.",
       "P": {"disposition": "accept", "scenario": "The user gives an explicit recognised stop instruction and the agent confirms that default response shape has resumed.", "boundary": "Acceptance changes only Sapheneia's response shape for later replies."},
       "M": {"disposition": "refuse", "scenario": "A topic change or terse reply is treated as deactivation without an explicit stop instruction.", "boundary": "Behavioural inference cannot supply the missing instruction."},
       "S": {"disposition": "refuse", "scenario": "The stop phrase belongs to another user or an earlier session.", "boundary": "Deactivation authority is bound to the active session subject."},
@@ -18,7 +18,7 @@
       "R": {"disposition": "recover", "scenario": "Keep Sapheneia active until the current user gives an explicit stop instruction, then confirm the change once.", "boundary": "Recovery does not remove another active skill contract."}
     },
     "sapheneia-durable-record-shape": {
-      "evaluation": {"model": "not-run", "prompt": "Shape one named record the agent is about to write down while preserving its evidence inventory and host structure.", "corpus": "this labelled fixture", "disposition": "Expected P/M/S/O/R decisions recorded; cross-model behaviour remains unknown."},
+      "request": "Shape one named durable record while preserving its evidence inventory and host structure.",
       "P": {"disposition": "accept", "scenario": "One agent-authored audit record is shortened only by removing claim-neutral connective prose while every finding, severity, file:line location, unknown and required audit field survives.", "boundary": "Acceptance covers this candidate audit record and does not activate session-wide response shaping."},
       "M": {"disposition": "refuse", "scenario": "A pull request body has no protected evidence inventory, so content parity cannot be checked after compression.", "boundary": "Missing inventory evidence blocks publication of the shaped candidate."},
       "S": {"disposition": "refuse", "scenario": "The inventory belongs to a different record than the candidate being shaped, or the candidate's bytes are fixed by a generator, digest or fixed template.", "boundary": "Evidence for one written record does not authorise another subject, and bytes another owner fixes are not a subject this pass may shorten."},

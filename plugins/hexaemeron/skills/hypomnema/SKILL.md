@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.9.0"
+  version: "5.11.0"
 ---
 
 <p align="center">
@@ -43,7 +43,7 @@ Its version, held frontier, next job, and maturity state live in
 pointers and shapes, including stable `adr/<slug>` identities. An explicit
 study mode binds one selected Protasis candidate through a closed design bridge
 to exactly one numbered ADR, shape-valid numberless draft, or governed-skill
-ledger. It refuses a duplicate the study declares; it does not discover the
+ledger. A stable selector resolves to one canonical ADR draft or final. It refuses a duplicate the study declares; it does not discover the
 same decision standing in a second established home when the study declares
 one.
 
@@ -93,8 +93,9 @@ What this makes easy, what it makes hard, and what it commits us to.
 Name that file `<slug>.md`, where the slug is lowercase ASCII kebab-case and
 at most 96 bytes. Cite it as `adr/<slug>` in Markdown and supported source
 comments before and after assignment. One slug names exactly one draft or
-final record; numbered records inherited unchanged from the base may share a
-slug, and a draft never takes one they hold. A Markdown file directly under
+final record; numbered records inherited from the base may share a slug only
+while their original paths, modes and bytes remain intact. A draft never takes
+one they hold. A Markdown file directly under
 `docs/decisions/` that is neither is tolerated only while it is inherited
 unchanged from the base; the product may not add or change one. Existing `ADR-NNN-<slug>.md` records and `ADR-NNN` references
 remain valid and are not rewritten to adopt the stable form.
@@ -124,6 +125,14 @@ only the exact first `# Decision: <title>` heading, and preserves mode and all
 remaining bytes. Its canonical `fiat-decision-assignments/v1` report binds the
 exact base, base ref, product, result tree, blobs, ordered mapping, object
 format, and fixed ceilings.
+
+An inherited numbered record may remain exact or gain an appended amendment.
+Its path and mode must stay exact, and every base byte must remain the product
+blob's prefix. Both changed blobs pass through the existing bounded native
+reader. The assignment leaves the amended product bytes intact in the result
+tree. This checks preservation, not the amendment's meaning or approval.
+Deletion, relocation, truncation, rewriting or a mode change still refuses
+with `inherited-record-drift`.
 
 Every Git command disables replacement objects, inherited `GIT_*` repointing,
 prompts, lazy fetches, and user or system configuration. A shallow repository,
@@ -265,7 +274,9 @@ It is an ADR-numbered Markdown file below a `decisions` directory, a directly
 nested `docs/decisions/drafts/<slug>.md` carrying the valid stable slug, draft
 heading, five record sections and dated status, or an `EVOLUTION.md` beside a
 `SKILL.md` whose governed name matches its directory under a plugin skills
-tree. H008 also refuses absent, repeated, malformed or unclosed blocks, a
+tree. A stable `adr/<slug>` selector resolves only one exact canonical draft or
+three-digit numbered final; zero, duplicate, unsafe or changing candidates
+refuse. H008 also refuses absent, repeated, malformed or unclosed blocks, a
 selection mismatch, absolute, escaping, backslash or control-bearing paths, a
 wrong, malformed or dangling home, oversized inputs, duplicate JSON keys,
 excessive JSON depth, special files and a file that changes while it is read.
@@ -362,10 +373,10 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-pointer-gate
 
-- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run. A draft named by study mode is directly under `docs/decisions/drafts/` and has a valid stable slug, draft heading, five record sections and dated status.
+- Promise: A zero-exit Hypomnema lint establishes that the bounded checker found no unresolved relative links, absent superseding records, missing recognised Markdown or block-YAML runbook targets, malformed or duplicate stable decision identities, dangling `adr/<slug>` references, absent and empty required runbook answers in the selected first-party documents, or invalid explicit design bridge in a named study-mode run. A stable bridge selector must resolve to exactly one canonical ADR draft or final. A draft named by study mode is directly under `docs/decisions/drafts/` and has a valid stable slug, draft heading, five record sections and dated status.
 - Evidence: The exact lint version, mode, arguments, selected paths, design-evidence and repository-root identities where supplied, structured findings and zero exit status.
 - Evidence classes: checked
-- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; for a declared draft it also proves the mechanical draft path, heading, section and dated-status shape. Protasis owns full design-record validity, numbered-ADR shape and the versioning contract own their record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
+- Boundary: A clean ordinary walk proves only that recognised pointers resolve, stable identities have one recognised draft or final path, and recognised alert runbooks carry the three required answers at check time; it does not infer or require a design bridge. A clean study-mode run proves only the strict selection-envelope join and one declared established home; a stable selector binds one exact canonical draft or final, and for a declared draft it also proves the mechanical draft path, heading, section and dated-status shape. Protasis owns full design-record validity, numbered-ADR shape and the versioning contract own their record content, and no semantic duplicate outside the closed declaration is discovered. The YAML pass does not classify alerts or establish annotation presence, a Markdown `runbook:` keyword or relative link inside an inline code span is not a recognised pointer so a clean result says nothing about a target quoted as a specimen, word-suffix and hyphenated `runbook:` tokens are not recognised keywords, and the lint does not prove that records or operational answers are correct, complete or current.
 - Authorises: Passing the mechanical record and runbook-shape gate for the exact paths and checker version recorded.
 - Consequence: 1
 - Refuses: Unsafe, unreadable, unstable or oversized paths, unresolved recognised pointers, a malformed or duplicate stable identity, a missing or empty required runbook answer, an unexplained suppression, a malformed or mismatched explicit design bridge, a declared draft outside its exact home or without its required mechanical shape, or a claim about documents excluded from the run.
@@ -374,10 +385,10 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-decision-assignment
 
-- Promise: A successful replay establishes that one canonical `fiat-decision-assignments/v1` report is the deterministic `max(exact base)+1` transform for every validated draft in the exact product commit while the named integration-base ref still names that base.
+- Promise: A successful replay establishes that one canonical `fiat-decision-assignments/v1` report is the deterministic `max(exact base)+1` transform for every validated draft in the exact product commit while the named integration-base ref still names that base. Inherited numbered records retain their paths, modes and original bytes; appended amendments survive unchanged in the result tree.
 - Evidence: Full base and product commit ids, active base ref, result tree, ordered stable-slug mapping, source and result blob ids, file modes, object format, fixed ceilings, canonical report bytes and zero-exit replay.
 - Evidence classes: checked
-- Boundary: Replay proves the immutable Git-object transform and report bytes only. It does not prove that the resulting commit is signed, that its trailers agree, that a hosted status ran on the same head, or that repository rules serialize admission; Fiat and the base-owned workflow own those later gates.
+- Boundary: Replay proves the immutable Git-object transform and report bytes only. It does not approve an amendment's meaning or prove that the resulting commit is signed, that its trailers agree, that a hosted status ran on the same head, or that repository rules serialize admission; Fiat and the base-owned workflow own those later gates.
 - Authorises: Using the exact report to prepare or verify the decision-record path and heading changes in one integration composition.
 - Consequence: 2
 - Refuses: A shallow or incomplete repository, replacement or repointed Git state, wrong or moved base, unrelated or wrong-typed product, inherited-record drift, malformed or duplicate identity, numeric hole filling, more than 32 drafts, an oversized blob or path, a non-exact heading change, dirty or wrong worktree, report or blob drift, or any partial mutation.

@@ -1,0 +1,9 @@
+{
+  "candidate": "unmasked-regex",
+  "command": "python3 .hexaemeron/design-probes/failclosed.py unmasked-regex",
+  "criterion": "fail-closed-bypass",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

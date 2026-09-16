@@ -1,11 +1,14 @@
 """Elenchus classifies guards from real runner-owned reports."""
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
 import os
+import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -58,16 +61,16 @@ if "--exit-zero" not in sys.argv:
 '''
 
 FORGE_EMITTER = '''\
+import os
 from pathlib import Path
-import subprocess
 import sys
 
-run = subprocess.run(["forge", "test", "--junit"], capture_output=True, check=False)
 target = Path(sys.argv[1])
-if run.stdout:
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(run.stdout)
-raise SystemExit(run.returncode)
+target.parent.mkdir(parents=True, exist_ok=True)
+descriptor = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+os.dup2(descriptor, sys.stdout.fileno())
+os.close(descriptor)
+os.execv(sys.argv[2], [sys.argv[2], "test", "--junit"])
 '''
 
 NODE_EMITTER = '''\
@@ -106,6 +109,25 @@ process.exitCode = counts.assertionFailures + counts.errors > 0 ? 1 : 0;
 '''
 
 
+def replace_runner_ancestor(real_run, ancestor, malicious_source):
+    """Keep a replacement ancestor installed for the complete guarded run."""
+    held = ancestor.with_name(f"{ancestor.name}-held")
+
+    def run_with_replacement(command, *args, **kwargs):
+        ancestor.rename(held)
+        ancestor.mkdir()
+        replacement = ancestor / "runner"
+        replacement.write_text(malicious_source, encoding="utf-8")
+        replacement.chmod(0o755)
+        try:
+            return real_run(command, *args, **kwargs)
+        finally:
+            shutil.rmtree(ancestor)
+            held.rename(ancestor)
+
+    return run_with_replacement
+
+
 class Fixture:
     """A real temporary git history with independent children of one base."""
 
@@ -129,7 +151,10 @@ class Fixture:
         for name, body in files.items():
             target = self.path / name
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(body, encoding="utf-8")
+            if isinstance(body, bytes):
+                target.write_bytes(body)
+            else:
+                target.write_text(body, encoding="utf-8")
         self.run("add", "-A")
         self.run("-c", "commit.gpgsign=false", "commit", "--quiet", "-m", message)
         return self.run("rev-parse", "HEAD").strip()
@@ -219,6 +244,161 @@ class UnittestReports(RunnerCase):
         self.assertIn("ModuleNotFoundError", ordinary["output"])
         self.assertIn("AssertionError", self.outcome(self.broken)["output"])
 
+    def test_legacy_runner_output_capture_is_bounded(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        result = self.outcome(self.guarded, [
+            sys.executable,
+            "-c",
+            "from pathlib import Path; import sys; "
+            "sys.stdout.write('o'*2000000); sys.stderr.write('e'*2000000); "
+            "p=Path(sys.argv[1]); p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_text({guarded!r}, encoding='utf-8')",
+            "{report}",
+        ])
+        self.assertEqual("guarded", result["status"])
+        self.assertLessEqual(len(result["output"]), elenchus.MAX_DIAGNOSTIC_CHARS)
+
+    def test_legacy_runner_uses_the_closed_environment(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        script = (
+            "from pathlib import Path; import os,sys; "
+            "assert 'ELENCHUS_CALLER_VALUE' not in os.environ; "
+            "p=Path(sys.argv[1]); p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_text({guarded!r}, encoding='utf-8')"
+        )
+        with mock.patch.dict(
+            os.environ, {"ELENCHUS_CALLER_VALUE": "must-not-cross"}, clear=False
+        ):
+            result = self.outcome(
+                self.guarded, [sys.executable, "-c", script, "{report}"]
+            )
+        self.assertEqual("guarded", result["status"])
+
+    def test_legacy_runner_cannot_leave_an_escaped_descendant(self):
+        with tempfile.TemporaryDirectory(prefix="elenchus-legacy-descendant-") as directory:
+            marker = Path(directory) / "survived"
+            child = (
+                "from pathlib import Path; import signal,time; "
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+                "time.sleep(2); "
+                f"Path({str(marker)!r}).write_text('survived', encoding='utf-8')"
+            )
+            parent = (
+                "import subprocess,sys; "
+                f"subprocess.Popen([sys.executable, '-c', {child!r}], "
+                "start_new_session=True)"
+            )
+            result = self.outcome(
+                self.guarded,
+                [sys.executable, "-c", parent, "{report}"],
+                timeout=3,
+            )
+            self.assertEqual("inconclusive", result["status"])
+            self.assertRegex(
+                result["output"],
+                "PermissionError|BlockingIOError|Operation not permitted|"
+                "Resource temporarily unavailable",
+            )
+            time.sleep(2.25)
+            self.assertFalse(marker.exists())
+
+    def test_legacy_runner_rejects_an_executable_changed_during_the_run(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        with tempfile.TemporaryDirectory(prefix="elenchus-mutating-runner-") as directory:
+            runner = Path(directory) / "runner"
+            runner.write_text(
+                f"#!{sys.executable}\n"
+                "from pathlib import Path\n"
+                "import sys\n"
+                "source = Path(sys.argv[0])\n"
+                "source.write_text(source.read_text(encoding='utf-8') + "
+                "'# changed\\n', encoding='utf-8')\n"
+                "target = Path(sys.argv[1])\n"
+                "target.parent.mkdir(parents=True, exist_ok=True)\n"
+                f"target.write_text({guarded!r}, encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            result = self.outcome(self.guarded, [str(runner), "{report}"])
+        self.assertEqual("inconclusive", result["status"])
+        self.assertIn("executable changed", result["detail"])
+
+    def test_legacy_runner_ancestor_substitution_cannot_execute_replacement(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        with tempfile.TemporaryDirectory(prefix="elenchus-runner-parent-") as directory:
+            ancestor = Path(directory) / "bin"
+            ancestor.mkdir()
+            runner = ancestor / "runner"
+            runner.write_text(
+                f"#!{sys.executable}\n"
+                "from pathlib import Path\n"
+                "import sys\n"
+                "target = Path(sys.argv[1])\n"
+                "target.parent.mkdir(parents=True, exist_ok=True)\n"
+                f"target.write_text({guarded!r}, encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            marker = Path(directory) / "replacement-ran"
+            malicious = (
+                f"#!{sys.executable}\n"
+                "from pathlib import Path\n"
+                f"Path({str(marker)!r}).write_text('ran', encoding='utf-8')\n"
+            )
+            real_run = elenchus._run_guard_command
+            with mock.patch.object(
+                elenchus,
+                "_run_guard_command",
+                side_effect=replace_runner_ancestor(
+                    real_run, ancestor, malicious
+                ),
+            ):
+                result = self.outcome(
+                    self.guarded, [str(runner), "{report}"]
+                )
+            replacement_ran = marker.exists()
+        if sys.platform == "linux":
+            self.assertEqual("guarded", result["status"])
+        else:
+            self.assertEqual("inconclusive", result["status"])
+        self.assertFalse(replacement_ran)
+
     def test_legacy_no_report_is_inconclusive(self):
         result = elenchus.check(
             self.fixture.path, self.guarded, self.command, timeout=120
@@ -271,13 +451,989 @@ class UnittestReports(RunnerCase):
         self.assertEqual("unguarded", self.outcome(self.unguarded)["status"])
 
 
+class ParentGuardEvidence(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.fixture = Fixture({"emit_unittest.py": UNITTEST_EMITTER})
+        cls.payload = b"raw-guard-\xff\x00\r\n"
+        cls.guard = cls.fixture.child("raw guard", {
+            "payload.bin": cls.payload,
+            "test_raw_guard.py": (
+                "from pathlib import Path\n"
+                "import os\n"
+                "import unittest\n\n"
+                "class RawGuard(unittest.TestCase):\n"
+                "    def test_parent_fails(self):\n"
+                f"        self.assertEqual(Path('payload.bin').read_bytes(), {cls.payload!r})\n"
+                "        self.assertTrue(os.stat('payload.bin').st_mode & 0o100)\n"
+                "        self.fail('known parent failure')\n"
+            ),
+        })
+        os.chmod(cls.fixture.path / "payload.bin", 0o755)
+        cls.fixture.run("add", "payload.bin")
+        cls.fixture.run(
+            "-c", "commit.gpgsign=false", "commit", "--quiet", "--amend", "--no-edit"
+        )
+        cls.guard = cls.fixture.run("rev-parse", "HEAD").strip()
+        cls.rows = cls._rows(cls.guard)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.fixture.destroy()
+
+    @classmethod
+    def _rows(cls, ref):
+        names = cls.fixture.run(
+            "diff-tree", "--no-commit-id", "--name-status", "-r", ref
+        ).splitlines()
+        rows = []
+        for line in names:
+            status, path = line.split("\t")
+            entry = cls.fixture.run("ls-tree", ref, "--", path).strip()
+            mode, kind, oid, actual = entry.replace("\t", " ").split(" ", 3)
+            assert kind == "blob" and actual == path
+            raw = subprocess.run(
+                ["git", "-C", str(cls.fixture.path), "cat-file", "blob", oid],
+                capture_output=True,
+                check=True,
+            ).stdout
+            rows.append({
+                "path": path,
+                "status": status,
+                "mode": mode,
+                "oid": oid,
+                "bytes": len(raw),
+                "sha256": hashlib.sha256(raw).hexdigest(),
+                "raw": raw,
+            })
+        return sorted(rows, key=lambda row: row["path"].encode("utf-8"))
+
+    def run_evidence(self, command=None, **changes):
+        rows = [dict(row) for row in changes.pop("rows", self.rows)]
+        return elenchus.parent_guard_evidence(
+            self.fixture.path,
+            changes.pop("parent", self.fixture.base),
+            rows,
+            command or [sys.executable, "emit_unittest.py", "{report}"],
+            changes.pop("report_format", "unittest-json-v1"),
+            changes.pop("report_file", REPORT_FILE),
+            changes.pop("timeout", 120),
+            **changes,
+        )
+
+    def test_report_path_pathspec_magic_cannot_hide_a_tracked_file(self):
+        fixture = Fixture({":(literal)sentinel": "tracked bytes\n"})
+        self.addCleanup(fixture.destroy)
+        target = fixture.path / ":(literal)sentinel"
+        before = target.read_bytes()
+
+        with self.assertRaisesRegex(elenchus.ReportError, "tracked file"):
+            elenchus.prepare_report_path(fixture.path, ":(literal)sentinel")
+
+        self.assertEqual(before, target.read_bytes())
+
+    def test_report_path_tracking_errors_refuse_without_unlinking(self):
+        fixture = Fixture({"ordinary.txt": "tracked bytes\n"})
+        self.addCleanup(fixture.destroy)
+        target = fixture.path / "ordinary.txt"
+        before = target.read_bytes()
+        failed = subprocess.CompletedProcess([], 2, stdout="", stderr="broken")
+
+        with mock.patch.object(elenchus.subprocess, "run", return_value=failed):
+            with self.assertRaisesRegex(elenchus.ReportError, "tracked state"):
+                elenchus.prepare_report_path(fixture.path, "ordinary.txt")
+
+        self.assertEqual(before, target.read_bytes())
+
+    def test_missing_submodule_object_materializes_as_a_bound_empty_directory(self):
+        fixture = Fixture({"emit_unittest.py": UNITTEST_EMITTER})
+        self.addCleanup(fixture.destroy)
+        missing = "1" * 40
+        fixture.run(
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"160000,{missing},vendor/sub",
+        )
+        fixture.run(
+            "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "gitlink parent"
+        )
+        fixture.base = fixture.run("rev-parse", "HEAD").strip()
+        absent = subprocess.run(
+            ["git", "-C", str(fixture.path), "cat-file", "-e", missing],
+            capture_output=True,
+            check=False,
+        )
+        self.assertNotEqual(0, absent.returncode)
+        guard_path = "test_gitlink_parent.py"
+        guard = fixture.child(
+            "gitlink guard",
+            {
+                guard_path: (
+                    "from pathlib import Path\n"
+                    "import unittest\n\n"
+                    "class GitlinkParent(unittest.TestCase):\n"
+                    "    def test_gitlink_is_an_empty_directory(self):\n"
+                    "        self.assertTrue(Path('vendor/sub').is_dir())\n"
+                    "        self.assertEqual([], list(Path('vendor/sub').iterdir()))\n"
+                    "        self.fail('known parent failure')\n"
+                )
+            },
+        )
+        entry = fixture.run("ls-tree", guard, "--", guard_path).strip()
+        mode, kind, oid, actual = entry.replace("\t", " ").split(" ", 3)
+        raw = subprocess.run(
+            ["git", "-C", str(fixture.path), "cat-file", "blob", oid],
+            capture_output=True,
+            check=True,
+        ).stdout
+        result = elenchus.parent_guard_evidence(
+            fixture.path,
+            fixture.base,
+            [
+                {
+                    "path": actual,
+                    "status": "A",
+                    "mode": mode,
+                    "oid": oid,
+                    "bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "raw": raw,
+                }
+            ],
+            [sys.executable, "emit_unittest.py", "{report}"],
+            "unittest-json-v1",
+            REPORT_FILE,
+            timeout=120,
+        )
+
+        self.assertEqual("blob", kind)
+        self.assertEqual("guarded", result["status"])
+
+    def test_parent_tree_and_blob_materialization_limits_are_exact(self):
+        listing = elenchus._native_git(
+            self.fixture.path,
+            "ls-tree",
+            "-r",
+            "-z",
+            "--full-tree",
+            self.fixture.base,
+        )
+        entries = elenchus._parent_tree_entries(self.fixture.path, self.fixture.base)
+        sizes = [
+            int(elenchus._native_git(self.fixture.path, "cat-file", "-s", oid))
+            for _path, _mode, kind, oid in entries
+            if kind == "blob"
+        ]
+        cases = (
+            ("tree-bytes", "MAX_PARENT_TREE_BYTES", len(listing)),
+            ("entry-count", "MAX_PARENT_ENTRIES", len(entries)),
+            ("one-blob", "MAX_PARENT_BLOB_BYTES", max(sizes)),
+            ("aggregate", "MAX_PARENT_BLOBS_BYTES", sum(sizes)),
+        )
+        for name, limit, exact in cases:
+            with self.subTest(name=f"{name}-exact"), mock.patch.object(
+                elenchus, limit, exact
+            ):
+                self.assertEqual("guarded", self.run_evidence()["status"])
+            with self.subTest(name=f"{name}-over"), mock.patch.object(
+                elenchus, limit, exact - 1
+            ), mock.patch.object(elenchus, "_run_guard_command") as runner:
+                with self.assertRaisesRegex(elenchus.ReportError, "size limit|too many"):
+                    self.run_evidence()
+                runner.assert_not_called()
+
+    def test_parent_blob_reader_refuses_an_expired_deadline(self):
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(60)"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        reader = elenchus._BatchBlobReader(process, time.monotonic() - 1)
+        try:
+            with self.assertRaisesRegex(elenchus.ReportError, "timed out"):
+                reader.line(129)
+        finally:
+            process.kill()
+            process.wait()
+            for stream in (process.stdin, process.stdout, process.stderr):
+                if stream is not None:
+                    stream.close()
+            reader.close()
+
+    def test_parent_tree_listing_refuses_an_expired_deadline(self):
+        real_popen = subprocess.Popen
+        processes = []
+
+        def capture(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            processes.append(process)
+            return process
+
+        try:
+            with (
+                mock.patch.object(elenchus, "MAX_PARENT_GIT_SECONDS", 0),
+                mock.patch.object(
+                    elenchus.subprocess, "Popen", side_effect=capture
+                ),
+            ):
+                with self.assertRaisesRegex(elenchus.ReportError, "listing timed out"):
+                    elenchus._parent_tree_entries(self.fixture.path, self.fixture.base)
+        finally:
+            for process in processes:
+                if process.poll() is None:
+                    process.kill()
+                    process.wait(timeout=1)
+
+    def test_stuck_parent_git_cleanup_shares_deadline_and_reaps_process(self):
+        real_popen = subprocess.Popen
+
+        def stuck_process(*_args, **kwargs):
+            process = real_popen(
+                [sys.executable, "-c", "import time; time.sleep(60)"],
+                stdin=kwargs.get("stdin"),
+                stdout=kwargs.get("stdout"),
+                stderr=kwargs.get("stderr"),
+            )
+            processes.append(process)
+            return process
+
+        for operation in ("listing", "blobs"):
+            with self.subTest(operation=operation):
+                processes = []
+                started = time.monotonic()
+                try:
+                    with (
+                        mock.patch.object(elenchus, "MAX_PARENT_GIT_SECONDS", 0.25),
+                        mock.patch.object(
+                            elenchus, "MAX_PARENT_GIT_REAP_SECONDS", 0.05
+                        ),
+                        mock.patch.object(
+                            elenchus.subprocess,
+                            "Popen",
+                            side_effect=stuck_process,
+                        ),
+                    ):
+                        if operation == "listing":
+                            with self.assertRaisesRegex(
+                                elenchus.ReportError, "listing timed out"
+                            ):
+                                elenchus._parent_tree_entries(
+                                    self.fixture.path, self.fixture.base
+                                )
+                        else:
+                            with (
+                                mock.patch.object(
+                                    elenchus, "_parent_tree_entries", return_value=[]
+                                ),
+                                mock.patch.object(
+                                    elenchus, "_native_git", return_value=b""
+                                ),
+                                tempfile.TemporaryDirectory(
+                                    prefix="elenchus-stuck-parent-git-"
+                                ) as directory,
+                            ):
+                                with self.assertRaisesRegex(
+                                    elenchus.ReportError, "materialization timed out"
+                                ):
+                                    elenchus._materialize_parent_tree(
+                                        self.fixture.path,
+                                        Path(directory),
+                                        self.fixture.base,
+                                    )
+                    self.assertLess(time.monotonic() - started, 0.75)
+                    self.assertEqual(1, len(processes))
+                    self.assertIsNotNone(processes[0].poll())
+                    self.assertEqual(-signal.SIGKILL, processes[0].returncode)
+                finally:
+                    for process in processes:
+                        if process.poll() is None:
+                            process.kill()
+                            process.wait(timeout=1)
+                        for stream in (
+                            process.stdin,
+                            process.stdout,
+                            process.stderr,
+                        ):
+                            if stream is not None:
+                                stream.close()
+
+    def transformed_parent_result(
+        self, attributes, configurations, *, global_configurations=False
+    ):
+        fixture = Fixture({
+            "parent.txt": "raw-parent\n",
+            "emit_unittest.py": UNITTEST_EMITTER,
+        })
+        self.addCleanup(fixture.destroy)
+        tool = fixture.path / "parent-tool"
+        tool.write_bytes(b"#!/bin/sh\nexit 0\n")
+        tool.chmod(0o755)
+        (fixture.path / "parent-link").symlink_to("parent.txt")
+        fixture.run("add", "parent-tool", "parent-link")
+        fixture.run(
+            "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "parent modes"
+        )
+        (fixture.path / ".gitattributes").write_text(attributes, encoding="utf-8")
+        fixture.run("add", ".gitattributes")
+        fixture.run(
+            "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "attributes"
+        )
+        fixture.base = fixture.run("rev-parse", "HEAD").strip()
+        test_path = fixture.path / "test_parent_bytes.py"
+        test_path.write_text(
+            "from pathlib import Path\n"
+            "import os\n"
+            "import unittest\n\n"
+            "class ParentBytes(unittest.TestCase):\n"
+            "    def test_parent_bytes_are_native_git_bytes(self):\n"
+            "        self.assertEqual(Path('parent.txt').read_bytes(), "
+            "b'raw-parent\\n')\n"
+            "        self.assertEqual('parent.txt', os.readlink('parent-link'))\n"
+            "        self.assertTrue(Path('parent-link').is_symlink())\n"
+            "        self.assertEqual(0o111, os.stat('parent-tool').st_mode & 0o111)\n",
+            encoding="utf-8",
+        )
+        fixture.run("add", "test_parent_bytes.py")
+        fixture.run(
+            "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "parent bytes guard"
+        )
+        guard = fixture.run("rev-parse", "HEAD").strip()
+        environment = contextlib.nullcontext()
+        if global_configurations:
+            global_config = fixture.path / "attack-global-config"
+            for name, value in configurations:
+                subprocess.run(
+                    ["git", "config", "--file", str(global_config), name, value],
+                    capture_output=True,
+                    check=True,
+                )
+            environment = mock.patch.dict(
+                os.environ, {"GIT_CONFIG_GLOBAL": str(global_config)}, clear=False
+            )
+        else:
+            for name, value in configurations:
+                fixture.run("config", name, value)
+        checkout_home = Path(tempfile.mkdtemp(prefix="elenchus-filter-checkout-"))
+        self.addCleanup(shutil.rmtree, checkout_home, True)
+        checkout_tree = checkout_home / "tree"
+        with environment:
+            checkout = subprocess.run(
+                [
+                    "git", "-C", str(fixture.path), "worktree", "add", "--quiet",
+                    "--detach", str(checkout_tree), fixture.base,
+                ],
+                capture_output=True,
+                check=False,
+            )
+            checkout_bytes = (
+                (checkout_tree / "parent.txt").read_bytes()
+                if checkout.returncode == 0
+                else None
+            )
+            subprocess.run(
+                [
+                    "git", "-C", str(fixture.path), "worktree", "remove", "--force",
+                    str(checkout_tree),
+                ],
+                capture_output=True,
+                check=False,
+            )
+            rows = []
+            for line in fixture.run(
+                "diff-tree", "--no-commit-id", "--name-status", "-r", guard
+            ).splitlines():
+                status, path = line.split("\t")
+                entry = fixture.run("ls-tree", guard, "--", path).strip()
+                mode, kind, oid, actual = entry.replace("\t", " ").split(" ", 3)
+                self.assertEqual(("blob", path), (kind, actual))
+                raw = subprocess.run(
+                    ["git", "-C", str(fixture.path), "cat-file", "blob", oid],
+                    capture_output=True,
+                    check=True,
+                ).stdout
+                rows.append({
+                    "path": path,
+                    "status": status,
+                    "mode": mode,
+                    "oid": oid,
+                    "bytes": len(raw),
+                    "sha256": hashlib.sha256(raw).hexdigest(),
+                    "raw": raw,
+                })
+            rows.sort(key=lambda row: row["path"].encode("utf-8"))
+            result = elenchus.parent_guard_evidence(
+                fixture.path,
+                fixture.base,
+                rows,
+                [sys.executable, "emit_unittest.py", "{report}"],
+                "unittest-json-v1",
+                REPORT_FILE,
+                timeout=120,
+            )
+        return result, checkout.returncode, checkout_bytes
+
+    def test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup(self):
+        before = self.fixture.worktrees()
+        result = self.run_evidence()
+        self.assertEqual("guarded", result["status"])
+        self.assertEqual({
+            "complete": True,
+            "executed": 1,
+            "assertion_failures": 1,
+            "errors": 0,
+            "skipped": 0,
+        }, result["report"])
+        self.assertEqual(
+            "elenchus.unittest.v1",
+            json.loads(result["raw_report"].decode("utf-8"))["schema"],
+        )
+        self.assertEqual(before, self.fixture.worktrees())
+
+    def test_git_replacement_objects_do_not_change_supplied_blob_evidence(self):
+        target = next(row for row in self.rows if row["path"] == "payload.bin")
+        replacement = subprocess.run(
+            ["git", "-C", str(self.fixture.path), "hash-object", "-w", "--stdin"],
+            input=b"replacement bytes",
+            capture_output=True,
+            check=True,
+        ).stdout.decode().strip()
+        self.fixture.run("replace", target["oid"], replacement)
+        self.addCleanup(
+            subprocess.run,
+            ["git", "-C", str(self.fixture.path), "replace", "-d", target["oid"]],
+            capture_output=True,
+            check=False,
+        )
+
+        result = self.run_evidence()
+
+        self.assertEqual("guarded", result["status"])
+
+    def test_checkout_transformations_cannot_change_parent_evidence(self):
+        cases = (
+            (
+                "smudge-and-clean-filter",
+                "parent.txt filter=attack\n",
+                (
+                    ("filter.attack.smudge", "sed s/raw-parent/smudged-parent/"),
+                    ("filter.attack.clean", "sed s/smudged-parent/raw-parent/"),
+                    ("filter.attack.required", "true"),
+                ),
+                b"smudged-parent\n",
+            ),
+            (
+                "process-filter",
+                "parent.txt filter=attack\n",
+                (
+                    ("filter.attack.process", "/definitely/missing/filter-process"),
+                    ("filter.attack.required", "true"),
+                ),
+                None,
+            ),
+            (
+                "autocrlf",
+                "parent.txt text\n",
+                (("core.autocrlf", "true"),),
+                b"raw-parent\r\n",
+            ),
+            (
+                "working-tree-encoding",
+                "parent.txt working-tree-encoding=UTF-16LE\n",
+                (("core.checkRoundtripEncoding", "UTF-16LE"),),
+                "raw-parent\n".encode("utf-16le"),
+                False,
+            ),
+            (
+                "global-smudge-filter",
+                "parent.txt filter=attack\n",
+                (
+                    ("filter.attack.smudge", "sed s/raw-parent/global-parent/"),
+                    ("filter.attack.clean", "cat"),
+                    ("filter.attack.required", "true"),
+                ),
+                b"global-parent\n",
+                True,
+            ),
+        )
+        normalized_cases = (
+            case if len(case) == 5 else (*case, False)
+            for case in cases
+        )
+        for name, attributes, configurations, transformed, is_global in normalized_cases:
+            with self.subTest(name=name):
+                result, checkout_exit, checkout_bytes = self.transformed_parent_result(
+                    attributes,
+                    configurations,
+                    global_configurations=is_global,
+                )
+                if transformed is None:
+                    self.assertNotEqual(0, checkout_exit)
+                else:
+                    self.assertEqual(0, checkout_exit)
+                    self.assertEqual(transformed, checkout_bytes)
+                self.assertEqual("passed", result["status"])
+                self.assertEqual(1, result["report"]["executed"])
+                self.assertEqual(0, result["report"]["assertion_failures"])
+
+    def test_caller_path_and_pythonpath_cannot_forge_guard_evidence(self):
+        passed = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        forged = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        command = [
+            "python3",
+            "-c",
+            "from pathlib import Path; import sys; "
+            f"p=Path(sys.argv[1]); p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_text({passed!r}, encoding='utf-8')",
+            "{report}",
+        ]
+
+        with tempfile.TemporaryDirectory(prefix="elenchus-fake-path-") as directory:
+            attack = Path(directory)
+            marker = attack / "path-ran"
+            git_marker = attack / "git-path-ran"
+            fake = attack / "python3"
+            fake.write_text(
+                "#!/bin/sh\n"
+                f": > {shlex.quote(str(marker))}\n"
+                "mkdir -p \"$(dirname \"$3\")\"\n"
+                f"printf %s {shlex.quote(forged)} > \"$3\"\n"
+                "exit 1\n",
+                encoding="utf-8",
+            )
+            fake.chmod(0o755)
+            fake_git = attack / "git"
+            fake_git.write_text(
+                "#!/bin/sh\n"
+                f": > {shlex.quote(str(git_marker))}\n"
+                "exit 1\n",
+                encoding="utf-8",
+            )
+            fake_git.chmod(0o755)
+            with mock.patch.dict(
+                os.environ,
+                {"PATH": f"{attack}{os.pathsep}{os.environ.get('PATH', '')}"},
+                clear=False,
+            ):
+                result = self.run_evidence(command)
+            self.assertEqual("passed", result["status"])
+            self.assertFalse(marker.exists())
+            self.assertFalse(git_marker.exists())
+
+        with tempfile.TemporaryDirectory(prefix="elenchus-pythonpath-") as directory:
+            attack = Path(directory)
+            marker = attack / "pythonpath-ran"
+            (attack / "sitecustomize.py").write_text(
+                "from pathlib import Path\n"
+                "import os\n"
+                "import sys\n"
+                f"Path({str(marker)!r}).write_text('ran', encoding='utf-8')\n"
+                "target = Path(sys.argv[-1])\n"
+                "target.parent.mkdir(parents=True, exist_ok=True)\n"
+                f"target.write_text({forged!r}, encoding='utf-8')\n"
+                "os._exit(1)\n",
+                encoding="utf-8",
+            )
+            with mock.patch.dict(
+                os.environ, {"PYTHONPATH": str(attack)}, clear=False
+            ):
+                result = self.run_evidence(command)
+            self.assertEqual("passed", result["status"])
+            self.assertFalse(marker.exists())
+
+    def test_blob_shape_mode_digest_object_parent_and_order_fail_closed(self):
+        cases = []
+        bad_mode = [dict(row) for row in self.rows]
+        bad_mode[0]["mode"] = "120000"
+        cases.append(bad_mode)
+        bad_digest = [dict(row) for row in self.rows]
+        bad_digest[0]["sha256"] = "0" * 64
+        cases.append(bad_digest)
+        bad_object = [dict(row) for row in self.rows]
+        bad_object[0]["raw"] += b"x"
+        bad_object[0]["bytes"] += 1
+        bad_object[0]["sha256"] = hashlib.sha256(bad_object[0]["raw"]).hexdigest()
+        cases.append(bad_object)
+        cases.append(list(reversed(self.rows)))
+        unknown = [dict(row) for row in self.rows]
+        unknown[0]["extra"] = None
+        cases.append(unknown)
+        for rows in cases:
+            with self.subTest(rows=rows), self.assertRaises(elenchus.ReportError):
+                self.run_evidence(rows=rows)
+        with self.assertRaises(elenchus.ReportError):
+            self.run_evidence(parent="HEAD")
+
+    def test_report_symlink_hardlink_and_cap_are_inconclusive(self):
+        valid = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        scripts = (
+            (
+                "symlink",
+                "from pathlib import Path; import sys; "
+                f"p=Path(sys.argv[1]); q=p.parent/'other'; q.write_text({valid!r}); "
+                "p.symlink_to(q)",
+            ),
+            (
+                "hardlink",
+                "from pathlib import Path; import os,sys; "
+                f"p=Path(sys.argv[1]); p.write_text({valid!r}); "
+                "os.link(p,p.parent/'other')",
+            ),
+            (
+                "oversized",
+                "from pathlib import Path; import sys; "
+                f"Path(sys.argv[1]).write_bytes(b'x'*{elenchus.MAX_REPORT_BYTES + 1})",
+            ),
+            (
+                "ancestor-symlink",
+                "from pathlib import Path; import os,sys; "
+                "p=Path(sys.argv[1]); old=p.parent.with_name('.elenchus-old'); "
+                "p.parent.rename(old); p.parent.symlink_to(old, target_is_directory=True); "
+                f"(old/p.name).write_text({valid!r})",
+            ),
+            (
+                "fifo",
+                "from pathlib import Path; import os,sys; "
+                "p=Path(sys.argv[1]); p.parent.mkdir(parents=True, exist_ok=True); "
+                "os.mkfifo(p)",
+            ),
+        )
+        for name, script in scripts:
+            with self.subTest(name=name):
+                result = self.run_evidence([sys.executable, "-c", script, "{report}"])
+                self.assertEqual("inconclusive", result["status"])
+
+    def test_output_is_bounded_and_escaped_descendants_are_contained(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        output = self.run_evidence([
+            sys.executable,
+            "-c",
+            "from pathlib import Path; import sys; "
+            "sys.stdout.write('o'*2000000); sys.stderr.write('e'*2000000); "
+            "p=Path(sys.argv[1]); p.parent.mkdir(parents=True, exist_ok=True); "
+            f"p.write_text({guarded!r}, encoding='utf-8')",
+            "{report}",
+        ])
+        self.assertEqual("guarded", output["status"])
+        self.assertLessEqual(len(output["output"]), elenchus.MAX_DIAGNOSTIC_CHARS)
+
+        with tempfile.TemporaryDirectory(prefix="elenchus-descendant-") as directory:
+            marker = Path(directory) / "survived"
+            child = (
+                "from pathlib import Path; import signal,time; "
+                "signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+                "time.sleep(2); "
+                f"Path({str(marker)!r}).write_text('survived', encoding='utf-8')"
+            )
+            parent = (
+                "import subprocess,sys; "
+                f"subprocess.Popen([sys.executable, '-c', {child!r}], "
+                "start_new_session=True)"
+            )
+            started = time.monotonic()
+            result = self.run_evidence(
+                [sys.executable, "-c", parent, "{report}"], timeout=3
+            )
+            elapsed = time.monotonic() - started
+            self.assertEqual("inconclusive", result["status"])
+            self.assertNotIn("raw_report", result)
+            self.assertRegex(
+                result["output"],
+                "PermissionError|BlockingIOError|Operation not permitted|"
+                "Resource temporarily unavailable",
+            )
+            self.assertLess(elapsed, 3)
+            time.sleep(2.25)
+            self.assertFalse(marker.exists())
+
+    def test_parent_guard_rejects_an_executable_changed_during_the_run(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        with tempfile.TemporaryDirectory(prefix="elenchus-mutating-runner-") as directory:
+            runner = Path(directory) / "runner"
+            runner.write_text(
+                f"#!{sys.executable}\n"
+                "from pathlib import Path\n"
+                "import sys\n"
+                "source = Path(sys.argv[0])\n"
+                "source.write_text(source.read_text(encoding='utf-8') + "
+                "'# changed\\n', encoding='utf-8')\n"
+                "target = Path(sys.argv[1])\n"
+                "target.parent.mkdir(parents=True, exist_ok=True)\n"
+                f"target.write_text({guarded!r}, encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            result = self.run_evidence([str(runner), "{report}"])
+        self.assertEqual("inconclusive", result["status"])
+        self.assertIn("executable changed", result["detail"])
+
+    def test_parent_runner_ancestor_substitution_cannot_execute_replacement(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        with tempfile.TemporaryDirectory(prefix="elenchus-runner-parent-") as directory:
+            ancestor = Path(directory) / "bin"
+            ancestor.mkdir()
+            runner = ancestor / "runner"
+            runner.write_text(
+                f"#!{sys.executable}\n"
+                "from pathlib import Path\n"
+                "import sys\n"
+                "target = Path(sys.argv[1])\n"
+                "target.parent.mkdir(parents=True, exist_ok=True)\n"
+                f"target.write_text({guarded!r}, encoding='utf-8')\n",
+                encoding="utf-8",
+            )
+            runner.chmod(0o755)
+            marker = Path(directory) / "replacement-ran"
+            malicious = (
+                f"#!{sys.executable}\n"
+                "from pathlib import Path\n"
+                f"Path({str(marker)!r}).write_text('ran', encoding='utf-8')\n"
+            )
+            real_run = elenchus._run_guard_command
+            with mock.patch.object(
+                elenchus,
+                "_run_guard_command",
+                side_effect=replace_runner_ancestor(
+                    real_run, ancestor, malicious
+                ),
+            ):
+                result = self.run_evidence([str(runner), "{report}"])
+            replacement_ran = marker.exists()
+        if sys.platform == "linux":
+            self.assertEqual("guarded", result["status"])
+        else:
+            self.assertEqual("inconclusive", result["status"])
+        self.assertFalse(replacement_ran)
+
+    def test_incomplete_escaped_pipes_prevent_report_admission(self):
+        guarded = json.dumps({
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 1,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        })
+        with tempfile.TemporaryDirectory(prefix="elenchus-open-pipe-") as directory:
+            pid_file = Path(directory) / "pid"
+            child = "import time; time.sleep(30)"
+            parent = (
+                "from pathlib import Path; import subprocess,sys; "
+                f"child=subprocess.Popen([sys.executable, '-c', {child!r}], "
+                "start_new_session=True); "
+                f"Path({str(pid_file)!r}).write_text(str(child.pid)); "
+                "p=Path(sys.argv[1]); p.parent.mkdir(parents=True, exist_ok=True); "
+                f"p.write_text({guarded!r}, encoding='utf-8')"
+            )
+
+            def without_containment(command, target):
+                return elenchus.GuardCommand(command, (), (target,))
+
+            with mock.patch.object(
+                elenchus,
+                "_contained_guard_command",
+                side_effect=without_containment,
+            ):
+                result = self.run_evidence(
+                    [sys.executable, "-c", parent, "{report}"], timeout=3
+                )
+            child_pid = int(pid_file.read_text(encoding="ascii"))
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(child_pid, signal.SIGKILL)
+            self.assertEqual("inconclusive", result["status"])
+            self.assertIn("output streams open", result["detail"])
+            self.assertNotIn("raw_report", result)
+
+    def test_overlay_status_and_physical_path_boundaries_fail_closed(self):
+        target = next(row for row in self.rows if row["path"] == "payload.bin")
+        for path in (
+            ".git/test_guard.py",
+            "tests/.GiT/test_guard.py",
+            "tests/test_bad\npath.py",
+        ):
+            row = dict(target, path=path, status="A")
+            with self.subTest(path=path), self.assertRaises(elenchus.ReportError):
+                self.run_evidence(rows=[row])
+
+        aliases = [
+            dict(target, path="tests/Test_alias.py", status="A"),
+            dict(target, path="tests/test_alias.py", status="A"),
+        ]
+        aliases.sort(key=lambda row: row["path"].encode("utf-8"))
+        with self.assertRaises(elenchus.ReportError):
+            self.run_evidence(rows=aliases)
+
+        with tempfile.TemporaryDirectory(prefix="elenchus-overlay-") as directory:
+            tree = Path(directory)
+            existing = tree / "existing.py"
+            existing.write_bytes(b"parent")
+            added = dict(target, path="existing.py", status="A")
+            with self.assertRaises(elenchus.ReportError):
+                elenchus._overlay_guard_blob(tree, added)
+            self.assertEqual(b"parent", existing.read_bytes())
+
+            missing = dict(target, path="missing.py", status="M")
+            with self.assertRaises(elenchus.ReportError):
+                elenchus._overlay_guard_blob(tree, missing)
+            self.assertFalse((tree / "missing.py").exists())
+
+    def test_report_path_cannot_overlap_or_alias_a_guard_blob(self):
+        target = next(row for row in self.rows if row["path"] == "test_raw_guard.py")
+        nested = dict(target, path="tests/test_overlap.py", status="A")
+        unicode_path = dict(target, path="tests/t\u00e9st.py", status="A")
+        cases = (
+            ([target], "test_raw_guard.py"),
+            ([target], "test_raw_guard.py/report.json"),
+            ([target], "TEST_RAW_GUARD.PY"),
+            ([nested], "tests"),
+            ([nested], "TESTS"),
+            ([unicode_path], "tests/te\u0301st.py"),
+        )
+        for rows, report_file in cases:
+            with self.subTest(report_file=report_file):
+                with self.assertRaises(elenchus.ReportError):
+                    self.run_evidence(rows=rows, report_file=report_file)
+
+    def test_report_change_while_reading_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tree = Path(directory)
+            report = tree / "report"
+            report.write_bytes(b"x" * 70000)
+            real_read = os.read
+            changed = False
+
+            def read_then_change(descriptor, count):
+                nonlocal changed
+                chunk = real_read(descriptor, count)
+                if chunk and not changed:
+                    changed = True
+                    with report.open("ab") as target:
+                        target.write(b"y")
+                return chunk
+
+            with mock.patch.object(elenchus.os, "read", side_effect=read_then_change):
+                with self.assertRaises(elenchus.ReportError):
+                    elenchus._stable_report_bytes(report, 0, tree)
+
+    def test_report_ancestor_replacement_while_reading_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tree = Path(directory)
+            reports = tree / "reports"
+            reports.mkdir()
+            report = reports / "report"
+            body = b"x" * 70000
+            report.write_bytes(body)
+            real_read = os.read
+            replaced = False
+
+            def read_then_replace(descriptor, count):
+                nonlocal replaced
+                chunk = real_read(descriptor, count)
+                if chunk and not replaced:
+                    replaced = True
+                    reports.rename(tree / "reports-old")
+                    reports.mkdir()
+                    (reports / "report").write_bytes(body)
+                return chunk
+
+            with mock.patch.object(elenchus.os, "read", side_effect=read_then_replace):
+                with self.assertRaises(elenchus.ReportError):
+                    elenchus._stable_report_bytes(report, 0, tree)
+
+    def test_complete_command_has_one_4096_byte_ceiling(self):
+        with self.assertRaises(elenchus.ReportError):
+            self.run_evidence([
+                sys.executable,
+                "x" * elenchus.MAX_COMMAND_BYTES,
+                "{report}",
+            ])
+
+    def test_timeout_start_failure_and_signal_are_distinct_inconclusive_results(self):
+        timeout = self.run_evidence(
+            [sys.executable, "-c", "import time; time.sleep(2)", "{report}"],
+            timeout=1,
+        )
+        missing = self.run_evidence(["/definitely/missing/elenchus-runner", "{report}"])
+        interrupted = self.run_evidence([
+            sys.executable, "-c", "import os,signal; os.kill(os.getpid(),signal.SIGTERM)",
+            "{report}",
+        ])
+        self.assertIn("did not finish", timeout["detail"])
+        self.assertIn("could not be started", missing["detail"])
+        self.assertIn("interrupted", interrupted["detail"])
+        self.assertEqual(
+            ["inconclusive", "inconclusive", "inconclusive"],
+            [timeout["status"], missing["status"], interrupted["status"]],
+        )
+
+
 class ForgeReports(RunnerCase):
     @classmethod
     def setUpClass(cls):
+        forge = shutil.which("forge")
+        if forge is None:
+            raise unittest.SkipTest("forge is unavailable")
         cls.runner_version = subprocess.run(
-            ["forge", "--version"], capture_output=True, text=True, check=True
+            [forge, "--version"], capture_output=True, text=True, check=True
         ).stdout.splitlines()[0]
-        cls.command = [sys.executable, "emit_forge.py", "{report}"]
+        cls.command = [sys.executable, "emit_forge.py", "{report}", forge]
         cls.report_format = "forge-junit-v1"
         cls.fixture = Fixture({
             "foundry.toml": (
@@ -315,10 +1471,14 @@ class ForgeReports(RunnerCase):
             ),
         })
 
-    def test_native_junit_distinguishes_all_three_outcomes(self):
-        self.assertEqual("guarded", self.outcome(self.guarded)["status"])
-        self.assertEqual("passed", self.outcome(self.passed)["status"])
-        self.assertEqual("inconclusive", self.outcome(self.broken)["status"])
+    def test_cold_native_forge_fails_closed_when_it_needs_a_solc_child(self):
+        result = self.outcome(self.guarded)
+        self.assertEqual("inconclusive", result["status"])
+        self.assertNotIn("report", result)
+        self.assertRegex(
+            result["output"],
+            "Operation not permitted|Resource temporarily unavailable",
+        )
 
     def test_fixture_exercised_the_declared_forge_version(self):
         self.assertIn("1.7.1", self.runner_version)
@@ -327,10 +1487,13 @@ class ForgeReports(RunnerCase):
 class NodeReports(RunnerCase):
     @classmethod
     def setUpClass(cls):
+        node = shutil.which("node")
+        if node is None:
+            raise unittest.SkipTest("node is unavailable")
         cls.runner_version = subprocess.run(
-            ["node", "--version"], capture_output=True, text=True, check=True
+            [node, "--version"], capture_output=True, text=True, check=True
         ).stdout.strip()
-        cls.command = ["node", "emit_node.mjs", "{report}"]
+        cls.command = [node, "emit_node.mjs", "{report}"]
         cls.report_format = "node-test-json-v1"
         cls.fixture = Fixture({
             "adder.mjs": "export const add = (a, b) => a - b;\n",
@@ -389,6 +1552,107 @@ class ReportValidation(unittest.TestCase):
             elenchus.parse_unittest_report(self.payload(complete=False))
         with self.assertRaises(elenchus.ReportError):
             elenchus.parse_unittest_report(self.payload(testsRun=1, failures=2))
+
+    def test_json_reports_reject_duplicate_object_keys(self):
+        unittest_report = self.payload().replace(
+            b'{', b'{"schema":"elenchus.unittest.v1",', 1
+        )
+        node_report = (
+            b'{"schema":"elenchus.node-test.v1","complete":true,'
+            b'"executed":1,"executed":1,"assertionFailures":0,'
+            b'"errors":0,"skipped":0}'
+        )
+        for parser, raw in (
+            (elenchus.parse_unittest_report, unittest_report),
+            (elenchus.parse_node_report, node_report),
+        ):
+            with self.subTest(parser=parser.__name__):
+                with self.assertRaisesRegex(
+                    elenchus.ReportError, "duplicate object key"
+                ):
+                    parser(raw)
+
+    def test_forge_junit_parser_preserves_all_three_verdicts(self):
+        reports = (
+            b'<testsuites tests="1" failures="1" errors="0">'
+            b'<testcase><failure/></testcase></testsuites>',
+            b'<testsuites tests="1" failures="0" errors="0">'
+            b'<testcase/></testsuites>',
+            b'<testsuites tests="1" failures="0" errors="1">'
+            b'<testcase><error/></testcase></testsuites>',
+        )
+        self.assertEqual(
+            ["guarded", "passed", "inconclusive"],
+            [
+                elenchus.classify(elenchus.parse_forge_report(raw))[0]
+                for raw in reports
+            ],
+        )
+
+    def test_platform_no_child_boundaries_are_explicit_or_refused(self):
+        identity = (1, 2, 3, 4, 5, 6, 7)
+        command = ["/runner", "{report}"]
+        target = mock.Mock(spec=elenchus.ExecutableBinding)
+        target.path = "/runner"
+        target.leaf = "runner"
+        target.descriptor = 40
+        target.parent_descriptor = 39
+        target.identity = identity
+        python = mock.Mock(spec=elenchus.ExecutableBinding)
+        python.path = "/usr/bin/python3"
+        python.descriptor = 41
+        with (
+            mock.patch.object(elenchus.os, "geteuid", return_value=501),
+            mock.patch.object(elenchus.os, "getuid", return_value=501),
+            mock.patch.object(elenchus.sys, "platform", "linux"),
+            mock.patch.object(
+                elenchus.os, "uname", return_value=mock.Mock(machine="x86_64")
+            ),
+            mock.patch.object(
+                elenchus, "_trusted_executable",
+                return_value=python,
+            ),
+        ):
+            wrapped = elenchus._contained_guard_command(command, target)
+        self.assertEqual(["/proc/self/fd/41", "-I", "-c"], wrapped.argv[:3])
+        self.assertIn("PR_SET_SECCOMP", wrapped.argv[3])
+        self.assertIn("CLONE_THREAD", wrapped.argv[3])
+        self.assertIn("os.execve(target_fd", wrapped.argv[3])
+        self.assertEqual((41, 40), wrapped.pass_fds)
+
+        sandbox = mock.Mock(spec=elenchus.ExecutableBinding)
+        sandbox.path = "/usr/bin/sandbox-exec"
+        sandbox.descriptor = 42
+        system_python = mock.Mock(spec=elenchus.ExecutableBinding)
+        system_python.path = "/usr/bin/python3"
+        system_python.descriptor = 43
+        with (
+            mock.patch.object(elenchus.os, "geteuid", return_value=501),
+            mock.patch.object(elenchus.os, "getuid", return_value=501),
+            mock.patch.object(elenchus.sys, "platform", "darwin"),
+            mock.patch.object(
+                elenchus, "_trusted_executable",
+                side_effect=(sandbox, system_python),
+            ),
+            mock.patch.object(
+                elenchus, "_binding_path_is_immutable", return_value=True
+            ),
+        ):
+            wrapped = elenchus._contained_guard_command(command, target)
+        self.assertEqual("/usr/bin/sandbox-exec", wrapped.argv[0])
+        self.assertIn("deny process-fork", wrapped.argv[2])
+        self.assertEqual("/usr/bin/python3", wrapped.argv[3])
+        self.assertIn("dir_fd=parent_fd", wrapped.argv[6])
+        self.assertIn("follow_symlinks=False", wrapped.argv[6])
+        self.assertEqual((39, 40), wrapped.pass_fds)
+
+        with (
+            mock.patch.object(elenchus.os, "geteuid", return_value=501),
+            mock.patch.object(elenchus.os, "getuid", return_value=501),
+            mock.patch.object(elenchus.sys, "platform", "freebsd"),
+        ):
+            with self.assertRaises(OSError):
+                elenchus._contained_guard_command(command, target)
         with self.assertRaises(elenchus.ReportError):
             elenchus.parse_unittest_report(self.payload(testsRun=True))
         zero = elenchus.parse_unittest_report(self.payload(testsRun=0))

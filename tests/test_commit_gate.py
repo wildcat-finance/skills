@@ -27,6 +27,11 @@ import subprocess
 import tempfile
 import unittest
 
+from scripts.commit_gate_activation import (
+    activation_complaint as checkout_activation_complaint,
+    nobody_commits_here as declared_noncheckout,
+)
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DECISIONS = REPOSITORY_ROOT / "docs" / "decisions"
 RECORD = DECISIONS / "draft-activate-the-commit-gate-from-a-tracked-hooks-directory.md"
@@ -1679,92 +1684,23 @@ class HookIndexMutationTests(unittest.TestCase):
 # --- is the gate on in this checkout? --------------------------------------
 #
 # Git cannot install a hook on clone, so the gate cannot arrive by itself. It
-# can only announce that it is missing, and the root suite is the only thing
-# that runs in a fresh clone early enough to do the announcing.
+# can only announce that it is missing. The root suite and the checked runner's
+# source-checkout preflight share the policy that makes that announcement.
 
 # The activation as a contributor types it. `ACTIVATION` above is the same
 # command as arguments; assembling this one from it means a rename in either
 # place cannot leave the two disagreeing.
 ACTIVATION_COMMAND = "git " + " ".join(ACTIVATION)
 
-# Executions nobody commits from, each named by a variable whoever started the
-# process sets. Nothing here is inferred from the tree, because a faithful copy
-# of a checkout looks exactly like one:
-#
-#   * `GITHUB_ACTIONS` names a hosted runner. Every workflow under
-#     `.github/workflows/` runs on one, so this one variable covers the whole
-#     hosted half. No evidence of a contributor's local hook reaches a server,
-#     so that half holds the tracked bytes alone -- that the directory exists
-#     and its pre-commit is executable.
-#   * `WILDCAT_CHECK_CONTAINMENT` is set by `scripts/run_checks.py` for every
-#     check it starts, however many sessions deep. It runs the root suite from
-#     a disposable snapshot under `tmp/check-runner` that carries a git
-#     directory of its own, so `git config` there reads the snapshot's
-#     configuration rather than the checkout's, and the snapshot is deleted
-#     when the run ends.
-#
-# `CI` is deliberately not on that list (S4-R1-01). GitHub Actions sets it
-# alongside `GITHUB_ACTIONS`, so it admits no execution this repository has,
-# and it is the one name an unrelated local tool sets by convention: a
-# contributor whose shell exports it would get a silent skip in exactly the
-# unactivated checkout this case exists to report on. An execution that is
-# genuinely nobody's checkout says so with the marker above.
-#
-# A contributor's clone carries none of them, which is why the case below
-# still fires there. The draft record says the same in prose, under "Hosted
-# execution cannot see whether a contributor activated the gate locally".
-NOBODY_COMMITS_HERE = ("GITHUB_ACTIONS", "WILDCAT_CHECK_CONTAINMENT")
-
-# Values that say the variable is set and off. Anything else non-empty counts.
-DECLARED_OFF = frozenset({"0", "false", "no", "off"})
-
-
+# Hosted jobs cannot observe a contributor's hook configuration. The checked
+# runner names its exact disposable snapshot separately from the containment
+# token inherited by every descendant. That token alone never exempts a checkout.
 def nobody_commits_here() -> str | None:
-    """The variable saying this is not a checkout anybody commits from."""
-    for name in NOBODY_COMMITS_HERE:
-        value = os.environ.get(name, "").strip()
-        if value and value.lower() not in DECLARED_OFF:
-            return name
-    return None
+    return declared_noncheckout(REPOSITORY_ROOT, os.environ)
 
 
 def activation_complaint(configured: str | None) -> str | None:
-    """What is wrong with this `core.hooksPath`, or None when nothing is.
-
-    Separate from the case that reads the checkout, so the wording can be
-    driven both ways without a fixture and without making a real checkout
-    wrong to do it. Git runs a hook from the top of the working tree, so a
-    relative value resolves against the repository root rather than against
-    whatever directory the suite was started from.
-    """
-    remedy = (
-        f"Turn it on with `{ACTIVATION_COMMAND}`, run from the top of this "
-        f"working tree. {HOOK.name} and {GREENLIGHT.name} are tracked in "
-        f"{GITHOOKS.name}/, {HOOKS_README.name} says what each one does, and "
-        f"{BYPASS_TOKEN}=1 admits a commit you mean to make without a "
-        "recorded green."
-    )
-    if configured is None or not configured.strip():
-        return (
-            "the commit gate is not activated in this checkout: core.hooksPath "
-            "is unset, so git runs no tracked hook and a commit of a tree no "
-            f"suite has passed on is admitted silently. {remedy}"
-        )
-    value = configured.strip()
-    resolved = Path(value)
-    if not resolved.is_absolute():
-        resolved = REPOSITORY_ROOT / resolved
-    try:
-        elsewhere = resolved.resolve() != GITHOOKS.resolve()
-    except OSError:
-        elsewhere = True
-    if not elsewhere:
-        return None
-    return (
-        "the commit gate is not activated in this checkout: core.hooksPath is "
-        f"{value!r}, which resolves to {resolved} rather than to the tracked "
-        f"{GITHOOKS}, so git runs some other directory's hooks. {remedy}"
-    )
+    return checkout_activation_complaint(REPOSITORY_ROOT, configured)
 
 
 def configured_hooks_path() -> str | None:
@@ -1830,8 +1766,8 @@ class ActivationTests(unittest.TestCase):
         Every other case here settles wording or tracked bytes, which hold
         wherever the suite runs. This one reports on the checkout it is
         running in, so it is the case that fails in a clone nobody has
-        activated -- and the only place that failure can be raised, because
-        nothing else in a fresh clone runs before the first commit.
+        activated. The checked runner applies the same policy to its source
+        checkout before creating a disposable snapshot.
         """
         declared = nobody_commits_here()
         if declared is not None:

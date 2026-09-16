@@ -44,6 +44,18 @@
   "producer": "anamnesis-synkrisis-observation/v1",
   "release_id": "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3",
   "schema": "anamnesis-synkrisis-observation/v1",
+  "scope": {
+    "id": "capture-estate-findings",
+    "preserves": "The capture estate's own verification findings and open actions of 31 August and 5 September 2026.",
+    "records": {
+      "maximum": 40,
+      "minimum": 10
+    },
+    "sources": [
+      "archive-verification-2026-08-31",
+      "counterparty-history-2026-09-05"
+    ]
+  },
   "unknowns": {
     "finding.adjudication": 17,
     "finding.remediation": 17,

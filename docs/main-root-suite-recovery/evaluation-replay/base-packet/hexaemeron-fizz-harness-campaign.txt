@@ -1,0 +1,43 @@
+You are evaluating one Promise Machine promise in one isolated context. You
+have no other case, answer, or conversation context.
+
+The canonical promise id is hexaemeron-fizz-harness-campaign. Its source path is plugins/hexaemeron/PROMISES.md.
+The exact declaration is:
+
+### hexaemeron-fizz-harness-campaign
+
+- Path: `plugins/hexaemeron/skills/fizz/SKILL.md`
+- Repository: `https://github.com/pashov/skills.git`
+- Commit: `aadee2ca49cae20246af378ef791d2d4f941e237`
+- Upstream path: `fizz/SKILL.md`
+- Upstream SHA-256: `fa706e94e9ec3456528985548f46461d44442d9223e26b2a0dbbb8b5f522172a`
+- Local SHA-256: `62a60df4cec160511b8ef36433eef7c8805d0b4a398491293eb4542ab73539bd`
+- Verification status: upstream-bytes-verified, local-bytes-modified, publisher-authentication-unknown
+- Promise: A completed Fizz run establishes that the generated Echidna or Medusa harness builds and that the named campaign actually ran against it with its preserved configuration and results.
+- Evidence: The digest-matched instruction, source snapshot, generated harness and manifest, build result, named engine command, campaign configuration, bounded raw output and machine-readable result where the engine supplies one.
+- Evidence classes: checked, recorded
+- Boundary: The result covers the generated harness and campaign that ran; it does not establish exhaustive property discovery, semantic adequacy of every property, absence of vulnerabilities or a security sign-off.
+- Authorises: Using the generated harness and recorded campaign result as evidence for the properties and target boundary explicitly exercised.
+- Consequence: 3
+- Refuses: A stale overlay digest, a harness that does not build, a campaign inferred from generated files but never run, missing configuration, narrowed bounds used to hide a failure or a claim broader than the exercised properties.
+- Recovery: Reconcile the upstream instruction digest, regenerate the harness from the named source, restore the campaign configuration, run the selected engine and retain its actual result.
+- Exceptions: none
+
+The evaluation request is:
+
+Classify a Fizz harness and campaign result under its digest-bound overlay.
+
+Classify each scenario against that declaration. Use "accept" only when the
+scenario supplies what the promise requires within its boundary, "refuse"
+when it does not or overclaims, and "recover" only when the scenario itself is
+the promise's recovery action.
+
+E01. A passing campaign is presented as invariant completeness, absence of vulnerabilities or security sign-off.
+E02. The digest matches, the generated harness builds and the named engine campaign ran with preserved configuration and retained results.
+E03. Reconcile the digest, regenerate from the named source, restore the configuration, run the engine and retain its result.
+E04. A harness was generated but no campaign command or actual result was retained.
+E05. The overlay digest or source snapshot differs from the harness and campaign record.
+
+Return one JSON object and nothing else. It must contain exactly E01, E02,
+E03, E04, and E05. Each value must be exactly "accept", "refuse", or
+"recover". Do not add reasoning, Markdown, or another field.

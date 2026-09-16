@@ -1,0 +1,47 @@
+name: hexaemeron-forge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/hexaemeron/harness/**"
+      - "plugins/hexaemeron/tests/test_harness_*.py"
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/hexaemeron-forge.yml"
+  pull_request:
+    paths:
+      - "plugins/hexaemeron/harness/**"
+      - "plugins/hexaemeron/tests/test_harness_*.py"
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/hexaemeron-forge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Fetch the protocol source at its pinned commit and verify its digests
+        run: python3 fetch_protocol.py
+        working-directory: plugins/hexaemeron/harness
+      - name: The harness bindings to the fetched source
+        run: python3 -m unittest discover -s ../tests -t ../tests -p 'test_harness_*.py'
+        working-directory: plugins/hexaemeron/harness
+      - name: Build
+        run: forge build
+        working-directory: plugins/hexaemeron/harness
+      - name: The emitter suite
+        run: forge test -vv
+        working-directory: plugins/hexaemeron/harness
