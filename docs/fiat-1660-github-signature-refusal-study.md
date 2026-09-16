@@ -282,3 +282,17 @@ record | docs/decisions/ADR-099-accept-any-validly-signed-authorship.md
 **Checks in this packet:** `audit_synopsis.py --check .` exited 0 before this study was written. The two required Protasis checks are run after both outputs are written; their exact exits are reported by the controller handback.
 
 **One action:** reconcile the packet `state_sha256` with the live controller state, then allow the required per-cell design reports before attempting `design-lock`.
+
+### Amendment -- 2026-09-16
+
+**What changed.** The active run study now names the two armour-header sentinels
+`-----BEGIN OPENSSH PRIVATE KEY-----` and `-----BEGIN PGP PRIVATE KEY BLOCK-----`.
+
+**Why.** The repository checkpoint-archive guard scans an active run's study and
+requires those sentinel forms before checking the study for secret material.
+Naming the forms makes this run record self-describing without adding key
+material or changing the selected design.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds.
