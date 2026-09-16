@@ -537,6 +537,7 @@ DESIGN_EVIDENCE_FILE = os.path.join(STATE_DIR_NAME, "design-evidence.json")
 DESIGN_LOCK_INFO = "design-lock"
 DESIGN_LOCK_KEYS = frozenset({"schema", "sha256", "candidate"})
 DESIGN_CONTRACT_KEYS = frozenset({"design_evidence"})
+SUCCESS_CRITERIA_CONTRACT = "protasis-success-criteria-execution/v1"
 DESIGN_TRANSITIONS_MAX = 502
 DESIGN_CONSUMED_MAX = 128
 KNOWN_FAILURE_INVENTORY_SCHEMA = "protasis-known-failure-inventory/v1"
@@ -2376,12 +2377,20 @@ def validate_state_shape(state) -> dict:
     contracts = root.get("contracts")
     if contracts is not None:
         contracts = require_state_container(contracts, "contracts", dict)
-        if set(contracts) not in (DESIGN_CONTRACT_KEYS, DESIGN_CONTRACT_KEYS | {"gate_commands"}):
+        allowed_contracts = (
+            DESIGN_CONTRACT_KEYS,
+            DESIGN_CONTRACT_KEYS | {"gate_commands"},
+            DESIGN_CONTRACT_KEYS | {"success_criteria"},
+            DESIGN_CONTRACT_KEYS | {"gate_commands", "success_criteria"},
+        )
+        if set(contracts) not in allowed_contracts:
             die("state key 'contracts' has an unsupported field set", 1)
         if contracts.get("design_evidence") != DESIGN_EVIDENCE_SCHEMA:
             die("state key 'contracts.design_evidence' is not supported", 1)
         if "gate_commands" in contracts and contracts["gate_commands"] != "protasis-gate-commands/v1":
             die("unsupported gate command contract", 1)
+        if "success_criteria" in contracts and contracts["success_criteria"] != SUCCESS_CRITERIA_CONTRACT:
+            die("unsupported success criteria contract", 1)
     config = require_state_container(root.get("config"), "config", dict)
     for section in ("skills", "audit", "git"):
         require_state_container(
@@ -2837,6 +2846,7 @@ MUTATING = frozenset(
         "cmd_replacement_resume",
         "cmd_checkpoint_archive",
         "cmd_retain_guard",
+        "cmd_run_exit",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -3515,7 +3525,11 @@ def cmd_init(args) -> None:
     state = {
         "version": 1,
         "controller": "hexctl",
-        "contracts": {"design_evidence": DESIGN_EVIDENCE_SCHEMA, "gate_commands": "protasis-gate-commands/v1"},
+        "contracts": {
+            "design_evidence": DESIGN_EVIDENCE_SCHEMA,
+            "gate_commands": "protasis-gate-commands/v1",
+            "success_criteria": SUCCESS_CRITERIA_CONTRACT,
+        },
         "topic": args.topic,
         "base": starting_commit,
         "run_branch": run_branch,
@@ -7262,6 +7276,8 @@ RESERVED_RECEIPTS = {
     "runbook",
     "run_observations",
     RUN_ANCHOR_RECEIPT,
+    "success_criteria",
+    "criteria_attempts",
 }
 
 
@@ -14012,6 +14028,341 @@ def capture_gate_commands(base_dir: str, state: dict, data: bytes) -> dict | Non
         die(f"gate command validation refused: {exc}", 1)
 
 
+def criteria_execution_module():
+    """Load the controller-owned bounded execution adapter."""
+    source = Path(__file__).with_name("criteria_execution.py")
+    specification = importlib.util.spec_from_file_location(
+        "fiat_criteria_execution", source
+    )
+    if specification is None or specification.loader is None:
+        die("criteria execution adapter unavailable", 1)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+def success_criteria_contract(state: dict) -> bool:
+    return (
+        as_dict(state.get("contracts")).get("success_criteria")
+        == SUCCESS_CRITERIA_CONTRACT
+    )
+
+
+def capture_success_criteria(base_dir: str, state: dict,
+                             study_data: bytes, runbook_data: bytes) -> dict | None:
+    """Capture the inert declaration/Exit join for a new runbook receipt.
+
+    The marker is present in new runs, but a study without the optional fence
+    remains a valid no-criteria run.  No execution receipt is invented for it.
+    """
+    if not success_criteria_contract(state):
+        return None
+    adapter = criteria_execution_module()
+    try:
+        criteria = adapter.adapters(Path(base_dir).resolve())[0]
+        if criteria.parse(study_data) is None:
+            return None
+        admission = adapter.admit(Path(base_dir).resolve(), study_data, runbook_data)
+        admission["study_sha256"] = hashlib.sha256(study_data).hexdigest()
+        admission["runbook_sha256"] = hashlib.sha256(runbook_data).hexdigest()
+        return admission
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria admission refused: {exc}", 1)
+
+
+def success_criteria_admission(state: dict) -> dict | None:
+    return as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+        "success_criteria"
+    )
+
+
+def _criteria_attempts(state: dict) -> list:
+    admission = success_criteria_admission(state)
+    if not isinstance(admission, dict):
+        return []
+    attempts = admission.get("attempts", [])
+    if not isinstance(attempts, list):
+        die("success criteria attempts are malformed", 1)
+    return attempts
+
+
+def verify_success_criteria(base_dir: str, state: dict,
+                            initial_entry: dict | None,
+                            runbook_event: dict | None,
+                            execution_events: list[dict]) -> None:
+    """Replay criterion admission and all attempts without executing commands."""
+    marker = as_dict(state.get("contracts")).get("success_criteria")
+    original = as_dict(
+        as_dict(as_dict(initial_entry).get("data")).get("contracts")
+    ).get("success_criteria")
+    if marker != original:
+        die("success criteria contract differs from immutable init event", 1)
+    if not marker:
+        if success_criteria_admission(state) is not None or execution_events:
+            die("legacy run has fabricated success criteria evidence", 1)
+        return
+    receipt = success_criteria_admission(state)
+    event_receipt = as_dict(runbook_event).get("success_criteria")
+    if receipt is None:
+        if event_receipt is not None or execution_events:
+            die("success criteria evidence precedes its runbook admission", 1)
+        # Optional declaration absent: this is a marker-bearing legacy-shaped
+        # fixture and has no due criteria.
+        return
+    if not isinstance(receipt, dict) or event_receipt is None:
+        die("success criteria admission is missing from the immutable runbook event", 1)
+    if receipt != event_receipt:
+        # Attempts are appended by run-exit, so compare the immutable admission
+        # after removing that deliberately mutable collection.
+        left = dict(receipt); right = dict(event_receipt)
+        left.pop("attempts", None); right.pop("attempts", None)
+        if left != right:
+            die("success criteria admission disagrees with its ledger event", 1)
+    study = receipted_source(base_dir, state, "study")
+    runbook = receipted_source(base_dir, state, "runbook")
+    if study is None or runbook is None:
+        die("success criteria admission has no receipted source", 1)
+    adapter = criteria_execution_module()
+    try:
+        current = adapter.validate_admission(
+            Path(base_dir).resolve(), study["text"].encode(),
+            runbook["text"].encode(),
+        {
+            key: value for key, value in receipt.items()
+            if key not in {"attempts"}
+        },
+        )
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria admission does not replay: {exc}", 1)
+    if current.get("operation_ran") is not False:
+        die("success criteria admission claims an executed operation", 1)
+    attempts = receipt.get("attempts", [])
+    if not isinstance(attempts, list) or len(attempts) > adapter.MAX_ATTEMPTS:
+        die("success criteria attempt bound exceeded", 1)
+    if len(execution_events) != len(attempts):
+        die("success criteria attempts do not match controller ledger events", 1)
+    for attempt, event in zip(attempts, execution_events):
+        if not isinstance(event, dict) or event.get("attempt") != attempt:
+            die("success criteria attempt ledger record disagrees with state", 1)
+        try:
+            adapter.validate_result(
+                attempt, receipt["join"], run_id=controller_run_id(state),
+                study_sha256=receipt.get("study_sha256"),
+            )
+        except (adapter.Refusal, OSError, ValueError) as exc:
+            die(f"success criteria result does not replay: {exc}", 1)
+
+
+def _criteria_success_for_step(base_dir: str, state: dict, step: dict,
+                               commit_sha: str | None = None) -> None:
+    """Require every descriptor due at ``step`` to have a settled attempt."""
+    admission = success_criteria_admission(state)
+    if admission is None:
+        return
+    adapter = criteria_execution_module()
+    join = admission.get("join")
+    rows = as_dict(join).get("criteria")
+    if not isinstance(rows, list):
+        die("success criteria join is malformed", 1)
+    due = [row for row in rows if isinstance(row, dict) and row.get("step") == step.get("n")]
+    if not due:
+        return
+    attempts = admission.get("attempts", [])
+    if not isinstance(attempts, list):
+        die("success criteria attempts are malformed", 1)
+    for row in due:
+        matched = False
+        for attempt in attempts:
+            try:
+                adapter.validate_result(attempt, join,
+                                        run_id=controller_run_id(state),
+                                        step=step["n"], criterion_id=row["id"],
+                                        study_sha256=admission.get("study_sha256"))
+            except (adapter.Refusal, OSError, ValueError):
+                continue
+            if not attempt.get("settled"):
+                continue
+            if commit_sha is not None:
+                before = as_dict(attempt.get("source_before"))
+                after = as_dict(attempt.get("source_after"))
+                if before.get("commit") != commit_sha or after.get("commit") != commit_sha:
+                    continue
+            matched = True
+            break
+        if not matched:
+            die(
+                f"success criterion '{row.get('id')}' for step {step.get('n')} "
+                "has no matching successful observed execution"
+            )
+
+
+def _criteria_all_success(base_dir: str, state: dict) -> None:
+    for step in state.get("steps", []):
+        implementation = as_dict(as_dict(step.get("receipts")).get("implement"))
+        commit_sha = implementation.get("commit")
+        if commit_sha:
+            _criteria_success_for_step(base_dir, state, step, commit_sha)
+
+
+def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | None:
+    """Name the next missing consuming-step observation, if one is due."""
+    admission = success_criteria_admission(state)
+    if admission is None:
+        return None
+    rows = as_dict(admission.get("join")).get("criteria")
+    if not isinstance(rows, list):
+        return None
+    due = [row for row in rows if isinstance(row, dict) and row.get("step") == step.get("n")]
+    if not due:
+        return None
+    attempts = admission.get("attempts", [])
+    if not isinstance(attempts, list):
+        return {"do": "blocked", "reason": "success criteria attempts are malformed"}
+    adapter = criteria_execution_module()
+    current_commit = None
+    if base_dir is not None:
+        try:
+            current_commit = tool_text(
+                _guard_native_git(
+                    base_dir,
+                    ["rev-parse", "--verify", "HEAD"],
+                    "success criteria implementation HEAD",
+                ),
+                "success criteria implementation HEAD",
+            ).strip()
+        except (SystemExit, OSError, ValueError):
+            current_commit = None
+    for row in due:
+        settled = False
+        for attempt in attempts:
+            try:
+                adapter.validate_result(
+                    attempt, admission["join"], run_id=controller_run_id(state),
+                    step=step["n"], criterion_id=row["id"],
+                )
+            except (adapter.Refusal, OSError, ValueError):
+                continue
+            before = as_dict(attempt.get("source_before"))
+            after = as_dict(attempt.get("source_after"))
+            if attempt.get("settled") and (
+                current_commit is None
+                or (before.get("commit") == current_commit and after.get("commit") == current_commit)
+            ):
+                settled = True
+                break
+        if not settled:
+            return {
+                "step": step["n"],
+                "title": step["title"],
+                "do": "run-exit",
+                "criterion": row["id"],
+                "command": row["command"],
+                "then": f"hexctl run-exit --criterion {row['id']}",
+                "operation_ran": False,
+                "reason": "observe the registered Exit before done implement",
+            }
+    return None
+
+
+def _criteria_init_id(base_dir: str) -> str:
+    entries = _intact_ledger_entries(base_dir, "success criteria")
+    if not entries or entries[0].get("event") != "init":
+        die("success criteria run has no immutable init receipt", 1)
+    return "init-" + entries[0]["hash"]
+
+
+def cmd_run_exit(args) -> None:
+    """Observe one admitted Exit command during its consuming implementation step."""
+    state = load_state(args.dir)
+    if not success_criteria_contract(state):
+        die("run-exit requires the success criteria contract", 1)
+    admission = success_criteria_admission(state)
+    if admission is None:
+        die("run-exit has no admitted success criteria declaration", 1)
+    if state.get("phase") != "steps":
+        die("run-exit is available only during an implementation step", 1)
+    step = current_step(state)
+    if step.get("phase") not in ("implement", "issue"):
+        die(
+            f"run-exit requires step {step.get('n')} implementation phase; "
+            f"the step is in '{step.get('phase')}'"
+        )
+    criterion_id = getattr(args, "criterion", None)
+    if not isinstance(criterion_id, str) or not criterion_id:
+        die("--criterion is required")
+    join = as_dict(admission.get("join"))
+    rows = join.get("criteria")
+    if not isinstance(rows, list):
+        die("success criteria admission has no joined descriptors", 1)
+    row = next((item for item in rows if isinstance(item, dict) and item.get("id") == criterion_id), None)
+    if row is None:
+        die(f"unknown success criterion '{criterion_id}'", 1)
+    if row.get("step") != step.get("n"):
+        die(
+            f"success criterion '{criterion_id}' belongs to step {row.get('step')}, "
+            f"not consuming step {step.get('n')}"
+        )
+    if run_branch_of(state):
+        expected_branch = step_branch_name(state, step)
+        branch = tool_text(
+            _guard_native_git(
+                args.dir,
+                ["symbolic-ref", "--quiet", "--short", "HEAD"],
+                "run-exit worktree is not on a branch",
+            ),
+            "run-exit branch",
+        ).strip()
+        head = tool_text(
+            _guard_native_git(
+                args.dir,
+                ["rev-parse", "--verify", "HEAD"],
+                "run-exit HEAD",
+            ),
+            "run-exit HEAD",
+        ).strip()
+        tip = resolved_commit(args.dir, expected_branch, "run-exit step branch")
+        if branch != expected_branch or head != tip:
+            die(
+                "run-exit requires the consuming Step branch checked out at its "
+                "exact committed tip"
+            )
+    study = receipted_source(args.dir, state, "study")
+    runbook = receipted_source(args.dir, state, "runbook")
+    if study is None or runbook is None:
+        die("run-exit requires receipted study and runbook sources", 1)
+    adapter = criteria_execution_module()
+    immutable_admission = {
+        key: value for key, value in admission.items() if key != "attempts"
+    }
+    try:
+        adapter.validate_admission(
+            Path(args.dir).resolve(), study["text"].encode(),
+            runbook["text"].encode(), immutable_admission,
+        )
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"run-exit admission is stale: {exc}", 1)
+    attempts = admission.get("attempts", [])
+    if not isinstance(attempts, list) or len(attempts) >= adapter.MAX_ATTEMPTS:
+        die("success criteria attempt bound reached", 1)
+    try:
+        result = adapter.execute(
+            Path(args.dir).resolve(), join, criterion_id,
+            run_id=controller_run_id(state),
+            init_id=_criteria_init_id(args.dir),
+            step=step["n"], require_signed=True,
+            study_sha256=study["sha256"], runbook_sha256=runbook["sha256"],
+        )
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"run-exit refused: {exc}", 1)
+    candidate = dict(admission)
+    candidate["attempts"] = [*attempts, result]
+    if sum(adapter.result_data_size(item) for item in candidate["attempts"]) > adapter.MAX_RESULT_BYTES:
+        die("success criteria aggregate result-data cap reached", 1)
+    state["receipts"]["runbook"]["success_criteria"] = candidate
+    commit(args.dir, state, "run-exit", {"attempt": result})
+    print(json.dumps(result, sort_keys=True))
+
+
 def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
                          runbook_event: dict | None, amendment_events: list,
                          *, allow_source_drift: bool = False, historical_source: bytes | None = None) -> None:
@@ -14091,6 +14442,12 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     original = as_dict(as_dict(entries[0].get("data")).get("contracts")).get("gate_commands")
     if marker != original:
         die("gate command contract differs from immutable init event", 1)
+    criteria_marker = as_dict(state.get("contracts")).get("success_criteria")
+    criteria_original = as_dict(
+        as_dict(entries[0].get("data")).get("contracts")
+    ).get("success_criteria")
+    if criteria_marker != criteria_original:
+        die("success criteria contract differs from immutable init event", 1)
     if not marker:
         return
     verify_run_anchor(base_dir, state, entries[0])
@@ -14108,6 +14465,10 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     amendments = [e["data"] for e in entries if e["event"] == "amend:runbook"]
     verify_gate_commands(base_dir, state, entries[0], events[-1] if events else None,
                          amendments, allow_source_drift=allow_source_drift, historical_source=data)
+    criteria_events = [e["data"] for e in entries if e["event"] == "run-exit"]
+    verify_success_criteria(
+        base_dir, state, entries[0], events[-1] if events else None, criteria_events
+    )
 
 
 def done_runbook(args, state: dict) -> None:
@@ -14174,6 +14535,12 @@ def done_runbook(args, state: dict) -> None:
     study_source = receipted_source(args.dir, state, "study")
     if study_source is None:
         die("runbook receipt requires one receipted study source", 1)
+    success_criteria = capture_success_criteria(
+        args.dir,
+        state,
+        study_source["text"].encode("utf-8"),
+        artifact_bytes,
+    )
     inventory_capture = _load_checked_inventory(
         args.dir, study_source["path"], artifact_path
     )
@@ -14240,6 +14607,9 @@ def done_runbook(args, state: dict) -> None:
     if gate_receipt is not None:
         state["receipts"]["runbook"]["gate_commands"] = gate_receipt
         receipt["gate_commands"] = gate_receipt
+    if success_criteria is not None:
+        state["receipts"]["runbook"]["success_criteria"] = success_criteria
+        receipt["success_criteria"] = success_criteria
     commit(args.dir, state, "done:runbook", receipt)
     phase = "inoculate" if inventory_capture is not None else "implement"
     print(f"runbook receipted; {len(titles)} steps registered; step 1 -> {phase}")
@@ -14545,6 +14915,7 @@ def done_implement(args, state: dict) -> None:
     )
     if branch_tip != supplied_head:
         die(f"step {step['n']} implementation head is not the declared branch tip")
+    _criteria_success_for_step(args.dir, state, step, supplied_head)
     if capture is not None:
         current_branch = tool_text(
             _guard_native_git(
@@ -15431,6 +15802,8 @@ def _integrate_directive(
         if base_dir is None:
             die("version resolution freshness needs the run worktree", 1)
         resolution = active_version_resolution(base_dir, state)
+    if base_dir is not None:
+        _criteria_all_success(base_dir, state)
     directive = {
         "do": "integrate",
         "run_branch": run_branch,
@@ -28209,6 +28582,10 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
         }
     if step["phase"] in ("implement", "push"):
         directive = {**base, "do": step["phase"], **branch_plan(state, step)}
+        if step["phase"] == "implement":
+            criteria_directive = _criteria_next_directive(base_dir, state, step)
+            if criteria_directive is not None:
+                directive = {**directive, **criteria_directive}
         directive.update(_next_recovery_field(base_dir, state, step))
         if (
             step["phase"] == "implement"
@@ -28282,6 +28659,7 @@ def clean(text: str) -> str:
 def cmd_status(args) -> None:
     state = load_state(args.dir, allow_pending_replacement=True, allow_pending_amendment=True, allow_pending_resolution=True)
     gate_status = {"status": "legacy", "validation": "not-recorded"}
+    criteria_status = {"status": "legacy", "operation_ran": False, "attempts": 0}
     with open(ledger_path(args.dir), encoding="utf-8") as handle:
         initial = next((json.loads(line) for line in handle if line.strip()), {})
     initial_gate = as_dict(as_dict(initial.get("data")).get("contracts")).get("gate_commands")
@@ -28293,11 +28671,29 @@ def cmd_status(args) -> None:
             gate_status = {"status": "current" if as_dict(state.get("receipts")).get("runbook") else "awaiting-runbook", "validation": "interface-only"}
         except SystemExit:
             gate_status = {"status": "stale-or-invalid", "recovery": "inspect verify output; submit a freshly validated runbook amendment"}
+    if success_criteria_contract(state):
+        admission = success_criteria_admission(state)
+        if admission is None:
+            criteria_status = {"status": "awaiting-runbook", "operation_ran": False, "attempts": 0}
+        else:
+            attempts = admission.get("attempts", [])
+            join = as_dict(admission.get("join"))
+            settled = sorted({criterion for attempt in attempts if isinstance(attempt, dict) and attempt.get("settled") for criterion in attempt.get("criterion_ids", [])}) if isinstance(attempts, list) else []
+            criteria_status = {
+                "status": "current",
+                "operation_ran": False,
+                "attempts": len(attempts) if isinstance(attempts, list) else 0,
+                "criteria": len(join.get("criteria", [])) if isinstance(join.get("criteria"), list) else 0,
+                "settled": settled,
+            }
     pending = pending_amendments(args.dir)
     if gate_contract(state) and pending:
         gate_status = {"status": "pending-amendment", "validation": "not-complete", "recovery": "recover the exact pending amendment"}
     if getattr(args, "field", None) == "gate_command_status":
         print(json.dumps(gate_status, sort_keys=True))
+        return
+    if getattr(args, "field", None) == "success_criteria_status":
+        print(json.dumps(criteria_status, sort_keys=True))
         return
     assignment = as_dict(state.get("receipts")).get(
         DECISION_ASSIGNMENT_GENERIC_RECEIPT_KEY
@@ -28409,6 +28805,7 @@ def cmd_status(args) -> None:
     if state["receipts"].get("replacement_pending"):
         print("PENDING: replacement admission; inspect status --json, halt safely, or run replacement-resume")
     print("gate commands: " + json.dumps(gate_status, sort_keys=True))
+    print("success criteria: " + json.dumps(criteria_status, sort_keys=True))
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
@@ -28685,6 +29082,7 @@ def verify_run(
     study_event = None
     runbook_event = None
     gate_amendment_events = []
+    execution_events = []
     inoculation_events = []
     design_transition_events = []
     resolution_events = []
@@ -28715,6 +29113,8 @@ def verify_run(
                 runbook_event = entry.get("data")
             if entry.get("event") == "amend:runbook":
                 gate_amendment_events.append(entry.get("data"))
+            if entry.get("event") == "run-exit":
+                execution_events.append(entry.get("data"))
             if entry.get("event") == "done:study":
                 study_event = entry.get("data")
             if entry.get("event") == "done:inoculate":
@@ -28736,6 +29136,9 @@ def verify_run(
         )
     verify_run_anchor(base_dir, state, initial_entry)
     verify_gate_commands(base_dir, state, initial_entry, runbook_event, gate_amendment_events, allow_source_drift=allow_gate_source_drift)
+    verify_success_criteria(
+        base_dir, state, initial_entry, runbook_event, execution_events
+    )
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
@@ -29558,6 +29961,13 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     sp.set_defaults(fn=cmd_next)
+
+    sp = sub.add_parser(
+        "run-exit",
+        help="observe one registered Exit command for its consuming criterion",
+    )
+    sp.add_argument("--criterion", required=True)
+    sp.set_defaults(fn=cmd_run_exit)
 
     sp = sub.add_parser(
         "retain-guard",

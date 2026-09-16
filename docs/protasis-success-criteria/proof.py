@@ -326,6 +326,68 @@ def check_declaration_contract(root):
     }
 
 
+def check_execution_custody(root):
+    """Exercise the bounded executor with real disposable child processes.
+
+    This proof records process observations only.  It does not turn a fixture
+    command into evidence for a Fiat run, and it does not claim semantic
+    sufficiency for a declared criterion.
+    """
+    executor_path = PACKAGE.replace("docs/protasis-success-criteria", "plugins/hexaemeron/skills/fiat/scripts") + "/criteria_execution.py"
+    controller_path = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    if not (root / executor_path).is_file() or not (root / controller_path).is_file():
+        raise Refusal("operation-not-implemented:execution-custody:step-3")
+    inputs = Inputs(root)
+    inputs.read(SELF)
+    inputs.read(executor_path)
+    # The controller is intentionally larger than the proof reader's 1 MiB
+    # per-input budget.  Bind its exact bytes with a separate bounded stream;
+    # this keeps the proof's inventory limit while still identifying the
+    # controller that the demonstration inspected.
+    controller = root / controller_path
+    try:
+        before = controller.stat()
+        if not stat.S_ISREG(before.st_mode) or before.st_size > 2 * 1024 * 1024:
+            raise Refusal("controller-source-bound")
+        with controller.open("rb") as stream:
+            controller_bytes = stream.read(2 * 1024 * 1024 + 1)
+        after = controller.stat()
+    except OSError as error:
+        raise Refusal("controller-source-unavailable") from error
+    if len(controller_bytes) > 2 * 1024 * 1024 or before.st_size != after.st_size or before.st_mtime_ns != after.st_mtime_ns:
+        raise Refusal("controller-source-changed")
+    module = load_module(root / executor_path, "criteria_execution_proof")
+    child = [sys.executable, "-c", "import sys; sys.stdout.write('proof-ok')"]
+    success = module.execute_argv(child, root, timeout=2, stream_cap=1024)
+    if success.get("status") != "completed" or success.get("returncode") != 0:
+        raise Refusal("execution-success-case-unmet")
+    failed = module.execute_argv(
+        [sys.executable, "-c", "import sys; sys.exit(7)"],
+        root, timeout=2, stream_cap=1024,
+    )
+    if failed.get("status") != "completed" or failed.get("returncode") != 7:
+        raise Refusal("execution-exit-case-unmet")
+    overflow = module.execute_argv(
+        [sys.executable, "-c", "import sys; sys.stdout.write('x' * 32)"],
+        root, timeout=2, stream_cap=16,
+    )
+    if overflow.get("status") != "stream-overflow" or not overflow["stdout"]["truncated"]:
+        raise Refusal("execution-overflow-case-unmet")
+    inputs.recheck()
+    return inputs, {
+        "schema": "success-criteria-execution-evidence/v1",
+        "scope": "Real child-process observations of bounded execution outcomes.",
+        "controller": {"path": controller_path, "sha256": digest(controller_bytes), "bytes": len(controller_bytes)},
+        "executor": {"path": executor_path, "sha256": digest(inputs.bytes[executor_path])},
+        "checks": [
+            {"case": "completed-zero", "result": success},
+            {"case": "completed-exit-seven", "result": failed},
+            {"case": "incremental-stream-overflow", "result": overflow},
+        ],
+        "sources": inputs.inventory(),
+    }
+
+
 def output_paths(report):
     parts = relative_parts(report)
     if (len(parts) != 3 or parts[:2] != (".hexaemeron", "reports")
@@ -355,6 +417,29 @@ def write_exclusive(directory, name, data):
 
 def run(root, candidate, criterion, report_path):
     """Write a fresh design report and companion evidence after the checks pass."""
+    if criterion == "execution-custody":
+        if candidate != SELECTED:
+            raise Refusal("candidate-not-selected")
+        names = output_paths(report_path)
+        directory = open_directory(root, (".hexaemeron", "reports"), create=True)
+        try:
+            require_absent(directory, names)
+            inputs, evidence = check_execution_custody(root)
+            command = ("python3 " + SELF + " --candidate " + candidate
+                       + " --criterion " + criterion + " --report " + report_path)
+            report = {"schema": "protasis-design-report/v1", "candidate": candidate,
+                      "criterion": criterion, "value": True, "unit": "boolean",
+                      "command": command, "exit": 0}
+            report_bytes = encoded(report)
+            evidence["report"] = {"path": report_path, "sha256": digest(report_bytes)}
+            inputs.recheck()
+            require_absent(directory, names)
+            write_exclusive(directory, names[1], encoded(evidence))
+            inputs.recheck()
+            write_exclusive(directory, names[0], report_bytes)
+            return report
+        finally:
+            os.close(directory)
     if criterion not in ("design-home", "declaration-contract") and criterion in FUTURE:
         raise Refusal("operation-not-implemented:" + criterion + ":step-" + str(FUTURE[criterion]))
     if criterion not in ("design-home", "declaration-contract"):
