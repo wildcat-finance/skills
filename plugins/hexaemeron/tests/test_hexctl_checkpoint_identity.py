@@ -161,12 +161,13 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         original_bounded_git = module.bounded_git
         moved = False
 
-        def move_base_before_add(base_dir, argv, refusal=None):
+        def move_base_before_add(base_dir, argv, refusal=None, **kwargs):
             nonlocal moved
             if argv[:2] == ["worktree", "add"] and not moved:
+                self.assertEqual(kwargs.get("timeout"), module.GIT_MATERIALIZE_TIMEOUT)
                 moved = True
                 git(self.repo, "commit", "-q", "--allow-empty", "-m", "move main")
-            return original_bounded_git(base_dir, argv, refusal)
+            return original_bounded_git(base_dir, argv, refusal, **kwargs)
 
         args = argparse.Namespace(
             dir=str(self.repo),

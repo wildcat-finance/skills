@@ -662,12 +662,15 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.12.0")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v5.13.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
         by_version = {row["version"]: row for row in history_rows(ledger)}
+        current = by_version["protasis-v5.13.0"]
+        self.assertIn("skills#1356", current["evidence"])
+        self.assertIn("source-pinned local command", current["change"])
         current = by_version["protasis-v5.12.0"]
         self.assertIn("skills#508", current["evidence"])
         self.assertIn("inert command-interface", current["change"])
