@@ -1,0 +1,13 @@
+test_horos_boundary_is_current_for_the_scaffold (tests.test_agent_instruction.AgentInstructionScaffoldTests.test_horos_boundary_is_current_for_the_scaffold) ... ok
+test_the_committed_boundary_matches_a_fresh_scan (tests.test_boundary_currency.BoundaryCurrencyTests.test_the_committed_boundary_matches_a_fresh_scan) ... ok
+test_the_committed_boundary_matches_the_delivered_tree (tests.test_joined_front_door.HorosBoundaryTests.test_the_committed_boundary_matches_the_delivered_tree) ... ok
+test_detector_accepts_the_helper_and_system_temp (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_detector_accepts_the_helper_and_system_temp) ... ok
+test_detector_is_red_on_the_recorded_defect_forms (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_detector_is_red_on_the_recorded_defect_forms)
+Hostile specimens: the exact anchored forms S3-R1-01 and ff92fdd removed. ... ok
+test_no_test_module_anchors_scratch_outside_the_helper (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_no_test_module_anchors_scratch_outside_the_helper) ... ok
+test_the_helper_anchor_stays_gitignored (tests.test_scratch_quiescence.ScratchQuiescenceTests.test_the_helper_anchor_stays_gitignored) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.779s
+
+OK

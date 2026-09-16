@@ -19,12 +19,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+                "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+                "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
               },
               {
                 "evidence_class": "measured",
@@ -62,12 +62,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+            "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+            "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
           },
           {
             "evidence_class": "measured",
@@ -114,12 +114,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+                "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-                "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+                "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
               },
               {
                 "evidence_class": "measured",
@@ -139,7 +139,7 @@
           ],
           "promise": "fiat-checkpoint-archive",
           "source": {
-            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+            "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
           },
           "target": {
             "scope": "structural binding for fiat-checkpoint-archive",
@@ -157,12 +157,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+            "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
-            "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+            "sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af"
           },
           {
             "evidence_class": "measured",
@@ -175,7 +175,7 @@
         },
         "promise_id": "fiat-checkpoint-archive",
         "scope": "structural binding for fiat-checkpoint-archive",
-        "source_digest": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e",
+        "source_digest": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af",
         "subject": "runtime source plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py#test_restore_from_archive_recreates_repository_and_controller_state",
         "transition": {
           "action": "structurally bind fiat-checkpoint-archive without running its domain operation",

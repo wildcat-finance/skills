@@ -3071,16 +3071,10 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         `checkpoint archive` snapshots every controller file into the capsule
         and scans each one, so a run whose study quotes an armour header could
         not archive itself. That was S2-R2-02, and steps 4 and 5 export this run
-        for real. Each document is read as it stands rather than as a fixture
-        copy, so the guard keeps holding as it grows.
+        for real. The tracked archive study and reference remain the witnesses;
+        another run's active study does not become an archive specification.
         """
-        checked = [STUDY, REFERENCE]
-        run_study = ROOT / ".hexaemeron" / "study.md"
-        if run_study.exists():
-            # Untracked run state: present in a Fiat run worktree, absent in a
-            # clean checkout, and byte-equal to `STUDY` by this step's binding.
-            checked.append(run_study)
-        for path in checked:
+        for path in (STUDY, REFERENCE):
             with self.subTest(document=path.name):
                 text = read(path)
                 self.assertTrue(
@@ -3088,6 +3082,17 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     f"{path.name} names no armour header, so it guards nothing",
                 )
                 self.assertIsNone(self.scan(path.read_bytes()))
+
+    def test_unrelated_active_study_does_not_join_archive_specifications(self):
+        with tempfile.TemporaryDirectory(prefix="other-study-") as directory:
+            active_root = Path(directory)
+            (active_root / ".hexaemeron").mkdir()
+            (active_root / ".hexaemeron/study.md").write_text(
+                "# An unrelated study\nIts contract names no archive armour.\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(sys.modules[__name__], "ROOT", active_root):
+                self.test_secret_scan_passes_the_run_s_own_specification_documents()
 
 
 def _zip_local_header(name: bytes, data: bytes, *, method=0, flags=0, extra=b""):
@@ -3208,7 +3213,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
 
     # -- fixture plumbing -------------------------------------------------
 
-    def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1):
+    def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1, temp_parent=None):
         args = [
             sys.executable,
             HEXCTL,
@@ -3221,7 +3226,8 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         ]
         if scratch is not None:
             args += ["--scratch", str(scratch)]
-        proc = subprocess.run(args, capture_output=True, text=True)
+        env = None if temp_parent is None else {**os.environ, "TMPDIR": str(temp_parent)}
+        proc = subprocess.run(args, capture_output=True, text=True, env=env)
         if proc.returncode != expect:
             raise AssertionError(
                 f"checkpoint inspect -> rc {proc.returncode} (expected {expect})\n"
@@ -3712,20 +3718,63 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
     def test_inspect_writes_nothing_outside_scratch(self):
         path = self.good_archive()
         digest = self.outer_sha256(path)
-        before = set(os.listdir(tempfile.gettempdir()))
-        self.run_inspect(path, digest, expect=0)
-        after = set(os.listdir(tempfile.gettempdir()))
-        leaked = {
-            name
-            for name in after - before
-            if name.startswith(".fiat-checkpoint-inspect-") or name.startswith(".fiat-gpg-")
-        }
-        self.assertEqual(set(), leaked)
-        named_scratch = os.path.join(self.dir, "named-scratch")
-        self.run_inspect(path, digest, scratch=named_scratch, expect=0)
-        self.assertTrue(os.path.isdir(named_scratch))
-        self.assertEqual(0o700, stat.S_IMODE(os.stat(named_scratch).st_mode))
-        self.assertTrue(os.listdir(named_scratch))
+        with tempfile.TemporaryDirectory(prefix="i-") as temp_parent:
+            before = set(os.listdir(temp_parent))
+            self.run_inspect(path, digest, expect=0, temp_parent=temp_parent)
+            after = set(os.listdir(temp_parent))
+            leaked = {
+                name
+                for name in after - before
+                if name.startswith(".fiat-checkpoint-inspect-") or name.startswith(".fiat-gpg-")
+            }
+            self.assertEqual(set(), leaked)
+            named_scratch = os.path.join(self.dir, "named-scratch")
+            self.run_inspect(path, digest, scratch=named_scratch, expect=0,
+                             temp_parent=temp_parent)
+            self.assertTrue(os.path.isdir(named_scratch))
+            self.assertEqual(0o700, stat.S_IMODE(os.stat(named_scratch).st_mode))
+            self.assertTrue(os.listdir(named_scratch))
+
+    def test_cleanup_check_does_not_attribute_foreign_inspection_activity(self):
+        original = self.run_inspect
+        foreign = []
+        shared = Path(tempfile.gettempdir())
+
+        def inspect_with_foreign_activity(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if kwargs.get("scratch") is None:
+                writer = subprocess.run(
+                    [sys.executable, "-c",
+                     "import tempfile; print(tempfile.mkdtemp("
+                     "prefix='.fiat-checkpoint-inspect-foreign-'))"],
+                    capture_output=True, text=True, check=True,
+                    env={**os.environ, "TMPDIR": str(shared)},
+                )
+                path = Path(writer.stdout.strip())
+                self.assertEqual(shared, path.parent)
+                self.assertTrue(path.name.startswith(".fiat-checkpoint-inspect-foreign-"))
+                self.addCleanup(shutil.rmtree, path)
+                foreign.append(path)
+            return result
+
+        with mock.patch.object(self, "run_inspect", side_effect=inspect_with_foreign_activity):
+            self.test_inspect_writes_nothing_outside_scratch()
+        self.assertTrue(foreign)
+        self.assertTrue(all(path.is_dir() for path in foreign))
+
+    def test_cleanup_check_still_detects_an_owned_inspection_leak(self):
+        original = self.run_inspect
+        name = ".fiat-checkpoint-inspect-owned-leak"
+
+        def inspect_with_owned_leak(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if kwargs.get("scratch") is None:
+                (Path(kwargs["temp_parent"]) / name).mkdir()
+            return result
+
+        with mock.patch.object(self, "run_inspect", side_effect=inspect_with_owned_leak):
+            with self.assertRaisesRegex(AssertionError, re.escape(name)):
+                self.test_inspect_writes_nothing_outside_scratch()
 
     def test_inspect_prints_no_entry_content(self):
         path = self.good_archive()

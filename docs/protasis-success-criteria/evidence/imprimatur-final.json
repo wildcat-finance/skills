@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+    "--max-defects",
+    "0",
+    ".hexaemeron/study.md",
+    ".hexaemeron/decision-draft.md",
+    ".hexaemeron/study-step-topology.md"
+  ],
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "exit": 0,
+  "expected_exit": 0,
+  "input_sha256": {
+    "decision-draft.md": "1fda565419143251605d488b6a022df63bdd802bd3053b7f0238e2c2ed28ccc8",
+    "design-evidence.json": "89938e2d649d73c98298ea70823282ed83d397b2e21c9b79cdd01e35184944f7",
+    "study.md": "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92"
+  },
+  "name": "imprimatur-final",
+  "stderr": "",
+  "stdout": "\n=== .hexaemeron/study.md ===\nscore 100.0/100   defects 0   weighted 0   /1k words 0.0\nclean\n\n=== .hexaemeron/decision-draft.md ===\nscore 100.0/100   defects 0   weighted 0   /1k words 0.0\nclean\n\n=== .hexaemeron/study-step-topology.md ===\nscore 100.0/100   defects 0   weighted 0   /1k words 0.0\nclean\n"
+}

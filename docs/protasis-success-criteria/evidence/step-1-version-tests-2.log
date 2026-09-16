@@ -1,0 +1,14 @@
+test_a_codex_manifest_exists_wherever_codex_metadata_ships (tests.test_version_propagation.PluginVersionPropagationTests.test_a_codex_manifest_exists_wherever_codex_metadata_ships)
+A plugin shipping a .codex-plugin directory must put a manifest in it. ... ok
+test_ariadne_version_reaches_both_marketplaces (tests.test_version_propagation.PluginVersionPropagationTests.test_ariadne_version_reaches_both_marketplaces) ... ok
+test_every_plugin_states_a_version_in_each_manifest_that_has_one (tests.test_version_propagation.PluginVersionPropagationTests.test_every_plugin_states_a_version_in_each_manifest_that_has_one) ... ok
+test_hexaemeron_version_reaches_both_marketplaces (tests.test_version_propagation.PluginVersionPropagationTests.test_hexaemeron_version_reaches_both_marketplaces) ... ok
+test_promise_machine_delivery_versions_are_exact_and_current (tests.test_version_propagation.PluginVersionPropagationTests.test_promise_machine_delivery_versions_are_exact_and_current) ... ok
+test_sapheneia_version_reaches_both_marketplaces (tests.test_version_propagation.PluginVersionPropagationTests.test_sapheneia_version_reaches_both_marketplaces) ... ok
+test_the_three_manifests_agree (tests.test_version_propagation.PluginVersionPropagationTests.test_the_three_manifests_agree) ... ok
+test_every_governed_skill_declares_a_parseable_current_version (tests.test_version_propagation.SkillVersionPropagationTests.test_every_governed_skill_declares_a_parseable_current_version) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.038s
+
+OK

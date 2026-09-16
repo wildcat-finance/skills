@@ -1,0 +1,32 @@
+"""Exercise one foreign child against the original or current cleanup check."""
+from pathlib import Path
+import ast
+import hashlib
+import json
+import subprocess
+import sys
+import textwrap
+import unittest
+from unittest import mock
+
+ROOT = Path(__file__).absolute().parents[2]
+sys.path.insert(0, str(ROOT / "plugins/hexaemeron/tests"))
+import test_hexctl_checkpoint_archive as archive
+
+original = subprocess.check_output([
+    "git", "-C", str(ROOT), "show",
+    "eaab110104d186bdd0b1d362dd583a2e72ecc21a:plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+])
+assert hashlib.sha256(original).hexdigest() == "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e"
+name = "test_inspect_writes_nothing_outside_scratch"
+node = next(item for item in ast.parse(original).body if isinstance(item, ast.ClassDef) and item.name == "CheckpointArchiveInspectTests")
+method = next(item for item in node.body if isinstance(item, ast.FunctionDef) and item.name == name)
+namespace = {}
+exec(compile(textwrap.dedent(ast.get_source_segment(original.decode(), method)), "recorded-parent-cleanup-method", "exec"), archive.__dict__, namespace)
+selected = namespace[name] if sys.argv[1:] == ["--original"] else getattr(archive.CheckpointArchiveInspectTests, name)
+case = archive.CheckpointArchiveInspectTests("test_cleanup_check_does_not_attribute_foreign_inspection_activity")
+with mock.patch.object(archive.CheckpointArchiveInspectTests, name, selected):
+    result = unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite([case]))
+print(json.dumps({"original_cleanup_method": sys.argv[1:] == ["--original"], "testsRun": result.testsRun,
+                  "failures": len(result.failures), "errors": len(result.errors), "skips": len(result.skipped)}, sort_keys=True))
+raise SystemExit(2 if result.skipped else (0 if result.wasSuccessful() else 1))
