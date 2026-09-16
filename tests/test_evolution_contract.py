@@ -415,12 +415,20 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.61.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.62.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
+        self.assertEqual(current["version"], "fiat-v6.62.1")
+        self.assertEqual(current["axis"], "generation")
+        self.assertEqual(current["revision"], "delegated-task-identity")
+        self.assertEqual(current["digest"], "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1")
+        self.assertIn("skills#1676", current["evidence"])
+        self.assertIn("record inventory", current["change"])
+        self.assertIn("held target stay unchanged", current["change"])
+        current = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.61.1")
         self.assertEqual(current["version"], "fiat-v6.61.1")
         self.assertIn("skills#508", current["evidence"])
         self.assertIn("native macOS worker supervisor", current["change"])

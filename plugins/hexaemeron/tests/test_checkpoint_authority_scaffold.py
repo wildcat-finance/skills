@@ -33,6 +33,10 @@ class ConformanceScaffoldTests(unittest.TestCase):
             target = self.root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / relative, target)
+        (self.root / subject.MANIFEST_PATH).write_text(json.dumps({
+            "schema": "checkpoint-authority-conformance-corpus/v1", "candidate": subject.CANDIDATE,
+            "criteria": list(subject.CRITERIA), "cases": [], "implemented_criteria": [],
+        }))
 
     def invoke(self, *, criterion="records-and-signatures", candidate="ordered-replay",
                report=None, extra=()):
