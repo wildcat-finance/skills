@@ -94,3 +94,19 @@ Elenchus verdict: passed
 | S3-R1-02 | high | plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py:141 | Source custody rejected this repository's 40-character Git SHA-1 commit and tree identities before launching any registered command. | fixed in 4d206f25fd2074746e43ea56d7459f7fcb1de988; disposable Git identity regression, full Hex guard, root gate and the real source-bound timeout path pass |
 
 Leads not pursued: No additional actionable lead was identified after the two causal repairs. The clean signed source-bound execution record is the direct replay evidence: `observed-execution` admitted and launched the registered Step 3 Hex command, recorded `timeout`, kept `settled=false`, and preserved identical clean signed commit/tree identities before and after. The full Hex guard is `.hexaemeron/reports/step-3-guard.json` with the counts above; the normal root gate recorded 2,048 passing tests; focused criteria/gate/scaffold tests recorded 65 passing tests before the final source-identity regression and 66 after it. Fresh Imprimatur, Phylax, Ephoros and Hypomnema checks were clean, and the required `--audit-filter sapheneia:sapheneia` was applied. Earlier Step 1 and Step 2 audit records and their generated synopses remain unchanged.
+
+## Step 3, round 2 -- 2026-09-16T20:29:06Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: declaration-shape=reviewed; exit-identity=reviewed; execution-authority=reviewed; source-binding=reviewed; subprocess-input=reviewed; partial-result=reviewed; amendment-history=not-applicable; completion-gap=reviewed; legacy-replay=not-applicable; checkpoint-context=not-applicable; resource-growth=reviewed; self-hosting=not-applicable; release-copies=reviewed; claim-boundary=reviewed
+
+Not checked: This round rechecked the Step 3 execution adapter, its due-step bindings, the declared command admission and the source-bound replay path after both causal repairs. Amendment custody, legacy compatibility, checkpoint restoration and the separate successor-controller demonstration remain due in Steps 4 and 5. No Solidity changed; the packet's security-suite waiver applies. Hosted pull-request and merge state remain outside this round.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Nothing new was found. S3-R1-01 is fixed in 73978449950ad4b2720cfd155bfdcf7668bc8e5c and S3-R1-02 is fixed in 4d206f25fd2074746e43ea56d7459f7fcb1de988. The current clean signed source-bound execution record still admits and launches the registered Step 3 command, records its bounded timeout, keeps `settled=false`, and preserves identical commit and tree identities before and after. The required lints and root suite were rerun for this round; the audit filter remains `sapheneia:sapheneia`.
