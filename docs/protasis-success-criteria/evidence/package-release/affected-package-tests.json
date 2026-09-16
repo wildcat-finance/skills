@@ -1,0 +1,25 @@
+{
+  "after": {
+    "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+    "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+  },
+  "argv": [
+    "python3",
+    "-m",
+    "unittest",
+    "tests.test_plugin_release",
+    "tests.test_version_propagation",
+    "plugins.hexaemeron.tests.test_phylax_model_proxy.ConformanceTests.test_skill_package_marketplace_coverage_and_portable_versions_are_exact",
+    "-v"
+  ],
+  "before": {
+    "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+    "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+  },
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "elapsed_seconds": 16.189812083961442,
+  "exit": 0,
+  "log": ".hexaemeron/evidence/warden-step-1-round-2/package-repair/affected-package-tests.log",
+  "log_sha256": "812a0d9cb234ec6c069522a78aecc20753d38fed60a49c9446a154e0d343cef9",
+  "started_at": "2026-09-16T13:41:48.264134+00:00"
+}

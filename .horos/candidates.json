@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 27617850,
+    "bytes_blob": 27865012,
     "bytes_generated": 98
   },
   "entries": [
@@ -796,6 +796,13 @@
       "evidence": "no newline in a 2048-byte window at offset 99573 of 199147 bytes",
       "grade": "candidate",
       "path": "docs/protasis-success-criteria/evidence/audit-excerpts.json"
+    },
+    {
+      "bytes": 247162,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123581 of 247162 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-audit-package-increment/step-1-checked.json"
     },
     {
       "bytes": 247164,
