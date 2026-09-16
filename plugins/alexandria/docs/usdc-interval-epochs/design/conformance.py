@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import sys
+import stat
 import unittest
 
 
@@ -74,8 +75,15 @@ def main(argv=None):
               "command": "python3.14 .hexaemeron/design/conformance.py " + args.criterion,
               "exit": 0}
     path = report_dir / ("position-boundary-" + args.criterion + ".json")
-    with path.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(report, indent=2, sort_keys=True) + "\n")
+    data = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode()
+    if path.exists() or path.is_symlink():
+        if path.is_symlink() or not stat.S_ISREG(path.stat().st_mode) or path.stat().st_size != len(data):
+            parser.error("existing conformance report is unsafe or differs from fresh evidence")
+        if path.read_bytes() != data:
+            parser.error("existing conformance report differs from fresh evidence")
+    else:
+        with path.open("xb") as handle:
+            handle.write(data)
     return 0
 
 

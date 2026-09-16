@@ -55,7 +55,7 @@ Compound v3 Phase 0 adds `compound-v3-registry-v1.schema.json` for the pinned
 call, ordered-storage and provider-reported finality gate outcomes. Runtime
 checks bind these contracts to the exact upstream commit and raw RPC objects.
 
-The resumable interval collector adds three more.
+The resumable interval collector has plan, checkpoint and receipt contracts.
 `interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
 interval, shard width, the evidence classes the plan collects and the named
 finality policy that fixed the interval's end. The evidence classes are a
@@ -77,14 +77,36 @@ each implementation's runtime code. Those reads are staged under the virtual
 shard index one past the plan's last, so a checkpoint whose next shard is one
 past the plan says the shards are done and its `epoch-evidence` offset says
 how many opening reads are committed. It is not
-release truth and no release names it. `interval-receipt-v1.schema.json`
-covers what a collected interval turns out to hold: its code-hash-bound
+release truth and no release names it. The immutable
+`interval-receipt-v1.schema.json` covers the original block-only receipt: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. A dispute names one of six kinds: the
 three shard kinds, `boundary-hash`, `log-identity` and `transaction-order`,
 and the three opening-read kinds, `first-block-hash`, `slot-word` and
 `code-digest`, filed under the virtual shard index. Runtime checks bind a
 checkpoint to its own plan's digest and refuse a shard outside it.
+
+New builds use `interval-receipt-v2.schema.json`, format
+`alexandria-interval-receipt/v2`. Each epoch adds `start_position` and exclusive
+`end_position`, each containing a decimal-string `block_number` and integer or
+null `transaction_index` and `log_index`. Both indexes are null together only
+at a block edge. The first start is before all logs at interval start; the
+last end is before all logs at interval end plus one. Interior boundaries carry
+the upgrade's indexes, and non-null `upgrade` objects add `transaction_index`.
+Block envelopes and their hashes remain, with the upgrade block shared by
+adjacent envelopes.
+
+V2 also requires ordered `log_attributions` rows containing `block_number`,
+`block_hash`, `transaction_hash`, `transaction_index`, `log_index`, zero-based
+`epoch_index` and `kind` (`proxy-log` or `upgrade-boundary`). Runtime checks
+validate typed coordinates, strict log order, consistent transaction and block
+hashes, exact positional tiling and agreement with freshly derived ownership.
+They refuse first-block upgrades without prior implementation evidence,
+multiple upgrades in a block and ordinary logs in an upgrade transaction.
+An omitted logs class keeps its coverage gap and an empty attribution array.
+The [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision)
+records why these limits remain. V1 verification preserves its original bytes,
+identifiers and block-only meaning; it gains no v2 attribution guarantee.
 
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format
