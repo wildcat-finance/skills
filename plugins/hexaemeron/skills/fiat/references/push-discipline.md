@@ -276,6 +276,15 @@ stays outside the archive. No state or ledger entry is appended by export.
 [checkpoint-archive.md](checkpoint-archive.md) owns the layout, signatures,
 limits, refusal classes and restore transaction.
 
+When the complete-history bundle exceeds 1 GiB, select
+`checkpoint archive --format directory`. The same boundary directory then
+holds `checkpoint.directory` and its adjacent `.sha256` sidecar. This carrier
+admits a complete bundle up to 256 GiB and binds its members through the exact
+root manifest digest, which is also its `outer_sha256`. See
+[checkpoint-directory.md](checkpoint-directory.md) for capture, storage,
+runtime and restore requirements. Pass the directory path and that digest to
+the same receiver commands below.
+
 Do not upload the checkpoint, publish it to a service, post its digests to an
 issue, commit it, or push it. Transport remains the local filesystem.
 

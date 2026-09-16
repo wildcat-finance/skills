@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.61.1"
+  version: "6.62.1"
 ---
 
 <p align="center">
@@ -839,6 +839,18 @@ the direct hand-off values. This is mandatory controller work: do not ask the
 user whether to save it, where to put it or whether it may be skipped. Keep the
 outer SHA-256, manifest SHA-256 and `snapshot_id` outside the archive.
 
+For complete history beyond the ZIP bundle limit, use
+`checkpoint archive --format directory`. The
+[directory carrier](references/checkpoint-directory.md) keeps the same checks
+with a 256 GiB bundle limit. Its `outer_sha256` names the exact root manifest
+bytes, which bind every member; hand that digest over outside the directory.
+
+A task issue may belong to another repository. Its exact URL stays in
+`receipts.task_issue` and supplies the normal filing and closure checks.
+The run anchor hashes that URL as an external task; the target's own
+origin remains the delivery repository. Same-repository issues keep their
+existing number-only anchor.
+
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before each merge, an unchanged waiting head passes without a relation process.
 An unequal waiting tip passes topology only when a bounded native
@@ -1257,7 +1269,7 @@ identity and ledger checks remain the relocation authority.
 
 ### fiat-checkpoint-archive
 
-- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
+- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP or native directory carrier recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
 - Evidence: The out-of-band outer SHA-256, closed content manifest, capsule manifest digest, complete-history bundle, pinned signature checks with recorded trailer counts, identity join, hostile archive tests, clean-machine transcript and six recorded budget measurements.
 - Evidence classes: checked, recorded, measured
 - Boundary: Checks bind this archive and its carried public keys. They do not prove signer ownership, delivery-claim truth, future performance, acceptance by another party or authority to execute the next directive. Acceptance of this archive stays outside it; prior acceptance entries remain reserved.
