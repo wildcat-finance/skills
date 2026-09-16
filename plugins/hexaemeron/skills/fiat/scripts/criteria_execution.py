@@ -44,6 +44,11 @@ class Refusal(ValueError):
     """An execution request or recorded result cannot be admitted."""
 
 
+def as_dict(value) -> dict:
+    """Treat optional receipt sections as empty mappings at the boundary."""
+    return value if isinstance(value, dict) else {}
+
+
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -51,8 +56,8 @@ def digest(data: bytes) -> str:
 def canonical(value) -> bytes:
     try:
         return (json.dumps(value, ensure_ascii=True, sort_keys=True,
-                           separators=(",", ":")) + "\n").encode("ascii")
-    except (TypeError, ValueError, UnicodeEncodeError) as exc:
+                           separators=(",", ":"), allow_nan=False) + "\n").encode("ascii")
+    except (RecursionError, TypeError, ValueError, UnicodeEncodeError) as exc:
         raise Refusal("unsupported-json-value") from exc
 
 
@@ -123,6 +128,10 @@ def source_snapshot(root: str | os.PathLike[str], *, require_signed: bool = True
                   label="source-status")
     if status:
         raise Refusal("source-dirty")
+    reported_root = _git(root, ["rev-parse", "--show-toplevel"],
+                          label="source-root")
+    if os.path.realpath(reported_root) != str(root):
+        raise Refusal("source-root")
     commit = _git(root, ["rev-parse", "--verify", "HEAD^{commit}"],
                   label="source-commit")
     tree = _git(root, ["rev-parse", "--verify", "HEAD^{tree}"],
@@ -172,7 +181,14 @@ def _descriptor_group(join: dict, criterion_id: str) -> list[dict]:
     rows = join.get("criteria")
     if not isinstance(rows, list) or not rows or len(rows) > MAX_CRITERIA:
         raise Refusal("join-criteria")
-    selected = [row for row in rows if isinstance(row, dict) and row.get("id") == criterion_id]
+    if any(not isinstance(row, dict) for row in rows):
+        raise Refusal("join-descriptor")
+    ids = [row.get("id") for row in rows]
+    if any(not isinstance(value, str) or not value for value in ids):
+        raise Refusal("join-id")
+    if len(ids) != len(set(ids)):
+        raise Refusal("join-duplicate-id")
+    selected = [row for row in rows if row.get("id") == criterion_id]
     if len(selected) != 1:
         raise Refusal("criterion-unknown")
     row = selected[0]
@@ -251,7 +267,11 @@ def _resolved_argv(invocation: dict) -> tuple[list[str], list[str], dict, dict]:
         raise Refusal("interpreter-binding")
     if not isinstance(cli, dict) or not isinstance(cli.get("sha256"), str):
         raise Refusal("cli-binding")
-    return list(original), list(execution), cli, {"path": executable, "sha256": digest(Path(executable).read_bytes())}
+    try:
+        executable_bytes = Path(executable).read_bytes()
+    except OSError as exc:
+        raise Refusal("interpreter-unavailable") from exc
+    return list(original), list(execution), cli, {"path": executable, "sha256": digest(executable_bytes)}
 
 
 def _kill_group(process: subprocess.Popen) -> None:
@@ -359,7 +379,9 @@ def execute_argv(argv: list[str], root: str | os.PathLike[str], *, timeout: floa
                 try:
                     chunk = os.read(key.fileobj.fileno(), READ_CHUNK)
                 except OSError:
-                    chunk = b""
+                    status, reason = "stream-read-failed", f"{name}-stream-read"
+                    _kill_group(process)
+                    break
                 if not chunk:
                     try:
                         selector.unregister(key.fileobj)
@@ -410,11 +432,7 @@ def execute_argv(argv: list[str], root: str | os.PathLike[str], *, timeout: floa
     if status != "completed":
         failure_class = status
     elif returncode not in (None, 0):
-        failure_class = (
-            "startup"
-            if counts["stdout"] == 0 and counts["stderr"] == 0
-            else "exit"
-        )
+        failure_class = "exit"
     return {
         "status": status,
         "reason": reason,
@@ -435,6 +453,10 @@ def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
             timeout: float = MAX_ATTEMPT_SECONDS, stream_cap: int = MAX_STREAM_BYTES,
             study_sha256: str | None = None, runbook_sha256: str | None = None) -> dict:
     """Observe one descriptor group and return an append-only attempt record."""
+    if not isinstance(run_id, str) or not run_id.strip():
+        raise Refusal("run-id")
+    if not isinstance(init_id, str) or not init_id.strip():
+        raise Refusal("init-id")
     root = Path(root).resolve(strict=True)
     group = _descriptor_group(join, criterion_id)
     first = group[0]
@@ -454,7 +476,7 @@ def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
     criteria, gate = adapters(source_root)
     try:
         expanded = gate.expand(command)
-    except (gate.Refusal, ValueError) as exc:
+    except (gate.Refusal, ValueError, RecursionError) as exc:
         raise Refusal("command-expansion") from exc
     if not expanded or len(expanded) > 256:
         raise Refusal("expanded-command-bound")
@@ -462,7 +484,10 @@ def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
     for original in expanded:
         # Re-admit the exact command and take its registered CLI binding.  The
         # command records in the join carry this same data from the runbook.
-        validated = gate.validate_command(source_root, command)
+        try:
+            validated = gate.validate_command(source_root, command)
+        except (gate.Refusal, ValueError, RecursionError) as exc:
+            raise Refusal("command-admission") from exc
         invocation = next((item for item in validated["invocations"] if item["argv"] == original), None)
         if invocation is None:
             raise Refusal("invocation-binding")
@@ -509,6 +534,7 @@ def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
         "declaration_sha256": join.get("declaration_sha256"),
         "runbook_sha256": runbook_sha256 or join.get("runbook_sha256"),
         "study_sha256": study_sha256,
+        "adapter_sha256": join.get("adapter_sha256"),
         "descriptors": [dict(item) for item in group],
         "invocations": invocations,
         "outcomes": results,
@@ -525,15 +551,20 @@ def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
 
 
 def validate_result(result: dict, join: dict, *, run_id: str | None = None,
-                    step: int | None = None, criterion_id: str | None = None,
+                    init_id: str | None = None, step: int | None = None,
+                    criterion_id: str | None = None,
                     study_sha256: str | None = None) -> dict:
     """Validate stored evidence without executing or trusting its verdict."""
-    if not isinstance(result, dict) or result.get("schema") != RESULT_SCHEMA:
+    if (not isinstance(result, dict)
+            or result.get("schema") != RESULT_SCHEMA
+            or result.get("attempt_schema") != ATTEMPT_SCHEMA):
         raise Refusal("result-schema")
     if result.get("operation_ran") is not True or result.get("observed") is not True:
         raise Refusal("result-not-observed")
     if run_id is not None and result.get("run_id") != run_id:
         raise Refusal("result-run")
+    if init_id is not None and result.get("init_id") != init_id:
+        raise Refusal("result-init")
     if step is not None and result.get("step") != step:
         raise Refusal("result-step")
     ids = result.get("criterion_ids")
@@ -545,7 +576,9 @@ def validate_result(result: dict, join: dict, *, run_id: str | None = None,
     descriptors = result.get("descriptors")
     if not isinstance(descriptors, list) or descriptors != expected:
         raise Refusal("result-descriptor-bytes")
-    if result.get("command") != expected[0].get("command") or result.get("step") != expected[0].get("step"):
+    if (not isinstance(result.get("command"), str)
+            or result.get("command") != expected[0].get("command")
+            or result.get("step") != expected[0].get("step")):
         raise Refusal("result-command")
     if result.get("command_sha256") != digest(result["command"].encode("utf-8")):
         raise Refusal("result-command-digest")
@@ -553,6 +586,11 @@ def validate_result(result: dict, join: dict, *, run_id: str | None = None,
         raise Refusal("result-declaration")
     if result.get("runbook_sha256") != join.get("runbook_sha256"):
         raise Refusal("result-runbook")
+    expected_adapter = join.get("adapter_sha256")
+    if expected_adapter is not None:
+        _sha(expected_adapter, "result-adapter")
+        if result.get("adapter_sha256") != expected_adapter:
+            raise Refusal("result-adapter")
     if result.get("study_sha256") is not None:
         _sha(result.get("study_sha256"), "result-study")
         # The runbook join has no study bytes of its own; callers that retain
@@ -577,15 +615,29 @@ def validate_result(result: dict, join: dict, *, run_id: str | None = None,
             raise Refusal("result-argv-binding")
         resolved = observed.get("resolved_argv")
         admitted_execution = admitted.get("execution_argv")
-        if not isinstance(resolved, list) or not isinstance(admitted_execution, list) or len(resolved) != len(admitted_execution) or resolved[1:] != admitted_execution[1:]:
+        if (not isinstance(resolved, list) or not isinstance(admitted_execution, list)
+                or len(resolved) != len(admitted_execution)
+                or resolved[1:] != admitted_execution[1:]):
             raise Refusal("result-expanded-argv")
         executable = observed.get("executable")
-        if not isinstance(executable, dict) or not isinstance(executable.get("path"), str) or not executable["path"].startswith("/") or SHA256.fullmatch(executable.get("sha256", "")) is None:
+        if (not isinstance(executable, dict)
+                or not isinstance(executable.get("path"), str)
+                or not executable["path"].startswith("/")
+                or os.path.realpath(executable["path"]) != executable["path"]
+                or SHA256.fullmatch(executable.get("sha256", "")) is None
+                or not resolved or resolved[0] != executable["path"]):
             raise Refusal("result-executable")
+        try:
+            if not os.path.isfile(executable["path"]) or os.path.islink(executable["path"]):
+                raise Refusal("result-executable")
+            if digest(Path(executable["path"]).read_bytes()) != executable["sha256"]:
+                raise Refusal("result-executable")
+        except OSError as exc:
+            raise Refusal("result-executable") from exc
     for outcome in outcomes:
         if not isinstance(outcome, dict) or outcome.get("status") not in {
             "completed", "launch-failed", "timeout", "stream-overflow",
-            "interrupted", "source-drift",
+            "interrupted", "stream-read-failed", "source-drift",
         }:
             raise Refusal("result-outcome")
         for stream in ("stdout", "stderr"):
@@ -594,15 +646,30 @@ def validate_result(result: dict, join: dict, *, run_id: str | None = None,
                 raise Refusal("result-stream")
     for source_name in ("source_before", "source_after"):
         source = result.get(source_name)
-        if not isinstance(source, dict) or SHA256.fullmatch(source.get("commit", "")) is None or SHA256.fullmatch(source.get("tree", "")) is None:
+        if (not isinstance(source, dict)
+                or not isinstance(source.get("root"), str)
+                or not source["root"].startswith("/")
+                or os.path.realpath(source["root"]) != source["root"]
+                or source.get("status") not in {"clean", "dirty", "unavailable"}
+                or type(source.get("signed")) is not bool
+                or SHA256.fullmatch(source.get("commit", "")) is None
+                or SHA256.fullmatch(source.get("tree", "")) is None):
             raise Refusal("result-source")
     if result.get("cwd") != result["source_before"].get("root") or result["source_before"].get("root") != result["source_after"].get("root"):
         raise Refusal("result-context")
     if result.get("settled") is True:
-        if not result["source_before"].get("signed") or not result["source_after"].get("signed"):
+        if (result.get("status") != "settled"
+                or result["source_before"].get("status") != "clean"
+                or result["source_after"].get("status") != "clean"
+                or not result["source_before"].get("signed")
+                or not result["source_after"].get("signed")
+                or result["source_before"].get("commit") != result["source_after"].get("commit")
+                or result["source_before"].get("tree") != result["source_after"].get("tree")):
             raise Refusal("result-source-signature")
         if not outcomes or any(item.get("status") != "completed" or item.get("returncode") != 0 for item in outcomes):
             raise Refusal("result-forged-success")
+    elif result.get("status") == "settled":
+        raise Refusal("result-settled-status")
     if _result_size(result) > MAX_RESULT_BYTES:
         raise Refusal("result-data-cap")
     return result

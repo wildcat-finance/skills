@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+import shutil
 import sys
 import unittest
 
@@ -119,6 +120,114 @@ class CriteriaExecutionTests(unittest.TestCase):
         }
         with self.assertRaises(MODULE.Refusal):
             MODULE.validate_result(result, join, run_id="run", criterion_id="c")
+
+    def test_result_replay_rejects_unbound_descriptor_without_crashing(self):
+        join = {
+            "schema": "protasis-success-criteria-join/v1",
+            "criteria": [{
+                "id": "c", "claim": "ran", "step": 1,
+                "command": "python3 x.py",
+                "exit": {
+                    "step": 1, "command": "python3 x.py",
+                    "command_sha256": MODULE.digest(b"python3 x.py"),
+                    "source": {"invocations": []},
+                },
+            }],
+        }
+        result = {
+            "schema": MODULE.RESULT_SCHEMA,
+            "operation_ran": True,
+            "observed": True,
+            "run_id": "run",
+            "init_id": "init",
+            "criterion_ids": ["c"],
+            "step": 1,
+            "cwd": "/tmp/repo",
+            "command": "python3 x.py",
+            "command_sha256": MODULE.digest(b"python3 x.py"),
+            "descriptors": [join["criteria"][0]],
+            "invocations": [],
+            "outcomes": [],
+            "source_before": {
+                "root": "/tmp/repo", "commit": "0" * 64,
+                "tree": "0" * 64, "status": "clean", "signed": False,
+            },
+            "source_after": {
+                "root": "/tmp/repo", "commit": "0" * 64,
+                "tree": "0" * 64, "status": "clean", "signed": False,
+            },
+            "settled": False,
+        }
+        with self.assertRaises(MODULE.Refusal):
+            MODULE.validate_result(result, join, run_id="run", criterion_id="c")
+
+    def test_result_replay_accepts_a_complete_unsettled_observation(self):
+        executable = pathlib.Path(shutil.which("python3")).resolve()
+        source_root = str(pathlib.Path("/tmp/repo").resolve())
+        cli = {"path": "x.py", "sha256": "1" * 64,
+               "declarations_sha256": "2" * 64}
+        admitted = {
+            "argv": ["python3", "x.py"],
+            "execution_argv": ["python3", "x.py"],
+            "cli": cli,
+            "result": "interface-valid",
+        }
+        descriptor = {
+            "id": "c", "claim": "ran", "step": 1,
+            "command": "python3 x.py",
+            "exit": {
+                "step": 1, "command": "python3 x.py",
+                "command_sha256": MODULE.digest(b"python3 x.py"),
+                "source": {"invocations": [admitted]},
+            },
+        }
+        join = {
+            "schema": "protasis-success-criteria-join/v1",
+            "criteria": [descriptor],
+        }
+        result = {
+            "schema": MODULE.RESULT_SCHEMA,
+            "attempt_schema": MODULE.ATTEMPT_SCHEMA,
+            "operation_ran": True,
+            "observed": True,
+            "run_id": "run",
+            "init_id": "init",
+            "attempt_id": "attempt",
+            "criterion_ids": ["c"],
+            "step": 1,
+            "cwd": source_root,
+            "command": "python3 x.py",
+            "command_sha256": MODULE.digest(b"python3 x.py"),
+            "declaration_sha256": None,
+            "runbook_sha256": None,
+            "study_sha256": None,
+            "descriptors": [descriptor],
+            "invocations": [{
+                "original_argv": ["python3", "x.py"],
+                "resolved_argv": [str(executable), "x.py"],
+                "cli": cli,
+                "executable": {"path": str(executable),
+                                "sha256": MODULE.digest(executable.read_bytes())},
+            }],
+            "outcomes": [{
+                "status": "completed", "reason": "nonzero-exit",
+                "failure": "exit", "returncode": 7, "elapsed_ms": 1,
+                "stdout": {"bytes": 0, "sha256": MODULE.digest(b""), "truncated": False},
+                "stderr": {"bytes": 0, "sha256": MODULE.digest(b""), "truncated": False},
+            }],
+            "source_before": {
+                "root": source_root, "commit": "0" * 64,
+                "tree": "0" * 64, "status": "clean", "signed": False,
+            },
+            "source_after": {
+                "root": source_root, "commit": "0" * 64,
+                "tree": "0" * 64, "status": "clean", "signed": False,
+            },
+            "settled": False,
+            "status": "completed",
+        }
+        MODULE.validate_result(result, join, run_id="run", init_id="init",
+                               criterion_id="c")
 
 
 if __name__ == "__main__":

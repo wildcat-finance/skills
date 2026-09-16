@@ -14147,6 +14147,7 @@ def verify_success_criteria(base_dir: str, state: dict,
         try:
             adapter.validate_result(
                 attempt, receipt["join"], run_id=controller_run_id(state),
+                init_id=_criteria_init_id(base_dir),
                 study_sha256=receipt.get("study_sha256"),
             )
         except (adapter.Refusal, OSError, ValueError) as exc:
@@ -14176,6 +14177,7 @@ def _criteria_success_for_step(base_dir: str, state: dict, step: dict,
             try:
                 adapter.validate_result(attempt, join,
                                         run_id=controller_run_id(state),
+                                        init_id=_criteria_init_id(base_dir),
                                         step=step["n"], criterion_id=row["id"],
                                         study_sha256=admission.get("study_sha256"))
             except (adapter.Refusal, OSError, ValueError):
@@ -14219,6 +14221,7 @@ def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | N
     if not isinstance(attempts, list):
         return {"do": "blocked", "reason": "success criteria attempts are malformed"}
     adapter = criteria_execution_module()
+    criteria_init_id = _criteria_init_id(base_dir) if base_dir is not None else None
     current_commit = None
     if base_dir is not None:
         try:
@@ -14238,7 +14241,9 @@ def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | N
             try:
                 adapter.validate_result(
                     attempt, admission["join"], run_id=controller_run_id(state),
+                    init_id=criteria_init_id,
                     step=step["n"], criterion_id=row["id"],
+                    study_sha256=admission.get("study_sha256"),
                 )
             except (adapter.Refusal, OSError, ValueError):
                 continue
