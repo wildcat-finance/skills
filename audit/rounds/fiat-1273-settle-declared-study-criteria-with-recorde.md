@@ -45,3 +45,19 @@ Elenchus verdict: passed
 | S1-R3-01 | low | .horos/census.json:11,216 | The committed Horos census omitted the bytes added by the round-2 audit record, so the exact root suite refused its fresh-census currency assertion. | fixed in the signed round-3 audit repair commit; owner regeneration now reports 1,175 Markdown files at 25,555,655 bytes and 4,097 total files at 122,702,147 bytes, and the root suite passes |
 
 Leads not pursued: None. The initial failing root run is preserved as .hexaemeron/evidence/warden-step-1-round-2/round-3-root-suite.log; the fixed run is round-3-root-suite-fixed.log, with its exact tree and index identity. round-3-phylax-fixed.json, round-3-ephoros-fixed.json, round-3-hypomnema-fixed.json and round-3-horos-census-fixed.json record fresh zero-exit checks. round-3-elenchus-fixed.log and .hexaemeron/reports/step-1-round-3-elenchus.json record the complete passing Elenchus result. The selected Step 1 scaffold remains the only delivered product; future criteria and controller operations remain due in Steps 2-5. --audit-filter sapheneia:sapheneia was applied with every protected item retained.
+
+## Step 1, round 4 -- 2026-09-16T14:53:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: declaration-shape=not-applicable; exit-identity=not-applicable; execution-authority=reviewed; source-binding=reviewed; subprocess-input=reviewed; partial-result=reviewed; amendment-history=reviewed; completion-gap=not-applicable; legacy-replay=reviewed; checkpoint-context=reviewed; resource-growth=reviewed; self-hosting=reviewed; release-copies=reviewed; claim-boundary=reviewed
+
+Not checked: This clean follow-up reviewed the fixed Step 1 tree at 8285ceaa48eff14d9eb2dd4ed7696a6a9a401014, reran the three required lints and the exact root suite, and found no new issue. The release metadata and Horos census repairs remain present and source-bound. Production declaration, execution, recovery, terminal, legacy and checkpoint enforcement and the successor demonstration remain due in Steps 2-5. The accepted non-Solidity waiver applies. Earlier audit rounds, their failures, fixes and actual Elenchus classifications remain preserved.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: None. round-4-phylax.json, round-4-ephoros.json, round-4-hypomnema.json and round-4-root-suite.json record the clean follow-up. No additional product change or audit lead was identified; Step 1 is ready for its audit close and prose handoff. --audit-filter sapheneia:sapheneia was applied with every protected item retained.
