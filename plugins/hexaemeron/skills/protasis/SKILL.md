@@ -449,8 +449,8 @@ the study carrying four fields:
 **What changed.** The capture step reads the header from the fixture, not RPC.
 **Why.** The archive endpoint was withdrawn mid-run.
 **Steps touched.** Step 3's entry and step 4's files.
-**Still holding.** Steps 5 and 6 re-confirmed: each unbuilt step's entry and
-exit hold as written. Step 3 does not; see below.
+**Still holding.** Step 3: entry broken; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds.
 ```
 
 Every unbuilt step gets a verdict in the last field: its entry and exit hold,

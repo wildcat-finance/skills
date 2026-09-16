@@ -1,7 +1,7 @@
 # Alexandria examples
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 [`credit-history-v0`](credit-history-v0/README.md) runs the checked-in offline
@@ -20,6 +20,14 @@ Ethereum USDC interval, blocks 25,903,935 to 25,905,934, collected once from
 two live providers and agreed between them. The checked-in staging tree rebuilds
 the release offline to the identifier the example pins, across two
 implementation epochs whose runtime code the release carries and re-hashes.
+
+[`usdc-interval-epochs-v0`](usdc-interval-epochs-v0/README.md) builds
+`alexandria-interval-receipt/v2` releases with no network. Over a synthetic
+upgrade block it pins each log's owner, including a proxy log earlier in that
+block that stays with the preceding implementation. It rebuilds the live
+interval's unchanged staging bytes under a new identifier and records the
+refusals for moved owners, moved boundaries and ordinary logs inside the
+upgrade transaction.
 
 [`compound-v3-phase0-v0`](compound-v3-phase0-v0/README.md) preserves the
 pinned Comet registry and exact RPC corpus for one old and one recent Ethereum
