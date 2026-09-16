@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+"""Run one Fiat 1660 guard and emit a fresh closed unittest report."""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import sys
+import unittest
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
+
+from tests.emit_run_observation_report import (  # noqa: E402
+    report_target,
+    result_payload,
+    write_report,
+)
+
+
+CASES = {
+    "kf-1660-github-keyring-bypass": (
+        "plugins.hexaemeron.tests.test_hexctl.GitHubSignerDiagnosis."
+        "test_a_github_signed_commit_is_refused_when_the_keyring_accepts_it"
+    ),
+    "kf-1660-prover-keyring-precondition": (
+        "plugins.hexaemeron.tests.test_hexctl.GitHubSignerDiagnosis."
+        "test_signature_prover_skips_github_signed_commits_when_finding_local_signer"
+    ),
+}
+
+
+def arguments(argv):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--case", choices=tuple(CASES), required=True)
+    parser.add_argument("--report", required=True)
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    options = arguments(sys.argv[1:] if argv is None else argv)
+    target = report_target([options.report])
+    suite = unittest.defaultTestLoader.loadTestsFromName(CASES[options.case])
+    result = unittest.TextTestRunner(verbosity=1).run(suite)
+    try:
+        write_report(target, result_payload(result))
+    except OSError:
+        print("emit_fiat1660_guard_report.py: report write failed", file=sys.stderr)
+        return 2
+    rejected = sum(
+        len(getattr(result, field, ()))
+        for field in (
+            "failures",
+            "errors",
+            "skipped",
+            "expectedFailures",
+            "unexpectedSuccesses",
+        )
+    )
+    print(f"{max(result.testsRun - rejected, 0)}/{result.testsRun} tests passed")
+    return 0 if result.testsRun > 0 and rejected == 0 else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

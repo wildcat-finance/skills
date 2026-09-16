@@ -38,6 +38,13 @@ class VersionRelationTests(HexctlCase):
         # replaces ordinary ``git show`` output.
         self.env["PATH"] = os.pathsep.join(self.env["PATH"].split(os.pathsep)[1:])
 
+    @contextlib.contextmanager
+    def replacement_objects_enabled(self):
+        """Opt into the fixture's replacement ref under Fiat's closed runner."""
+        with mock.patch.dict(os.environ):
+            os.environ.pop("GIT_NO_REPLACE_OBJECTS", None)
+            yield
+
     def test_parser_admits_the_version_resolution_receipt(self):
         parser = hexctl_module().build_parser()
         args = parser.parse_args(
@@ -1084,10 +1091,11 @@ class VersionRelationTests(HexctlCase):
             receipt["base_commit"],
         ).stdout.strip()
         self.git("replace", merge_commit, replacement)
-        self.assertEqual(
-            self.git("show", "-s", "--format=%P", merge_commit).stdout.strip(),
-            f"{receipt['head_commit']} {receipt['base_commit']}",
-        )
+        with self.replacement_objects_enabled():
+            self.assertEqual(
+                self.git("show", "-s", "--format=%P", merge_commit).stdout.strip(),
+                f"{receipt['head_commit']} {receipt['base_commit']}",
+            )
         with mock.patch.object(
             module, "remote_branch_tip", return_value=merge_commit
         ):
@@ -1806,9 +1814,10 @@ class VersionRelationTests(HexctlCase):
         ).stdout.strip()
         self.git("replace", sync, replacement)
 
-        self.assertEqual(
-            module.commit_parents(self.target, sync, "fixture"), [product, base]
-        )
+        with self.replacement_objects_enabled():
+            self.assertEqual(
+                module.commit_parents(self.target, sync, "fixture"), [product, base]
+            )
         self.assertEqual(
             module._native_relation_parents(self.target, sync, "fixture"),
             [base, product],

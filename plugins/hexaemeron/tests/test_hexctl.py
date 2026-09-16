@@ -5773,11 +5773,13 @@ class GitHubSignerDiagnosis(unittest.TestCase):
     """A refusal must name GitHub's key as the cause, not just fail.
 
     A commit GitHub rewrote carries GitHub's web-flow signature. `verify-commit`
-    then fails against a local keyring, and the bare message sends whoever reads
-    it looking for a broken signing setup rather than at the branch rewrite that
-    actually happened. The wrong repair for that message is importing GitHub's
-    public key, which makes the check pass and removes the guarantee it exists
-    for, so the message says so explicitly.
+    may fail against a local keyring, and the bare message sends whoever reads it
+    looking for a broken signing setup rather than at the branch rewrite that
+    actually happened. A keyring may also trust GitHub's public key, so the
+    commit identity is read before verification and the same refusal must hold
+    in that case. The wrong repair for that message is importing GitHub's public
+    key, which makes the check pass and removes the guarantee it exists for, so
+    the message says so explicitly.
     """
 
     def setUp(self):
@@ -5787,11 +5789,13 @@ class GitHubSignerDiagnosis(unittest.TestCase):
         self.assertIn("B5690EEEBB952194", self.hexctl.GITHUB_SIGNING_KEYS)
         self.assertIn("4AEE18F83AFDEB23", self.hexctl.GITHUB_SIGNING_KEYS)
 
-    def _refusal(self, key):
+    def _refusal(self, key, *, verification_status=1):
         """The message verify_local_commit dies with, for a given signing key."""
         module = self.hexctl
         captured = StringIO()
-        with mock.patch.object(module, "bounded_tool_status", return_value=1), \
+        with mock.patch.object(
+            module, "bounded_tool_status", return_value=verification_status
+        ), \
              mock.patch.object(module, "signing_key", return_value=key), \
              mock.patch.object(module, "require_full_sha", side_effect=lambda s, _l: s), \
              redirect_stderr(captured):
@@ -5809,6 +5813,64 @@ class GitHubSignerDiagnosis(unittest.TestCase):
             message,
             "the wrong repair is the obvious one and has to be ruled out in the message",
         )
+
+    def test_a_github_signed_commit_is_refused_when_the_keyring_accepts_it(self):
+        message = self._refusal("b5690eeebb952194", verification_status=0)
+        self.assertIn("signed by GitHub", message)
+        self.assertIn("B5690EEEBB952194", message)
+
+    def test_native_relation_refuses_a_github_signed_commit_before_verification(self):
+        module = self.hexctl
+        captured = StringIO()
+        with mock.patch.object(
+            module, "_native_signature_git", return_value=b""
+        ) as verifier, \
+             mock.patch.object(module, "signing_key", return_value="b5690eeebb952194"), \
+             mock.patch.object(module, "require_full_sha", side_effect=lambda s, _l: s), \
+             redirect_stderr(captured):
+            with self.assertRaises(SystemExit):
+                module.verify_local_commit(
+                    ".", "a" * 40, "step 1", native_relation=True
+                )
+        verifier.assert_not_called()
+        self.assertIn("signed by GitHub", captured.getvalue())
+        self.assertIn("B5690EEEBB952194", captured.getvalue())
+
+    def test_final_green_path_is_closed(self):
+        with mock.patch.dict(os.environ, {"PATH": "/caller"}):
+            env = self.hexctl._final_green_environment()
+        paths = env["PATH"].split(os.pathsep)
+        self.assertEqual(os.path.dirname(os.path.abspath(sys.executable)), paths[0])
+        self.assertNotIn("/caller", paths)
+        self.assertEqual("1", env["GIT_NO_REPLACE_OBJECTS"])
+        self.assertTrue(set(os.defpath.split(os.pathsep)) <= set(paths))
+
+    def test_signature_prover_skips_github_signed_commits_when_finding_local_signer(self):
+        import importlib.util
+
+        prover_path = Path(HERE).resolve().parents[2] / "tests/prove_signature_only_refusals.py"
+        specification = importlib.util.spec_from_file_location(
+            "signature_prover_under_test", prover_path
+        )
+        self.assertIsNotNone(specification)
+        self.assertIsNotNone(specification.loader)
+        prover = importlib.util.module_from_spec(specification)
+        specification.loader.exec_module(prover)
+
+        fake_hexctl = mock.Mock()
+        fake_hexctl.GITHUB_SIGNING_KEYS = self.hexctl.GITHUB_SIGNING_KEYS
+        fake_hexctl.signing_key.side_effect = [
+            "B5690EEEBB952194",
+            "DEADBEEFDEADBEEF",
+        ]
+        commits = "a" * 40 + "\n" + "b" * 40
+        with mock.patch.object(prover, "git_text", return_value=commits), \
+             mock.patch.object(prover, "keyring_accepts", return_value=True):
+            try:
+                verified = prover.locally_verified_commit(fake_hexctl)
+            except prover.Unproven as error:
+                self.fail(str(error))
+        self.assertEqual("b" * 40, verified)
 
     def test_an_unknown_key_is_reported_without_blaming_github(self):
         message = self._refusal("DEADBEEFDEADBEEF")
