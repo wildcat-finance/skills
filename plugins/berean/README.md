@@ -10,6 +10,11 @@ Berean pins the corpus, chain reads, recorded answers and evaluation needed to c
 **Current frontier.** The reference release answers against a frozen demonstration corpus and preserved Aave v4 mainnet reads; no release yet cites live Wildcat documentation or a captured Wildcat market read, and no Ariadne statement binds a berean release.
 
 **Next Fiat job.** Use /hexaemeron:fiat to ship the first berean release grounded in captured Wildcat documentation and Wildcat market reads, replacing the demonstration corpus in the reference deployment. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+
+Ariadne now ships a checked statement over the fixed Berean demonstration
+release, so the frontier's claim that no Ariadne statement binds a berean
+release is out of date. Berean's ledger keeps that sentence until its held
+Wildcat reference release job completes.
 <!-- marketplace-context:end -->
 
 ## START HERE
@@ -21,7 +26,9 @@ cases, and records promotion or rollback without needing the original model.
 
 The machinery ships, but the reference release is still a demonstration using
 a frozen corpus and preserved Aave v4 reads. There is no live Wildcat
-reference release and no Ariadne statement binds a Berean release yet.
+reference release. Ariadne now ships a checked statement over the fixed
+Berean demonstration release; that statement does not establish a Wildcat
+reference deployment.
 
 ## PLACE IN THE COLLECTIVE
 
@@ -139,7 +146,7 @@ python3 -m unittest discover -s plugins/berean/tests -t plugins/berean
 - [`docs/spec.md`](./docs/spec.md), the Wildcat Commons specification this
   plugin was built from.
 - [`docs/design.md`](./docs/design.md), the decisions behind the formats and
-  the deferred Ariadne binding.
+  the separate Ariadne binding.
 - [`docs/release-policy.md`](./docs/release-policy.md) and
   [`docs/answers.md`](./docs/answers.md), the lifecycle and vocabulary
   records.

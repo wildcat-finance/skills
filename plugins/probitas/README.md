@@ -78,7 +78,7 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 ## WHAT IT SHIPS
 
 - the executable [`probitas.py`](./scripts/probitas.py) collector, renderer, evidence comparison and gate checker, standard library only;
-- adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, an archive route over verified Alexandria releases for Goldfinch and Clearpool, and ten further venues carried as named gaps rather than silence;
+- adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, an archive route over verified Alexandria releases for Aave v4 and Clearpool, and explicit coverage for every venue, including named gaps where the selected routes provide no answer;
 - eleven synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
 - a [committed example dossier](./docs/example-dossier.md) that the tests regenerate and compare, so it cannot drift;
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
@@ -152,7 +152,7 @@ does not replace the current dossier.
 `collect` gathers from two routes. The adapter route queries the venues that
 ship an adapter, backed either by the network or by a fixture directory. The
 archive route reads verified Alexandria releases through a disposable index,
-which is where Goldfinch and Clearpool history lives. A real diligence run
+which supplies preserved Aave v4 and Clearpool history. A real diligence run
 usually wants both, so they combine:
 
 ```bash
@@ -187,7 +187,7 @@ contradict each other and the run says so.
 Every coverage row names the route that produced it, and an archive row names
 the Alexandria releases behind it. A venue some route answered for is not
 reported as a gap because another route had nothing to say about it; a route
-that failed still leaves one. The archive route keeps the original Goldfinch or
+that failed still leaves one. The archive route keeps the original Aave v4 or
 Clearpool venue and the Alexandria release, capture, component and row
 identities on every record.
 
@@ -282,8 +282,8 @@ clean history.
 ## VENUES
 
 Fifteen in the registry, five with adapters. The other ten appear in every
-coverage table saying nobody checked, which is gate 2 working rather than an
-omission.
+coverage table saying nobody checked unless the archive route answered, which it
+can for Aave v4 and Clearpool; that is gate 2 working rather than an omission.
 
 - Wildcat: Shipped. Public Goldsky subgraph, no key.
 - Morpho Blue: Shipped. Borrowing on Blue markets, keyless public API.
@@ -318,7 +318,7 @@ defaults, which makes it a list of counterparties who did not repay, sitting on
 chain and directly relevant to anyone they approach next. A dead protocol is
 not a dead record.
 
-The four that ship read differently on purpose. Wildcat is undercollateralised,
+The other four adapters read differently on purpose. Wildcat is undercollateralised,
 so a missed reserve ratio is about the borrower. Morpho is overcollateralised,
 so a liquidation is about a price, and the dossier says so in as many words.
 Bad debt is the one Morpho signal that bears on conduct, and it gets its own

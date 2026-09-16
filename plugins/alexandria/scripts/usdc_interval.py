@@ -48,6 +48,12 @@ from alexandria_lib.interval import (
     MAX_DISPUTES,
     OPENING_CLASS,
     RECEIPT_FORMAT,
+    LEGACY_RECEIPT_FORMAT,
+    discover_block_epochs,
+    validate_block_epochs,
+    proxy_log_positions,
+    attribute_logs,
+    validate_attributions,
     Staging,
     ZERO_ADDRESS,
     discover_epochs,
@@ -261,11 +267,14 @@ class OpeningPhase:
     Nothing here touches a transport or a file.
     """
 
-    def __init__(self, plan, staged_logs) -> None:
+    def __init__(self, plan, staged_logs, *, legacy=False) -> None:
         self.plan = plan
         self.virtual = len(plan["shards"])
         self.start = int(plan["interval"]["start"])
         self.end = int(plan["interval"]["end"])
+        self.logs = staged_logs
+        if not legacy:
+            proxy_log_positions(staged_logs, plan["proxy"], plan["interval"])
         self.upgrades = upgrade_logs(staged_logs, plan["proxy"])
         self.announced = {upgrade["block"]: upgrade for upgrade in self.upgrades}
         self.boundaries = opening_boundaries(self.start, self.end, self.upgrades)
@@ -445,7 +454,7 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
     return phase, replayed
 
 
-def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str) -> list:
+def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str, *, legacy=False) -> list:
     """The epoch table the preserved opening reads derive, and nothing else.
 
     Every input is a value `OpeningPhase.accept` took from a journaled read:
@@ -458,12 +467,13 @@ def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str) -> list:
     interval = plan["interval"]
     block_hashes = {str(block): value for block, value in phase.hashes.items()}
     block_hashes[str(int(interval["end"]))] = end_hash
-    return discover_epochs(
+    discover = discover_block_epochs if legacy else discover_epochs
+    return discover(
         chain=plan["chain"],
         deployment=plan["deployment"],
         proxy=plan["proxy"],
         interval=dict(interval),
-        upgrade_logs=[upgrade["record"] for upgrade in phase.upgrades],
+        upgrade_logs=[upgrade["record"] for upgrade in phase.upgrades] if legacy else phase.logs,
         slot_reads={str(block): word for block, word in phase.slot_words.items()},
         code_reads=dict(phase.codes),
         block_hashes=block_hashes,
@@ -1024,6 +1034,10 @@ class Reconciler:
                         index, "logs", "eth_getLogs",
                         [{"address": self.plan["proxy"], "fromBlock": hex(shard["start"]), "toBlock": hex(shard["end"])}],
                     )
+                if isinstance(logs, list):
+                    proxy_log_positions(logs, self.plan["proxy"], self.plan["interval"])
+                if isinstance(second_logs, list):
+                    proxy_log_positions(second_logs, self.plan["proxy"], self.plan["interval"])
             except AlexandriaError:
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
@@ -1254,20 +1268,11 @@ class Builder:
         end_hash = shards[-1]["end_hash"]
         start_hash = phase.hashes[phase.start]
         epochs = self._epochs(phase, end_hash)
-        validate_epochs(epochs, phase.start, phase.end)
+        self._validate_epoch_table(epochs, phase.start, phase.end)
         code = self._code_component(epochs, phase)
         code_bytes = canonical_bytes(code)
         documents = {
-            "epoch-table": {
-                "epochs": epochs,
-                "format": RECEIPT_FORMAT,
-                "implementation_code": {
-                    "component": CODE_COMPONENT,
-                    "sha256": hashlib.sha256(code_bytes).hexdigest(),
-                },
-                "reconciliation": reconciliation["reconciliation"],
-                "shards": shards,
-            },
+            "epoch-table": self._epoch_receipt(phase, epochs, code_bytes, reconciliation, shards),
             "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
             CODE_COMPONENT: code,
             "interval-plan": self.plan,
@@ -1306,6 +1311,16 @@ class Builder:
             return ingest(staging / "capture-plan.json", output)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
+
+    def _validate_epoch_table(self, epochs, start, end):
+        validate_epochs(epochs, start, end)
+
+    def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
+        return {"epochs": epochs, "format": RECEIPT_FORMAT,
+                "log_attributions": attribute_logs(phase.logs, self.plan["proxy"], self.plan["interval"], epochs),
+                "implementation_code": {"component": CODE_COMPONENT,
+                                        "sha256": hashlib.sha256(code_bytes).hexdigest()},
+                "reconciliation": reconciliation["reconciliation"], "shards": shards}
 
     def _capture(self, component: str, document, reconciliation, boundaries) -> dict:
         interval = self.plan["interval"]
@@ -1587,11 +1602,15 @@ def check_interval(release_root: Path) -> dict:
     end = int(interval["end"])
 
     receipt = documents["epoch-table"]
-    if not isinstance(receipt, dict) or set(receipt) != {
-        "epochs", "format", "implementation_code", "reconciliation", "shards",
-    } or receipt["format"] != RECEIPT_FORMAT:
+    legacy = isinstance(receipt, dict) and receipt.get("format") == LEGACY_RECEIPT_FORMAT
+    required = {"epochs", "format", "implementation_code", "reconciliation", "shards"}
+    if not legacy:
+        required.add("log_attributions")
+    if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT):
         raise AlexandriaError("the interval receipt has an unknown shape")
-    validate_epochs(receipt["epochs"], start, end)
+    (validate_block_epochs if legacy else validate_epochs)(receipt["epochs"], start, end)
+    if not legacy:
+        validate_attributions(receipt["log_attributions"])
     for epoch in receipt["epochs"]:
         if epoch["proxy"] != plan["proxy"] or epoch["chain"] != plan["chain"]:
             raise AlexandriaError("an epoch does not belong to the plan's market")
@@ -1891,7 +1910,7 @@ def check_interval(release_root: Path) -> dict:
     # the first block's hash and derive the epoch table the receipt has to
     # match, so nothing the receipt declares about an epoch is believed on
     # its own word.
-    phase = _replay_release_opening(plan, documents, classes)
+    phase = _replay_release_opening(plan, documents, classes, legacy=legacy)
     first_hash = phase.hashes[start]
 
     # The implementation code, re-hashed from the component's bytes: the
@@ -1902,15 +1921,19 @@ def check_interval(release_root: Path) -> dict:
     implementations = _recheck_implementation_code(
         receipt, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
     )
-    derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"])
+    derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"], legacy=legacy)
     if derived_epochs != receipt["epochs"]:
         raise AlexandriaError(
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
 
+    if not legacy and receipt["log_attributions"] != attribute_logs(phase.logs, plan["proxy"], interval, derived_epochs):
+        raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
+
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
 
     return {
+        "receipt_semantics": "v1-block-only" if legacy else "v2-positional",
         "epochs": len(receipt["epochs"]),
         "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
@@ -1923,7 +1946,7 @@ def check_interval(release_root: Path) -> dict:
     }
 
 
-def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
+def _replay_release_opening(plan, documents, classes, *, legacy=False) -> OpeningPhase:
     """Replay the release's `epoch-evidence` records against its plan, offline."""
     logs = []
     if "logs" in classes:
@@ -1934,7 +1957,7 @@ def _replay_release_opening(plan, documents, classes) -> OpeningPhase:
             result = envelope.get("result") if isinstance(envelope, dict) else None
             if isinstance(result, list):
                 logs.extend(result)
-    phase = OpeningPhase(plan, logs)
+    phase = OpeningPhase(plan, logs, legacy=legacy)
     entries = documents[OPENING_CLASS]["records"]
     position = 0
     for read in phase.reads():

@@ -1,0 +1,185 @@
+{
+  "format": "alexandria-usdc-interval-epochs-demo/v1",
+  "historical_first_block": "proxy log hash contradicts its epoch boundary",
+  "hostile_releases": {
+    "moved-boundary": "the epoch table does not match the epochs the preserved opening reads derive",
+    "moved-owner": "log attributions do not match ownership derived from preserved logs"
+  },
+  "index_only_reconciliation": {
+    "disputed": 0,
+    "log_index": "0x5",
+    "primary_transaction_index": "0x3",
+    "second_transaction_index": "0x7",
+    "status": "agreed"
+  },
+  "synthetic": {
+    "epochs": 2,
+    "implementations": {
+      "0x42f9505a376761b180e27a01ba0554244ed1de7d": "302225f1bb36d46cee282bbb0fd9eb92931eecc0f1fbe36b87a83b3411ff89e3",
+      "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b": "0537b1c3ebc093175943b4796be7f47151668eba20a0f887bb752cc9b52eba78"
+    },
+    "interval": {
+      "end": "15331685",
+      "start": "15331586"
+    },
+    "ownership": [
+      {
+        "block_number": "15331586",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 0,
+        "transaction_index": 0
+      },
+      {
+        "block_number": "15331587",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 1,
+        "transaction_index": 1
+      },
+      {
+        "block_number": "15331588",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 2,
+        "transaction_index": 2
+      },
+      {
+        "block_number": "15331606",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 0,
+        "transaction_index": 0
+      },
+      {
+        "block_number": "15331607",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 1,
+        "transaction_index": 1
+      },
+      {
+        "block_number": "15331608",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 2,
+        "transaction_index": 2
+      },
+      {
+        "block_number": "15331626",
+        "epoch_index": 0,
+        "implementation": "0x42f9505a376761b180e27a01ba0554244ed1de7d",
+        "kind": "proxy-log",
+        "log_index": 3,
+        "transaction_index": 1
+      },
+      {
+        "block_number": "15331626",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "upgrade-boundary",
+        "log_index": 4,
+        "transaction_index": 2
+      },
+      {
+        "block_number": "15331626",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 5,
+        "transaction_index": 3
+      },
+      {
+        "block_number": "15331627",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 1,
+        "transaction_index": 1
+      },
+      {
+        "block_number": "15331628",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 2,
+        "transaction_index": 2
+      },
+      {
+        "block_number": "15331646",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 0,
+        "transaction_index": 0
+      },
+      {
+        "block_number": "15331647",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 1,
+        "transaction_index": 1
+      },
+      {
+        "block_number": "15331648",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 2,
+        "transaction_index": 2
+      },
+      {
+        "block_number": "15331666",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 0,
+        "transaction_index": 0
+      },
+      {
+        "block_number": "15331667",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 1,
+        "transaction_index": 1
+      },
+      {
+        "block_number": "15331668",
+        "epoch_index": 1,
+        "implementation": "0x8b3e1f2a4c5d6e7f8091a2b3c4d5e6f708192a3b",
+        "kind": "proxy-log",
+        "log_index": 2,
+        "transaction_index": 2
+      }
+    ],
+    "receipt_semantics": "v2-positional",
+    "reconciliation": "agreed",
+    "release_id": "sha256:b71996c8450d5f28c36d112fab7bafb636b2176d74e6f609646dbe5162983036",
+    "shard_statuses": {
+      "complete": 5
+    },
+    "upgrade_block": "15331626"
+  },
+  "unsupported_attribution": {
+    "ordinary-log-after-announcement": {
+      "codes": [
+        "malformed-upgrade-log"
+      ],
+      "refusal": "ordinary proxy log at (15331626, 2, 5) in an upgrade transaction is unsupported"
+    },
+    "ordinary-log-before-announcement": {
+      "codes": [
+        "malformed-upgrade-log"
+      ],
+      "refusal": "ordinary proxy log at (15331626, 2, 3) in an upgrade transaction is unsupported"
+    }
+  }
+}
