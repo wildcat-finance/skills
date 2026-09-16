@@ -1,0 +1,481 @@
+{
+  "schema": "wildcat.kickoff-observed-policy.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1487",
+  "consumer": "https://github.com/wildcat-finance/skills/issues/1368",
+  "tier": "protocol-observed",
+  "source_revision": "ce514a2edc790b3a13e19ed847da7716ea39de67",
+  "decision": {
+    "decision_maker": "Dr Laurence E. Day",
+    "role": "maintainer",
+    "date": "2026-09-16",
+    "evidence": "docs/kickoff/1368/evidence/decision.json",
+    "evidence_sha256": "0f823c3b8a55052c61b3fe6cb1f4eb72514caa0d2e32dae31c6f95bb34abfb43",
+    "record": "https://github.com/wildcat-finance/skills/issues/1487#issuecomment-5695677707",
+    "record_sha256": "16ffcea67bbec46a2c7f100c730244dbfddc5190105870077ff1a0f1a359244a",
+    "selected": {
+      "audience": "Public, address-level",
+      "conclusions": "Debtor of record only (Recommended)",
+      "entity-name": "Neutral role label (Recommended)",
+      "reviewer": "Independent agent (Recommended)"
+    }
+  },
+  "producer": "Shoggoth, drafting the role matrix under Probitas",
+  "reviewer": "an independent agent the decision-maker chose; its reports, naming the digests each reviewed, are in docs/kickoff/1368/evidence/review.json and the body of the pull request that adds this record. The selected option also set the merge condition: the delivery session merges once the required invariants check passes.",
+  "audience": {
+    "id": "public-address-level",
+    "rule": "Findings drawn from public chain logs may be published, including in this repo, provided every prohibited claim stays out. Trade: a public credit dossier on an address that never asked for one can read as Wildcat vetting borrowers, which Probitas says Wildcat does not do."
+  },
+  "entity_name": {
+    "id": "neutral-role-label",
+    "rule": "The entity field is built from role and venue, for example 'Borrower of record, Wildcat market 0x...'. No organisation name taken from a market name, registry entry, ENS name or explorer label. An organisation name appears only when it declares the address, which makes that address declared."
+  },
+  "conclusions": {
+    "id": "debtor-of-record-only",
+    "rule": "Conclusion-bearing only where the venue's own log names the address as the account whose debt changed, and only for that address's own sourced events inside stated coverage. Every other role is recorded as context and feeds no conclusion."
+  },
+  "venue_id_convention": "A field's venue is the id used by the module its at path cites: Probitas venue ids under plugins/probitas, Tabularium adapter ids under plugins/tabularium. Euler V2 therefore appears as euler and as euler-v2.",
+  "roles": [
+    {
+      "id": "debtor-of-record",
+      "feeds_conclusion": "yes: that address's own sourced debt events, inside stated coverage only",
+      "fields": [
+        {
+          "venue": "wildcat",
+          "field": "market borrower",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py:246"
+          ]
+        },
+        {
+          "venue": "aave-v4",
+          "field": "borrower",
+          "at": [
+            "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py:146"
+          ]
+        },
+        {
+          "venue": "euler-v1",
+          "field": "borrower",
+          "at": [
+            "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py:73"
+          ]
+        },
+        {
+          "venue": "euler",
+          "field": "EVC owner (sub-account XOR-checked)",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/euler.py:140-148",
+            "plugins/probitas/scripts/probitas_lib/adapters/euler.py:387-392"
+          ]
+        },
+        {
+          "venue": "morpho-midnight",
+          "field": "seller on borrow",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:78-82",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:696-699"
+          ]
+        },
+        {
+          "venue": "morpho-midnight",
+          "field": "on_behalf on primary exits",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:260",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:706-707"
+          ],
+          "reading": "Reading, not a selection: of the two primary exits only exit_borrow_primary changes debt; exit_lend_primary closes lender units (morpho_midnight.py:71), so its on_behalf is not read as a debtor of record."
+        },
+        {
+          "venue": "morpho-midnight",
+          "field": "borrower on liquidation",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:279",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:710-711"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wrapper-router-vault",
+      "feeds_conclusion": "yes about its own position; no about anyone behind it",
+      "fields": [
+        {
+          "field": "a debtor contract holding positions for other accounts"
+        }
+      ]
+    },
+    {
+      "id": "payer",
+      "feeds_conclusion": "no; never becomes a borrower",
+      "fields": [
+        {
+          "venue": "morpho-midnight",
+          "field": "payer",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:236",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:263",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:279"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caller-or-actor",
+      "feeds_conclusion": "no",
+      "fields": [
+        {
+          "venue": "aave-v4",
+          "field": "caller",
+          "at": [
+            "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py:147-148"
+          ]
+        },
+        {
+          "venue": "morpho-midnight",
+          "field": "caller",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:231",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:259",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:270",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:279"
+          ]
+        },
+        {
+          "venue": "euler-v2",
+          "field": "actor",
+          "at": [
+            "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py:124-125"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "liquidator-receiver-lender-counterparty",
+      "feeds_conclusion": "no",
+      "fields": [
+        {
+          "venue": "euler-v1",
+          "field": "liquidator",
+          "at": [
+            "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py:75-76"
+          ]
+        },
+        {
+          "venue": "morpho-midnight",
+          "field": "receiver",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:237",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:265",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:275",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:279"
+          ]
+        },
+        {
+          "venue": "morpho-midnight",
+          "field": "buyer",
+          "at": [
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:80",
+            "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py:234"
+          ]
+        },
+        {
+          "venue": "euler-v2",
+          "field": "counterparty",
+          "at": [
+            "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py:126-127"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "registry-or-label",
+      "feeds_conclusion": "no; never names an entity or upgrades a tier",
+      "fields": [
+        {
+          "field": "registry entry"
+        },
+        {
+          "field": "market name"
+        },
+        {
+          "field": "ENS name"
+        },
+        {
+          "field": "explorer tag"
+        }
+      ]
+    }
+  ],
+  "never_for_any_role": [
+    "a person",
+    "the counterparty declaring or controlling the address",
+    "a link between addresses from behaviour, funding or timing",
+    "default, full repayment, a score or a Wildcat verdict",
+    "completeness beyond stated coverage"
+  ],
+  "source_requirements": [
+    "venue",
+    "chain id",
+    "contract",
+    "tx hash",
+    "block",
+    "log index",
+    "event",
+    "the role field that names it",
+    "route",
+    "release, for an archive route",
+    "coverage window"
+  ],
+  "claims": [
+    {
+      "id": "debtor-role",
+      "verdict": "permitted",
+      "claim": "A venue's own log names the address as the account whose debt changed in a cited event.",
+      "rests_on": [
+        "decision.selected.conclusions",
+        "roles.debtor-of-record"
+      ]
+    },
+    {
+      "id": "debtor-events",
+      "verdict": "permitted",
+      "claim": "The address's own sourced debt events inside stated coverage, as the venue recorded them.",
+      "rests_on": [
+        "decision.selected.conclusions",
+        "roles.debtor-of-record"
+      ]
+    },
+    {
+      "id": "wrapper-own-position",
+      "verdict": "permitted",
+      "claim": "A debtor contract holding positions for other accounts: its own position.",
+      "rests_on": [
+        "roles.wrapper-router-vault"
+      ]
+    },
+    {
+      "id": "context-role",
+      "verdict": "permitted",
+      "claim": "A non-debtor role recorded beside its sourced event as context.",
+      "rests_on": [
+        "decision.selected.conclusions"
+      ]
+    },
+    {
+      "id": "publication",
+      "verdict": "permitted",
+      "claim": "Publishing a finding drawn from public chain logs, including in this repository, when it makes no prohibited claim.",
+      "rests_on": [
+        "decision.selected.audience"
+      ]
+    },
+    {
+      "id": "role-label-entity",
+      "verdict": "permitted",
+      "claim": "A dossier entity built from role and venue.",
+      "rests_on": [
+        "decision.selected.entity-name"
+      ]
+    },
+    {
+      "id": "person",
+      "verdict": "prohibited",
+      "claim": "A person named or implied behind the address.",
+      "rests_on": [
+        "never_for_any_role"
+      ]
+    },
+    {
+      "id": "counterparty-control",
+      "verdict": "prohibited",
+      "claim": "The counterparty declared or controls the address.",
+      "rests_on": [
+        "never_for_any_role"
+      ]
+    },
+    {
+      "id": "behavioural-link",
+      "verdict": "prohibited",
+      "claim": "The address is linked to another address through behaviour, funding or timing.",
+      "rests_on": [
+        "never_for_any_role"
+      ]
+    },
+    {
+      "id": "verdict",
+      "verdict": "prohibited",
+      "claim": "The address defaulted or repaid in full, or carries a score or a Wildcat verdict.",
+      "rests_on": [
+        "never_for_any_role"
+      ]
+    },
+    {
+      "id": "beyond-coverage",
+      "verdict": "prohibited",
+      "claim": "The address's record is complete beyond stated coverage.",
+      "rests_on": [
+        "never_for_any_role"
+      ]
+    },
+    {
+      "id": "payer-as-borrower",
+      "verdict": "prohibited",
+      "claim": "A payer is a borrower.",
+      "rests_on": [
+        "roles.payer"
+      ]
+    },
+    {
+      "id": "non-debtor-conclusion",
+      "verdict": "prohibited",
+      "claim": "A conclusion drawn from a payer, caller, actor, liquidator, receiver, lender or counterparty role.",
+      "rests_on": [
+        "decision.selected.conclusions",
+        "roles.payer",
+        "roles.caller-or-actor",
+        "roles.liquidator-receiver-lender-counterparty"
+      ]
+    },
+    {
+      "id": "beneficiary",
+      "verdict": "prohibited",
+      "claim": "A conclusion about anyone behind a wrapper, router or vault.",
+      "rests_on": [
+        "roles.wrapper-router-vault"
+      ]
+    },
+    {
+      "id": "registry-identity",
+      "verdict": "prohibited",
+      "claim": "A registry entry, market name, ENS name or explorer tag names the address's entity or upgrades its tier.",
+      "rests_on": [
+        "roles.registry-or-label"
+      ]
+    },
+    {
+      "id": "label-entity-name",
+      "verdict": "prohibited",
+      "claim": "An organisation name for the dossier entity taken from a market name, registry entry, ENS name or explorer label.",
+      "rests_on": [
+        "decision.selected.entity-name"
+      ]
+    }
+  ],
+  "not_decided": [
+    "Fields the decision was not shown, such as Tabularium's Euler V2 account (plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py:122) and Morpho Blue's user (plugins/probitas/scripts/probitas_lib/adapters/morpho.py:174-176). Each needs its own mapping to a role, with file and line, before it places an address in the tier.",
+    "How a debtor contract is shown to hold positions for other accounts.",
+    "Dossier layout for observed addresses, beyond keeping them apart from declared addresses as #1368 requires."
+  ],
+  "inputs": [
+    {
+      "path": "plugins/probitas/skills/probitas/SKILL.md",
+      "bytes": 19979,
+      "sha256": "c3129e6a61c3f109de319da771630c40724f4f1d3b2961db4faff81fd66f256c"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas.py",
+      "bytes": 15883,
+      "sha256": "22a1a386efb7391cc664b8f811f6e59949bf804c781fcca75cf7faf3bd967f37"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/evidence.py",
+      "bytes": 17481,
+      "sha256": "819cd1769e1b3d696d11168d76f787fe2aba01fe10b7018fab72de7c5aecd792"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/gates.py",
+      "bytes": 16130,
+      "sha256": "4e800da2cd3969f7606ed57e772cc3d8218afb55685dfb6416671e364faee594"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/render.py",
+      "bytes": 19984,
+      "sha256": "a0430faa831eca3a6009dd4c58fde294dcdfadb9b4849e31e7c7e2d99c274e17"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py",
+      "bytes": 17949,
+      "sha256": "6e4a947253a5bc3903f7dab77569439892d5d1765d8d730b3e44854a56c8cc79"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/euler.py",
+      "bytes": 25956,
+      "sha256": "fa39f7cbb0f4d4ac50f4ab15adf3179b3d469ef379022e92b7d320087eab5490"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/morpho.py",
+      "bytes": 9902,
+      "sha256": "a07ad47a96f23c2eaff2ebb5e24c45421d05d065492567ffc9b688ea98296829"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py",
+      "bytes": 45452,
+      "sha256": "7985fcb7d5b74eab91f705575ab4c14905540138ba8a4aeca690201af629f01b"
+    },
+    {
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py",
+      "bytes": 10517,
+      "sha256": "df5da6d4c73834397c1d76fa206b1d231ae4f3da387de87f5ebd1d778bd338b1"
+    },
+    {
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py",
+      "bytes": 7199,
+      "sha256": "f20f1eef700a155bdac2cb4ebac0dc75f2fe2437d82202dfb1c06eb79c43fc85"
+    },
+    {
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py",
+      "bytes": 10467,
+      "sha256": "981b77cec8562875831a72049138547e17d36d9eb9296ecbddbcb5314fc5075c"
+    },
+    {
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/euler_v1.py",
+      "bytes": 19965,
+      "sha256": "c39d6d834c5a5acc931f7b811d3622fc093cae0d74eb3bcb83071d9567eed18e"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/aave_v4.py",
+      "bytes": 10027,
+      "sha256": "63c0878a44c7638c37776050babb91568d47d979f21ba7ae867b07aa48aec761"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
+      "bytes": 6335,
+      "sha256": "797f99e0563c5e91f6d8c73c20ef64a251ef606e93caf69404e1224309fe7892"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/euler-events.json",
+      "bytes": 377,
+      "sha256": "153834eb1a2715fd5e9b75de04f49cf58bc55a2af44aa5e0944d452304ce705b"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/euler-liquidations.json",
+      "bytes": 119,
+      "sha256": "965a9bb3b5859dafd5c618ed12b565e60ead0fa229faa3f390b5720b01880be2"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/euler-v1.json",
+      "bytes": 210,
+      "sha256": "8888237ac9e2e28d9e1c103e5006f4e447553935273f0cda8e1a227066968b73"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/euler-vaults.json",
+      "bytes": 124,
+      "sha256": "07ef10971aee535ea87035562d023aa9857fbdbfd814e52bb1fa27c061223a6d"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/morpho-midnight.json",
+      "bytes": 4907,
+      "sha256": "c01533bdfabf40da61a7a21b73767615083ef336665e974ed56c12275615b4b5"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/morpho.json",
+      "bytes": 1509,
+      "sha256": "c439c13a1daa4c2bf115f15fab3d0fb60dea950956c2ccb69febff98ec9797a4"
+    },
+    {
+      "path": "plugins/probitas/tests/fixtures/demo/wildcat.json",
+      "bytes": 2377,
+      "sha256": "9fe3c05d2c69a69f5ee4c3c1f81f2803b3db9d11f45b08897387e274871fe5b0"
+    }
+  ]
+}
