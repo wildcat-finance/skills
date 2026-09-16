@@ -14,7 +14,7 @@ import os
 import re
 
 from . import formatting, registry, sanitise
-from .evidence import EVIDENCE_SCHEMA, classify_source
+from .evidence import EVIDENCE_SCHEMA, PROVENANCE_TIERS, classify_source
 
 TEMPLATE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -93,7 +93,59 @@ def load_bytes(data, name):
             raise RenderError(f"{name} has a {key!r} block that is not a list")
     if not isinstance(payload["subject"].get("addresses"), list):
         raise RenderError(f"{name} has no subject addresses")
+    _check_provenance(payload, name)
     return payload
+
+
+def _shown(value):
+    """An untrusted value for a diagnostic: escaped by repr and bounded."""
+    text = repr(value)
+    return text if len(text) <= 80 else text[:77] + "..."
+
+
+def _check_provenance(payload, name):
+    """Refuse provenance the dossier cannot place, naming the value.
+
+    The renderer sorts records by their address's tier alone and gate 1 reads
+    tiers from the subject addresses alone. A tier neither knows, a record
+    against an address that is not a subject, or a record whose own tier
+    differs from its address's therefore left a finding out of the dossier or
+    showed it on the wrong side of the inferred line while every gate passed,
+    and an address given two tiers was listed under one with its findings
+    under the other. Construction refuses each of these, but `verify` reads an
+    evidence file somebody else produced, so construction never ran on it.
+    """
+    tiers = {}
+    for index, item in enumerate(payload["subject"]["addresses"]):
+        if not isinstance(item, dict) or not isinstance(item.get("address"), str):
+            raise RenderError(f"{name} subject address {index} names no address")
+        address, tier = item["address"], item.get("provenance")
+        if tier not in PROVENANCE_TIERS:
+            raise RenderError(
+                f"{name} gives subject address {_shown(address)} the provenance "
+                f"tier {_shown(tier)}, which is not one of "
+                f"{', '.join(PROVENANCE_TIERS)}"
+            )
+        if tiers.setdefault(address, tier) != tier:
+            raise RenderError(
+                f"{name} gives subject address {_shown(address)} both "
+                f"{tiers[address]} and {tier}; an address holds one provenance tier"
+            )
+    for index, record in enumerate(payload["records"]):
+        if not isinstance(record, dict):
+            raise RenderError(f"{name} record {index} is not an object")
+        address = record.get("address")
+        if not isinstance(address, str) or address not in tiers:
+            raise RenderError(
+                f"{name} record {index} cites {_shown(address)}, which is not a "
+                "subject address"
+            )
+        if record.get("provenance") != tiers[address]:
+            raise RenderError(
+                f"{name} record {index} carries the provenance tier "
+                f"{_shown(record.get('provenance'))}, but its address "
+                f"{_shown(address)} is {tiers[address]}"
+            )
 
 
 def decimals_by_market(records):
@@ -456,6 +508,7 @@ def _gaps(payload):
 
 def render(payload):
     """Build the dossier. Deterministic: same evidence, same bytes."""
+    _check_provenance(payload, "evidence")
     with open(TEMPLATE, encoding="utf-8") as handle:
         template = handle.read()
 

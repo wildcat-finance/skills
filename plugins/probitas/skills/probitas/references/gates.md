@@ -24,6 +24,12 @@ The evidence model refuses the same blurring one layer down. An address given
 as both declared and inferred raises at construction rather than quietly
 keeping whichever came last.
 
+`render` and `verify` refuse it again, because an evidence file can be edited
+after construction. A tier other than the three, an address given two tiers,
+a record whose address is not a subject address, and a record whose tier
+differs from its address's each exit 2 with the value named, before any
+dossier is written or gate is run.
+
 ## 2. Coverage is stated
 
 Every venue in the registry has to have a coverage row. A missing row fails,
