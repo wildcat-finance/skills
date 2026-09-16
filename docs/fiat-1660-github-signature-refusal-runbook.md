@@ -135,3 +135,22 @@ host and keep the source-bound guard proof reviewable.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds.
+
+### Amendment -- 2026-09-16
+
+**What changed.** Complete replacement Files: Refresh
+`docs/promise-machine/obligation-gates/integration-projection.json` and its
+companion report
+`docs/promise-machine/obligation-gates/integration-projection.md` when the
+current repository inputs named by that projection change during this step.
+Regenerate `.horos/census.json` when the census owner reports that the tracked
+tree has changed.
+
+**Why.** The root suite checks the projection's input digests byte for byte and
+the Horos census against a fresh scan. The source-bound guard and its evidence
+refresh change those inputs, so leaving the projection or census at the prior
+tree would make final-green fail on stale owner-produced evidence.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds.
