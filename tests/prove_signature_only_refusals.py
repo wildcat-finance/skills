@@ -34,10 +34,10 @@ report a different message, or none, and this prover exits non-zero.
 
 The GitHub branch runs only after ``git verify-commit`` fails, so it can be
 reached only under a keyring that cannot validate a GitHub web-flow key. A
-keyring that can is a precondition this prover cannot establish, not a removed
-guard: when ``git verify-commit`` accepts the web-flow specimen, or the
-harvested commit is signed with a key in ``GITHUB_SIGNING_KEYS``, the prover
-names that cause and exits 3 without writing a report.
+keyring that can is the known kf-1660-prover-keyring-precondition failure this
+guard preserves: when ``git verify-commit`` accepts the web-flow specimen, or
+the harvested commit is signed with a key in ``GITHUB_SIGNING_KEYS``, the
+prover names that cause and exits 3 without writing a report.
 
 Boundaries. Every ``git`` call is a fixed argument list with no shell and a
 hard timeout. Standard output is read as it arrives and the child is killed
