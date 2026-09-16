@@ -88,3 +88,23 @@ policy; no second decision home is created.
 The last command of this step is the signature prover. Its closed report is
 the demonstration from the problem statement and is the evidence handed to
 the audit and prose phases.
+
+### Amendment -- 2026-09-16
+
+**What changed.** Complete replacement Files: Change `tests/promise_machine_coverage.json` and `docs/promise-machine/obligation-gates/evaluation-run.json` when the controller source or its fixture-only evaluation tree digest changes as part of this step. These are owner-produced deterministic evidence records; keep their historical answers and prompt/corpus results unchanged.
+
+**Why.** The guard implementation changes `hexctl.py` and its current source binding in `tests/promise_machine_coverage.json`; the portable Promise Machine check then requires `evaluation-run.json` to be recomputed from the unchanged prompt and raw-answer identities. Without those owner-produced refreshes, the full suite refuses a stale tree binding.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds.
+
+### Amendment -- 2026-09-16
+
+**What changed.** Complete replacement Files: Change `tests/fixtures/promise-machine/composition/cases.json`, `tests/fixtures/promise-machine/runtime/fiat-final-integration.json`, `tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json`, and `tests/fixtures/promise-machine/runtime/fiat-study-amendment.json` to rebind their owner-produced evidence references to the changed `plugins/hexaemeron/tests/test_hexctl.py` source bytes. Preserve every fixture's recorded result, field map, and historical evidence apart from that source digest.
+
+**Why.** The guard regression changes `test_hexctl.py`, whose whole-file digest is bound by the two composition relations and the three Fiat runtime fixtures. `scripts/promise_machine.py coverage --check` refuses those stale bindings, so the same source change cannot reach a green step exit until the owner-produced records are refreshed.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds.

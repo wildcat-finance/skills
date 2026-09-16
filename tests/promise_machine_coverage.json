@@ -161,7 +161,7 @@
   "composition": {
     "fixture": {
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "d4a0292390df02a283727d06a32b0e34b36c9955abeb3ccbb01c47662ebad629"
+      "sha256": "cbc4d5a2725acd66b1b0ca4d743b17974ffb3dc5f6714cdb9a5763a4220fe139"
     },
     "relations": [
       {
@@ -5276,12 +5276,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "69861f4cebbb35035e7c7466700905e35f31cb17e49b7bf38d12b0d5693df254"
+        "sha256": "aa0720ef0b8a6c990b4858ffe2d64b1f9ec684e159da5ced2a134d794e9c9492"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "69861f4cebbb35035e7c7466700905e35f31cb17e49b7bf38d12b0d5693df254"
+        "sha256": "aa0720ef0b8a6c990b4858ffe2d64b1f9ec684e159da5ced2a134d794e9c9492"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -5363,12 +5363,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "negative",
-        "sha256": "961623b422993e86a9598daf23df6a9a8879664c9743bf0175acafca2e6d2836"
+        "sha256": "e30a5f3b77a78c4d2f03003289e7be4038ce607e8292298637ddda9e6470a573"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "positive",
-        "sha256": "961623b422993e86a9598daf23df6a9a8879664c9743bf0175acafca2e6d2836"
+        "sha256": "e30a5f3b77a78c4d2f03003289e7be4038ce607e8292298637ddda9e6470a573"
       },
       "reader": "native-json-v1",
       "selector": "test_push_advances_steps_then_the_stack_integrates",
@@ -5479,12 +5479,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "negative",
-        "sha256": "f8019e59d8254e63ac46d82b7c63cd08a4242cbd7d0f029ce45bf706907e7e39"
+        "sha256": "589f080f2a1f4b6c5f7b73ee7e768fd98ee13230272856e0a4443103db74d125"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "positive",
-        "sha256": "f8019e59d8254e63ac46d82b7c63cd08a4242cbd7d0f029ce45bf706907e7e39"
+        "sha256": "589f080f2a1f4b6c5f7b73ee7e768fd98ee13230272856e0a4443103db74d125"
       },
       "reader": "native-json-v1",
       "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
