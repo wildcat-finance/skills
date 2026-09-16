@@ -500,6 +500,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.61.1",
         "fiat-v6.62.1",
         "fiat-v6.63.1",
+        "fiat-v6.64.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -9366,6 +9367,40 @@ def _latest_guard_audit_receipt(state: dict, log_path: str) -> dict | None:
     return latest
 
 
+def _guard_audit_native_pair(base_dir: str, paths: list[str], payloads: dict) -> dict:
+    """Bind a clean audit pair to native HEAD and stage-zero index rows."""
+    head = tool_text(
+        _guard_exact_git(base_dir, ["rev-parse", "--verify", "HEAD"],
+                         "guard audit HEAD cannot be resolved"),
+        "guard audit HEAD",
+    ).strip()
+    if COMMIT_RE.fullmatch(head) is None:
+        die("guard audit HEAD is not one full object id")
+    rows = _guard_tree_rows(base_dir, head, paths)
+    index = _guard_exact_git(
+        base_dir, ["ls-files", "--stage", "-z", "--", *paths],
+        "guard audit index rows cannot be read",
+    )
+    expected = b"".join(
+        f"{rows[path]['mode']} {rows[path]['oid']} 0\t{path}\0".encode("utf-8")
+        for path in sorted(paths, key=lambda path: path.encode("utf-8"))
+    )
+    if index != expected:
+        die("guard audit index does not match its exact native HEAD pair")
+    for path in paths:
+        payload, identity = payloads[path]
+        row = rows[path]
+        object_id, blob = read_commit_blob(
+            base_dir, head, path, "guard audit native blob"
+        )
+        if (object_id != row["oid"] or blob != payload
+                or _guard_git_blob_oid(payload, row["oid"]) != row["oid"]
+                or bool(stat.S_IMODE(identity[2]) & stat.S_IXUSR)
+                != (row["mode"] == "100755")):
+            die("guard audit pair does not match its native HEAD blobs")
+    return {"head": head, "rows": rows, "index": index}
+
+
 def _guard_audit_pair_operation(base_dir: str, state: dict) -> dict:
     """Validate one operation-local untouched audit pair and status view."""
     log_path, synopsis_path = _guard_audit_paths(state)
@@ -9391,14 +9426,22 @@ def _guard_audit_pair_operation(base_dir: str, state: dict) -> dict:
         key=lambda item: item[1].encode("utf-8"),
     )
     before_rows = _guard_status_rows(base_dir)
-    if before_rows != expected_rows:
-        die("guard worktree must contain exactly the untracked audit pair")
+    if before_rows not in ([], expected_rows):
+        die("guard worktree must be clean or contain exactly the untracked audit pair")
+    expected_rows = before_rows
     log_bytes, log_identity = _guard_file_snapshot(
         base_dir, log_path, "guard audit log", limit=SOURCE_BYTES_MAX
     )
     synopsis_bytes, synopsis_identity = _guard_file_snapshot(
         base_dir, synopsis_path, "guard audit synopsis", limit=SOURCE_BYTES_MAX
     )
+    native_pair = None
+    if not expected_rows:
+        native_pair = _guard_audit_native_pair(
+            base_dir, [log_path, synopsis_path],
+            {log_path: (log_bytes, log_identity),
+             synopsis_path: (synopsis_bytes, synopsis_identity)},
+        )
     if len(log_bytes) != latest["log_end_offset"]:
         die("guard audit log has an unreceipted suffix or missing prefix")
     synopsis_sha256 = hashlib.sha256(synopsis_bytes).hexdigest()
@@ -9428,6 +9471,14 @@ def _guard_audit_pair_operation(base_dir: str, state: dict) -> dict:
         or _guard_status_rows(base_dir) != expected_rows
     ):
         die("guard audit pair changed during validation")
+    if native_pair is not None and _guard_audit_native_pair(
+        base_dir, [log_path, synopsis_path],
+        {log_path: (final_log, final_log_identity),
+         synopsis_path: (final_synopsis, final_synopsis_identity)},
+    ) != native_pair:
+        die("guard audit native pair changed during validation")
+    if _guard_status_rows(base_dir) != expected_rows:
+        die("guard audit worktree changed during native validation")
     return {
         "log": log_path,
         "log_sha256": hashlib.sha256(log_bytes).hexdigest(),

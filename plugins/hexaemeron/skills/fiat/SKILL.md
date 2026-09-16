@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.63.1"
+  version: "6.64.1"
 ---
 
 <p align="center">
@@ -615,18 +615,23 @@ findings and 4,096 union paths; a path is at most 1,024 UTF-8 bytes; one blob is
 at most 2,097,152 bytes and their sum at most 16,777,216 bytes; a command is at
 most 4,096 UTF-8 bytes and 16 arguments.
 
-The guard boundary permits one exception to an otherwise clean tree: the
-configured audit log and its derived synopsis are exactly the two non-ignored
-untracked rows. They are never guard paths and are never staged, changed,
-copied, removed or followed. Every guarded operation independently opens each
-bounded single-link regular leaf through stable no-follow directory
-descriptors, proves named-leaf and descriptor identity stable for that
-operation, and matches the complete receipt-bound log prefix and current
-synopsis bytes and digests. It never compares device, inode or times across
-operations or processes, and persists no audit identity, timestamp observation
-or marker. The exception lasts from successor Step entry through successful
-`done inoculate`; in the current pre-contract live run it ends after bootstrap
-guard validation immediately before the recorded implement transition.
+An inherited audit log and its derived synopsis may be a clean committed pair
+or exactly the two non-ignored untracked rows. A committed pair must match its
+native HEAD's raw blobs and modes and the exact stage-zero index rows. Fiat
+checks those bindings again after reading the files and refuses a changed HEAD,
+blob or index. Staged, mixed and ignored untracked pairs refuse. Neither form
+is a guard path; the operation never stages, changes, copies, removes or follows
+either file.
+
+Every guarded operation independently opens each bounded single-link regular
+leaf through stable no-follow directory descriptors, proves named-leaf and
+descriptor identity stable for that operation, and matches the complete
+receipt-bound log prefix and current synopsis bytes and digests. It never
+compares device, inode or times across operations or processes, and persists
+no audit identity, timestamp observation or marker. Both forms remain available
+from successor Step entry through successful `done inoculate`; in the current
+pre-contract live run the exception ends after bootstrap guard validation
+immediately before the recorded implement transition.
 
 Fiat passes Elenchus only the exact parent, complete raw blob rows, closed argv,
 format and logical report file. Elenchus owns detached-parent overlay,

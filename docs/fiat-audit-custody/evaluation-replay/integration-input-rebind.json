@@ -1,0 +1,29 @@
+{
+  "changed_fields": [
+    "inputs"
+  ],
+  "changes": [
+    {
+      "before": {
+        "bytes": 287104,
+        "path": "tests/promise_machine_coverage.json",
+        "sha256": "7d47b00d67c68ab98f010676594a459c3a0db4497f559eab40157c506bc27c0b"
+      },
+      "bytes": 287104,
+      "path": "tests/promise_machine_coverage.json",
+      "sha256": "58ab41ab7d84f1743857e980ccfa4c962769d757208e3e89c12dfddb828a29fc"
+    },
+    {
+      "before": {
+        "bytes": 3231,
+        "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+        "sha256": "37c6d3c7290488b590e50ba18f344d8e5c2ceba3ea7f9181f5699a2b99976b28"
+      },
+      "bytes": 3231,
+      "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
+      "sha256": "1fab8972e2ed191d846022e3e9f3cf2b1f47feb5fb84a676d6cd2b91fac6ba11"
+    }
+  ],
+  "new_execution": false,
+  "operation": "source-input-digest-projection"
+}
