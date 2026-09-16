@@ -388,6 +388,139 @@ def check_execution_custody(root):
     }
 
 
+def check_terminal_compatibility(root):
+    """Exercise completion, amendment and read-only historical replay.
+
+    The specimens use the real receipt adapter and a no-op result validator;
+    they never invoke a registered Exit.  That distinction is recorded in the
+    evidence so this resolver cannot accidentally claim a production run.
+    """
+    executor_path = "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py"
+    receipts_path = "plugins/hexaemeron/skills/fiat/scripts/criteria_receipts.py"
+    controller_path = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    if not all((root / path).is_file() for path in (executor_path, receipts_path, controller_path)):
+        raise Refusal("operation-not-implemented:terminal-compatibility:step-4")
+    inputs = Inputs(root)
+    inputs.read(SELF)
+    inputs.read(executor_path)
+    inputs.read(receipts_path)
+    controller = root / controller_path
+    try:
+        before = controller.stat()
+        if not stat.S_ISREG(before.st_mode) or before.st_size > 2 * 1024 * 1024:
+            raise Refusal("controller-source-bound")
+        with controller.open("rb") as stream:
+            controller_bytes = stream.read(2 * 1024 * 1024 + 1)
+        after = controller.stat()
+    except OSError as error:
+        raise Refusal("controller-source-unavailable") from error
+    if (len(controller_bytes) > 2 * 1024 * 1024
+            or before.st_size != after.st_size
+            or before.st_mtime_ns != after.st_mtime_ns):
+        raise Refusal("controller-source-changed")
+    receipts = load_module(root / receipts_path, "criteria_receipts_terminal_proof")
+    command = "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-4-exit.json"
+    row = lambda identifier, claim, step, cmd: {
+        "id": identifier, "claim": claim, "step": step, "command": cmd,
+        "descriptor_sha256": "1" * 64,
+        "exit": {"step": step, "command": cmd,
+                 "command_sha256": hashlib.sha256(cmd.encode()).hexdigest()},
+    }
+    joined = {"schema": receipts.JOIN_SCHEMA, "declaration_sha256": "2" * 64,
+              "runbook_sha256": "b" * 64,
+              "criteria": [row("completed", "already observed", 4, command),
+                           row("unbuilt", "still due", 4, command)]}
+    admission = {"join": joined, "study_sha256": "a" * 64,
+                 "runbook_sha256": "b" * 64}
+    custody = receipts.new(admission)
+    settled = {"attempt_id": "attempt-completed", "study_sha256": "a" * 64,
+               "runbook_sha256": "b" * 64, "criterion_ids": ["completed"],
+               "settled": True, "status": "settled"}
+    checks = []
+    try:
+        receipts.require_complete(custody, [settled])
+    except receipts.Refusal as error:
+        checks.append({"case": "completion-refuses-gaps", "reason": str(error)})
+    else:
+        raise Refusal("completion-gap-accepted")
+    changed = json.loads(json.dumps(joined))
+    changed["criteria"][0]["command"] = command + " --changed"
+    changed["criteria"][0]["exit"]["command"] = changed["criteria"][0]["command"]
+    changed["criteria"][0]["exit"]["command_sha256"] = hashlib.sha256(
+        changed["criteria"][0]["command"].encode()
+    ).hexdigest()
+    try:
+        receipts.amend(custody, changed, study_sha256="a" * 64,
+                       runbook_sha256="c" * 64, amendment_sha256="3" * 64,
+                       attempts=[settled])
+    except receipts.Refusal as error:
+        checks.append({"case": "completed-descriptor-frozen", "reason": str(error)})
+    else:
+        raise Refusal("completed-descriptor-change-accepted")
+    unrelated = json.loads(json.dumps(joined))
+    unrelated["criteria"][1]["claim"] = "updated unbuilt claim"
+    unrelated["criteria"][1]["descriptor_sha256"] = "4" * 64
+    amended = receipts.amend(custody, unrelated, study_sha256="a" * 64,
+                             runbook_sha256="c" * 64, amendment_sha256="3" * 64,
+                             attempts=[settled])
+    checks.append({"case": "unrelated-amendment-preserved", "versions": len(amended["versions"])})
+    try:
+        receipts.amend(amended, unrelated, study_sha256="a" * 64,
+                       runbook_sha256="d" * 64, amendment_sha256="3" * 64,
+                       attempts=[settled])
+    except receipts.Refusal as error:
+        checks.append({"case": "duplicate-amendment-refused", "reason": str(error)})
+    else:
+        raise Refusal("duplicate-amendment-accepted")
+    launches = []
+    def validator(attempt, historical_join, **kwargs):
+        launches.append(attempt["attempt_id"])
+        if historical_join["schema"] != receipts.JOIN_SCHEMA:
+            raise Refusal("replay-join")
+        return attempt
+    complete = dict(settled)
+    complete["attempt_id"] = "attempt-unbuilt"
+    complete["criterion_ids"] = ["unbuilt"]
+    complete["study_sha256"] = "a" * 64
+    complete["runbook_sha256"] = "c" * 64
+    terminal = receipts.terminal(amended, [settled, complete],
+                                 run_id="run-proof", validator=validator)
+    receipts.validate_terminal(terminal, amended, [settled, complete],
+                               validator=validator)
+    if len(launches) != 4:
+        raise Refusal("replay-validator-count")
+    checks.append({"case": "replay-preserves-bindings", "validator_calls": len(launches),
+                   "operation_ran": terminal["operation_ran"]})
+    wrong = dict(complete)
+    wrong["runbook_sha256"] = "e" * 64
+    try:
+        receipts.version_for_attempt(amended, wrong)
+    except receipts.Refusal as error:
+        checks.append({"case": "wrong-source-refused", "reason": str(error)})
+    else:
+        raise Refusal("wrong-source-accepted")
+    # A legacy receipt has no declaration or history and remains outside this
+    # adapter; there is deliberately no conversion path here.
+    try:
+        receipts.history({"schema": "legacy"})
+    except receipts.Refusal as error:
+        checks.append({"case": "legacy-no-backfill", "reason": str(error)})
+    else:
+        raise Refusal("legacy-backfill-accepted")
+    inputs.recheck()
+    return inputs, {
+        "schema": "success-criteria-terminal-evidence/v1",
+        "scope": "Read-only completion and historical receipt compatibility specimens.",
+        "controller": {"path": controller_path, "sha256": digest(controller_bytes),
+                       "bytes": len(controller_bytes)},
+        "executor": {"path": executor_path, "sha256": digest(inputs.bytes[executor_path])},
+        "receipts": {"path": receipts_path, "sha256": digest(inputs.bytes[receipts_path])},
+        "inspection_launches": 0,
+        "checks": checks,
+        "sources": inputs.inventory(),
+    }
+
+
 def output_paths(report):
     parts = relative_parts(report)
     if (len(parts) != 3 or parts[:2] != (".hexaemeron", "reports")
@@ -425,6 +558,29 @@ def run(root, candidate, criterion, report_path):
         try:
             require_absent(directory, names)
             inputs, evidence = check_execution_custody(root)
+            command = ("python3 " + SELF + " --candidate " + candidate
+                       + " --criterion " + criterion + " --report " + report_path)
+            report = {"schema": "protasis-design-report/v1", "candidate": candidate,
+                      "criterion": criterion, "value": True, "unit": "boolean",
+                      "command": command, "exit": 0}
+            report_bytes = encoded(report)
+            evidence["report"] = {"path": report_path, "sha256": digest(report_bytes)}
+            inputs.recheck()
+            require_absent(directory, names)
+            write_exclusive(directory, names[1], encoded(evidence))
+            inputs.recheck()
+            write_exclusive(directory, names[0], report_bytes)
+            return report
+        finally:
+            os.close(directory)
+    if criterion == "terminal-compatibility":
+        if candidate != SELECTED:
+            raise Refusal("candidate-not-selected")
+        names = output_paths(report_path)
+        directory = open_directory(root, (".hexaemeron", "reports"), create=True)
+        try:
+            require_absent(directory, names)
+            inputs, evidence = check_terminal_compatibility(root)
             command = ("python3 " + SELF + " --candidate " + candidate
                        + " --criterion " + criterion + " --report " + report_path)
             report = {"schema": "protasis-design-report/v1", "candidate": candidate,

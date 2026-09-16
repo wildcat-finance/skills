@@ -222,9 +222,17 @@ def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict
     if record is None:
         raise Refusal("success-criteria-missing")
     current = gate.validate_with_criteria(Path(root).resolve(), study, runbook)
+    # ``criteria_receipts`` adds a bounded historical version chain beside the
+    # inert admission.  Those fields describe already-recorded source
+    # versions; they are checked by that module and must not make a current
+    # adapter replay look like a command or declaration drift.
+    replay_only = {
+        "attempts", "study_sha256", "runbook_sha256", "versions",
+        "amendments", "terminal", "terminal_receipt", "history",
+    }
     comparable = {
         key: value for key, value in admission.items()
-        if key not in {"attempts", "study_sha256", "runbook_sha256"}
+        if key not in replay_only
     }
     if current != comparable or admission.get("operation_ran") is not False:
         raise Refusal("admission-drift")

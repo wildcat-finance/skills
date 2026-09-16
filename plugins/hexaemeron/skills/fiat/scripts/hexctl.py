@@ -14041,6 +14041,19 @@ def criteria_execution_module():
     return module
 
 
+def criteria_receipts_module():
+    """Load the historical success-criteria receipt adapter."""
+    source = Path(__file__).with_name("criteria_receipts.py")
+    specification = importlib.util.spec_from_file_location(
+        "fiat_criteria_receipts", source
+    )
+    if specification is None or specification.loader is None:
+        die("criteria receipt adapter unavailable", 1)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
 def success_criteria_contract(state: dict) -> bool:
     return (
         as_dict(state.get("contracts")).get("success_criteria")
@@ -14058,6 +14071,7 @@ def capture_success_criteria(base_dir: str, state: dict,
     if not success_criteria_contract(state):
         return None
     adapter = criteria_execution_module()
+    receipts = criteria_receipts_module()
     try:
         criteria = adapter.adapters(Path(base_dir).resolve())[0]
         if criteria.parse(study_data) is None:
@@ -14065,6 +14079,11 @@ def capture_success_criteria(base_dir: str, state: dict,
         admission = adapter.admit(Path(base_dir).resolve(), study_data, runbook_data)
         admission["study_sha256"] = hashlib.sha256(study_data).hexdigest()
         admission["runbook_sha256"] = hashlib.sha256(runbook_data).hexdigest()
+        # Keep the first effective join beside the mutable attempt list.  The
+        # next amendment can then append a new version without invalidating a
+        # result that was honestly observed against the prior source bytes.
+        receipts = criteria_receipts_module()
+        admission["history"] = receipts.new(admission)
         return admission
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission refused: {exc}", 1)
@@ -14086,11 +14105,114 @@ def _criteria_attempts(state: dict) -> list:
     return attempts
 
 
+def _criteria_history(admission: dict) -> dict:
+    """Return historical receipt custody, with a Step 3 compatibility view."""
+    receipts = criteria_receipts_module()
+    stored = admission.get("history")
+    if stored is not None:
+        try:
+            receipts.history(stored)
+        except (receipts.Refusal, OSError, ValueError) as exc:
+            die(f"success criteria receipt history is malformed: {exc}", 1)
+        return stored
+    # Step 3 admissions predate the version chain.  They remain readable and
+    # are given one in-memory baseline solely for replay; no receipt is
+    # fabricated into the old state or ledger.
+    try:
+        return receipts.new({
+            "join": admission.get("join"),
+            "study_sha256": admission.get("study_sha256"),
+            "runbook_sha256": admission.get("runbook_sha256"),
+        })
+    except (receipts.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria legacy receipt cannot replay: {exc}", 1)
+
+
+def _criteria_admission_projection(value: dict) -> dict:
+    """Keep immutable admission fields when comparing a ledger event."""
+    return {
+        key: value[key]
+        for key in value
+        if key not in {"attempts", "history"}
+    }
+
+
+def _criteria_attempt_join(admission: dict, attempt: dict) -> dict:
+    """Resolve one result to the source version that admitted its command."""
+    receipts = criteria_receipts_module()
+    try:
+        return receipts.version_for_attempt(
+            _criteria_history(admission), attempt
+        )["join"]
+    except (receipts.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria result source version is not receipted: {exc}", 1)
+
+
+def _criteria_amendment_candidate(
+    base_dir: str, state: dict, subject: str, candidate: bytes,
+    amendment_sha256: str,
+) -> tuple[dict | None, dict | None]:
+    """Preflight a study/runbook amendment against settled descriptor history."""
+    current = success_criteria_admission(state)
+    # The subject artefact is deliberately allowed to be the candidate bytes
+    # here.  During recovery the canonical path has already been replaced,
+    # so calling receipted_source() for it would reject the exact transaction
+    # this helper is meant to finish.  Read only the other source from its
+    # receipt; the amendment command has already checked the candidate's
+    # bounded bytes and its prior digest.
+    if subject == "study":
+        other = receipted_source(base_dir, state, "runbook")
+        if other is None:
+            return None, None
+        candidate_study, candidate_runbook = candidate, other["text"].encode()
+    elif subject == "runbook":
+        other = receipted_source(base_dir, state, "study")
+        if other is None:
+            return None, None
+        candidate_study, candidate_runbook = other["text"].encode(), candidate
+    else:
+        die(f"unsupported success criteria amendment subject: {subject}")
+
+    if current is None:
+        probe = capture_success_criteria(
+            base_dir, state, candidate_study, candidate_runbook
+        )
+        if probe is not None:
+            die(
+                f"{subject} amendment cannot backfill success-criteria custody "
+                "onto a legacy run"
+            )
+        return None, None
+    probe = capture_success_criteria(base_dir, state, candidate_study, candidate_runbook)
+    if probe is None:
+        die("success criteria amendment removes the declared criteria")
+    receipts = criteria_receipts_module()
+    attempts = current.get("attempts", [])
+    try:
+        historical = _criteria_history(current)
+        updated_history = receipts.amend(
+            historical,
+            probe["join"],
+            study_sha256=probe["study_sha256"],
+            runbook_sha256=probe["runbook_sha256"],
+            amendment_sha256=amendment_sha256,
+            attempts=attempts,
+            kind=subject,
+        )
+    except (receipts.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria amendment refused before mutation: {exc}")
+    updated = dict(probe)
+    updated["attempts"] = list(attempts)
+    updated["history"] = updated_history
+    return updated, updated_history["amendments"][-1]
+
+
 def verify_success_criteria(base_dir: str, state: dict,
                             initial_entry: dict | None,
                             runbook_event: dict | None,
-                            execution_events: list[dict]) -> None:
-    """Replay criterion admission and all attempts without executing commands."""
+                            execution_events: list[dict],
+                            amendment_events: list[dict] | None = None) -> None:
+    """Replay admission, amendments and attempts without executing commands."""
     marker = as_dict(state.get("contracts")).get("success_criteria")
     original = as_dict(
         as_dict(as_dict(initial_entry).get("data")).get("contracts")
@@ -14111,13 +14233,36 @@ def verify_success_criteria(base_dir: str, state: dict,
         return
     if not isinstance(receipt, dict) or event_receipt is None:
         die("success criteria admission is missing from the immutable runbook event", 1)
-    if receipt != event_receipt:
-        # Attempts are appended by run-exit, so compare the immutable admission
-        # after removing that deliberately mutable collection.
+    # The initial runbook event owns the baseline admission.  Attempts are
+    # mutable append-only observations and later source amendments may replace
+    # the active join, so compare the event to the first historical version
+    # rather than to today's whole admission.
+    if not isinstance(event_receipt, dict):
+        die("success criteria admission is missing from the immutable runbook event", 1)
+    receipt_history = _criteria_history(receipt)
+    receipts = criteria_receipts_module()
+    try:
+        versions = receipts.history(receipt_history)
+    except (receipts.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria receipt history does not replay: {exc}", 1)
+    baseline = versions[0]
+    event_projection = _criteria_admission_projection(event_receipt)
+    # A pre-Step-4 receipt has no history and is compared exactly as before;
+    # a versioned receipt additionally proves that the event is its baseline.
+    if receipt.get("history") is None:
         left = dict(receipt); right = dict(event_receipt)
         left.pop("attempts", None); right.pop("attempts", None)
         if left != right:
             die("success criteria admission disagrees with its ledger event", 1)
+    else:
+        baseline_projection = _criteria_admission_projection({
+            **receipt,
+            "join": baseline["join"],
+            "study_sha256": baseline["study_sha256"],
+            "runbook_sha256": baseline["runbook_sha256"],
+        })
+        if event_projection != baseline_projection:
+            die("success criteria baseline admission disagrees with its ledger event", 1)
     study = receipted_source(base_dir, state, "study")
     runbook = receipted_source(base_dir, state, "runbook")
     if study is None or runbook is None:
@@ -14129,7 +14274,7 @@ def verify_success_criteria(base_dir: str, state: dict,
             runbook["text"].encode(),
         {
             key: value for key, value in receipt.items()
-            if key not in {"attempts"}
+            if key not in {"attempts", "history"}
         },
         )
     except (adapter.Refusal, OSError, ValueError) as exc:
@@ -14141,17 +14286,49 @@ def verify_success_criteria(base_dir: str, state: dict,
         die("success criteria attempt bound exceeded", 1)
     if len(execution_events) != len(attempts):
         die("success criteria attempts do not match controller ledger events", 1)
+    if amendment_events is not None:
+        if not isinstance(amendment_events, list):
+            die("success criteria amendment events are malformed", 1)
+        expected_amendments = receipt_history.get("amendments", [])
+        event_amendments = []
+        for event in amendment_events:
+            if not isinstance(event, dict):
+                die("success criteria amendment ledger record is malformed", 1)
+            marker = event.get("success_criteria_amendment")
+            if marker is not None:
+                event_amendments.append(marker)
+        if len(event_amendments) != len(expected_amendments):
+            die("success criteria amendment history does not match the ledger")
+        for marker, expected in zip(event_amendments, expected_amendments):
+            if marker != expected:
+                die("success criteria amendment ledger record disagrees with state")
+    try:
+        receipts.replay(
+            receipt_history,
+            attempts,
+            adapter.validate_result,
+            run_id=controller_run_id(state),
+            init_id=_criteria_init_id(base_dir),
+        )
+    except (receipts.Refusal, adapter.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria result history does not replay: {exc}", 1)
     for attempt, event in zip(attempts, execution_events):
         if not isinstance(event, dict) or event.get("attempt") != attempt:
             die("success criteria attempt ledger record disagrees with state", 1)
+    terminal = as_dict(as_dict(state.get("receipts")).get("integrate")).get(
+        "success_criteria"
+    )
+    if terminal is not None:
         try:
-            adapter.validate_result(
-                attempt, receipt["join"], run_id=controller_run_id(state),
+            receipts.validate_terminal(
+                terminal,
+                receipt_history,
+                attempts,
+                validator=adapter.validate_result,
                 init_id=_criteria_init_id(base_dir),
-                study_sha256=receipt.get("study_sha256"),
             )
-        except (adapter.Refusal, OSError, ValueError) as exc:
-            die(f"success criteria result does not replay: {exc}", 1)
+        except (receipts.Refusal, adapter.Refusal, OSError, ValueError) as exc:
+            die(f"success criteria terminal receipt does not replay: {exc}", 1)
 
 
 def _criteria_success_for_step(base_dir: str, state: dict, step: dict,
@@ -14161,6 +14338,7 @@ def _criteria_success_for_step(base_dir: str, state: dict, step: dict,
     if admission is None:
         return
     adapter = criteria_execution_module()
+    receipts = criteria_receipts_module()
     join = admission.get("join")
     rows = as_dict(join).get("criteria")
     if not isinstance(rows, list):
@@ -14175,14 +14353,27 @@ def _criteria_success_for_step(base_dir: str, state: dict, step: dict,
         matched = False
         for attempt in attempts:
             try:
-                adapter.validate_result(attempt, join,
+                historical_join = _criteria_attempt_join(admission, attempt)
+                adapter.validate_result(attempt, historical_join,
                                         run_id=controller_run_id(state),
                                         init_id=_criteria_init_id(base_dir),
                                         step=step["n"], criterion_id=row["id"],
-                                        study_sha256=admission.get("study_sha256"))
+                                        )
             except (adapter.Refusal, OSError, ValueError):
                 continue
             if not attempt.get("settled"):
+                continue
+            historical_row = next(
+                (item for item in historical_join.get("criteria", [])
+                 if isinstance(item, dict) and item.get("id") == row.get("id")),
+                None,
+            )
+            try:
+                if historical_row is None or not receipts.descriptor_unchanged(
+                    historical_row, row
+                ):
+                    continue
+            except (receipts.Refusal, OSError, ValueError):
                 continue
             if commit_sha is not None:
                 before = as_dict(attempt.get("source_before"))
@@ -14206,6 +14397,25 @@ def _criteria_all_success(base_dir: str, state: dict) -> None:
             _criteria_success_for_step(base_dir, state, step, commit_sha)
 
 
+def _criteria_terminal_receipt(base_dir: str, state: dict) -> dict | None:
+    """Build the final read-only criteria receipt at the integration boundary."""
+    admission = success_criteria_admission(state)
+    if admission is None:
+        return None
+    adapter = criteria_execution_module()
+    receipts = criteria_receipts_module()
+    try:
+        return receipts.terminal(
+            _criteria_history(admission),
+            admission.get("attempts", []),
+            run_id=controller_run_id(state),
+            validator=adapter.validate_result,
+            init_id=_criteria_init_id(base_dir),
+        )
+    except (receipts.Refusal, adapter.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria terminal receipt refused: {exc}", 1)
+
+
 def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | None:
     """Name the next missing consuming-step observation, if one is due."""
     admission = success_criteria_admission(state)
@@ -14221,6 +14431,7 @@ def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | N
     if not isinstance(attempts, list):
         return {"do": "blocked", "reason": "success criteria attempts are malformed"}
     adapter = criteria_execution_module()
+    receipts = criteria_receipts_module()
     criteria_init_id = _criteria_init_id(base_dir) if base_dir is not None else None
     current_commit = None
     if base_dir is not None:
@@ -14239,13 +14450,22 @@ def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | N
         settled = False
         for attempt in attempts:
             try:
+                historical_join = _criteria_attempt_join(admission, attempt)
                 adapter.validate_result(
-                    attempt, admission["join"], run_id=controller_run_id(state),
+                    attempt, historical_join, run_id=controller_run_id(state),
                     init_id=criteria_init_id,
                     step=step["n"], criterion_id=row["id"],
-                    study_sha256=admission.get("study_sha256"),
                 )
             except (adapter.Refusal, OSError, ValueError):
+                continue
+            historical_row = next(
+                (item for item in historical_join.get("criteria", [])
+                 if isinstance(item, dict) and item.get("id") == row.get("id")),
+                None,
+            )
+            if historical_row is None or not receipts.descriptor_unchanged(
+                historical_row, row
+            ):
                 continue
             before = as_dict(attempt.get("source_before"))
             after = as_dict(attempt.get("source_after"))
@@ -14361,6 +14581,16 @@ def cmd_run_exit(args) -> None:
         die(f"run-exit refused: {exc}", 1)
     candidate = dict(admission)
     candidate["attempts"] = [*attempts, result]
+    if candidate.get("history") is None:
+        receipts = criteria_receipts_module()
+        try:
+            candidate["history"] = receipts.new({
+                "join": admission.get("join"),
+                "study_sha256": admission.get("study_sha256"),
+                "runbook_sha256": admission.get("runbook_sha256"),
+            })
+        except (receipts.Refusal, OSError, ValueError) as exc:
+            die(f"success criteria history cannot be initialised: {exc}", 1)
     if sum(adapter.result_data_size(item) for item in candidate["attempts"]) > adapter.MAX_RESULT_BYTES:
         die("success criteria aggregate result-data cap reached", 1)
     state["receipts"]["runbook"]["success_criteria"] = candidate
@@ -14471,8 +14701,13 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     verify_gate_commands(base_dir, state, entries[0], events[-1] if events else None,
                          amendments, allow_source_drift=allow_source_drift, historical_source=data)
     criteria_events = [e["data"] for e in entries if e["event"] == "run-exit"]
+    criteria_amendments = [
+        e["data"] for e in entries
+        if e["event"] in {"amend:study", "amend:runbook"}
+    ]
     verify_success_criteria(
-        base_dir, state, entries[0], events[-1] if events else None, criteria_events
+        base_dir, state, entries[0], events[-1] if events else None, criteria_events,
+        criteria_amendments,
     )
 
 
@@ -18810,6 +19045,12 @@ def done_integrate(args, state: dict) -> None:
     attribution = merged_attribution(args.dir, state, args.merge_commit)
     carried_forward = carried_forward_record(run_pr_path(args.dir))
     carried_forward["filed_issue_contracts"] = filed_issue_contracts
+    # Re-run the complete historical check immediately before the terminal
+    # receipt.  The integration directive checked the same contract before the
+    # merge; this second read closes the gap where a result could be replaced
+    # after that directive but before the final state write.
+    _criteria_all_success(args.dir, state)
+    criteria_terminal = _criteria_terminal_receipt(args.dir, state)
     state["receipts"]["integrate"] = {
         "run_branch": run_branch_of(state),
         "base": integration_base,
@@ -18827,6 +19068,8 @@ def done_integrate(args, state: dict) -> None:
             args.dir, frontier, published
         ) if frontier else [],
     }
+    if criteria_terminal is not None:
+        state["receipts"]["integrate"]["success_criteria"] = criteria_terminal
     if terminal_resolution is not None:
         state["receipts"]["integrate"]["version_resolution"] = terminal_resolution
     if sync:
@@ -19807,6 +20050,11 @@ def _recover_study_amendment(
 
     _check_amended_study(base_dir, canonical)
     recovered = _study_amendment_record(state, prior, canonical)
+    criteria_candidate, criteria_amendment = _criteria_amendment_candidate(
+        base_dir, state, "study", canonical, recovered["amendment_sha256"]
+    )
+    if criteria_amendment is not None:
+        recovered["success_criteria_amendment"] = criteria_amendment
     if recovered.get("runbook_rebinds") != amendment.get("runbook_rebinds"):
         die(
             "pending study amendment runbook_rebinds do not recompute from the "
@@ -19822,6 +20070,8 @@ def _recover_study_amendment(
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
     _apply_study_amendment_receipt(receipt, amendment)
+    if criteria_candidate is not None:
+        receipt["success_criteria"] = criteria_candidate
     _commit_or_complete_study_amendment(base_dir, state, amendment)
     verify_run(base_dir, allow_pending_amendment=True)
     clear_study_amendment_pending(base_dir)
@@ -19874,6 +20124,11 @@ def cmd_amend_study(args) -> None:
 
     _check_amended_study(args.dir, candidate)
     amendment = _study_amendment_record(state, expected, candidate)
+    criteria_candidate, criteria_amendment = _criteria_amendment_candidate(
+        args.dir, state, "study", candidate, amendment["amendment_sha256"]
+    )
+    if criteria_amendment is not None:
+        amendment["success_criteria_amendment"] = criteria_amendment
     _require_capture_aware_amendment_candidate(
         args.dir, state, "study", candidate
     )
@@ -19900,6 +20155,8 @@ def cmd_amend_study(args) -> None:
     # the receipt must name the bytes this command validated, not a later read.
     _replace_study_bytes(canonical_path, candidate)
     _apply_study_amendment_receipt(receipt, amendment)
+    if criteria_candidate is not None:
+        receipt["success_criteria"] = criteria_candidate
     commit(args.dir, state, "amend:study", amendment)
     verify_run(args.dir, allow_pending_amendment=True)
     clear_study_amendment_pending(args.dir)
@@ -19979,6 +20236,11 @@ def _recover_runbook_amendment(
     gate_receipt = capture_gate_commands(base_dir, state, canonical)
     if gate_receipt is not None:
         recovered["gate_commands"] = gate_receipt
+    criteria_candidate, criteria_amendment = _criteria_amendment_candidate(
+        base_dir, state, "runbook", canonical, recovered["amendment_sha256"]
+    )
+    if criteria_amendment is not None:
+        recovered["success_criteria_amendment"] = criteria_amendment
     _check_amended_runbook(base_dir, canonical)
     if recovered != amendment:
         die("pending runbook amendment metadata does not match candidate bytes", 1)
@@ -19991,6 +20253,8 @@ def _recover_runbook_amendment(
     if len(existing_history or []) >= AMENDMENT_HISTORY_MAX:
         die(f"runbook amendment history is capped at {AMENDMENT_HISTORY_MAX}")
     _apply_runbook_amendment_receipt(receipt, amendment)
+    if criteria_candidate is not None:
+        receipt["success_criteria"] = criteria_candidate
     _commit_or_complete_runbook_amendment(base_dir, state, amendment)
     verify_run(base_dir, allow_pending_amendment=True)
     clear_amendment_pending(base_dir, "runbook")
@@ -20042,6 +20306,11 @@ def cmd_amend_runbook(args) -> None:
             )
 
     amendment = _runbook_amendment_record(state, expected, candidate)
+    criteria_candidate, criteria_amendment = _criteria_amendment_candidate(
+        args.dir, state, "runbook", candidate, amendment["amendment_sha256"]
+    )
+    if criteria_amendment is not None:
+        amendment["success_criteria_amendment"] = criteria_amendment
     gate_receipt = capture_gate_commands(args.dir, state, candidate)
     if gate_receipt is not None:
         amendment["gate_commands"] = gate_receipt
@@ -20071,6 +20340,8 @@ def cmd_amend_runbook(args) -> None:
     write_amendment_pending(args.dir, "runbook", pending)
     _replace_runbook_bytes(canonical_path, candidate)
     _apply_runbook_amendment_receipt(receipt, amendment)
+    if criteria_candidate is not None:
+        receipt["success_criteria"] = criteria_candidate
     commit(args.dir, state, "amend:runbook", amendment)
     verify_run(args.dir, allow_pending_amendment=True)
     clear_amendment_pending(args.dir, "runbook")
@@ -29087,6 +29358,7 @@ def verify_run(
     study_event = None
     runbook_event = None
     gate_amendment_events = []
+    criteria_amendment_events = []
     execution_events = []
     inoculation_events = []
     design_transition_events = []
@@ -29118,6 +29390,9 @@ def verify_run(
                 runbook_event = entry.get("data")
             if entry.get("event") == "amend:runbook":
                 gate_amendment_events.append(entry.get("data"))
+                criteria_amendment_events.append(entry.get("data"))
+            if entry.get("event") == "amend:study":
+                criteria_amendment_events.append(entry.get("data"))
             if entry.get("event") == "run-exit":
                 execution_events.append(entry.get("data"))
             if entry.get("event") == "done:study":
@@ -29142,7 +29417,8 @@ def verify_run(
     verify_run_anchor(base_dir, state, initial_entry)
     verify_gate_commands(base_dir, state, initial_entry, runbook_event, gate_amendment_events, allow_source_drift=allow_gate_source_drift)
     verify_success_criteria(
-        base_dir, state, initial_entry, runbook_event, execution_events
+        base_dir, state, initial_entry, runbook_event, execution_events,
+        criteria_amendment_events,
     )
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:

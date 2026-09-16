@@ -239,6 +239,27 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
         self.assertEqual({row["case"] for row in evidence["checks"]}, {
             "completed-zero", "completed-exit-seven", "incremental-stream-overflow",
         })
+
+    def test_terminal_compatibility_report_uses_historical_receipts(self):
+        for relative in (
+            "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py",
+            "plugins/hexaemeron/skills/fiat/scripts/criteria_receipts.py",
+            "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        ):
+            destination = self.root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / relative, destination)
+        report_path = ".hexaemeron/reports/controller-capture-terminal-compatibility.json"
+        report = PROOF.run(self.root, "controller-capture", "terminal-compatibility", report_path)
+        self.assertTrue(report["value"])
+        evidence = json.loads((self.root / (report_path[:-5] + ".evidence.json")).read_bytes())
+        self.assertEqual(evidence["schema"], "success-criteria-terminal-evidence/v1")
+        self.assertEqual(evidence["inspection_launches"], 0)
+        cases = {row["case"]: row for row in evidence["checks"]}
+        self.assertIn("completion-refuses-gaps", cases)
+        self.assertIn("completed-descriptor-frozen", cases)
+        self.assertIn("legacy-no-backfill", cases)
+        self.assertEqual(cases["replay-preserves-bindings"]["operation_ran"], False)
         self.assertEqual(evidence["controller"]["path"],
                          "plugins/hexaemeron/skills/fiat/scripts/hexctl.py")
         self.assertGreater(evidence["controller"]["bytes"], 1_000_000)
