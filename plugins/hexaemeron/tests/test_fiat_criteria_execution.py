@@ -5,7 +5,9 @@ from __future__ import annotations
 import importlib.util
 import pathlib
 import shutil
+import subprocess
 import sys
+import tempfile
 import unittest
 
 
@@ -18,6 +20,20 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CriteriaExecutionTests(unittest.TestCase):
+    def test_source_snapshot_accepts_the_repository_git_object_format(self):
+        with tempfile.TemporaryDirectory(prefix="criteria-source-") as raw:
+            root = pathlib.Path(raw).resolve()
+            subprocess.run(["git", "init", "-q", str(root)], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.name", "Criteria Test"], check=True)
+            subprocess.run(["git", "-C", str(root), "config", "user.email", "criteria@example.invalid"], check=True)
+            (root / "README").write_text("fixture\n")
+            subprocess.run(["git", "-C", str(root), "add", "README"], check=True)
+            subprocess.run(["git", "-C", str(root), "-c", "commit.gpgsign=false", "commit", "-q", "-m", "fixture"], check=True)
+            snapshot = MODULE.source_snapshot(root, require_signed=False)
+        self.assertRegex(snapshot["commit"], r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+        self.assertRegex(snapshot["tree"], r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+        self.assertEqual(snapshot["status"], "clean")
+
     def test_successful_child_is_observed_and_settled(self):
         result = MODULE.execute_argv(
             [sys.executable, "-c", "import sys; sys.stdout.write('ok')"],

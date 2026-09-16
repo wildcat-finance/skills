@@ -19,6 +19,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import selectors
 import shutil
 import signal
@@ -38,6 +39,7 @@ MAX_STREAM_BYTES = 4 * 1024 * 1024
 MAX_ATTEMPT_SECONDS = 1800.0
 READ_CHUNK = 64 * 1024
 SHA256 = __import__("re").compile(r"^[0-9a-f]{64}$")
+GIT_OBJECT_ID = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 
 
 class Refusal(ValueError):
@@ -136,7 +138,7 @@ def source_snapshot(root: str | os.PathLike[str], *, require_signed: bool = True
                   label="source-commit")
     tree = _git(root, ["rev-parse", "--verify", "HEAD^{tree}"],
                 label="source-tree")
-    if SHA256.fullmatch(commit) is None or SHA256.fullmatch(tree) is None:
+    if GIT_OBJECT_ID.fullmatch(commit) is None or GIT_OBJECT_ID.fullmatch(tree) is None:
         raise Refusal("source-identity")
     verified = False
     if require_signed:
@@ -652,8 +654,8 @@ def validate_result(result: dict, join: dict, *, run_id: str | None = None,
                 or os.path.realpath(source["root"]) != source["root"]
                 or source.get("status") not in {"clean", "dirty", "unavailable"}
                 or type(source.get("signed")) is not bool
-                or SHA256.fullmatch(source.get("commit", "")) is None
-                or SHA256.fullmatch(source.get("tree", "")) is None):
+                or GIT_OBJECT_ID.fullmatch(source.get("commit", "")) is None
+                or GIT_OBJECT_ID.fullmatch(source.get("tree", "")) is None):
             raise Refusal("result-source")
     if result.get("cwd") != result["source_before"].get("root") or result["source_before"].get("root") != result["source_after"].get("root"):
         raise Refusal("result-context")
