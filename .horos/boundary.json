@@ -1,12 +1,12 @@
 {
   "counts": {
-    "bytes_binary": 43942262,
+    "bytes_binary": 44001865,
     "bytes_content_addressed": 7850052,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 3880
+    "files_walked": 3897
   },
   "entries": [
     {
@@ -801,6 +801,13 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "plugins/hexaemeron/assets/characters/warden.png"
+    },
+    {
+      "bytes": 59603,
+      "category": "binary",
+      "evidence": "file signature zip",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/checkpoint.zip"
     },
     {
       "bytes": 949,
