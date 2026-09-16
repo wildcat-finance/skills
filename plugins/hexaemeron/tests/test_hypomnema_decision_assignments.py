@@ -206,6 +206,72 @@ class DecisionAssignments(unittest.TestCase):
         report = self.plan()
         self.assertEqual(report["mappings"][0]["number"], 61)
 
+    def test_append_only_numbered_amendment_survives_plan_apply_and_replay(self):
+        relative = sorted((self.repo.path / "docs/decisions").glob("ADR-*.md"))[0]
+        before = relative.read_bytes()
+        amended = before + b"\n## Amendment\n\nPreserve every earlier byte.\n"
+        self.repo.commit_path(relative.relative_to(self.repo.path).as_posix(), amended)
+        report = self.plan()
+        for command in ("replay", "apply"):
+            with self.subTest(command=command):
+                result = run_assignment(self.repo, command)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertEqual(payload(result)["result_tree"], report["result_tree"])
+                self.assertEqual(relative.read_bytes(), amended)
+        run_git(self.repo.path, "add", "-A")
+        self.assertEqual(run_git(self.repo.path, "write-tree"), report["result_tree"])
+
+    def test_numbered_record_rewrite_removal_relocation_and_mode_drift_refuse(self):
+        for change in ("rewrite", "truncate", "prepend", "remove", "relocate", "mode"):
+            with self.subTest(change=change):
+                repo = Repository()
+                try:
+                    path = sorted((repo.path / "docs/decisions").glob("ADR-*.md"))[0]
+                    before = path.read_bytes()
+                    if change == "rewrite":
+                        path.write_bytes(before.replace(b"# ADR-", b"# BAD-", 1))
+                    elif change == "truncate":
+                        path.write_bytes(before[:-1])
+                    elif change == "prepend":
+                        path.write_bytes(b"New preface\n" + before)
+                    elif change == "remove":
+                        path.unlink()
+                    elif change == "relocate":
+                        path.rename(path.with_name("ADR-001-relocated.md"))
+                    else:
+                        path.chmod(0o755)
+                        path.write_bytes(before + b"\nAmendment\n")
+                    run_git(repo.path, "add", "-A")
+                    run_git(repo.path, "commit", "-q", "-m", "mutate inherited record")
+                    repo.product = run_git(repo.path, "rev-parse", "HEAD")
+                    result = run_assignment(repo, "plan", base=repo.base, product=repo.product)
+                    self.assert_refused(result, "inherited-record-drift")
+                finally:
+                    repo.close()
+
+    def test_appended_numbered_record_still_obeys_blob_limit(self):
+        path = sorted((self.repo.path / "docs/decisions").glob("ADR-*.md"))[0]
+        self.repo.commit_path(
+            path.relative_to(self.repo.path).as_posix(),
+            path.read_bytes() + b"x" * assignments.MAX_BLOB_BYTES,
+        )
+        result = run_assignment(
+            self.repo, "plan", base=self.repo.base, product=self.repo.product
+        )
+        self.assert_refused(result, "blob-limit")
+
+    def test_amendment_report_cannot_substitute_the_unamended_result_tree(self):
+        unamended = self.plan()
+        path = sorted((self.repo.path / "docs/decisions").glob("ADR-*.md"))[0]
+        self.repo.commit_path(
+            path.relative_to(self.repo.path).as_posix(), path.read_bytes() + b"\nAmendment\n"
+        )
+        report = self.plan()
+        self.assertNotEqual(report["result_tree"], unamended["result_tree"])
+        report["result_tree"] = unamended["result_tree"]
+        (self.repo.path / self.repo.report).write_bytes(assignments.canonical(report))
+        self.assert_refused(run_assignment(self.repo, "replay"), "report-mismatch")
+
     def test_apply_changes_only_the_path_and_exact_first_heading(self):
         report = self.plan()
         source = self.repo.path / "docs/decisions/drafts/alpha-choice.md"
