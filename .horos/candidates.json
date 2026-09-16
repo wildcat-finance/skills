@@ -1,8 +1,8 @@
 {
   "counts": {
     "bytes_asset": 138,
-    "bytes_binary": 9723,
-    "bytes_blob": 25256796,
+    "bytes_binary": 9962,
+    "bytes_blob": 25292837,
     "bytes_generated": 98
   },
   "entries": [
@@ -929,6 +929,20 @@
       "evidence": "no newline in the first 4096 bytes of 19687 bytes",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/trust-prefix.json"
+    },
+    {
+      "bytes": 239,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/independent-public-key.gpg"
+    },
+    {
+      "bytes": 36041,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 36041 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-profile.json"
     },
     {
       "bytes": 38122,

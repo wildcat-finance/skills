@@ -8,7 +8,7 @@
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 25551194,
+      "bytes": 25557694,
       "files": 1175,
       "suffix": ".md"
     },
@@ -20,14 +20,14 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 16636308,
-      "files": 1327,
+      "bytes": 16701904,
+      "files": 1331,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 15939296,
-      "files": 684,
+      "bytes": 16040542,
+      "files": 695,
       "suffix": ".py"
     },
     {
@@ -71,6 +71,12 @@
       "bytes": 71352,
       "files": 15,
       "suffix": ".yml"
+    },
+    {
+      "boundary_bytes": 59603,
+      "bytes": 59603,
+      "files": 1,
+      "suffix": ".zip"
     },
     {
       "boundary_bytes": 58214,
@@ -187,6 +193,12 @@
       "suffix": ".tsx"
     },
     {
+      "boundary_bytes": 0,
+      "bytes": 239,
+      "files": 1,
+      "suffix": ".gpg"
+    },
+    {
       "boundary_bytes": 146,
       "bytes": 146,
       "files": 1,
@@ -219,6 +231,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 119169029,
-  "total_files": 3888
+  "total_bytes": 119402213,
+  "total_files": 3905
 }

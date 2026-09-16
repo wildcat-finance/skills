@@ -44,7 +44,7 @@ class ImplementedConformanceTests(unittest.TestCase):
 
     def test_later_criteria_still_refuse_without_execution(self):
         with mock.patch.object(subject,'_execute',side_effect=AssertionError('later gate executed')):
-            for criterion in subject.CRITERIA[1:]:
+            for criterion in subject.CRITERIA[2:]:
                 status,event=self.invoke(criterion)
                 self.assertEqual(status,3);self.assertFalse(event['complete'])
                 self.assertEqual(event['executed_cases'],[])
