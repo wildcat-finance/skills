@@ -266,3 +266,38 @@ retain. ephoros applies to the freshness reporting.
 demonstrably does what this runbook says. Closing it earlier would mean closing
 an epic whose components are open, which is how the previous programme ended up
 with a study that disclaimed itself.
+
+## Amendment, 2026-09-16: Replace the #862 construction packet
+
+The [adopted specification](checkpoint-authority/specimens/adopted-specification.md)
+replaces Step 3's single construction packet with P-862 followed by service
+packets A, B and C. Every original byte above remains preserved. Each packet
+still names one repository and its own Fiat delivery. The service repository
+now exists, so repository creation is no longer an unmet entry condition.
+
+1. Skills #1676 delivers P-862 through the five steps in the
+   [protocol runbook](checkpoint-authority/runbook.md). It publishes closed
+   records, signature semantics, native coverage, ordered replay, Ariadne gates
+   and an immutable interoperable release before any service consumer adopts it.
+2. Service #1 delivers packet A: authenticated quarantine and isolated native
+   validation against that release, preserving the native containment limits.
+3. Service #2 delivers packet B: conditional R2 publication, independent
+   authorization, exact receipt copies and finite publication finalization.
+4. Service #3 delivers packet C: private exact retrieval and complete replay
+   that reconstructs authority without trusting the database or rolling back
+   below a remembered head. All ten service steps and AC01 through AC20 must
+   pass before Skills #862 closes.
+
+Step 4 remains Skills #863 and now applies ADR-071's R2 amendment: separate
+Cloudflare accounts in the EU, indefinite locks, single conditional PUT and
+full GET verification. It owns production KMS custody in `eu-west-2`, the
+independent complete journal/fresh-head service and deployment evidence. The
+old S3 version-retention and IAM delete-deny wording does not describe R2.
+The runtime credential cannot change locks; the effective lock supplies
+protection. Shared-provider risk and unproved geographic independence remain.
+
+Steps 5 through 8 retain their owners: #864 controller fences, #865 full
+frontier and resolution, #866 disaster recovery and physical-removal drills,
+and #867 public Atlas integration. P-862's minimal private lookup and parent
+profile cannot close those steps. #859 closes last. This sequence authorizes
+no cloud creation, spending, access change, deployment or physical deletion.

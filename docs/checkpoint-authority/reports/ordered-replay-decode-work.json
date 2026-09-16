@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "ordered-replay",
+  "criterion": "decode-work",
+  "value": 1280,
+  "unit": "count",
+  "command": "python3 .hexaemeron/study-evidence/design_probe.py --out .hexaemeron/reports",
+  "exit": 0
+}
