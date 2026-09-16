@@ -1,0 +1,9 @@
+{
+  "candidate": "position-boundary",
+  "command": "python3.14 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "extra-release-components",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
