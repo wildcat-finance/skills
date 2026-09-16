@@ -89,6 +89,43 @@ class GateCommandTests(unittest.TestCase):
             with self.subTest(suffix=suffix), self.assertRaises(gates.Refusal):
                 gates.validate_command(ROOT, COMMAND + suffix)
 
+    def test_named_mode_choice_and_runner_epilog_load_without_execution(self):
+        import ast
+        parser, _ = gates.interface(ROOT, BREVITAS)
+        self.assertEqual(parser.parse_args(['--mode', 'fiat-audit-record']).mode,
+                         'fiat-audit-record')
+        runner = 'scripts/run_checks.py'
+        parser, _ = gates.interface(ROOT, runner)
+        self.assertEqual(parser.parse_args(['--jobs', '12', '--plan']).jobs, 12)
+        original = (ROOT / runner).read_text()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / runner
+            path.parent.mkdir(parents=True)
+            marker = root / 'executed'
+            for value in ('None', 'True', '12', '["help"]',
+                          '__import__("pathlib").Path(' + repr(str(marker)) + ').touch()'):
+                tree = ast.parse(original)
+                builder = next(node for node in tree.body
+                               if isinstance(node, ast.FunctionDef) and node.name == 'build_parser')
+                epilog = next(kw for kw in builder.body[0].value.keywords if kw.arg == 'epilog')
+                epilog.value = ast.parse(value, mode='eval').body
+                path.write_text(ast.unparse(tree))
+                with self.subTest(epilog=value), self.assertRaisesRegex(
+                        gates.Refusal, 'unsupported-cli-constructor-option'):
+                    gates.interface(root, runner)
+                self.assertFalse(marker.exists())
+
+    def test_named_declaration_accepts_only_unique_module_literals(self):
+        import ast
+        for value in ('MODE', 'call()', '"prefix" + "suffix"'):
+            with self.subTest(value=value), self.assertRaises(gates.Refusal):
+                gates.literal(ast.parse('MODE', mode='eval').body,
+                              ast.parse('MODE = ' + value))
+        with self.assertRaises(gates.Refusal):
+            gates.literal(ast.parse('MODE', mode='eval').body,
+                          ast.parse('MODE = "one"\nMODE = "two"'))
+
     def test_shell_comment_tilde_and_literal_argv_substitution_refuse(self):
         for suffix in (' # ignored', ' ~/draft.md', ' "#literal"', ' "~literal"'):
             with self.subTest(suffix=suffix), self.assertRaises(gates.Refusal):

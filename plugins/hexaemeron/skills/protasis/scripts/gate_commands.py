@@ -28,7 +28,7 @@ REGISTRY = {
     **{PREFIX + name + "/scripts/" + name + ".py": "main"
        for name in ("protasis", "imprimatur", "phylax", "ephoros", "hypomnema")},
 }
-MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '4b86d2a66c31b83569a71c278ae2e5650cf4a84c39c1bf2bdb4ac4a7203865bc', 'scripts/run_checks.py': 'd31a43b5909fdb242d61136714972e26b202adc09fa082eb3859368817cb791f', 'plugins/hexaemeron/tests/run_tests.py': '25834ae4d1915444352afe27cc1b88864b72850ec85cdf5cd14f4b290526f931', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': '5ae65fc4ba221bd3ab6c12bd6b5388f4eca6da8082843ea57bfb3895239de706', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': '9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
+MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': '79981b3478b8e067a4e151c3ff6ca164ae2a5ef4ae585ebb8cf4a4a54b4001a5', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': '5ae65fc4ba221bd3ab6c12bd6b5388f4eca6da8082843ea57bfb3895239de706', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': '9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})([^\n]*)$")
 LOOP = re.compile(r'\Afor file in (?P<items>[^;\n]+)(?:;|\n)\s*do(?:[ \t]+|\n)(?P<body>[^;\n]+)(?:;|\n)\s*done\s*\Z')
 ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`;\s*report file:\s*`([^`\n]+)`')
@@ -91,11 +91,21 @@ class InertParser(argparse.ArgumentParser):
         raise Refusal('cli-exit-option')
 
 
-def literal(node):
+def literal(node, tree=None):
     if isinstance(node, ast.Constant) and type(node.value) in (str, int, bool, type(None)):
         return node.value
     if isinstance(node, (ast.Tuple, ast.List)):
-        return [literal(value) for value in node.elts]
+        return [literal(value, tree) for value in node.elts]
+    if isinstance(node, ast.Name) and tree is not None:
+        constants = [statement for statement in tree.body
+                     if isinstance(statement, ast.Assign) and len(statement.targets) == 1
+                     and isinstance(statement.targets[0], ast.Name)
+                     and statement.targets[0].id == node.id]
+        if len(constants) != 1:
+            raise Refusal('ambiguous-cli-constant')
+        # The module binding was checked before reaching this declaration.
+        # Read one literal assignment; aliases and expressions stay unsupported.
+        return literal(constants[0].value)
     raise Refusal('nonliteral-cli-declaration')
 
 
@@ -173,6 +183,8 @@ def interface(root: Path, path: str):
             for kw in call.keywords:
                 if kw.arg == 'formatter_class' and ast.unparse(kw.value) == 'argparse.RawDescriptionHelpFormatter':
                     continue
+                if kw.arg == 'epilog' and isinstance(kw.value, ast.Constant) and type(kw.value.value) is str:
+                    continue
                 if kw.arg not in ('description', 'prog') or not (isinstance(kw.value, ast.Constant) or isinstance(kw.value, ast.Name) and kw.value.id == '__doc__'):
                     raise Refusal('unsupported-cli-constructor-option')
             constructed = True
@@ -201,7 +213,7 @@ def interface(root: Path, path: str):
                             raise Refusal('ambiguous-cli-default')
                         kwargs[kw.arg] = literal(constants[0].value)
                     else:
-                        kwargs[kw.arg] = literal(kw.value)
+                        kwargs[kw.arg] = literal(kw.value, tree)
             nargs = kwargs.get('nargs')
             if not (nargs is None or type(nargs) is int and 0 <= nargs <= 128 or type(nargs) is str and nargs in ('?', '*', '+')):
                 raise Refusal('unsupported-cli-nargs')

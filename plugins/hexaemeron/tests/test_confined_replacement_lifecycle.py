@@ -200,9 +200,16 @@ class ConfinedReplacementLifecycleTests(unittest.TestCase):
         fresh.run_ctl('--dir', str(current), 'verify')
         alias = Path(fresh.dir) / 'run-alias'
         alias.symlink_to(current, target_is_directory=True)
-        refused = fresh.run_ctl('--dir', str(alias), 'verify', expect=1)
-        self.assertIn('replacement admission receipt does not replay', refused.stderr)
+        controller_paths = [current / '.hexaemeron' / name for name in ('state.json', 'ledger.jsonl')]
+        before_alias = [path.read_bytes() for path in controller_paths]
+        refused = fresh.run_ctl('--dir', str(alias), 'verify', expect=2)
+        self.assertIn('no-known transaction directory is not one stable no-follow directory',
+                      refused.stderr)
+        with self.assertRaisesRegex(replacement.worker.Refusal, 'unsafe-target-root'):
+            replacement.verify_receipt(controller, alias, controller.load_state(str(current)))
+        self.assertEqual(before_alias, [path.read_bytes() for path in controller_paths])
         alias.unlink()
+        fresh.run_ctl('verify')
         self.observations['integration-refuses-mismatch'] = refusals
         receipt = fresh.state()['receipts']['runbook']['gate_commands']
         self.assertFalse(receipt['operation_ran'])

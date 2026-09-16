@@ -14063,7 +14063,8 @@ def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
             die(f"gate source stale or invalid: {exc}; submit a freshly validated runbook amendment", 1)
 
 
-def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: bool = True) -> None:
+def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: bool = True,
+                            allow_pending_no_known: bool = False) -> None:
     """Allow only current interface drift while checking preserved recovery custody."""
     with open(ledger_path(base_dir), encoding="utf-8") as handle:
         first = next((json.loads(line) for line in handle if line.strip()), {})
@@ -14073,7 +14074,19 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
         return
     entries = _intact_ledger_entries(base_dir, "gate recovery")
     if state_fingerprint(state) != entries[-1]["state"]:
-        die("gate recovery state differs from ledger", 1)
+        pending = load_no_known_transaction(base_dir, state) if allow_pending_no_known else None
+        # A sealed no-known transaction writes the ledger before the state.
+        # Admit only that exact edge to its existing recovery handler; no
+        # other state/ledger disagreement becomes ordinary mutation authority.
+        if not (
+            pending is not None
+            and len(entries) >= 2
+            and state_fingerprint(state) == pending["state_before_sha256"]
+            and entries[-1] == pending["ledger_entry"]
+            and entries[-2]["hash"] == pending["ledger_head"]
+            and entries[-2]["state"] == pending["state_before_sha256"]
+        ):
+            die("gate recovery state differs from ledger", 1)
     marker = as_dict(state.get("contracts")).get("gate_commands")
     original = as_dict(as_dict(entries[0].get("data")).get("contracts")).get("gate_commands")
     if marker != original:
@@ -29734,8 +29747,16 @@ def main() -> None:
             args._init_preflight = init_preflight(args)
         with held_lock(args.dir, args.fn.__name__):
             if args.fn.__name__ not in ("cmd_init", "cmd_halt", "cmd_resume", "cmd_reset", "cmd_amend_runbook"):
-                candidate_state = load_state(args.dir, allow_pending_replacement=True, allow_pending_amendment=True, allow_pending_resolution=True)
-                gate_recovery_preflight(args.dir, candidate_state, allow_source_drift=False)
+                recovering_no_known = args.fn.__name__ == "cmd_done" and args.phase == "inoculate"
+                candidate_state = load_state(
+                    args.dir, allow_pending_replacement=True,
+                    allow_pending_amendment=True, allow_pending_resolution=True,
+                    allow_pending_no_known=recovering_no_known,
+                )
+                gate_recovery_preflight(
+                    args.dir, candidate_state, allow_source_drift=False,
+                    allow_pending_no_known=recovering_no_known,
+                )
             args.fn(args)
         return
     args.fn(args)
