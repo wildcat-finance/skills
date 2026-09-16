@@ -5836,6 +5836,15 @@ class GitHubSignerDiagnosis(unittest.TestCase):
         self.assertIn("signed by GitHub", captured.getvalue())
         self.assertIn("B5690EEEBB952194", captured.getvalue())
 
+    def test_final_green_path_is_closed(self):
+        with mock.patch.dict(os.environ, {"PATH": "/caller"}):
+            env = self.hexctl._final_green_environment()
+        paths = env["PATH"].split(os.pathsep)
+        self.assertEqual(os.path.dirname(os.path.abspath(sys.executable)), paths[0])
+        self.assertNotIn("/caller", paths)
+        self.assertEqual("1", env["GIT_NO_REPLACE_OBJECTS"])
+        self.assertTrue(set(os.defpath.split(os.pathsep)) <= set(paths))
+
     def test_signature_prover_skips_github_signed_commits_when_finding_local_signer(self):
         import importlib.util
 

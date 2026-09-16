@@ -108,3 +108,30 @@ the audit and prose phases.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds.
+
+### Amendment -- 2026-09-16
+
+**What changed.** Complete replacement Files: Change
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/tests/test_hexctl.py`,
+`plugins/hexaemeron/tests/test_version_relations.py`, and
+`tests/prove_signature_only_refusals.py`. Create
+`docs/fiat-1660-github-signature-refusal-study.md`,
+`docs/fiat-1660-github-signature-refusal-runbook.md`, and
+`docs/fiat-1660-github-signature-refusal-demonstration.md` as the run's
+operator-facing records. Keep
+`docs/decisions/ADR-099-accept-any-validly-signed-authorship.md` as the
+standing decision record; do not edit it in this step. Permit only the
+configured append-only audit record and deterministic Horos files if their
+owning checks change them.
+
+**Why.** The closed final-green environment must retain its replacement-object
+barrier, so the two existing replacement-object tests need an explicit fixture
+opt-in. The same environment needs the pinned interpreter directory and fixed
+platform tool directories on `PATH` so nested `python3` and `gpg` calls use the
+checked toolchain. These changes are required to run the declared suite on this
+host and keep the source-bound guard proof reviewable.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds.

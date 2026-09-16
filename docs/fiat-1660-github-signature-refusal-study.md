@@ -296,3 +296,25 @@ material or changing the selected design.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds.
+
+### Amendment -- 2026-09-16
+
+**What changed.** Step 1 now permits a minimal final-green runner environment
+repair in `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`: closed children
+put the running interpreter's directory and the existing fixed platform tool
+directories on `PATH`, while `GIT_NO_REPLACE_OBJECTS=1`, Git configuration
+isolation, no lazy fetch, fixed argv, timeout, and output caps remain in force.
+The two version-relation fixtures may opt into replacement objects only around
+their ordinary-versus-native assertions.
+
+**Why.** On this macOS host, the previous closed `PATH` selected the unsupported
+system `python3` and could not find `gpg`, so the declared final-green suites
+could not execute the checked-in toolchain. The replacement-object assertions
+also need an explicit local opt-in because the closed runner correctly disables
+ambient replacement refs. This changes the runner environment and test fixture
+setup only; it does not change signature admission, the ledger, Git
+configuration, or the selected key-refusal design.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds.

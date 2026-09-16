@@ -12599,14 +12599,16 @@ def _final_green_executable(argv: list[str]) -> list[str]:
     return [sys.executable, *argv[1:]]
 
 
-def _final_green_run(
-    base_dir: str, argv: list[str], cwd: str, label: str
-) -> int:
-    """Run one declared fixed-tree command with no shell and a closed child."""
-    directory = scoped_path(base_dir, cwd, f"{label} working directory")
-    if not os.path.isdir(directory):
-        die(f"{label} working directory is not present")
-    environment = {
+def _final_green_environment() -> dict[str, str]:
+    """Build the closed child environment without caller-controlled PATH."""
+    directories = [
+        os.path.dirname(os.path.abspath(sys.executable)),
+        *os.defpath.split(os.pathsep),
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+        "/opt/local/bin",
+    ]
+    return {
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_NO_LAZY_FETCH": "1",
@@ -12614,12 +12616,24 @@ def _final_green_run(
         "GIT_TERMINAL_PROMPT": "0",
         "LANG": "C",
         "LC_ALL": "C",
-        "PATH": os.defpath,
+        "PATH": os.pathsep.join(
+            dict.fromkeys(path for path in directories if os.path.isabs(path))
+        ),
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONNOUSERSITE": "1",
         "PYTHONUTF8": "1",
         "TZ": "UTC",
     }
+
+
+def _final_green_run(
+    base_dir: str, argv: list[str], cwd: str, label: str
+) -> int:
+    """Run one declared fixed-tree command with no shell and a closed child."""
+    directory = scoped_path(base_dir, cwd, f"{label} working directory")
+    if not os.path.isdir(directory):
+        die(f"{label} working directory is not present")
+    environment = _final_green_environment()
     try:
         completed = subprocess.run(
             argv,
