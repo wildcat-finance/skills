@@ -39,6 +39,11 @@ FROZEN = {
 }
 DESIGN_CHECKER = "plugins/hexaemeron/skills/protasis/scripts/design_evidence.py"
 BRIDGE_CHECKER = "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
+DECLARATION_SOURCE = "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py"
+PROTASIS_SOURCE = "plugins/hexaemeron/skills/protasis/scripts/protasis.py"
+GATE_SOURCE = "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
+STUDY_SOURCE = PACKAGE + "/study.md"
+RUNBOOK_SOURCE = PACKAGE + "/runbook.md"
 MAX_INPUT_BYTES = 1024 * 1024
 MAX_TOTAL_BYTES = 8 * 1024 * 1024
 DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
@@ -210,7 +215,7 @@ def check_design_home(root):
     inputs.recheck()
     return inputs, {
         "schema": "success-criteria-scaffold-evidence/v1",
-        "scope": "Design-home join and policy specimens; future controller conformance remains unavailable.",
+        "scope": "Design-home join and policy specimens; later controller conformance remains separate.",
         "interpreter": {"path": sys.executable, "version": python_version},
         "sources": inputs.inventory(),
         "checks": [
@@ -218,6 +223,106 @@ def check_design_home(root):
             {"name": "protasis-design-selection", "selected": SELECTED, "consumed": selection},
             {"name": "policy-specimen-replay", "observations": observations},
         ],
+    }
+
+
+def check_declaration_contract(root):
+    """Exercise the pure declaration contract and the real inert adapter.
+
+    Every source used by the adapter is read into the companion inventory. The
+    checks operate on bytes and temporary Markdown specimens only; no target
+    module is imported by the adapter and no registered command is launched.
+    """
+    inputs = Inputs(root)
+    inputs.read(SELF)
+    python_version = inputs.read(".python-version").decode("ascii").strip()
+    if python_version != ".".join(map(str, sys.version_info[:3])):
+        raise Refusal("interpreter-version-mismatch")
+    study = inputs.read(STUDY_SOURCE)
+    runbook = inputs.read(RUNBOOK_SOURCE)
+    inputs.read(DECLARATION_SOURCE)
+    inputs.read(PROTASIS_SOURCE)
+    inputs.read(GATE_SOURCE)
+    gates = load_module(root / GATE_SOURCE, "criteria_gate_commands")
+    parser = load_module(root / DECLARATION_SOURCE, "criteria_success_criteria")
+    for relative in gates.REGISTRY:
+        inputs.read(relative)
+    record = parser.parse(study)
+    if record is None or len(record["criteria"]) != 8:
+        raise Refusal("declaration-record-missing-or-incomplete")
+    admission = gates.validate_with_criteria(root, study, runbook)
+    joined = admission.get("join")
+    if (not isinstance(joined, dict) or joined.get("schema") != parser.JOIN_SCHEMA
+            or len(joined.get("criteria", [])) != len(record["criteria"])
+            or admission.get("operation_ran") is not False):
+        raise Refusal("adapter-declaration-join-invalid")
+
+    observations = []
+    malformed = b"```success-criteria\n{\"schema\":\"" + parser.SCHEMA.encode()
+    malformed += b"\",\"criteria\":[]}\n```\n"
+    try:
+        parser.parse(malformed)
+    except parser.Refusal as error:
+        observations.append({"case": "empty-criteria", "reason": str(error)})
+    else:
+        raise Refusal("malformed-declaration-accepted")
+
+    # A descriptor must name the active Exit field, not a Tests-only command or
+    # the wrong consuming step.
+    first = dict(record["criteria"][0])
+    wrong_step = dict(first)
+    wrong_step["step"] = 1 if first["step"] != 1 else 2
+    try:
+        parser.join({"schema": parser.SCHEMA, "criteria": [wrong_step]}, runbook)
+    except parser.Refusal as error:
+        observations.append({"case": "wrong-step", "reason": str(error)})
+    else:
+        raise Refusal("wrong-step-join-accepted")
+
+    # The current runbook has accepted amendments. Prove that the latest
+    # replacement is active and the previous literal is no longer admitted.
+    amended = (
+        "## Step 1: Amendment specimen\n\n"
+        "**Goal.** Check.\n**Entry.** Clean.\n"
+        "**Exit.** Run `python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py old.md`.\n"
+        "**Files.** `old.md`.\n**Tests.** Parser.\n**Disciplines.** none.\n\n"
+        "### Amendment -- 2026-09-16\n\n"
+        "**What changed.** Complete replacement Exit: Run `python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py new.md`.\n"
+        "**Why.** The fixture changed.\n**Steps touched.** Step 1.\n"
+        "**Still holding.** Step 1: entry holds; exit holds.\n"
+    )
+    old = {"schema": parser.SCHEMA, "criteria": [{
+        "id": "amended-old", "claim": "old", "step": 1,
+        "command": "python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py old.md",
+    }]}
+    new = {"schema": parser.SCHEMA, "criteria": [{
+        "id": "amended-new", "claim": "new", "step": 1,
+        "command": "python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py new.md",
+    }]}
+    try:
+        parser.join(old, amended)
+    except parser.Refusal as error:
+        observations.append({"case": "superseded-exit", "reason": str(error)})
+    else:
+        raise Refusal("superseded-exit-accepted")
+    if len(parser.join(new, amended)["criteria"]) != 1:
+        raise Refusal("amended-exit-not-effective")
+    observations.append({
+        "case": "adapter-admission",
+        "criteria": len(joined["criteria"]),
+        "commands": len(admission["gate_commands"]["commands"]),
+        "declaration_sha256": admission["declaration_sha256"],
+        "runbook_sha256": joined["runbook_sha256"],
+        "adapter_sha256": admission["gate_commands"]["adapter_sha256"],
+        "operation_ran": False,
+    })
+    inputs.recheck()
+    return inputs, {
+        "schema": "success-criteria-declaration-evidence/v1",
+        "scope": "Pure bounded declaration parsing and inert effective-Exit admission.",
+        "interpreter": {"path": sys.executable, "version": python_version},
+        "sources": inputs.inventory(),
+        "checks": observations,
     }
 
 
@@ -250,9 +355,9 @@ def write_exclusive(directory, name, data):
 
 def run(root, candidate, criterion, report_path):
     """Write a fresh design report and companion evidence after the checks pass."""
-    if criterion in FUTURE:
+    if criterion not in ("design-home", "declaration-contract") and criterion in FUTURE:
         raise Refusal("operation-not-implemented:" + criterion + ":step-" + str(FUTURE[criterion]))
-    if criterion != "design-home":
+    if criterion not in ("design-home", "declaration-contract"):
         raise Refusal("unknown-operation")
     if candidate != SELECTED:
         raise Refusal("candidate-not-selected")
@@ -260,7 +365,10 @@ def run(root, candidate, criterion, report_path):
     directory = open_directory(root, (".hexaemeron", "reports"), create=True)
     try:
         require_absent(directory, names)
-        inputs, evidence = check_design_home(root)
+        if criterion == "design-home":
+            inputs, evidence = check_design_home(root)
+        else:
+            inputs, evidence = check_declaration_contract(root)
         command = ("python3 " + SELF + " --candidate " + candidate
                    + " --criterion " + criterion + " --report " + report_path)
         report = {"schema": "protasis-design-report/v1", "candidate": candidate,

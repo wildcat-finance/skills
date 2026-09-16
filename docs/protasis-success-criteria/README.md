@@ -1,9 +1,10 @@
 # Declared success criteria: Step 1 evidence
 
 This package publishes the accepted #1273 study, runbook, design selection and
-decision. `proof.py` checks their design-home join and replays the selection
-specimens. The declaration, execution, completion and joined-controller
-operations remain unavailable until their owning steps land.
+decision. `proof.py` checks their design-home join, replays the selection
+specimens and, after Step 2, checks the bounded declaration and effective-Exit
+join against the inert command adapter. Execution, completion and the joined
+controller demonstration remain pending their owning steps.
 
 ## Run the design-home check
 
@@ -33,9 +34,24 @@ companion without its report; inspect that evidence and choose a fresh report
 name for a deliberate retry. The companion records local observations and is
 not a signed attestation or a controller receipt.
 
+## Declaration contract
+
+The Step 2 resolver checks the single `success-criteria` fence in the accepted
+study, rejects malformed or ambiguous rows, and binds every descriptor to one
+effective registered Exit command. It does not execute a command or claim that
+the command's result settles its claim:
+
+```bash
+python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion declaration-contract --report .hexaemeron/reports/controller-capture-declaration-contract.json
+```
+
+The report has the same source-bound companion format as the design-home check;
+the companion records the declaration, runbook, adapter and interpreter
+digests, plus named refusal observations. Both output files must be absent
+before a run.
+
 ## What remains unavailable
 
-- `declaration-contract`: implementation Step 2.
 - `execution-custody`: implementation Step 3.
 - `terminal-compatibility`: implementation Step 4.
 - `joined-demonstration`: implementation Step 5.

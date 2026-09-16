@@ -67,6 +67,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import importlib.util
 import json
 import re
 import sys
@@ -149,6 +150,21 @@ DESIGN_LOCK_INFO = "design-lock"
 DESIGN_LOCK_SCHEMA = "protasis-design-evidence/v1"
 DESIGN_LOCK_FIELDS = ("schema", "sha256", "candidate")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _success_criteria_module():
+    """Load the sibling declaration parser without importing a target module."""
+    try:
+        import success_criteria
+        return success_criteria
+    except ImportError:
+        path = Path(__file__).with_name("success_criteria.py")
+        spec = importlib.util.spec_from_file_location("protasis_success_criteria", path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
 
 class Finding:
@@ -858,6 +874,20 @@ def check_study(path: Path) -> list[Finding]:
         ))
         return findings
 
+    # The declaration is optional for legacy studies, but when its fence is
+    # present it is a closed source-bound interface.  Keep the existing study
+    # findings and add one bounded finding rather than allowing malformed JSON
+    # to pass as ordinary prose.
+    try:
+        _success_criteria_module().parse("\n".join(lines))
+    except Exception as exc:
+        reason = str(exc)
+        if not reason or any(not character.isprintable() for character in reason):
+            reason = "success-criteria-invalid"
+        findings.append(Finding(
+            path, 1, "S009", "success-criteria declaration refused: " + reason,
+        ))
+
     for number in sorted(ITEMS):
         name = ITEMS[number]
         occurrences = spans.get(number, [])
@@ -899,10 +929,15 @@ def main(argv: list[str] | None = None) -> int:
                              "instead of runbooks against the step schema")
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--gate-root", help="validate registered runbook commands without executing them")
+    parser.add_argument("--criteria", help="admit a success-criteria declaration with the registered runbook commands")
     args = parser.parse_args(argv)
 
     if args.study and args.gate_root:
         parser.error("--gate-root applies only to runbooks")
+    if args.study and args.criteria:
+        parser.error("--criteria applies only to runbooks")
+    if args.criteria and not args.gate_root:
+        parser.error("--criteria requires --gate-root")
     checker = check_study if args.study else check
     findings: list[Finding] = []
     for name in args.paths:
@@ -912,8 +947,16 @@ def main(argv: list[str] | None = None) -> int:
                 source = Path(name)
                 captured = gate_commands.read_source(source.absolute().parent, source.name, gate_commands.MAX_DOCUMENT)
                 findings.extend(check(source, captured=captured))
-                gate_commands.validate(Path(args.gate_root).resolve(), captured)
-            except (gate_commands.Refusal, OSError) as exc:
+                if args.criteria:
+                    criteria = Path(args.criteria)
+                    declaration = gate_commands.read_source(
+                        criteria.absolute().parent, criteria.name,
+                        gate_commands.MAX_DOCUMENT)
+                    gate_commands.validate_with_criteria(
+                        Path(args.gate_root).resolve(), declaration, captured)
+                else:
+                    gate_commands.validate(Path(args.gate_root).resolve(), captured)
+            except (gate_commands.Refusal, ValueError, OSError) as exc:
                 findings.append(Finding(Path(name), 1, "P008", str(exc)))
         else:
             findings.extend(checker(Path(name)))
