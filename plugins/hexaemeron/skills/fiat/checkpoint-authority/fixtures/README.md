@@ -1,4 +1,4 @@
-# Checkpoint authority fixture home
+Checkpoint authority fixture home.
 
 The manifest names the selected candidate and four pending conformance gates.
 Its empty `cases` and `implemented_criteria` arrays explicitly mean that no
