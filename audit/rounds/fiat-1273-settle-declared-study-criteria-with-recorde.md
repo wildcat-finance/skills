@@ -61,3 +61,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: None. round-4-phylax.json, round-4-ephoros.json, round-4-hypomnema.json and round-4-root-suite.json record the clean follow-up. No additional product change or audit lead was identified; Step 1 is ready for its audit close and prose handoff. --audit-filter sapheneia:sapheneia was applied with every protected item retained.
+
+## Step 2, round 1 -- 2026-09-16T16:44:20Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: declaration-shape=reviewed; exit-identity=reviewed; execution-authority=reviewed; source-binding=reviewed; subprocess-input=reviewed; partial-result=not-applicable; amendment-history=reviewed; completion-gap=not-applicable; legacy-replay=not-applicable; checkpoint-context=not-applicable; resource-growth=reviewed; self-hosting=reviewed; release-copies=reviewed; claim-boundary=reviewed
+
+Not checked: Step 2 does not launch a target command or claim an execution result. Child execution custody, interrupted attempts, retries, terminal completion, legacy replay, checkpoint restore and the successor demonstration remain due in Steps 3-5. The selection measurements remain synthetic observations. No Solidity changed; the packet's security-suite waiver applies.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: None. The pure bounded parser and inert adapter were reviewed against the exact Step 2 commit f04918a2cd89573914db65cf275c4e146262655f. Focused criteria tests, the full Hex Exit (3,395 tests, zero failures/errors, five skips and one expected failure), the checked runner (13/13 checks green), the staged root gate (2,047 tests), fresh Phylax, Ephoros and Hypomnema lints, and the fresh root suite (2,047 tests) passed. Evidence is under .hexaemeron/evidence/warden-step-2-round-1/: review.json records the bounded review and its exclusions; phylax.json, ephoros.json, hypomnema.json and root-suite.json retain the fresh mechanical checks. No actionable lead was identified. --audit-filter sapheneia:sapheneia was applied with every protected item retained.
