@@ -144,8 +144,18 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual(2, refused.exception.code)
         self.assertIn("not one stable bounded regular file", errors.getvalue())
 
-    def prepare_capture(self, *, assigned=False, assigned_step=1, amendable=False):
-        self.init()
+    def prepare_capture(self, *, assigned=False, assigned_step=1, amendable=False,
+                        current_gates=False):
+        if current_gates:
+            cli = "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
+            source_root = Path(__file__).resolve().parents[3]
+            self.write(cli, (source_root / cli).read_text())
+            self.git("add", "--", cli)
+            self.git("commit", "-q", "-m", "fixture current command source")
+            self.run_ctl("init", "--topic", "Current no-known recovery")
+            self.write_design_evidence()
+        else:
+            self.init()
         source_path = "audit/rounds/source.md"
         source = "fixture audit source\n"
         source_sha256 = hashlib.sha256(source.encode()).hexdigest()
@@ -243,7 +253,8 @@ class InoculationLifecycleTests(HexctlCase):
         else:
             runbook_text += (
                 "**Goal.** Exercise the pre-implementation transition.\n\n"
-                "**Exit.** The source-bound transition is checked.\n"
+                + ("**Exit.** Run `python3 " + cli + " study.md`.\n"
+                   if current_gates else "**Exit.** The source-bound transition is checked.\n")
             )
         titles = ["Guarded step"]
         if assigned and assigned_step == 2:
@@ -380,12 +391,14 @@ class InoculationLifecycleTests(HexctlCase):
         tracked_product=False,
         tracked_executable=False,
         tracked_gitlink=False,
+        current_gates=False,
     ):
         """Put a zero-assigned Step on its exact clean pre-edit branch."""
         _directive, source_path = self.prepare_capture(
             assigned=assigned,
             assigned_step=assigned_step,
             amendable=amendable,
+            current_gates=current_gates,
         )
         paths = [
             "study.md",
@@ -2606,6 +2619,49 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertTrue(completion.is_file())
         self.assertTrue(intent.is_file())
         self.run_ctl("verify")
+
+    def recover_current_no_known_transaction(self, *, state_written):
+        self.prepare_no_known_boundary(current_gates=True)
+        self.write_no_known_findings()
+        controller = hexctl_module()
+        state = controller.load_state(self.target)
+        self.assertEqual("protasis-gate-commands/v1", state["contracts"]["gate_commands"])
+        replace_state = controller._replace_no_known_state
+
+        def interrupt_state(*args):
+            if state_written:
+                replace_state(*args)
+            raise KeyboardInterrupt("fixture pending no-known state window")
+
+        with (
+            mock.patch.object(controller, "_replace_no_known_state", side_effect=interrupt_state),
+            controller.held_lock(self.target, "cmd_done"),
+            self.assertRaises(KeyboardInterrupt),
+        ):
+            controller.done_inoculate(argparse.Namespace(dir=self.target), state)
+        before = self.controller_bytes()
+        blocked = self.run_ctl("record", "security_suite", '"waived: fixture"', expect=2)
+        self.assertIn("transaction is pending", blocked.stderr)
+        self.assertEqual(before, self.controller_bytes())
+
+        runbook = Path(self.target, "runbook.md")
+        original = runbook.read_bytes()
+        runbook.write_bytes(original + b"\nChanged after transaction staging.\n")
+        refused = self.run_ctl("done", "inoculate", expect=2)
+        self.assertIn("runbook", refused.stderr)
+        self.assertEqual(before, self.controller_bytes())
+        runbook.write_bytes(original)
+
+        recovered = self.run_ctl("done", "inoculate")
+        self.assertIn("phase -> implement", recovered.stdout)
+        self.assertEqual("implement", self.state()["steps"][0]["phase"])
+        self.run_ctl("verify")
+
+    def test_current_no_known_recovers_between_ledger_and_state(self):
+        self.recover_current_no_known_transaction(state_written=False)
+
+    def test_current_no_known_recovers_after_state_before_marker_retirement(self):
+        self.recover_current_no_known_transaction(state_written=True)
 
     def test_no_known_completion_binds_the_exact_full_ledger_entry(self):
         self.prepare_no_known_boundary()
