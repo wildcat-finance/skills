@@ -1,0 +1,120 @@
+{
+  "schema": "wildcat.kickoff-review.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1485",
+  "reviewer": {
+    "identity": "independent agent",
+    "chosen_by": "Dr Laurence E. Day, in the reviewer question of the decision comment",
+    "boundary": "an agent session with no authorship of the record, given read-only instructions and no permission to edit. It is not a GitHub review and not a human reviewer."
+  },
+  "method": "two rounds. Each checked every file:line against the named file at the named commit, recomputed every digest and byte count, confirmed each topic0 literal is present inside the named emit_ function and equals cast keccak of its declared signature, re-ran the branch relations and the carrier survey, and read the emit sites to judge each actor class. Round two also enumerated every caller of every emit-bearing function across all 118 src/ paths at the candidate.",
+  "rounds": [
+    {
+      "round": 1,
+      "verdict": "not accurate as written",
+      "blocking": 7,
+      "notes": 14,
+      "blocking_findings": [
+        {
+          "id": 1,
+          "claim": "src/spherex/SphereXProtectedEvents.sol is byte-identical at both commits",
+          "source": "1262 bytes at the base against 1261 at the candidate; pragma solidity ^0.8.20 becomes pragma solidity 0.8.25",
+          "resolution": "corrected; the candidate copy and its digest were added to sources.json"
+        },
+        {
+          "id": 2,
+          "claim": "release/v2.6 event signatures match the deployed base",
+          "source": "its indexed-actor signatures match, but it drops SanctionedAccountAssetsSentToEscrow and adds WrapperRegistered",
+          "resolution": "corrected; release/v2.6 is now recorded as not a carrier with both differences stated"
+        },
+        {
+          "id": 3,
+          "claim": "five refs carry the revision",
+          "source": "seven of the twenty branch heads carry it; codex/issue-128-singleton-hook-specialisation and feat-mv2-adapter were missing",
+          "resolution": "corrected; the survey now reads every branch head and both refs are in the rejected table"
+        },
+        {
+          "id": 4,
+          "claim": "bea503c2 is the newest carrier",
+          "source": "deploy/sepolia-v2.5.4 is a carrier with a later tip, 2026-09-07, and is a 2-commit descendant",
+          "resolution": "corrected; the claim is now that the selected commit is the newest carrier contributing Solidity of its own"
+        },
+        {
+          "id": 5,
+          "claim": "AnnualInterestAndReserveRatioBipsUpdated is gated onlyBorrower on both paths; actor class debtor",
+          "source": "a third path, executePendingAnnualInterestBipsReduction at src/market/WildcatMarketConfig.sol:202, has no caller restriction; its natspec at :199 calls it permissionless and it reaches the shared emit through :218",
+          "resolution": "corrected; the class is now caller, the third path is named, and the hook condition at :205 is recorded. This changed a ratified semantic and was reported to the decision-maker, whose approved option text already read 'caller on config'"
+        },
+        {
+          "id": 6,
+          "claim": "#1381 receives the eight events whose topic count rose, with both topic0 values each",
+          "source": "only five events have a topic0 at each commit and a raised topic count",
+          "resolution": "corrected; the five are named with their log1-to-log2 and log1-to-log3 transitions"
+        },
+        {
+          "id": 7,
+          "claim": "the reviewer report sits in evidence/review.json",
+          "source": "no such file existed",
+          "resolution": "resolved; this file"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "verdict": "not accurate as written",
+      "blocking": 1,
+      "notes": 6,
+      "blocking_findings": [
+        {
+          "id": 1,
+          "claim": "SphereXProtectedEvents.sol has four emitters",
+          "source": "it has five: emit_ChangedSpherexOperator, emit_ChangedSpherexEngineAddress, emit_SpherexAdminTransferStarted, emit_SpherexAdminTransferCompleted and emit_NewAllowedSenderOnchain",
+          "resolution": "corrected to five in all three files"
+        }
+      ],
+      "notes_resolved": [
+        "the eleven-row explanation did not account for the Wrapper row, and the .md said eleven where the JSON said twelve; the .md table now carries the cancel row and both read twelve",
+        "'the withdrawal events also carry unchanged indexed actors' over-generalised; only WithdrawalQueued and WithdrawalExecuted index an address, and the four batch events index only expiry",
+        "src/market/WildcatMarketRevolving.sol and src/interfaces/IWildcatMarketRevolving.sol were named as preserved emitter paths without digests; both are now pinned",
+        "the APR gate field read as wholly ungated; it now records the hook condition at src/market/WildcatMarketConfig.sol:205",
+        "commands.json described the diverged carriers as only behind the selected commit; it now records that each is both ahead and behind"
+      ],
+      "outstanding": [
+        "docs/kickoff/1372/ was untracked at review time, which the committing pull request resolves"
+      ]
+    }
+  ],
+  "verified": {
+    "topic0_cases": {
+      "count": 22,
+      "mismatches": 0,
+      "check": "each literal present inside the named emit_ function's block, the header matching the signature's event name, and cast keccak equal to both recorded values",
+      "tool": "cast Version: 1.7.1"
+    },
+    "digests_recomputed": {
+      "count": 13,
+      "failures": 0,
+      "scope": "the base and candidate source files, deployments/sepolia/source-v2-5-4.txt, deployments/sepolia/v2-5-4.json, and targets.md and targets.json at 1d131b98",
+      "note": "round two re-ran these after the corrections, including the added entries"
+    },
+    "file_line_references": {
+      "signature_delta": 48,
+      "actor_semantics": 49,
+      "suspect": 0
+    },
+    "branch_relations": "every ahead and behind count matches gh api compare",
+    "carrier_survey": {
+      "branch_heads_read": 20,
+      "carriers": 7,
+      "note": "tag v2.5.4 resolves to the selected commit itself, so tags add no carrier"
+    },
+    "emit_site_completeness": "every caller of every emit-bearing function across all 118 src/ paths at the candidate was enumerated; no path the record omits reaches a recorded emit site",
+    "decision_comment": {
+      "bytes": 4020,
+      "sha256": "df2c84dda76ea03d3ebdcae01944788b794a773e9dbd8e1c515a0fa9e564830d",
+      "result": "byte-identical to live comment 5714361463, never edited; all four selections agree with the record"
+    },
+    "actor_classes": "payer, caller and registry-derived owner assignments agree with the source. repay, repayAndProcessUnpaidWithdrawalBatches and collectFees are permissionless at the candidate. The one disagreement was the APR class, now corrected",
+    "overclaiming": "no mainnet claim, no defect-free claim, no audit claim"
+  },
+  "boundary": "the reviewer checked the record against its named sources. It did not audit the candidate, judge whether the decision is right, or establish that the candidate is free of defects."
+}
