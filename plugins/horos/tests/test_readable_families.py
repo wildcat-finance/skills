@@ -101,11 +101,23 @@ def git(root, *args):
     )
 
 
-def check_attr_set(root, relpath):
-    """True when `git check-attr` reports either linguist attribute set."""
+def check_attr_set(root, relpath, env=None):
+    """True when `git check-attr` reports either linguist attribute set.
+
+    Dropping every `GIT_*` name leaves `HOME` and `XDG_CONFIG_HOME` behind, and
+    the per-user attributes file under either one still decides a path the
+    throwaway repository's own `.gitattributes` leaves unspecified. Two case
+    bodies below hold such paths, so without this pin the comparison would
+    answer one way here and another on a maintainer whose
+    `~/.config/git/attributes` names one of them. A `core.attributesFile` given
+    on the command line outranks that default, and the path it names is never
+    written.
+    """
     completed = subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
         [
             "git",
+            "-c",
+            "core.attributesFile=" + os.path.join(root, ".absent-attributes"),
             "-C",
             root,
             "check-attr",
@@ -116,7 +128,7 @@ def check_attr_set(root, relpath):
         ],
         capture_output=True,
         check=True,
-        env=git_env(),
+        env=env or git_env(),
     )
     states = []
     for line in completed.stdout.decode("utf-8", errors="replace").splitlines():
@@ -396,6 +408,33 @@ class GitParityTests(unittest.TestCase):
                         expected,
                         f"{name}: {relpath} covered={covered}, git set={expected}",
                     )
+
+    def test_a_per_user_attributes_file_does_not_move_the_comparison(self):
+        """The comparison answers the same on every host.
+
+        `family-under-a-set-line` leaves `docs/manifest.json` unspecified in
+        the tree, which is exactly where git falls back to the per-user file.
+        Horos reads no such file, so an unpinned comparison would report the
+        family excluded on a maintainer carrying this rule and readable here.
+        """
+        home = tempfile.TemporaryDirectory()
+        self.addCleanup(home.cleanup)
+        write(home.name, ".config/git/attributes", "docs/** linguist-generated\n")
+        env = git_env()
+        env["HOME"] = home.name
+        env["XDG_CONFIG_HOME"] = os.path.join(home.name, ".config")
+        body = dict(
+            (name, (body, files)) for name, body, files in ATTRIBUTE_CASES
+        )["family-under-a-set-line"]
+        root = self.build(*body)
+        result = horos.scan_tree(root)
+        for relpath in ("docs/manifest.json", "docs/notes.md"):
+            with self.subTest(path=relpath):
+                self.assertFalse(
+                    check_attr_set(root, relpath, env=env),
+                    f"{relpath}: a per-user attributes file reached check-attr",
+                )
+                self.assertIsNone(covering_entry(result, relpath))
 
 
 @unittest.skipIf(GIT is None, "git unavailable")
