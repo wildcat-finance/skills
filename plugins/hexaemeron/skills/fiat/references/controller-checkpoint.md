@@ -97,6 +97,15 @@ state's stored capture digests, its step, phase and step parent must equal the
 captured Step's, and every manifest digest it names must be the digest of a
 `controller/` file the capsule actually carries.
 
+## Success-criteria demonstration
+
+The Step 5 joined demonstration is a separate readback over a disposable
+Git-backed fixture. It binds the successor controller bytes and source commit,
+records the shared Exit and its bounded refusal cases, and keeps terminal
+replay read-only. Its zero inspection-launch count is evidence about that
+fixture only; it is not a completion receipt or a claim that a criterion is
+semantically sufficient.
+
 ## Read boundary
 
 Every source component must be a UTF-8 path no longer than 1,024 bytes. Empty,

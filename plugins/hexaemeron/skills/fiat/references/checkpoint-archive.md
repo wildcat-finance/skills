@@ -123,6 +123,13 @@ streaming each entry.
 
 ## Results and proof
 
+The success-criteria joined demonstration is related evidence, not an archive
+member. It runs the successor controller in a disposable Git-backed fixture,
+binds the source and command identities, and records bounded positive and
+negative outcomes. Its terminal replay reports `operation_ran:false` and zero
+inspection launches; checkpoint archive restore remains the authority for
+recreating a run and executes no directive.
+
 Each command prints one canonical JSON object on stdout.
 
 `fiat-checkpoint-archive-export/v1`, from `archive`: `archive`, `sidecar`,

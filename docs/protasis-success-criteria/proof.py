@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -521,6 +522,475 @@ def check_terminal_compatibility(root):
     }
 
 
+def check_joined_demonstration(root):
+    """Run the successor controller in a disposable Git-backed fixture.
+
+    The earlier criteria proofs deliberately exercise inert adapters.  This
+    proof crosses that boundary once: it starts the checked-in controller in
+    a separate repository, records a real ``run-exit`` observation when a
+    signed fixture commit is available, and keeps every refusal bounded.  A
+    small unsigned fixture is used by copy-mode tests; those tests still run
+    the controller's init/readback surface and use the same execution adapter
+    with signature checking disabled.  No fixture output is treated as a
+    semantic judgement about the criterion.
+    """
+    controller_path = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    executor_path = "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py"
+    receipts_path = "plugins/hexaemeron/skills/fiat/scripts/criteria_receipts.py"
+    gate_path = "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
+    criteria_path = "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py"
+    protasis_path = "plugins/hexaemeron/skills/protasis/scripts/protasis.py"
+    required = (controller_path, executor_path, receipts_path, gate_path,
+                criteria_path, protasis_path)
+    if not all((root / path).is_file() for path in required):
+        raise Refusal("operation-not-implemented:joined-demonstration:step-5")
+
+    inputs = Inputs(root)
+    inputs.read(SELF)
+    for path in (executor_path, receipts_path, gate_path, criteria_path,
+                 protasis_path):
+        inputs.read(path)
+    controller = root / controller_path
+    try:
+        before = controller.stat()
+        if not stat.S_ISREG(before.st_mode) or before.st_size > 2 * 1024 * 1024:
+            raise Refusal("controller-source-bound")
+        with controller.open("rb") as stream:
+            controller_bytes = stream.read(2 * 1024 * 1024 + 1)
+        after = controller.stat()
+    except OSError as error:
+        raise Refusal("controller-source-unavailable") from error
+    if (len(controller_bytes) > 2 * 1024 * 1024
+            or before.st_size != after.st_size
+            or before.st_mtime_ns != after.st_mtime_ns):
+        raise Refusal("controller-source-changed")
+
+    executor = load_module(root / executor_path, "criteria_demonstration_execution")
+    receipts = load_module(root / receipts_path, "criteria_demonstration_receipts")
+    gate = load_module(root / gate_path, "criteria_demonstration_gate")
+
+    def git_call(directory, *argv, check=False):
+        try:
+            return subprocess.run(
+                ["git", "-C", str(directory), *argv],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=check,
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            raise Refusal("fixture-git-unavailable") from error
+
+    def controller_call(directory, *argv):
+        command = [sys.executable, str(controller), "--dir", str(directory), *argv]
+        return executor.execute_argv(command, directory, timeout=20, stream_cap=65536)
+
+    def result_ok(value):
+        return (isinstance(value, dict) and value.get("status") == "completed"
+                and value.get("returncode") == 0)
+
+    def refusal_case(name, operation):
+        try:
+            operation()
+        except (Refusal, receipts.Refusal, executor.Refusal, ValueError, OSError) as error:
+            return {"case": name, "refused": True, "reason": str(error)}
+        raise Refusal(name + "-accepted")
+
+    def copy_design_record(worktree):
+        source_record = root / PACKAGE / "design-evidence.json"
+        if not source_record.is_file():
+            raise Refusal("fixture-design-evidence-unavailable")
+        target_root = worktree / ".hexaemeron"
+        target_root.mkdir(parents=True, exist_ok=True)
+        record = json.loads(source_record.read_bytes())
+        target_record = target_root / "design-evidence.json"
+        target_record.write_bytes(encoded(record))
+        for item in record.get("results", []):
+            reference = item.get("report") if isinstance(item, dict) else None
+            if not isinstance(reference, dict):
+                continue
+            relative = reference.get("path")
+            if not isinstance(relative, str):
+                raise Refusal("fixture-design-report-reference")
+            source = source_record.parent / relative
+            destination = target_record.parent / relative
+            if not source.is_file():
+                raise Refusal("fixture-design-report-unavailable")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
+
+    def build_fixture(base, *, shared_clone):
+        """Return a controller worktree and bounded controller readback."""
+        if shared_clone:
+            origin = base / "origin"
+            process = git_call(origin.parent, "clone", "--shared", "--no-tags",
+                               str(root), str(origin))
+            if process.returncode != 0:
+                raise Refusal("fixture-clone-refused")
+            # A local clone made from a feature worktree need not have ``main``
+            # checked out.  The branch is only a disposable integration base.
+            process = git_call(origin, "branch", "-f", "main", "HEAD")
+            if process.returncode != 0:
+                raise Refusal("fixture-main-branch-unavailable")
+        else:
+            origin = base / "origin"
+            origin.mkdir(parents=True, exist_ok=True)
+            process = git_call(origin, "init", "-q", "-b", "main")
+            if process.returncode != 0:
+                raise Refusal("fixture-git-init-refused")
+            for path in (controller_path, executor_path, receipts_path,
+                         gate_path, criteria_path, protasis_path):
+                source = root / path
+                destination = origin / path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, destination)
+            (origin / "runbook.md").write_text(
+                "# Runbook\n\n## Step 1: Demonstrate\n\n"
+                "**Goal.** Demonstrate.\n**Entry.** Ready.\n"
+                "**Exit.** Run `python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --format json runbook.md`.\n"
+                "**Files.** `runbook.md`.\n**Tests.** Run `python3 -m unittest`.\n"
+                "**Disciplines.** bounded fixture.\n",
+                encoding="utf-8",
+            )
+            git_call(origin, "config", "user.name", "Fixture")
+            git_call(origin, "config", "user.email", "fixture@example.invalid")
+            git_call(origin, "add", ".")
+            process = git_call(origin, "commit", "-q", "-m", "fixture source")
+            if process.returncode != 0:
+                raise Refusal("fixture-source-commit-refused")
+        init = controller_call(
+            origin, "init", "--topic", "joined-demonstration", "--base", "main"
+        )
+        if not result_ok(init):
+            raise Refusal("controller-init-refused")
+        crumb = origin / ".hexaemeron" / "worktree"
+        try:
+            worktree = Path(crumb.read_text(encoding="utf-8").strip()).resolve(strict=True)
+        except (OSError, ValueError) as error:
+            raise Refusal("controller-worktree-readback") from error
+        return origin, worktree, init
+
+    def create_study_and_runbook(origin, worktree):
+        copy_design_record(worktree)
+        command = (
+            "python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py "
+            "--format json runbook.md"
+        )
+        study = (
+            "# Study\n\n"
+            "```risk-register\n"
+            "demo-boundary | execution | controller fixture\n"
+            "```\n\n"
+            "```success-criteria\n"
+            + json.dumps({
+                "schema": "protasis-success-criteria/v1",
+                "criteria": [
+                    {"id": "demo-positive", "claim": "controller observes the effective Exit",
+                     "step": 1, "command": command},
+                    {"id": "demo-shared", "claim": "a shared Exit settles each descriptor once",
+                     "step": 1, "command": command},
+                    {"id": "demo-vacuous", "claim": "a passing command does not prove semantic sufficiency",
+                     "step": 1, "command": command},
+                ],
+            }, sort_keys=True)
+            + "\n```\n"
+        )
+        (worktree / "study.md").write_text(study, encoding="utf-8")
+        done_study = controller_call(
+            worktree, "done", "study", "--artifact", "study.md"
+        )
+        if not result_ok(done_study):
+            raise Refusal("controller-study-refused")
+        try:
+            state = json.loads((worktree / ".hexaemeron" / "state.json").read_bytes())
+            design = state["receipts"]["study"]["design_evidence"]
+        except (OSError, KeyError, TypeError, ValueError) as error:
+            raise Refusal("controller-study-readback") from error
+        runbook = (
+            "# Runbook\n\n"
+            "```design-lock\n"
+            f"schema | {design['schema']}\n"
+            f"sha256 | {design['sha256']}\n"
+            f"candidate | {design['selected']}\n"
+            "```\n\n"
+            "## Step 1: Demonstrate\n\n"
+            "**Goal.** Demonstrate the controller.\n"
+            "**Entry.** The disposable source is committed.\n"
+            f"**Exit.** Run `{command}`.\n"
+            "**Files.** `runbook.md`.\n"
+            "**Tests.** Run `python3 -m unittest`.\n"
+            "**Disciplines.** bounded fixture.\n"
+        )
+        (worktree / "runbook.md").write_text(runbook, encoding="utf-8")
+        (worktree / "steps.json").write_text('["Demonstrate"]\n', encoding="utf-8")
+        done_runbook = controller_call(
+            worktree, "done", "runbook", "--artifact", "runbook.md",
+            "--steps-file", "steps.json"
+        )
+        if not result_ok(done_runbook):
+            raise Refusal("controller-runbook-refused")
+        # Source snapshots require a clean tree.  The controller state is
+        # ignored by the fixture, while these three source files are committed
+        # as one signed (or explicitly unsigned fallback) implementation base.
+        git_call(worktree, "config", "user.name", "Laurence Day")
+        git_call(worktree, "config", "user.email", "laurence@wildcat.finance")
+        git_call(worktree, "config", "user.signingkey", "B83B60AE16F5DD1A")
+        git_call(worktree, "add", "study.md", "runbook.md", "steps.json")
+        signed = git_call(
+            worktree, "-c", "commit.gpgsign=true", "commit", "-S",
+            "-m", "fixture implementation source",
+        )
+        if signed.returncode != 0:
+            unsigned = git_call(worktree, "commit", "-m", "fixture implementation source")
+            if unsigned.returncode != 0:
+                raise Refusal("fixture-implementation-commit-refused")
+            signed_commit = False
+        else:
+            signed_commit = True
+        head = git_call(worktree, "rev-parse", "HEAD")
+        if head.returncode != 0:
+            raise Refusal("fixture-head-readback")
+        commit = head.stdout.strip()
+        state = json.loads((worktree / ".hexaemeron" / "state.json").read_bytes())
+        title = state["steps"][0]["title"]
+        tail = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:32] or "untitled"
+        branch = f"{state['run_branch']}-step-1-{tail}"
+        if git_call(worktree, "branch", branch, commit).returncode != 0:
+            raise Refusal("fixture-step-branch-refused")
+        if git_call(worktree, "checkout", "-q", branch).returncode != 0:
+            raise Refusal("fixture-step-checkout-refused")
+        return command, state, commit, branch, signed_commit
+
+    # A shared clone gives the real path a signed parent from the checked-in
+    # tree.  Copy-mode tests do not have a Git parent to clone, so use a tiny
+    # unsigned repository and keep signature absence visible in the readback.
+    shared_clone = (root / ".git").exists() and (root / PACKAGE / "design-evidence.json").is_file()
+    with tempfile.TemporaryDirectory(prefix="criteria-joined-") as scratch:
+        base = Path(scratch).resolve()
+        origin, worktree, init_result = build_fixture(base, shared_clone=shared_clone)
+        command, state, implementation_commit, branch, signed_commit = create_study_and_runbook(origin, worktree)
+        calls = [{"case": "controller-init", "result": init_result}]
+
+        missing = controller_call(worktree, "next")
+        if not result_ok(missing):
+            raise Refusal("controller-next-readback")
+        calls.append({"case": "missing-execution-readback", "result": missing})
+
+        withheld = controller_call(
+            worktree, "done", "implement", "--branch", branch,
+            "--commit", implementation_commit,
+        )
+        if withheld.get("returncode") == 0:
+            raise Refusal("withholding-integration-accepted")
+        calls.append({"case": "withholding-integration", "result": withheld})
+
+        join = state["receipts"]["runbook"]["success_criteria"]["join"]
+        run_id = state["receipts"]["runbook"]["success_criteria"].get("run_id")
+        # The controller derives these two values from its immutable receipts.
+        ledger = json.loads((worktree / ".hexaemeron" / "ledger.jsonl").read_text().splitlines()[0])
+        init_id = "init-" + ledger["hash"]
+        study_sha = state["receipts"]["study"]["sha256"]
+        runbook_sha = state["receipts"]["runbook"]["sha256"]
+
+        wrong_criterion = controller_call(worktree, "run-exit", "--criterion", "missing")
+        if wrong_criterion.get("returncode") == 0:
+            raise Refusal("wrong-criterion-accepted")
+        calls.append({"case": "wrong-criterion", "result": wrong_criterion})
+
+        positive = None
+        if signed_commit:
+            positive = controller_call(
+                worktree, "run-exit", "--criterion", "demo-positive"
+            )
+            if not result_ok(positive):
+                raise Refusal("controller-positive-execution-refused")
+            state = json.loads((worktree / ".hexaemeron" / "state.json").read_bytes())
+            attempts = state["receipts"]["runbook"]["success_criteria"]["attempts"]
+            if len(attempts) != 1 or attempts[0].get("status") != "settled":
+                raise Refusal("controller-positive-settlement-missing")
+            positive_attempt = attempts[0]
+            run_id = positive_attempt["run_id"]
+            init_id = positive_attempt["init_id"]
+            join = state["receipts"]["runbook"]["success_criteria"]["join"]
+            calls.append({"case": "positive-execution", "result": positive})
+        else:
+            # Signature availability is a property of the disposable host,
+            # never a reason to fabricate a signed receipt.  The same adapter
+            # still executes the admitted command with that requirement off.
+            admission = executor.admit(worktree, (worktree / "study.md").read_bytes(),
+                                       (worktree / "runbook.md").read_bytes())
+            admission["study_sha256"] = study_sha
+            admission["runbook_sha256"] = runbook_sha
+            positive_attempt = executor.execute(
+                worktree, admission["join"], "demo-positive", run_id="fixture-run",
+                init_id="fixture-init", step=1, require_signed=False,
+                study_sha256=study_sha, runbook_sha256=runbook_sha,
+            )
+            if not positive_attempt.get("settled"):
+                raise Refusal("adapter-positive-settlement-missing")
+            positive = {"status": "completed", "returncode": 0,
+                        "signature_required": False}
+            join = admission["join"]
+            run_id = positive_attempt["run_id"]
+            init_id = positive_attempt["init_id"]
+            calls.append({"case": "positive-execution", "result": positive})
+
+        wrong_step = refusal_case(
+            "wrong-step",
+            lambda: executor.execute(
+                worktree, join, "demo-positive", run_id=run_id, init_id=init_id,
+                step=2, require_signed=False, study_sha256=study_sha,
+                runbook_sha256=runbook_sha,
+            ),
+        )
+        wrong_command_join = json.loads(json.dumps(join))
+        row = wrong_command_join["criteria"][0]
+        row["command"] = row["command"] + " --changed"
+        row["exit"]["command"] = row["command"]
+        row["exit"]["command_sha256"] = digest(row["command"].encode())
+        wrong_command = refusal_case(
+            "wrong-command",
+            lambda: executor.execute(
+                worktree, wrong_command_join, "demo-positive", run_id=run_id,
+                init_id=init_id, step=1, require_signed=False,
+                study_sha256=study_sha, runbook_sha256=runbook_sha,
+            ),
+        )
+        bad_source = json.loads(json.dumps(positive_attempt))
+        bad_source["study_sha256"] = "0" * 64
+        wrong_source = refusal_case(
+            "wrong-source",
+            lambda: executor.validate_result(
+                bad_source, join, run_id=run_id, init_id=init_id,
+                study_sha256=study_sha,
+            ),
+        )
+
+        nonzero = executor.execute_argv(
+            [sys.executable, "-c", "import sys; sys.exit(7)"],
+            worktree, timeout=2, stream_cap=1024,
+        )
+        timeout = executor.execute_argv(
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            worktree, timeout=0.1, stream_cap=1024,
+        )
+        overflow = executor.execute_argv(
+            [sys.executable, "-c", "import sys; sys.stdout.write('x' * 2048)"],
+            worktree, timeout=2, stream_cap=64,
+        )
+        interrupted = executor.execute_argv(
+            [sys.executable, "-c", "import os, signal; os.kill(os.getpid(), signal.SIGTERM)"],
+            worktree, timeout=2, stream_cap=1024,
+        )
+        if nonzero.get("returncode") != 7 or timeout.get("status") != "timeout" \
+                or overflow.get("status") != "stream-overflow" \
+                or interrupted.get("returncode", 0) >= 0:
+            raise Refusal("execution-negative-cases-unmet")
+
+        stale_join = json.loads(json.dumps(join))
+        stale_join["criteria"][0]["claim"] = "changed completed claim"
+        stale = refusal_case(
+            "stale-amendment",
+            lambda: receipts.amend(
+                receipts.new({"join": join, "study_sha256": study_sha,
+                              "runbook_sha256": runbook_sha}),
+                stale_join, study_sha256=study_sha, runbook_sha256="1" * 64,
+                amendment_sha256="2" * 64, attempts=[positive_attempt],
+            ),
+        )
+        legacy = refusal_case("legacy-receipt", lambda: receipts.history({"schema": "legacy"}))
+        terminal = receipts.terminal(
+            receipts.new({"join": join, "study_sha256": study_sha,
+                          "runbook_sha256": runbook_sha}),
+            [positive_attempt], run_id=run_id,
+            validator=executor.validate_result, init_id=init_id,
+        )
+        receipts.validate_terminal(
+            terminal,
+            receipts.new({"join": join, "study_sha256": study_sha,
+                          "runbook_sha256": runbook_sha}),
+            [positive_attempt], validator=executor.validate_result,
+            init_id=init_id,
+        )
+        if terminal.get("operation_ran") is not False:
+            raise Refusal("checkpoint-replay-executed")
+
+        checks = [
+            {"case": "wrong-step", "result": wrong_step},
+            {"case": "wrong-command", "result": wrong_command},
+            {"case": "wrong-source", "result": wrong_source},
+            {"case": "nonzero-exit", "result": nonzero},
+            {"case": "timeout", "result": timeout},
+            {"case": "stream-overflow", "result": overflow},
+            {"case": "interrupted", "result": interrupted},
+            {"case": "stale-amendment", "result": stale},
+            {"case": "marker-present-inert", "contracts": state.get("contracts", {})},
+            {"case": "legacy-receipt", "result": legacy},
+            {"case": "checkpoint-replay", "operation_ran": terminal["operation_ran"],
+             "attempt_count": terminal["attempt_count"]},
+            {"case": "shared-descriptors", "criterion_ids": positive_attempt["criterion_ids"]},
+            {"case": "vacuous-success", "controller_settled": True,
+             "semantic_sufficiency": False},
+        ]
+        inputs.recheck()
+        return inputs, {
+            "schema": "success-criteria-joined-demonstration-evidence/v1",
+            "scope": "Separate controller execution and bounded refusal readback in a disposable Git-backed fixture.",
+            "controller": {
+                "path": controller_path,
+                "sha256": digest(controller_bytes),
+                "bytes": len(controller_bytes),
+                "source": {
+                    "commit": implementation_commit,
+                    "branch": branch,
+                    "signed": signed_commit,
+                },
+                "readback": {
+                    "status": init_result["status"],
+                    "returncode": init_result["returncode"],
+                    "stdout": init_result["stdout"],
+                    "stderr": init_result["stderr"],
+                },
+            },
+            "fixture": {
+                "kind": "git-backed-disposable",
+                "origin": str(origin),
+                "worktree": str(worktree),
+                "source_commit": implementation_commit,
+                "source_signed": signed_commit,
+            },
+            "source_command": {
+                "command": positive_attempt["command"],
+                "command_sha256": positive_attempt["command_sha256"],
+                "criterion_ids": positive_attempt["criterion_ids"],
+                "study_sha256": positive_attempt["study_sha256"],
+                "runbook_sha256": positive_attempt["runbook_sha256"],
+                "source_before": positive_attempt["source_before"],
+                "source_after": positive_attempt["source_after"],
+            },
+            "controller_calls": calls,
+            "checks": checks,
+            "terminal": {
+                "schema": terminal["schema"],
+                "operation_ran": terminal["operation_ran"],
+                "attempt_count": terminal["attempt_count"],
+            },
+            "inspection_launches": 0,
+            "actual_counts": {
+                "controller_calls": len(calls),
+                "execution_invocations": len(positive_attempt["invocations"]),
+                "inspection_launches": 0,
+            },
+            "exclusions": [
+                "The command result does not establish criterion sufficiency.",
+                "The vacuous success case is retained as a passing observation, not a semantic grade.",
+                "Remote GitHub and deployment surfaces are fixture boundaries and were not contacted.",
+            ],
+            "sources": inputs.inventory(),
+        }
+
+
 def output_paths(report):
     parts = relative_parts(report)
     if (len(parts) != 3 or parts[:2] != (".hexaemeron", "reports")
@@ -581,6 +1051,29 @@ def run(root, candidate, criterion, report_path):
         try:
             require_absent(directory, names)
             inputs, evidence = check_terminal_compatibility(root)
+            command = ("python3 " + SELF + " --candidate " + candidate
+                       + " --criterion " + criterion + " --report " + report_path)
+            report = {"schema": "protasis-design-report/v1", "candidate": candidate,
+                      "criterion": criterion, "value": True, "unit": "boolean",
+                      "command": command, "exit": 0}
+            report_bytes = encoded(report)
+            evidence["report"] = {"path": report_path, "sha256": digest(report_bytes)}
+            inputs.recheck()
+            require_absent(directory, names)
+            write_exclusive(directory, names[1], encoded(evidence))
+            inputs.recheck()
+            write_exclusive(directory, names[0], report_bytes)
+            return report
+        finally:
+            os.close(directory)
+    if criterion == "joined-demonstration":
+        if candidate != SELECTED:
+            raise Refusal("candidate-not-selected")
+        names = output_paths(report_path)
+        directory = open_directory(root, (".hexaemeron", "reports"), create=True)
+        try:
+            require_absent(directory, names)
+            inputs, evidence = check_joined_demonstration(root)
             command = ("python3 " + SELF + " --candidate " + candidate
                        + " --criterion " + criterion + " --report " + report_path)
             report = {"schema": "protasis-design-report/v1", "candidate": candidate,
