@@ -817,3 +817,21 @@ schema | hypomnema-design-bridge/v1
 decision | attribute-then-family
 record | plugins/horos/skills/horos/EVOLUTION.md
 ```
+
+### Amendment -- 2026-09-17
+
+**What changed.** Assumption 8, the #1228 row of section 2.2 and the last
+sentence of section 2.5 describe a root-suite failure pair inside the run
+worktree that does not reproduce. Step 1's commit gate ran
+`python3 -m unittest discover -s tests` inside the run worktree, with
+`.hexaemeron/design-evidence.json` present, and 2,017 tests passed. The first
+convention bullet of the receipted runbook is superseded the same way. Exits
+still run on the checks runner's snapshot, and a red root suite inside the run
+worktree is a real signal.
+**Why.** Measured on Step 1 on 2026-09-17. Issue 1228 is closed, and the claim
+was carried from an earlier run without being measured again.
+**Steps touched.** Steps 1, 2, 3, 4 and 5, whose commits pass the repository
+gate inside the run worktree.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
