@@ -1,0 +1,112 @@
+{
+  "schema": "wildcat.kickoff-decision.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1485",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1372",
+  "evidence_class": "attested",
+  "decision_maker": {
+    "name": "Dr Laurence E. Day",
+    "role": "maintainer",
+    "date": "2026-09-17"
+  },
+  "channel": "four structured questions in the delivery session",
+  "recorded_by": "Shoggoth",
+  "record": {
+    "url": "https://github.com/wildcat-finance/skills/issues/1485#issuecomment-5714361463",
+    "posted_by": "laurenceday",
+    "created_at": "2026-09-17T12:28:58Z",
+    "body_bytes": 4020,
+    "body_sha256": "df2c84dda76ea03d3ebdcae01944788b794a773e9dbd8e1c515a0fa9e564830d",
+    "readback": "the posted comment was read back from GitHub and is byte-identical to these bytes",
+    "body": "Decision for this issue, made by Dr Laurence E. Day (maintainer) on 2026-09-17. He answered four structured questions in the delivery session. Each question, every option offered and the option selected are reproduced below exactly as displayed. The delivery session posted this comment from his account; it is not a separate GitHub review.\n\n## 1. Candidate\n\nQuestion: Which SHA does the record pin as the proposed candidate?\n\n- **Selected: release/v2.5 @ bea503c2 (Recommended).** Release-line head, 2026-09-05. The Sepolia v2.5.4 deployment pins this exact commit as contract_source_commit, so source and deployment agree. Trade: the branch carries the whole v2.5 release, not only the event change.\n- **Not selected: deploy/sepolia-v2.5.4 @ 1263de7e.** The deployment branch tip, 2026-09-07. Two commits ahead of release/v2.5, touching only deployment artefacts and docs \u2014 no src/ change, so the event surface is byte-identical. Trade: pins a deployment branch that will be superseded by the next ceremony.\n- **Not selected: fiat/147 @ 77ac6f30.** Where the revision was introduced, 2026-08-24. Narrowest diff for the event model itself. Trade: it is an ancestor of release/v2.5, so it lacks the v2.5 natspec, later fixes and the Sepolia build pin; auditing it audits code no longer at the head.\n\n## 2. Ship\n\nQuestion: Is the indexed-actor event revision intended to ship to production?\n\n- **Selected: Pursue (Recommended).** Record it as intended to ship on the v2.5 release line. Evidence: it is deployed on Sepolia at v2.5.4 with a reproducible build pin, and release/v2.5 carries its own audit-scope and verification docs. #1363, #1372, #1381 and #1406 may design against these topics. Trade: if v2.5 mainnet slips or the surface moves again, those consumers rebuild.\n- **Not selected: Decline production delivery; comparison only.** Record it as not intended to ship. #1372's audit and #1363's two-commit diff still run, labelled as a disposable comparison. Trade: cannot satisfy candidate-merge acceptance, and the record then has to explain the live Sepolia deployment as something other than a shipping path.\n- **Not selected: Leave the ship decision blocked.** Record the two sources and the actor semantics, and leave the decision field blocked with a recovery child filed against #1372. Trade: #1372 stays blocked, which is the state it is in now.\n\n## 3. Semantics\n\nQuestion: How should the record treat the actor semantics read from the emit sites?\n\n- **Selected: Ratify all six as intended (Recommended).** Record debtor on draw and close, payer on repay, arbitrary caller on fee collection, caller on config, and registry-derived principal on transfer as the intended semantics. #1372 audits against them. The v2.5 natspec already states each one, so this matches the source's own declaration.\n- **Not selected: Ratify, and flag principal indexing as a gap.** Same, plus record that borrowerPrincipal is non-indexed on BorrowerTransferRequested and BorrowerTransferCancelled and indexed only on BorrowerTransferred, so no consumer can filter the transfer lifecycle by principal. Recorded as an unintended gap for #1372 to audit, not as a defect claim.\n- **Not selected: Record as observed, ratify nothing.** State what each emit site passes and explicitly decline to call any of it intended. Trade: #1372 gets the addresses but no approved semantics, so it cannot judge an event against an intent.\n\n## 4. Reviewer\n\nQuestion: Who should the record name as its reviewer?\n\n- **Selected: Independent agent (Recommended).** A fresh subagent checks every file:line, SHA and digest in the record against the pinned revisions; its findings and verdict go in the PR body. You stay the named decision-maker. This matches the docs/kickoff/1368 precedent.\n- **Not selected: You, in this session.** You read the finished record here and confirm it before merge; the record names you as reviewer. GitHub will not let you approve a PR opened from your own account, so the confirmation is recorded from this session.\n"
+  },
+  "questions": [
+    {
+      "id": "candidate",
+      "header": "Candidate",
+      "question": "Which SHA does the record pin as the proposed candidate?",
+      "options": [
+        {
+          "label": "release/v2.5 @ bea503c2 (Recommended)",
+          "recommended": true,
+          "description": "Release-line head, 2026-09-05. The Sepolia v2.5.4 deployment pins this exact commit as contract_source_commit, so source and deployment agree. Trade: the branch carries the whole v2.5 release, not only the event change."
+        },
+        {
+          "label": "deploy/sepolia-v2.5.4 @ 1263de7e",
+          "recommended": false,
+          "description": "The deployment branch tip, 2026-09-07. Two commits ahead of release/v2.5, touching only deployment artefacts and docs \u2014 no src/ change, so the event surface is byte-identical. Trade: pins a deployment branch that will be superseded by the next ceremony."
+        },
+        {
+          "label": "fiat/147 @ 77ac6f30",
+          "recommended": false,
+          "description": "Where the revision was introduced, 2026-08-24. Narrowest diff for the event model itself. Trade: it is an ancestor of release/v2.5, so it lacks the v2.5 natspec, later fixes and the Sepolia build pin; auditing it audits code no longer at the head."
+        }
+      ],
+      "selected": "release/v2.5 @ bea503c2 (Recommended)"
+    },
+    {
+      "id": "ship",
+      "header": "Ship",
+      "question": "Is the indexed-actor event revision intended to ship to production?",
+      "options": [
+        {
+          "label": "Pursue (Recommended)",
+          "recommended": true,
+          "description": "Record it as intended to ship on the v2.5 release line. Evidence: it is deployed on Sepolia at v2.5.4 with a reproducible build pin, and release/v2.5 carries its own audit-scope and verification docs. #1363, #1372, #1381 and #1406 may design against these topics. Trade: if v2.5 mainnet slips or the surface moves again, those consumers rebuild."
+        },
+        {
+          "label": "Decline production delivery; comparison only",
+          "recommended": false,
+          "description": "Record it as not intended to ship. #1372's audit and #1363's two-commit diff still run, labelled as a disposable comparison. Trade: cannot satisfy candidate-merge acceptance, and the record then has to explain the live Sepolia deployment as something other than a shipping path."
+        },
+        {
+          "label": "Leave the ship decision blocked",
+          "recommended": false,
+          "description": "Record the two sources and the actor semantics, and leave the decision field blocked with a recovery child filed against #1372. Trade: #1372 stays blocked, which is the state it is in now."
+        }
+      ],
+      "selected": "Pursue (Recommended)"
+    },
+    {
+      "id": "semantics",
+      "header": "Semantics",
+      "question": "How should the record treat the actor semantics read from the emit sites?",
+      "options": [
+        {
+          "label": "Ratify all six as intended (Recommended)",
+          "recommended": true,
+          "description": "Record debtor on draw and close, payer on repay, arbitrary caller on fee collection, caller on config, and registry-derived principal on transfer as the intended semantics. #1372 audits against them. The v2.5 natspec already states each one, so this matches the source's own declaration."
+        },
+        {
+          "label": "Ratify, and flag principal indexing as a gap",
+          "recommended": false,
+          "description": "Same, plus record that borrowerPrincipal is non-indexed on BorrowerTransferRequested and BorrowerTransferCancelled and indexed only on BorrowerTransferred, so no consumer can filter the transfer lifecycle by principal. Recorded as an unintended gap for #1372 to audit, not as a defect claim."
+        },
+        {
+          "label": "Record as observed, ratify nothing",
+          "recommended": false,
+          "description": "State what each emit site passes and explicitly decline to call any of it intended. Trade: #1372 gets the addresses but no approved semantics, so it cannot judge an event against an intent."
+        }
+      ],
+      "selected": "Ratify all six as intended (Recommended)"
+    },
+    {
+      "id": "reviewer",
+      "header": "Reviewer",
+      "question": "Who should the record name as its reviewer?",
+      "options": [
+        {
+          "label": "Independent agent (Recommended)",
+          "recommended": true,
+          "description": "A fresh subagent checks every file:line, SHA and digest in the record against the pinned revisions; its findings and verdict go in the PR body. You stay the named decision-maker. This matches the docs/kickoff/1368 precedent."
+        },
+        {
+          "label": "You, in this session",
+          "recommended": false,
+          "description": "You read the finished record here and confirm it before merge; the record names you as reviewer. GitHub will not let you approve a PR opened from your own account, so the confirmation is recorded from this session."
+        }
+      ],
+      "selected": "Independent agent (Recommended)"
+    }
+  ],
+  "boundary": "The delivery session posted these answers from the decision-maker's account; the comment is not a separate GitHub review. Labels are exactly as displayed. The answers pin the candidate, record the shipping intent and ratify the actor semantics for #1372 and #1363. They do not audit the diff, merge the candidate or deploy anything to Ethereum mainnet."
+}
