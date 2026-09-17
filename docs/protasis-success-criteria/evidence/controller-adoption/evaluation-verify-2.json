@@ -1,0 +1,27 @@
+{
+  "after": {
+    "head": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "index_entries_sha256": "4b7bb499743edc23e2397fcc8928c79bd6ec22d6d6b0033112ac9a4dd4a69277"
+  },
+  "argv": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "tests/promise_evaluation_driver.py",
+    "verify",
+    "--packet",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-1/evaluation-packet",
+    "--answers",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/docs/promise-machine/obligation-gates/evaluation-answers.json",
+    "--run",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/warden-step-1-round-1/evaluation-run.json"
+  ],
+  "before": {
+    "head": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "index_entries_sha256": "4b7bb499743edc23e2397fcc8928c79bd6ec22d6d6b0033112ac9a4dd4a69277"
+  },
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "elapsed_seconds": 0.06135258299764246,
+  "exit": 0,
+  "log": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-verify-2.log",
+  "log_sha256": "cad2b5a4b074bdb15d741afaf4632b6fed04b9816aa324de2abccabf53d0c4ad",
+  "started_at": "2026-09-16T12:49:30.073944+00:00"
+}

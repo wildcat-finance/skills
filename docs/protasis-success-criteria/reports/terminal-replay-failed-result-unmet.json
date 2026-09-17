@@ -1,0 +1,9 @@
+{
+  "candidate": "terminal-replay",
+  "command": "python3 selection_probe.py --candidate terminal-replay --criterion failed-result-unmet --report reports/terminal-replay-failed-result-unmet.json",
+  "criterion": "failed-result-unmet",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

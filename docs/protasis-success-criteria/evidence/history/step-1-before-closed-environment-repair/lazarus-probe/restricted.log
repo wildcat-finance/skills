@@ -1,0 +1,2 @@
+demonstrations.py: D080 --report 'restricted.json' resolves outside the output root /private/tmp/issue-1273-lazarus-environment-probe
+{"code":"D080","correlation_id":"fc9aec9a40a92a45","event":"demonstration.refused","message":"--report 'restricted.json' resolves outside the output root /private/tmp/issue-1273-lazarus-environment-probe"}

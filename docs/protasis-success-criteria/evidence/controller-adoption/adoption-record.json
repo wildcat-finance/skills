@@ -1,0 +1,28 @@
+{
+  "recorded_at": "2026-09-16T12:37:31.193510+00:00",
+  "authority": "Approval for anything you need.",
+  "old": {
+    "source": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273",
+    "commit": "eaab110104d186bdd0b1d362dd583a2e72ecc21a",
+    "controller_sha256": "326817a508a2d0be382e8e44071ec1d5957411a9cb6091764d7a33e9e032ff30"
+  },
+  "new": {
+    "source": "/Users/c0rtexzer0/Documents/ChatGPT/skills-1273-controller-c572009b",
+    "commit": "c572009b7922b4b7b9400893c5adc6d4df641a72",
+    "controller_sha256": "9ca0576cf335b8df7f124b6235f87df4b60e7c290823229becd57227ea1e7359",
+    "ledger_version": "fiat-v6.64.1"
+  },
+  "publication": {
+    "pr": "https://github.com/wildcat-finance/skills/pull/1698",
+    "merge": "ed94a4564c53b28c8db6cd22d3fd38e809338d75",
+    "public_http_status": 200,
+    "candidate_github_verified": true,
+    "candidate_github_reason": "valid"
+  },
+  "study_sha256": "2ff25685ea7e4f0c00b27f529ce901886156d46a5582ab7987c126105c64f3d4",
+  "runbook_sha256": "bb36b579fe02a406519afd640e52d35d1c3583c5827cca790609933527ba6651",
+  "initial_currency_preserved": true,
+  "source_checkout_clean": true,
+  "target_controller_updated": false,
+  "live_step_2_demonstrated": false
+}

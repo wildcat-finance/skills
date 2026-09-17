@@ -1,0 +1,1542 @@
+{
+  "copies": [
+    {
+      "bytes": 15601,
+      "path": "docs/protasis-success-criteria/design-evidence.json",
+      "sha256": "89938e2d649d73c98298ea70823282ed83d397b2e21c9b79cdd01e35184944f7",
+      "source": ".hexaemeron/design-evidence.json"
+    },
+    {
+      "bytes": 6301,
+      "path": "docs/protasis-success-criteria/selection_probe.py",
+      "sha256": "3f4b3c3de29084aa0accb047919cbfc7f7c4cb12c2d7118d3490cb48dac2bc8b",
+      "source": ".hexaemeron/selection_probe.py"
+    },
+    {
+      "bytes": 4863,
+      "path": "docs/protasis-success-criteria/evidence/prepared-decision-draft.md",
+      "sha256": "1fda565419143251605d488b6a022df63bdd802bd3053b7f0238e2c2ed28ccc8",
+      "source": ".hexaemeron/decision-draft.md"
+    },
+    {
+      "bytes": 355,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-unexecuted-result-refused.json",
+      "sha256": "0ab26875797e2669d4a0d96d6b8a0b4b2705d6530a45c6e57bf3253b5bf90ea4",
+      "source": ".hexaemeron/reports/controller-capture-unexecuted-result-refused.json"
+    },
+    {
+      "bytes": 361,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-descriptor-mismatch-refused.json",
+      "sha256": "0b60e88d2192511babaad6bdaf3cc202ad1486548da5689d62551405d5d0d4db",
+      "source": ".hexaemeron/reports/controller-capture-descriptor-mismatch-refused.json"
+    },
+    {
+      "bytes": 341,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-settlement-invocations.json",
+      "sha256": "f07f1d2a76fb0d8201e3af666d1227edbfef12222c2e0de4ed155425afa2065c",
+      "source": ".hexaemeron/reports/controller-capture-settlement-invocations.json"
+    },
+    {
+      "bytes": 334,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-sample-record-bytes.json",
+      "sha256": "05542191cdd22656a0a9b29c1fab363bdb2a896224d0b12730a46ddc96dec2b7",
+      "source": ".hexaemeron/reports/controller-capture-sample-record-bytes.json"
+    },
+    {
+      "bytes": 334,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-legacy-no-backfill.json",
+      "sha256": "72497bcac37ba922756d09408eed41ff09262a041cfc98332be6f4cff6d6b4a0",
+      "source": ".hexaemeron/reports/controller-capture-legacy-no-backfill.json"
+    },
+    {
+      "bytes": 337,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-failed-result-unmet.json",
+      "sha256": "ded94128c6461dbbde71ab3b16ff23e6f30591d74a5e6ef4ad611931c526bf57",
+      "source": ".hexaemeron/reports/controller-capture-failed-result-unmet.json"
+    },
+    {
+      "bytes": 347,
+      "path": "docs/protasis-success-criteria/reports/producer-report-unexecuted-result-refused.json",
+      "sha256": "bd41e2da361d91beb6ec06acf0e41af07bba297e6309f6afb494956685cb5836",
+      "source": ".hexaemeron/reports/producer-report-unexecuted-result-refused.json"
+    },
+    {
+      "bytes": 352,
+      "path": "docs/protasis-success-criteria/reports/producer-report-descriptor-mismatch-refused.json",
+      "sha256": "23f869f48cdc59c8ca2e19bc1eaa3277b35359c9584b49ce87dbb63f511bc886",
+      "source": ".hexaemeron/reports/producer-report-descriptor-mismatch-refused.json"
+    },
+    {
+      "bytes": 332,
+      "path": "docs/protasis-success-criteria/reports/producer-report-settlement-invocations.json",
+      "sha256": "21356d498b85616799589f658501601191e6ee569d3556fb6b27d9509eb46f96",
+      "source": ".hexaemeron/reports/producer-report-settlement-invocations.json"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/producer-report-sample-record-bytes.json",
+      "sha256": "71711d2d040fce1863a822f52feecf23632a44fc31e881d1ecf647b37616ffb0",
+      "source": ".hexaemeron/reports/producer-report-sample-record-bytes.json"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/producer-report-legacy-no-backfill.json",
+      "sha256": "621f3b5093915f0e268d24a8f9886d6aa928aafc6df40b6331ca0ca1f51483a7",
+      "source": ".hexaemeron/reports/producer-report-legacy-no-backfill.json"
+    },
+    {
+      "bytes": 328,
+      "path": "docs/protasis-success-criteria/reports/producer-report-failed-result-unmet.json",
+      "sha256": "0190409a84d55db2f34957172e8db3bd5747437104d97365a2596a9eb271145e",
+      "source": ".hexaemeron/reports/producer-report-failed-result-unmet.json"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-unexecuted-result-refused.json",
+      "sha256": "1f0f2ce7a32a441d7c4591a97e353a9ed13183d2cd5923921c6d99af7efdd525",
+      "source": ".hexaemeron/reports/terminal-replay-unexecuted-result-refused.json"
+    },
+    {
+      "bytes": 352,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-descriptor-mismatch-refused.json",
+      "sha256": "2372b1b31f170272f86b4ae6e9d8ee7fb19832566cdc164a924e400381d17d26",
+      "source": ".hexaemeron/reports/terminal-replay-descriptor-mismatch-refused.json"
+    },
+    {
+      "bytes": 332,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-settlement-invocations.json",
+      "sha256": "d364b9cc991de252a63390f7fa34ec130ee024c4dbe5001272d2f8da1aa40f0d",
+      "source": ".hexaemeron/reports/terminal-replay-settlement-invocations.json"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-sample-record-bytes.json",
+      "sha256": "c6241fe48d4b889a508cabaddfcbdefba38099ec070b97925a3515a672aaa62b",
+      "source": ".hexaemeron/reports/terminal-replay-sample-record-bytes.json"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-legacy-no-backfill.json",
+      "sha256": "9ab2beac4f73198bcb05b04e96a4b0c9e5a252a7b22d475083485e439170f516",
+      "source": ".hexaemeron/reports/terminal-replay-legacy-no-backfill.json"
+    },
+    {
+      "bytes": 328,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-failed-result-unmet.json",
+      "sha256": "d7c03cc8b6f744f82c9e27fcbf6719a45c475bc8b25ad76fec630a3797b132b5",
+      "source": ".hexaemeron/reports/terminal-replay-failed-result-unmet.json"
+    },
+    {
+      "bytes": 3230,
+      "path": "docs/protasis-success-criteria/evidence/issue-1273.json",
+      "sha256": "4d2d0a1bc913d2f60aa53f86165260ea656d1184e92a8418fbe5a1cbdef443cd",
+      "source": ".hexaemeron/evidence/issue-1273.json"
+    },
+    {
+      "bytes": 9751,
+      "path": "docs/protasis-success-criteria/evidence/pr-1670.json",
+      "sha256": "92669921c856ed6af2abb1c610af6e49f5e1fc601a6cdbc0975ec198fd2590a5",
+      "source": ".hexaemeron/evidence/pr-1670.json"
+    },
+    {
+      "bytes": 2719,
+      "path": "docs/protasis-success-criteria/evidence/pr-1681.json",
+      "sha256": "88201439c4f0232d4eca0c4cd5bb8e7270c5dcf4ce532ece624b2e9f86390c0e",
+      "source": ".hexaemeron/evidence/pr-1681.json"
+    },
+    {
+      "bytes": 1216,
+      "path": "docs/protasis-success-criteria/evidence/pr-1685.json",
+      "sha256": "c48feb022e3c71e07daadf83561cc5d50541e31bd564d41bb685a37635408899",
+      "source": ".hexaemeron/evidence/pr-1685.json"
+    },
+    {
+      "bytes": 33706,
+      "path": "docs/protasis-success-criteria/evidence/audit-currency.log",
+      "sha256": "c2f6fca0bebd411ac4280d79542ade0aeaa00ad3a9861d032ad33c0fb49a44c8",
+      "source": ".hexaemeron/evidence/audit-currency.log"
+    },
+    {
+      "bytes": 4414,
+      "path": "docs/protasis-success-criteria/evidence/audit-reading-manifest.json",
+      "sha256": "a051c402949809a15617cd96370aace9f7e25a16490b276e549588ab21290832",
+      "source": ".hexaemeron/evidence/audit-reading-manifest.json"
+    },
+    {
+      "bytes": 199147,
+      "path": "docs/protasis-success-criteria/evidence/audit-excerpts.json",
+      "sha256": "18d470cfaf6b1568c24ccab65cd23438c48300735534ac6f028b15720ba4941a",
+      "source": ".hexaemeron/evidence/audit-excerpts.json"
+    },
+    {
+      "bytes": 7039,
+      "path": "docs/protasis-success-criteria/evidence/gate-interface-probe.json",
+      "sha256": "d54df6edce3e4f3846bf9ec15668bda90b1be6a12d4994bbe0670c27d52cb6b8",
+      "source": ".hexaemeron/evidence/gate-interface-probe.json"
+    },
+    {
+      "bytes": 14278,
+      "path": "docs/protasis-success-criteria/evidence/selection-executions.json",
+      "sha256": "85cde52c4e3eacdb5e8685fa463ad72816a778c7b536b39186a405d1618ee31a",
+      "source": ".hexaemeron/evidence/selection-executions.json"
+    },
+    {
+      "bytes": 5853,
+      "path": "docs/protasis-success-criteria/evidence/design-lock-final.json",
+      "sha256": "f32e1b0300ac6d6f6a8beb76a46258a74704e2e73f5c6420a3fe2b9b73d24f5b",
+      "source": ".hexaemeron/evidence/design-lock-final.json"
+    },
+    {
+      "bytes": 2229,
+      "path": "docs/protasis-success-criteria/evidence/prose-parity.json",
+      "sha256": "6ff8e084e9f9633e62688fd25451fc19249bd4419a4823bb7c6982db7c94c4b3",
+      "source": ".hexaemeron/evidence/prose-parity.json"
+    },
+    {
+      "bytes": 49084,
+      "path": "docs/protasis-success-criteria/evidence/final-source-study.md",
+      "sha256": "ad4776886a15c3bc382035585fd06517bfea17ac3ca2dfc765be9ab735dda433",
+      "source": ".hexaemeron/evidence/final-source-study.md"
+    },
+    {
+      "bytes": 1131,
+      "path": "docs/protasis-success-criteria/evidence/imprimatur-final.json",
+      "sha256": "216f04105eb993cf8bdfd60da9a79dde39848d90a2b2c36c12522dbe91c11a19",
+      "source": ".hexaemeron/evidence/imprimatur-final.json"
+    },
+    {
+      "bytes": 517,
+      "path": "docs/protasis-success-criteria/evidence/runbook-prose-parity.json",
+      "sha256": "54906a215afdd42d9e2e1d14fdda750d290232147add3fac12c711bac0166fed",
+      "source": ".hexaemeron/evidence/runbook-prose-parity.json"
+    },
+    {
+      "bytes": 209,
+      "path": "docs/protasis-success-criteria/evidence/runbook-imprimatur-final.log",
+      "sha256": "cc75b97ff01a5f80ca12232588ec0069ee531bd9546477addbd065b3ef7205d9",
+      "source": ".hexaemeron/evidence/runbook-imprimatur-final.log"
+    },
+    {
+      "bytes": 1283,
+      "path": "docs/protasis-success-criteria/evidence/step-1-prose-review.json",
+      "sha256": "21133abaa01c48a2e1531240f08beef2dd232c7e593041681566e7711db26828",
+      "source": ".hexaemeron/evidence/step-1-prose-review.json"
+    },
+    {
+      "bytes": 1521,
+      "path": "docs/protasis-success-criteria/evidence/step-1-imprimatur-final.json",
+      "sha256": "d1e0ea218b08dcc76d8b3ef5439f23375501da1243e53bca2cbc0a8d79ad814d",
+      "source": ".hexaemeron/evidence/step-1-imprimatur-final.json"
+    },
+    {
+      "bytes": 0,
+      "path": "docs/protasis-success-criteria/evidence/step-1-brevitas.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/evidence/step-1-brevitas.log"
+    },
+    {
+      "bytes": 3679,
+      "path": "docs/protasis-success-criteria/evidence/step-1-prose-source-README.md.txt",
+      "sha256": "d9303e603fd34875acf66dc217e75a07587b062bd9e4cc8ce8ac7de0e3365081",
+      "source": ".hexaemeron/evidence/step-1-prose-source-README.md"
+    },
+    {
+      "bytes": 459,
+      "path": "docs/protasis-success-criteria/evidence/study-step-topology.md",
+      "sha256": "79a750defca70624345311ddf62df55f7f69ac8100c45d9442c9453c9eefa4a9",
+      "source": ".hexaemeron/study-step-topology.md"
+    },
+    {
+      "bytes": 49080,
+      "path": "docs/protasis-success-criteria/evidence/opening-study.md",
+      "prefix_bytes": 49080,
+      "sha256": "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92",
+      "source": ".hexaemeron/study.md"
+    },
+    {
+      "bytes": 14458,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/controller-capture-design-home.evidence.json",
+      "sha256": "b4301753b27a4284275c4cc7b560dea8b1ea2fea349575db32f6dded784bdc9d",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 7139,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/history.json",
+      "sha256": "2d4f58279d3a377039ca2229bbbf7adc346243db2d9da7dd639f119fd9b681e3",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/history.json"
+    },
+    {
+      "bytes": 12573,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/proof.py.txt",
+      "sha256": "4943beadcada2dbc5f6a494ae044af65d91d407c565bb138431cd38353c4073b",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/proof.py.txt"
+    },
+    {
+      "bytes": 12637,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/provenance.json",
+      "sha256": "2e9bf792685635a41299fdc6e177ff74f35eab58b9627b80b899a2ddd659669a",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/provenance.json"
+    },
+    {
+      "bytes": 22319,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/runbook.md.txt",
+      "sha256": "84d62b59909d057231d824450c3ff3a8a2bec62316ace77d39eb54bb7313cf9c",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/runbook.md.txt"
+    },
+    {
+      "bytes": 802,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-active-study-reproduction.json",
+      "sha256": "a683bf877ff454cd902bf75a7c7e710bc7276ef6763fb5f6b8682e03f6f42352",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-active-study-reproduction.json"
+    },
+    {
+      "bytes": 1799,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-active-study-reproduction.log",
+      "sha256": "ff0f527f0ef5cfc9d22446ec2692dbf5da8c47c6d984aa7a47e7dfc24db958c3",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-active-study-reproduction.log"
+    },
+    {
+      "bytes": 162,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-exit-failed.json",
+      "sha256": "5a5baef849ae68900b18cccba18deb1167de91941e0941bd1441a367cf82ce09",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-exit-failed.json"
+    },
+    {
+      "bytes": 923,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction-2.json",
+      "sha256": "add63a3aa9b579e51cbe3b0ba54c75f2aad5e13a556c18ea8f37f021ca12d32b",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction-2.json"
+    },
+    {
+      "bytes": 1444,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction-2.log",
+      "sha256": "eab4f94f5512431b3ad4daf442f2eea3ca3b890461a24e6a584ca5f905b0ffa4",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction-2.log"
+    },
+    {
+      "bytes": 2048,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction-2.py.txt",
+      "sha256": "695ebd8c5482d000b3054a417108022270762b1cbeafebf8fa1c74f71480f2a2",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction-2.py.txt"
+    },
+    {
+      "bytes": 917,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction.json",
+      "sha256": "153b1af64e2cfa90ea69e5af49947f67bfd45085182db8236ed56308486aa93f",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction.json"
+    },
+    {
+      "bytes": 411,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction.log",
+      "sha256": "6570c7a7082297ebc9ac32f599bc33d2348b8a3621902048ff15b6edc67e570a",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction.log"
+    },
+    {
+      "bytes": 1708,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction.py.txt",
+      "sha256": "657ba47ec952636cd2b5b2fdc4749327a4b83bca0b7b5ee2573cd50c62accffc",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-foreign-temp-reproduction.py.txt"
+    },
+    {
+      "bytes": 6780,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-greenlight.log",
+      "sha256": "aea7efb250d084e784c45f59fdc1e488aa22d9c97615914558b0d169a0625c1c",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-greenlight.log"
+    },
+    {
+      "bytes": 381805,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log",
+      "sha256": "ba55c87bfdf008e9d39445015486fd17e0b1178355889f2c31e09aef8f666f7b",
+      "source": ".hexaemeron/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log"
+    },
+    {
+      "bytes": 2722,
+      "path": "docs/protasis-success-criteria/evidence/step-1-archive-fixtures-fixed.log",
+      "sha256": "46f024309885da47738735f6865d8b86360c953650aa894bcdf7bb36d1e08481",
+      "source": ".hexaemeron/evidence/step-1-archive-fixtures-fixed.log"
+    },
+    {
+      "bytes": 391,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-fixed.log",
+      "sha256": "a1061f87a8a1775ff32c29bcc3c0fb3a7d72d9943eed7762e61cc86ba88ef483",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-fixed.log"
+    },
+    {
+      "bytes": 911,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-fixed.json",
+      "sha256": "87621034debc41baafcb1c590e43e8d3180d2570e590b85f4c625c5d4ffcbb80",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-fixed.json"
+    },
+    {
+      "bytes": 1305,
+      "path": "docs/protasis-success-criteria/evidence/step-1-fixture-prose-before-vulgate.json",
+      "sha256": "93a1ea7c1c3ef0ca2a93b334b3ba67768b7385e94d1e1731af1bdc3df1133d6f",
+      "source": ".hexaemeron/evidence/step-1-fixture-prose-before-vulgate.json"
+    },
+    {
+      "bytes": 1305,
+      "path": "docs/protasis-success-criteria/evidence/step-1-fixture-prose-final.json",
+      "sha256": "93a1ea7c1c3ef0ca2a93b334b3ba67768b7385e94d1e1731af1bdc3df1133d6f",
+      "source": ".hexaemeron/evidence/step-1-fixture-prose-final.json"
+    },
+    {
+      "bytes": 988,
+      "path": "docs/protasis-success-criteria/evidence/step-1-fixture-prose-review.json",
+      "sha256": "f370df871915b0dfb6819f59b081f971a6dbb28b14649e491f8283d095aa249c",
+      "source": ".hexaemeron/evidence/step-1-fixture-prose-review.json"
+    },
+    {
+      "bytes": 4473,
+      "path": "docs/protasis-success-criteria/evidence/step-1-scaffold-tests-3.log",
+      "sha256": "3bb8d0640f078ef786c44808ca4b9566d7c7f2e289fabd5aa46983771ef086f9",
+      "source": ".hexaemeron/evidence/step-1-scaffold-tests-3.log"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-bridge-3.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-bridge-3.log"
+    },
+    {
+      "bytes": 81,
+      "path": "docs/protasis-success-criteria/evidence/step-1-lints-4.log",
+      "sha256": "02bbeb08466b4373722da85a945f679864d6f72d823dffed11f66b1cfd4c00b5",
+      "source": ".hexaemeron/evidence/step-1-lints-4.log"
+    },
+    {
+      "bytes": 1578,
+      "path": "docs/protasis-success-criteria/evidence/step-1-version-tests-2.log",
+      "sha256": "31767cd17006d38ff7923ce9537668444722d2eef82a08b62aec9e473f058191",
+      "source": ".hexaemeron/evidence/step-1-version-tests-2.log"
+    },
+    {
+      "bytes": 330,
+      "path": "docs/protasis-success-criteria/evidence/step-1-design-home-2.log",
+      "sha256": "3c1ed411bdb730396c701e3173166dab2fd65e07907536ba713dbe09a1c597da",
+      "source": ".hexaemeron/evidence/step-1-design-home-2.log"
+    },
+    {
+      "bytes": 1851,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-reproduction-3.py.txt",
+      "sha256": "509ce7a0b758fb5b206ac25c0c4305cd486e31ef75aa7da8710443aa694eb4e5",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-reproduction-3.py"
+    },
+    {
+      "bytes": 1487,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-3-red.log",
+      "sha256": "d1285ca6910be9de8d99975d13136bc5c89f84a06217bbc7c7534672ad6edfe7",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-3-red.log"
+    },
+    {
+      "bytes": 563,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-3-red.json",
+      "sha256": "b7487fdd45fab1c67e5eae2cd42ea32f81aef80b46dfbe5cc5715ea22998dcb7",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-3-red.json"
+    },
+    {
+      "bytes": 390,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-3-green.log",
+      "sha256": "9ac8e39435645841c8330c227bdbd0f760ae5555d30cbb705fc59033bfdf6a09",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-3-green.log"
+    },
+    {
+      "bytes": 544,
+      "path": "docs/protasis-success-criteria/evidence/step-1-foreign-temp-3-green.json",
+      "sha256": "26892e8f001267cde5ac0cef0a64dc70eab20d091bc02ba55cb6d6d5d7e7c220",
+      "source": ".hexaemeron/evidence/step-1-foreign-temp-3-green.json"
+    },
+    {
+      "bytes": 2722,
+      "path": "docs/protasis-success-criteria/evidence/step-1-archive-fixtures-fixed-2.log",
+      "sha256": "527803075143f3300e79baa9e2e923c1e2f09bdc5334062850aba4ee8c42b326",
+      "source": ".hexaemeron/evidence/step-1-archive-fixtures-fixed-2.log"
+    },
+    {
+      "bytes": 808,
+      "path": "docs/protasis-success-criteria/evidence/step-1-scratch-rule-fixed.log",
+      "sha256": "a4f0a4219cccff8cf3334002c41f93896abdd8ea71d94df9975520b4bc8dcc5d",
+      "source": ".hexaemeron/evidence/step-1-scratch-rule-fixed.log"
+    },
+    {
+      "bytes": 1297,
+      "path": "docs/protasis-success-criteria/evidence/step-1-root-owned-causes-fixed.log",
+      "sha256": "4a89f4706544ee586c0b7a1abe519a00179f600123e3f169fcb2c8656767660a",
+      "source": ".hexaemeron/evidence/step-1-root-owned-causes-fixed.log"
+    },
+    {
+      "bytes": 14458,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-evaluation-projection/controller-capture-design-home.evidence.json",
+      "sha256": "f80d0f9000d01f5e2d6cb6af0abed8844ea560e6356414a19c0a76d95006917f",
+      "source": ".hexaemeron/evidence/history/step-1-before-evaluation-projection/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-evaluation-projection/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/evidence/history/step-1-before-evaluation-projection/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 1294,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-evaluation-projection/history.json",
+      "sha256": "b77e1cf9dacdeeef9eb450f3a7bc2e1d4638588ce8080f91a9047ef647039ad5",
+      "source": ".hexaemeron/evidence/history/step-1-before-evaluation-projection/history.json"
+    },
+    {
+      "bytes": 12573,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-evaluation-projection/proof.py.txt",
+      "sha256": "55c435494a6dd857bf5588deb757ea50a10df62afff95556dabd6ffae111cdc5",
+      "source": ".hexaemeron/evidence/history/step-1-before-evaluation-projection/proof.py.txt"
+    },
+    {
+      "bytes": 23790,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-evaluation-projection/provenance.json",
+      "sha256": "d86be8a499a5c7cc486f6cc33de545d17ad2018ec4e47fc2dbb9a76ed3325d43",
+      "source": ".hexaemeron/evidence/history/step-1-before-evaluation-projection/provenance.json"
+    },
+    {
+      "bytes": 26672,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-evaluation-projection/runbook.md.txt",
+      "sha256": "5c65d36850122b02b64fae283b4de07a9707117a0e1e0eb7e8b7167f75e4f6a9",
+      "source": ".hexaemeron/evidence/history/step-1-before-evaluation-projection/runbook.md.txt"
+    },
+    {
+      "bytes": 3231,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/original-evaluation-run.json",
+      "sha256": "9dfd281ab10bdc449d670c053751748eb4985061357c0c0f9bc05bd666c8ea29",
+      "source": ".hexaemeron/evidence/step-1-evaluation-original.json"
+    },
+    {
+      "bytes": 2962,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/proposal.json",
+      "sha256": "82ab12c557d542d25e18e814750a13c4327e6accc996d2e2ad45d4a4eba12635",
+      "source": ".hexaemeron/evidence/step-1-evaluation-projection-proposal/manifest.json"
+    },
+    {
+      "bytes": 3647,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/source-packet-manifest.json",
+      "sha256": "f514b16553c0c185994f40ced2b904c5a7e5c561e81148787a493c03019314d3",
+      "source": ".hexaemeron/evidence/step-1-evaluation-projection-proposal/source-packet/manifest.json"
+    },
+    {
+      "bytes": 3647,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/candidate-packet-manifest.json",
+      "sha256": "18cd809f9e93c5ae7a28c340f627764efe28aad5f61727cf528a71ba17e9459c",
+      "source": ".hexaemeron/evidence/step-1-evaluation-projection-proposal/candidate-packet/manifest.json"
+    },
+    {
+      "bytes": 3028,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/applied.json",
+      "sha256": "50fe3dabee2e499d6572da80a5051f0e608c2db61b105907fe5463a331276b67",
+      "source": ".hexaemeron/evidence/step-1-evaluation-projection-applied.json"
+    },
+    {
+      "bytes": 1667,
+      "path": "docs/protasis-success-criteria/evidence/step-1-numbered-fixture-red.log",
+      "sha256": "9304ee4c364bbc3e595c1c5a8e164f3af63730eb0c8e963e3249672f74a515ce",
+      "source": ".hexaemeron/evidence/step-1-numbered-fixture-red.log"
+    },
+    {
+      "bytes": 367,
+      "path": "docs/protasis-success-criteria/evidence/step-1-numbered-fixture-red.json",
+      "sha256": "83268c0ae380cb6690e678ab2660684eb18ddb9754cbd70261b2d59e687117a4",
+      "source": ".hexaemeron/evidence/step-1-numbered-fixture-red.json"
+    },
+    {
+      "bytes": 4670,
+      "path": "docs/protasis-success-criteria/evidence/step-1-numbered-fixture-green.log",
+      "sha256": "47405bbaf8ccb595569ece1768569ae0b387b9f20c2aaf93213aa648d0fb399f",
+      "source": ".hexaemeron/evidence/step-1-numbered-fixture-green.log"
+    },
+    {
+      "bytes": 276,
+      "path": "docs/protasis-success-criteria/evidence/step-1-numbered-fixture-green.json",
+      "sha256": "af0876448fd991e224dd5997727174ccacfa028935cdbad1b2132682a23a819f",
+      "source": ".hexaemeron/evidence/step-1-numbered-fixture-green.json"
+    },
+    {
+      "bytes": 181,
+      "path": "docs/protasis-success-criteria/evidence/step-1-evaluation-verify-3.log",
+      "sha256": "cad2b5a4b074bdb15d741afaf4632b6fed04b9816aa324de2abccabf53d0c4ad",
+      "source": ".hexaemeron/evidence/step-1-evaluation-verify-3.log"
+    },
+    {
+      "bytes": 101,
+      "path": "docs/protasis-success-criteria/evidence/step-1-portable-sync-4.log",
+      "sha256": "fd1692b9af37d002de30d0d12436ffa4cf38ce90fa1810851aef3e422cf0cf95",
+      "source": ".hexaemeron/evidence/step-1-portable-sync-4.log"
+    },
+    {
+      "bytes": 47,
+      "path": "docs/protasis-success-criteria/evidence/step-1-portable-check-4.log",
+      "sha256": "96ce1a47511e2e0585baba8bcc4a30f24d88561bc942c6abd2adaba83e679640",
+      "source": ".hexaemeron/evidence/step-1-portable-check-4.log"
+    },
+    {
+      "bytes": 330,
+      "path": "docs/protasis-success-criteria/evidence/step-1-design-home-3.log",
+      "sha256": "3c1ed411bdb730396c701e3173166dab2fd65e07907536ba713dbe09a1c597da",
+      "source": ".hexaemeron/evidence/step-1-design-home-3.log"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-bridge-4.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-bridge-4.log"
+    },
+    {
+      "bytes": 4670,
+      "path": "docs/protasis-success-criteria/evidence/step-1-scaffold-tests-4.log",
+      "sha256": "9dbd54e7003e1be0578d3f0762fa81d6a0f55bac7fb43131af3e1428e7d8517a",
+      "source": ".hexaemeron/evidence/step-1-scaffold-tests-4.log"
+    },
+    {
+      "bytes": 12449,
+      "path": "docs/protasis-success-criteria/evidence/step-1-evaluation-owning-tests.log",
+      "sha256": "baa3b54cddb6a31e795e448994dc4770deb23b5ad46e016d8d261783b7d19256",
+      "source": ".hexaemeron/evidence/step-1-evaluation-owning-tests.log"
+    },
+    {
+      "bytes": 455,
+      "path": "docs/protasis-success-criteria/evidence/step-1-evaluation-prose-before-vulgate.log",
+      "sha256": "27bad173cb76a676230b7ed80c61f805f00361606563dd7f468a3856146704e5",
+      "source": ".hexaemeron/evidence/step-1-evaluation-prose-before-vulgate.log"
+    },
+    {
+      "bytes": 455,
+      "path": "docs/protasis-success-criteria/evidence/step-1-evaluation-prose-final.log",
+      "sha256": "27bad173cb76a676230b7ed80c61f805f00361606563dd7f468a3856146704e5",
+      "source": ".hexaemeron/evidence/step-1-evaluation-prose-final.log"
+    },
+    {
+      "bytes": 0,
+      "path": "docs/protasis-success-criteria/evidence/step-1-readme-brevitas-5.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/evidence/step-1-readme-brevitas-5.log"
+    },
+    {
+      "bytes": 807,
+      "path": "docs/protasis-success-criteria/evidence/step-1-evaluation-prose-review.json",
+      "sha256": "1dc8389b9e6b8b8c6d8515b7ce62eca0636089209223423d3ed9369a61ade711",
+      "source": ".hexaemeron/evidence/step-1-evaluation-prose-review.json"
+    },
+    {
+      "bytes": 14458,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/controller-capture-design-home.evidence.json",
+      "sha256": "8ada3e0c1093827c4a8fee7743b37bb87953456a97d850140f4eea0aed7371ec",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 3231,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/evaluation-run.json",
+      "sha256": "1273422fd38fdc7e35793271ab88f0438f40c2b55d290189c79858d5defa2c53",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/evaluation-run.json"
+    },
+    {
+      "bytes": 29070,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/integration-projection.json",
+      "sha256": "481da4c180ee3c9ce7cd3ba1598cd9a44c37a33f2d322048f544fd7e402e866e",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/integration-projection.json"
+    },
+    {
+      "bytes": 14254,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/integration-projection.md.txt",
+      "sha256": "54464bb14c904a16b798bc4df4c726a42d274f02917e1f83b5e483b3801eb870",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/integration-projection.md.txt"
+    },
+    {
+      "bytes": 1143,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/copy-manifest.json",
+      "sha256": "8c7b35d959a77689ebbdec353ec6fda89776b309a5eb120e5cbd349c3a37f5cf",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/copy-manifest.json"
+    },
+    {
+      "bytes": 1948,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/observations-actual.json",
+      "sha256": "121bb5507eb7237db8cae9f8775fcd43cfec2c56799809b084b13261a0059854",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/observations-actual.json"
+    },
+    {
+      "bytes": 1696,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/observations.json",
+      "sha256": "027d0e8c6652c7951d5ff4ff09f559c15d799830e187fa79727923f0aca4846a",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/observations.json"
+    },
+    {
+      "bytes": 6448,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python-actual.json",
+      "sha256": "d7841825c216f80ec90b4e47845605d8d78422a8408625d1f7634e642f2f06af",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python-actual.json"
+    },
+    {
+      "bytes": 966,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python-actual.log",
+      "sha256": "d9e960474c715e044989c1e9aca3df9e294aa953741086379e61d4a1d6424b1f",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python-actual.log"
+    },
+    {
+      "bytes": 358,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python.log",
+      "sha256": "3030c59019f4533fb52ac01be8f974b075a405062eed7f1088d192f1f2045c51",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python.log"
+    },
+    {
+      "bytes": 5248,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted-actual.json",
+      "sha256": "2afa350d47d0159f4688f5c3fedc94a0e61de122a41e2498ac8f2b14c94350b9",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted-actual.json"
+    },
+    {
+      "bytes": 1109,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted-actual.log",
+      "sha256": "7204a2dcb5db818045a541a9f771855307ec340c52eebdf5dc4a4cbdb8517fbe",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted-actual.log"
+    },
+    {
+      "bytes": 340,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted.log",
+      "sha256": "be9f92e20d728ab702260cd0003d72dce72c43060de87edec66b7829200044dc",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted.log"
+    },
+    {
+      "bytes": 12573,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/proof.py.txt",
+      "sha256": "6f2287c53e34cc7df4d1aa4185e4b82f0bf78b1c8766fa6bddc9496e094c2b45",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/proof.py.txt"
+    },
+    {
+      "bytes": 31572,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/provenance.json",
+      "sha256": "3f39088f7cdbb567f062f44bc4cec3a32c629a289dbbc823203f05b45e18c631",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/provenance.json"
+    },
+    {
+      "bytes": 32289,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/runbook.md.txt",
+      "sha256": "0b4534a3903f2d3e093e7b059c429b9e3afd64f5ea0d599e487c40e1fa1fa787",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/runbook.md.txt"
+    },
+    {
+      "bytes": 437,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-bridge-4.json",
+      "sha256": "ae37f1f2f7c5d3ae9fc6329efb69666f091b77987a5df8d2f721d836ba93960c",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-bridge-4.json"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-bridge-4.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-bridge-4.log"
+    },
+    {
+      "bytes": 466,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-checked-runner-result.json",
+      "sha256": "1bb90fb5163aef77170ce6e47fc13a38b035308fafa88f6372ccf0ddcd13b09c",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-checked-runner-result.json"
+    },
+    {
+      "bytes": 2202,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-checked-runner.log",
+      "sha256": "5d0e3f8dce2b51d3d64f20b24da65a7803dba6f369d80015dfb187a76606bbce",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-checked-runner.log"
+    },
+    {
+      "bytes": 247164,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-checked.json",
+      "sha256": "026ace5f66f1b43eff9a414d40795a27f58779dd3ee863f91f9d336ed1f309ba",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-checked.json"
+    },
+    {
+      "bytes": 6431,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-declared.log",
+      "sha256": "39de847ba23ef99cb61eff79357780308e86df72140eee19a0c6300f99e1a014",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-declared.log"
+    },
+    {
+      "bytes": 676,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-pinned.log",
+      "sha256": "9bd85e8158f146e6f2f93221e81e40d857240df1c6f8c8b7d2ee31926eee3694",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-pinned.log"
+    },
+    {
+      "bytes": 1792,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-probe.json",
+      "sha256": "d09636fcfcd1f5f3447bdd624b9aac7df3d5eae71e7e5848139d82eacbd9cc2f",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-probe.json"
+    },
+    {
+      "bytes": 1641,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-probe.py.txt",
+      "sha256": "cf9c80b1c1eb2342f1b14afadaf9b0578e93cf1b88623889ce75c7f65307c148",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-probe.py.txt"
+    },
+    {
+      "bytes": 30235,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-failure-extract.json",
+      "sha256": "aabf63fb7adef8b62354cdbad16e4af30f0c5aa26d4ff4b00661951652e75869",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-failure-extract.json"
+    },
+    {
+      "bytes": 716,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.json",
+      "sha256": "035b1f5e5a65c443a44c6289d2e1ed7c097a5b41c5e9f4bc8ce80c65332a3d17",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.json"
+    },
+    {
+      "bytes": 438592,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.log",
+      "sha256": "827652ce025e9aebaf24bfcd42532483e40dcfb93df093a38fc7efc34b04c256",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.log"
+    },
+    {
+      "bytes": 16637,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-narrow-probes-2.json",
+      "sha256": "4e075628828fda2de90e5d2380e24ed08913a698ed19bace6c95154b4153bf13",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-narrow-probes-2.json"
+    },
+    {
+      "bytes": 16372,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-failure-extract.json",
+      "sha256": "a38c3192963fb3e294e723e0aba3072862def0a2dcf677a0e20682f73037ca3a",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-failure-extract.json"
+    },
+    {
+      "bytes": 868,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-reproduction.json",
+      "sha256": "756258aa79f8f6c6bbb1d835563161965285ef9e636ed287310fd16842d2aa55",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-reproduction.json"
+    },
+    {
+      "bytes": 26563,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-reproduction.log",
+      "sha256": "cc13780efcf40015edfed2b9490350c7dc861b5f71bd7a1556540ed704d8fb07",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-reproduction.log"
+    },
+    {
+      "bytes": 1041,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-done-implement-result.json",
+      "sha256": "5d6a98cfb3af96576e822483c59358b41da57898802a6c289d3dd3432b0e273e",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-done-implement-result.json"
+    },
+    {
+      "bytes": 83,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-done-implement.log",
+      "sha256": "60ed3a4b8ca79761ddb9454720b367f2fa9caffc6e17ea095829a1f48911e8e8",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-done-implement.log"
+    },
+    {
+      "bytes": 3028,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-evaluation-projection-applied.json",
+      "sha256": "50fe3dabee2e499d6572da80a5051f0e608c2db61b105907fe5463a331276b67",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-evaluation-projection-applied.json"
+    },
+    {
+      "bytes": 162,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-exit.json",
+      "sha256": "38424499d08101782b9e4ecfa51bda1b0c1a49618aa4b94c9cc01d1df48eb426",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-exit.json"
+    },
+    {
+      "bytes": 336,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-greenlight-3-result.json",
+      "sha256": "c6003cc415247082bb05ca984587beb2e37718e3e73161b9f69bf8d854b62f17",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-greenlight-3-result.json"
+    },
+    {
+      "bytes": 6780,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-greenlight-3.log",
+      "sha256": "970df2629c670370d82685b642654b3cd279794b5ef4cb0937e1ed6abd77e6f1",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-greenlight-3.log"
+    },
+    {
+      "bytes": 461,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3-result.json",
+      "sha256": "828d11050c1746993ad0bb05895a9fe02523fdf19074cd55a410833e417d5a50",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3-result.json"
+    },
+    {
+      "bytes": 379168,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3.log",
+      "sha256": "18508cf5fee8cdfb949545282ded09c1a996fedc4c891ab6e7c8a7054977a94d",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3.log"
+    },
+    {
+      "bytes": 423,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-commit.json",
+      "sha256": "dde9e18c1557b66bfeb40bf159a27bb6f184097521923dd15d211177e6b4f2d1",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-commit.json"
+    },
+    {
+      "bytes": 11993,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-commit.log",
+      "sha256": "5865acfab207d456d016cff8dc612d68222de70316d3ace4b460f8a4fcfe4305",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-commit.log"
+    },
+    {
+      "bytes": 581,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-signature.log",
+      "sha256": "c32c1ccf0e009067c76720f14daac4d53ad29f21dab07c6a5cfb2697e7f26b80",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-signature.log"
+    },
+    {
+      "bytes": 4581,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-source-boundary-3.json",
+      "sha256": "351f7e187c11a7e3af8967c8404741da86a2d6ab0b35a85dc6e20b2e5cfd1f95",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-source-boundary-3.json"
+    },
+    {
+      "bytes": 14202,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/history.json",
+      "sha256": "e55b99cb8feaa8a0f1913fb6bc93cb6a77b91993a5cbf4a4f03af1221afdc5b0",
+      "source": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/history.json"
+    },
+    {
+      "bytes": 2885,
+      "path": "docs/protasis-success-criteria/evidence/runbook-closed-environment-prose.json",
+      "sha256": "a78def75f5c39713fb56d128c978cfffb44b7c65f4142b5a920d93ade9210503",
+      "source": ".hexaemeron/evidence/runbook-closed-environment-prose.json"
+    },
+    {
+      "bytes": 63,
+      "path": "docs/protasis-success-criteria/evidence/runbook-closed-environment-imprimatur-final.log",
+      "sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+      "source": ".hexaemeron/evidence/runbook-closed-environment-imprimatur-final.log"
+    },
+    {
+      "bytes": 539,
+      "path": "docs/protasis-success-criteria/evidence/step-1-bridge-5.json",
+      "sha256": "ebf0925d450d01216be28b4c095d5bfadb44b787b73dc0d14c508c330b4588a2",
+      "source": ".hexaemeron/evidence/step-1-bridge-5.json"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-bridge-5.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-bridge-5.log"
+    },
+    {
+      "bytes": 4723,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-binding-refresh.json",
+      "sha256": "8506644ddd76ed836507b6fe07149ad2c07e19f04980ca12f72e00ec9096ec32",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-binding-refresh.json"
+    },
+    {
+      "bytes": 1808,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-catalogue-refresh.json",
+      "sha256": "3b989e710aa426b839f72ae7de22dd9cfd92776b3f8bb8298bf13240086b2a97",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-catalogue-refresh.json"
+    },
+    {
+      "bytes": 14181,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-coverage-1.log",
+      "sha256": "43e81b52a23f93f3bb5ca48062fc59d362242d070020f93cb1d9791e8df3b467",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-coverage-1.log"
+    },
+    {
+      "bytes": 60,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-coverage-2.log",
+      "sha256": "a0cc06fde5f7bd29b04f3177a2b93a4909542fe81f1ebbca642d7fae2b34912b",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-coverage-2.log"
+    },
+    {
+      "bytes": 47,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-portable-check.log",
+      "sha256": "96ce1a47511e2e0585baba8bcc4a30f24d88561bc942c6abd2adaba83e679640",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-portable-check.log"
+    },
+    {
+      "bytes": 101,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-portable-sync.log",
+      "sha256": "fd1692b9af37d002de30d0d12436ffa4cf38ce90fa1810851aef3e422cf0cf95",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-portable-sync.log"
+    },
+    {
+      "bytes": 1250,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-prose-review.json",
+      "sha256": "844e03024ecce4dec233544950c118380ef878c1ec21035eb459a43d505fbda5",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-prose-review.json"
+    },
+    {
+      "bytes": 5430,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-prose-source-README.md.txt",
+      "sha256": "d7950448c39ab255cc9e763085b9d17ac5a7dbc135dc3149f9cb03b4ec000605",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-prose-source-README.md.txt"
+    },
+    {
+      "bytes": 0,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-readme-brevitas.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-readme-brevitas.log"
+    },
+    {
+      "bytes": 63,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-readme-imprimatur-1.log",
+      "sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-readme-imprimatur-1.log"
+    },
+    {
+      "bytes": 63,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-readme-imprimatur-2.log",
+      "sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-readme-imprimatur-2.log"
+    },
+    {
+      "bytes": 63,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-readme-imprimatur-final.log",
+      "sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-readme-imprimatur-final.log"
+    },
+    {
+      "bytes": 330,
+      "path": "docs/protasis-success-criteria/evidence/step-1-design-home-4.log",
+      "sha256": "3c1ed411bdb730396c701e3173166dab2fd65e07907536ba713dbe09a1c597da",
+      "source": ".hexaemeron/evidence/step-1-design-home-4.log"
+    },
+    {
+      "bytes": 1107,
+      "path": "docs/protasis-success-criteria/evidence/step-1-restricted-root-fixtures-1.json",
+      "sha256": "f3ebf02ad39bbdce12e7470ca7b5e84f065202ebb4cf4840b9475351ac906f7f",
+      "source": ".hexaemeron/evidence/step-1-restricted-root-fixtures-1.json"
+    },
+    {
+      "bytes": 5893,
+      "path": "docs/protasis-success-criteria/evidence/step-1-restricted-root-fixtures-1.log",
+      "sha256": "5d9d744e07f996051813853c53ca5dfa96f1730c3d016d5c06be68939384d8eb",
+      "source": ".hexaemeron/evidence/step-1-restricted-root-fixtures-1.log"
+    },
+    {
+      "bytes": 264,
+      "path": "docs/protasis-success-criteria/evidence/step-1-scaffold-tests-5.json",
+      "sha256": "758fcee9b74c858444aced806d873ecede3077c924f9a8d5abd0f705a337f44d",
+      "source": ".hexaemeron/evidence/step-1-scaffold-tests-5.json"
+    },
+    {
+      "bytes": 4670,
+      "path": "docs/protasis-success-criteria/evidence/step-1-scaffold-tests-5.log",
+      "sha256": "7c02c204c966c6db835ef4b3056941ca6e77072cfd6f0bf605730dd73a51b043",
+      "source": ".hexaemeron/evidence/step-1-scaffold-tests-5.log"
+    },
+    {
+      "bytes": 4581,
+      "path": "docs/protasis-success-criteria/evidence/step-1-source-boundary-4.json",
+      "sha256": "8b13ceb6606dafda65d69e8e749d70b1bb7c07a6ad449d1216bd044fb0c3c40a",
+      "source": ".hexaemeron/evidence/step-1-source-boundary-4.json"
+    },
+    {
+      "bytes": 4632,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/closed-environment-applied.json",
+      "sha256": "ebb0c4fd140185e6174ba04e3227fa2a0c8a7705b34dc9b5112ec59b7172dce8",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-evaluation/applied.json"
+    },
+    {
+      "bytes": 3647,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/closed-environment-packet-manifest.json",
+      "sha256": "03fae0a959212b27c04cdb03c7e2aa33d5438f534e0e3baea1ab9625d2b23c42",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-evaluation/candidate-packet/manifest.json"
+    },
+    {
+      "bytes": 279,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/closed-environment-emit.log",
+      "sha256": "5ffa7740903a72a52d315270b96e612510fd78c4d047159b0c91f9461037b2e4",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-evaluation/emit.log"
+    },
+    {
+      "bytes": 176,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/closed-environment-tally.log",
+      "sha256": "80c9ff0336eb66b3f867d21027f27ff9b6ffbe395ce008cf8b63a145189328e8",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-evaluation/tally.log"
+    },
+    {
+      "bytes": 181,
+      "path": "docs/protasis-success-criteria/evidence/evaluation-projection/closed-environment-verify.log",
+      "sha256": "cad2b5a4b074bdb15d741afaf4632b6fed04b9816aa324de2abccabf53d0c4ad",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-evaluation/verify.log"
+    },
+    {
+      "bytes": 378,
+      "path": "docs/protasis-success-criteria/evidence/step-1-design-step2-4.json",
+      "sha256": "32af7bf65f8057290424c8304607ac8bab3bf09a96c8384d6a4801799cf06ecf",
+      "source": ".hexaemeron/evidence/step-1-design-step2-4.json"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-phylax-1.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-phylax-1.log"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-ephoros-1.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-ephoros-1.log"
+    },
+    {
+      "bytes": 1560,
+      "path": "docs/protasis-success-criteria/evidence/step-1-restricted-hex-fixtures-1.json",
+      "sha256": "a5752cd81aaa0b0706279bd8378decc2e405a2ff9fee93c55f01fe57eddc8830",
+      "source": ".hexaemeron/evidence/step-1-restricted-hex-fixtures-1.json"
+    },
+    {
+      "bytes": 60762,
+      "path": "docs/protasis-success-criteria/evidence/step-1-restricted-hex-fixtures-1.log",
+      "sha256": "fbf5d35684986544afeb6a1e9620b5165c09d59da6c461c0d27c81c7f50b1027",
+      "source": ".hexaemeron/evidence/step-1-restricted-hex-fixtures-1.log"
+    },
+    {
+      "bytes": 11828,
+      "path": "docs/protasis-success-criteria/evidence/step-1-closed-environment-projection-tests.log",
+      "sha256": "a0685a4421eaedf2072f13d03037b89223d6603e706f71f1fb738de59c6fde8f",
+      "source": ".hexaemeron/evidence/step-1-closed-environment-projection-tests.log"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-repair-final-phylax.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-repair-final-phylax.log"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-repair-final-ephoros.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-repair-final-ephoros.log"
+    },
+    {
+      "bytes": 6,
+      "path": "docs/protasis-success-criteria/evidence/step-1-repair-final-hypomnema.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-repair-final-hypomnema.log"
+    },
+    {
+      "bytes": 50583,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/study.md.txt",
+      "sha256": "3b15af2f2137075ee5c265cff385f25f966d2f47e77f06d3104ce00a494b7be4",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/study.md.txt"
+    },
+    {
+      "bytes": 41070,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/runbook.md.txt",
+      "sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/runbook.md.txt"
+    },
+    {
+      "bytes": 12573,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/proof.py.txt",
+      "sha256": "0272737d0cd224589f0ce5646518340295944274da6ee9c01587afbf7809bc24",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/proof.py.txt"
+    },
+    {
+      "bytes": 6460,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/README.md.txt",
+      "sha256": "07fb198fdc28d5554b92749015adb45466b962a75fe99bc3850bee3c077d2ab6",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/README.md.txt"
+    },
+    {
+      "bytes": 59367,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/provenance.json",
+      "sha256": "229113e1cf1cb9c86d3f4a265856c53e1ed7d2d396726a56f0c0cb3fad29999e",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/provenance.json"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 14458,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/controller-capture-design-home.evidence.json",
+      "sha256": "49e8a96c247663cd7714081e7c821dea4f77b47ce3f0fba3e5629807040dff21",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 3231,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/evaluation-run.json",
+      "sha256": "416ca056a957560995752979eaa56a2f0b1bfe4e8faca060ef6e3e39c338ed94",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/evaluation-run.json"
+    },
+    {
+      "bytes": 29070,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/integration-projection.json",
+      "sha256": "bf9083171009f2a5ae51c23c55cf5361ba5d941823f82cb9574e51278f60fd49",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/integration-projection.json"
+    },
+    {
+      "bytes": 14254,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/integration-projection.md.txt",
+      "sha256": "e9f307662a65e55446b0560a0f6324ae2fbe5dd91b3e779f7f5f4a4e2c25c23b",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/integration-projection.md.txt"
+    },
+    {
+      "bytes": 162,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-exit.json",
+      "sha256": "25baaa000f5e984e94bc7e13cacbb14a2e948a90368d3c330dbb7a41635caa91",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-exit.json"
+    },
+    {
+      "bytes": 247161,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-checked.json",
+      "sha256": "43ae501536572255f39d9fd30f34b24a4e3b9c7f93825965d9576cde8ee52ce9",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-checked.json"
+    },
+    {
+      "bytes": 1280,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-done-implement-2-result.json",
+      "sha256": "69d9d9960522e54cb2ce4c26d304da24f537cfe1ec6a4eab1d7dffc22c7a232f",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-done-implement-2-result.json"
+    },
+    {
+      "bytes": 48,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-done-implement-2.log",
+      "sha256": "407bcac8d3105d2d31e5425402265bdc8f609f5977668ef492006697594d3746",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-done-implement-2.log"
+    },
+    {
+      "bytes": 241,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-greenlight-4-result.json",
+      "sha256": "a9f484fbd2b00f90915d9929f48933b10d80b5ff437e86f0cef408b6c6b890f8",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-greenlight-4-result.json"
+    },
+    {
+      "bytes": 6784,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-greenlight-4.log",
+      "sha256": "12864398b678e75ef846531593900210473ba2bc686d3791e62c1d8aeb2b12a8",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-greenlight-4.log"
+    },
+    {
+      "bytes": 402,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4-result.json",
+      "sha256": "b5c2d7babd4631f507c467f435467dce63145a6d2ec80723eb96f9911aa17eee",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4-result.json"
+    },
+    {
+      "bytes": 379816,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4.log",
+      "sha256": "e605d1153c5fe1d390f0e5be3a0beaf8a16c0ff0a0911083ed294a5a520685b3",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4.log"
+    },
+    {
+      "bytes": 5366,
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/history.json",
+      "sha256": "399a38ce8d76737ee816b58d964e77e3ec7c9bb65d3b267fff605f34ace7b499",
+      "source": ".hexaemeron/evidence/history/step-1-before-controller-adoption/history.json"
+    },
+    {
+      "bytes": 54,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/adopted-verify.log",
+      "sha256": "3cbfb94cc6f1f9304d1009cd931e4087e585471a222699df760c0816444b607a",
+      "source": ".hexaemeron/evidence/controller-adoption/adopted-verify.log"
+    },
+    {
+      "bytes": 1207,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/adoption-record.json",
+      "sha256": "f34f9716e1e474bea7ba95b231c36aaa74414e0075cb0e1f018f58986bf8df06",
+      "source": ".hexaemeron/evidence/controller-adoption/adoption-record.json"
+    },
+    {
+      "bytes": 36,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/adoption-record.log",
+      "sha256": "4d83ac19c16416a47b0e9adff5cd60d6daaed7d6a946fe65e350f0985d1323d9",
+      "source": ".hexaemeron/evidence/controller-adoption/adoption-record.log"
+    },
+    {
+      "bytes": 426,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/candidate-status.json",
+      "sha256": "af646a01b4b8a3ba06aa96feb70faca50a3ea4b0b493fc32f47d3910695ed529",
+      "source": ".hexaemeron/evidence/controller-adoption/candidate-status.json"
+    },
+    {
+      "bytes": 560,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/checked-result.json",
+      "sha256": "7cfd711538e44a9fd320ce0c8454c9ecee9cbfbbd614da86fcd4bbb7de03b1d0",
+      "source": ".hexaemeron/evidence/controller-adoption/checked-result.json"
+    },
+    {
+      "bytes": 1974,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/compatibility-verify.json",
+      "sha256": "bedb4da8be685ab52442360bc96e6547cfbb995de86231571a5923c1db3e63a5",
+      "source": ".hexaemeron/evidence/controller-adoption/compatibility-verify.json"
+    },
+    {
+      "bytes": 436,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/gate-interface-comparison.json",
+      "sha256": "c01f137cee6f06cf64fb92335da734c301e8933993276cc7ce56e76c587574d8",
+      "source": ".hexaemeron/evidence/controller-adoption/gate-interface-comparison.json"
+    },
+    {
+      "bytes": 2228,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/github-checks.json",
+      "sha256": "f8387580e7b288012e09b39c9201cd7dffa6f758050e1070fa4f8e21ddd209b0",
+      "source": ".hexaemeron/evidence/controller-adoption/github-checks.json"
+    },
+    {
+      "bytes": 519,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/github-signatures.json",
+      "sha256": "894e8492a06c06a8194ee33687ea63cddb62ca4efd42072e1adaffe392d213f1",
+      "source": ".hexaemeron/evidence/controller-adoption/github-signatures.json"
+    },
+    {
+      "bytes": 235,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/greenlight-result.json",
+      "sha256": "39101046bcdd4dfc71a3bce2981a9aba1a5979303df4f8bd7348735ecc1ab8d8",
+      "source": ".hexaemeron/evidence/controller-adoption/greenlight-result.json"
+    },
+    {
+      "bytes": 312,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/imprimatur-final.log",
+      "sha256": "a6bd3ea6c0939e5cae1ff808ae23c393adb2a664072c24fde1481b67aae1aed4",
+      "source": ".hexaemeron/evidence/controller-adoption/imprimatur-final.log"
+    },
+    {
+      "bytes": 312,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/imprimatur-initial.log",
+      "sha256": "a6bd3ea6c0939e5cae1ff808ae23c393adb2a664072c24fde1481b67aae1aed4",
+      "source": ".hexaemeron/evidence/controller-adoption/imprimatur-initial.log"
+    },
+    {
+      "bytes": 555,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/merged.json",
+      "sha256": "c999b6c3af2e0c054515fd04a309f971cf7d11300150fa790321d060637a3b3c",
+      "source": ".hexaemeron/evidence/controller-adoption/merged.json"
+    },
+    {
+      "bytes": 1284,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/parent-review.json",
+      "sha256": "f6ad8344d92bd2964539a3355ae9b79bc7c4624f5afad6df2c35b0c4187c48df",
+      "source": ".hexaemeron/evidence/controller-adoption/parent-review.json"
+    },
+    {
+      "bytes": 680,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/runbook-admission-result.json",
+      "sha256": "f8068b69686acc304a8f07b30cf7f85dc83e9ddd85ca809571151a4c612be4d0",
+      "source": ".hexaemeron/evidence/controller-adoption/runbook-admission-result.json"
+    },
+    {
+      "bytes": 320,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/runbook-admission.log",
+      "sha256": "8a5e6d3c58d8a0d242ff34db9af1aa58cce3ce485a99d3214cfa5c1d6c03f366",
+      "source": ".hexaemeron/evidence/controller-adoption/runbook-admission.log"
+    },
+    {
+      "bytes": 289,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/source-checkout.json",
+      "sha256": "4db080d0ad9b2df04d2d9da6d61ed7a1bf573cd52854256043f2134ee0c4a6ae",
+      "source": ".hexaemeron/evidence/controller-adoption/source-checkout.json"
+    },
+    {
+      "bytes": 665,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/study-admission-2.log",
+      "sha256": "26f7ae1aff598f60a233c3450cf313df50a67e20eecb4ef3598d6fee5bb979e3",
+      "source": ".hexaemeron/evidence/controller-adoption/study-admission-2.log"
+    },
+    {
+      "bytes": 703,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/study-admission-result-2.json",
+      "sha256": "5ed5a7adcdabe05687a39e850a42a1fe8a365fe9581c922603a5f39bb45768aa",
+      "source": ".hexaemeron/evidence/controller-adoption/study-admission-result-2.json"
+    },
+    {
+      "bytes": 586,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/study-admission-result.json",
+      "sha256": "ddf591de1bb9b3e9d90f3b3c854fe6761092309a1bfbbfe2b1a9a4d402c146a7",
+      "source": ".hexaemeron/evidence/controller-adoption/study-admission-result.json"
+    },
+    {
+      "bytes": 84,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/study-admission.log",
+      "sha256": "bd1df3d6d045f027b4097d358e696d295305f31fc0c2c75c8c254b9dd37f3c6d",
+      "source": ".hexaemeron/evidence/controller-adoption/study-admission.log"
+    },
+    {
+      "bytes": 833,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/vulgate-comparison.json",
+      "sha256": "95eb736fc453dc2fa1b91b0184f8435151f12139e63155d2aa5c83a7b2463714",
+      "source": ".hexaemeron/evidence/controller-adoption/vulgate-comparison.json"
+    },
+    {
+      "bytes": 1082,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/warden-next.json",
+      "sha256": "51e36430544672b3d812da97fd075d3a92656d5a5b8be089ebe4748e38aae6c8",
+      "source": ".hexaemeron/evidence/controller-adoption/warden-next.json"
+    },
+    {
+      "bytes": 1346,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/published-family-collision-red.log",
+      "sha256": "905479745d04c511abaaa40171cb83bee321b4a1bcd23a9de58e826d265f6b19",
+      "source": "/private/tmp/issue-1273-audit-custody-evidence/revision-3/family-collision-red.log"
+    },
+    {
+      "bytes": 240,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/published-family-collision-green.log",
+      "sha256": "04b744b68f18db02605f6a4e96630cde578223d53b369f9be38e1d17cf1cc144",
+      "source": "/private/tmp/issue-1273-audit-custody-evidence/revision-3/family-collision-green.log"
+    },
+    {
+      "bytes": 1242,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/family-collision.py.txt",
+      "sha256": "ce1ff18dff82d402f31c4aa929c3b69ac02bd8b74d51318500995c9a2f7b1e5f",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/family-collision.py"
+    },
+    {
+      "bytes": 1478,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/family-collision-red-1.log",
+      "sha256": "859621ded69290b6a58e6a1f8057aba8d5cbb4eb8a9b175b0bbb7a597e35756e",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/family-collision-red-1.log"
+    },
+    {
+      "bytes": 1478,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/family-collision-red-2.log",
+      "sha256": "f6302e699d6ee5f32ffbec2263a3f1235881b78362688759a8949b5b108f0e81",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/family-collision-red-2.log"
+    },
+    {
+      "bytes": 53514,
+      "path": "docs/protasis-success-criteria/study.md",
+      "sha256": "2ff25685ea7e4f0c00b27f529ce901886156d46a5582ab7987c126105c64f3d4",
+      "source": ".hexaemeron/study.md"
+    },
+    {
+      "bytes": 50901,
+      "path": "docs/protasis-success-criteria/runbook.md",
+      "sha256": "bb36b579fe02a406519afd640e52d35d1c3583c5827cca790609933527ba6651",
+      "source": ".hexaemeron/runbook.md"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/reports/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 14458,
+      "path": "docs/protasis-success-criteria/evidence/controller-capture-design-home.evidence.json",
+      "sha256": "c61156687a6bbab38b5d6910a9c3ade2a83608e825f4d249a2b1cbb04c48aa7d",
+      "source": ".hexaemeron/reports/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 847,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/family-collision-green-2.json",
+      "sha256": "7d5f37d2ce9816e31a5244b093bbfda46d9583bca9cb481ee776a64d2eb29898",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/family-collision-green-2.json"
+    },
+    {
+      "bytes": 317,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/family-collision-green-2.log",
+      "sha256": "fc0ccd1e3bd706e18512aef7667b22fdf1080e7b62382f643fb177c075df2ef6",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/family-collision-green-2.log"
+    },
+    {
+      "bytes": 438,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-unchanged.json",
+      "sha256": "b82bc168c358df6c37de3e48a07ded17833a3b92632652925e2d36599a103496",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-unchanged.json"
+    },
+    {
+      "bytes": 835,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-emit.json",
+      "sha256": "5752add50b81c2289284d168ad52633fb4951078d5198024193a69077c993dbd",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-emit.json"
+    },
+    {
+      "bytes": 279,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-emit.log",
+      "sha256": "5ffa7740903a72a52d315270b96e612510fd78c4d047159b0c91f9461037b2e4",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-emit.log"
+    },
+    {
+      "bytes": 1624,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-tally-2.json",
+      "sha256": "ec806f5e39bd43db5dd92859846593f89409f380f33611302d44ed8d04f563ca",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-tally-2.json"
+    },
+    {
+      "bytes": 176,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-tally-2.log",
+      "sha256": "80c9ff0336eb66b3f867d21027f27ff9b6ffbe395ce008cf8b63a145189328e8",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-tally-2.log"
+    },
+    {
+      "bytes": 1469,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-verify-2.json",
+      "sha256": "84e312eab71819c6929f789511f58446d8a7b4165b7201b1889987a5a4195131",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-verify-2.json"
+    },
+    {
+      "bytes": 181,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-verify-2.log",
+      "sha256": "cad2b5a4b074bdb15d741afaf4632b6fed04b9816aa324de2abccabf53d0c4ad",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-verify-2.log"
+    },
+    {
+      "bytes": 1156,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-inventory.json",
+      "sha256": "3a7f05a3c19a5c2c45a550977c10465d26155f0e90b60ab7854563da988c3000",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-inventory.json"
+    },
+    {
+      "bytes": 984,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-vulgate-comparison.json",
+      "sha256": "92d3bfa54ac4f2b9dcd0b77be995457db05d146534f4e7dcdffab736243fb7c7",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-vulgate-comparison.json"
+    },
+    {
+      "bytes": 982,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-imprimatur-initial.json",
+      "sha256": "017ae7c9deea7830b0d0d4a158f2546c5d87f86d48d5a92e828da019246ca173",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-imprimatur-initial.json"
+    },
+    {
+      "bytes": 63,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-imprimatur-initial.log",
+      "sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-imprimatur-initial.log"
+    },
+    {
+      "bytes": 3647,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/evaluation-packet-manifest.json",
+      "sha256": "03fae0a959212b27c04cdb03c7e2aa33d5438f534e0e3baea1ab9625d2b23c42",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/evaluation-packet/manifest.json"
+    },
+    {
+      "bytes": 6460,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-source.md.txt",
+      "sha256": "07fb198fdc28d5554b92749015adb45466b962a75fe99bc3850bee3c077d2ab6",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-source.md.txt"
+    },
+    {
+      "bytes": 958,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-imprimatur-final.json",
+      "sha256": "85ce02a2bcc27468fe2fdb6be0b6dadf2debd4f03ee9f1f732bbd68e22958d51",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-imprimatur-final.json"
+    },
+    {
+      "bytes": 63,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-imprimatur-final.log",
+      "sha256": "d7e5c78a55f6ae8354e801ec1a8c023449e2664c62815c46f4d6fa6c5621d83b",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-imprimatur-final.log"
+    },
+    {
+      "bytes": 877,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-brevitas.json",
+      "sha256": "e045e3fd147829368c76fa420b5ca9437e7465835e9fae23b79a1474997a63d9",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-brevitas.json"
+    },
+    {
+      "bytes": 0,
+      "path": "docs/protasis-success-criteria/evidence/controller-adoption/README-brevitas.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": ".hexaemeron/evidence/warden-step-1-round-1/README-brevitas.log"
+    }
+  ],
+  "schema": "success-criteria-source-copies/v1"
+}

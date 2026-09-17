@@ -1,0 +1,13 @@
+{
+  "operation": "read-only gate interface comparison",
+  "operation_ran": false,
+  "candidate_controller_sha256": "9ca0576cf335b8df7f124b6235f87df4b60e7c290823229becd57227ea1e7359",
+  "changes": [
+    {
+      "path": "/adapter_sha256",
+      "before": "eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279",
+      "after": "8116b2c06be9bb20b92f02a6b6f6e75e298fb45ff2f430cdd235c4ee41e58f8a"
+    }
+  ],
+  "adoption": false
+}

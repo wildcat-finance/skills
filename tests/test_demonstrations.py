@@ -19,6 +19,8 @@ import time
 import unittest
 from unittest import mock
 
+from tests.fixture_python import pinned_python_path
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
@@ -1562,10 +1564,11 @@ class RunnerReportTests(RunnerHarness):
         selected = demonstrations.select_records(
             records, skills, public_set=True, record_directory=None
         )
-        code, payload, events, _target = self.run_records(
-            selected, report="public-set.json",
-            ceiling_ms=demonstrations.PUBLIC_SET_CEILING_MS, mode="public-set",
-        )
+        with pinned_python_path():
+            code, payload, events, _target = self.run_records(
+                selected, report="public-set.json",
+                ceiling_ms=demonstrations.PUBLIC_SET_CEILING_MS, mode="public-set",
+            )
         if code != 0:
             absent = absent_dependencies(payload)
             if absent:

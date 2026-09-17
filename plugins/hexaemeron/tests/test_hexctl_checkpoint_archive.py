@@ -105,6 +105,7 @@ os.environ["TMPDIR"] = tempfile.tempdir
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from test_hexctl import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module  # noqa: E402
+from fixture_tools import native_signing_tools  # noqa: E402
 
 ORIGIN_URL = "https://github.com/wildcat-finance/example.git"
 COAUTHOR = "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>"
@@ -1801,19 +1802,26 @@ class SignedRunFixture(HexctlCase):
 
     @classmethod
     def setUpClass(cls):
-        if shutil.which("gpg") is None:
+        cls.key_home = None
+        cls.fingerprint = None
+        tool_context = native_signing_tools()
+        try:
+            cls.tool_paths = tool_context.__enter__()
+        except FileNotFoundError:
             return
+        cls.addClassCleanup(tool_context.__exit__, None, None, None)
         # A gpg-agent's socket lives in its home and AF_UNIX paths are capped
         # near 104 bytes, so the names below stay short. The system temporary
         # root, canonicalised above, leaves room; a name under the tree would
         # not, and `tests/test_scratch_quiescence.py` forbids anchoring there
         # anyway.
         cls.key_root = tempfile.mkdtemp(prefix="fiat861-")
+        cls.addClassCleanup(shutil.rmtree, cls.key_root, ignore_errors=True)
         cls.key_home = os.path.join(cls.key_root, "h")
         os.mkdir(cls.key_home, 0o700)
         generated = subprocess.run(
             [
-                "gpg",
+                cls.tool_paths["gpg"],
                 "--batch",
                 "--quiet",
                 "--pinentry-mode",
@@ -1834,7 +1842,7 @@ class SignedRunFixture(HexctlCase):
             cls.key_home = None
             return
         listed = subprocess.run(
-            ["gpg", "--batch", "--with-colons", "--list-secret-keys"],
+            [cls.tool_paths["gpg"], "--batch", "--with-colons", "--list-secret-keys"],
             env={**os.environ, "GNUPGHOME": cls.key_home},
             capture_output=True,
             text=True,
@@ -1851,10 +1859,9 @@ class SignedRunFixture(HexctlCase):
         if getattr(cls, "key_home", None) is None:
             return
         subprocess.run(
-            ["gpgconf", "--homedir", cls.key_home, "--kill", "all"],
+            [cls.tool_paths["gpgconf"], "--homedir", cls.key_home, "--kill", "all"],
             capture_output=True,
         )
-        shutil.rmtree(cls.key_root, ignore_errors=True)
 
     def setUp(self):
         if self.key_home is None:
@@ -1863,7 +1870,7 @@ class SignedRunFixture(HexctlCase):
         self.env["GNUPGHOME"] = self.key_home
         self.git("remote", "add", "origin", ORIGIN_URL)
         self.git("config", "user.signingkey", self.fingerprint)
-        self.git("config", "gpg.program", "gpg")
+        self.git("config", "gpg.program", self.tool_paths["gpg"])
         self.fake_refs["main"] = self.head_sha()
 
     # -- fixture ---------------------------------------------------------
@@ -1881,7 +1888,7 @@ class SignedRunFixture(HexctlCase):
                 "-c",
                 f"user.signingkey={self.fingerprint}",
                 "-c",
-                "gpg.program=gpg",
+                f"gpg.program={self.tool_paths['gpg']}",
                 "commit",
                 "-q",
                 *(("--amend",) if amend else ()),
@@ -3071,16 +3078,10 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         `checkpoint archive` snapshots every controller file into the capsule
         and scans each one, so a run whose study quotes an armour header could
         not archive itself. That was S2-R2-02, and steps 4 and 5 export this run
-        for real. Each document is read as it stands rather than as a fixture
-        copy, so the guard keeps holding as it grows.
+        for real. The tracked archive study and reference remain the witnesses;
+        another run's active study does not become an archive specification.
         """
-        checked = [STUDY, REFERENCE]
-        run_study = ROOT / ".hexaemeron" / "study.md"
-        if run_study.exists():
-            # Untracked run state: present in a Fiat run worktree, absent in a
-            # clean checkout, and byte-equal to `STUDY` by this step's binding.
-            checked.append(run_study)
-        for path in checked:
+        for path in (STUDY, REFERENCE):
             with self.subTest(document=path.name):
                 text = read(path)
                 self.assertTrue(
@@ -3088,6 +3089,17 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     f"{path.name} names no armour header, so it guards nothing",
                 )
                 self.assertIsNone(self.scan(path.read_bytes()))
+
+    def test_unrelated_active_study_does_not_join_archive_specifications(self):
+        with tempfile.TemporaryDirectory(prefix="other-study-") as directory:
+            active_root = Path(directory)
+            (active_root / ".hexaemeron").mkdir()
+            (active_root / ".hexaemeron/study.md").write_text(
+                "# An unrelated study\nIts contract names no archive armour.\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(sys.modules[__name__], "ROOT", active_root):
+                self.test_secret_scan_passes_the_run_s_own_specification_documents()
 
 
 def _zip_local_header(name: bytes, data: bytes, *, method=0, flags=0, extra=b""):
@@ -3208,7 +3220,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
 
     # -- fixture plumbing -------------------------------------------------
 
-    def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1):
+    def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1, temp_parent=None):
         args = [
             sys.executable,
             HEXCTL,
@@ -3221,7 +3233,8 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         ]
         if scratch is not None:
             args += ["--scratch", str(scratch)]
-        proc = subprocess.run(args, capture_output=True, text=True)
+        env = None if temp_parent is None else {**os.environ, "TMPDIR": str(temp_parent)}
+        proc = subprocess.run(args, capture_output=True, text=True, env=env)
         if proc.returncode != expect:
             raise AssertionError(
                 f"checkpoint inspect -> rc {proc.returncode} (expected {expect})\n"
@@ -3712,20 +3725,63 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
     def test_inspect_writes_nothing_outside_scratch(self):
         path = self.good_archive()
         digest = self.outer_sha256(path)
-        before = set(os.listdir(tempfile.gettempdir()))
-        self.run_inspect(path, digest, expect=0)
-        after = set(os.listdir(tempfile.gettempdir()))
-        leaked = {
-            name
-            for name in after - before
-            if name.startswith(".fiat-checkpoint-inspect-") or name.startswith(".fiat-gpg-")
-        }
-        self.assertEqual(set(), leaked)
-        named_scratch = os.path.join(self.dir, "named-scratch")
-        self.run_inspect(path, digest, scratch=named_scratch, expect=0)
-        self.assertTrue(os.path.isdir(named_scratch))
-        self.assertEqual(0o700, stat.S_IMODE(os.stat(named_scratch).st_mode))
-        self.assertTrue(os.listdir(named_scratch))
+        with tempfile.TemporaryDirectory(prefix="i-") as temp_parent:
+            before = set(os.listdir(temp_parent))
+            self.run_inspect(path, digest, expect=0, temp_parent=temp_parent)
+            after = set(os.listdir(temp_parent))
+            leaked = {
+                name
+                for name in after - before
+                if name.startswith(".fiat-checkpoint-inspect-") or name.startswith(".fiat-gpg-")
+            }
+            self.assertEqual(set(), leaked)
+            named_scratch = os.path.join(self.dir, "named-scratch")
+            self.run_inspect(path, digest, scratch=named_scratch, expect=0,
+                             temp_parent=temp_parent)
+            self.assertTrue(os.path.isdir(named_scratch))
+            self.assertEqual(0o700, stat.S_IMODE(os.stat(named_scratch).st_mode))
+            self.assertTrue(os.listdir(named_scratch))
+
+    def test_cleanup_check_does_not_attribute_foreign_inspection_activity(self):
+        original = self.run_inspect
+        foreign = []
+        shared = Path(tempfile.gettempdir())
+
+        def inspect_with_foreign_activity(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if kwargs.get("scratch") is None:
+                writer = subprocess.run(
+                    [sys.executable, "-c",
+                     "import tempfile; print(tempfile.mkdtemp("
+                     "prefix='.fiat-checkpoint-inspect-foreign-'))"],
+                    capture_output=True, text=True, check=True,
+                    env={**os.environ, "TMPDIR": str(shared)},
+                )
+                path = Path(writer.stdout.strip())
+                self.assertEqual(shared, path.parent)
+                self.assertTrue(path.name.startswith(".fiat-checkpoint-inspect-foreign-"))
+                self.addCleanup(shutil.rmtree, path)
+                foreign.append(path)
+            return result
+
+        with mock.patch.object(self, "run_inspect", side_effect=inspect_with_foreign_activity):
+            self.test_inspect_writes_nothing_outside_scratch()
+        self.assertTrue(foreign)
+        self.assertTrue(all(path.is_dir() for path in foreign))
+
+    def test_cleanup_check_still_detects_an_owned_inspection_leak(self):
+        original = self.run_inspect
+        name = ".fiat-checkpoint-inspect-owned-leak"
+
+        def inspect_with_owned_leak(*args, **kwargs):
+            result = original(*args, **kwargs)
+            if kwargs.get("scratch") is None:
+                (Path(kwargs["temp_parent"]) / name).mkdir()
+            return result
+
+        with mock.patch.object(self, "run_inspect", side_effect=inspect_with_owned_leak):
+            with self.assertRaisesRegex(AssertionError, re.escape(name)):
+                self.test_inspect_writes_nothing_outside_scratch()
 
     def test_inspect_prints_no_entry_content(self):
         path = self.good_archive()

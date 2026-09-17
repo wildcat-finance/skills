@@ -1,0 +1,9 @@
+{
+  "candidate": "terminal-replay",
+  "command": "python3 selection_probe.py --candidate terminal-replay --criterion sample-record-bytes --report reports/terminal-replay-sample-record-bytes.json",
+  "criterion": "sample-record-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 345
+}

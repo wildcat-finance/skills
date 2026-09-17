@@ -1,0 +1,9 @@
+{
+  "candidate": "controller-capture",
+  "command": "python3 selection_probe.py --candidate controller-capture --criterion failed-result-unmet --report reports/controller-capture-failed-result-unmet.json",
+  "criterion": "failed-result-unmet",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

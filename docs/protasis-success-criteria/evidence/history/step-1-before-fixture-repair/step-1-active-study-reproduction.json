@@ -1,0 +1,24 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "plugins/hexaemeron/tests",
+    "-p",
+    "test_hexctl_checkpoint_archive.py",
+    "-k",
+    "test_secret_scan_passes_the_run_s_own_specification_documents",
+    "-v"
+  ],
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "exit": 1,
+  "interpreter": "/opt/homebrew/bin/python3",
+  "output": {
+    "bytes": 1799,
+    "path": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-active-study-reproduction.log",
+    "sha256": "ff0f527f0ef5cfc9d22446ec2692dbf5da8c47c6d984aa7a47e7dfc24db958c3"
+  },
+  "wall_time_seconds": 0.11840220796875656
+}

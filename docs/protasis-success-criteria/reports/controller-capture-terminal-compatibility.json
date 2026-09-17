@@ -1,0 +1,9 @@
+{
+  "candidate": "controller-capture",
+  "command": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion terminal-compatibility --report .hexaemeron/reports/controller-capture-terminal-compatibility.json",
+  "criterion": "terminal-compatibility",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "step-1-child-interpreter-probe/v1",
+  "script_sha256": "cf9c80b1c1eb2342f1b14afadaf9b0578e93cf1b88623889ce75c7f65307c148",
+  "environment": {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/bin:/usr/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONUTF8": "1",
+    "TZ": "UTC"
+  },
+  "diagnostic_only": true,
+  "runs": [
+    {
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-child-interpreter-probe.py",
+        "declared"
+      ],
+      "exit": 1,
+      "seconds": 1.1930295419879258,
+      "log": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-child-interpreter-declared.log",
+      "log_sha256": "39de847ba23ef99cb61eff79357780308e86df72140eee19a0c6300f99e1a014"
+    },
+    {
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-child-interpreter-probe.py",
+        "pinned"
+      ],
+      "exit": 0,
+      "seconds": 2.9823772920062765,
+      "log": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-child-interpreter-pinned.log",
+      "log_sha256": "9bd85e8158f146e6f2f93221e81e40d857240df1c6f8c8b7d2ee31926eee3694"
+    }
+  ]
+}

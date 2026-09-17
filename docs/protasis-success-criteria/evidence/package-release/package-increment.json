@@ -1,0 +1,39 @@
+{
+  "after": "1.6.45",
+  "base": "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+  "before": "1.6.44",
+  "before_head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+  "files": [
+    {
+      "after_sha256": "5281d53cc3342aaaca9a48705243b78843d5178f0c0bcf211d1690ec08a1f9d0",
+      "before_sha256": "94cb5643809af4b060740db5dcabebc9c208d58dcdabe85ae79dc9855f112deb",
+      "path": "plugins/hexaemeron/.claude-plugin/plugin.json"
+    },
+    {
+      "after_sha256": "5a03e4e5a63f330194e75defc37f2f3a5feeb188355b35ce630586bf8a14d8cf",
+      "before_sha256": "e0330a234495fe572461448783e14bf5d7942ad0593b8ffe586916917a9cbb48",
+      "path": "plugins/hexaemeron/.codex-plugin/plugin.json"
+    },
+    {
+      "after_sha256": "1eeb1371d3775aa8b8237e7a6e986ca386320646340cae760c6c6501b7eea8be",
+      "before_sha256": "70a3c620769cfbbdbb2a7b26b62440e2788d50c4afb48efbed39bc06d87274f5",
+      "path": ".claude-plugin/marketplace.json"
+    },
+    {
+      "after_sha256": "2fb85d527d4f74ec7e2950b42d601844872708eb877f6c21dbec7482e45ee435",
+      "before_sha256": "5bd8eadd7b8cfab53ffe8b9bf8ce5936834c8ac199a95032f923a9ec36c9da81",
+      "path": ".agents/plugins/marketplace.json"
+    },
+    {
+      "after_sha256": "fa141d3762ca1e22774bb3d4085b6393e89ef13e991fbf64d644552cd7f53744",
+      "before_sha256": "13767a8ca69d3de66c1f90cd8d3f56f9f844047d8e2226ad133b313c5bcea157",
+      "path": "tests/test_version_propagation.py"
+    },
+    {
+      "after_sha256": "115af9da37c2dc5b36200d7c5fe2bf5ecb5296e36506b8f6025d1ff0a032b8d6",
+      "before_sha256": "4edde092cfd5dbdf77af802a0131bce9e702c540dd2216ea5883ebed85868fe2",
+      "path": "plugins/hexaemeron/tests/test_phylax_model_proxy.py"
+    }
+  ],
+  "finding": "S1-R2-01"
+}

@@ -1,0 +1,17 @@
+{
+  "command": [
+    "/opt/homebrew/bin/python3",
+    "-B",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-foreign-temp-reproduction-2.py"
+  ],
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "exit": 1,
+  "output": {
+    "bytes": 1444,
+    "path": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-foreign-temp-reproduction-2.log",
+    "sha256": "eab4f94f5512431b3ad4daf442f2eea3ca3b890461a24e6a584ca5f905b0ffa4"
+  },
+  "script_sha256": "695ebd8c5482d000b3054a417108022270762b1cbeafebf8fa1c74f71480f2a2",
+  "test_source_sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e",
+  "wall_time_seconds": 15.836736790952273
+}

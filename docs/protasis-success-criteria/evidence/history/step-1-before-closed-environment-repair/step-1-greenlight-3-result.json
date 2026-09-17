@@ -1,0 +1,11 @@
+{
+  "command": [
+    ".githooks/greenlight"
+  ],
+  "started": "2026-09-16T08:31:49.727186+00:00",
+  "ended": "2026-09-16T08:38:40.805453+00:00",
+  "exit": 0,
+  "seconds": 411.0752697500866,
+  "staged_tree": "ac5ef69b093a409f421dc31177f92df68b31f7ca",
+  "log_sha256": "970df2629c670370d82685b642654b3cd279794b5ef4cb0937e1ed6abd77e6f1"
+}

@@ -1,0 +1,46 @@
+source     c41c8eac969e4e0c59dbe463a7cf6e0ff170e07f0c0bcbaeec4128fec8c1c243
+map        8d576053833f
+base       (working tree only)
+changed    0 path(s)
+
+selected scopes
+  dead-code        consumer of root
+  hexaemeron       requested
+  repo-lints       consumer of hexaemeron; consumer of root; consumer of dead-code
+  root             consumer of hexaemeron
+
+selected checks
+  dead-code-suite        Report-only dead-code suite
+  dead-code-suppressions-check Current dead-code suppression validation
+  demonstrations-suite   Governed demonstration ledger suite
+  front-door-check       Public front-door contract check
+  hexaemeron-forge-build Hexaemeron harness forge build  [group hexaemeron-forge]
+  hexaemeron-forge-test  Hexaemeron harness forge test  [group hexaemeron-forge]
+  hexaemeron-suite       Hexaemeron suite
+  imprimatur-suite       Imprimatur suite
+  joined-front-door-suite Joined front-door and demonstration suite
+  lint-ephoros           Ephoros signal lint
+  lint-hypomnema         Hypomnema record lint
+  lint-phylax            Phylax boundary lint
+  root-suite             Root repository suite
+
+omitted: adr-assignment-workflow, alexandria-suite, anamnesis-suite, ariadne-suite, berean-suite, brevitas-suite, dokimasia-suite, harness-roster-check, harness-roster-freshness, hermes-suite, homologia-suite, horos-suite, janus-suite, lazarus-suite, lemma-markdown, lemma-solidity, pandects-forge-build, pandects-forge-test, pandects-suite, probitas-suite, sapheneia-suite, suite-redundancy-suite, synkrisis-suite, tabularium-suite
+
+budget     26 slot(s) (explicit, cap 32)
+
+results
+  dead-code-suite        passed       115.4s
+  dead-code-suppressions-check passed       264.1s
+  demonstrations-suite   passed       79.2s
+  front-door-check       passed       0.9s
+  hexaemeron-forge-build passed       7.3s
+  hexaemeron-forge-test  passed       1.1s
+  hexaemeron-suite       passed       1139.1s
+  imprimatur-suite       passed       2.4s
+  joined-front-door-suite passed       75.3s
+  lint-ephoros           passed       22.7s
+  lint-hypomnema         passed       2.7s
+  lint-phylax            passed       48.9s
+  root-suite             passed       859.1s
+
+outcome    green

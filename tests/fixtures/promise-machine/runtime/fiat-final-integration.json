@@ -13,7 +13,7 @@
             "id": "promise-owner:fiat-final-integration",
             "reference": {
               "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-              "sha256": "02c7a4498ca0dd10cba4e8110a01a2db42acef30e8ef1eb8d321ad4acbff7136"
+              "sha256": "3db3ac5e793bdd55b07226dcb9ab0c49460a7eb9830f77e8e22ab3946434c7e3"
             }
           },
           "evidence": {
@@ -63,7 +63,7 @@
           "id": "promise-owner:fiat-final-integration",
           "reference": {
             "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-            "sha256": "02c7a4498ca0dd10cba4e8110a01a2db42acef30e8ef1eb8d321ad4acbff7136"
+            "sha256": "3db3ac5e793bdd55b07226dcb9ab0c49460a7eb9830f77e8e22ab3946434c7e3"
           }
         },
         "evidence_classes": [
@@ -120,7 +120,7 @@
             "id": "promise-owner:fiat-final-integration",
             "reference": {
               "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-              "sha256": "02c7a4498ca0dd10cba4e8110a01a2db42acef30e8ef1eb8d321ad4acbff7136"
+              "sha256": "3db3ac5e793bdd55b07226dcb9ab0c49460a7eb9830f77e8e22ab3946434c7e3"
             }
           },
           "evidence": {
@@ -170,7 +170,7 @@
           "id": "promise-owner:fiat-final-integration",
           "reference": {
             "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-            "sha256": "02c7a4498ca0dd10cba4e8110a01a2db42acef30e8ef1eb8d321ad4acbff7136"
+            "sha256": "3db3ac5e793bdd55b07226dcb9ab0c49460a7eb9830f77e8e22ab3946434c7e3"
           }
         },
         "evidence_classes": [

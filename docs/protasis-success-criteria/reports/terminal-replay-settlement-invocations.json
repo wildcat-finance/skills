@@ -1,0 +1,9 @@
+{
+  "candidate": "terminal-replay",
+  "command": "python3 selection_probe.py --candidate terminal-replay --criterion settlement-invocations --report reports/terminal-replay-settlement-invocations.json",
+  "criterion": "settlement-invocations",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 3
+}
