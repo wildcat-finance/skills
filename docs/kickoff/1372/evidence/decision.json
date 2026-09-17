@@ -1,0 +1,54 @@
+{
+  "schema": "wildcat.kickoff-event-decision.v1",
+  "record": "docs/kickoff/1372/eventdecision.md",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1485",
+  "parent_issue": "https://github.com/wildcat-finance/skills/issues/1372",
+  "evidence_class": "attested",
+  "decision": "pursue",
+  "candidate_status": "interim",
+  "repository": "https://github.com/wildcat-finance/v2-protocol",
+  "deployed_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+  "candidate_commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "candidate_ref": "tag v2.5.4; the release/v2.5 head when read at 2026-09-17T04:01:49Z",
+  "decision_maker": {
+    "name": "Dr Laurence E. Day",
+    "github": "laurenceday",
+    "role": "protocol maintainer; committer of the v2-protocol main head f5a26146",
+    "act": "selected the option below in the delivery session",
+    "observed_at": "2026-09-17T02:05:35Z"
+  },
+  "reviewer": "Dr Laurence E. Day (laurenceday), before the pull request merges",
+  "producer": "Shoggoth as Surveyor under Protasis",
+  "question": "Dave says v2.5.4 is the top right now and that the next release will most likely change events (MarketClosed). Which decision should the #1485 record carry?",
+  "options_offered": [
+    "Pursue; v2.5.4 is the interim pin",
+    "Pursue; wait for the successor",
+    "Not decided; keep #1485 blocked"
+  ],
+  "selected_option": {
+    "label": "Pursue; v2.5.4 is the interim pin",
+    "description": "Record pursue, attributed to you on Dave's statement. The candidate is bea503c2. The successor release must be re-pinned and #1372 re-audited before any verdict gates a merge. The PR closes #1485."
+  },
+  "earlier_question": "An earlier question offered pursue or decline for bea503c2. The answer was the relayed statement below, not an option, so the question above asked which decision to record.",
+  "basis": {
+    "statement_by": "Dave Coleman",
+    "channel": "Slack messages relayed verbatim by Dr Laurence E. Day in the delivery session on 2026-09-16",
+    "displayed_times": "3:01 PM to 3:03 PM on 2026-09-16, as relayed; the relaying host clock was BST (UTC+1)",
+    "event_relevant_content": [
+      "v2.5.4 is the latest Sepolia-deployed version of v2-protocol",
+      "another release will follow",
+      "that release will most likely change events, because MarketClosed will need adjustments",
+      "v2.5.4 is the top of the line at the time of the statement"
+    ],
+    "withheld": "The rest of the statement describes unreleased work outside the event surface and stays out of this public record.",
+    "relayed_text_sha256": "730cf0c77b5e6629532614489595ac41c319d011e6ce35148622027929c51c34",
+    "digest_input": "the relayed text as UTF-8: five lines joined by LF, no final LF, spacing as transcribed in the delivery session"
+  },
+  "consequences": [
+    "#1372, #1363, #1381 and #1406 use bea503c2 as the candidate until a successor release is recorded.",
+    "Before a consumer uses an audit verdict, harness result or gas result at bea503c2 as a merge gate, it checks the v2.5 line's current top. A successor head needs a new pin and a new #1372 audit.",
+    "The decision is pursue, so candidate-merge acceptance in #1372 and #1406 applies to the pinned head. The disposable-comparison limit for a declined candidate does not apply."
+  ],
+  "not_inferred_from": "the existence of release/v2.5, the v2.5.4 tag or the deploy/sepolia-v2.5.4 branch",
+  "boundary": "Records the maintainer's pursue decision and interim candidate pin. It does not approve a deployment, establish that bea503c2 or its successor will be deployed, audit either commit, or apply candidate topics to logs the deployed contracts emitted."
+}
