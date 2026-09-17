@@ -282,3 +282,102 @@ Elenchus command: `python3 plugins/horos/tests/run_tests.py --elenchus-report {r
 test. metron: the benchmark median is recorded against the 1,000 ms budget.
 phylax: none, no new boundary. ephoros: none, nothing runs unattended.
 elenchus: none, no failure in hand.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Complete replacement Files:
+`plugins/horos/docs/readable-families/study.md`,
+`plugins/horos/docs/readable-families/runbook.md`, `.horos/boundary.json`,
+`.horos/candidates.json`, `.horos/census.json`,
+`plugins/horos/.claude-plugin/plugin.json`,
+`plugins/horos/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`tests/test_version_propagation.py`.
+**Why.** The study amendment of 2026-09-17 has each step raise the Horos plugin
+package version one patch above its pull request's base, so the four version
+files join this step's Files.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Complete replacement Files:
+`plugins/horos/skills/horos/scripts/horos.py`,
+`plugins/horos/tests/test_readable_families.py` (new), `.horos/boundary.json`,
+`.horos/candidates.json`, `.horos/census.json`,
+`plugins/horos/.claude-plugin/plugin.json`,
+`plugins/horos/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`tests/test_version_propagation.py`.
+**Why.** The study amendment of 2026-09-17 has each step raise the Horos plugin
+package version one patch above its pull request's base, so the four version
+files join this step's Files.
+**Steps touched.** Step 2.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Complete replacement Files:
+`plugins/horos/tests/test_committed_family_retention.py` (new),
+`plugins/horos/examples/fixture/.gitattributes`,
+`plugins/horos/examples/fixture/out/` (new),
+`plugins/horos/examples/fixture/releases/` (new),
+`plugins/horos/examples/fixture/.horos/boundary.json`,
+`plugins/horos/examples/fixture/.horos/candidates.json`,
+`plugins/horos/examples/fixture/.horos/census.json`,
+`plugins/horos/examples/README.md`, `plugins/horos/tests/test_discipline.py`
+only if its rule-class assertions need the new evidence,
+`.horos/boundary.json`, `.horos/candidates.json`, `.horos/census.json`,
+`plugins/horos/.claude-plugin/plugin.json`,
+`plugins/horos/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`tests/test_version_propagation.py`.
+**Why.** The study amendment of 2026-09-17 has each step raise the Horos plugin
+package version one patch above its pull request's base, so the four version
+files join this step's Files.
+**Steps touched.** Step 3.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Complete replacement Files:
+`plugins/horos/skills/horos/SKILL.md`,
+`plugins/horos/skills/horos/EVOLUTION.md`, `plugins/horos/README.md`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai`,
+`tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json`,
+`tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json`,
+`tests/fixtures/agent-instruction-v1/evidence/measurement.json`,
+`tests/fixtures/agent-instruction-v1/evidence/parity.json`,
+`tests/promise_machine_coverage.json`, `.horos/boundary.json`,
+`.horos/candidates.json`, `.horos/census.json`,
+`plugins/horos/.claude-plugin/plugin.json`,
+`plugins/horos/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`tests/test_version_propagation.py`.
+**Why.** The study amendment of 2026-09-17 has each step raise the Horos plugin
+package version one patch above its pull request's base, so the four version
+files join this step's Files.
+**Steps touched.** Step 4.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Complete replacement Files:
+`plugins/horos/docs/evidence/skills-readable-families.md` (new),
+`plugins/horos/tests/test_evidence.py`, `.horos/boundary.json`,
+`.horos/candidates.json`, `.horos/census.json`,
+`plugins/horos/.claude-plugin/plugin.json`,
+`plugins/horos/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`tests/test_version_propagation.py`.
+**Why.** The study amendment of 2026-09-17 has each step raise the Horos plugin
+package version one patch above its pull request's base, so the four version
+files join this step's Files.
+**Steps touched.** Step 5.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.

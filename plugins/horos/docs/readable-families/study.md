@@ -835,3 +835,28 @@ gate inside the run worktree.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Assumption 7 and section 12 keep the Horos plugin package
+version at `0.1.1`, and section 3 lists a package version bump under ask first.
+Since 2026-09-16 the repository's `invariants` check runs
+`scripts/plugin_release.py` against each pull request's own base and refuses a
+changed plugin whose package version does not increase. It refused Step 1's
+pull request with `horos: changed package requires a version above 0.1.1; got 0.1.1`.
+The operator decided on 2026-09-17 that every step raises the Horos package
+version by one patch above its pull request's base and above every version any
+local or remote ref claims. The four places are
+`plugins/horos/.claude-plugin/plugin.json`,
+`plugins/horos/.codex-plugin/plugin.json`, the Horos entry of
+`.claude-plugin/marketplace.json` and the `horos` pin in
+`tests/test_version_propagation.py`. The skill label, its generation row and
+the version-relations declaration are unchanged.
+**Why.** The plugin-release rule landed after the Horos runs whose practice
+section 12 cites. Run 1273's stacked pull requests passed it with one package
+bump per step.
+**Steps touched.** Steps 1, 2, 3, 4 and 5, each of which changes the Horos
+plugin tree.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
+entry holds; exit holds.
