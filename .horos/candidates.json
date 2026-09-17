@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 25406055,
+    "bytes_blob": 24133683,
     "bytes_generated": 98
   },
   "entries": [
@@ -145,6 +145,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 36465,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1383-horos-33-evidence-files-readable-by-rule.synopsis.md"
     },
     {
       "bytes": 60462,
@@ -875,13 +882,6 @@
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/input/responses/recent-prestate-trace.json"
     },
     {
-      "bytes": 76773,
-      "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 76773 bytes",
-      "grade": "candidate",
-      "path": "plugins/alexandria/examples/compound-v3-phase0-v0/release/manifest.json"
-    },
-    {
       "bytes": 28233,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 28233 bytes",
@@ -1126,13 +1126,6 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/probitas/audit/AUDIT_SYNOPSIS.md"
-    },
-    {
-      "bytes": 1232064,
-      "category": "blob",
-      "evidence": "mean line length above 400 in the first 4096 bytes",
-      "grade": "candidate",
-      "path": "plugins/tabularium/examples/aave-v4-v0/events.jsonl"
     },
     {
       "bytes": 461304,

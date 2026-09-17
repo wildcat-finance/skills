@@ -381,3 +381,61 @@ files join this step's Files.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-17
+
+**What changed.** Complete replacement Exit: The command below exits 0 and reports outcome green, and the deliverables that follow hold:
+
+```sh
+python3 scripts/run_checks.py --base fiat/1383-horos-33-evidence-files-readable-by-rule --scope root --scope horos --format json
+```
+
+- Resolution sits beside the unchanged set-only helpers, in the precedence of
+  study section 4, "What attribute-then-family builds". Within one attribute
+  file the last matching line decides, and the innermost file that decides
+  wins. `attr` and `attr=true` set, `-attr` and `attr=false` unset, `!attr`
+  and any other value leave the attribute unspecified, and a macro definition
+  line is skipped.
+- A set attribute makes a hard entry citing its deciding line in today's
+  evidence format. An unset attribute keeps any file readable. Otherwise an
+  exact family basename is readable, checked first in `classify_file` after its
+  symlink refusal.
+- A corroborated generated or vendored directory, or a directory a set pattern
+  matches, that holds a readable tracked file becomes per-file hard entries.
+  The directory evidence ends with `; split around readable <path>`, plus
+  ` and <n> more` when there are more. Candidate directory entries and the
+  census count each file once, as before.
+- `plugins/horos/tests/test_readable_families.py` checks each family in the
+  three placements of study section 1: a served `out/` directory, a
+  maintainer's broad set pattern with a readable line, and a neighbouring
+  `ledger.tar.part-aa` under `*.part-* linguist-generated`. It also checks the
+  eight near-miss names, a set attribute excluding each family name, the
+  attribute cases against `git check-attr` in temporary repositories with every
+  `GIT_*` variable removed, and `check` scoped to a split directory. It imports
+  only the standard library and `horos`, uses no name the starting classifier
+  lacks, and at least 4 of its tests fail by assertion when copied beside the
+  starting classifier, shown by a hand counterfactual.
+- The regenerated root boundary changes no hard entry, and changes no
+  boundary field except counts attributable to tracked files this step's own
+  Files list adds.
+  `.horos/candidates.json` loses exactly two entries,
+  `plugins/alexandria/examples/compound-v3-phase0-v0/release/manifest.json` and
+  `plugins/tabularium/examples/aave-v4-v0/events.jsonl`. The fixture and
+  scoped-entry boundaries still equal a fresh scan. Boundary schema 2, every
+  existing evidence string, and the signatures of `parse_attribute_file`,
+  `match_attribute_scopes`, `match_gitattributes`, `gitattributes_rules` and
+  `classify_file` are unchanged.
+- `python3 plugins/horos/tests/benchmark_scope.py --root . --scope plugins/horos --runs 5`
+  reports `full_tree_median_ms` at or under 1,000, recorded before and after
+  the change.
+
+**Why.** `counts.files_walked` is a boundary field, and this step's own Files
+list adds a tracked test module, so the earlier clause forbade a change the
+step is required to make. Round 1 recorded that as S2-R1-01: at
+93e410b9f2eebd92df74bc97633778f6cb3cda95 with the new module removed, a fresh
+scan equals the boundary committed at b102c6e9 with `counts.files_walked` at
+3840, so the move to 3841 is attributable solely to that module and none of it
+to the classifier.
+**Steps touched.** Step 2.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
