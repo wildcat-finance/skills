@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 25344997,
+    "bytes_blob": 27865012,
     "bytes_generated": 98
   },
   "entries": [
@@ -789,6 +789,62 @@
       "evidence": "no newline in the first 4096 bytes of 24683 bytes",
       "grade": "candidate",
       "path": "docs/main-root-suite-recovery/parity-attempt-1.json"
+    },
+    {
+      "bytes": 199147,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 99573 of 199147 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/audit-excerpts.json"
+    },
+    {
+      "bytes": 247162,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123581 of 247162 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-audit-package-increment/step-1-checked.json"
+    },
+    {
+      "bytes": 247164,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123582 of 247164 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-checked.json"
+    },
+    {
+      "bytes": 438592,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 219296 of 438592 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.log"
+    },
+    {
+      "bytes": 379168,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 189584 of 379168 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3.log"
+    },
+    {
+      "bytes": 247161,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123580 of 247161 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-checked.json"
+    },
+    {
+      "bytes": 379816,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 189908 of 379816 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4.log"
+    },
+    {
+      "bytes": 381805,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 190902 of 381805 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log"
     },
     {
       "bytes": 59394,

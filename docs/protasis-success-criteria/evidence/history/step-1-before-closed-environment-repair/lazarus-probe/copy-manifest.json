@@ -1,0 +1,14 @@
+{
+  "source": "/private/tmp/issue-1273-lazarus-environment-probe",
+  "scope": "Paired diagnostic on unchanged 84859f22; restricted child PATH fails, fixture-owned python3 symlink to pinned sys.executable passes. First two attempts were report-path preflight refusals and remain preserved. No Lazarus source or producer argv changed.",
+  "files": {
+    "observations-actual.json": "121bb5507eb7237db8cae9f8775fcd43cfec2c56799809b084b13261a0059854",
+    "observations.json": "027d0e8c6652c7951d5ff4ff09f559c15d799830e187fa79727923f0aca4846a",
+    "pinned-child-python-actual.json": "d7841825c216f80ec90b4e47845605d8d78422a8408625d1f7634e642f2f06af",
+    "pinned-child-python-actual.log": "d9e960474c715e044989c1e9aca3df9e294aa953741086379e61d4a1d6424b1f",
+    "pinned-child-python.log": "3030c59019f4533fb52ac01be8f974b075a405062eed7f1088d192f1f2045c51",
+    "restricted-actual.json": "2afa350d47d0159f4688f5c3fedc94a0e61de122a41e2498ac8f2b14c94350b9",
+    "restricted-actual.log": "7204a2dcb5db818045a541a9f771855307ec340c52eebdf5dc4a4cbdb8517fbe",
+    "restricted.log": "be9f92e20d728ab702260cd0003d72dce72c43060de87edec66b7829200044dc"
+  }
+}

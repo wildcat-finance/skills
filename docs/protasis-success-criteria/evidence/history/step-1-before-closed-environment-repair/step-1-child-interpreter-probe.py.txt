@@ -1,0 +1,35 @@
+from pathlib import Path
+import subprocess
+import sys
+import unittest
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "plugins/hexaemeron/tests"))
+# The full suite imports this module and canonicalises its temporary root.
+import test_hexctl_checkpoint_archive
+native_run = subprocess.run
+pinned = sys.argv[1] == "pinned"
+def observe(*args, **kwargs):
+    argv = args[0] if args else kwargs.get("args")
+    if isinstance(argv, (tuple, list)) and argv and argv[0] == "python3":
+        selected = [sys.executable, *argv[1:]] if pinned else argv
+        if args:
+            args = (selected, *args[1:])
+        else:
+            kwargs["args"] = selected
+        try:
+            result = native_run(*args, **kwargs)
+        except subprocess.CalledProcessError as error:
+            print("CAPTURED CHILD STDERR:", error.stderr, file=sys.stderr)
+            raise
+        if result.returncode and result.stderr:
+            print("CAPTURED CHILD STDERR:", result.stderr, file=sys.stderr)
+        return result
+    return native_run(*args, **kwargs)
+subprocess.run = observe
+names = [
+    "test_known_failure_inventory.KnownFailureInventoryTests.test_cli_refuses_absent_surfaces_with_nonempty_expected_ids",
+    "test_known_failure_inventory.KnownFailureInventoryTests.test_committed_study_fixture_and_exact_checker_command_have_parity",
+    "test_fiat_decision_assignments.FiatDecisionAssignmentTests.test_exact_report_candidate_and_ordered_trailers_are_receipted",
+]
+result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromNames(names))
+raise SystemExit(not result.wasSuccessful())

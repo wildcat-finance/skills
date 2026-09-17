@@ -1,0 +1,13 @@
+{
+  "command": [
+    "python3",
+    "-B",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-foreign-temp-reproduction-3.py",
+    "--original"
+  ],
+  "exit": 1,
+  "fixture_sha256": "c96866bdb7118a7caa988dbce8adc4d57c4bd91466633516aaef6c8c422145af",
+  "log_sha256": "d1285ca6910be9de8d99975d13136bc5c89f84a06217bbc7c7534672ad6edfe7",
+  "script_sha256": "509ce7a0b758fb5b206ac25c0c4305cd486e31ef75aa7da8710443aa694eb4e5",
+  "wall_time_seconds": 11.262987665948458
+}

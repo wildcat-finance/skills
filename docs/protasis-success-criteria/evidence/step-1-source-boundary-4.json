@@ -1,0 +1,97 @@
+{
+  "capture": {
+    "assignments": [],
+    "findings": [],
+    "inventory_sha256": "944731ca52c228d4a63b89a19a28c3fe0ae5930e2fed5817197d418cd2b96544",
+    "no_known_findings": {
+      "consuming_step": 1,
+      "source_views": [
+        {
+          "id": "root-audit",
+          "source_sha256": "d0be89aa23e8db7979ac29ff1613e31d59a1ee78d07131147d50eb6268e01d9d",
+          "view_sha256": "82dc1d43e0fa9ee7a4cd7044aadeeb4049a1980e57943486809bc1d14533d0ee"
+        },
+        {
+          "id": "hex-audit",
+          "source_sha256": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f",
+          "view_sha256": "2e919d920cd952a837bee6069251b710a9543df37514d7248a996d61766138cd"
+        },
+        {
+          "id": "known-guards",
+          "source_sha256": "9f502b9a4635c50966602ed73de4b739f5bac29c5bcc6fe60ea6942a1e7ceac4",
+          "view_sha256": "7bb90fe87595cb73b27fd890ec3a52a3b43105875ad4386a3877f74cf9790f64"
+        },
+        {
+          "id": "command-records",
+          "source_sha256": "47ad26907f9e8e686e2182ec52b8b5334a9f0353f10ff603697980d038785a0e",
+          "view_sha256": "88cc98ea65c453e987947add97f6227d76b008d342fdf8fd5decbd4e2c9dc668"
+        },
+        {
+          "id": "study-amendments",
+          "source_sha256": "42a71b9f1298e40f21858171c2e58940ef9eba88a2fc21a2ad3b9e4a0e60d806",
+          "view_sha256": "78a76684d35d313f92d622ca682c6e6b94c9a7bcee697b53f93dfdfa13f82f60"
+        },
+        {
+          "id": "study-pointers",
+          "source_sha256": "5bc607fa5a21df5f742a02f205868ef65bed1c45d432c11a6cb8d421ba6ed19a",
+          "view_sha256": "31c1618e5e782789dd874b9822d85619d2396b9e36fd1b473ef98c0b6d124b17"
+        },
+        {
+          "id": "integration-sync",
+          "source_sha256": "f74d407497496f4583503a1fe9582aebe5d5ba9f69cbd142048def14e648fc0c",
+          "view_sha256": "ab553a1949acbde3a9bcf25359df3648a5260f391cf0de818730e1b31df3f2ec"
+        }
+      ],
+      "surveyor_assertion": "no-known-findings"
+    },
+    "runbook_sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+    "schema": "protasis-known-failure-inventory-capture/v1",
+    "source_views": [
+      {
+        "id": "root-audit",
+        "path": "audit/AUDIT_SYNOPSIS.md",
+        "source_sha256": "d0be89aa23e8db7979ac29ff1613e31d59a1ee78d07131147d50eb6268e01d9d",
+        "view_sha256": "82dc1d43e0fa9ee7a4cd7044aadeeb4049a1980e57943486809bc1d14533d0ee"
+      },
+      {
+        "id": "hex-audit",
+        "path": "plugins/hexaemeron/audit/AUDIT_SYNOPSIS.md",
+        "source_sha256": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f",
+        "view_sha256": "2e919d920cd952a837bee6069251b710a9543df37514d7248a996d61766138cd"
+      },
+      {
+        "id": "known-guards",
+        "path": "audit/rounds/fiat-453-inject-known-failure-guards-before-productio.synopsis.md",
+        "source_sha256": "9f502b9a4635c50966602ed73de4b739f5bac29c5bcc6fe60ea6942a1e7ceac4",
+        "view_sha256": "7bb90fe87595cb73b27fd890ec3a52a3b43105875ad4386a3877f74cf9790f64"
+      },
+      {
+        "id": "command-records",
+        "path": "audit/rounds/fiat-508-restudy-residual-carryover-confinement-and-g.synopsis.md",
+        "source_sha256": "47ad26907f9e8e686e2182ec52b8b5334a9f0353f10ff603697980d038785a0e",
+        "view_sha256": "88cc98ea65c453e987947add97f6227d76b008d342fdf8fd5decbd4e2c9dc668"
+      },
+      {
+        "id": "study-amendments",
+        "path": "audit/rounds/fiat-1264-rebind-runbook-amendments-across-a-study-am.synopsis.md",
+        "source_sha256": "42a71b9f1298e40f21858171c2e58940ef9eba88a2fc21a2ad3b9e4a0e60d806",
+        "view_sha256": "78a76684d35d313f92d622ca682c6e6b94c9a7bcee697b53f93dfdfa13f82f60"
+      },
+      {
+        "id": "study-pointers",
+        "path": "audit/rounds/fiat-1086-gate-study-and-runbook-links-before-their-d.synopsis.md",
+        "source_sha256": "5bc607fa5a21df5f742a02f205868ef65bed1c45d432c11a6cb8d421ba6ed19a",
+        "view_sha256": "31c1618e5e782789dd874b9822d85619d2396b9e36fd1b473ef98c0b6d124b17"
+      },
+      {
+        "id": "integration-sync",
+        "path": "audit/rounds/fiat-608-bind-the-integrate-gate-to-the-sync-receipt.synopsis.md",
+        "source_sha256": "f74d407497496f4583503a1fe9582aebe5d5ba9f69cbd142048def14e648fc0c",
+        "view_sha256": "ab553a1949acbde3a9bcf25359df3648a5260f391cf0de818730e1b31df3f2ec"
+      }
+    ],
+    "study_sha256": "3b15af2f2137075ee5c265cff385f25f966d2f47e77f06d3104ce00a494b7be4"
+  },
+  "packet_runbook_sha256": "54eacdb214afe18c09bd570806a94c22fd2977761f8ee064f6c9acf84307cd97",
+  "status": "clean"
+}

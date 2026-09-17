@@ -15,6 +15,8 @@ import time
 import unittest
 from unittest import mock
 
+from fixture_tools import signing_tool
+
 
 ROOT = Path(__file__).resolve().parents[3]
 PROOF_MODE = "--proof" in sys.argv
@@ -151,7 +153,7 @@ class AuditSynopsisRecoveryTests(unittest.TestCase):
         header = raw.split(b"\n\n", 1)[0]
         self.assertIn(b"gpgsig ", header)
         subprocess.run(
-            ["git", "verify-commit", commit],
+            ["git", "-c", f"gpg.program={signing_tool('gpg')}", "verify-commit", commit],
             cwd=ROOT,
             check=True,
             stdout=subprocess.PIPE,

@@ -1,0 +1,21 @@
+{
+  "command": [
+    "python3",
+    "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "--dir",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+    "done",
+    "implement",
+    "--branch",
+    "fiat/1273-settle-declared-study-criteria-with-recorde-step-1-scaffold-the-declared-contract-a",
+    "--commit",
+    "84859f22bf3f1d446f6c8c93310757f40b9b42f0",
+    "--tests",
+    "Hex Exit jobs12: 3348 tests, zero failures/errors, 5 skips, 1 expected failure. Staged root greenlight: 2042 tests passed. Checked runner scope hexaemeron jobs26: 13/13 green; report SHA256 026ace5f66f1b43eff9a414d40795a27f58779dd3ee863f91f9d336ed1f309ba. Focused scaffold25, evaluation/binding69, boundary/scratch15 and signing guard passed."
+  ],
+  "started_at": "2026-09-16T09:01:44.484196+00:00",
+  "finished_at": "2026-09-16T09:11:18.828196+00:00",
+  "elapsed_seconds": 574.31,
+  "exit_code": 2,
+  "log_sha256": "60ed3a4b8ca79761ddb9454720b367f2fa9caffc6e17ea095829a1f48911e8e8"
+}

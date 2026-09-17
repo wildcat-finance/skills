@@ -1,0 +1,14 @@
+{
+  "consumed": [
+    {
+      "candidate": "controller-capture",
+      "criterion": "design-home",
+      "path": "reports/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e"
+    }
+  ],
+  "findings": [],
+  "schema": "protasis-design-evidence/v1",
+  "selected": "controller-capture",
+  "transition": "step:2"
+}

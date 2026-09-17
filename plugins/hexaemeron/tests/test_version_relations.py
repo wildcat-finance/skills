@@ -1084,10 +1084,12 @@ class VersionRelationTests(HexctlCase):
             receipt["base_commit"],
         ).stdout.strip()
         self.git("replace", merge_commit, replacement)
-        self.assertEqual(
-            self.git("show", "-s", "--format=%P", merge_commit).stdout.strip(),
-            f"{receipt['head_commit']} {receipt['base_commit']}",
-        )
+        with mock.patch.dict(os.environ):
+            os.environ.pop("GIT_NO_REPLACE_OBJECTS", None)
+            self.assertEqual(
+                self.git("show", "-s", "--format=%P", merge_commit).stdout.strip(),
+                f"{receipt['head_commit']} {receipt['base_commit']}",
+            )
         with mock.patch.object(
             module, "remote_branch_tip", return_value=merge_commit
         ):
@@ -1600,9 +1602,11 @@ class VersionRelationTests(HexctlCase):
         ).stdout.strip()
         self.git("replace", sync, replacement)
 
-        self.assertEqual(
-            module.commit_parents(self.target, sync, "fixture"), [product, base]
-        )
+        with mock.patch.dict(os.environ):
+            os.environ.pop("GIT_NO_REPLACE_OBJECTS", None)
+            self.assertEqual(
+                module.commit_parents(self.target, sync, "fixture"), [product, base]
+            )
         self.assertEqual(
             module._native_relation_parents(self.target, sync, "fixture"),
             [base, product],

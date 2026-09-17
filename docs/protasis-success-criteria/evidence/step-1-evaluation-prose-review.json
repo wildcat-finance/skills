@@ -1,0 +1,24 @@
+{
+  "protected": [
+    "existing commands and refusal reasons",
+    "bounds and concurrency limits",
+    "selection claims and exclusions",
+    "source and status provenance",
+    "eleven unchanged prompts and fifty-five unchanged outcomes",
+    "no new model observation",
+    "preserved original evaluation and prompt manifests",
+    "numbered decision fixture support"
+  ],
+  "schema": "step-1-prose-review/v1",
+  "sequence": [
+    "Sapheneia protected-content shape",
+    "Imprimatur zero defects before Vulgate",
+    "Vulgate surface review without further changes",
+    "protected content comparison",
+    "final Imprimatur zero defects"
+  ],
+  "subject": {
+    "path": "docs/protasis-success-criteria/README.md",
+    "sha256": "d7950448c39ab255cc9e763085b9d17ac5a7dbc135dc3149f9cb03b4ec000605"
+  }
+}

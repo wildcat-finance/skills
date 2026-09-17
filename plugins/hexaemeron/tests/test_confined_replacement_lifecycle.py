@@ -17,6 +17,7 @@ import unittest
 from unittest import mock
 
 from hexctl_harness import HexctlCase, LINTS_CLEAN, hexctl_module
+from fixture_tools import native_signing_tools
 import test_carryover as packet_cases
 from test_carryover import ISSUE, SOURCE, carryover
 
@@ -33,6 +34,7 @@ class ConfinedReplacementLifecycleTests(unittest.TestCase):
         return case
 
     def test_exhausted_source_to_current_gate_audit_and_integration(self):
+        tool_paths = self.enterContext(native_signing_tools())
         self.observations = {}
         old = self.fixture(); old.to_audit(task_issue=ISSUE)
         helper = packet_cases.InoculationBodyTests(); helper.setUp(); self.addCleanup(helper.doCleanups)
@@ -48,11 +50,11 @@ class ConfinedReplacementLifecycleTests(unittest.TestCase):
         keyhome = Path(keytemporary.name); keyhome.chmod(0o700)
         env = {**os.environ, 'GNUPGHOME': str(keyhome)}
         old.env['GNUPGHOME'] = str(keyhome)
-        key = subprocess.run(['gpg', '--batch', '--pinentry-mode', 'loopback', '--passphrase', '',
+        key = subprocess.run([tool_paths['gpg'], '--batch', '--pinentry-mode', 'loopback', '--passphrase', '',
                               '--quick-generate-key', 'Lifecycle Fixture <fixture@example.invalid>',
                               'ed25519', 'sign', '0'], env=env, capture_output=True, timeout=30)
         self.assertEqual(key.returncode, 0, key.stderr.decode())
-        self.addCleanup(subprocess.run, ['gpgconf', '--homedir', str(keyhome), '--kill', 'gpg-agent'],
+        self.addCleanup(subprocess.run, [tool_paths['gpgconf'], '--homedir', str(keyhome), '--kill', 'gpg-agent'],
                         capture_output=True, check=False, timeout=10)
         message = 'Fixed candidate\n\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>\nWildcat-Origin: shoggoth\n'
         subprocess.run(['git', '-c', 'user.signingkey=fixture@example.invalid', '-c', 'gpg.format=openpgp',

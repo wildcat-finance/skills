@@ -1,0 +1,7 @@
+test_inspect_writes_nothing_outside_scratch (test_hexctl_checkpoint_archive.CheckpointArchiveInspectTests.test_inspect_writes_nothing_outside_scratch) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 7.520s
+
+OK
+{"controlled_foreign_directories": [".fiat-checkpoint-inspect-controlled-foreign-uouug5ex"], "errors": 0, "failures": 0, "testsRun": 1}

@@ -1,0 +1,36 @@
+{
+  "command": [
+    "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "-B",
+    "-c",
+    "import sys, unittest; sys.path.insert(0, 'plugins/hexaemeron/tests'); import test_hexctl_checkpoint_archive; suite=unittest.defaultTestLoader.loadTestsFromNames(['test_fixture_tools', 'test_known_failure_inventory', 'test_fiat_decision_assignments', 'test_version_relations', 'test_carryover', 'test_confined_replacement_lifecycle', 'test_hexctl_checkpoint_archive', 'test_audit_synopsis_recovery']); result=unittest.TextTestRunner(verbosity=2).run(suite); sys.exit(not result.wasSuccessful())"
+  ],
+  "environment": {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/bin:/usr/bin",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONNOUSERSITE": "1",
+    "PYTHONUTF8": "1",
+    "TZ": "UTC"
+  },
+  "modules": [
+    "test_fixture_tools",
+    "test_known_failure_inventory",
+    "test_fiat_decision_assignments",
+    "test_version_relations",
+    "test_carryover",
+    "test_confined_replacement_lifecycle",
+    "test_hexctl_checkpoint_archive",
+    "test_audit_synopsis_recovery"
+  ],
+  "exit": 0,
+  "seconds": 1442.0234344999772,
+  "log": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde/.hexaemeron/evidence/step-1-restricted-hex-fixtures-1.log",
+  "log_sha256": "fbf5d35684986544afeb6a1e9620b5165c09d59da6c461c0d27c81c7f50b1027"
+}

@@ -1,0 +1,429 @@
+{
+  "candidates": [
+    {
+      "id": "controller-capture",
+      "summary": "Capture actual execution at the consuming step; terminal verification joins recorded results without launching commands."
+    },
+    {
+      "id": "producer-report",
+      "summary": "Accept a supplied result object after descriptor and exit validation; the reporter retains execution custody."
+    },
+    {
+      "id": "terminal-replay",
+      "summary": "Execute the declared command on each terminal inspection instead of retaining an authoritative historical result."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "unexecuted-result-refused",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "descriptor-mismatch-refused",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "settlement-invocations",
+      "kind": "metric",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "sample-record-bytes",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": 4096,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-no-backfill",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "failed-result-unmet",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "design-home",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "declaration-contract",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "execution-custody",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "terminal-compatibility",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "joined-demonstration",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "controller-capture",
+      "criterion": "unexecuted-result-refused",
+      "report": {
+        "path": "reports/controller-capture-unexecuted-result-refused.json",
+        "sha256": "0ab26875797e2669d4a0d96d6b8a0b4b2705d6530a45c6e57bf3253b5bf90ea4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "controller-capture",
+      "criterion": "descriptor-mismatch-refused",
+      "report": {
+        "path": "reports/controller-capture-descriptor-mismatch-refused.json",
+        "sha256": "0b60e88d2192511babaad6bdaf3cc202ad1486548da5689d62551405d5d0d4db"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "controller-capture",
+      "criterion": "settlement-invocations",
+      "report": {
+        "path": "reports/controller-capture-settlement-invocations.json",
+        "sha256": "f07f1d2a76fb0d8201e3af666d1227edbfef12222c2e0de4ed155425afa2065c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "controller-capture",
+      "criterion": "sample-record-bytes",
+      "report": {
+        "path": "reports/controller-capture-sample-record-bytes.json",
+        "sha256": "05542191cdd22656a0a9b29c1fab363bdb2a896224d0b12730a46ddc96dec2b7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "controller-capture",
+      "criterion": "legacy-no-backfill",
+      "report": {
+        "path": "reports/controller-capture-legacy-no-backfill.json",
+        "sha256": "72497bcac37ba922756d09408eed41ff09262a041cfc98332be6f4cff6d6b4a0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "controller-capture",
+      "criterion": "failed-result-unmet",
+      "report": {
+        "path": "reports/controller-capture-failed-result-unmet.json",
+        "sha256": "ded94128c6461dbbde71ab3b16ff23e6f30591d74a5e6ef4ad611931c526bf57"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "controller-capture",
+      "criterion": "design-home",
+      "report": "reports/controller-capture-design-home.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion design-home --report .hexaemeron/reports/controller-capture-design-home.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "controller-capture",
+      "criterion": "declaration-contract",
+      "report": "reports/controller-capture-declaration-contract.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion declaration-contract --report .hexaemeron/reports/controller-capture-declaration-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "controller-capture",
+      "criterion": "execution-custody",
+      "report": "reports/controller-capture-execution-custody.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion execution-custody --report .hexaemeron/reports/controller-capture-execution-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "controller-capture",
+      "criterion": "terminal-compatibility",
+      "report": "reports/controller-capture-terminal-compatibility.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion terminal-compatibility --report .hexaemeron/reports/controller-capture-terminal-compatibility.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "controller-capture",
+      "criterion": "joined-demonstration",
+      "report": "reports/controller-capture-joined-demonstration.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion joined-demonstration --report .hexaemeron/reports/controller-capture-joined-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "producer-report",
+      "criterion": "unexecuted-result-refused",
+      "report": {
+        "path": "reports/producer-report-unexecuted-result-refused.json",
+        "sha256": "bd41e2da361d91beb6ec06acf0e41af07bba297e6309f6afb494956685cb5836"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "producer-report",
+      "criterion": "descriptor-mismatch-refused",
+      "report": {
+        "path": "reports/producer-report-descriptor-mismatch-refused.json",
+        "sha256": "23f869f48cdc59c8ca2e19bc1eaa3277b35359c9584b49ce87dbb63f511bc886"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "producer-report",
+      "criterion": "settlement-invocations",
+      "report": {
+        "path": "reports/producer-report-settlement-invocations.json",
+        "sha256": "21356d498b85616799589f658501601191e6ee569d3556fb6b27d9509eb46f96"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "producer-report",
+      "criterion": "sample-record-bytes",
+      "report": {
+        "path": "reports/producer-report-sample-record-bytes.json",
+        "sha256": "71711d2d040fce1863a822f52feecf23632a44fc31e881d1ecf647b37616ffb0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "producer-report",
+      "criterion": "legacy-no-backfill",
+      "report": {
+        "path": "reports/producer-report-legacy-no-backfill.json",
+        "sha256": "621f3b5093915f0e268d24a8f9886d6aa928aafc6df40b6331ca0ca1f51483a7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "producer-report",
+      "criterion": "failed-result-unmet",
+      "report": {
+        "path": "reports/producer-report-failed-result-unmet.json",
+        "sha256": "0190409a84d55db2f34957172e8db3bd5747437104d97365a2596a9eb271145e"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "producer-report",
+      "criterion": "design-home",
+      "report": "reports/producer-report-design-home.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate producer-report --criterion design-home --report .hexaemeron/reports/producer-report-design-home.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "producer-report",
+      "criterion": "declaration-contract",
+      "report": "reports/producer-report-declaration-contract.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate producer-report --criterion declaration-contract --report .hexaemeron/reports/producer-report-declaration-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "producer-report",
+      "criterion": "execution-custody",
+      "report": "reports/producer-report-execution-custody.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate producer-report --criterion execution-custody --report .hexaemeron/reports/producer-report-execution-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "producer-report",
+      "criterion": "terminal-compatibility",
+      "report": "reports/producer-report-terminal-compatibility.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate producer-report --criterion terminal-compatibility --report .hexaemeron/reports/producer-report-terminal-compatibility.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "producer-report",
+      "criterion": "joined-demonstration",
+      "report": "reports/producer-report-joined-demonstration.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate producer-report --criterion joined-demonstration --report .hexaemeron/reports/producer-report-joined-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "terminal-replay",
+      "criterion": "unexecuted-result-refused",
+      "report": {
+        "path": "reports/terminal-replay-unexecuted-result-refused.json",
+        "sha256": "1f0f2ce7a32a441d7c4591a97e353a9ed13183d2cd5923921c6d99af7efdd525"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "terminal-replay",
+      "criterion": "descriptor-mismatch-refused",
+      "report": {
+        "path": "reports/terminal-replay-descriptor-mismatch-refused.json",
+        "sha256": "2372b1b31f170272f86b4ae6e9d8ee7fb19832566cdc164a924e400381d17d26"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "terminal-replay",
+      "criterion": "settlement-invocations",
+      "report": {
+        "path": "reports/terminal-replay-settlement-invocations.json",
+        "sha256": "d364b9cc991de252a63390f7fa34ec130ee024c4dbe5001272d2f8da1aa40f0d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "terminal-replay",
+      "criterion": "sample-record-bytes",
+      "report": {
+        "path": "reports/terminal-replay-sample-record-bytes.json",
+        "sha256": "c6241fe48d4b889a508cabaddfcbdefba38099ec070b97925a3515a672aaa62b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "terminal-replay",
+      "criterion": "legacy-no-backfill",
+      "report": {
+        "path": "reports/terminal-replay-legacy-no-backfill.json",
+        "sha256": "9ab2beac4f73198bcb05b04e96a4b0c9e5a252a7b22d475083485e439170f516"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "terminal-replay",
+      "criterion": "failed-result-unmet",
+      "report": {
+        "path": "reports/terminal-replay-failed-result-unmet.json",
+        "sha256": "d7c03cc8b6f744f82c9e27fcbf6719a45c475bc8b25ad76fec630a3797b132b5"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "terminal-replay",
+      "criterion": "design-home",
+      "report": "reports/terminal-replay-design-home.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate terminal-replay --criterion design-home --report .hexaemeron/reports/terminal-replay-design-home.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "terminal-replay",
+      "criterion": "declaration-contract",
+      "report": "reports/terminal-replay-declaration-contract.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate terminal-replay --criterion declaration-contract --report .hexaemeron/reports/terminal-replay-declaration-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "terminal-replay",
+      "criterion": "execution-custody",
+      "report": "reports/terminal-replay-execution-custody.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate terminal-replay --criterion execution-custody --report .hexaemeron/reports/terminal-replay-execution-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "terminal-replay",
+      "criterion": "terminal-compatibility",
+      "report": "reports/terminal-replay-terminal-compatibility.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate terminal-replay --criterion terminal-compatibility --report .hexaemeron/reports/terminal-replay-terminal-compatibility.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "terminal-replay",
+      "criterion": "joined-demonstration",
+      "report": "reports/terminal-replay-joined-demonstration.json",
+      "resolver": "python3 docs/protasis-success-criteria/proof.py --candidate terminal-replay --criterion joined-demonstration --report .hexaemeron/reports/terminal-replay-joined-demonstration.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "controller-capture",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

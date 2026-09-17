@@ -1,0 +1,13 @@
+{
+  "command": [
+    "/opt/homebrew/bin/python3",
+    "-B",
+    "-m",
+    "unittest",
+    "tests.test_success_criteria_scaffold",
+    "-v"
+  ],
+  "exit": 0,
+  "seconds": 3.9385236249072477,
+  "test_sha256": "0d197e3cb53fabbac3545aa05dea99cd883e058b06b776212d700d8495842e54"
+}

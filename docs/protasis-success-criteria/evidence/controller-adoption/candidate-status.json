@@ -1,0 +1,12 @@
+{
+  "status": "prepared; not admitted",
+  "published_candidate": "c572009b7922b4b7b9400893c5adc6d4df641a72",
+  "controller_sha256": "9ca0576cf335b8df7f124b6235f87df4b60e7c290823229becd57227ea1e7359",
+  "source_prefixes_unchanged": true,
+  "required_before_admission": [
+    "full local and hosted checks pass",
+    "prerequisite PR merged",
+    "published candidate signature and ancestry verified"
+  ],
+  "adoption": false
+}

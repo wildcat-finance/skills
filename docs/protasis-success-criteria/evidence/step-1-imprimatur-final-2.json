@@ -1,0 +1,88 @@
+{
+  "docs/protasis-success-criteria/README.md": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 466,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 34,
+      "mean_sentence_length": 13.7,
+      "length_variance": 56.4,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 5,
+      "max_allowed_run": 4,
+      "repeated_openers": {
+        "- implementation": 3
+      }
+    }
+  },
+  "docs/protasis-success-criteria/proof.py": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 49,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 4,
+      "mean_sentence_length": 12.2,
+      "length_variance": 3.2,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 3,
+      "max_allowed_run": 4,
+      "repeated_openers": {}
+    }
+  },
+  "tests/test_success_criteria_scaffold.py": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 11,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 1,
+      "mean_sentence_length": 11,
+      "length_variance": 0.0,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 1,
+      "max_allowed_run": 4,
+      "repeated_openers": {}
+    }
+  },
+  "docs/decisions/drafts/settle-study-criteria-from-recorded-execution.md": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 664,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 49,
+      "mean_sentence_length": 13.6,
+      "length_variance": 53.7,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 8,
+      "max_allowed_run": 4,
+      "repeated_openers": {}
+    }
+  }
+}

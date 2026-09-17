@@ -1,0 +1,9 @@
+{
+  "argv": [
+    ".githooks/greenlight"
+  ],
+  "tree": "d12e1daef747d0cd84cb7d8466410f0f3125e173",
+  "exit": 0,
+  "wall_seconds": 263.6775958330836,
+  "log_sha256": "2e5cc97aab765a9d7bc8a95476846307bc8335aa0596578bfe75512416777fea"
+}

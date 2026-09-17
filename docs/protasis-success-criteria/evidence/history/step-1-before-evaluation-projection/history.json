@@ -1,0 +1,36 @@
+{
+  "entries": [
+    {
+      "archive": "controller-capture-design-home.json",
+      "bytes": 346,
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/reports/controller-capture-design-home.json"
+    },
+    {
+      "archive": "controller-capture-design-home.evidence.json",
+      "bytes": 14458,
+      "sha256": "f80d0f9000d01f5e2d6cb6af0abed8844ea560e6356414a19c0a76d95006917f",
+      "source": ".hexaemeron/reports/controller-capture-design-home.evidence.json"
+    },
+    {
+      "archive": "runbook.md.txt",
+      "bytes": 26672,
+      "sha256": "5c65d36850122b02b64fae283b4de07a9707117a0e1e0eb7e8b7167f75e4f6a9",
+      "source": "docs/protasis-success-criteria/runbook.md"
+    },
+    {
+      "archive": "proof.py.txt",
+      "bytes": 12573,
+      "sha256": "55c435494a6dd857bf5588deb757ea50a10df62afff95556dabd6ffae111cdc5",
+      "source": "docs/protasis-success-criteria/proof.py"
+    },
+    {
+      "archive": "provenance.json",
+      "bytes": 23790,
+      "sha256": "d86be8a499a5c7cc486f6cc33de545d17ad2018ec4e47fc2dbb9a76ed3325d43",
+      "source": "docs/protasis-success-criteria/evidence/provenance.json"
+    }
+  ],
+  "reason": "evaluation-projection-runbook-amendment",
+  "schema": "success-criteria-source-history/v1"
+}

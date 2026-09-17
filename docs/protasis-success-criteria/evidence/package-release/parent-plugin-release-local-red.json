@@ -1,0 +1,12 @@
+{
+  "argv": [
+    "python3",
+    "scripts/plugin_release.py",
+    "--base",
+    "d230b3ac07158bd5786a5c58539e6999ed3dda54",
+    "--head",
+    "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b"
+  ],
+  "exit": 1,
+  "log_sha256": "b72c2a29f051be514759b24c272388d67da023df45f5147b0c1cd2ea6af0be69"
+}

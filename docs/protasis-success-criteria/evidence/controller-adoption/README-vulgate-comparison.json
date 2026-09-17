@@ -1,0 +1,19 @@
+{
+  "after_sha256": "f1b9e6e81bf3b3b72c3ccd2c3d435059e131e3f29de4463388433cecbf6155c7",
+  "before_sha256": "f1b9e6e81bf3b3b72c3ccd2c3d435059e131e3f29de4463388433cecbf6155c7",
+  "content_parity": true,
+  "existing_prose_unchanged": true,
+  "protected_items_checked": [
+    "sole admitted published external-controller replacement",
+    "PR #1698 and signed c572009b7922b4b7b9400893c5adc6d4df641a72",
+    "source signature publication and adapter readbacks",
+    "original and target controllers unchanged in Step 1",
+    "historical d230b3ac07158bd5786a5c58539e6999ed3dda54 evidence preserved",
+    "current companion binds amended study and runbook",
+    "owned temporary parent; symlink refusal; occupied sibling preserved",
+    "collision reproduced twice before repair and passed after",
+    "evaluation byte-identical; 11 prompts; 55 outcomes; no projection change; no new model observation"
+  ],
+  "subject": "docs/protasis-success-criteria/README.md",
+  "surface_changes": []
+}
