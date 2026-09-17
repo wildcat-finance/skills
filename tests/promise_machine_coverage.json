@@ -4486,7 +4486,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "f0fbb7521769804a13becac7bdd87a231bc50e44c81d2c2cfb9c352c080fe288"
+      "sha256": "190276aa6583c664ebd138051f99cd6c71aeab68631a704e5b9defd1cc3aa414"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",

@@ -1,0 +1,70 @@
+{
+  "checks": [
+    {
+      "case": "completion-refuses-gaps",
+      "reason": "unmet-criteria:unbuilt"
+    },
+    {
+      "case": "completed-descriptor-frozen",
+      "reason": "completed-descriptor-changed"
+    },
+    {
+      "case": "unrelated-amendment-preserved",
+      "versions": 2
+    },
+    {
+      "case": "duplicate-amendment-refused",
+      "reason": "duplicate-amendment-digest"
+    },
+    {
+      "case": "replay-preserves-bindings",
+      "operation_ran": false,
+      "validator_calls": 4
+    },
+    {
+      "case": "wrong-source-refused",
+      "reason": "attempt-source-version"
+    },
+    {
+      "case": "legacy-no-backfill",
+      "reason": "receipt-schema"
+    }
+  ],
+  "controller": {
+    "bytes": 1232290,
+    "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "sha256": "190276aa6583c664ebd138051f99cd6c71aeab68631a704e5b9defd1cc3aa414"
+  },
+  "executor": {
+    "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py",
+    "sha256": "4eddddefe6034db3ac4887cd6c03c7d8aa905f03f613b819caafb6e0ba7b7a7c"
+  },
+  "inspection_launches": 0,
+  "receipts": {
+    "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_receipts.py",
+    "sha256": "272c50cfe1ce7d91a1ab56fc91301d1d3916843201a15f3dd7abfee7b1d13d2b"
+  },
+  "report": {
+    "path": ".hexaemeron/reports/controller-capture-terminal-compatibility.json",
+    "sha256": "6deb46c4e1aaf6680d45b6e3aa1dabb1964157d555151f13e7683665c431cc5b"
+  },
+  "schema": "success-criteria-terminal-evidence/v1",
+  "scope": "Read-only completion and historical receipt compatibility specimens.",
+  "sources": [
+    {
+      "bytes": 30082,
+      "path": "docs/protasis-success-criteria/proof.py",
+      "sha256": "cffd0674714e13e5b69dccf076bb55dc061d98d59a177f0c6834966ad7a71ad3"
+    },
+    {
+      "bytes": 31162,
+      "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py",
+      "sha256": "4eddddefe6034db3ac4887cd6c03c7d8aa905f03f613b819caafb6e0ba7b7a7c"
+    },
+    {
+      "bytes": 17401,
+      "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_receipts.py",
+      "sha256": "272c50cfe1ce7d91a1ab56fc91301d1d3916843201a15f3dd7abfee7b1d13d2b"
+    }
+  ]
+}

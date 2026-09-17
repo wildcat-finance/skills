@@ -4,8 +4,8 @@ This package publishes the accepted #1273 study, runbook, design selection and
 decision. `proof.py` checks their design-home join, replays the selection
 specimens, checks the bounded declaration and effective-Exit join, and records
 real bounded child-process outcomes for execution custody. Completion, replay
-compatibility and the joined controller demonstration remain pending their
-owning steps.
+compatibility and the joined controller demonstration remain separate
+conformance operations.
 
 ## Run the design-home check
 
@@ -67,17 +67,32 @@ create-only report with its companion evidence. This establishes bounded
 execution custody for the recorded command; it does not establish semantic
 criterion correctness, host isolation or a later-tree guarantee.
 
+## Terminal compatibility
+
+Step 4 checks the historical receipt path without launching an Exit command:
+
+```bash
+python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion terminal-compatibility --report .hexaemeron/reports/controller-capture-terminal-compatibility.json
+```
+
+The proof refuses an incomplete result, freezes a completed descriptor across
+an amendment, permits an unrelated unbuilt amendment, rejects duplicate
+amendment digests and rejects a result from an unknown source version. It then
+replays the source-bound attempts into a terminal receipt and checks the legacy
+no-backfill path. Replay is inspection only; the evidence records zero command
+launches.
+
 ## What remains unavailable
 
-- `terminal-compatibility`: implementation Step 4.
 - `joined-demonstration`: implementation Step 5.
 
-Each returns `operation-not-implemented:<criterion>:step-<number>` and exit 1
-without producing a report. The two losing candidates also receive no
-conformance report. `design-home` establishes only the published join and
-selection replay. `execution-custody` records bounded child-process outcomes;
-it does not make the later completion or demonstration claims. Step 3 makes no
-semantic-correctness claim.
+The remaining operation returns
+`operation-not-implemented:joined-demonstration:step-5` and exit 1 without
+producing a report. The two losing candidates also receive no conformance
+report. `design-home` establishes only the published join and selection
+replay. `execution-custody` records bounded child-process outcomes, while
+`terminal-compatibility` checks read-only completion and amendment custody.
+Neither makes a semantic-correctness claim.
 
 ## Preserved sources
 

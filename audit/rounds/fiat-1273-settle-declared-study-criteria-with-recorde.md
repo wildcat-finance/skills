@@ -110,3 +110,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: Nothing new was found. S3-R1-01 is fixed in 73978449950ad4b2720cfd155bfdcf7668bc8e5c and S3-R1-02 is fixed in 4d206f25fd2074746e43ea56d7459f7fcb1de988. The current clean signed source-bound execution record still admits and launches the registered Step 3 command, records its bounded timeout, keeps `settled=false`, and preserves identical commit and tree identities before and after. The required lints and root suite were rerun for this round; the audit filter remains `sapheneia:sapheneia`.
+
+## Step 4, round 1 -- 2026-09-16T22:37:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: declaration-shape=reviewed; exit-identity=reviewed; execution-authority=reviewed; source-binding=reviewed; subprocess-input=reviewed; partial-result=reviewed; amendment-history=reviewed; completion-gap=reviewed; legacy-replay=reviewed; checkpoint-context=reviewed; resource-growth=reviewed; self-hosting=not-applicable; release-copies=reviewed; claim-boundary=reviewed
+
+Not checked: This round reviewed the Step 4 implementation range from 12a65c426c7a8eb7ec820a4853001228557fb7cb through 6cb3f63524939825c3d5eee7375e495024d9cf03. It covered the historical receipt chain, completed-descriptor freeze, amendment and duplicate-digest checks, source-version replay, terminal readback, legacy no-backfill path, bounded attempt data and the integration recheck. The terminal proof is synthetic and launches no registered Exit; the outer run has no success-criteria marker, so no production criterion result is claimed here. The separate successor-controller demonstration remains due in Step 5. No Solidity changed; the packet's security-suite waiver applies. Hosted pull-request and merge state remain outside this round.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No actionable lead was identified. The fresh Step 4 guard is recorded in .hexaemeron/reports/step-4-guard.json with 3,390 tests, zero failures and zero errors, five skips and one expected failure. The checked ownership runner is recorded in .hexaemeron/reports/step-4-checked.json with all 13 selected checks green, including the 2,049-test root suite and Hexaemeron suite; Phylax, Ephoros and Hypomnema each exited 0. The review retained the explicit synthetic boundary and the no-backfill, read-only replay and no-successor claims. --audit-filter sapheneia:sapheneia was applied with every protected item retained.
