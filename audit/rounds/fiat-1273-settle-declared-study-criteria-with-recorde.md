@@ -126,3 +126,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: No actionable lead was identified. The fresh Step 4 guard is recorded in .hexaemeron/reports/step-4-guard.json with 3,390 tests, zero failures and zero errors, five skips and one expected failure. The checked ownership runner is recorded in .hexaemeron/reports/step-4-checked.json with all 13 selected checks green, including the 2,049-test root suite and Hexaemeron suite; Phylax, Ephoros and Hypomnema each exited 0. The review retained the explicit synthetic boundary and the no-backfill, read-only replay and no-successor claims. --audit-filter sapheneia:sapheneia was applied with every protected item retained.
+
+## Step 5, round 1 -- 2026-09-17T01:44:02Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: declaration-shape=reviewed; exit-identity=reviewed; execution-authority=reviewed; source-binding=reviewed; subprocess-input=reviewed; partial-result=reviewed; amendment-history=reviewed; completion-gap=reviewed; legacy-replay=reviewed; checkpoint-context=reviewed; resource-growth=reviewed; self-hosting=reviewed; release-copies=reviewed; claim-boundary=reviewed
+
+Not checked: This round reviewed the Step 5 implementation range from c8404b07629ce5322653e48e8275b2b02d792c0c through 48b6cf8c99d74e57b29ac4a018cb23f67cb5c4eb. It covered the source-bound joined demonstration, the external controller readback, bounded positive and refusal outcomes, the v6.62.1 checkpoint compatibility repair, the reconciled source fixtures, the final Horos census, and the regenerated obligation-gate inputs. The joined demonstration records the signed fixture source commit 9640e690ae2adeaa54201f30439db6be26029ffd, controller identity, one shared command settling three descriptors, zero inspection launches, and a deliberately vacuous passing result; it does not claim semantic sufficiency. The fresh Hexaemeron report is .hexaemeron/reports/step-5-exit-final.json with 3,397 tests, zero failures and zero errors, five skips and one expected failure. The checked runner is .hexaemeron/reports/step-5-checked-final.json with all 13 selected checks green, including the root and Hexaemeron suites and Phylax, Ephoros and Hypomnema. No Solidity changed; the packet's security-suite waiver applies. Remote GitHub and deployment surfaces remain outside this local fixture and audit. Hosted pull-request, merge and current-main composition remain outside this round.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No actionable lead was identified. The earlier failed Step 5 reports remain preserved; the final controller-backed proof, source-bound fixture reconciliation, current compatibility entry, fresh Hexaemeron report and checked-runner report provide the bounded evidence for this round. The audit retains the explicit exclusions around semantic sufficiency, remote surfaces and final-main composition. --audit-filter sapheneia:sapheneia was applied with all protected content retained.

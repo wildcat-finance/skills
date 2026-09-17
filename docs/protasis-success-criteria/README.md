@@ -1,11 +1,10 @@
-# Declared success criteria: Step 1 evidence
+# Declared success criteria: recorded execution
 
 This package publishes the accepted #1273 study, runbook, design selection and
 decision. `proof.py` checks their design-home join, replays the selection
-specimens, checks the bounded declaration and effective-Exit join, and records
-real bounded child-process outcomes for execution custody. Completion, replay
-compatibility and the joined controller demonstration remain separate
-conformance operations.
+specimens, checks the bounded declaration and effective-Exit join, records
+real bounded child-process outcomes for execution custody, and demonstrates
+the joined controller contract in a disposable Git-backed run.
 
 ## Run the design-home check
 
@@ -82,17 +81,28 @@ replays the source-bound attempts into a terminal receipt and checks the legacy
 no-backfill path. Replay is inspection only; the evidence records zero command
 launches.
 
-## What remains unavailable
+## Joined controller demonstration
 
-- `joined-demonstration`: implementation Step 5.
+Step 5 runs the checked-in controller in a separate Git-backed fixture and
+records the source and command identities beside each bounded result:
 
-The remaining operation returns
-`operation-not-implemented:joined-demonstration:step-5` and exit 1 without
-producing a report. The two losing candidates also receive no conformance
-report. `design-home` establishes only the published join and selection
-replay. `execution-custody` records bounded child-process outcomes, while
-`terminal-compatibility` checks read-only completion and amendment custody.
-Neither makes a semantic-correctness claim.
+```bash
+python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion joined-demonstration --report .hexaemeron/reports/controller-capture-joined-demonstration.json
+```
+
+The demonstration observes a settled shared Exit, the missing-execution and
+withheld-integration boundaries, wrong criterion, step, command and source,
+non-zero, timeout, overflow and interrupted outcomes, stale amendment and
+legacy receipt refusals, marker behaviour, checkpoint replay, and a deliberately
+vacuous passing descriptor. Replay is read-only and records zero inspection
+launches. The report identifies the controller bytes and the fixture commit;
+remote GitHub and deployment surfaces remain outside the fixture.
+
+The report is source-bound and create-only. It establishes that the controller
+records the observed result and refuses the named substitutions. It does not
+establish that a command tests its criterion, that a criterion is sufficient,
+or that a fixture result describes production behaviour. The two losing
+candidates still receive no conformance report.
 
 ## Preserved sources
 

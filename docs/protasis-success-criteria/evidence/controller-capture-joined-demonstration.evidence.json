@@ -1,0 +1,362 @@
+{
+  "actual_counts": {
+    "controller_calls": 5,
+    "execution_invocations": 1,
+    "inspection_launches": 0
+  },
+  "checks": [
+    {
+      "case": "wrong-step",
+      "result": {
+        "case": "wrong-step",
+        "reason": "criterion-step",
+        "refused": true
+      }
+    },
+    {
+      "case": "wrong-command",
+      "result": {
+        "case": "wrong-command",
+        "reason": "command-admission",
+        "refused": true
+      }
+    },
+    {
+      "case": "wrong-source",
+      "result": {
+        "case": "wrong-source",
+        "reason": "result-study",
+        "refused": true
+      }
+    },
+    {
+      "case": "nonzero-exit",
+      "result": {
+        "elapsed_ms": 18,
+        "failure": "exit",
+        "reason": "nonzero-exit",
+        "returncode": 7,
+        "status": "completed",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "timeout",
+      "result": {
+        "elapsed_ms": 102,
+        "failure": "timeout",
+        "reason": "attempt-deadline",
+        "returncode": -15,
+        "status": "timeout",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "stream-overflow",
+      "result": {
+        "elapsed_ms": 19,
+        "failure": "stream-overflow",
+        "reason": "stdout-stream-cap",
+        "returncode": -15,
+        "status": "stream-overflow",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 64,
+          "sha256": "7ce100971f64e7001e8fe5a51973ecdfe1ced42befe7ee8d5fd6219506b5393c",
+          "truncated": true
+        }
+      }
+    },
+    {
+      "case": "interrupted",
+      "result": {
+        "elapsed_ms": 17,
+        "failure": "interrupted",
+        "reason": "signal-15",
+        "returncode": -15,
+        "status": "interrupted",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "stale-amendment",
+      "result": {
+        "case": "stale-amendment",
+        "reason": "completed-descriptor-changed",
+        "refused": true
+      }
+    },
+    {
+      "case": "marker-present-inert",
+      "contracts": {
+        "design_evidence": "protasis-design-evidence/v1",
+        "gate_commands": "protasis-gate-commands/v1",
+        "success_criteria": "protasis-success-criteria-execution/v1"
+      }
+    },
+    {
+      "case": "legacy-receipt",
+      "result": {
+        "case": "legacy-receipt",
+        "reason": "receipt-schema",
+        "refused": true
+      }
+    },
+    {
+      "attempt_count": 1,
+      "case": "checkpoint-replay",
+      "operation_ran": false
+    },
+    {
+      "case": "shared-descriptors",
+      "criterion_ids": [
+        "demo-positive",
+        "demo-shared",
+        "demo-vacuous"
+      ]
+    },
+    {
+      "case": "vacuous-success",
+      "controller_settled": true,
+      "semantic_sufficiency": false
+    }
+  ],
+  "controller": {
+    "bytes": 1232290,
+    "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+    "readback": {
+      "returncode": 0,
+      "status": "completed",
+      "stderr": {
+        "bytes": 245,
+        "sha256": "8108c39f5d2fe9c9bdd687c3d34f708da9dddb0504a4ff7546d201a7cc670474",
+        "truncated": false
+      },
+      "stdout": {
+        "bytes": 552,
+        "sha256": "b508cc471743c34cf74f0f49555d4e19f3ae142ed68872090cef50b4a0a27f57",
+        "truncated": false
+      }
+    },
+    "sha256": "190276aa6583c664ebd138051f99cd6c71aeab68631a704e5b9defd1cc3aa414",
+    "source": {
+      "branch": "fiat/joined-demonstration-step-1-demonstrate",
+      "commit": "9640e690ae2adeaa54201f30439db6be26029ffd",
+      "signed": true
+    }
+  },
+  "controller_calls": [
+    {
+      "case": "controller-init",
+      "result": {
+        "elapsed_ms": 877,
+        "failure": null,
+        "reason": "zero-exit",
+        "returncode": 0,
+        "status": "completed",
+        "stderr": {
+          "bytes": 245,
+          "sha256": "8108c39f5d2fe9c9bdd687c3d34f708da9dddb0504a4ff7546d201a7cc670474",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 552,
+          "sha256": "b508cc471743c34cf74f0f49555d4e19f3ae142ed68872090cef50b4a0a27f57",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "missing-execution-readback",
+      "result": {
+        "elapsed_ms": 172,
+        "failure": null,
+        "reason": "zero-exit",
+        "returncode": 0,
+        "status": "completed",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 666,
+          "sha256": "02e5857cd8f8228c2ae9f5f4cb6cb26d19551f9978d1edb6421994d7d5c64eeb",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "withholding-integration",
+      "result": {
+        "elapsed_ms": 216,
+        "failure": "exit",
+        "reason": "nonzero-exit",
+        "returncode": 2,
+        "status": "completed",
+        "stderr": {
+          "bytes": 106,
+          "sha256": "27d5f2567ac836f2eb60d7aa8071c6be04c414280e1754b96fe44d149636bf55",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "wrong-criterion",
+      "result": {
+        "elapsed_ms": 181,
+        "failure": "exit",
+        "reason": "nonzero-exit",
+        "returncode": 1,
+        "status": "completed",
+        "stderr": {
+          "bytes": 51,
+          "sha256": "954ec5124669a0d9d48e4ac35529175e9cb021ce9243a0e4b1ad99f1c80464f8",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        }
+      }
+    },
+    {
+      "case": "positive-execution",
+      "result": {
+        "elapsed_ms": 484,
+        "failure": null,
+        "reason": "zero-exit",
+        "returncode": 0,
+        "status": "completed",
+        "stderr": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "truncated": false
+        },
+        "stdout": {
+          "bytes": 6691,
+          "sha256": "40df3a71b213ac0901fd6f032eb626a66047c291f9172e0bb09ead63fed08d23",
+          "truncated": false
+        }
+      }
+    }
+  ],
+  "exclusions": [
+    "The command result does not establish criterion sufficiency.",
+    "The vacuous success case is retained as a passing observation, not a semantic grade.",
+    "Remote GitHub and deployment surfaces are fixture boundaries and were not contacted."
+  ],
+  "fixture": {
+    "kind": "git-backed-disposable",
+    "origin": "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/criteria-joined-4r9tzm0d/origin",
+    "source_commit": "9640e690ae2adeaa54201f30439db6be26029ffd",
+    "source_signed": true,
+    "worktree": "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/criteria-joined-4r9tzm0d/origin/tmp/fiat/fiat-joined-demonstration"
+  },
+  "inspection_launches": 0,
+  "report": {
+    "path": ".hexaemeron/reports/controller-capture-joined-demonstration.json",
+    "sha256": "9f73cc9cef425ff2e3fcb6309332a0a1670227f0de3676ef748b7aeff03d0b11"
+  },
+  "schema": "success-criteria-joined-demonstration-evidence/v1",
+  "scope": "Separate controller execution and bounded refusal readback in a disposable Git-backed fixture.",
+  "source_command": {
+    "command": "python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --format json runbook.md",
+    "command_sha256": "850fc1cf860aba6ba7ebee16f8100414a0e555595ce7a3eae1445d8fea86cb2c",
+    "criterion_ids": [
+      "demo-positive",
+      "demo-shared",
+      "demo-vacuous"
+    ],
+    "runbook_sha256": "e93468b2a2ddda6b8beb03e31c70cca162cda1bfb4491dda0b18bb2c66a7c787",
+    "source_after": {
+      "commit": "9640e690ae2adeaa54201f30439db6be26029ffd",
+      "root": "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/criteria-joined-4r9tzm0d/origin/tmp/fiat/fiat-joined-demonstration",
+      "signed": true,
+      "status": "clean",
+      "tree": "1a848cf7359ff97e3f22bcded8a5308b46d39101"
+    },
+    "source_before": {
+      "commit": "9640e690ae2adeaa54201f30439db6be26029ffd",
+      "root": "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/criteria-joined-4r9tzm0d/origin/tmp/fiat/fiat-joined-demonstration",
+      "signed": true,
+      "status": "clean",
+      "tree": "1a848cf7359ff97e3f22bcded8a5308b46d39101"
+    },
+    "study_sha256": "c01f718999c2aadddaed9708e6310596f3f221bfbfe07bd69ceec049180b8fc7"
+  },
+  "sources": [
+    {
+      "bytes": 54618,
+      "path": "docs/protasis-success-criteria/proof.py",
+      "sha256": "69d11c2d2cff910dccab52715a9d826fb2e2fabd34726da25752073d9be74455"
+    },
+    {
+      "bytes": 31162,
+      "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py",
+      "sha256": "4eddddefe6034db3ac4887cd6c03c7d8aa905f03f613b819caafb6e0ba7b7a7c"
+    },
+    {
+      "bytes": 17401,
+      "path": "plugins/hexaemeron/skills/fiat/scripts/criteria_receipts.py",
+      "sha256": "272c50cfe1ce7d91a1ab56fc91301d1d3916843201a15f3dd7abfee7b1d13d2b"
+    },
+    {
+      "bytes": 26738,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
+      "sha256": "b9fa8eb4293e6cbfa221e543fa30c1c1b4b6dea0faf71c794273be44be75492c"
+    },
+    {
+      "bytes": 39567,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
+      "sha256": "4173755991c975f8914c02eaa57fe22c3b36880f7f65b10cb3c20e7ea8b4542a"
+    },
+    {
+      "bytes": 20519,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py",
+      "sha256": "3d15265475f42e520f15a24a5293600448ebc8891f803948051bc5f15d3895a7"
+    }
+  ],
+  "terminal": {
+    "attempt_count": 1,
+    "operation_ran": false,
+    "schema": "protasis-success-criteria-terminal/v1"
+  }
+}

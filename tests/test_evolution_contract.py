@@ -415,16 +415,19 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.61.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.62.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.61.1")
-        self.assertIn("skills#508", current["evidence"])
-        self.assertIn("native macOS worker supervisor", current["change"])
+        self.assertEqual(current["version"], "fiat-v6.62.1")
+        self.assertIn("skills#1273", current["evidence"])
+        self.assertIn("successor-controller demonstration", current["change"])
         self.assertIn("held target stay unchanged", current["change"])
+        worker = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.61.1")
+        self.assertEqual(worker["axis"], "generation")
+        self.assertIn("native macOS worker supervisor", worker["change"])
         archive = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.60.1")
         self.assertEqual(archive["version"], "fiat-v6.60.1")
         self.assertEqual(archive["axis"], "generation")
@@ -659,11 +662,18 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v5.12.1")
-        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v6.12.1")
+        self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "success-criteria-evidence-join")
-        self.assertIn("skills#1273", field(ledger, "Next Fiat job"))
+        self.assertEqual(field(ledger, "Next Fiat job"), "None -- mature")
         by_version = {row["version"]: row for row in history_rows(ledger)}
+        closed = by_version["protasis-v6.12.1"]
+        self.assertEqual(closed["axis"], "evolution")
+        self.assertIn("skills#1273", closed["evidence"])
+        self.assertIn("joined demonstration", closed["evidence"])
+        self.assertIn("does not claim criterion sufficiency", closed["change"])
+        canonical = "|".join((field(ledger, "Frontier status"), field(ledger, "Frontier revision"), field(ledger, "Current frontier"), field(ledger, "Next Fiat job"))) + "\n"
+        self.assertEqual(closed["digest"], hashlib.sha256(canonical.encode()).hexdigest())
         reopened = by_version["protasis-v5.12.1"]
         self.assertEqual(reopened["axis"], "epoch")
         self.assertIn("skills/issues/1273", reopened["evidence"])

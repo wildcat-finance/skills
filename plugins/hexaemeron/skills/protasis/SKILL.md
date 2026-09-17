@@ -14,7 +14,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "5.12.1"
+  version: "6.12.1"
 ---
 
 <p align="center">
@@ -51,7 +51,10 @@ runbook prose, one source-bound known-failure inventory, and one closed
 candidate-by-criterion design record at the transition where each item of
 evidence becomes due. The optional command check validates literal arguments
 and finite per-file loops against registered source interfaces without
-executing the declared commands.
+executing the declared commands. Fiat's Step 5 demonstration separately
+records the successor controller's executed result and bounded refusal cases;
+that report does not enlarge Protasis's declaration or claim criterion
+sufficiency.
 
 ## Refuse these six
 
@@ -662,6 +665,8 @@ count is not a report.
 - [ ] No discipline core is restated where a citation belongs.
 - [ ] Assumptions are on the page and were confirmed or corrected.
 - [ ] Every success criterion names a command, a test or a demo path.
+- [ ] The final demonstration identifies its controller, source command and
+      bounded positive and negative observations without claiming sufficiency.
 - [ ] The design record covers correctness, time, space, compatibility and
       recovery with one exact result per candidate and criterion.
 - [ ] Every resolved result binds a zero-exit report; every pending result names

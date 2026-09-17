@@ -202,7 +202,7 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
 
     def test_later_operations_refuse_by_name_before_writing(self):
         for criterion, step in PROOF.FUTURE.items():
-            if criterion == "declaration-contract":
+            if criterion in ("declaration-contract", "joined-demonstration"):
                 continue
             with self.subTest(criterion=criterion):
                 with self.assertRaisesRegex(PROOF.Refusal, "operation-not-implemented:" + criterion + ":step-" + str(step)):

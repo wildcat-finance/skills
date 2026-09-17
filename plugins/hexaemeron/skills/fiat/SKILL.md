@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.61.1"
+  version: "6.62.1"
 ---
 
 <p align="center">
@@ -1169,6 +1169,18 @@ separately validates the relative report declaration under the restored root.
 The operand authorizes no command execution at the old root; existing checkpoint
 identity and ledger checks remain the relocation authority.
 
+## Joined controller demonstration
+
+Step 5 has a separate evidence operation for the successor contract. It runs
+the checked-in controller in a disposable Git-backed fixture, binds the exact
+controller bytes and source commit, and records one bounded positive result
+alongside the refusal cases it actually observes. A shared Exit may settle
+several descriptors from one attempt, while a passing command still says
+nothing about criterion sufficiency. Terminal replay remains read-only and
+records its zero inspection launches. The report names fixture-only GitHub and
+remote boundaries; it is evidence for this demonstration, not an integration
+receipt.
+
 ## Promise Machine contract
 
 ### fiat-design-evidence
@@ -1181,6 +1193,18 @@ identity and ledger checks remain the relocation authority.
 - Consequence: 2
 - Refuses: A missing or changed record, incomplete matrix, missing required concern, unsafe report, non-zero report exit, state/report disagreement, selection evidence still pending, failed selection gate, selected dominated candidate, unsupported tie-break, missing or mismatched runbook lock, evidence absent or failed at its named transition, receipt/event mismatch, or replay drift.
 - Recovery: Before design lock, run the named resolver and rewrite the draft record. After design lock, restore the exact receipted record and reports or produce the pending report at its named path; halt and start a new run if the candidate, criterion set or selection must change.
+- Exceptions: none
+
+### fiat-joined-controller-demonstration
+
+- Promise: A successful Step 5 demonstration establishes that the checked-in successor controller, identified by exact source bytes and a disposable Git commit, records one observed registered Exit with its command, source, step and descriptor bindings while retaining bounded positive, negative, legacy and vacuous-result outcomes and a read-only terminal replay.
+- Evidence: The source-bound controller, executor, receipt and command-adapter digests; controller init/readback; Git fixture and commit identity; missing-execution and withheld-integration directives; settled shared-descriptor attempt; wrong criterion, step, command and source refusals; non-zero, timeout, overflow and interrupted child outcomes; stale-amendment and legacy receipts; marker state; terminal receipt with `operation_ran:false`; zero inspection-launch count; actual invocation counts and exclusions.
+- Evidence classes: checked, recorded, measured
+- Boundary: The demonstration establishes controller behavior on the named fixture and the exact bounded observations it records. It does not establish criterion sufficiency, semantic correctness, host isolation, production performance, remote GitHub state or delivery completion. A vacuous pass is retained as a passing observation with semantic sufficiency left unclaimed.
+- Authorises: Carrying the source-bound joined-demonstration report into the Step 5 conformance gate and the final integration evidence without treating it as a test verdict or a replacement for the controller's own receipts.
+- Consequence: 2
+- Refuses: An unavailable or changed controller source, missing fixture identity, unsigned or dirty positive source where a signed run is required, absent command identity, forged or mismatched result, relabelled timeout or inconclusive outcome, non-zero negative case accepted as success, replay that launches an inspection command, or a report whose counts and exclusions do not match its observations.
+- Recovery: Preserve the failed fixture and bounded readback, repair the named source, command or receipt binding, and rerun the demonstration with a fresh report path; do not rewrite an earlier report or promote a vacuous command into a semantic claim.
 - Exceptions: none
 
 ### fiat-study-amendment
