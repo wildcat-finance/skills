@@ -269,6 +269,173 @@ def match_gitattributes(rules, relpath):
     return match_attribute_scopes({".": rules}, relpath)
 
 
+# The four names a reader needs to verify a release, and why each is here.
+# `manifest.json` is the release inventory Alexandria, Lazarus, Homologia and
+# Tabularium all write; `statement.json` is the in-toto statement Ariadne and
+# Lazarus publish beside a release; `SHA256SUMS` is the checksum list a
+# stranger re-runs; `events.jsonl` is the canonical event ledger Tabularium and
+# Ariadne emit. Every one of them is shaped like the sinks Horos exists to
+# exclude -- large, often a single line, often sitting in a build directory
+# beside archive parts -- so geometry and directory corroboration hide exactly
+# the evidence a release rests on. The names are exact basenames, not patterns:
+# `manifest.jsonl`, `statements.json`, `SHA256SUMS.txt` and `events.json` are
+# different files, and so is any case variant, because a rule that guessed
+# would protect files nobody publishes.
+READABLE_FAMILY_NAMES = frozenset(
+    {"manifest.json", "statement.json", "SHA256SUMS", "events.jsonl"}
+)
+
+
+# Why the maintainer's attributes are resolved first, in both directions, and
+# why the family names come second. The repository's maintainer owns its rules,
+# and an entry citing an attribute Git does not report is an exclusion with no
+# evidence behind it, which is the one thing a reading boundary may not do. So
+# both linguist attributes resolve exactly as Git resolves them -- within one
+# file the last matching line decides, and the innermost file that decides an
+# attribute wins -- and only then, for a file no line decided, do the four
+# family names outrank Horos's own heuristics. Reversing the two would let
+# Horos overrule a maintainer who deliberately marked a release manifest
+# generated; reversing them the other way would leave the families unprotected
+# until somebody wrote a line.
+LINGUIST_ATTRIBUTES = (
+    ("vendored", "linguist-vendored"),
+    ("generated", "linguist-generated"),
+)
+
+
+def _attribute_state(token, attribute):
+    """The state one whitespace-separated token gives one attribute, or None
+    when the token does not name it. Git's forms: `attr` and `attr=true` set
+    it, `-attr` and `attr=false` unset it, `!attr` and any other value leave it
+    unspecified."""
+    if token == attribute:
+        return "set"
+    if token == "-" + attribute:
+        return "unset"
+    if token == "!" + attribute:
+        return "unspecified"
+    if token.startswith(attribute + "="):
+        return {"true": "set", "false": "unset"}.get(
+            token[len(attribute) + 1 :], "unspecified"
+        )
+    return None
+
+
+def parse_attribute_states(path):
+    """Every linguist state one .gitattributes declares, in file order.
+
+    The set-only `parse_attribute_file` above is unchanged and still serves the
+    callers that only ask which patterns exclude. This one keeps the unset and
+    unspecified lines too, because Git does, under the same cap, the same
+    symlink refusal and the same fail-open decoding. A line whose pattern
+    begins with `[attr]` defines a macro rather than matching a path, so it is
+    skipped.
+    """
+    rules = []
+    if not os.path.isfile(path) or os.path.islink(path):
+        return rules
+    try:
+        with open(path, "rb") as handle:
+            text = handle.read(ATTRIBUTES_CAP).decode("utf-8", errors="replace")
+    except OSError:
+        return rules
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 2 or parts[0].startswith("#") or parts[0].startswith("[attr]"):
+            continue
+        pattern = parts[0].lstrip("/")
+        for category, attribute in LINGUIST_ATTRIBUTES:
+            state = None
+            for token in parts[1:]:
+                token_state = _attribute_state(token, attribute)
+                if token_state is not None:
+                    state = token_state
+            if state is not None:
+                rules.append((pattern, category, attribute, state))
+    return rules
+
+
+def _attribute_pattern_matches(pattern, local):
+    """Today's pattern matching, unchanged: the literal pattern, a `/**`
+    pattern's `/*` twin, against the scope-relative path or its basename."""
+    candidates = [pattern]
+    if pattern.endswith("/**"):
+        candidates.append(pattern[: -len("/**")] + "/*")
+    for candidate in candidates:
+        if fnmatch.fnmatch(local, candidate) or fnmatch.fnmatch(
+            PurePosixPath(local).name, candidate
+        ):
+            return True
+    return False
+
+
+def resolve_attribute_states(scopes, relpath):
+    """Resolve both linguist attributes for one path the way Git does.
+
+    `scopes` maps a scope directory to `parse_attribute_states` output.
+    Returns {category: (state, evidence, depth, index)} holding only the
+    attributes some line decided; depth is the deciding scope's distance from
+    the path, innermost first, and index orders deciding lines inside one file.
+    """
+    decided = {}
+    for depth, scope in enumerate(_ancestors_innermost_first(relpath)):
+        rules = scopes.get(scope)
+        if not rules:
+            continue
+        local = relpath if scope == "." else relpath[len(scope) + 1 :]
+        where = ".gitattributes" if scope == "." else f"{scope}/.gitattributes"
+        here = {}
+        for index, (pattern, category, attribute, state) in enumerate(rules):
+            if category in decided:
+                continue
+            if _attribute_pattern_matches(pattern, local):
+                # The last matching line in this file decides, so a later match
+                # replaces an earlier one before the file is consulted.
+                here[category] = (
+                    state,
+                    f"{attribute} for {pattern!r} in {where}",
+                    depth,
+                    index,
+                )
+        decided.update(here)
+    return decided
+
+
+def attribute_verdict(scopes, relpath):
+    """The attribute half of the precedence.
+
+    ("set", category, evidence) when either attribute resolves set,
+    ("unset", None, None) when neither is set and one is explicitly unset, and
+    None when no line decided either way. With both set the innermost deciding
+    file speaks, and inside one file the deciding line that comes first, so the
+    entry cites one line a reader can open.
+    """
+    decided = resolve_attribute_states(scopes, relpath)
+    if not decided:
+        return None
+    sets = [
+        (value[2], value[3], category, value[1])
+        for category, value in decided.items()
+        if value[0] == "set"
+    ]
+    if sets:
+        _depth, _index, category, evidence = min(sets)
+        return "set", category, evidence
+    if any(value[0] == "unset" for value in decided.values()):
+        return "unset", None, None
+    return None
+
+
+def readable_by_rule(scopes, relpath):
+    """True when a path is readable under the rules above the heuristics: an
+    attribute that resolves unset, or an exact family basename no attribute
+    resolved set. Nothing is opened, so the test costs a name comparison."""
+    verdict = attribute_verdict(scopes, relpath)
+    if verdict is not None:
+        return verdict[0] == "unset"
+    return PurePosixPath(relpath).name in READABLE_FAMILY_NAMES
+
+
 # Leading bytes that name a binary format outright; more reliable than a
 # null byte happening to appear inside the prefix.
 FILE_SIGNATURES = (
@@ -400,11 +567,19 @@ def classify_file(root, relpath):
     can count it as skipped rather than silently readable. Symlinks are
     refused here as well as in the walk: this function is public, and a
     caller handing it a link must not make the scanner read outside root.
+    A family name is answered before the stat, so it neither reads nor raises.
     """
     fullpath = os.path.join(root, relpath)
     if os.path.islink(fullpath):
         return None
     name = PurePosixPath(relpath).name
+
+    # The family names outrank every heuristic below, and the check sits here,
+    # first after the symlink refusal, so a caller holding one path gets the
+    # same answer the walk does. A 64 MiB statement.json costs one comparison.
+    if name in READABLE_FAMILY_NAMES:
+        return None
+
     size = os.stat(fullpath).st_size
 
     # First, because it is the only rule that proves itself: a matching
@@ -576,6 +751,110 @@ def binding_directory_entry(
     return entry
 
 
+def _enumerate_subtree(root, relpath, scopes, universe):
+    """One walk of a directory the scan would otherwise prune.
+
+    Returns (`scopes` widened with every .gitattributes beneath it, sorted
+    (path, size) pairs for the tracked files it holds). A pruned directory's
+    nested attribute files never reach the main walk, so whatever decides its
+    fate has to read them here, under the same cap and symlink refusal. Both
+    the split and the set-pattern test need exactly this, so the directory is
+    enumerated once and the result is passed to whichever one asked.
+    """
+    widened = dict(scopes)
+    found = []
+    for dirpath, dirnames, filenames in os.walk(
+        os.path.join(root, relpath), followlinks=False
+    ):
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIPPED_DIR_NAMES)
+        if ".gitattributes" in filenames:
+            inner_dir = os.path.relpath(dirpath, root).replace(os.sep, "/")
+            states = parse_attribute_states(os.path.join(dirpath, ".gitattributes"))
+            if states:
+                widened[inner_dir] = states
+        for filename in sorted(filenames):
+            fullpath = os.path.join(dirpath, filename)
+            if os.path.islink(fullpath):
+                continue
+            inner = os.path.relpath(fullpath, root).replace(os.sep, "/")
+            if universe is not None and inner not in universe:
+                continue
+            try:
+                size = os.stat(fullpath).st_size
+            except OSError:
+                continue
+            found.append((inner, size))
+    found.sort()
+    return widened, found
+
+
+def directory_resolves_set(root, relpath, scopes, universe):
+    """True when every tracked file beneath a directory a set pattern matched
+    resolves set as well. That is what keeps the directory one entry: if one
+    file beneath it is unset or unspecified, the aggregate would exclude a file
+    Git does not report as generated or vendored, so the walk enters instead
+    and decides file by file."""
+    widened, files = _enumerate_subtree(root, relpath, scopes, universe)
+    for inner, _size in files:
+        verdict = attribute_verdict(widened, inner)
+        if verdict is None or verdict[0] != "set":
+            return False
+    return True
+
+
+def split_directory_entries(root, relpath, category, evidence, scopes, tally, universe):
+    """Per-file entries for a hard directory that holds a readable file, or
+    None when nothing beneath it is readable and the single entry still stands.
+
+    Readable here means readable by rule -- an attribute resolved unset, or a
+    family basename no attribute resolved set -- so the test reads no file
+    content. Every other tracked file beneath stays excluded: an attribute-set
+    file keeps its own attribute evidence, and the rest carry the directory's
+    evidence with the readable file named, so a reader can see why one entry
+    became many. The census counts each file exactly once, as the aggregate
+    entry did.
+    """
+    widened, files = _enumerate_subtree(root, relpath, scopes, universe)
+    verdicts = {}
+    readable = []
+    for inner, _size in files:
+        verdict = attribute_verdict(widened, inner)
+        verdicts[inner] = verdict
+        if verdict is not None:
+            if verdict[0] == "unset":
+                readable.append(inner)
+        elif PurePosixPath(inner).name in READABLE_FAMILY_NAMES:
+            readable.append(inner)
+    if not readable:
+        return None
+    split_evidence = evidence + f"; split around readable {readable[0]}"
+    if len(readable) > 1:
+        split_evidence += f" and {len(readable) - 1} more"
+    covered = set(readable)
+    entries = []
+    for inner, size in files:
+        name = PurePosixPath(inner).name
+        if inner in covered:
+            _census_add(tally, name, size, in_boundary=False)
+            continue
+        verdict = verdicts[inner]
+        if verdict is not None and verdict[0] == "set":
+            entry_category, entry_evidence = verdict[1], verdict[2]
+        else:
+            entry_category, entry_evidence = category, split_evidence
+        entries.append(
+            {
+                "path": inner,
+                "category": entry_category,
+                "bytes": size,
+                "evidence": entry_evidence,
+                "grade": "hard",
+            }
+        )
+        _census_add(tally, name, size, in_boundary=True)
+    return entries
+
+
 def resolve_universe(root, include_untracked=False):
     """The file set a scan covers. Git-tracked by default so local build
     products and caches never contaminate a committed boundary; the
@@ -632,6 +911,10 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
     root = os.path.abspath(root)
     universe_label, universe = resolve_universe(root, include_untracked)
     scopes = {}
+    # The set-only view the directory matcher below still reads, and the full
+    # view the per-file precedence resolves over. Two views of the same lines,
+    # so the unchanged helpers keep answering exactly as they did.
+    state_scopes = {}
     tally = {} if census else None
     entries = []
     candidates = []
@@ -644,9 +927,13 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
         relative_dir = os.path.relpath(dirpath, root)
         posix_dir = "." if relative_dir == "." else relative_dir.replace(os.sep, "/")
         if ".gitattributes" in filenames:
-            rules = parse_attribute_file(os.path.join(dirpath, ".gitattributes"))
+            attribute_path = os.path.join(dirpath, ".gitattributes")
+            rules = parse_attribute_file(attribute_path)
             if rules:
                 scopes[posix_dir] = rules
+            states = parse_attribute_states(attribute_path)
+            if states:
+                state_scopes[posix_dir] = states
             if scope is not None and not _inside_scope(posix_dir, scope):
                 attribute_files_above_scope += 1
         keep = []
@@ -672,11 +959,29 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
             if named_category is not None:
                 corroboration = corroborate_directory(child, dirname)
                 if corroboration is not None:
+                    evidence = (
+                        f"directory name {dirname} corroborated by {corroboration}"
+                    )
+                    # A corroborated directory is one entry until something
+                    # beneath it is readable by rule; then it becomes per-file
+                    # entries so the readable file is not swallowed with it.
+                    split = split_directory_entries(
+                        root,
+                        relpath,
+                        named_category,
+                        evidence,
+                        state_scopes,
+                        tally,
+                        universe,
+                    )
+                    if split is not None:
+                        entries.extend(split)
+                        continue
                     entry = binding_directory_entry(
                         root,
                         relpath,
                         named_category,
-                        f"directory name {dirname} corroborated by {corroboration}",
+                        evidence,
                         tally,
                         universe=universe,
                     )
@@ -703,13 +1008,17 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
                 keep.append(dirname)
                 continue
             matched = match_attribute_scopes(scopes, relpath + "/")
-            if matched is not None:
+            if matched is not None and directory_resolves_set(
+                root, relpath, state_scopes, universe
+            ):
                 entry = binding_directory_entry(
                     root, relpath, matched[0], matched[1], tally, universe=universe
                 )
                 if entry is not None:
                     entries.append(entry)
                 continue
+            # A matched directory holding a file the maintainer did not leave
+            # set is walked instead, and each file beneath decides for itself.
             keep.append(dirname)
         dirnames[:] = keep
 
@@ -729,8 +1038,8 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
                 outside_scope_listed += 1
                 continue
             walked += 1
-            matched = match_attribute_scopes(scopes, relpath)
-            if matched is not None:
+            verdict = attribute_verdict(state_scopes, relpath)
+            if verdict is not None and verdict[0] == "set":
                 try:
                     size = os.stat(fullpath).st_size
                 except OSError:
@@ -739,13 +1048,25 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
                 entries.append(
                     {
                         "path": relpath,
-                        "category": matched[0],
+                        "category": verdict[1],
                         "bytes": size,
-                        "evidence": matched[1],
+                        "evidence": verdict[2],
                         "grade": "hard",
                     }
                 )
                 _census_add(tally, filename, size, in_boundary=True)
+                continue
+            if verdict is not None and verdict[0] == "unset":
+                # An explicit unset is the maintainer saying this file is worth
+                # reading. It outranks every heuristic below, so the file earns
+                # neither an entry nor a candidate.
+                if tally is not None:
+                    try:
+                        size = os.stat(fullpath).st_size
+                    except OSError:
+                        skipped_unreadable += 1
+                        continue
+                    _census_add(tally, filename, size, in_boundary=False)
                 continue
             try:
                 entry = classify_file(root, relpath)
