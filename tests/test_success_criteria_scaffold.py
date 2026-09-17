@@ -32,6 +32,16 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
         self.decision = home_path.as_posix()
         files = [".python-version", PROOF.SELF, PROOF.DESIGN_CHECKER,
                  PROOF.BRIDGE_CHECKER, self.decision]
+        files += [
+            "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py",
+            "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
+            "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
+        ]
+        gate = PROOF.load_module(
+            ROOT / "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
+            "scaffold_fixture_gate_commands",
+        )
+        files += list(gate.REGISTRY)
         files += [PACKAGE + "/" + name for name in PROOF.FROZEN]
         design = json.loads((ROOT / PACKAGE / "design-evidence.json").read_bytes())
         files += [PACKAGE + "/" + row["report"]["path"] for row in design["results"]
@@ -190,13 +200,28 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
             self.run_proof()
         self.assert_no_reports()
 
-    def test_all_four_future_operations_refuse_by_name_before_writing(self):
+    def test_later_operations_refuse_by_name_before_writing(self):
         for criterion, step in PROOF.FUTURE.items():
+            if criterion == "declaration-contract":
+                continue
             with self.subTest(criterion=criterion):
                 with self.assertRaisesRegex(PROOF.Refusal, "operation-not-implemented:" + criterion + ":step-" + str(step)):
                     self.run_proof(criterion=criterion)
                 self.assert_no_reports()
-        self.assertFalse((self.root / ".hexaemeron").exists())
+
+    def test_declaration_contract_report_is_bound_to_the_actual_adapter(self):
+        report_path = ".hexaemeron/reports/controller-capture-declaration-contract.json"
+        report = PROOF.run(self.root, "controller-capture", "declaration-contract", report_path)
+        self.assertEqual(set(report), {"schema", "candidate", "criterion", "value",
+                                       "unit", "command", "exit"})
+        self.assertEqual(report["schema"], "protasis-design-report/v1")
+        self.assertIs(report["value"], True)
+        evidence = json.loads((self.root / (report_path[:-5] + ".evidence.json")).read_bytes())
+        self.assertEqual(evidence["schema"], "success-criteria-declaration-evidence/v1")
+        checks = {row["case"]: row for row in evidence["checks"]}
+        self.assertEqual(checks["adapter-admission"]["criteria"], 8)
+        self.assertFalse(checks["adapter-admission"]["operation_ran"])
+        self.assertIn("superseded-exit", checks)
 
     def test_losing_candidates_do_not_receive_conformance_reports(self):
         for candidate in ("producer-report", "terminal-replay"):

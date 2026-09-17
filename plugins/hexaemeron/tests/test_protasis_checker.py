@@ -66,6 +66,13 @@ def findings(source):
         return protasis.check(path)
 
 
+def study_findings(source):
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "study.md"
+        path.write_text(source, encoding="utf-8")
+        return protasis.check_study(path)
+
+
 def codes(source):
     return sorted(f.code for f in findings(source))
 
@@ -98,6 +105,22 @@ class RequiredFields(unittest.TestCase):
     def test_the_finding_points_at_the_heading_line(self):
         found = findings("\n" + without("Goal"))
         self.assertEqual(found[0].line, 2)
+
+    def test_success_criteria_declaration_is_optional_for_legacy_studies(self):
+        study = "\n".join(
+            f"## {number}. Item {number}\n\nA recorded answer.\n"
+            for number in range(1, 13)
+        )
+        path_findings = study_findings(study)
+        self.assertNotIn("S009", [finding.code for finding in path_findings])
+
+    def test_malformed_success_criteria_is_reported_without_running_commands(self):
+        study = "\n".join(
+            f"## {number}. Item {number}\n\nA recorded answer.\n"
+            for number in range(1, 13)
+        ) + "\n```success-criteria\n{not json}\n```\n"
+        found = study_findings(study)
+        self.assertIn("S009", [finding.code for finding in found])
 
 
 class RunbookAmendments(unittest.TestCase):

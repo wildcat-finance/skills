@@ -1,0 +1,9 @@
+{
+  "candidate": "controller-capture",
+  "command": "python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion declaration-contract --report .hexaemeron/reports/controller-capture-declaration-contract.json",
+  "criterion": "declaration-contract",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

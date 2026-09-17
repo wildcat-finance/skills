@@ -1,0 +1,107 @@
+{
+  "checks": [
+    {
+      "case": "empty-criteria",
+      "reason": "success-criteria-empty"
+    },
+    {
+      "case": "wrong-step",
+      "reason": "criteria-exit-missing:declared-exit-join"
+    },
+    {
+      "case": "superseded-exit",
+      "reason": "criteria-exit-missing:amended-old"
+    },
+    {
+      "adapter_sha256": "eb8765a4805a2b31cd27ff257d72faa54d191b6fe254546697169a2be67b0658",
+      "case": "adapter-admission",
+      "commands": 19,
+      "criteria": 8,
+      "declaration_sha256": "014ecce6ff862daa5de36160d460f493118bf9e6fc9fdb763bb0253b9386a9d0",
+      "operation_ran": false,
+      "runbook_sha256": "bb36b579fe02a406519afd640e52d35d1c3583c5827cca790609933527ba6651"
+    }
+  ],
+  "interpreter": {
+    "path": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "version": "3.14.6"
+  },
+  "report": {
+    "path": ".hexaemeron/reports/controller-capture-declaration-contract.json",
+    "sha256": "a71ec8fb87f9ebb0cf5d9a3bd9592c878601dfb63dd095592bbfdeda2545768a"
+  },
+  "schema": "success-criteria-declaration-evidence/v1",
+  "scope": "Pure bounded declaration parsing and inert effective-Exit admission.",
+  "sources": [
+    {
+      "bytes": 7,
+      "path": ".python-version",
+      "sha256": "3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab"
+    },
+    {
+      "bytes": 17723,
+      "path": "docs/protasis-success-criteria/proof.py",
+      "sha256": "a41e1bb1fc298cf2df937ff7581249419aaa2f4545e6bbbe07f750fde5c59496"
+    },
+    {
+      "bytes": 50901,
+      "path": "docs/protasis-success-criteria/runbook.md",
+      "sha256": "bb36b579fe02a406519afd640e52d35d1c3583c5827cca790609933527ba6651"
+    },
+    {
+      "bytes": 53514,
+      "path": "docs/protasis-success-criteria/study.md",
+      "sha256": "2ff25685ea7e4f0c00b27f529ce901886156d46a5582ab7987c126105c64f3d4"
+    },
+    {
+      "bytes": 18130,
+      "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+      "sha256": "85d633e1e378a67dae7dfcb747a50a31c90727a60b034f41bcb887cb8de53529"
+    },
+    {
+      "bytes": 57515,
+      "path": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py",
+      "sha256": "efe8543bac4e6073a72a0201821dcb395fdcde32871d28967f06e7cc0c81f0b9"
+    },
+    {
+      "bytes": 59709,
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "sha256": "15994563244fbce2f358394e1464b9e4ba2f50c16a959f5c44c30ab75a3147eb"
+    },
+    {
+      "bytes": 39353,
+      "path": "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+      "sha256": "7522d57632d5ceee515f37355744718853ee82d26c5e549b68571a2dce9ad50a"
+    },
+    {
+      "bytes": 46574,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/phylax.py",
+      "sha256": "a8c998c586ebc0d3d7ac59fc1867a4b54b5d482f34e1b96aea75a0e4d41cafda"
+    },
+    {
+      "bytes": 26531,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
+      "sha256": "eb8765a4805a2b31cd27ff257d72faa54d191b6fe254546697169a2be67b0658"
+    },
+    {
+      "bytes": 39567,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
+      "sha256": "4173755991c975f8914c02eaa57fe22c3b36880f7f65b10cb3c20e7ea8b4542a"
+    },
+    {
+      "bytes": 19055,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py",
+      "sha256": "40814c3ad5acde3d95cc7430dd0fbcb8088624d8f1074ddd21e2af376c40bf60"
+    },
+    {
+      "bytes": 136742,
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b"
+    },
+    {
+      "bytes": 120833,
+      "path": "scripts/run_checks.py",
+      "sha256": "c6a789bf4dff9f53eb3adba4a3ed62f7e3cba7e1a79d32f69f00a5a16f27c1e0"
+    }
+  ]
+}
