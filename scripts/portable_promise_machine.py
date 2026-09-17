@@ -224,6 +224,22 @@ OMISSIONS = (
         ),
     },
     {
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+        "reason": (
+            "the checkpoint authority record, signature and replay conformance "
+            "corpora are data the router never reads; only the conformance "
+            "reporters read them, and those run from the full source checkout"
+        ),
+    },
+    {
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
+        "reason": (
+            "the native boundary conformance fixture is data the router never "
+            "reads; only the native conformance reporter reads it, and that runs "
+            "from the full source checkout"
+        ),
+    },
+    {
         "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
         "reason": "the large offline trace inputs remain in the full source checkout",
     },
@@ -279,6 +295,8 @@ def _omitted(relative: Path) -> bool:
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
         return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
+        return True
+    if parts[:5] == ("plugins", "hexaemeron", "skills", "fiat", "checkpoint-authority") and len(parts) >= 7 and parts[5] in {"fixtures", "native-fixture"}:
         return True
     example = parts[:4] == (
         "plugins",

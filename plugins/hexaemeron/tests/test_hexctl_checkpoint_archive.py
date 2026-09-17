@@ -3071,16 +3071,10 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         `checkpoint archive` snapshots every controller file into the capsule
         and scans each one, so a run whose study quotes an armour header could
         not archive itself. That was S2-R2-02, and steps 4 and 5 export this run
-        for real. Each document is read as it stands rather than as a fixture
-        copy, so the guard keeps holding as it grows.
+        for real. The tracked archive study and reference remain the witnesses;
+        another run's active study does not become an archive specification.
         """
-        checked = [STUDY, REFERENCE]
-        run_study = ROOT / ".hexaemeron" / "study.md"
-        if run_study.exists():
-            # Untracked run state: present in a Fiat run worktree, absent in a
-            # clean checkout, and byte-equal to `STUDY` by this step's binding.
-            checked.append(run_study)
-        for path in checked:
+        for path in (STUDY, REFERENCE):
             with self.subTest(document=path.name):
                 text = read(path)
                 self.assertTrue(
@@ -3088,6 +3082,17 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     f"{path.name} names no armour header, so it guards nothing",
                 )
                 self.assertIsNone(self.scan(path.read_bytes()))
+
+    def test_unrelated_active_study_does_not_join_archive_specifications(self):
+        with tempfile.TemporaryDirectory(prefix="other-study-") as directory:
+            active_root = Path(directory)
+            (active_root / ".hexaemeron").mkdir()
+            (active_root / ".hexaemeron/study.md").write_text(
+                "# An unrelated study\nIts contract names no archive armour.\n",
+                encoding="utf-8",
+            )
+            with mock.patch.object(sys.modules[__name__], "ROOT", active_root):
+                self.test_secret_scan_passes_the_run_s_own_specification_documents()
 
 
 def _zip_local_header(name: bytes, data: bytes, *, method=0, flags=0, extra=b""):

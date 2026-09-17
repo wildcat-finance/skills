@@ -9,7 +9,7 @@ from .canonical import MAX_ENTRIES, MAX_TOTAL_BYTES, Refusal, canonical, decode
 from .records import references, time_value
 from .schema import ID, SCOPE, validate
 from .signatures import (MAX_ENVELOPE_BYTES, b64decode, public_key, verify_envelope,
-                         verify_signature)
+                         verify_signature, _decode_envelope, _verify_decoded, freeze, thaw)
 
 TRUST_TYPES = frozenset({"authority-policy", "enrollment-challenge", "key-enrollment",
     "key-rotation", "key-revocation", "run-grant", "run-registration"})
@@ -43,23 +43,25 @@ def proof_message(challenge):
 @dataclass(frozen=True)
 class _Retained:
     """Only state needed by later entries; not a complete verified payload."""
-    projection: bytes
+    projection: object
     envelope_sha256: str
 
     @property
     def record(self):
-        return decode(self.projection, require_canonical=True)
+        return thaw(self.projection)
 
 
 def _retain(record, identity):
     kind = record["type"]
     fields = {
         "key-enrollment": ("actor_id", "key", "not_before", "not_after"),
-        "key-rotation": ("actor_id", "key", "not_before", "not_after"),
+        "key-rotation": ("actor_id", "key", "not_before", "not_after", "replaces"),
+        "key-revocation": ("actor_id", "enrollment", "effective_at"),
         "run-grant": ("actor_id", "enrollment", "permissions", "not_before", "not_after"),
+        "run-registration": ("native_anchor_sha256", "initial_base", "source", "owner_id", "permitted_protocols", "initial_parent", "root_authorized"),
     }.get(kind, ())
     projection = record if kind == "enrollment-challenge" else {"type": kind, **{key: record[key] for key in fields}}
-    return _Retained(canonical(projection), identity)
+    return _Retained(freeze(projection), identity)
 
 
 class TrustPrefix:
@@ -90,18 +92,12 @@ class TrustPrefix:
         self.revoked = set()
         self.consumed_challenges = set()
 
-    def _peek(self, envelope):
-        outer = decode(envelope, limit=MAX_ENVELOPE_BYTES)
-        if type(outer) is not dict or "payload" not in outer:
-            raise Refusal("envelope-fields", "trust")
-        statement = decode(b64decode(outer["payload"]), require_canonical=True)
-        if type(statement) is not dict or type(statement.get("predicate")) is not dict:
+    def authenticate(self, envelope, *, _decoded=None):
+        """Verify one record with already trusted authority; install no carried key."""
+        decoded = _decode_envelope(envelope) if _decoded is None else _decoded
+        record = decoded[2]["predicate"]
+        if type(record) is not dict:
             raise Refusal("statement-fields", "trust")
-        return statement["predicate"]
-
-    def authenticate(self, envelope):
-        """Verify one record with already trusted authority; never install carried keys."""
-        record = self._peek(envelope)
         kind, issuer = record.get("type"), record.get("issuer")
         if type(issuer) is not str or type(kind) is not str:
             raise Refusal("issuer-untrusted", "trust")
@@ -125,7 +121,7 @@ class TrustPrefix:
             if not time_value(authority["not_before"]) <= instant < time_value(authority["not_after"]):
                 raise Refusal("issuer-expired", "trust")
             key = authority["key"]
-        verified = verify_envelope(envelope, key, self.tools, scope=self.bootstrap.scope)
+        verified = _verify_decoded(envelope, decoded, key, self.tools, scope=self.bootstrap.scope)
         record = verified.record
         if self.policy is not None:
             if kind != "authority-policy" and record.get("policy") != {"type": "authority-policy", "sha256": self.policy.envelope_sha256}:
@@ -139,6 +135,28 @@ class TrustPrefix:
         if found is None or found.record["type"] != reference["type"] or reference["type"] not in kinds:
             raise Refusal("trust-reference", "trust")
         return found.record
+
+    def signing_history(self, references):
+        """Ordered relevant enrollments, rotation ancestors and later revocations."""
+        relevant = set()
+        pending = list(references)
+        while pending:
+            reference = pending.pop()
+            identity = reference["sha256"]
+            row = self._reference(reference, "key-enrollment", "key-rotation")
+            if identity in relevant:
+                continue
+            relevant.add(identity)
+            if row["type"] == "key-rotation":
+                pending.append(row["replaces"])
+        result = []
+        for identity, retained in self.records.items():
+            row = retained.record
+            if identity in relevant or (row["type"] == "key-revocation" and row["enrollment"]["sha256"] in relevant):
+                result.append({"type": row["type"], "sha256": identity})
+        if len(result) > 64:
+            raise Refusal("signing-history-limit", "trust")
+        return result
 
     def _active_enrollment(self, reference, actor, instant):
         enrollment = self._reference(reference, "key-enrollment", "key-rotation")
@@ -157,13 +175,13 @@ class TrustPrefix:
         if not time_value(grant["not_before"]) <= instant < time_value(grant["not_after"]):
             raise Refusal("grant-expired", "trust")
 
-    def append(self, envelope):
+    def append(self, envelope, *, _decoded=None):
         """Append only after all structural, signature and predecessor checks pass."""
         if type(envelope) is not bytes:
             raise Refusal("invalid-bytes", "trust")
         if self.count >= MAX_ENTRIES or self.total_bytes + len(envelope) > MAX_TOTAL_BYTES:
             raise Refusal("aggregate-limit", "trust")
-        verified = self.authenticate(envelope)
+        verified = self.authenticate(envelope, _decoded=_decoded)
         record = verified.record
         kind, identity = record["type"], verified.envelope_sha256
         if kind not in TRUST_TYPES:
@@ -209,7 +227,7 @@ class TrustPrefix:
             self.enrollments[identity] = _retain(record, identity)
             challenge_identity = record["proof"]["challenge"]["sha256"]
             self.consumed_challenges.add(challenge_identity)
-            self.records[challenge_identity] = _Retained(canonical({"type": "enrollment-challenge"}), challenge_identity)
+            self.records[challenge_identity] = _Retained(freeze({"type": "enrollment-challenge"}), challenge_identity)
             if kind == "key-rotation":
                 self.revoked.add(record["replaces"]["sha256"])
         elif kind == "key-revocation":

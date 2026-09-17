@@ -53,6 +53,11 @@ def _copies(copies, *, artifact=None):
 def parse_record(data: bytes, *, scope=None):
     """Return a new parsed value; this alone establishes no signature or authority."""
     record = decode(data, require_canonical=True)
+    return validate_record(record, data, scope=scope)
+
+
+def validate_record(record, data, *, scope=None):
+    """Validate the already decoded signed body without a second JSON parse."""
     if type(record) is not dict or type(record.get("type")) is not str or record["type"] not in SCHEMAS:
         raise Refusal("unsupported-record-type")
     if record.get("protocol") != PROTOCOL:

@@ -4837,12 +4837,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
-        "sha256": "5f1b56da92d7a1e1516527d860a3a4df246199b77ede64cdc26415390f30d50d"
+        "sha256": "bcba5be665a0dd6cfe5a169c3567c41dd6434771f04e28b1458725309cad609a"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "5f1b56da92d7a1e1516527d860a3a4df246199b77ede64cdc26415390f30d50d"
+        "sha256": "bcba5be665a0dd6cfe5a169c3567c41dd6434771f04e28b1458725309cad609a"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",
@@ -5129,16 +5129,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "negative",
-        "sha256": "9761b0d7186410da73a1b41eb6efc5ed091a4ecc7085fdaec047e3312fbfec9b"
+        "sha256": "b4934f5c05149d6f84a50312c94ea79b790470214db3b2c3492b635b883ff954"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "positive",
-        "sha256": "9761b0d7186410da73a1b41eb6efc5ed091a4ecc7085fdaec047e3312fbfec9b"
+        "sha256": "b4934f5c05149d6f84a50312c94ea79b790470214db3b2c3492b635b883ff954"
       },
       "reader": "native-json-v1",
       "selector": "test_restore_from_archive_recreates_repository_and_controller_state",
-      "sha256": "7fbdc8194f4a7e1ebcb6d676275ef579e9487cedebb0a0f3166becd070aaad4e",
+      "sha256": "351f47d721d142215c6e4bacb564674da2cfc87f755ec4d9f04a114c8323bd38",
       "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py"
     },
     "fiat-controller-checkpoint": {

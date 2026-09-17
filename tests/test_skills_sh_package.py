@@ -154,6 +154,13 @@ CONTRACT = "promise-machine/v1"
 # moves to 1,600; the 25 MiB byte cap and five MiB reserve stay unchanged.
 # Required shipped content, omission rules and source bindings stay intact.
 # This does not make the 1,000-file archive and download routes compatible.
+# 2026-09-18: Step 4 of issue #1676 measured 21,187,330 package bytes, 215,810
+# over the maximum the reserve leaves. Omitting the checkpoint authority
+# conformance corpora (`checkpoint-authority/fixtures/**` and
+# `native-fixture/**`, read only by reporters the package already omits) under
+# adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime
+# gives 20,855,284 package bytes across 1,510 files, 5,359,116 bytes of
+# headroom; the cap, reserve and file tripwire stay unchanged.
 MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
@@ -165,6 +172,8 @@ EXPECTED_OMISSIONS = {
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
     "plugins/anamnesis/specimens/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
     "plugins/*/tests/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",

@@ -1,12 +1,12 @@
-# Checkpoint authority records, signatures and native verification
+# Checkpoint authority records, signatures, native verification and replay
 
 ## Scope
 
-Step 2 implements `records-and-signatures`; Step 3 implements
-`native-boundary-coverage` for `ordered-replay`, under
+Step 2 implements `records-and-signatures`, Step 3 `native-boundary-coverage`
+and Step 4 `authority-replay` for `ordered-replay`, under
 `adr/verify-checkpoint-authority-by-ordered-replay`. Native checkpoint v1 is
-unchanged. Complete journal replay, current eligibility and released
-interoperability remain unresolved at their later criteria.
+unchanged. Released interoperability remains unresolved at its later
+criterion, and no local result establishes current production eligibility.
 
 ## Records and bytes
 
@@ -92,7 +92,7 @@ transparency claim.
 A pass requires every manifest case to start and finish, with zero failures,
 errors, skips or expected failures. Evidence binds actual source, fixture,
 tool, runtime, counter and output identities. Empty historical corpora and the
-two later criteria still return 3. Malformed or unsafe invocations return 2;
+released-interoperability criterion still return 3. Malformed or unsafe invocations return 2;
 completed failing cases return 1. Outputs contain fixed codes, test identities
 and hashes; raw failure messages stay inside the test runner.
 
@@ -199,6 +199,124 @@ keyring was removed. Upstream fake GitHub/ref tooling and synthetic
 observation prefixes belong to fixture generation. They establish neither
 production trust nor actual run telemetry. The fixture's source/setup
 history is outside the two governed ranges.
+
+## Ordered replay
+
+[`replay.py`](../scripts/checkpoint_authority/replay.py) consumes one signed
+envelope at a time from an explicit `Bootstrap` and returns a complete-head
+verdict only when the last record is an `authority-head` whose
+`policy_history` and `decisions` counts and tails equal the replayed prefix.
+Trust records extend the policy prefix through `TrustPrefix`; each decision
+event must be followed by exactly one `journal-entry` committing its exact
+signed payload and predecessor commitment; evidence records carry sequence 1
+with no predecessor; every typed reference must already be present with the
+declared type, and no record may reference itself or a later record. Records
+outside the bootstrap scope, unknown types, unjournaled events, duplicate
+envelopes, gaps, reordering and forked predecessors refuse by code. Each
+envelope's carrier and signed body are decoded once; after the join only the
+typed projection in `RETAIN` survives, and a journaled event body is replaced
+by its type and digest. The decision index and the replay carry the aggregate
+65,536-entry and 268,435,456-byte limits; a refusal leaves the reader unusable
+until a new replay is constructed.
+
+Authorization and cancellation are exclusive per snapshot and per candidate,
+in either order. Authorization is durable across lease, endorsement and grant
+expiry. Publication is finite: both exact archive copies at acceptance, both
+receipt copies and both finalization copies, each at the policy's primary and
+recovery locations, make a publication `complete`; anything less stays
+`incomplete`. A caller-supplied presence map turns missing objects into
+`unexplained-absence`, or `authorized-absence` when a signed
+`authorized-removal` following a denial names every missing digest; neither
+restores eligibility. `retry` recognises an exact or randomized re-signature
+of the first accepted envelope as the same decision through the replayed
+policy, never through a caller key; `equivalent` returns the canonical
+archive and receipt digests for an alternate carrier whose native identity
+matches and accepts nothing new.
+
+[`parents.py`](../scripts/checkpoint_authority/parents.py) joins a
+`parent-link` to caller-owned native evidence: the exact `NativeResult`
+payload the validation names and the producer ledger whose length, tail and
+digest the reconstructed identity binds. Only prefix digests survive. An
+acceptance is a registered root when the registration permits it and no
+accepted prefix of the same registration exists; otherwise its parent is the
+unique longest complete accepted producer prefix, every prior receipt is
+carried in order and bounded at 64, the transition names that parent link and
+prefix, and a poisoned parent refuses a child. A producer anchor naming
+another run, another base or another native pin is a base/run mismatch.
+
+Denials take effect against the current head and mark every matching
+authorized acceptance; `descendants: poison` closes the accepted children in
+one ordered pass. Stream permits are verified in journal order against the
+head they name: complete publication, matching archive and receipt digests, a
+download grant, an unexpired head, and one use per actor, session and nonce.
+A permit ordered before a denial remains a historical admission; one after it
+refuses. [`eligibility.py`](../scripts/checkpoint_authority/eligibility.py)
+holds the caller-supplied `Freshness`: the challenge the head must echo,
+trusted time inside the head's validity and the policy's `max_head_age_seconds`,
+and the remembered policy and decision floors the replay must pass through
+with matching tails. Without it, `current_eligibility` is `unknown`; with it,
+`denied`, `unavailable` or `eligible`. `GATEWAY_CONTRACT` states the consuming
+gateway's cancellation push, two-second and 8 MiB head checks and five-second
+channel-freshness cancellation; the replay does not execute a gateway, prove
+an unused nonce offline or recall delivered bytes.
+
+[`wire.py`](../scripts/checkpoint_authority/wire.py) closes the private
+lookup, inventory, status and download-grant shapes: canonical JSON, at most
+100 items and 262,144 bytes for an inventory page and 65,536 bytes for any
+other control response, sorted unique acceptance identities, a status state
+bound to its code, a grant expiring within 60 seconds, one fixed absence
+response for unknown and unauthorized resources, `private, no-store`
+octet-stream headers with a digest-derived filename and no provider location,
+and `capability_not_enabled` for frontier, resolution and public discovery.
+
+## Ariadne evidence boundary
+
+Ariadne registers `https://wildcat.finance/attestations/checkpoint-authority/v1`
+over a release copy of `schema.family_document()`. Its predicate checks one
+record's closed shape, digest roles, typed evidence references, timestamp
+recoverability, predecessor and parent relations and copy or coverage
+inventories, and reports signature authentication, native execution, storage
+observations, complete replay and current eligibility as unchecked. Its copy of
+the schema and result vocabulary is held to this owner by a checkout parity
+test; no runtime import crosses the plugins. An Ariadne pass never replaces a
+replay verdict. [The Ariadne guide](../../../../ariadne/docs/checkpoint-authority.md)
+publishes the field and gate contract.
+
+## Reproduce the replay criterion
+
+```bash
+python3 plugins/hexaemeron/tests/checkpoint_authority_replay_corpus.py --check
+python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate ordered-replay --criterion authority-replay --report .hexaemeron/reports/ordered-replay-authority-replay.json
+```
+
+The [replay manifest](../checkpoint-authority/fixtures/replay-manifest.json) binds the
+committed positive history, its recorded hostile mutations, the Metron budget
+record, Ariadne's schema copy and conformance fixtures, and every replay,
+conformance and Ariadne case id. The
+[positive history](../checkpoint-authority/fixtures/replay-history.json) is one signed
+root acceptance, finalization and permit with ephemeral test keys and
+synthetic native attestations; no native command ran and no private key is
+retained. [Its hostile file](../checkpoint-authority/fixtures/replay-hostile.json)
+records fourteen unsigned mutations with the code and stage each must refuse.
+Regenerate the history only with `--history`, then `--write`; every
+regeneration produces new signatures. The `fixtures/` and `native-fixture/`
+corpora are read only by these reporters from a full checkout; the portable
+Promise Machine runtime omits them and records the two omission patterns and
+their reasons in its manifest, under
+`adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime`.
+The schemas, `native-profile.json`, `native-capabilities.json` and the
+READMEs stay in the runtime.
+
+The [budget record](../checkpoint-authority/fixtures/replay-budget.json) is the Metron
+measurement for this step: 1,391 signed records replayed one body at a time
+with 1,391 signed-body and 1,391 carrier decodes, no retained body nodes and a
+62,013,440-byte peak child RSS against the study's 512 MiB ceiling, at a
+10,588.742 ms median over three fresh processes including real public-key
+subprocesses. The study's 1,280-decode and 266,697-byte model comparison
+reports are preserved unchanged; this record measures the protocol, not the
+model, and establishes no production latency or throughput.
+
+## Native fixture limits
 
 Small fixture success does not resolve the full-layout Step 1 native inspect
 Git-fetch timeout or establish the adopted service benchmark. The historical

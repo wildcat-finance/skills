@@ -168,8 +168,8 @@ def numbered(number, body, subject_list=None):
 
 
 class RegisteredContractTests(unittest.TestCase):
-    def test_the_default_registry_has_five_predicates_and_this_is_one(self):
-        self.assertEqual(len(registry.DEFAULT), 5)
+    def test_the_default_registry_has_six_predicates_and_this_is_one(self):
+        self.assertEqual(len(registry.DEFAULT), 6)
         self.assertIs(registry.DEFAULT.get(agent.TYPE), agent)
 
     def test_the_predicates_command_lists_the_new_type(self):

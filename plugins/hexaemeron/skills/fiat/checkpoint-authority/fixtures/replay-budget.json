@@ -1,0 +1,74 @@
+{
+  "budget": {
+    "carrier_decodes_per_record_maximum": 1,
+    "peak_rss_bytes_maximum": 536870912,
+    "records_minimum": 1280,
+    "retained_body_collection": false,
+    "signed_body_decodes_per_record_maximum": 1
+  },
+  "candidate": "ordered-replay",
+  "command": "python3 plugins/hexaemeron/tests/checkpoint_authority_replay_budget.py --write",
+  "discipline": "metron",
+  "environment": {
+    "machine": "arm64",
+    "measurement": "fresh child process per repetition; ru_maxrss covers the whole child",
+    "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+    "python": "3.14.6",
+    "repetitions": 3,
+    "signature_verification": "real pinned openssl, ssh-keygen and gpg subprocesses per envelope; timing includes them"
+  },
+  "limits": "One machine, one synthetic workload signed with ephemeral test keys and unexecuted synthetic native attestations. No production latency, archive validation time, filesystem overhead or provider cost is established.",
+  "measured": {
+    "acceptances": 14,
+    "carrier_decodes": 1391,
+    "decisions": 14,
+    "eligible": 14,
+    "envelope_bytes": 2657360,
+    "native_result_decodes": 14,
+    "other_decodes": 1,
+    "peak_rss_bytes": {
+      "max": 62013440,
+      "samples": [
+        62013440,
+        61784064,
+        61636608
+      ]
+    },
+    "producer_ledger_line_decodes": 119,
+    "records": 1391,
+    "retained_body_nodes": 0,
+    "signed_body_decodes": 1391,
+    "tracemalloc_peak_bytes": {
+      "max": 8350228,
+      "samples": [
+        8349140,
+        8350228,
+        8348454
+      ]
+    },
+    "wall_ms": {
+      "median": 10588.742,
+      "samples": [
+        10588.742,
+        10341.995,
+        11008.857
+      ]
+    }
+  },
+  "passed": true,
+  "schema": "checkpoint-authority-replay-budget/v1",
+  "study_comparison": {
+    "corpus_sha256": "cf56704482a20f2d7d7d03d26c1eed8f54d9bf9d5d2d45bb64c18c1d3e8474ae",
+    "decode_work": 1280,
+    "note": "The study measured a closed synthetic journal model with bare JSON records and no signatures; this record measures the protocol replay over signed DSSE envelopes with real public-key verification.",
+    "resident_memory_traced_bytes": 266697
+  },
+  "verdict": {
+    "every_acceptance_eligible_under_fresh_head": true,
+    "no_retained_body_collection": true,
+    "one_carrier_decode_per_record": true,
+    "one_signed_body_decode_per_record": true,
+    "peak_rss_under_budget": true,
+    "records_at_least_minimum": true
+  }
+}

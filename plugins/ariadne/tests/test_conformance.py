@@ -79,6 +79,20 @@ GROUNDED_AGENT_BREACHES = {
         ("/subject/9/annotations/passed",),
     ),
 }
+CHECKPOINT_AUTHORITY_COMPOUND_VECTORS = {
+    # A record outside the closed shape establishes nothing: every checkpoint
+    # result fails closed, and the unprojected record's external evidence
+    # names read to core gate 7 as self-asserted authorship.
+    "fail-check-predicate-fields-checkpoint-authority-unknown-field.json": (
+        (7, "authorship"),
+        (2, "environment"),
+        (5, "comparison"),
+        (None, "predicate-fields"),
+        (None, "subject-roles"),
+        (None, "evidence-references"),
+        (None, "required-coverage"),
+    ),
+}
 COMPOUND_FAILURE_VECTORS = {
     "fail-check-predicate-fields-grounded-agent-unknown-field.json": (
         (2, "environment"),
@@ -203,6 +217,8 @@ def failure_vector_obeys_name(name, failures):
     if check is None:
         return False
     if failures == ((None, check),):
+        return True
+    if CHECKPOINT_AUTHORITY_COMPOUND_VECTORS.get(name) == failures:
         return True
     return COMPOUND_FAILURE_VECTORS.get(name) == failures
 
