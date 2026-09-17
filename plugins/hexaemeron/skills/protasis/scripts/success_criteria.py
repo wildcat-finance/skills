@@ -497,3 +497,36 @@ def join_to_exits(record: dict | None, runbook, *, command_records=None):
 
 def bind(record: dict | None, runbook, *, command_records=None):
     return join(record, runbook, command_records=command_records)
+
+
+def criteria_for_step(joined: dict | None, step: int) -> list[dict]:
+    """Return the immutable descriptors consumed by one numbered step.
+
+    Execution custody uses this projection to decide which rows one observed
+    Exit settles.  It is deliberately read-only and preserves the join's
+    descriptor order; it never infers a criterion from a command or from a
+    result record.
+    """
+    if not isinstance(joined, dict) or joined.get("schema") != JOIN_SCHEMA:
+        raise Refusal("join-schema")
+    if type(step) is not int or step < 1:
+        raise Refusal("join-step")
+    rows = joined.get("criteria")
+    if not isinstance(rows, list) or len(rows) > MAX_CRITERIA:
+        raise Refusal("join-criteria")
+    return [row for row in rows if isinstance(row, dict) and row.get("step") == step]
+
+
+def descriptor_ids(joined: dict | None) -> list[str]:
+    """Return all joined ids in their declared order for receipt readback."""
+    if not isinstance(joined, dict) or joined.get("schema") != JOIN_SCHEMA:
+        raise Refusal("join-schema")
+    rows = joined.get("criteria")
+    if not isinstance(rows, list) or len(rows) > MAX_CRITERIA:
+        raise Refusal("join-criteria")
+    ids = [row.get("id") for row in rows if isinstance(row, dict)]
+    if len(ids) != len(rows) or any(not isinstance(value, str) for value in ids):
+        raise Refusal("join-id")
+    if len(ids) != len(set(ids)):
+        raise Refusal("join-duplicate-id")
+    return ids

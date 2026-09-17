@@ -2,9 +2,10 @@
 
 This package publishes the accepted #1273 study, runbook, design selection and
 decision. `proof.py` checks their design-home join, replays the selection
-specimens and, after Step 2, checks the bounded declaration and effective-Exit
-join against the inert command adapter. Execution, completion and the joined
-controller demonstration remain pending their owning steps.
+specimens, checks the bounded declaration and effective-Exit join, and records
+real bounded child-process outcomes for execution custody. Completion, replay
+compatibility and the joined controller demonstration remain pending their
+owning steps.
 
 ## Run the design-home check
 
@@ -50,16 +51,33 @@ the companion records the declaration, runbook, adapter and interpreter
 digests, plus named refusal observations. Both output files must be absent
 before a run.
 
+## Execution custody
+
+Step 3 proves that the selected executor records an observed result rather than
+accepting caller-supplied success:
+
+```bash
+python3 docs/protasis-success-criteria/proof.py --candidate controller-capture --criterion execution-custody --report .hexaemeron/reports/controller-capture-execution-custody.json
+```
+
+The proof launches real disposable children for zero exit, non-zero exit and
+incremental output overflow. It binds the executor and target controller
+digests, preserves bounded stdout and stderr observations, and writes a
+create-only report with its companion evidence. This establishes bounded
+execution custody for the recorded command; it does not establish semantic
+criterion correctness, host isolation or a later-tree guarantee.
+
 ## What remains unavailable
 
-- `execution-custody`: implementation Step 3.
 - `terminal-compatibility`: implementation Step 4.
 - `joined-demonstration`: implementation Step 5.
 
 Each returns `operation-not-implemented:<criterion>:step-<number>` and exit 1
 without producing a report. The two losing candidates also receive no
 conformance report. `design-home` establishes only the published join and
-selection replay. Step 1 makes no feature-completion claim.
+selection replay. `execution-custody` records bounded child-process outcomes;
+it does not make the later completion or demonstration claims. Step 3 makes no
+semantic-correctness claim.
 
 ## Preserved sources
 

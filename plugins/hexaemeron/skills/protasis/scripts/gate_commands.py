@@ -485,6 +485,9 @@ def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes) -> di
     joined = parser.join(record, runbook, command_records=gate['commands'])
     if joined is None:
         raise Refusal('success-criteria-missing')
+    # Carry the reviewed command-adapter identity into the immutable join so
+    # later execution/replay can reject an adapter substitution explicitly.
+    joined['adapter_sha256'] = gate['adapter_sha256']
     return {
         'schema': 'protasis-success-criteria-admission/v1',
         'gate_commands': gate,

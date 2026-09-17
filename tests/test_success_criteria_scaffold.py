@@ -223,6 +223,26 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
         self.assertFalse(checks["adapter-admission"]["operation_ran"])
         self.assertIn("superseded-exit", checks)
 
+    def test_execution_custody_report_uses_real_child_observations(self):
+        executor = ROOT / "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py"
+        controller = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+        for source in (executor, controller):
+            relative = source.relative_to(ROOT)
+            destination = self.root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
+        report_path = ".hexaemeron/reports/controller-capture-execution-custody.json"
+        report = PROOF.run(self.root, "controller-capture", "execution-custody", report_path)
+        self.assertTrue(report["value"])
+        evidence = json.loads((self.root / (report_path[:-5] + ".evidence.json")).read_bytes())
+        self.assertEqual(evidence["schema"], "success-criteria-execution-evidence/v1")
+        self.assertEqual({row["case"] for row in evidence["checks"]}, {
+            "completed-zero", "completed-exit-seven", "incremental-stream-overflow",
+        })
+        self.assertEqual(evidence["controller"]["path"],
+                         "plugins/hexaemeron/skills/fiat/scripts/hexctl.py")
+        self.assertGreater(evidence["controller"]["bytes"], 1_000_000)
+
     def test_losing_candidates_do_not_receive_conformance_reports(self):
         for candidate in ("producer-report", "terminal-replay"):
             with self.subTest(candidate=candidate):
