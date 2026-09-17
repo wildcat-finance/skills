@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 27887766,
+    "bytes_blob": 27951234,
     "bytes_generated": 98
   },
   "entries": [
@@ -63,7 +63,7 @@
       "path": "audit/rounds/fiat-1264-rebind-runbook-amendments-across-a-study-am.synopsis.md"
     },
     {
-      "bytes": 19179,
+      "bytes": 21589,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -166,6 +166,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
+    },
+    {
+      "bytes": 21929,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -791,6 +798,13 @@
       "path": "docs/kickoff/1359/evidence/consumer-inputs.json"
     },
     {
+      "bytes": 35913,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1368/evidence/review.json"
+    },
+    {
       "bytes": 24683,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 24683 bytes",
@@ -980,16 +994,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 77903,
+      "bytes": 80191,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 38951",
+      "evidence": "mean line length above 400 in a window at offset 40095",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 111682,
+      "bytes": 112610,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 109634",
+      "evidence": "mean line length above 400 in a window at offset 110562",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

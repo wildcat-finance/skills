@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.62.1"
+  version: "6.65.1"
 ---
 
 <p align="center">
@@ -615,18 +615,23 @@ findings and 4,096 union paths; a path is at most 1,024 UTF-8 bytes; one blob is
 at most 2,097,152 bytes and their sum at most 16,777,216 bytes; a command is at
 most 4,096 UTF-8 bytes and 16 arguments.
 
-The guard boundary permits one exception to an otherwise clean tree: the
-configured audit log and its derived synopsis are exactly the two non-ignored
-untracked rows. They are never guard paths and are never staged, changed,
-copied, removed or followed. Every guarded operation independently opens each
-bounded single-link regular leaf through stable no-follow directory
-descriptors, proves named-leaf and descriptor identity stable for that
-operation, and matches the complete receipt-bound log prefix and current
-synopsis bytes and digests. It never compares device, inode or times across
-operations or processes, and persists no audit identity, timestamp observation
-or marker. The exception lasts from successor Step entry through successful
-`done inoculate`; in the current pre-contract live run it ends after bootstrap
-guard validation immediately before the recorded implement transition.
+An inherited audit log and its derived synopsis may be a clean committed pair
+or exactly the two non-ignored untracked rows. A committed pair must match its
+native HEAD's raw blobs and modes and the exact stage-zero index rows. Fiat
+checks those bindings again after reading the files and refuses a changed HEAD,
+blob or index. Staged, mixed and ignored untracked pairs refuse. Neither form
+is a guard path; the operation never stages, changes, copies, removes or follows
+either file.
+
+Every guarded operation independently opens each bounded single-link regular
+leaf through stable no-follow directory descriptors, proves named-leaf and
+descriptor identity stable for that operation, and matches the complete
+receipt-bound log prefix and current synopsis bytes and digests. It never
+compares device, inode or times across operations or processes, and persists
+no audit identity, timestamp observation or marker. Both forms remain available
+from successor Step entry through successful `done inoculate`; in the current
+pre-contract live run the exception ends after bootstrap guard validation
+immediately before the recorded implement transition.
 
 Fiat passes Elenchus only the exact parent, complete raw blob rows, closed argv,
 format and logical report file. Elenchus owns detached-parent overlay,
@@ -838,6 +843,18 @@ section of [push-discipline.md](references/push-discipline.md) names the
 the direct hand-off values. This is mandatory controller work: do not ask the
 user whether to save it, where to put it or whether it may be skipped. Keep the
 outer SHA-256, manifest SHA-256 and `snapshot_id` outside the archive.
+
+For complete history beyond the ZIP bundle limit, use
+`checkpoint archive --format directory`. The
+[directory carrier](references/checkpoint-directory.md) keeps the same checks
+with a 256 GiB bundle limit. Its `outer_sha256` names the exact root manifest
+bytes, which bind every member; hand that digest over outside the directory.
+
+A task issue may belong to another repository. Its exact URL stays in
+`receipts.task_issue` and supplies the normal filing and closure checks.
+The run anchor hashes that URL as an external task; the target's own
+origin remains the delivery repository. Same-repository issues keep their
+existing number-only anchor.
 
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before each merge, an unchanged waiting head passes without a relation process.
@@ -1281,7 +1298,7 @@ receipt.
 
 ### fiat-checkpoint-archive
 
-- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
+- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP or native directory carrier recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
 - Evidence: The out-of-band outer SHA-256, closed content manifest, capsule manifest digest, complete-history bundle, pinned signature checks with recorded trailer counts, identity join, hostile archive tests, clean-machine transcript and six recorded budget measurements.
 - Evidence classes: checked, recorded, measured
 - Boundary: Checks bind this archive and its carried public keys. They do not prove signer ownership, delivery-claim truth, future performance, acceptance by another party or authority to execute the next directive. Acceptance of this archive stays outside it; prior acceptance entries remain reserved.
