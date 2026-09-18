@@ -159,8 +159,9 @@ CONTRACT = "promise-machine/v1"
 # conformance corpora (`checkpoint-authority/fixtures/**` and
 # `native-fixture/**`, read only by reporters the package already omits) under
 # adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime
-# gives 20,855,284 package bytes across 1,510 files, 5,359,116 bytes of
-# headroom; the cap, reserve and file tripwire stay unchanged.
+# gives a complete package of 1,510 files and 20,855,576 bytes (5,358,824 bytes
+# below the cap) whose runtime manifest records 1,503 files and 20,392,692
+# total_bytes; the cap, reserve and file tripwire stay unchanged.
 MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024

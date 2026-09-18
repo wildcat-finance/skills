@@ -18,27 +18,29 @@ bytes, 215,810 over it, and the root suite refused the package.
 
 The checkpoint authority protocol keeps its conformance corpora beside its
 schemas under `plugins/hexaemeron/skills/fiat/checkpoint-authority/`:
-`fixtures/` carries the Step 2 record and signature specimens (125,904 bytes)
-and the four Step 4 replay files, `replay-history.json`,
-`replay-manifest.json`, `replay-hostile.json` and `replay-budget.json`
-(124,853 bytes); `native-fixture/` carries the Step 3 native boundary archive,
-its public key and fixture record (65,353 bytes). Only the conformance
-reporters read these files: `conformance.py`, `native_conformance.py` and
-`replay_conformance.py`, driven from
+`fixtures/` carries the Step 2 record and signature specimens (46 files,
+123,737 bytes), its 2,390-byte README and the four Step 4 replay files,
+`replay-history.json`, `replay-manifest.json`, `replay-hostile.json` and
+`replay-budget.json` (124,880 bytes); `native-fixture/` carries the Step 3
+native boundary archive, its public key and fixture record (65,353 bytes).
+Only the conformance reporters read these files: `conformance.py`,
+`native_conformance.py` and `replay_conformance.py`, driven from
 `plugins/hexaemeron/tests/checkpoint_authority_conformance.py`, which the
 runtime already omits with every `plugins/*/tests/**` path. `native.py` reads
-`native-profile.json` at run time, and the router reads the schemas and READMEs.
+`native-profile.json` at run time, and the router reads the schemas and
+`schemas/README.md`.
 
 ## Decision
 
 Omit `plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**` and
 `plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**` from
 the generated runtime. Everything else under `checkpoint-authority/` stays in
-the payload: `schemas/**`, `native-profile.json`, `native-capabilities.json`
-and the READMEs. The four Step 4 replay files move into `fixtures/`, so one
-directory holds every record, signature and replay specimen; no Step 1 to 3
-file moves. The cap, the reserve and every numbered decision record keep their
-bytes.
+the payload: `schemas/**` with `schemas/README.md`, `native-profile.json`,
+`native-capabilities.json`, `native-manifest.json` and `tool-profile.json`;
+`fixtures/README.md` leaves with its directory. The four Step 4 replay files
+move into `fixtures/`, so one directory holds every record, signature and
+replay specimen; no Step 1 to 3 file moves. The cap, the reserve and every
+numbered decision record keep their bytes.
 
 ## Alternatives
 
@@ -61,8 +63,10 @@ reporters run only from a full checkout, where their manifests bind the
 corpora by digest; a runtime user who needs a conformance result checks out
 the source. The runtime manifest records the two omission patterns and their
 reasons beside the other omitted classes; per-file omitted rows remain the
-ADR-090 portrait class only. With this decision the generated package measures
-20,855,284 bytes across 1,510 files, 5,359,116 bytes below the ceiling.
+ADR-090 portrait class only. With this decision the complete generated package
+measures 20,855,576 bytes across 1,510 files, 5,358,824 bytes below the ceiling,
+and its runtime manifest records 1,503 files and 20,392,692 `total_bytes`, the
+measure the package test holds to the reserve.
 `tests/test_skills_sh_package.py` holds the omission set and records those
 figures beside the 1,600-file tripwire and the unchanged cap and reserve. The
 protocol reference and the fixtures README point here from the corpus layout.

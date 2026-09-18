@@ -1,9 +1,10 @@
 """Bind closed checkpoint authority records without signature or live-authority claims.
 
 The local schema is a release copy of the owner's nineteen closed record
-shapes. Checkout parity tests compare it with the owner byte for byte; an
-isolated Ariadne install imports no sibling plugin and reads only this
-directory. Every check here is a fact about one record's own bytes and the
+shapes. A checkout parity test compares the parsed copy with the owner's
+projection, and the authority-replay manifest binds the copy's bytes by
+digest; an isolated Ariadne install imports no sibling plugin and reads only
+this directory. Every check here is a fact about one record's own bytes and the
 statement around it. Signatures, native execution, storage observations,
 complete journal replay and current eligibility stay outside this predicate
 and are reported unchecked.
