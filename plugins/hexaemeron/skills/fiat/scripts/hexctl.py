@@ -18219,12 +18219,67 @@ def expected_run_branch_tip(state: dict):
     return None
 
 
+def directed_merge_landing(base_dir: str, state: dict, expected: str, tip: str):
+    """The directed step merge sitting on the run branch ahead of its receipt.
+
+    Between the `merge-step` merge and `done merge-step`, the run branch tip is
+    a merge this run asked for but has not yet recorded. It is told apart from a
+    stray merge by its parents: the first is the tip the last receipt named,
+    and the second is the head the pending step's push receipt recorded. A tip
+    whose parents say anything else, or cannot be read, is not the directed
+    merge, and the caller treats it as unreceipted movement (issue 1614).
+
+    A step adopted at push does not merge again, so nothing on the run branch
+    can be its directed merge.
+    """
+    merged = as_dict(state.get("integrate")).get("merged") or []
+    step = next((step for step in state["steps"] if step["n"] not in merged), None)
+    if step is None:
+        return None
+    push_receipt = as_dict(step["receipts"].get("push"))
+    if as_dict(push_receipt.get("early_merge")):
+        return None
+    head = push_receipt.get("head_commit")
+    if not isinstance(head, str) or not COMMIT_RE.fullmatch(head):
+        return None
+    if run_branch_tip_parents(base_dir, tip) != [expected, head]:
+        return None
+    return {"step": step["n"], "merge_commit": tip, "head": head}
+
+
+def run_branch_tip_parents(base_dir: str, tip: str):
+    """The exact parents of a run branch tip, or ``None`` when unanswered.
+
+    The merge is made on the remote and the merge-step procedure never fetches
+    it, so GitHub's record of the commit is asked first, the same record the
+    receipt trusts for the merge's verification. The local object graph answers
+    only when GitHub did not. A read that neither source answers is ``None``
+    rather than an empty list, so a missing answer never passes for a root
+    commit.
+    """
+    try:
+        payload = github_commit_payload(base_dir, github_repository(base_dir), tip)
+    except SystemExit:
+        payload = None
+    if payload is not None:
+        parents = payload.get("parents")
+        if isinstance(parents, list):
+            shas = [as_dict(parent).get("sha") for parent in parents]
+            if all(isinstance(sha, str) and COMMIT_RE.fullmatch(sha) for sha in shas):
+                return shas
+    try:
+        return commit_parents(base_dir, tip, "run branch tip")
+    except SystemExit:
+        return None
+
+
 def unreceipted_run_branch_movement(base_dir: str, state: dict, landing=None):
     """Whether the run branch moved without a receipt naming the move.
 
     Every legitimate change to the run branch during integration is one this run
-    recorded: a merge-step receipt, or a sync. A tip that is neither means
-    something merged into it that the controller was never asked for.
+    recorded: a merge-step receipt, a sync, or the directed step merge that is
+    waiting for its own receipt. A tip that is none of these means something
+    merged into it that the controller was never asked for.
 
     A chained stack makes that unrecoverable rather than untidy. The topmost step
     branch holds every commit in the run, so merging the wrong one lands all of
@@ -18251,6 +18306,20 @@ def unreceipted_run_branch_movement(base_dir: str, state: dict, landing=None):
         return {"fault": "unreadable", "branch": branch, "expected": expected}
     if tip in accepted:
         return None
+    if landing is None:
+        # `next` and `status` run between the directed merge and its receipt, so
+        # the merge the directive asked for is where the loop left the branch.
+        # A receipt names its own landing and is not asked to guess one.
+        landed = directed_merge_landing(base_dir, state, expected, tip)
+        if landed is not None:
+            return {
+                "fault": "landed",
+                "branch": branch,
+                "expected": expected,
+                "tip": tip,
+                "step": landed["step"],
+                "head": landed["head"],
+            }
     return {"fault": "moved", "branch": branch, "expected": expected, "tip": tip}
 
 
@@ -18261,6 +18330,14 @@ def describe_run_branch_movement(fault: dict) -> str:
             f"the run branch '{fault['branch']}' could not be read, so whether it "
             f"still matches the receipted tip {fault['expected']} is unknown"
         )
+    if fault["fault"] == "landed":
+        return (
+            f"the run branch '{fault['branch']}' is at {fault['tip']}, the step "
+            f"{fault['step']} merge the directive named, merging {fault['head']} "
+            f"onto the receipted tip {fault['expected']}; its receipt is pending: "
+            f"hexctl done merge-step --step {fault['step']} "
+            f"--merge-commit {fault['tip']}"
+        )
     return (
         f"the run branch '{fault['branch']}' is at {fault['tip']} and this run's "
         f"last receipt names {fault['expected']}"
@@ -18269,11 +18346,18 @@ def describe_run_branch_movement(fault: dict) -> str:
 
 def refuse_unreceipted_run_branch_movement(
     base_dir: str, state: dict, landing=None
-) -> None:
-    """Stop the integrate phase when the run branch moved outside the loop."""
+) -> dict | None:
+    """Stop the integrate phase when the run branch moved outside the loop.
+
+    Returns the directed merge waiting for its receipt when that is what moved
+    the branch, so `next` can name the receipt instead of a halt; every other
+    movement refuses.
+    """
     fault = unreceipted_run_branch_movement(base_dir, state, landing)
     if fault is None:
-        return
+        return None
+    if fault["fault"] == "landed":
+        return fault
     if fault["fault"] == "unreadable":
         die(
             describe_run_branch_movement(fault)
@@ -28796,8 +28880,22 @@ def cmd_next(args) -> None:
         # be worked around. Once every step has merged the branch may legitimately
         # carry a sync the controller has not receipted yet, and `done sync-run`
         # owns that topology, so the check stops when the stack does.
-        refuse_unreceipted_run_branch_movement(args.dir, state)
+        landed = refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
+        if landed is not None:
+            # The directed merge has landed and only its receipt is owed. The
+            # directive says so and carries the exact receipt, so an operator
+            # following it neither merges again nor halts a healthy run.
+            directive = dict(directive)
+            directive["landed_merge"] = landed["tip"]
+            directive["merge"] = (
+                f"already merged as {landed['tip']}; receipt it and do not "
+                "merge again"
+            )
+            directive["then"] = (
+                f"hexctl done merge-step --step {landed['step']} "
+                f"--merge-commit {landed['tip']}"
+            )
     out = delegation_packet(args.dir, state, directive)
     observed = getattr(args, "task_handle", None)
     if observed is not None:
