@@ -15,9 +15,9 @@ nowhere on purpose. A verifier meeting it should check the core gates, report
 that gates 2 and 5 belong to a predicate it does not know, and not describe the
 run as clean.
 
-The `solidity`, `dataset`, versioned `state-fixture` and `grounded-agent`
-fixtures use the five types this build registers, so they exercise each
-predicate's own gates as well as the core ones. Gates 2 and 5 mean different
+The `solidity`, `dataset`, versioned `state-fixture`, `grounded-agent` and
+`checkpoint-authority` fixtures use the six types this build registers, so
+they exercise each predicate's own gates as well as the core ones. Gates 2 and 5 mean different
 things for each release shape, so each type carries its own breaching fixtures
 for them.
 
@@ -132,6 +132,25 @@ from its named passing parent at the one stated typed leaf.
 | `fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json` | `pass-grounded-agent-null-evidence.json` | `2 environment`; `optional-evidence` | `reads_absence_reason` changes from a stated reason to null while reads remain null |
 | `fail-check-subject-names-grounded-agent-nonportable-name.json` | `pass-grounded-agent-complete.json` | `subject-names` | One outer subject name gains a line break |
 | `fail-check-evidence-boundary-grounded-agent-promotion-result.json` | `pass-grounded-agent-complete.json` | `evidence-boundary` | The promotion subject descriptor adds the Berean result count `annotations.passed`; promotion identity metadata must not project evaluation results |
+
+### Checkpoint authority v1
+
+Every breaching fixture differs from `pass-checkpoint-authority-acceptance.json`
+at one leaf. The unknown-field fixture is the one compound vector: a record
+outside the closed shape establishes nothing, so every checkpoint result fails
+closed, and the unprojected record's external evidence names read to core gate
+7 as self-asserted authorship.
+
+| Fixture | Contract | Ordered failure result | What it shows |
+| --- | --- | --- | --- |
+| `pass-checkpoint-authority-acceptance.json` | Checkpoint authority v1 | none | A registered-root acceptance with three role-named subjects, two copies over the exact accepted representation and typed evidence references |
+| `pass-checkpoint-authority-head.json` | Checkpoint authority v1 | none | A signed authority head carrying both stream counts and tails, with the single `record` subject over its canonical bytes |
+| `fail-gate2-checkpoint-authority-calendar-instant.json` | Checkpoint authority v1 | `2 environment` | `issued_at` is `2026-02-30T00:00:00Z`, which the published pattern admits and no calendar contains |
+| `fail-gate5-checkpoint-authority-orphan-predecessor.json` | Checkpoint authority v1 | `5 comparison` | `sequence` is 2 beside a null `previous`, so the predecessor relation names one side |
+| `fail-check-predicate-fields-checkpoint-authority-unknown-field.json` | Checkpoint authority v1 | `7 authorship`; `2 environment`; `5 comparison`; `predicate-fields`; `subject-roles`; `evidence-references`; `required-coverage` | `undeclared` adds a field outside the closed record |
+| `fail-check-subject-roles-checkpoint-authority-swapped-roles.json` | Checkpoint authority v1 | `subject-roles` | The `snapshot_id` and `outer_sha256` subject digests are exchanged while their names stay |
+| `fail-check-evidence-references-checkpoint-authority-identity-as-evidence.json` | Checkpoint authority v1 | `evidence-references` | The `validation` reference names the snapshot digest, a role substitution |
+| `fail-check-required-coverage-checkpoint-authority-copy-length.json` | Checkpoint authority v1 | `required-coverage` | The recovery copy's object length differs from the accepted representation |
 
 ## Running them
 

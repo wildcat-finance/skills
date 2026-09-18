@@ -64,6 +64,7 @@ class PredicatesTests(unittest.TestCase):
                 "https://ariadne.wildcat.finance/solidity-release/v1",
                 "https://ariadne.wildcat.finance/state-fixture/v1",
                 "https://ariadne.wildcat.finance/state-fixture/v2",
+                "https://wildcat.finance/attestations/checkpoint-authority/v1",
             ],
         )
         self.assertTrue(all(entry["summary"] for entry in found))

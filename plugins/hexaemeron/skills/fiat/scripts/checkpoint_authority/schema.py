@@ -233,3 +233,11 @@ def validate(value, schema):
 def document(kind):
     return {"$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": PREDICATE + "/" + kind, **SCHEMAS[kind]}
+
+
+def family_document():
+    """One closed `oneOf` over every record type, for release copies such as Ariadne's."""
+    return {"$schema": "https://json-schema.org/draft/2020-12/schema", "$id": PREDICATE,
+            "description": "Closed checkpoint authority records for " + PREDICATE
+                           + "; `type` selects exactly one record shape.",
+            "oneOf": [SCHEMAS[kind] for kind in RECORD_TYPES]}

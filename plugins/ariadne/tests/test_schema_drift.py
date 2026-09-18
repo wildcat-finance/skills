@@ -22,6 +22,7 @@ from . import support  # noqa: F401  (sets sys.path)
 
 from ariadne_lib import core_predicate, digests  # noqa: E402
 from ariadne_lib import registry  # noqa: E402
+from ariadne_lib.predicates import checkpoint_authority  # noqa: E402
 from ariadne_lib.predicates import dataset  # noqa: E402
 from ariadne_lib.predicates import grounded_agent  # noqa: E402
 from ariadne_lib.predicates import solidity_release as release  # noqa: E402
@@ -35,6 +36,7 @@ DATASET_SCHEMA = os.path.join(SCHEMAS, "dataset-v1.json")
 STATE_FIXTURE_SCHEMA = os.path.join(SCHEMAS, "state-fixture-v1.json")
 STATE_FIXTURE_V2_SCHEMA = os.path.join(SCHEMAS, "state-fixture-v2.json")
 GROUNDED_AGENT_SCHEMA = os.path.join(SCHEMAS, "grounded-agent-v1.json")
+CHECKPOINT_AUTHORITY_SCHEMA = os.path.join(SCHEMAS, "checkpoint-authority-v1.json")
 
 SHIPPED = (
     (release, SCHEMA),
@@ -42,6 +44,7 @@ SHIPPED = (
     (state_fixture, STATE_FIXTURE_SCHEMA),
     (state_fixture.V2, STATE_FIXTURE_V2_SCHEMA),
     (grounded_agent, GROUNDED_AGENT_SCHEMA),
+    (checkpoint_authority, CHECKPOINT_AUTHORITY_SCHEMA),
 )
 """Each shipped predicate and its published schema."""
 
@@ -1142,6 +1145,57 @@ class BereanPublicConstantDriftTests(unittest.TestCase):
             promotion["THRESHOLD_FIELDS"],
             getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ()),
         )
+
+
+class CheckpointAuthoritySchemaDriftTests(unittest.TestCase):
+    """The release copy is one closed `oneOf` over the owner's nineteen records.
+
+    The module reads this file at import, so the two cannot disagree on a
+    field table; what can drift is the copy against the owner, which the
+    checkout-only parity test in `test_checkpoint_authority.py` holds.
+    """
+
+    def setUp(self):
+        self.schema = read_schema(CHECKPOINT_AUTHORITY_SCHEMA)
+
+    def test_the_schema_names_this_predicate_type(self):
+        self.assertEqual(self.schema["$id"], checkpoint_authority.TYPE)
+        self.assertEqual(
+            self.schema["$schema"], "https://json-schema.org/draft/2020-12/schema"
+        )
+
+    def test_every_record_type_is_a_closed_branch(self):
+        self.assertEqual(sorted(self.schema), ["$id", "$schema", "description", "oneOf"])
+        self.assertIn(checkpoint_authority.TYPE, self.schema["description"])
+        branches = self.schema["oneOf"]
+        self.assertEqual(len(branches), 19)
+        kinds = [row["properties"]["type"]["enum"] for row in branches]
+        self.assertEqual(len({kind[0] for kind in kinds}), 19)
+        for row in branches:
+            with self.subTest(record=row["properties"]["type"]["enum"][0]):
+                self.assertEqual(len(row["properties"]["type"]["enum"]), 1)
+                self.assertFalse(row["additionalProperties"])
+                self.assertEqual(sorted(row["required"]), sorted(row["properties"]))
+                for field in ("protocol", "environment", "service", "scope", "type",
+                              "sequence", "previous", "issued_at", "issuer"):
+                    self.assertIn(field, row["properties"])
+
+    def test_the_module_field_table_is_the_union_of_every_branch(self):
+        self.assertEqual(set(checkpoint_authority.RECORDS), {
+            row["properties"]["type"]["enum"][0] for row in self.schema["oneOf"]
+        })
+        self.assertEqual(
+            checkpoint_authority.PREDICATE_FIELDS,
+            tuple(sorted({key for row in self.schema["oneOf"] for key in row["properties"]})),
+        )
+
+    def test_the_protocol_and_profile_enumerations_are_closed(self):
+        for row in self.schema["oneOf"]:
+            self.assertEqual(row["properties"]["protocol"]["enum"], ["checkpoint-authority/v1"])
+            self.assertEqual(row["properties"]["environment"]["enum"], ["test", "production"])
+        policy = checkpoint_authority.RECORDS["authority-policy"]["properties"]
+        self.assertEqual(policy["signature_profile"]["enum"], ["dsse-p256-sha256-der/v1"])
+        self.assertEqual(policy["max_head_age_seconds"]["maximum"], 300)
 
 
 class CompletenessTests(unittest.TestCase):

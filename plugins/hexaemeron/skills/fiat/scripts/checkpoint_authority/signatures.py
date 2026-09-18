@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from pathlib import Path
 import re
@@ -15,7 +15,7 @@ import tempfile
 import time
 
 from .canonical import Refusal, canonical, decode, digest
-from .records import parse_record
+from .records import parse_record, validate_record
 from .schema import KEY, PREDICATE, STATEMENT, validate
 
 PAYLOAD_TYPE = "application/vnd.in-toto+json"
@@ -290,20 +290,40 @@ def envelope_bytes(payload, signature):
                       "signatures": [{"keyid": "", "sig": b64(signature)}]}, limit=MAX_ENVELOPE_BYTES)
 
 
+def freeze(value):
+    """Keep nested state immutable without retaining a reparsed JSON collection."""
+    from types import MappingProxyType
+    if type(value) is dict:
+        return MappingProxyType({key: freeze(child) for key, child in value.items()})
+    if type(value) is list:
+        return tuple(freeze(child) for child in value)
+    return value
+
+
+def thaw(value):
+    from types import MappingProxyType
+    if isinstance(value, MappingProxyType):
+        return {key: thaw(child) for key, child in value.items()}
+    if type(value) is tuple:
+        return [thaw(child) for child in value]
+    return value
+
+
 @dataclass(frozen=True)
 class VerifiedPayload:
     payload: bytes
     record_bytes: bytes
     envelope_sha256: str
     key_fingerprint: str
+    _record: object = field(repr=False)
 
     @property
     def record(self):
-        return parse_record(self.record_bytes)
+        return thaw(self._record)
 
 
-def verify_envelope(envelope: bytes, key: dict, tools: dict, *, scope=None):
-    """Authenticate exactly the decoded bytes, then admit their closed statement."""
+def _decode_envelope(envelope):
+    """Decode the carrier and signed JSON once; nothing here authenticates them."""
     outer = decode(envelope, limit=MAX_ENVELOPE_BYTES)
     if type(outer) is not dict or set(outer) != {"payloadType", "payload", "signatures"}:
         raise Refusal("envelope-fields", "signature")
@@ -316,14 +336,25 @@ def verify_envelope(envelope: bytes, key: dict, tools: dict, *, scope=None):
         raise Refusal("key-hint", "signature")
     payload = b64decode(outer["payload"])
     signature = b64decode(rows[0]["sig"], maximum=16384)
-    verify_signature(pae(payload), signature, key, tools)
     statement = decode(payload, require_canonical=True)
     if type(statement) is not dict or set(statement) != {"_type", "subject", "predicateType", "predicate"} or statement["_type"] != STATEMENT or statement["predicateType"] != PREDICATE:
         raise Refusal("statement-fields", "statement")
+    return payload, signature, statement
+
+
+def _verify_decoded(envelope, decoded, key, tools, *, scope=None):
+    payload, signature, statement = decoded
+    # The same exact payload selected the trusted issuer and is authenticated here.
+    verify_signature(pae(payload), signature, key, tools)
     record_bytes = canonical(statement["predicate"])
-    record = parse_record(record_bytes, scope=scope)
+    record = validate_record(statement["predicate"], record_bytes, scope=scope)
     if statement["subject"] != subjects(record):
         raise Refusal("subject-roles", "statement")
     if record["issuer"] != key["fingerprint"]:
         raise Refusal("issuer-key", "statement")
-    return VerifiedPayload(payload, record_bytes, digest(envelope), key["fingerprint"])
+    return VerifiedPayload(payload, record_bytes, digest(envelope), key["fingerprint"], freeze(record))
+
+
+def verify_envelope(envelope: bytes, key: dict, tools: dict, *, scope=None):
+    """Authenticate exact decoded bytes; return an immutable verified projection."""
+    return _verify_decoded(envelope, _decode_envelope(envelope), key, tools, scope=scope)

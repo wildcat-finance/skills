@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 25292837,
+    "bytes_blob": 25484901,
     "bytes_generated": 98
   },
   "entries": [
@@ -917,11 +917,25 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
+      "bytes": 78048,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 78048 bytes",
+      "grade": "candidate",
+      "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
+    },
+    {
       "bytes": 78122,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 39061",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
+    },
+    {
+      "bytes": 114016,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 114016 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/replay-history.json"
     },
     {
       "bytes": 19687,

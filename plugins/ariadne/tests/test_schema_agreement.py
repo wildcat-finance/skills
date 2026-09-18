@@ -35,6 +35,7 @@ FOR_TYPE = {
     "https://ariadne.wildcat.finance/state-fixture/v1": "state-fixture-v1.json",
     "https://ariadne.wildcat.finance/state-fixture/v2": "state-fixture-v2.json",
     "https://ariadne.wildcat.finance/grounded-agent/v1": "grounded-agent-v1.json",
+    "https://wildcat.finance/attestations/checkpoint-authority/v1": "checkpoint-authority-v1.json",
 }
 
 ACCEPTED_BY_THE_SCHEMA = {
@@ -58,6 +59,21 @@ ACCEPTED_BY_THE_SCHEMA = {
     ),
     "fail-check-evidence-boundary-grounded-agent-promotion-result.json": (
         "the evidence-boundary check scans outer descriptor annotations"
+    ),
+    "fail-gate2-checkpoint-authority-calendar-instant.json": (
+        "the published timestamp pattern admits a day that names no instant"
+    ),
+    "fail-gate5-checkpoint-authority-orphan-predecessor.json": (
+        "a schema cannot join the sequence number to the null predecessor"
+    ),
+    "fail-check-subject-roles-checkpoint-authority-swapped-roles.json": (
+        "a schema validates the predicate body and cannot see the subjects"
+    ),
+    "fail-check-evidence-references-checkpoint-authority-identity-as-evidence.json": (
+        "a schema cannot compare a reference digest with the identity digests"
+    ),
+    "fail-check-required-coverage-checkpoint-authority-copy-length.json": (
+        "a schema cannot compare a copy object with the accepted representation"
     ),
     "fail-check-release-digest-grounded-agent-stale-semantic-digest.json": (
         "JSON Schema cannot recompute the canonical Berean semantic digest"
