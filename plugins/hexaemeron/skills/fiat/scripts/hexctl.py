@@ -112,7 +112,7 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
 ISSUE_TITLE_BYTES_MAX = 512
-ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation"))
+ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation", "kickoff"))
 FRAMEWORK_ISSUE_OPENING = (
     "Protasis decides which skill or skills this observation upgrades. "
     "The filer is the wrong party to guess."
@@ -123,6 +123,15 @@ FRAMEWORK_ISSUE_TITLE_RE = re.compile(
 SKILL_ISSUE_TITLE_RE = re.compile(
     r"^(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
     r"(?P<kind>next|wish|[1-9][0-9]*): (?P<summary>\S.*)$"
+)
+# The fifth queue: a maintainer's kickoff filing for one held frontier job.
+# Its title keeps the `{skill}-{n}` ordinal under a `kickoff/` prefix, and it
+# carries `kickoff` beside `held-job`, because the filing keeps the frontier
+# semantics of the job it kicks off rather than replacing them. #1475 records
+# why neither `{skill}-next` nor `{skill}-N` could absorb the queue.
+KICKOFF_ISSUE_TITLE_RE = re.compile(
+    r"^kickoff/(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
+    r"(?P<number>[1-9][0-9]*): (?P<summary>\S.*)$"
 )
 
 # The status block ADR-014's amendment authorises: one span at the top of an open
@@ -5739,13 +5748,15 @@ def issue_queue_contract(
 ) -> tuple[dict, list[str]]:
     """The canonical queue selected by one publishable issue title.
 
-    The repository has four queues, not a free-form title convention. Queue
-    labels are checked as one mutually exclusive set while unrelated labels
-    remain allowed. A framework observation also carries the exact opening
-    that leaves ownership for Protasis to decide.
+    The repository has five queues, not a free-form title convention. Queue
+    labels are checked as one exact set while unrelated labels remain
+    allowed: four queues take at most one queue label, and the kickoff queue
+    takes `kickoff` beside `held-job`. A framework observation also carries
+    the exact opening that leaves ownership for Protasis to decide.
     """
     faults: list[str] = []
-    queue = required_label = owner = None
+    queue = owner = None
+    required_labels: list[str] = []
     if not isinstance(title, str):
         return {}, [f"{label} carries a title that is not text"]
     if len(title.encode("utf-8")) > ISSUE_TITLE_BYTES_MAX:
@@ -5755,27 +5766,31 @@ def issue_queue_contract(
     if _contains_nonprinting_character(title):
         faults.append(f"{label} title contains a control character")
     framework = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
-    skill = None if framework else SKILL_ISSUE_TITLE_RE.fullmatch(title)
+    kickoff = None if framework else KICKOFF_ISSUE_TITLE_RE.fullmatch(title)
+    skill = None if framework or kickoff else SKILL_ISSUE_TITLE_RE.fullmatch(title)
     if framework:
-        queue, required_label, owner = "framework-N", "observation", "framework"
+        queue, required_labels, owner = "framework-N", ["observation"], "framework"
+    elif kickoff:
+        queue, owner = "kickoff/{skill}-N", kickoff.group("skill")
+        required_labels = ["held-job", "kickoff"]
     elif skill:
         owner = skill.group("skill")
         kind = skill.group("kind")
         if kind == "next":
-            queue, required_label = "{skill}-next", "held-job"
+            queue, required_labels = "{skill}-next", ["held-job"]
         elif kind == "wish":
             queue = "{skill}-wish"
         else:
-            queue, required_label = "{skill}-N", "wish"
+            queue, required_labels = "{skill}-N", ["wish"]
     else:
         faults.append(
             f"{label} title is not one of `{{skill}}-next: <summary>`, "
-            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, or "
-            "`framework-N: <summary>`"
+            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, "
+            "`kickoff/{skill}-N: <summary>`, or `framework-N: <summary>`"
         )
 
     queue_labels = sorted(set(labels) & ISSUE_QUEUE_LABELS)
-    expected = [] if required_label is None else [required_label]
+    expected = sorted(required_labels)
     if queue is not None and queue_labels != expected:
         actual = ", ".join(f"`{value}`" for value in queue_labels) or "none"
         wanted = ", ".join(f"`{value}`" for value in expected) or "no queue label"
