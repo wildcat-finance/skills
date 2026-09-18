@@ -41,7 +41,7 @@ SOURCE_REPO = "wildcat-finance/skills"
 DESTINATION_REPO = "wildcat-finance/skills-runtime"
 SOURCE_WORKFLOW = ".github/workflows/dispatch-skills-runtime-rebuild.yml"
 DESTINATION_WORKFLOW = ".github/workflows/sync.yml"
-SECRET = "RUNTIME_DISPATCH_TOKEN"
+SECRET = "RUNTIME_DISPATCH_TOKEN"  # phylax: allow credential: the secret's name, never its value
 CLAIM_FILES = (
     "scripts/portable_promise_machine.py",
     "docs/skills-runtime-publication.md",
