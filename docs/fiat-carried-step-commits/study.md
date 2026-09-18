@@ -255,3 +255,13 @@ record | docs/decisions/drafts/refuse-receipted-commits-carried-into-a-lower-ste
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-18
+
+**What changed.** The copy homes named in section 3 item 7, the section 9 Resolvers row and section 12 are superseded by the runbook's: the four resolvers are copied to `docs/fiat-carried-step-commits/design/`, the study to `docs/fiat-carried-step-commits/study.md` and the runbook to `docs/fiat-carried-step-commits/runbook.md`, beside `design-evidence.json` and `reports/` in the same directory. The names `docs/design/`, `docs/fiat-1480-carried-step-commits-study.md` and `docs/fiat-1480-carried-step-commits-runbook.md` no longer apply.
+
+**Why.** Audit finding S1-R1-01 (Step 1, round 1): the receipted runbook Step 1, its Files list and the first amendment's `design-bridge` record path put every copy under `docs/fiat-carried-step-commits/`, and Step 1 committed them there at `5da736c405421b59fe539f42ce9516f31d23a034`. The study copy is byte-identical to this receipted study, so the correction is an amendment, not an edit.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
