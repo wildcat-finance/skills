@@ -304,8 +304,9 @@ corpora are read only by these reporters from a full checkout; the portable
 Promise Machine runtime omits them and records the two omission patterns and
 their reasons in its manifest, under
 `adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime`.
-The schemas, `native-profile.json`, `native-capabilities.json` and the
-READMEs stay in the runtime.
+The schemas with `schemas/README.md`, `native-profile.json`,
+`native-capabilities.json`, `native-manifest.json` and `tool-profile.json`
+stay in the runtime; `fixtures/README.md` leaves with its directory.
 
 The [budget record](../checkpoint-authority/fixtures/replay-budget.json) is the Metron
 measurement for this step: 1,391 signed records replayed one body at a time

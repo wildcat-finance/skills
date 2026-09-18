@@ -18,8 +18,9 @@ eligible now. Each of those is reported as unchecked on every run.
 The predicate is one of nineteen closed record types, selected by `type`. The
 published schema, `schemas/checkpoint-authority-v1.json`, is a release copy of
 the owner's schema source, `plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/schema.py`,
-projected as one `oneOf`. Checkout parity tests compare the copy with the owner
-byte for byte; an isolated installation reads only the copy and imports no
+projected as one `oneOf`. A checkout parity test compares the parsed copy with
+the owner's projection and the `authority-replay` manifest binds the copy's
+bytes by digest; an isolated installation reads only the copy and imports no
 sibling plugin. Every object is closed: an unknown key, a missing key, a value
 of the wrong exact type, a boolean where an integer belongs, or a body above
 65,536 canonical bytes fails `predicate-fields`.
