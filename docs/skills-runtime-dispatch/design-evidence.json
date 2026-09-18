@@ -1,0 +1,437 @@
+{
+  "candidates": [
+    {
+      "id": "source-dispatch",
+      "summary": "A push-to-main workflow in wildcat-finance/skills starts the destination's existing workflow_dispatch job with a token scoped to Actions write on skills-runtime only; the destination job is unchanged."
+    },
+    {
+      "id": "reregister-schedule",
+      "summary": "Change the cron expression in both copies of sync.yml so GitHub re-registers the schedule; a workflow-scope push to the destination."
+    },
+    {
+      "id": "destination-poll-faster",
+      "summary": "Keep the pull model and add a faster cron entry in the destination job."
+    },
+    {
+      "id": "source-push",
+      "summary": "Generate in wildcat-finance/skills on push to main and push the package into skills-runtime with a contents-write credential (ADR-066 option B)."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "trigger-independent-of-schedule",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "destination-permissions-unchanged",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "credential-loss-leaves-package-intact",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "worst-case-trigger-wait",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "workflow-yaml-bytes-added",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "absent-secret-fails-loudly",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "readme-claims-match-trigger",
+      "kind": "gate",
+      "owner": "hypomnema",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "destination-workflow-untouched",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "dispatched-run-succeeds",
+      "kind": "gate",
+      "owner": "ephoros",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "source-dispatch",
+      "criterion": "trigger-independent-of-schedule",
+      "report": {
+        "path": "reports/selection/source-dispatch-trigger-independent-of-schedule.json",
+        "sha256": "4f04dddc53c687312010fbe1b84a349da21f144732c642f4355e15f1b4a17e6a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-dispatch",
+      "criterion": "destination-permissions-unchanged",
+      "report": {
+        "path": "reports/selection/source-dispatch-destination-permissions-unchanged.json",
+        "sha256": "6aeb3cf3f5465af4f2c6aa445849f61e396b11289d671a31a3255dfaedfa9e6a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-dispatch",
+      "criterion": "credential-loss-leaves-package-intact",
+      "report": {
+        "path": "reports/selection/source-dispatch-credential-loss-leaves-package-intact.json",
+        "sha256": "cc9ee98e002a4d8aa55bfd72561cd7de595ddcb0bfd83b387c92dd2710c907a0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-dispatch",
+      "criterion": "worst-case-trigger-wait",
+      "report": {
+        "path": "reports/selection/source-dispatch-worst-case-trigger-wait.json",
+        "sha256": "d48a1ba9f412164cc00a40dfb750749e5df8dc43ede89476a0d61400d19601b5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-dispatch",
+      "criterion": "workflow-yaml-bytes-added",
+      "report": {
+        "path": "reports/selection/source-dispatch-workflow-yaml-bytes-added.json",
+        "sha256": "0b24a360d95b3e6919c21c0cfea3d84fa5d798d0493151894cd1f2bf3dbf9ca3"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "source-dispatch",
+      "criterion": "absent-secret-fails-loudly",
+      "report": "reports/conformance/source-dispatch-absent-secret-fails-loudly.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py absent-secret-fails-loudly --candidate source-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "source-dispatch",
+      "criterion": "readme-claims-match-trigger",
+      "report": "reports/conformance/source-dispatch-readme-claims-match-trigger.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py readme-claims-match-trigger --candidate source-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "source-dispatch",
+      "criterion": "destination-workflow-untouched",
+      "report": "reports/conformance/source-dispatch-destination-workflow-untouched.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py destination-workflow-untouched --candidate source-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "source-dispatch",
+      "criterion": "dispatched-run-succeeds",
+      "report": "reports/conformance/source-dispatch-dispatched-run-succeeds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py dispatched-run-succeeds --candidate source-dispatch",
+      "state": "pending"
+    },
+    {
+      "candidate": "reregister-schedule",
+      "criterion": "trigger-independent-of-schedule",
+      "report": {
+        "path": "reports/selection/reregister-schedule-trigger-independent-of-schedule.json",
+        "sha256": "c044abb70d6262ab80f72869293a4ab4f5398400379229e400082cd4156c697d"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "reregister-schedule",
+      "criterion": "destination-permissions-unchanged",
+      "report": {
+        "path": "reports/selection/reregister-schedule-destination-permissions-unchanged.json",
+        "sha256": "cbd9f6964873e2a37539090cc847d1c70fad6a94354fe094ee36327efd07c74c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reregister-schedule",
+      "criterion": "credential-loss-leaves-package-intact",
+      "report": {
+        "path": "reports/selection/reregister-schedule-credential-loss-leaves-package-intact.json",
+        "sha256": "849e5bc1f87bd16c4571688ed33df8ead575241cc5107cb5af9c7e6214755a4f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reregister-schedule",
+      "criterion": "worst-case-trigger-wait",
+      "report": {
+        "path": "reports/selection/reregister-schedule-worst-case-trigger-wait.json",
+        "sha256": "a7418b4bebf83a064294544889a6c2a64a4f2d7e31d996a35983a762c7ae092d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reregister-schedule",
+      "criterion": "workflow-yaml-bytes-added",
+      "report": {
+        "path": "reports/selection/reregister-schedule-workflow-yaml-bytes-added.json",
+        "sha256": "7ed0be62b7cc7cb14450cd3b5bec613cc34123f65e669a8d9cf3cb4f8d973a52"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "reregister-schedule",
+      "criterion": "absent-secret-fails-loudly",
+      "report": "reports/conformance/reregister-schedule-absent-secret-fails-loudly.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py absent-secret-fails-loudly --candidate reregister-schedule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "reregister-schedule",
+      "criterion": "readme-claims-match-trigger",
+      "report": "reports/conformance/reregister-schedule-readme-claims-match-trigger.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py readme-claims-match-trigger --candidate reregister-schedule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "reregister-schedule",
+      "criterion": "destination-workflow-untouched",
+      "report": "reports/conformance/reregister-schedule-destination-workflow-untouched.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py destination-workflow-untouched --candidate reregister-schedule",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "reregister-schedule",
+      "criterion": "dispatched-run-succeeds",
+      "report": "reports/conformance/reregister-schedule-dispatched-run-succeeds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py dispatched-run-succeeds --candidate reregister-schedule",
+      "state": "pending"
+    },
+    {
+      "candidate": "destination-poll-faster",
+      "criterion": "trigger-independent-of-schedule",
+      "report": {
+        "path": "reports/selection/destination-poll-faster-trigger-independent-of-schedule.json",
+        "sha256": "5809207ebbf50439950d6e60cd8faf807825474eac7cfc51d9dc129e97a0e976"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "destination-poll-faster",
+      "criterion": "destination-permissions-unchanged",
+      "report": {
+        "path": "reports/selection/destination-poll-faster-destination-permissions-unchanged.json",
+        "sha256": "39c8e0eda1c07b8088c779482a48ada17c1da92ea0863e6c1e4005ba8505442f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "destination-poll-faster",
+      "criterion": "credential-loss-leaves-package-intact",
+      "report": {
+        "path": "reports/selection/destination-poll-faster-credential-loss-leaves-package-intact.json",
+        "sha256": "0caeb86f23f5943159115ca3f1042cc5643a0cf504ff87566a119249c6569e0e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "destination-poll-faster",
+      "criterion": "worst-case-trigger-wait",
+      "report": {
+        "path": "reports/selection/destination-poll-faster-worst-case-trigger-wait.json",
+        "sha256": "379d96e3f51a1fb671c500a97368b8f4934fd64305994337b519e661f08495eb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "destination-poll-faster",
+      "criterion": "workflow-yaml-bytes-added",
+      "report": {
+        "path": "reports/selection/destination-poll-faster-workflow-yaml-bytes-added.json",
+        "sha256": "b7bc040cb8033800d492ad6dfbd17dc4384a4e3e9a5564e4e626f2263d770109"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "destination-poll-faster",
+      "criterion": "absent-secret-fails-loudly",
+      "report": "reports/conformance/destination-poll-faster-absent-secret-fails-loudly.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py absent-secret-fails-loudly --candidate destination-poll-faster",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "destination-poll-faster",
+      "criterion": "readme-claims-match-trigger",
+      "report": "reports/conformance/destination-poll-faster-readme-claims-match-trigger.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py readme-claims-match-trigger --candidate destination-poll-faster",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "destination-poll-faster",
+      "criterion": "destination-workflow-untouched",
+      "report": "reports/conformance/destination-poll-faster-destination-workflow-untouched.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py destination-workflow-untouched --candidate destination-poll-faster",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "destination-poll-faster",
+      "criterion": "dispatched-run-succeeds",
+      "report": "reports/conformance/destination-poll-faster-dispatched-run-succeeds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py dispatched-run-succeeds --candidate destination-poll-faster",
+      "state": "pending"
+    },
+    {
+      "candidate": "source-push",
+      "criterion": "trigger-independent-of-schedule",
+      "report": {
+        "path": "reports/selection/source-push-trigger-independent-of-schedule.json",
+        "sha256": "41d8950e6174b4ec548b38f93bd7a82c7366b7f951c7868e7dfe260aab8722d9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-push",
+      "criterion": "destination-permissions-unchanged",
+      "report": {
+        "path": "reports/selection/source-push-destination-permissions-unchanged.json",
+        "sha256": "bc459e00c7e464055ec270d9bc39115fa8d879684197fd62e7f575bc4239db05"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "source-push",
+      "criterion": "credential-loss-leaves-package-intact",
+      "report": {
+        "path": "reports/selection/source-push-credential-loss-leaves-package-intact.json",
+        "sha256": "b6721dfd24abcec7e262604667abb97a75c134181cd2c5b8811223bc7a32ae37"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-push",
+      "criterion": "worst-case-trigger-wait",
+      "report": {
+        "path": "reports/selection/source-push-worst-case-trigger-wait.json",
+        "sha256": "f412dccbb8fb75028f0f19361973d0b993ed9879a63c55f8546558ddcc1c877f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "source-push",
+      "criterion": "workflow-yaml-bytes-added",
+      "report": {
+        "path": "reports/selection/source-push-workflow-yaml-bytes-added.json",
+        "sha256": "1c6de01363c6bd5ecadd8b26b0cd90f44c886328d8e30a8208344b7b3151e2b2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "source-push",
+      "criterion": "absent-secret-fails-loudly",
+      "report": "reports/conformance/source-push-absent-secret-fails-loudly.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py absent-secret-fails-loudly --candidate source-push",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "source-push",
+      "criterion": "readme-claims-match-trigger",
+      "report": "reports/conformance/source-push-readme-claims-match-trigger.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py readme-claims-match-trigger --candidate source-push",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "source-push",
+      "criterion": "destination-workflow-untouched",
+      "report": "reports/conformance/source-push-destination-workflow-untouched.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py destination-workflow-untouched --candidate source-push",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "source-push",
+      "criterion": "dispatched-run-succeeds",
+      "report": "reports/conformance/source-push-dispatched-run-succeeds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py dispatched-run-succeeds --candidate source-push",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "source-dispatch",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
