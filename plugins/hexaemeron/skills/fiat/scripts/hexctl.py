@@ -18570,11 +18570,13 @@ def carried_step_observation(
     step, its role, branch, recorded head, observed tip, the first carried
     commit in rev-list order and the step whose push receipt owns it. An
     ``unknown`` entry names a step whose range could not be enumerated, or,
-    with ``report`` set, whose tip or abbreviated receipt could not be read
-    (its ``tip`` is ``None``). Without ``report`` those two reads refuse
-    through their own single ``die`` line, as they did before ``status`` shared
-    this reader; ``status`` sets ``report`` because it reports and refuses
-    nothing, the way its ``STACK:`` line treats the run branch.
+    with ``report`` set, whose tip could not be read (its ``tip`` is ``None``)
+    or whose abbreviated recorded head resolves to no native commit (its
+    ``tip`` is the observed tip and the pair is reported as an unknown range).
+    Without ``report`` those two reads refuse through their own single ``die``
+    line, as they did before ``status`` shared this reader; ``status`` sets
+    ``report`` because it reports and refuses nothing, the way its ``STACK:``
+    line treats the run branch.
     ``waiting_only`` leaves the current step out: ``done merge-step`` checks
     the step being merged over the exact repaired range its receipt
     enumerates, so it reads nothing here that ``refuse_rewritten_stack`` did
@@ -18609,6 +18611,10 @@ def carried_step_observation(
             tip = tips[branch]
             if tip == recorded:
                 continue
+            # The tip is in hand from here on, so a receipt whose abbreviated
+            # head resolves to no native commit reports its range as unknown
+            # rather than claiming the tip could not be read (S3-R1-01).
+            entry["tip"] = tip
             if len(recorded) < 40:
                 recorded = _native_relation_commit(
                     base_dir, recorded, f"step {number} recorded push head"
@@ -18621,7 +18627,6 @@ def carried_step_observation(
                 raise
             unknown.append(entry)
             continue
-        entry["tip"] = tip
         gained = _native_gained_range(base_dir, recorded, tip)
         if gained is None:
             unknown.append(entry)

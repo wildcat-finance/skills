@@ -669,6 +669,26 @@ class CarriedStackStatusCases(CarriedStackFixture):
             self.assertIn("its tip could not be read", line)
             self.assertIn("is unknown", line)
 
+    def test_status_prints_an_unresolvable_recorded_head_as_an_unknown_range(self):
+        """A legacy abbreviated ``head_commit`` that resolves to no native
+        commit is not an unreadable tip: the tip was read, so the line names
+        the pair whose range is unknown and claims nothing about the tip
+        (audit finding S3-R1-01)."""
+        self.to_carried_stack()
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        state["steps"][1]["receipts"]["push"]["head_commit"] = "0000000"
+        with open(state_path, "w", encoding="utf-8") as handle:
+            json.dump(state, handle)
+        proc, lines = self.carry_lines()
+        self.assertEqual(len(lines), 1, proc.stdout)
+        self.assertIn(f"step 2 (a waiting step, '{self.branches[2]}')", lines[0])
+        self.assertIn(f"recorded head 0000000 and observed tip {self.s2}", lines[0])
+        self.assertIn(f"the range 0000000..{self.s2} is unknown", lines[0])
+        self.assertNotIn("its tip could not be read", lines[0])
+        self.assertNotIn("owned by", lines[0])
+
     def test_status_prints_no_carry_line_on_a_healthy_stack(self):
         self.to_carried_stack()
         proc, lines = self.carry_lines()
