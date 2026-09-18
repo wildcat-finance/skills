@@ -1,0 +1,633 @@
+{
+  "schema": "wildcat.kickoff-capture.v1",
+  "record": "docs/kickoff/1374/capture.md",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1490",
+  "parent_issue": "https://github.com/wildcat-finance/skills/issues/1374",
+  "produced_on": "2026-09-18",
+  "source_revision": "f0fa0c6632bd5fbef7f35e731646c32741ef282a",
+  "producer": "Shoggoth as Surveyor under Protasis, in the delivery session",
+  "publisher": "Dr Laurence E. Day, capture maintainer: committer and signer of the commit carrying this record",
+  "decision_maker": {
+    "name": "Dr Laurence E. Day",
+    "role": "capture maintainer",
+    "date": "2026-09-18"
+  },
+  "reviewer": "independent agent; its report is docs/kickoff/1374/evidence/review.json",
+  "selection": {
+    "reference_target": [
+      "wildcat-v1-ethereum-mainnet",
+      "wildcat-v2-ethereum-mainnet"
+    ],
+    "selected_release": null,
+    "selected_release_reason": "no Alexandria release covers either Wildcat row, and the interval collector cannot produce one; https://github.com/wildcat-finance/skills/issues/1731 owns that capability",
+    "admitted_targets": [
+      "wildcat-v1-ethereum-mainnet",
+      "wildcat-v2-ethereum-mainnet",
+      "aave-v3",
+      "maple-v1",
+      "maple-v2-fixed-term",
+      "maple-v2-open-term",
+      "euler-v1",
+      "euler-v2",
+      "centrifuge-v3"
+    ],
+    "admitted_target_count": 9,
+    "admitted_targets_blocked": [
+      "wildcat-v1-ethereum-mainnet",
+      "wildcat-v2-ethereum-mainnet",
+      "aave-v3",
+      "maple-v1",
+      "maple-v2-fixed-term",
+      "maple-v2-open-term",
+      "euler-v1",
+      "euler-v2",
+      "centrifuge-v3"
+    ],
+    "admitted_targets_without_deployment": [
+      "aave-v3",
+      "maple-v1",
+      "maple-v2-fixed-term",
+      "maple-v2-open-term",
+      "euler-v1",
+      "euler-v2",
+      "centrifuge-v3"
+    ],
+    "pattern_release_role": "worked pattern only: the Compound v3 USDC Comet release shows the shape a Wildcat capture must reach. It is not the reference capture and not an interim one"
+  },
+  "required_capture": [
+    {
+      "target": "wildcat-v1-ethereum-mainnet",
+      "registry_status": "blocked",
+      "registry_blocker": "V1 controller and market init-code source matches have not been reproduced. The preserved Ethereum observation at block 25960042 identifies candidate contracts but does not establish all historical implementation epochs.",
+      "chain": "Ethereum mainnet",
+      "chain_id": 1,
+      "caip2": "eip155:1",
+      "start_block": {
+        "number": 18686645,
+        "hash": "0xf875ac25e366bd6e03a94bd552c5a7be9469062e1ca9af4ca46bf4eda97f151a",
+        "timestamp": 1701374255,
+        "what": "WildcatArchController deployment, transaction 0x185630a823edeb2261ae6fa92b62c1b3200facf2a54ad9356cccbf4630a75d2d"
+      },
+      "observed_block": {
+        "number": 25960042,
+        "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
+        "timestamp": 1789200599
+      },
+      "blocks_to_observed_head": 7273397,
+      "contracts": [
+        {
+          "role": "registry",
+          "name": "WildcatArchController",
+          "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+          "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+          "code_length": 8724,
+          "sourcify": "match",
+          "code_match_method": "sourcify full match (creation and runtime); every in-tree Sourcify source blob equals the wildcat-protocol tree at da74452a through 016d0658; solc 0.8.22+commit.4fc1097e reproduction of the Sourcify stdJsonInput reproduces the runtime code modulo immutables"
+        },
+        {
+          "role": "sanctions-sentinel",
+          "name": "WildcatSanctionsSentinel",
+          "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+          "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+          "code_length": 3364,
+          "sourcify": "match",
+          "code_match_method": "sourcify full match; in-tree Sourcify source blobs equal the wildcat-protocol tree from 6164ddd4 to 488b30d0; solc 0.8.22 reproduction modulo immutables"
+        },
+        {
+          "role": "factory",
+          "name": "WildcatMarketControllerFactory",
+          "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+          "code_keccak256": "0x820f5453768df9f33465663ad5ade3416a82b821d3f39383ec2d358fd13ad945",
+          "code_length": 6354,
+          "sourcify": "match",
+          "code_match_method": "sourcify full match (creation and runtime); every in-tree Sourcify source blob equals the wildcat-protocol tree at da74452a through 016d0658; solc 0.8.22+commit.4fc1097e reproduction of the Sourcify stdJsonInput reproduces the runtime code modulo immutables"
+        },
+        {
+          "role": "market-init-code-storage",
+          "name": "WildcatMarket init code (V1)",
+          "address": "0xd0c690707b5642475f68a0487cea08e30a5719bd",
+          "code_keccak256": "0x79fa042e1a64cf7f2b02b7074c16f324ee3ac1fab1da99be6066aee6bf0138b6",
+          "code_length": 23651,
+          "sourcify": null,
+          "code_match_method": "stored init code keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; not reproduced from source in this pass"
+        },
+        {
+          "role": "controller-init-code-storage",
+          "name": "WildcatMarketController init code (V1)",
+          "address": "0x93caaddc316f699f9249e93a689566cefc446c3c",
+          "code_keccak256": "0x8e1eb2f3e38e1effddfd26b92802c0cb9aba828051fc0996696017a3cc414066",
+          "code_length": 16251,
+          "sourcify": null,
+          "code_match_method": "stored init code keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; not reproduced from source in this pass"
+        },
+        {
+          "role": "lens",
+          "name": "MarketLens (V1)",
+          "address": "0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+          "code_keccak256": "0x60a6478c59b7c6b95d7549d05b5801203ba70e79aa63e0e5fe1a91eccd4a431f",
+          "code_length": 17417,
+          "sourcify": "match",
+          "code_match_method": "sourcify full match; 40 of 46 in-tree Sourcify sources equal the wildcat-protocol head 488b30d0 and six library files differ, so no commit is pinned"
+        }
+      ],
+      "contract_count": 6,
+      "code_hash_recorded_count": 6,
+      "sourcify_match_count": 4,
+      "matched_by_other_means": [
+        {
+          "role": "market-init-code-storage",
+          "name": "WildcatMarket init code (V1)",
+          "method": "stored init code keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; not reproduced from source in this pass"
+        },
+        {
+          "role": "controller-init-code-storage",
+          "name": "WildcatMarketController init code (V1)",
+          "method": "stored init code keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; not reproduced from source in this pass"
+        }
+      ],
+      "upgradeable_proxies": 0,
+      "upgradeable_proxy_note": "no contract in this row is an EIP-1967 proxy; the estate is direct deployments, stored init code and create2 clones, so the collector's implementation-epoch model has no upgrade log to read and no implementation slot to sample",
+      "unresolved": [
+        "V1 market and controller init code hashes are recorded but not reproduced from the pinned source",
+        "the V1 MarketLens source commit is not pinned",
+        "one of the 37-source and 8-source blob sets pins five equivalent commits, not one; the deployer's exact checkout is unknown"
+      ]
+    },
+    {
+      "target": "wildcat-v2-ethereum-mainnet",
+      "registry_status": "blocked",
+      "registry_blocker": "The existing row matches core factory and stored init code but lacks the complete instance, hook and role-provider inventory. WildcatFeeRecipient and CollateralFactory source identity remains unestablished.",
+      "chain": "Ethereum mainnet",
+      "chain_id": 1,
+      "caip2": "eip155:1",
+      "start_block": {
+        "number": 21788182,
+        "hash": "0xa8c8592292a62b31242bdc1e973a8092288c0f6fbf22ddb536f1aa6f4e35a4d5",
+        "timestamp": 1738853567,
+        "what": "HooksFactory deployment, transaction 0xe1c92956c9ec365859a40f6ef8bb1ad4b59b469dca64fcadfef1f9a935ee82df"
+      },
+      "observed_block": {
+        "number": 25960042,
+        "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
+        "timestamp": 1789200599
+      },
+      "blocks_to_observed_head": 4171860,
+      "contracts": [
+        {
+          "role": "registry",
+          "name": "WildcatArchController",
+          "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+          "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+          "code_length": 8724,
+          "sourcify": "match",
+          "code_match_method": "sourcify full match (creation and runtime); every in-tree Sourcify source blob equals the wildcat-protocol tree at da74452a through 016d0658; solc 0.8.22+commit.4fc1097e reproduction of the Sourcify stdJsonInput reproduces the runtime code modulo immutables"
+        },
+        {
+          "role": "sanctions-sentinel",
+          "name": "WildcatSanctionsSentinel",
+          "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+          "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+          "code_length": 3364,
+          "sourcify": "match",
+          "code_match_method": "sourcify full match; in-tree Sourcify source blobs equal the wildcat-protocol tree from 6164ddd4 to 488b30d0; solc 0.8.22 reproduction modulo immutables"
+        },
+        {
+          "role": "factory",
+          "name": "HooksFactory",
+          "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+          "code_keccak256": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0",
+          "code_length": 16798,
+          "sourcify": "match",
+          "code_match_method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; Sourcify full match; on-chain runtime equals deployedBytecode modulo 22 immutable slots"
+        },
+        {
+          "role": "market-init-code-storage",
+          "name": "WildcatMarket init code",
+          "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+          "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+          "code_length": 23115,
+          "sourcify": null,
+          "code_match_method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode; keccak256 of the rest equals HooksFactory.marketInitCodeHash()"
+        },
+        {
+          "role": "hooks-template",
+          "name": "OpenTermHooks init code",
+          "address": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+          "code_keccak256": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+          "code_length": 20255,
+          "sourcify": null,
+          "code_match_method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode"
+        },
+        {
+          "role": "hooks-template",
+          "name": "FixedTermHooks init code (MaximumLoanTerm 365 days)",
+          "address": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+          "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+          "code_length": 22165,
+          "sourcify": null,
+          "code_match_method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode"
+        },
+        {
+          "role": "hooks-template",
+          "name": "FixedTermHooks init code (MaximumLoanTerm 730 days)",
+          "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+          "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+          "code_length": 22165,
+          "sourcify": null,
+          "code_match_method": "not in any deployment manifest, docs page or Sourcify; recompiling the FixedTermHooks verification input with src/access/FixedTermHooks.sol taken from commit 5838b2f3 (MaximumLoanTerm = 730 days) under the same settings reproduces the stored init code byte for byte"
+        },
+        {
+          "role": "lens",
+          "name": "MarketLens (deployments.json)",
+          "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+          "code_keccak256": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a",
+          "code_length": 24385,
+          "sourcify": null,
+          "code_match_method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte for its 60 in-tree sources; on-chain runtime equals deployedBytecode modulo 11 immutable slots; not on Sourcify"
+        },
+        {
+          "role": "lens",
+          "name": "MarketLens (docs page)",
+          "address": "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7",
+          "code_keccak256": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5",
+          "code_length": 20104,
+          "sourcify": "match",
+          "code_match_method": "Sourcify full match (0.8.25, runs 200, viaIR); all 60 in-tree Sourcify sources equal the plasma branch at e1f77540 and 1bc514b1; 57 of 60 equal v2.0.0"
+        },
+        {
+          "role": "wrapper-factory",
+          "name": "Wildcat4626WrapperFactory",
+          "address": "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a",
+          "code_keccak256": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e",
+          "code_length": 19188,
+          "sourcify": "match",
+          "code_match_method": "Sourcify full match (0.8.25, runs 200, viaIR off); all 9 in-tree Sourcify sources equal tag v2.1.0, the mainnet branch and main"
+        },
+        {
+          "role": "fee-recipient",
+          "name": "WildcatFeeRecipient",
+          "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+          "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+          "code_length": 1649,
+          "sourcify": "match",
+          "code_match_method": "Sourcify full match (0.8.25, runs 200); src/WildcatFeeRecipient.sol is in no v2-protocol tree read, so the source repository is not located"
+        },
+        {
+          "role": "collateral-factory",
+          "name": "CollateralFactory (subgraph)",
+          "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+          "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+          "code_length": 7615,
+          "sourcify": null,
+          "code_match_method": "code hash recorded only; not on Sourcify; the collateral-contract repository was not inspected"
+        }
+      ],
+      "contract_count": 12,
+      "code_hash_recorded_count": 12,
+      "sourcify_match_count": 6,
+      "matched_by_other_means": [
+        {
+          "role": "market-init-code-storage",
+          "name": "WildcatMarket init code",
+          "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode; keccak256 of the rest equals HooksFactory.marketInitCodeHash()"
+        },
+        {
+          "role": "hooks-template",
+          "name": "OpenTermHooks init code",
+          "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode"
+        },
+        {
+          "role": "hooks-template",
+          "name": "FixedTermHooks init code (MaximumLoanTerm 365 days)",
+          "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte; stored init code equals 0x00 followed by the recorded creation bytecode"
+        },
+        {
+          "role": "hooks-template",
+          "name": "FixedTermHooks init code (MaximumLoanTerm 730 days)",
+          "method": "not in any deployment manifest, docs page or Sourcify; recompiling the FixedTermHooks verification input with src/access/FixedTermHooks.sol taken from commit 5838b2f3 (MaximumLoanTerm = 730 days) under the same settings reproduces the stored init code byte for byte"
+        },
+        {
+          "role": "lens",
+          "name": "MarketLens (deployments.json)",
+          "method": "verification input in v2-protocol deployments/mainnet; every in-tree source blob equals the tree at 8dc8e449, d1691193, a70f297f (v2.0.0), c7be4039 (v2.1.0), the mainnet branch and main; solc 0.8.25+commit.b61c2a91 reproduces creation and deployed bytecode byte for byte for its 60 in-tree sources; on-chain runtime equals deployedBytecode modulo 11 immutable slots; not on Sourcify"
+        },
+        {
+          "role": "collateral-factory",
+          "name": "CollateralFactory (subgraph)",
+          "method": "code hash recorded only; not on Sourcify; the collateral-contract repository was not inspected"
+        }
+      ],
+      "upgradeable_proxies": 0,
+      "upgradeable_proxy_note": "no contract in this row is an EIP-1967 proxy; the estate is direct deployments, stored init code and create2 clones, so the collector's implementation-epoch model has no upgrade log to read and no implementation slot to sample",
+      "unresolved": [
+        "The third FixedTermHooks template is included by the approval of all registered templates. #1590 still owns its registration epoch and instance coverage; Hermes derives the protected set from that evidence.",
+        "Both MarketLens deployments remain recorded; #1590 maps their epochs and consumer use rather than selecting one by document precedence.",
+        "WildcatFeeRecipient and CollateralFactory sources are not located in this pass"
+      ]
+    }
+  ],
+  "pattern_release": {
+    "release_id": "sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32",
+    "release_name": "usdc-interval-v0",
+    "created_at": "2026-09-07T00:00:00Z",
+    "format": "alexandria-release/v1",
+    "venue": "compound-v3",
+    "registry_status": "excluded",
+    "registry_exclusion_reason": "Outside the operator-approved five-venue order and Ethereum Wildcat estate; retained as a dated inventory observation, not an admitted target.",
+    "chain": "eip155:1",
+    "deployment": "ethereum-usdc-comet",
+    "proxy": "0xc3d688b66703497daa19211eedff47f25384cdc3",
+    "interval": {
+      "end": "25905934",
+      "start": "25903935"
+    },
+    "interval_width_blocks": 2000,
+    "boundary_hashes": {
+      "start": "0xa4e35dad60b77815249c12cf22ad83056f2ad041ef9b6340dee03e83502d70f0",
+      "end": "0xc0ac604f5eaf0b78ee147ed3cec4f5c5ab1f7d66d1607266cbf343d7bdc959bd"
+    },
+    "finality": {
+      "block_hash": "0x6651ba0eb4ba8675dcdc62ac00431b34e0032ee7cfc9f81736c2420a805760d5",
+      "block_number": "25919986",
+      "policy": "finalized"
+    },
+    "evidence_classes_declared": [
+      "boundary-blocks",
+      "logs"
+    ],
+    "shards": {
+      "count": 4,
+      "width": 500,
+      "statuses": {
+        "complete": 4
+      }
+    },
+    "epochs": 2,
+    "implementations": {
+      "0x63e749153baf1838f63ca22c275370bd2b1ceb15": "b942614560ef7218a52173cc501ce9198f74a558348edf957cda62a218aa20fe",
+      "0x83d491269720ce925f92c6bf9f66b7a0779a293a": "93ac04f8ffb0962157af92ee7cf7c1583937d013bde1b6d592ec2a726d624b79"
+    },
+    "reconciliation": "agreed",
+    "receipt_semantics": "v1-block-only",
+    "components": [
+      {
+        "name": "boundary-blocks",
+        "role": "json-rpc-response",
+        "bytes": 89359,
+        "sha256": "sha256:c6ea7748e8d0e9f4ee12adfef1e2d4eca065d3420cf16611322e8888da2f0121"
+      },
+      {
+        "name": "epoch-evidence",
+        "role": "json-rpc-response",
+        "bytes": 168231,
+        "sha256": "sha256:2101f6f219cfa2ad871076902abc6c3293034d5203db7aed4e1b6c47322b687a"
+      },
+      {
+        "name": "epoch-table",
+        "role": "interval-receipt",
+        "bytes": 2241,
+        "sha256": "sha256:951e785dbb4cfe2a5cb9079b8bad49270f71fa12f2c5512e22f679ed7f6005a8"
+      },
+      {
+        "name": "error-receipts",
+        "role": "error-receipt",
+        "bytes": 56,
+        "sha256": "sha256:394dda064a231afcbbc0e4cf512cc7956ac43fe70fce1e8c2a6daa6f0c1fccc9"
+      },
+      {
+        "name": "implementation-code",
+        "role": "implementation-code",
+        "bytes": 74602,
+        "sha256": "sha256:06bee7f948e98c35b89ef8580f5f135ddd3be8dcaf7a4d4579339fe29ab21df0"
+      },
+      {
+        "name": "interval-plan",
+        "role": "capture-contract",
+        "bytes": 722,
+        "sha256": "sha256:2b1f658bbe9156fa08072bd5c603cd8bd49309785319d4c0db87cec902e968a5"
+      },
+      {
+        "name": "logs",
+        "role": "json-rpc-response",
+        "bytes": 64597,
+        "sha256": "sha256:4fcf5d2ec0b12360e79b900edb70c5261092cf5c102e4d6669d6370e93ecbecd"
+      },
+      {
+        "name": "reconciliation",
+        "role": "provider-reconciliation",
+        "bytes": 1073,
+        "sha256": "sha256:e8eb64070a8fa60bf366871a2481c160081d1655227b8a4e7ea4bbef22257572"
+      },
+      {
+        "name": "registry",
+        "role": "deployment-registry",
+        "bytes": 28233,
+        "sha256": "sha256:3eff07d0c032d8ab1b614d5ee7691b77e198daa31fa824c739ee7056340b848e"
+      }
+    ],
+    "component_count": 9,
+    "component_bytes_total": 429114,
+    "coverage": [
+      {
+        "component": "boundary-blocks",
+        "status": "partial",
+        "record_count": 4,
+        "gaps": [
+          "the traces evidence class was not declared by the plan, so it was never requested or preserved; no internal call to the proxy was preserved",
+          "no credit event, position observation or repayment conclusion is derived here"
+        ],
+        "unsupported_collections": [
+          "credit-event-mapping"
+        ],
+        "evidence_class": "recorded-rpc",
+        "finality": "finalized"
+      },
+      {
+        "component": "epoch-evidence",
+        "status": "partial",
+        "record_count": 7,
+        "gaps": [
+          "the traces evidence class was not declared by the plan, so it was never requested or preserved; no internal call to the proxy was preserved",
+          "no credit event, position observation or repayment conclusion is derived here"
+        ],
+        "unsupported_collections": [],
+        "evidence_class": "recorded-rpc",
+        "finality": "finalized"
+      },
+      {
+        "component": "epoch-table",
+        "status": "complete",
+        "record_count": 2,
+        "gaps": [],
+        "unsupported_collections": [],
+        "evidence_class": "header-bound",
+        "finality": "provider-reported"
+      },
+      {
+        "component": "error-receipts",
+        "status": "complete",
+        "record_count": 0,
+        "gaps": [],
+        "unsupported_collections": [],
+        "evidence_class": "header-bound",
+        "finality": "provider-reported"
+      },
+      {
+        "component": "implementation-code",
+        "status": "complete",
+        "record_count": 2,
+        "gaps": [],
+        "unsupported_collections": [],
+        "evidence_class": "header-bound",
+        "finality": "provider-reported"
+      },
+      {
+        "component": "interval-plan",
+        "status": "complete",
+        "record_count": 4,
+        "gaps": [],
+        "unsupported_collections": [],
+        "evidence_class": "header-bound",
+        "finality": "provider-reported"
+      },
+      {
+        "component": "logs",
+        "status": "partial",
+        "record_count": 4,
+        "gaps": [
+          "the traces evidence class was not declared by the plan, so it was never requested or preserved; no internal call to the proxy was preserved",
+          "no credit event, position observation or repayment conclusion is derived here"
+        ],
+        "unsupported_collections": [
+          "credit-event-mapping"
+        ],
+        "evidence_class": "recorded-rpc",
+        "finality": "finalized"
+      },
+      {
+        "component": "reconciliation",
+        "status": "complete",
+        "record_count": 4,
+        "gaps": [],
+        "unsupported_collections": [],
+        "evidence_class": "header-bound",
+        "finality": "provider-reported"
+      },
+      {
+        "component": "registry",
+        "status": "partial",
+        "record_count": 28,
+        "gaps": [
+          "27 of the 28 registry entries at the pin were not collected; this release covers the Ethereum USDC Comet only"
+        ],
+        "unsupported_collections": [],
+        "evidence_class": "header-bound",
+        "finality": "provider-reported"
+      }
+    ]
+  },
+  "tail": {
+    "declared_interval_swept": true,
+    "checkpoint_next_shard": 4,
+    "checkpoint_last_accepted_block": "25905934",
+    "declared_interval_end": "25905934",
+    "unswept_blocks_inside_declared_interval": 0,
+    "finality_boundary_block": "25919986",
+    "blocks_between_interval_end_and_finality_boundary": 14052,
+    "treatment": "scope bound, not a gap",
+    "treatment_reason": "the plan never declared those blocks, and the checkpoint shows every block it did declare was read; naming them a gap would record a hole the interval never claimed to fill",
+    "decided_by": "Dr Laurence E. Day, capture maintainer, 2026-09-18"
+  },
+  "blockers": [
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1731",
+      "title": "alexandria-wish: the interval collector cannot capture any admitted kickoff target",
+      "relation": "prerequisite of https://github.com/wildcat-finance/skills/issues/1374",
+      "causes": [
+        {
+          "cause": "registry byte-pin",
+          "location": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py:216",
+          "called_from": "plugins/alexandria/scripts/usdc_interval.py:1184",
+          "specimen": "docs/kickoff/1374/specimens/wildcat-v2-registry.json",
+          "refusal": "usdc-interval: Compound registry format is unknown",
+          "exit_status": 1
+        },
+        {
+          "cause": "registry byte-pin, matching format",
+          "location": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py:216",
+          "called_from": "plugins/alexandria/scripts/usdc_interval.py:1184",
+          "specimen": "the shipped registry with entries[0].proxy set to the Wildcat V2 HooksFactory; see evidence/commands.json",
+          "refusal": "usdc-interval: Compound registry bytes do not match the pinned registry",
+          "exit_status": 1
+        },
+        {
+          "cause": "EIP-1967 epoch model",
+          "location": "plugins/alexandria/scripts/alexandria_lib/interval.py:77-78",
+          "derived_at": [
+            "plugins/alexandria/scripts/alexandria_lib/interval.py:1188",
+            "plugins/alexandria/scripts/alexandria_lib/interval.py:1243"
+          ],
+          "specimen": null,
+          "refusal": null,
+          "exit_status": null,
+          "note": "read from source, not executed: the estate has no upgradeable proxy, so there is no input that would reach a refusal here"
+        }
+      ],
+      "related_not_prerequisite": "https://github.com/wildcat-finance/skills/issues/1379"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "docs/kickoff/1359/targets.json",
+      "bytes": 164821,
+      "sha256": "9e0d3c88c76ec727ea8aabe67fb8ac0648b039ef1fa9836a6a7f2f2ae4d4ca98"
+    },
+    {
+      "path": "docs/kickoff/1359/targets.md",
+      "bytes": 53142,
+      "sha256": "4bd599b1967819ac65db95cecce3b05d0c6ef60f4b145eb051a60668d22dc443"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",
+      "bytes": 722,
+      "sha256": "2b1f658bbe9156fa08072bd5c603cd8bd49309785319d4c0db87cec902e968a5"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/registry.json",
+      "bytes": 28233,
+      "sha256": "3eff07d0c032d8ab1b614d5ee7691b77e198daa31fa824c739ee7056340b848e"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/expected.json",
+      "bytes": 1089,
+      "sha256": "c003681d388fd5db8d10d15d9023baecaf09c1621427710eca5dd68afbfbdf87"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/demo.py",
+      "bytes": 7180,
+      "sha256": "e1e0e9ce2a077239594429db1eed2e1fedba1fc2fea528d05e483931b8b41f7a"
+    },
+    {
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "bytes": 103886,
+      "sha256": "a7dbb2ba7b8ddba95528c6e81f7038b147850bf96f96ac6539c88b82024f98b4"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
+      "bytes": 69955,
+      "sha256": "b767f0568f13245ebccaa191cb1946e97f0f5a42aee57935674d7ed1bcfbda25"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
+      "bytes": 9361,
+      "sha256": "f01dfff7c51aa5178fde9fff478a0dc37cc04b14d71a78dc84617ae26206094a"
+    }
+  ],
+  "what_this_does_not_establish": [
+    "that any Wildcat capture exists; none does",
+    "that the Compound v3 release covers any admitted target; its venue row is excluded",
+    "provider completeness, publisher identity, consensus finality or canonical-chain membership",
+    "any credit event, position or repayment conclusion",
+    "authorisation for a live capture, an endpoint or provider spending"
+  ]
+}
