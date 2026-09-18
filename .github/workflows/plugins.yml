@@ -30,6 +30,17 @@ on:
 permissions:
   contents: read
 
+# A superseded run teaches nothing and its shards are the most expensive jobs
+# in the repository, so a new push to the same pull request cancels the runs
+# behind it. Runs on `main` are not grouped with a pull request's and are never
+# cancelled: each one is the only record that a merged commit passed. The key
+# is `github.event_name` rather than the pull-request object, because the
+# workflow contract in `tests/test_python_contract.py` refuses that object
+# here.
+concurrency:
+  group: plugins-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   scope:
     strategy:
@@ -64,7 +75,14 @@ jobs:
           - synkrisis
           - tabularium
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Run 33336955590 on 2026-08-30 finished `scope (hexaemeron)` in 1755s and
+    # `scope (promise-machine)` in 1756s, four seconds inside the 30 minutes
+    # this used to allow. `plugins/hexaemeron/tests` held 2229 test methods
+    # that day and holds 3564 now, so both shards would be killed here before
+    # the suite they run could finish. This has to clear the per-check timeout
+    # the map sets for `hexaemeron-suite`, or the job dies before the check can
+    # report its own refusal.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
         with:

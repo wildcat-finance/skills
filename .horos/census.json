@@ -14,7 +14,7 @@
     },
     {
       "boundary_bytes": 64487,
-      "bytes": 18362568,
+      "bytes": 18362599,
       "files": 1465,
       "suffix": ".json"
     },
@@ -74,7 +74,7 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 71438,
+      "bytes": 73040,
       "files": 15,
       "suffix": ".yml"
     },
@@ -213,6 +213,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 123594007,
+  "total_bytes": 123595640,
   "total_files": 4176
 }
