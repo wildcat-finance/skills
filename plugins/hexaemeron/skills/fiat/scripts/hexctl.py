@@ -18498,22 +18498,32 @@ def _native_gained_range(
 ) -> list[str] | None:
     """The commits ``recorded..tip`` from native local objects, or ``None``.
 
-    One bounded native child through ``_native_relation_git``: scrubbed
+    One bounded native child through ``bounded_probe`` with the pinned
+    ``_native_git_executable`` and ``_native_relation_environment``: scrubbed
     environment, ``--no-replace-objects``, no lazy fetch, the ``GIT_TIMEOUT``
     and ``GIT_OUTPUT_MAX`` bounds, and at most ``GIT_PATHS_MAX`` commits
-    admitted. A start failure, timeout, output cap, non-zero status, more than
-    ``GIT_PATHS_MAX`` lines, or a line that is not a full SHA all return
-    ``None``: the range is unknown, and the caller says so without claiming a
-    cause. Nothing is fetched.
+    admitted. ``bounded_probe`` rather than ``_native_relation_git`` because
+    the latter refuses through ``die`` on a failed child, and this reader's
+    caller owns the one refusal line: a start failure, timeout, output cap,
+    non-zero status, more than ``GIT_PATHS_MAX`` lines, or a line that is not
+    a full SHA all return ``None`` with nothing printed, and the caller says
+    the range is unknown without claiming a cause. Nothing is fetched.
     """
     pair = f"{recorded}..{tip}"
-    try:
-        raw = _native_relation_git(
-            base_dir,
-            ["rev-list", f"--max-count={GIT_PATHS_MAX + 1}", pair],
-            f"gained range {pair} could not be enumerated",
-        )
-    except SystemExit:
+    status, raw, failure = bounded_probe(
+        base_dir,
+        _native_git_executable(),
+        [
+            "--no-replace-objects",
+            "rev-list",
+            f"--max-count={GIT_PATHS_MAX + 1}",
+            pair,
+        ],
+        environment=_native_relation_environment(),
+        output_max=GIT_OUTPUT_MAX,
+        timeout=GIT_TIMEOUT,
+    )
+    if failure is not None or status != 0:
         return None
     try:
         lines = [line for line in raw.decode("ascii").splitlines() if line]

@@ -242,6 +242,12 @@ class GainedRangeOwnershipGraphCases(unittest.TestCase):
         self.assertIn("unknown rather than clean", message)
         self.assertIn("nothing was fetched and no cause is claimed", message)
         self.assertNotIn("gained a commit another step's push receipt owns", message)
+        # The guard owns the refusal: the range reader prints nothing of its
+        # own, so stderr carries exactly one error line (S2-R1-02).
+        self.assertEqual(
+            message.count("hexctl: error:"), 1,
+            "an unknown range must produce exactly one refusal line",
+        )
 
     def test_a_legacy_head_only_receipt_owns_exactly_its_head(self):
         state = self._state()
