@@ -1,9 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://wildcat.finance/schemas/tabularium/canonical-event-v2.json",
-  "title": "Tabularium canonical credit event v2",
-  "description": "Superseded by canonical-event-v3.json on 2026-09-17. Kept to read schema_version 2 releases; the enums were corrected on that date to the adapter tuple table the v2 Python validator admitted.",
-  "deprecated": true,
+  "$id": "https://wildcat.finance/schemas/tabularium/canonical-event-v3.json",
+  "title": "Tabularium canonical credit event v3",
+  "description": "One credit event mapped by a registered adapter. The admitted vocabulary is the closed adapter tuple table: each oneOf branch pins venue and the provenance fields to one adapter module's constants.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -21,7 +20,7 @@
     "native_record"
   ],
   "properties": {
-    "schema_version": {"const": 2},
+    "schema_version": {"const": 3},
     "id": {"type": "string", "minLength": 1},
     "event_family": {
       "enum": [
@@ -132,7 +131,21 @@
           "uniqueItems": true,
           "items": {"type": "string", "minLength": 1}
         },
-        "mapping_rule": {"type": "string", "minLength": 1},
+        "mapping_rule": {
+          "enum": [
+            "aave-v4.borrow.v2",
+            "aave-v4.repay.v2",
+            "euler-v1.borrow.v1",
+            "euler-v1.liquidation.v1",
+            "euler-v1.repay.v1",
+            "euler-v2.borrow.v1",
+            "euler-v2.debt-socialized.v1",
+            "euler-v2.interest-accrued.v1",
+            "euler-v2.liquidation.v1",
+            "euler-v2.pull-debt.v1",
+            "euler-v2.repay.v1"
+          ]
+        },
         "adapter": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
         "adapter_version": {"enum": ["1.0.0", "2.0.0"]},
         "protocol_generation": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
@@ -140,5 +153,64 @@
       }
     },
     "native_record": {"type": "object"}
-  }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "venue": {"const": "aave-v4"},
+        "provenance": {
+          "properties": {
+            "adapter": {"const": "aave-v4"},
+            "adapter_version": {"const": "2.0.0"},
+            "protocol_generation": {"const": "aave-v4"},
+            "source_api": {"const": "ethereum-json-rpc"},
+            "mapping_rule": {"enum": ["aave-v4.borrow.v2", "aave-v4.repay.v2"]}
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {"const": "euler-v1"},
+        "provenance": {
+          "properties": {
+            "adapter": {"const": "euler-v1"},
+            "adapter_version": {"const": "1.0.0"},
+            "protocol_generation": {"const": "euler-v1"},
+            "source_api": {"const": "ethereum-json-rpc"},
+            "mapping_rule": {
+              "enum": [
+                "euler-v1.borrow.v1",
+                "euler-v1.liquidation.v1",
+                "euler-v1.repay.v1"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {"const": "euler-v2"},
+        "provenance": {
+          "properties": {
+            "adapter": {"const": "euler-v2"},
+            "adapter_version": {"const": "1.0.0"},
+            "protocol_generation": {"const": "euler-v2"},
+            "source_api": {"const": "euler-v3"},
+            "mapping_rule": {
+              "enum": [
+                "euler-v2.borrow.v1",
+                "euler-v2.debt-socialized.v1",
+                "euler-v2.interest-accrued.v1",
+                "euler-v2.liquidation.v1",
+                "euler-v2.pull-debt.v1",
+                "euler-v2.repay.v1"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
 }

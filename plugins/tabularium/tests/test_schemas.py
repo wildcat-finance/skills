@@ -1,15 +1,92 @@
-"""The versioned JSON Schema documents carry the intended envelope."""
+"""The versioned JSON Schema documents carry the intended envelope.
 
+The admitted vocabulary of the v3 documents is the closed adapter tuple table.
+That table is derived here at test time from `release_v2.ADAPTERS`, the
+registry a new adapter is registered in, never copied, so a schema that
+disagrees with what a registered adapter emits fails with the schema file, the
+field and the disagreeing value named. Reading the registry rather than a
+fixed module list is what makes registering a fourth adapter visible here: a
+list would leave its values unchecked against the schema documents.
+"""
+
+import copy
 import json
 import unittest
 
 from . import support
+from tabularium_lib import release_v2
+from tabularium_lib.adapters import aave_v4, euler_v1, euler_v2
 from tabularium_lib.release_v2 import KNOWN_GAPS
+
+try:
+    import jsonschema
+except ImportError:  # pragma: no cover - exercised only where the package is absent
+    jsonschema = None
+
+
+SCHEMA_DIRECTORY = support.PLUGIN_ROOT / "schemas"
+ADAPTER_MODULES = tuple(release_v2.ADAPTERS[name] for name in sorted(release_v2.ADAPTERS))
+DRAFT = "https://json-schema.org/draft/2020-12/schema"
+EVENT_V2 = "canonical-event-v2.json"
+COVERAGE_V2 = "coverage-manifest-v2.json"
+EVENT_V3 = "canonical-event-v3.json"
+COVERAGE_V3 = "coverage-manifest-v3.json"
+ALL_SCHEMAS = (EVENT_V2, COVERAGE_V2, EVENT_V3, COVERAGE_V3)
+DEPRECATED = {EVENT_V2: EVENT_V3, COVERAGE_V2: COVERAGE_V3}
+
+
+def tuple_table():
+    """One row per registered adapter, read from the module constants."""
+    rows = []
+    for module in ADAPTER_MODULES:
+        rows.append(
+            {
+                "venue": module.ADAPTER,
+                "adapter": module.ADAPTER,
+                "adapter_version": module.ADAPTER_VERSION,
+                "protocol_generation": module.PROTOCOL_GENERATION,
+                "source_api": module.SOURCE_API,
+                "evidence_class": release_v2.EVIDENCE_CLASSES[module.ADAPTER],
+                "mapping_rules": sorted(rule for _, _, rule in module.MAPPINGS.values()),
+            }
+        )
+    return rows
+
+
+def column(rows, key):
+    return sorted({row[key] for row in rows})
+
+
+def load_schema(name):
+    return json.loads((SCHEMA_DIRECTORY / name).read_text(encoding="utf-8"))
+
+
+def walk(schema, pointer):
+    """Follow a slash-separated pointer through nested dictionaries."""
+    node = schema
+    for part in pointer.split("/"):
+        if not isinstance(node, dict) or part not in node:
+            raise KeyError(pointer)
+        node = node[part]
+    return node
+
+
+def admits(subschema, value):
+    """Whether one property schema accepts one literal value."""
+    if "const" in subschema:
+        return subschema["const"] == value
+    if "enum" in subschema:
+        return value in subschema["enum"]
+    if subschema.get("type") == "string":
+        return isinstance(value, str) and len(value) >= subschema.get("minLength", 0)
+    return False
 
 
 class SchemaDocumentTests(unittest.TestCase):
+    maxDiff = None
+
     def load(self, name):
-        return json.loads((support.PLUGIN_ROOT / "schemas" / name).read_text())
+        return load_schema(name)
 
     def test_event_schema_is_draft_2020_12_and_requires_every_dimension(self):
         schema = self.load("canonical-event-v2.json")
@@ -76,3 +153,374 @@ class SchemaDocumentTests(unittest.TestCase):
             manifest["properties"]["registry_commit"]["const"],
             "f766f51583c23acc33b2a7824654ef2029a96804",
         )
+
+
+class SchemaDocumentValidityTests(unittest.TestCase):
+    """Every versioned document parses and is itself a valid draft 2020-12 schema."""
+
+    def test_every_versioned_document_parses_and_checks_as_a_schema(self):
+        for name in ALL_SCHEMAS:
+            with self.subTest(schema=name):
+                schema = load_schema(name)
+                self.assertEqual(schema["$schema"], DRAFT, name)
+                self.assertEqual(
+                    schema["$id"],
+                    "https://wildcat.finance/schemas/tabularium/" + name,
+                )
+                if jsonschema is not None:
+                    validator = jsonschema.validators.validator_for(schema)
+                    validator.check_schema(schema)
+                else:
+                    self.assertEqual(schema["type"], "object", name)
+                    self.assertIsInstance(schema["properties"], dict, name)
+                    self.assertIsInstance(schema["required"], list, name)
+                    self.assertFalse(schema["additionalProperties"], name)
+
+
+class TupleTableChecks(unittest.TestCase):
+    """Shared assertions naming the schema file, the field and the value."""
+
+    maxDiff = None
+
+    def assert_enum_equals(self, name, pointer, schema, expected):
+        try:
+            node = walk(schema, pointer)
+        except KeyError:
+            self.fail("%s: %s is missing" % (name, pointer))
+        self.assertIn("enum", node, "%s: %s has no enum" % (name, pointer))
+        actual = node["enum"]
+        self.assertEqual(
+            len(actual),
+            len(set(actual)),
+            "%s: %s/enum repeats a value: %s" % (name, pointer, actual),
+        )
+        missing = sorted(set(expected) - set(actual))
+        extra = sorted(set(actual) - set(expected))
+        if missing or extra:
+            self.fail(
+                "%s: %s/enum disagrees with the adapter tuple table; "
+                "missing from schema: %s; not emitted by any adapter: %s"
+                % (name, pointer, missing, extra)
+            )
+
+    def assert_const_equals(self, name, pointer, schema, expected):
+        try:
+            node = walk(schema, pointer)
+        except KeyError:
+            self.fail("%s: %s is missing" % (name, pointer))
+        self.assertIn("const", node, "%s: %s has no const" % (name, pointer))
+        self.assertEqual(
+            node["const"],
+            expected,
+            "%s: %s/const is %r, the adapter tuple table says %r"
+            % (name, pointer, node["const"], expected),
+        )
+
+    def assert_closed(self, name, pointer, schema):
+        node = walk(schema, pointer)
+        self.assertIs(
+            node.get("additionalProperties"),
+            False,
+            "%s: %s does not set additionalProperties false" % (name, pointer),
+        )
+
+    def branch_for(self, name, schema, key_pointer, expected):
+        """The single oneOf branch whose pinned key equals one row's value."""
+        branches = schema.get("oneOf")
+        self.assertIsInstance(branches, list, "%s: oneOf is missing" % name)
+        matches = []
+        for index, branch in enumerate(branches):
+            try:
+                pinned = walk(branch, key_pointer)
+            except KeyError:
+                self.fail("%s: oneOf[%d] does not pin %s" % (name, index, key_pointer))
+            if pinned.get("const") == expected:
+                matches.append(branch)
+        self.assertEqual(
+            len(matches),
+            1,
+            "%s: oneOf has %d branches pinning %s/const to %r, the adapter tuple "
+            "table has exactly one row" % (name, len(matches), key_pointer, expected),
+        )
+        return matches[0]
+
+    def check_event_v3(self, name, schema):
+        rows = tuple_table()
+        self.assertIs(schema.get("additionalProperties"), False, name)
+        self.assert_closed(name, "properties/provenance", schema)
+        self.assert_const_equals(name, "properties/schema_version", schema, 3)
+        provenance = "properties/provenance/properties"
+        self.assert_enum_equals(name, "properties/venue", schema, column(rows, "venue"))
+        self.assert_enum_equals(name, provenance + "/adapter", schema, column(rows, "adapter"))
+        self.assert_enum_equals(
+            name, provenance + "/adapter_version", schema, column(rows, "adapter_version")
+        )
+        self.assert_enum_equals(
+            name, provenance + "/protocol_generation", schema, column(rows, "protocol_generation")
+        )
+        self.assert_enum_equals(name, provenance + "/source_api", schema, column(rows, "source_api"))
+        every_rule = sorted(rule for row in rows for rule in row["mapping_rules"])
+        self.assert_enum_equals(name, provenance + "/mapping_rule", schema, every_rule)
+        self.assertEqual(
+            len(schema.get("oneOf", ())),
+            len(rows),
+            "%s: oneOf has %d branches, the adapter tuple table has %d rows"
+            % (name, len(schema.get("oneOf", ())), len(rows)),
+        )
+        for row in rows:
+            branch = self.branch_for(name, schema, "properties/venue", row["venue"])
+            label = "%s: oneOf[venue=%s]" % (name, row["venue"])
+            for field in ("adapter", "adapter_version", "protocol_generation", "source_api"):
+                self.assert_const_equals(label, provenance + "/" + field, branch, row[field])
+            self.assert_enum_equals(label, provenance + "/mapping_rule", branch, row["mapping_rules"])
+
+    def check_coverage_v3(self, name, schema):
+        rows = tuple_table()
+        self.assertIs(schema.get("additionalProperties"), False, name)
+        self.assert_closed(name, "properties/source", schema)
+        self.assert_closed(name, "properties/versions", schema)
+        self.assert_closed(name, "properties/versions/properties/adapter", schema)
+        self.assert_const_equals(name, "properties/schema_version", schema, 3)
+        self.assert_const_equals(name, "properties/versions/properties/event_schema", schema, 3)
+        source = "properties/source/properties"
+        adapter = "properties/versions/properties/adapter/properties"
+        self.assert_enum_equals(name, source + "/evidence_class", schema, column(rows, "evidence_class"))
+        self.assert_enum_equals(
+            name, source + "/protocol_generation", schema, column(rows, "protocol_generation")
+        )
+        self.assert_enum_equals(name, source + "/source_api", schema, column(rows, "source_api"))
+        self.assert_enum_equals(name, adapter + "/name", schema, column(rows, "adapter"))
+        self.assert_enum_equals(name, adapter + "/version", schema, column(rows, "adapter_version"))
+        every_rule = sorted(rule for row in rows for rule in row["mapping_rules"])
+        self.assert_enum_equals(
+            name, "properties/versions/properties/mapping_rules/items", schema, every_rule
+        )
+        gaps = walk(schema, "properties/known_gaps")
+        self.assertEqual(gaps["minItems"], 4, "%s: known_gaps/minItems" % name)
+        for module in ADAPTER_MODULES:
+            self.assertGreaterEqual(
+                len(KNOWN_GAPS[module.ADAPTER]),
+                gaps["minItems"],
+                "%s: known_gaps/minItems exceeds the %s gap count" % (name, module.ADAPTER),
+            )
+        self.assertEqual(
+            len(schema.get("oneOf", ())),
+            len(rows),
+            "%s: oneOf has %d branches, the adapter tuple table has %d rows"
+            % (name, len(schema.get("oneOf", ())), len(rows)),
+        )
+        for row in rows:
+            branch = self.branch_for(name, schema, adapter + "/name", row["adapter"])
+            label = "%s: oneOf[adapter=%s]" % (name, row["adapter"])
+            self.assert_const_equals(label, adapter + "/version", branch, row["adapter_version"])
+            for field in ("evidence_class", "protocol_generation", "source_api"):
+                self.assert_const_equals(label, source + "/" + field, branch, row[field])
+            self.assert_enum_equals(
+                label, "properties/versions/properties/mapping_rules/items", branch, row["mapping_rules"]
+            )
+
+
+class V3SchemaTupleTableTests(TupleTableChecks):
+    def test_tuple_table_has_one_row_per_adapter_and_eleven_rules(self):
+        rows = tuple_table()
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len({row["venue"] for row in rows}), 3)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 11)
+
+    def test_every_registered_adapter_reaches_the_tuple_table_and_the_v3_schemas(self):
+        """A registered adapter the v3 documents do not name is the drift."""
+        registered = sorted(release_v2.ADAPTERS)
+        self.assertEqual(
+            column(tuple_table(), "venue"),
+            registered,
+            "the tuple table does not cover every adapter in release_v2.ADAPTERS",
+        )
+        for name, pointer in (
+            (EVENT_V3, "properties/venue"),
+            (EVENT_V3, "properties/provenance/properties/adapter"),
+            (COVERAGE_V3, "properties/versions/properties/adapter/properties/name"),
+        ):
+            with self.subTest(schema=name, field=pointer):
+                self.assert_enum_equals(name, pointer, load_schema(name), registered)
+
+    def test_event_v3_enums_consts_and_branches_equal_the_tuple_table(self):
+        self.check_event_v3(EVENT_V3, load_schema(EVENT_V3))
+
+    def test_coverage_v3_enums_consts_and_branches_equal_the_tuple_table(self):
+        self.check_coverage_v3(COVERAGE_V3, load_schema(COVERAGE_V3))
+
+    def test_event_v3_keeps_the_v2_envelope_outside_the_tuple_fields(self):
+        v2 = load_schema(EVENT_V2)
+        v3 = load_schema(EVENT_V3)
+        self.assertEqual(v3["required"], v2["required"])
+        self.assertEqual(
+            v3["properties"]["provenance"]["required"],
+            v2["properties"]["provenance"]["required"],
+        )
+        tuple_fields = {"schema_version", "venue", "provenance"}
+        for key in v2["properties"]:
+            if key not in tuple_fields:
+                self.assertEqual(v3["properties"][key], v2["properties"][key], key)
+        provenance_tuple = {
+            "adapter", "adapter_version", "protocol_generation", "source_api", "mapping_rule",
+        }
+        for key in v2["properties"]["provenance"]["properties"]:
+            if key not in provenance_tuple:
+                self.assertEqual(
+                    v3["properties"]["provenance"]["properties"][key],
+                    v2["properties"]["provenance"]["properties"][key],
+                    key,
+                )
+
+    def test_coverage_v3_keeps_the_v2_envelope_outside_the_tuple_fields(self):
+        v2 = load_schema(COVERAGE_V2)
+        v3 = load_schema(COVERAGE_V3)
+        self.assertEqual(v3["required"], v2["required"])
+        self.assertEqual(v3["$defs"], v2["$defs"])
+        for key in ("release", "capture_manifest", "canonical", "coverage", "known_gaps"):
+            self.assertEqual(v3["properties"][key], v2["properties"][key], key)
+        source_tuple = {"evidence_class", "protocol_generation", "source_api"}
+        for key in v2["properties"]["source"]["properties"]:
+            if key not in source_tuple:
+                self.assertEqual(
+                    v3["properties"]["source"]["properties"][key],
+                    v2["properties"]["source"]["properties"][key],
+                    key,
+                )
+
+    def test_dropping_one_tuple_value_is_caught_with_file_field_and_value_named(self):
+        event = load_schema(EVENT_V3)
+        coverage = load_schema(COVERAGE_V3)
+        cases = (
+            (EVENT_V3, event, self.check_event_v3, "properties/venue", aave_v4.ADAPTER),
+            (
+                EVENT_V3,
+                event,
+                self.check_event_v3,
+                "properties/provenance/properties/adapter_version",
+                aave_v4.ADAPTER_VERSION,
+            ),
+            (
+                EVENT_V3,
+                event,
+                self.check_event_v3,
+                "properties/provenance/properties/mapping_rule",
+                euler_v2.MAPPINGS["pull_debt"][2],
+            ),
+            (
+                COVERAGE_V3,
+                coverage,
+                self.check_coverage_v3,
+                "properties/source/properties/evidence_class",
+                release_v2.EVIDENCE_CLASSES[euler_v1.ADAPTER],
+            ),
+            (
+                COVERAGE_V3,
+                coverage,
+                self.check_coverage_v3,
+                "properties/source/properties/source_api",
+                euler_v2.SOURCE_API,
+            ),
+        )
+        for name, schema, check, pointer, value in cases:
+            with self.subTest(schema=name, field=pointer, value=value):
+                edited = copy.deepcopy(schema)
+                walk(edited, pointer)["enum"].remove(value)
+                with self.assertRaises(AssertionError) as caught:
+                    check(name, edited)
+                message = str(caught.exception)
+                self.assertIn(name, message)
+                self.assertIn(pointer, message)
+                self.assertIn(value, message)
+
+    def test_dropping_one_one_of_branch_is_caught(self):
+        for name, check in ((EVENT_V3, self.check_event_v3), (COVERAGE_V3, self.check_coverage_v3)):
+            with self.subTest(schema=name):
+                edited = load_schema(name)
+                edited["oneOf"].pop()
+                with self.assertRaises(AssertionError) as caught:
+                    check(name, edited)
+                self.assertIn(name, str(caught.exception))
+                self.assertIn("oneOf", str(caught.exception))
+
+    def test_repointing_one_branch_const_to_another_row_is_caught(self):
+        edited = load_schema(EVENT_V3)
+        branch = self.branch_for(EVENT_V3, edited, "properties/venue", euler_v1.ADAPTER)
+        pointer = "properties/provenance/properties/source_api"
+        walk(branch, pointer)["const"] = euler_v2.SOURCE_API
+        with self.assertRaises(AssertionError) as caught:
+            self.check_event_v3(EVENT_V3, edited)
+        message = str(caught.exception)
+        self.assertIn(EVENT_V3, message)
+        self.assertIn(pointer, message)
+        self.assertIn(euler_v2.SOURCE_API, message)
+
+
+class V2SchemaDeprecationTests(unittest.TestCase):
+    def test_v2_documents_keep_their_id_and_are_marked_superseded(self):
+        for name, successor in DEPRECATED.items():
+            with self.subTest(schema=name):
+                schema = load_schema(name)
+                self.assertEqual(
+                    schema["$id"], "https://wildcat.finance/schemas/tabularium/" + name
+                )
+                self.assertIs(schema["deprecated"], True, name)
+                self.assertIn(successor, schema["description"], name)
+                self.assertRegex(schema["description"], r"20\d\d-\d\d-\d\d", name)
+                self.assertEqual(schema["properties"]["schema_version"]["const"], 2, name)
+
+    def test_v2_event_document_admits_every_value_the_python_validator_admits(self):
+        schema = load_schema(EVENT_V2)
+        provenance = schema["properties"]["provenance"]["properties"]
+        for row in tuple_table():
+            with self.subTest(adapter=row["adapter"]):
+                for field, node in (
+                    ("venue", schema["properties"]["venue"]),
+                    ("adapter", provenance["adapter"]),
+                    ("adapter_version", provenance["adapter_version"]),
+                    ("protocol_generation", provenance["protocol_generation"]),
+                    ("source_api", provenance["source_api"]),
+                ):
+                    self.assertTrue(
+                        admits(node, row[field]),
+                        "%s: %s refuses %r, which %s emits"
+                        % (EVENT_V2, field, row[field], row["adapter"]),
+                    )
+                for rule in row["mapping_rules"]:
+                    self.assertTrue(
+                        admits(provenance["mapping_rule"], rule),
+                        "%s: mapping_rule refuses %r" % (EVENT_V2, rule),
+                    )
+
+    def test_v2_coverage_document_admits_every_value_the_python_validator_admits(self):
+        schema = load_schema(COVERAGE_V2)
+        source = schema["properties"]["source"]["properties"]
+        adapter = schema["properties"]["versions"]["properties"]["adapter"]["properties"]
+        rules = schema["properties"]["versions"]["properties"]["mapping_rules"]["items"]
+        for row in tuple_table():
+            with self.subTest(adapter=row["adapter"]):
+                for field, node, value in (
+                    ("source.evidence_class", source["evidence_class"], row["evidence_class"]),
+                    ("source.protocol_generation", source["protocol_generation"], row["protocol_generation"]),
+                    ("source.source_api", source["source_api"], row["source_api"]),
+                    ("versions.adapter.name", adapter["name"], row["adapter"]),
+                    ("versions.adapter.version", adapter["version"], row["adapter_version"]),
+                ):
+                    self.assertTrue(
+                        admits(node, value),
+                        "%s: %s refuses %r, which %s emits"
+                        % (COVERAGE_V2, field, value, row["adapter"]),
+                    )
+                for rule in row["mapping_rules"]:
+                    self.assertTrue(
+                        admits(rules, rule),
+                        "%s: versions.mapping_rules refuses %r" % (COVERAGE_V2, rule),
+                    )
+                self.assertGreaterEqual(
+                    len(KNOWN_GAPS[row["adapter"]]),
+                    schema["properties"]["known_gaps"]["minItems"],
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()
