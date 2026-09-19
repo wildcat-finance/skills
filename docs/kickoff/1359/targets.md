@@ -520,7 +520,8 @@ inputs are the only published source binding. Excluded: Plasma testnet
 
 Status `resolved` since 2026-09-19. The 2026-09-12 observation and source
 record below is preserved; the source recovery that completed #1748 follows
-it under **Source recovery, 2026-09-19**.
+it under **Source recovery, 2026-09-19**, and the instance-level read that
+completed #1589 follows that under **Instance reads, 2026-09-19**.
 
 Wildcat V1 controller-factory estate on Ethereum mainnet, deprecated on the
 docs page. Core contracts were read at the estate block above; the factory's
@@ -567,9 +568,8 @@ block 18686645, hash
 arch controller deployment in transaction
 `0x185630a823edeb2261ae6fa92b62c1b3200facf2a54ad9356cccbf4630a75d2d`.
 
-The three controllers and seven markets above are derived, not independently
-read; their historical instance epochs remain open in
-[#1589](https://github.com/wildcat-finance/skills/issues/1589).
+The three controllers and seven markets above have each been read
+individually; see **Instance reads, 2026-09-19** below.
 
 #### Source recovery, 2026-09-19
 
@@ -611,9 +611,13 @@ time, not a single checkout. `488b30d0` (40 of 46) is recorded as the
 closest single-commit reference.
 
 **The five equivalent commits.** The factory deployed at block 18687391,
-2023-12-04T08:53:59Z — four days after all five candidate commits and after
-the licence rewrite too. `main`'s only commits between the rewrite and the
-deployment are `6164ddd4c75` itself and its merge `d46ecb80842c523b224d2d2e793db9750b611d0a`
+2023-11-30T22:27:35Z (corrected 2026-09-19: the #1748 pass recorded
+2023-12-04T08:53:59Z for this block, which cast against publicnode,
+rpc.mevblocker.io and Blockscout's block API all agree was wrong; the
+corrected timestamp does not change the finding below, since no other main
+commit falls in the gap either way) — about an hour after the licence
+rewrite. `main`'s only commits between the rewrite and the deployment are
+`6164ddd4c75` itself and its merge `d46ecb80842c523b224d2d2e793db9750b611d0a`
 (2023-11-30T21:22:29Z), both carrying post-rewrite blobs the deployed
 bytecode does not match. The deployer therefore used a checkout that was not
 `main`'s tip at deploy time, and since the five candidates are blob-identical
@@ -626,6 +630,60 @@ reference with the other four as `equivalent_commits`.
 returns `0x40C57923924B5c5c5455c48D93317139ADDaC8fb`, the same oracle already
 recorded as a `protected_set_exclusions` member under
 `wildcat-v2-ethereum-mainnet`; no new protected-set member is introduced.
+
+#### Instance reads, 2026-09-19
+
+Closes #1589: the three controllers and seven markets, the last named
+exclusion on this row. Full evidence, addresses, block/hash data and
+commands are in
+[`evidence/source-match-1589.json`](evidence/source-match-1589.json) and
+[`evidence/ethereum-mainnet-1589.json`](evidence/ethereum-mainnet-1589.json).
+
+**No historical implementation epoch exists.** `marketInitCodeHash` and
+`controllerInitCodeHash` are declared `immutable` on
+`WildcatMarketControllerFactory`, set once in its constructor from
+`type(WildcatMarket).creationCode` and
+`type(WildcatMarketController).creationCode` and never updatable. V1
+therefore has exactly one market template and one controller template for
+its entire life; every instance is a `CREATE2` deployment of that same
+pinned template (source commit
+`da74452aa7d1a0f024d99efd22cc6d950a8116b7`), differing only in per-instance
+constructor/immutable arguments, not in code.
+
+**Every instance reproduces the template.** Each of the 3 controllers
+(14750-byte runtime code) and 7 markets (20275-byte runtime code) was read
+via its creation transaction (`eth_getTransactionReceipt` for block, block
+hash and timestamp) and its current `eth_getCode`, cross-checked across
+`ethereum-rpc.publicnode.com`, `rpc.mevblocker.io` and
+`eth.blockscout.com/api/v2`. Diffing each instance's runtime bytecode
+against the compiled `WildcatMarketController`/`WildcatMarket`
+`deployedBytecode`, skipping only the byte ranges solc's
+`immutableReferences` names, gives 0 differing bytes outside immutables for
+all 10 instances.
+
+| Role | Address | Deployed block | Code keccak256 |
+| --- | --- | --- | --- |
+| controller | `0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8` | 18743513 | `0x7f465eac98c8a85183834920309a3bbe4811ad3dff5473e0dce10b4600cb0718` |
+| controller | `0xc2321ed31a274595e087b5010d200b748eb600e4` | 18823123 | `0xff5208ad56c775f6e842db531f51dd677589bcb77bdc1cda187cf0d34af70f1d` |
+| controller | `0x34e7aa31d0151b60490619a8f560ce5ee8196cc6` | 19425114 | `0xc9173ba223d0751d4bf9450bc2f895a61af164c40bf1b8b21c450f5d3b9d1729` |
+| market | `0x25083923f2174c5ff00d26cd6bc497221713c5b9` | 18815590 | `0xbb9c1373ef3707f54e38588a0d3272f06456cdb895e90e90ddf28ed63f96f460` |
+| market | `0x50ebdf73a0df61b782cea489e8102b3bfde0bda6` | 18815605 | `0x05497b17d3240ee152d4c7572ee30bcd578f3ecd067df780e9f4a40f191ebbcf` |
+| market | `0x5850afc80561932b0abb63dd13cdc129395323a3` | 18743513 | `0x1daa6f1f565328c589f05ffe3b1c8bf29804e5cbbe51221a9ea5dbf3124d20a1` |
+| market | `0x605309f21c1864bb0522781a2f97b91fe3a48601` | 19289990 | `0x28d011c52ecb299054fa653b0e380048f594e8d412992f18a9d2f0f77dfb2091` |
+| market | `0x691e1aa048f995890caa47a5ac0b61a9a846bdc8` | 19425114 | `0x8a67488e2b82c9c787cc0b35d28f0482161d3562e03dfb8ae17dc3546321f55d` |
+| market | `0x90d0ff1a7b1abef69eaf3952641058673439e2e3` | 19463335 | `0xde1884f9614ef943082cdfcada06447983a107d5461d9c4f654c89c098a44434` |
+| market | `0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a` | 18823123 | `0x88f4d56af2eeb44a71ccd0e21e86097c6bfa32167cde8b03dcaa1f6e1be9797a` |
+
+**Correction to the #1748 evidence.** Re-verifying the factory's Sourcify
+input while building this pass found that `source-match-1748.json` recorded
+block 18687391's timestamp as `1701680039` (2023-12-04T08:53:59Z). `cast`
+against `ethereum-rpc.publicnode.com`, a direct `rpc.mevblocker.io` read, the
+Blockscout block API and the deployment transaction's own receipt all agree
+on `1701383255` (2023-11-30T22:27:35Z) instead. Corrected in
+`source-match-1748.json`, this row's `source.equivalence_note` and the
+paragraph above; the "five equivalent commits, unresolvable" conclusion is
+unchanged, since no other `main` commit falls between `d46ecb80` and the
+deployment under either timestamp.
 
 ### `wildcat-v2.5-release-line`
 

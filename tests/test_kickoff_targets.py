@@ -478,5 +478,61 @@ class V1SourceRecoveryTests(unittest.TestCase):
         self.assertIn("0x40c57923924b5c5c5455c48d93317139addac8fb", self.matches["protected_set_check"]["result"].lower())
 
 
+class V1InstanceReadTests(unittest.TestCase):
+    """The 2026-09-19 pass (#1589) reads every V1 controller and market instance."""
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v1-ethereum-mainnet")
+        self.matches = json.loads((REGISTRY.parent / "evidence" / "source-match-1589.json").read_text(encoding="utf-8"))
+        self.observations = json.loads((REGISTRY.parent / "evidence" / "ethereum-mainnet-1589.json").read_text(encoding="utf-8"))
+
+    def test_the_exclusion_naming_unread_instances_is_gone(self):
+        for exclusion in self.row["exclusions"]:
+            self.assertNotIn("was not read", exclusion)
+        self.assertEqual(self.row["instance_reads_completed_by"], "https://github.com/wildcat-finance/skills/issues/1589")
+
+    def test_every_controller_and_market_address_is_a_row_contract(self):
+        contracts = {c["address"].lower(): c for c in self.row["deployment"]["contracts"]}
+        controllers = self.row["deployment"]["instances"]["controllers"]
+        markets = self.row["deployment"]["instances"]["markets"]
+        self.assertEqual(len(controllers), 3)
+        self.assertEqual(len(markets), 7)
+        for address in controllers + markets:
+            with self.subTest(address=address):
+                contract = contracts[address.lower()]
+                self.assertTrue(contract["code_match"]["source_commit"])
+                self.assertEqual(contract["code_match"]["source_commit"], self.row["source"]["commit"])
+
+    def test_every_instance_reproduces_the_single_template_modulo_immutables(self):
+        for entry in self.matches["controllers"] + self.matches["markets"]:
+            with self.subTest(address=entry["address"]):
+                self.assertEqual(entry["differing_bytes_outside_immutables"], 0)
+
+    def test_there_is_exactly_one_template_per_role(self):
+        finding = self.matches["immutable_template_finding"]
+        self.assertIn("immutable", finding["market_init_code_hash"])
+        self.assertIn("immutable", finding["controller_init_code_hash"])
+        self.assertEqual(self.matches["reproduction_summary"]["instances_checked"], 10)
+        self.assertTrue(self.matches["reproduction_summary"]["all_zero"])
+
+    def test_the_observations_file_covers_every_instance_with_the_row_hash(self):
+        contracts = {c["address"].lower(): c for c in self.row["deployment"]["contracts"]}
+        self.assertEqual(self.observations["schema"], "wildcat.kickoff-targets.observations.v1")
+        self.assertEqual(self.observations["chain_id"], 1)
+        self.assertEqual(len(self.observations["code"]), 10)
+        for entry in self.observations["code"]:
+            with self.subTest(address=entry["address"]):
+                contract = contracts[entry["address"].lower()]
+                self.assertEqual(contract["code_keccak256"], entry["code_keccak256"])
+
+    def test_the_factory_deployment_timestamp_correction_is_recorded(self):
+        factory_deployment = self.matches.get("correction_note") or ""
+        self.assertIn("1701383255", factory_deployment + json.dumps(self.matches))
+        equivalence_note = self.row["source"]["equivalence_note"]
+        self.assertIn("2023-11-30T22:27:35Z", equivalence_note)
+        self.assertIn("corrected 2026-09-19", equivalence_note)
+
+
 if __name__ == "__main__":
     unittest.main()
