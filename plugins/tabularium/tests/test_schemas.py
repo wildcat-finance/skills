@@ -9,12 +9,20 @@ fixed module list is what makes registering a fourth adapter visible here: a
 list would leave its values unchecked against the schema documents.
 """
 
+import contextlib
 import copy
+import io
 import json
+import os
+from pathlib import Path
+import sys
+import tempfile
 import unittest
+from unittest import mock
 
+from . import prove_schema_v3
 from . import support
-from tabularium_lib import release_v2
+from tabularium_lib import SUPPORTED_EVENT_SCHEMAS, release_v2
 from tabularium_lib.adapters import aave_v4, euler_v1, euler_v2
 from tabularium_lib.release_v2 import KNOWN_GAPS
 
@@ -33,6 +41,20 @@ EVENT_V3 = "canonical-event-v3.json"
 COVERAGE_V3 = "coverage-manifest-v3.json"
 ALL_SCHEMAS = (EVENT_V2, COVERAGE_V2, EVENT_V3, COVERAGE_V3)
 DEPRECATED = {EVENT_V2: EVENT_V3, COVERAGE_V2: COVERAGE_V3}
+REQUIRES_JSONSCHEMA = unittest.skipIf(jsonschema is None, support.JSONSCHEMA_ABSENT)
+
+
+def scratch_directory(prefix: str = "tabularium-schema-v3-"):
+    """Transient space with no symlinked component and no status entry.
+
+    The reporter refuses a symlinked path component, and on macOS the platform
+    temporary directory is reached through one, so scratch is anchored at the
+    ignored top-level tmp/ of this checkout instead.  That directory is
+    confined and `git status` never sees it.
+    """
+    scratch = support.REPO_ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
 
 
 def tuple_table():
@@ -520,6 +542,140 @@ class V2SchemaDeprecationTests(unittest.TestCase):
                     len(KNOWN_GAPS[row["adapter"]]),
                     schema["properties"]["known_gaps"]["minItems"],
                 )
+
+
+@REQUIRES_JSONSCHEMA
+class ShippedDocumentParityTests(unittest.TestCase):
+    """Every shipped document validates against the schema its version names.
+
+    A release says which envelope it was written to in `schema_version`, so the
+    document is validated against that version's schema file, not against the
+    current one.  The three v0 releases say 2, which is what the corrected and
+    superseded v2 files describe.
+    """
+
+    maxDiff = None
+
+    def check_release(self, name):
+        manifest, rows = support.release_documents(name)
+        version = manifest["schema_version"]
+        self.assertIn(version, SUPPORTED_EVENT_SCHEMAS, name)
+        self.assertEqual(manifest["versions"]["event_schema"], version, name)
+        self.assertEqual(
+            support.schema_refusal_fields(support.coverage_schema(version), manifest),
+            [],
+            "%s: coverage.json is refused by coverage-manifest-v%d.json"
+            % (name, version),
+        )
+        schema = support.event_schema(version)
+        adapter_module = release_v2.ADAPTERS[manifest["versions"]["adapter"]["name"]]
+        self.assertTrue(rows, "%s: events.jsonl is empty" % name)
+        for index, row in enumerate(rows, start=1):
+            with self.subTest(row=index):
+                self.assertEqual(row["schema_version"], version)
+                self.assertEqual(
+                    support.schema_refusal_fields(schema, row),
+                    [],
+                    "%s: row %d is refused by canonical-event-v%d.json"
+                    % (name, index, version),
+                )
+                self.assertIsNone(
+                    support.library_refusal_field(
+                        row, adapter_module, version, index
+                    ),
+                    "%s: row %d is refused by validate_event_row" % (name, index),
+                )
+
+    def test_aave_v4_v0_documents_validate_against_their_named_schema(self):
+        self.check_release("aave-v4-v0")
+
+    def test_euler_v1_v0_documents_validate_against_their_named_schema(self):
+        self.check_release("euler-v1-v0")
+
+    def test_euler_v2_v0_documents_validate_against_their_named_schema(self):
+        self.check_release("euler-v2-v0")
+
+
+@REQUIRES_JSONSCHEMA
+class RejectionParityTests(unittest.TestCase):
+    """Both validators refuse each committed fixture, naming the same field."""
+
+    maxDiff = None
+
+    def assert_parity(self, row, expected_field):
+        observation = support.parity_observation(row, expected_field)
+        self.assertTrue(observation["agreed"], support.parity_disagreement(observation))
+        return observation
+
+    def check_fixture(self, name, expected_field):
+        row = support.load_rejection_fixture(name)
+        observation = self.assert_parity(row, expected_field)
+        self.assertEqual(observation["schema_fields"], [expected_field], name)
+        self.assertEqual(observation["library_field"], expected_field, name)
+
+    def test_unknown_value_is_refused_by_both_validators(self):
+        self.check_fixture("unknown-value", "provenance.mapping_rule")
+
+    def test_wrong_version_is_refused_by_both_validators(self):
+        self.check_fixture("wrong-version", "schema_version")
+
+    def test_malformed_provenance_is_refused_by_both_validators(self):
+        self.check_fixture("malformed-provenance", "provenance.source_selector")
+
+    def test_a_row_only_one_validator_refuses_fails_the_parity_check(self):
+        """A one-sided refusal is a disagreement, never a pass.
+
+        The row carries one provenance key the closed v3 key set does not name.
+        `jsonschema` refuses it by name through `additionalProperties`;
+        `validate_event_row` checks the tuple table and the presence of the
+        eleven named provenance fields and does not police the key set, so it
+        admits the row.  The parity assertion has to fail on that, which is what
+        keeps a fixture either validator accepts out of a passing report.
+        """
+        row = support.load_rejection_fixture("unknown-value")
+        row["provenance"]["mapping_rule"] = "aave-v4.borrow.v2"
+        row["provenance"]["operator_note"] = "not a field of the closed key set"
+        observation = support.parity_observation(row, "provenance.operator_note")
+        self.assertEqual(observation["schema_fields"], ["provenance.operator_note"])
+        self.assertIsNone(observation["library_field"])
+        with self.assertRaises(self.failureException):
+            self.assert_parity(row, "provenance.operator_note")
+
+
+class ReporterRefusalTests(unittest.TestCase):
+    """The design reporter's two refusals, both of which write nothing."""
+
+    def report_argv(self, path):
+        return [
+            "--candidate", "superseding-releases",
+            "--criterion", "rejection-parity",
+            "--report", str(path),
+        ]
+
+    def test_the_reporter_refuses_to_write_when_jsonschema_is_absent(self):
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            stderr = io.StringIO()
+            with mock.patch.dict(sys.modules, {"jsonschema": None}):
+                with contextlib.redirect_stderr(stderr):
+                    code = prove_schema_v3.main(self.report_argv(report))
+            self.assertEqual(code, 1)
+            self.assertEqual(stderr.getvalue().strip(), support.JSONSCHEMA_ABSENT)
+            self.assertFalse(report.exists(), "a skip left a report behind")
+
+    @REQUIRES_JSONSCHEMA
+    def test_the_reporter_refuses_a_symlinked_report_component(self):
+        with scratch_directory() as directory:
+            root = Path(directory)
+            (root / "real").mkdir()
+            os.symlink(root / "real", root / "link")
+            report = root / "link" / "rejection-parity.json"
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                code = prove_schema_v3.main(self.report_argv(report))
+            self.assertEqual(code, 2)
+            self.assertIn("symlink", stderr.getvalue())
+            self.assertFalse((root / "real" / "rejection-parity.json").exists())
 
 
 if __name__ == "__main__":
