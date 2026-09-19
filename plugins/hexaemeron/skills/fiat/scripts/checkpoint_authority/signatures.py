@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass, field
+import errno
 import os
 from pathlib import Path
 import re
@@ -23,6 +24,8 @@ SPKI_PREFIX = bytes.fromhex("3059301306072a8648ce3d020106082a8648ce3d03010703420
 P256_ORDER = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551
 NAMESPACE = "wildcat-checkpoint-authority-v1"
 MAX_ENVELOPE_BYTES = 128 * 1024
+TRANSIENT_SPAWN = frozenset((errno.EAGAIN, errno.ENOMEM, errno.EMFILE, errno.ENFILE, errno.EINTR))
+"""Host exhaustion while starting a child; not evidence about the pinned executable."""
 
 
 def b64decode(value, *, maximum=65536):
@@ -114,6 +117,27 @@ class ToolPin:
             raise Refusal("tool-unavailable", "signature") from None
 
 
+def _spawn(argv, source, directory, environment, deadline):
+    """Start one child, retrying only a transient host failure inside the one deadline.
+
+    Process, memory or descriptor exhaustion on the host says nothing about the
+    pinned executable, so it is not reported as an unavailable tool. A failure
+    that persists to the deadline still refuses, and no other errno is retried.
+    """
+    delay = 0.01
+    while True:
+        try:
+            return subprocess.Popen(argv, stdin=source, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, cwd=directory, env=environment,
+                start_new_session=True)
+        except OSError as error:
+            if error.errno not in TRANSIENT_SPAWN or time.monotonic() + delay >= deadline:
+                raise
+            time.sleep(delay)
+            source.seek(0)
+            delay = min(delay * 2, 0.5)
+
+
 def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
     """Drain bounded child streams under one deadline; diagnostics stay private."""
     pin.check()
@@ -123,12 +147,10 @@ def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
         with tempfile.TemporaryFile() as source:
             source.write(input_bytes)
             source.seek(0)
-            process = subprocess.Popen([pin.path, *args], stdin=source,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=directory,
-                env=environment, start_new_session=True)
+            deadline = time.monotonic() + timeout
+            process = _spawn([pin.path, *args], source, directory, environment, deadline)
             buffers = {"stdout": bytearray(), "stderr": bytearray()}
             try:
-                deadline = time.monotonic() + timeout
                 with selectors.DefaultSelector() as selector:
                     selector.register(process.stdout, selectors.EVENT_READ, "stdout")
                     selector.register(process.stderr, selectors.EVENT_READ, "stderr")

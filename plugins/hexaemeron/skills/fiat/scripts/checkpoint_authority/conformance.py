@@ -377,6 +377,9 @@ def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
         if inputs["implemented"] and args.criterion == "authority-replay":
             from . import replay_conformance
             event = replay_conformance.run(root, report)
+        if inputs["implemented"] and args.criterion == "released-interoperability":
+            from . import release_conformance
+            event = release_conformance.run(root, report)
         _write(root, name, report, event)
     except (Refusal, OSError) as error:
         code = str(error) if isinstance(error, Refusal) else "unsafe-or-unavailable-file"
