@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 28072954,
+    "bytes_blob": 28105166,
     "bytes_generated": 98
   },
   "entries": [
@@ -796,6 +796,13 @@
       "evidence": "no newline in the first 4096 bytes of 119058 bytes",
       "grade": "candidate",
       "path": "docs/fiat-checkpoint-marker/reports/bounded-material-implementation-regression.observation.json"
+    },
+    {
+      "bytes": 32212,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 32212 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-native-archive-roundtrip.observation.json"
     },
     {
       "bytes": 459957,
