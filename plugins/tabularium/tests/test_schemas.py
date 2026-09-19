@@ -651,6 +651,32 @@ class ShippedDocumentParityTests(unittest.TestCase):
     def test_euler_v2_v0_documents_validate_against_their_named_schema(self):
         self.check_release("euler-v2-v0")
 
+    def test_aave_v4_v1_documents_validate_against_their_named_schema(self):
+        self.check_release("aave-v4-v1")
+
+    def test_euler_v1_v1_documents_validate_against_their_named_schema(self):
+        self.check_release("euler-v1-v1")
+
+    def test_euler_v2_v1_documents_validate_against_their_named_schema(self):
+        self.check_release("euler-v2-v1")
+
+    def test_the_three_superseding_releases_say_three_and_the_v0_releases_two(self):
+        """Each release is read against the envelope it names, not the newest.
+
+        `check_release` validates a release against the schema its own
+        `schema_version` names, so a v1 release that quietly said 2 would still
+        pass every case above by being checked against the v2 documents.  The
+        declared split is asserted here instead.
+        """
+        for name in support.LEGACY_RELEASES:
+            manifest, rows = support.release_documents(name)
+            self.assertEqual(manifest["schema_version"], 2, name)
+            self.assertEqual({row["schema_version"] for row in rows}, {2}, name)
+        for name in support.SUPERSEDING_RELEASES:
+            manifest, rows = support.release_documents(name)
+            self.assertEqual(manifest["schema_version"], 3, name)
+            self.assertEqual({row["schema_version"] for row in rows}, {3}, name)
+
 
 @REQUIRES_JSONSCHEMA
 class RejectionParityTests(unittest.TestCase):
@@ -880,6 +906,104 @@ class ReporterRefusalTests(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("symlink", stderr.getvalue())
             self.assertFalse((root / "real" / "rejection-parity.json").exists())
+
+
+@REQUIRES_JSONSCHEMA
+class ReporterCriterionTests(unittest.TestCase):
+    """Every criterion the reporter declares is resolved by an observer.
+
+    The report is a closed `protasis-design-report/v1` object: it carries one
+    value and no count, so nothing inside it can say how much evidence stood
+    behind that value.  These cases hold the two properties that gap needs.
+    """
+
+    def test_every_declared_criterion_has_an_observer_and_a_unit(self):
+        self.assertEqual(
+            set(prove_schema_v3.CRITERIA), set(prove_schema_v3.OBSERVERS)
+        )
+        self.assertEqual(set(prove_schema_v3.CRITERIA.values()), {"boolean"})
+
+    def test_an_empty_evidence_collection_fails_rather_than_passing(self):
+        """`all(())` is true, and a vacuous pass is the failure mode here.
+
+        A criterion resolved over no observations attests nothing, and the
+        report has nowhere to record that it attested nothing.  The reporter
+        therefore refuses an empty collection rather than writing `true` over
+        it, and the exit code and recorded value say so together.
+        """
+        for criterion in sorted(prove_schema_v3.CRITERIA):
+            with self.subTest(criterion=criterion):
+                with scratch_directory() as directory:
+                    report = Path(directory) / "empty.json"
+                    with mock.patch.dict(
+                        prove_schema_v3.OBSERVERS, {criterion: list}
+                    ):
+                        with contextlib.redirect_stdout(io.StringIO()):
+                            code = prove_schema_v3.main(
+                                [
+                                    "--candidate", "superseding-releases",
+                                    "--criterion", criterion,
+                                    "--report", str(report),
+                                ]
+                            )
+                    self.assertEqual(code, 1)
+                    written = json.loads(report.read_text(encoding="utf-8"))
+                self.assertIs(written["value"], False)
+                self.assertEqual(written["exit"], 1)
+                self.assertEqual(written["criterion"], criterion)
+
+    def test_the_shipped_ledger_criterion_reads_every_superseding_release(self):
+        observations = prove_schema_v3.shipped_ledgers_validate_v3()
+        self.assertEqual(
+            [observation["source_directory"] for observation in observations],
+            list(support.SUPERSEDING_RELEASES),
+        )
+        for observation in observations:
+            self.assertTrue(observation["agreed"], observation)
+            self.assertEqual(observation["schema_version"], 3)
+
+    def test_the_legacy_criterion_reads_every_release_published_under_two(self):
+        observations = prove_schema_v3.legacy_v0_verify()
+        self.assertEqual(
+            [observation["source_directory"] for observation in observations],
+            list(support.LEGACY_RELEASES),
+        )
+        for observation in observations:
+            self.assertTrue(observation["agreed"], observation)
+            self.assertEqual(observation["schema_version"], 2)
+            self.assertEqual(observation["digest_drift"], [])
+
+    def test_a_legacy_release_whose_bytes_moved_is_a_disagreement(self):
+        """Internal consistency is not the property this criterion holds.
+
+        A v0 release rewritten in place and rebuilt would verify perfectly.
+        The criterion exists to say that the published bytes did not move, so
+        the digest comparison has to fail on its own.
+        """
+        observation = support.verification_observation(
+            "euler-v1-v0", 2, {"events.jsonl": "0" * 64}
+        )
+        self.assertTrue(observation["verified"])
+        self.assertFalse(observation["agreed"])
+        self.assertEqual(
+            [drift["file"] for drift in observation["digest_drift"]],
+            ["events.jsonl"],
+        )
+
+    def test_a_release_with_no_rows_is_refused_rather_than_admitted(self):
+        """An empty ledger validates against every schema, so it proves none.
+
+        `document_observation` walks the rows of one release; with no rows
+        there is nothing for either validator to refuse, and the observation
+        would agree over an empty file.
+        """
+        manifest, _ = support.release_documents("euler-v1-v1")
+        with mock.patch.object(
+            support, "release_documents", return_value=(manifest, [])
+        ):
+            observation = support.document_observation("euler-v1-v1")
+        self.assertEqual(observation["rows"], 0)
+        self.assertFalse(observation["agreed"])
 
 
 if __name__ == "__main__":

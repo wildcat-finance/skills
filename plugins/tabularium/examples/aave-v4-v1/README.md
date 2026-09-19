@@ -1,26 +1,27 @@
-# Aave v4 mainnet credit window v0
+# Aave v4 mainnet credit window v1
 
 A checked-in, offline-verifiable Tabularium release built from Ethereum
 consensus logs: every Aave v4 borrow and repay in blocks `25855441` through
-`25870892`, mapped to canonical event schema v2.
+`25870892`, mapped to canonical event schema v3.
 
-This release is superseded by
-[`aave-v4-v1`](../aave-v4-v1/README.md), release
-`aave-v4-mainnet-credit-window-v1`, which restates the same events under
-canonical event schema v3 from this same `source.json`. Nothing here was
-migrated: these bytes are the ones that were published, and they stay
-verifiable against the v2 schema they name.
+This release supersedes
+[`aave-v4-v0`](../aave-v4-v0/README.md), which carries release
+`aave-v4-mainnet-credit-window-v0` under schema v2. Both were built from the
+same `source.json`, byte for byte, and the only difference in a canonical row
+is `schema_version`. The v0 release stays on disk and stays verifiable; it is
+not migrated in place.
 
 | Field | Value |
 | --- | --- |
-| Release | `aave-v4-mainnet-credit-window-v0` |
+| Release | `aave-v4-mainnet-credit-window-v1` |
+| Supersedes | `aave-v4-mainnet-credit-window-v0` |
 | Adapter | `aave-v4` 2.0.0, protocol generation `aave-v4` |
 | Source API | `ethereum-json-rpc` |
 | Evidence class | `native-log` |
 | Events | 500: 282 `borrowing`, 218 `repayment` |
 | Spokes emitting | 9 |
 | Assets | 10, each with a symbol and decimals read from its own contract |
-| Canonical digest | `490d3f6399f84af8a81a5401b3cc92bf7ecfbe98a6bb02f07215b9099625ccf7` |
+| Canonical digest | `81d416a10b70ab0f3d9a3bd41c0680e235b3b64f4f06cc36b4f4292c81136492` |
 
 ## What was captured
 
@@ -34,6 +35,9 @@ REPAY   0xd765a0263e8a360da8dd4fdb8c0dc5553adec12a96f29a462cdb45e5bea407dd
 The scope is the topic pair and the block range, both stated in
 `capture.json`. Emitting addresses are whatever the chain reported, not a list
 supplied from elsewhere, so no registry or indexer decided what is in scope.
+
+`capture.json` differs from the v0 capture in one field, `release`. The
+request it records, the scope and the source digest are unchanged.
 
 Each log names a spoke and an asset id but not a token. `source.json`
 therefore also preserves the supporting reads that resolve them, each with the
@@ -51,14 +55,21 @@ independently. The state and event views share one boundary.
 The bounds were chosen for this release. They are not a protocol milestone,
 and the window is not complete Aave v4 history.
 
+| File | SHA-256 |
+| --- | --- |
+| `source.json` | `1d88fdb5bca293995fd02e5a59f060d74541c80405e7bf1987544e5f334a8744` |
+| `capture.json` | `c5ea81d7c065792498f9b7359f30a8a6a9d0c5a587bc7bfdf81cee60365ca89a` |
+| `events.jsonl` | `81d416a10b70ab0f3d9a3bd41c0680e235b3b64f4f06cc36b4f4292c81136492` |
+| `coverage.json` | `fb2d96db06d1ebf9b1e89529ddaa7dfbf7931960dd57745dde166dc73089d49b` |
+
 ## Verify and rebuild offline
 
 Neither command opens a network connection:
 
 ```bash
 python3 plugins/tabularium/scripts/tabularium.py verify \
-  plugins/tabularium/examples/aave-v4-v0/coverage.json
-python3 plugins/tabularium/examples/aave-v4-v0/rebuild.py
+  plugins/tabularium/examples/aave-v4-v1/coverage.json
+python3 plugins/tabularium/examples/aave-v4-v1/rebuild.py
 ```
 
 `verify` recomputes the canonical digest, the row count and every tally from
@@ -86,3 +97,5 @@ refused, as is a token whose stated decimals disagree with its own result.
   topics. It is neither preserved nor counted here.
 - The release is unsigned. Offline verification proves internal consistency,
   not publisher identity or authenticity.
+
+See [DATA-DICTIONARY.md](DATA-DICTIONARY.md) for field meanings and limits.

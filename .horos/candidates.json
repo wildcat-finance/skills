@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 28014147,
+    "bytes_blob": 29827908,
     "bytes_generated": 98
   },
   "entries": [
@@ -154,7 +154,14 @@
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
     },
     {
-      "bytes": 62913,
+      "bytes": 91331,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 45665",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.md"
+    },
+    {
+      "bytes": 91975,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -1210,6 +1217,20 @@
       "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
+    },
+    {
+      "bytes": 1232064,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/aave-v4-v1/events.jsonl"
+    },
+    {
+      "bytes": 461304,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 461304 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
     },
     {
       "bytes": 24559,
