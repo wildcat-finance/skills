@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 27951234,
+    "bytes_blob": 27974347,
     "bytes_generated": 98
   },
   "entries": [
@@ -152,6 +152,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 23113,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.synopsis.md"
     },
     {
       "bytes": 60462,
