@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 27971115,
+    "bytes_blob": 27981779,
     "bytes_generated": 98
   },
   "entries": [
@@ -168,7 +168,7 @@
       "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
     },
     {
-      "bytes": 19881,
+      "bytes": 30545,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

@@ -362,3 +362,90 @@ read the rule (study section 12). elenchus: a red pin test is traced to the
 exact digest it names before anything is re-pinned. phylax: none, no new
 boundary. ephoros: none, nothing runs unattended. metron: none, the fixture's
 recorded counts are carried rather than measured.
+
+### Amendment -- 2026-09-18
+
+**What changed.** Complete replacement Exit: The command below exits 0 and reports outcome green, and the deliverables that follow hold:
+
+```sh
+python3 scripts/run_checks.py --base fiat/1480-refuse-a-later-step-s-commits-carried-into --scope root --scope hexaemeron --format json
+```
+
+- `refuse_rewritten_stack` returns the map of waiting-branch tips it read,
+  branch name to observed tip, and keeps every refusal it has today;
+  `test_the_step_being_merged_is_never_queried` still passes. `cmd_next` and
+  `done_merge_step` hand that map to `refuse_carried_step_commits`, which reads
+  only the tips the map lacks, so on a healthy stack `next` adds exactly one
+  native process to today's cost: the current step's tip read. This settles
+  audit finding S2-R1-01.
+- An unknown gained range refuses with exactly one `hexctl: error:` line,
+  naming the `<recorded>..<tip>` pair and claiming no cause; the read stays a
+  bounded native child with the scrubbed relation environment,
+  `--no-replace-objects`, no lazy fetch, the 30 s timeout, the 2 MiB cap and
+  the 500-commit limit (audit finding S2-R1-02).
+- `done_merge_step` calls the carry guard after `refuse_rewritten_stack` and
+  before `inspect_pull_request`, so a carry refuses before any GitHub evidence
+  is recorded. When the current tip is unequal to the recorded head, the
+  repaired range `pr_base..remote_head` that `verify_local_range` already
+  enumerates is intersected with the ownership set before `effective_push` is
+  built; a non-empty intersection refuses naming the first carried commit and
+  its owning step. The equality path is unchanged and adds no process.
+- `cmd_status` in the integrate phase prints one `CARRY:` line per carried
+  step beside the existing `STACK:` line, using the same reader as `next`,
+  printing an unknown answer as unknown, and refusing nothing.
+- `plugins/hexaemeron/tests/test_carried_step_commits.py` gains CLI cases
+  proving that `done merge-step` refuses a whole and a partial carry with
+  `.hexaemeron/state.json` and `.hexaemeron/ledger.jsonl` byte-identical, that
+  an equal tip still receipts, that a repaired range holding an owned commit
+  refuses, that `status` prints the `CARRY:` line and exits 0, and that on the
+  healthy three-step fixture `next` reads each unmerged branch's tip once
+  across both guards. `python3 -m unittest plugins.hexaemeron.tests.test_carried_step_commits -v`,
+  run by hand from the run worktree, reports at least 19 tests and `OK`.
+- `.hexaemeron/design/reports/gained-range-ownership-product-refuses-specimen-stack.json`
+  exists, written once by `conform_carry.py`, and reads `true`; its
+  byte-identical copy sits at
+  `docs/fiat-carried-step-commits/reports/gained-range-ownership-product-refuses-specimen-stack.json`.
+- `docs/fiat-carried-step-commits/runbook.md` is byte-identical to the
+  receipted `.hexaemeron/runbook.md`, this amendment included.
+- The `hexctl.py` digest cascade, the package bump and the three `.horos`
+  artefacts are current.
+
+Complete replacement Files: `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`,
+`plugins/hexaemeron/tests/test_carried_step_commits.py`,
+`docs/fiat-carried-step-commits/reports/gained-range-ownership-product-refuses-specimen-stack.json`
+(new), `docs/fiat-carried-step-commits/runbook.md`,
+`tests/promise_machine_coverage.json`,
+`docs/promise-machine/obligation-gates/evaluation-run.json`,
+`docs/promise-machine/obligation-gates/integration-projection.json`,
+`docs/promise-machine/obligation-gates/integration-projection.md`,
+`plugins/hexaemeron/.claude-plugin/plugin.json`,
+`plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`.agents/plugins/marketplace.json`, `tests/test_version_propagation.py`,
+`plugins/hexaemeron/tests/test_phylax_model_proxy.py`, `.horos/boundary.json`,
+`.horos/candidates.json`, `.horos/census.json`.
+
+Complete replacement Tests: `plugins/hexaemeron/tests/test_carried_step_commits.py`
+grows by at least 7 cases, 6 CLI cases for `done merge-step` and `status` and
+one tip-read count case, to at least 19 tests. Existing Hexaemeron tests are
+unchanged except `refuse_rewritten_stack`'s callers reading its return value.
+Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-3.json`
+
+Complete replacement Disciplines: phylax: no new child process; the merge-time
+check reads the range `verify_local_range` already enumerated, and the shared
+tip map removes the repeated `ls-remote` reads (study section 9). ephoros: the
+`CARRY:` line answers study section 8's question 2, and the single-line unknown
+refusal answers question 4. elenchus: each new case is red on the parent of
+its fixing commit (study section 11). metron: the study's recorded cost of one
+added native process per healthy `next` (study section 10) is now checked by
+the tip-read count case rather than claimed. hypomnema: none new; the draft
+record from Step 1 already holds the three decisions.
+**Why.** Step 2, round 1 recorded two accepted findings. S2-R1-01: the carry
+guard re-read every unmerged tip through `git ls-remote` after
+`refuse_rewritten_stack` had read the waiting ones, three reads against the
+study's one added process on the three-step fixture; Step 2's receipted Exit
+bound `refuse_rewritten_stack` unchanged, so the shared read lands here.
+S2-R1-02: an unknown range printed two error lines; round 2 fixed it on the
+Step 2 stacked branch and this Exit keeps that property. The runbook copy joins
+Files because this amendment makes the Step 1 copy trail.
+**Steps touched.** Step 3.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
