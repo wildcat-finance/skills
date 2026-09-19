@@ -78,11 +78,15 @@ real integrations and hostile composition tests, not a larger vocabulary.
 hash-chained repository delivery through study, runbook, implementation, audit,
 prose, push, and integration. It owns a dedicated worktree, durable state,
 per-step receipts, stacked pull requests, signed integration checks, verified
-local checkpoint archives, recovery, and retirement.
+local checkpoint archives, recovery, and retirement. Every delegated envelope
+carries a deterministic task handle naming the run's task, phase and role, and
+a stale, malformed or delegate-less handle is refused before a packet is
+emitted or state is written.
 
-**Missing.** A reused collaboration handle can expose an earlier issue. Its
-checkpoint store is deliberately local; it is not safe cross-machine hand-off
-or distributed orchestration.
+**Missing.** Closed audit history still ships in the tree as frozen prose, and
+an audit round has no field for its own evidence, which lands among the leads
+it did not pursue. Its checkpoint store is deliberately local; it is not safe
+cross-machine hand-off or distributed orchestration.
 
 **With enough contribution.** Fiat could become a dependable delivery kernel
 for long-running agent work: resumable across controlled hosts, capable of
@@ -145,13 +149,18 @@ retrieved sentence traceable to exact source bytes.
 
 **Today.** [Lazarus](./plugins/lazarus) captures finite fixed-block Ethereum
 evidence, proves and verifies the supported state offline, replays the exact
-recorded RPC requests over loopback, and packages preservation releases. It now
+recorded RPC requests over loopback, and packages preservation releases. It
 reconstructs a scoped `receiptsRoot` relation for represented receipt payloads
-and log projections.
+and log projections, and accepts an empty block only at Ethereum's empty trie
+root, where it proves zero relations and is preserved as a verified zero rather
+than as missing evidence.
 
-**Missing.** Empty blocks have no receipt-witness representation. Transaction
-hashes and unrelated RPC evidence may be recorded but are not thereby proved;
-canonical-chain and provider-independence claims remain outside the fixture.
+**Missing.** Nothing the recorded evidence names as a next job. The empty-block
+witness closed the last held one and the frontier is mature; reopening it needs
+a maintainer's new external evidence. The standing boundaries are unchanged:
+transaction hashes and unrelated RPC evidence may be recorded but are not
+thereby proved, and canonical-chain and provider-independence claims remain
+outside the fixture.
 
 **With enough contribution.** Lazarus could become a general historical-test
 preservation layer for EVM software: minimal fixture discovery, multiple
@@ -211,12 +220,17 @@ It should never promote correlation into cause or authorise remediation.
 **Today.** [Anamnesis](./plugins/anamnesis) admits audit findings and the
 changes that answered them against an explicit rights basis, keeps the
 producer's bytes and identifiers unchanged, and curates, releases and projects
-read-only views for Elenchus and Synkrisis. Its committed pilot specimen
-rebuilds offline from preserved producer bytes.
+read-only views for Elenchus and Synkrisis. A corpus declares a closed scope
+that its release id hashes, so what it preserves cannot change without changing
+its id, and the mapper that reads a source is resolved through a registry keyed
+by name and version, so an unresolved name refuses before any record is
+written. Its committed pilot specimen rebuilds offline from preserved producer
+bytes.
 
-**Missing.** One producer's corpus is admitted. Nothing here establishes that
-the corpus is complete, that a finding is real, or that a remediation is
-correct.
+**Missing.** Every source admitted so far was produced here, and the mapper is
+declared once for the whole curation policy, so one corpus cannot hold a second
+producer's format beside an existing one. Nothing here establishes that a
+corpus is complete, that a finding is real, or that a remediation is correct.
 
 **With enough contribution.** Anamnesis could hold a cross-producer record of
 what auditors found and what teams changed in reply, so a later reader can ask
@@ -324,11 +338,16 @@ Ariadne. Changes to the tools themselves belong upstream.
 
 **Today.** [Alexandria](./plugins/alexandria) preserves heterogeneous lending
 inputs by digest, emits verified derived views, creates unsigned release
-statements, and answers address queries without hiding source coverage. One
-Compound v3 Phase 0 execution witness exists.
+statements, and answers address queries without hiding source coverage. A
+declared Ethereum USDC interval is collected in resumable shards against two
+live providers, and every preserved proxy log is attributed to an
+implementation epoch by block, transaction index and log index, with each owner
+re-derived offline when a release is checked. One Compound v3 Phase 0 execution
+witness exists.
 
-**Missing.** There is no resumable, reconciled collector for a declared
-Ethereum USDC interval.
+**Missing.** Reconciliation compares a log without its transaction index, so a
+second provider that reports a different position for the same log records
+agreement rather than a dispute.
 
 **With enough contribution.** Alexandria could become a durable public archive
 of raw lending evidence across venues and time: resumable capture, independent
@@ -373,10 +392,16 @@ mechanical content and relations of studies, risk registers, amendments,
 runbooks, and optional version records. It also checks one closed
 candidate-by-criterion design-evidence record progressively: first at design
 lock, then when each step and the final integration make more evidence due.
+Each declared success criterion is bound to the Exit that ran and carries a
+source-bound observed result, and missing, failed or substituted evidence is
+refused before a step completes.
 
-**Missing.** It proves that the matrix is complete and the declared evidence is
-present when due. It does not prove that a cited report is true or that the
-chosen design is correct.
+**Missing.** Nothing the recorded evidence names as a next job. The
+success-criteria join closed the last held one and the frontier is mature;
+reopening it needs a maintainer's new external evidence. It proves that the
+matrix is complete and that declared evidence is present and observed when due.
+It does not prove that a cited report is true, that a vacuous pass is
+meaningful, or that the chosen design is correct.
 
 **With enough contribution.** Protasis could support more project shapes,
 more typed evidence producers, and stronger traceability from assumptions and
