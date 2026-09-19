@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 29874558,
+    "bytes_blob": 29917937,
     "bytes_generated": 98
   },
   "entries": [
@@ -180,6 +180,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
+    },
+    {
+      "bytes": 41719,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1480-refuse-a-later-step-s-commits-carried-into.synopsis.md"
     },
     {
       "bytes": 21929,
@@ -1008,16 +1015,16 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 81662,
+      "bytes": 82967,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 40831",
+      "evidence": "mean line length above 400 in a window at offset 41483",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 112610,
+      "bytes": 112965,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 110562",
+      "evidence": "mean line length above 400 in a window at offset 110917",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },

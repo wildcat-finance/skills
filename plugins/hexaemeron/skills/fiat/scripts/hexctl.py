@@ -513,6 +513,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.65.1",
         "fiat-v6.66.1",
         "fiat-v6.67.1",
+        "fiat-v6.68.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -18394,7 +18395,9 @@ def refuse_unreceipted_run_branch_movement(
     )
 
 
-def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> None:
+def refuse_rewritten_stack(
+    base_dir: str, state: dict, current_step: int
+) -> dict[str, str]:
     """Refuse when a waiting branch no longer contains its receipted head.
 
     Equality is the zero-query path. A moved tip receives one bounded native
@@ -18405,8 +18408,15 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
 
     A step whose branch cannot be read is reported rather than skipped: an absent
     downstream branch during integration is not a normal state.
+
+    Returns the waiting-branch tips this walk read, branch name to observed
+    tip, so ``refuse_carried_step_commits`` reads only the branches the map
+    lacks and no tip is read twice in one command (audit finding S2-R1-01).
+    The current step is never read here: its branch may legitimately differ
+    from its receipt after audit-branch fast-forwards.
     """
     merged = as_dict(state.get("integrate")).get("merged") or []
+    tips: dict[str, str] = {}
     nonancestors, unknown, unreadable = [], [], []
     for step in state["steps"]:
         number = step["n"]
@@ -18422,6 +18432,7 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
+        tips[branch] = tip
         if tip == recorded:
             continue
         if len(recorded) < 40:
@@ -18478,6 +18489,248 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
             "stack, and do not import GitHub's public key to make the signature "
             "check pass."
         )
+    return tips
+
+
+def receipt_owned_commits(state: dict) -> dict[str, int]:
+    """Map each commit a push receipt owns to the step that receipted it.
+
+    Ownership is read from push receipts alone, never from a branch: a step
+    owns its ``verified_commits``, or only its ``head_commit`` when the receipt
+    predates that list. A step whose receipt records ``early_merge`` owns
+    nothing here, because its commits already sit inside the branch below it
+    by an adoption the run receipted (issue 1021). Merged steps keep their
+    ownership: their commits are ancestors of every higher recorded head and
+    so never appear in a higher step's gained range.
+    """
+    owned: dict[str, int] = {}
+    for step in state["steps"]:
+        push_receipt = as_dict(step["receipts"].get("push"))
+        if not push_receipt or as_dict(push_receipt.get("early_merge")):
+            continue
+        commits = push_receipt.get("verified_commits")
+        if not (isinstance(commits, list) and commits):
+            head = push_receipt.get("head_commit")
+            commits = [head] if isinstance(head, str) and head else []
+        for commit in commits:
+            if not isinstance(commit, str) or not COMMIT_RE.fullmatch(commit):
+                die(
+                    f"step {step['n']} push receipt names a commit that is not a "
+                    "full SHA; receipt ownership cannot be established from it"
+                )
+            owned.setdefault(commit, step["n"])
+    return owned
+
+
+def _native_gained_range(
+    base_dir: str, recorded: str, tip: str
+) -> list[str] | None:
+    """The commits ``recorded..tip`` from native local objects, or ``None``.
+
+    One bounded native child through ``bounded_probe`` with the pinned
+    ``_native_git_executable`` and ``_native_relation_environment``: scrubbed
+    environment, ``--no-replace-objects``, no lazy fetch, the ``GIT_TIMEOUT``
+    and ``GIT_OUTPUT_MAX`` bounds, and at most ``GIT_PATHS_MAX`` commits
+    admitted. ``bounded_probe`` rather than ``_native_relation_git`` because
+    the latter refuses through ``die`` on a failed child, and this reader's
+    caller owns the one refusal line: a start failure, timeout, output cap,
+    non-zero status, more than ``GIT_PATHS_MAX`` lines, or a line that is not
+    a full SHA all return ``None`` with nothing printed, and the caller says
+    the range is unknown without claiming a cause. Nothing is fetched.
+    """
+    pair = f"{recorded}..{tip}"
+    status, raw, failure = bounded_probe(
+        base_dir,
+        _native_git_executable(),
+        [
+            "--no-replace-objects",
+            "rev-list",
+            f"--max-count={GIT_PATHS_MAX + 1}",
+            pair,
+        ],
+        environment=_native_relation_environment(),
+        output_max=GIT_OUTPUT_MAX,
+        timeout=GIT_TIMEOUT,
+    )
+    if failure is not None or status != 0:
+        return None
+    try:
+        lines = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        return None
+    if len(lines) > GIT_PATHS_MAX:
+        return None
+    if any(not COMMIT_RE.fullmatch(line) for line in lines):
+        return None
+    return lines
+
+
+def carried_step_observation(
+    base_dir: str,
+    state: dict,
+    current_step: int,
+    tips: dict[str, str] | None = None,
+    *,
+    report: bool = False,
+    waiting_only: bool = False,
+) -> dict:
+    """Observe every unmerged step's gained range against receipt ownership.
+
+    The one reader behind ``refuse_carried_step_commits`` and the ``CARRY:``
+    lines of ``status``. ``tips`` carries the branch tips a caller already
+    read, as ``refuse_rewritten_stack`` returns them; only a branch the map
+    lacks is read here, through ``remote_branch_tip``, and the completed map
+    is returned so the caller reads no tip twice. A moved tip has its gained
+    range ``<recorded>..<tip>`` enumerated once with ``_native_gained_range``;
+    an equal tip asks Git nothing.
+
+    Returns ``{"tips", "carried", "unknown"}``. A ``carried`` entry names the
+    step, its role, branch, recorded head, observed tip, the first carried
+    commit in rev-list order and the step whose push receipt owns it. An
+    ``unknown`` entry names a step whose range could not be enumerated, or,
+    with ``report`` set, whose tip could not be read (its ``tip`` is ``None``)
+    or whose abbreviated recorded head resolves to no native commit (its
+    ``tip`` is the observed tip and the pair is reported as an unknown range).
+    Without ``report`` those two reads refuse through their own single ``die``
+    line, as they did before ``status`` shared this reader; ``status`` sets
+    ``report`` because it reports and refuses nothing, the way its ``STACK:``
+    line treats the run branch.
+    ``waiting_only`` leaves the current step out: ``done merge-step`` checks
+    the step being merged over the exact repaired range its receipt
+    enumerates, so it reads nothing here that ``refuse_rewritten_stack`` did
+    not already read.
+    """
+    merged = as_dict(state.get("integrate")).get("merged") or []
+    owned = receipt_owned_commits(state)
+    tips = dict(tips or {})
+    carried, unknown = [], []
+    for step in state["steps"]:
+        number = step["n"]
+        if number in merged or (waiting_only and number == current_step):
+            continue
+        push_receipt = as_dict(step["receipts"].get("push"))
+        recorded = push_receipt.get("head_commit")
+        if not recorded:
+            continue
+        branch = step_branch_name(state, step)
+        role = "the step being merged" if number == current_step else "a waiting step"
+        entry = {
+            "step": number,
+            "role": role,
+            "branch": branch,
+            "recorded": recorded,
+            "tip": None,
+        }
+        try:
+            if branch not in tips:
+                tips[branch] = remote_branch_tip(
+                    base_dir, branch, f"step {number} branch tip"
+                )
+            tip = tips[branch]
+            if tip == recorded:
+                continue
+            # The tip is in hand from here on, so a receipt whose abbreviated
+            # head resolves to no native commit reports its range as unknown
+            # rather than claiming the tip could not be read (S3-R1-01).
+            entry["tip"] = tip
+            if len(recorded) < 40:
+                recorded = _native_relation_commit(
+                    base_dir, recorded, f"step {number} recorded push head"
+                )
+                entry["recorded"] = recorded
+                if tip == recorded:
+                    continue
+        except SystemExit:
+            if not report:
+                raise
+            unknown.append(entry)
+            continue
+        gained = _native_gained_range(base_dir, recorded, tip)
+        if gained is None:
+            unknown.append(entry)
+            continue
+        for commit in gained:
+            owner = owned.get(commit)
+            if owner is not None and owner != number:
+                carried.append({**entry, "commit": commit, "owner": owner})
+                break
+    return {"tips": tips, "carried": carried, "unknown": unknown}
+
+
+def describe_carried_step(entry: dict) -> str:
+    """One line naming a carried step: the observation, the commit, its owner."""
+    return (
+        f"step {entry['step']} ({entry['role']}, '{entry['branch']}') recorded "
+        f"head {entry['recorded']} and observed tip {entry['tip']}; the first "
+        f"carried commit in rev-list order is {entry['commit']}, owned by step "
+        f"{entry['owner']}'s push receipt"
+    )
+
+
+def describe_unknown_carry(entry: dict) -> str:
+    """One line saying what could not be answered about a step's gained range."""
+    if entry["tip"] is None:
+        return (
+            f"step {entry['step']} ({entry['role']}, '{entry['branch']}') "
+            f"recorded head {entry['recorded']}; its tip could not be read, so "
+            "whether it carries another step's commit is unknown"
+        )
+    return (
+        f"step {entry['step']} ({entry['role']}, '{entry['branch']}') recorded "
+        f"head {entry['recorded']} and observed tip {entry['tip']}; the range "
+        f"{entry['recorded']}..{entry['tip']} is unknown"
+    )
+
+
+def refuse_carried_step_commits(
+    base_dir: str,
+    state: dict,
+    current_step: int,
+    tips: dict[str, str] | None = None,
+    *,
+    waiting_only: bool = False,
+) -> dict[str, str]:
+    """Refuse when an unmerged step branch gained a commit another step owns.
+
+    ``refuse_rewritten_stack`` admits any moved waiting tip whose receipted
+    head is still an ancestor, and a later step's branch merged into a lower
+    step's branch has exactly that shape, so the carried commits would be
+    receipted as the lower step's work at ``done merge-step``. This guard reads
+    every unmerged step, the current step included, through
+    ``carried_step_observation``: ``tips`` is the map ``refuse_rewritten_stack``
+    returned, so the waiting branches it read are not read again and a healthy
+    ``next`` costs one read here, the current step's. ``done merge-step``
+    passes ``waiting_only`` and adds no read: the step being merged is
+    intersected with the same ownership set over the exact repaired range
+    ``pr_base..remote_head`` its receipt enumerates. The completed map is
+    returned for the caller's later use. A gained range holding a commit that
+    another step's push receipt owns refuses before any state or ledger write;
+    a range that could not be enumerated refuses as unknown and names the
+    exact pair. The design and its alternatives are recorded in
+    ``docs/decisions/drafts/refuse-receipted-commits-carried-into-a-lower-step-branch.md``.
+    """
+    observed = carried_step_observation(
+        base_dir, state, current_step, tips, waiting_only=waiting_only
+    )
+    if observed["unknown"]:
+        die(
+            "a step branch has an unknown gained range: "
+            + "; ".join(describe_unknown_carry(entry) for entry in observed["unknown"])
+            + ". The commits it gained could not be enumerated from bounded "
+            "native local objects, so the answer is unknown rather than clean; "
+            "nothing was fetched and no cause is claimed. Restore readable "
+            "native objects and repository history, then retry."
+        )
+    if observed["carried"]:
+        die(
+            "a step branch gained a commit another step's push receipt owns: "
+            + "; ".join(describe_carried_step(entry) for entry in observed["carried"])
+            + ". The controller does not claim which operation moved the "
+            "branch. A later step's receipted commits reach the run branch "
+            "only through that step's own merge; land the stack from branches "
+            "holding only their own commits, and do not receipt this merge."
+        )
+    return observed["tips"]
 
 
 def done_merge_step(args, state: dict) -> None:
@@ -18501,7 +18754,13 @@ def done_merge_step(args, state: dict) -> None:
             f"('{pending['branch']}') is next, not step {args.step}"
         )
     refuse_unreceipted_run_branch_movement(args.dir, state, args.merge_commit)
-    refuse_rewritten_stack(args.dir, state, args.step)
+    tips = refuse_rewritten_stack(args.dir, state, args.step)
+    # Before `inspect_pull_request`: a carry into a waiting branch refuses
+    # here with no GitHub read made, from the tips already in hand. The step
+    # being merged is checked below over the exact range its receipt repairs.
+    refuse_carried_step_commits(
+        args.dir, state, args.step, tips, waiting_only=True
+    )
     step = state["steps"][args.step - 1]
     require_receipted_final_green(args.dir, state, step, "merging a step")
     push_receipt = as_dict(step["receipts"].get("push"))
@@ -18588,6 +18847,23 @@ def done_merge_step(args, state: dict) -> None:
             remote_head,
             f"step {step['n']} merge-time push repair",
         )
+        # The range about to be receipted as this step's work is the range
+        # just enumerated; a commit in it that another step's push receipt
+        # owns refuses before `effective_push` exists, with no process added.
+        owned = receipt_owned_commits(state)
+        for repaired_sha in repaired_local:
+            owner = owned.get(repaired_sha)
+            if owner is not None and owner != args.step:
+                die(
+                    f"the repaired range {pr_base}..{remote_head} for step "
+                    f"{args.step} ('{pending['branch']}') holds {repaired_sha}, the "
+                    f"first commit in it owned by step {owner}'s push receipt. "
+                    "The controller does not claim which operation moved the "
+                    "branch. A later step's receipted commits reach the run "
+                    "branch only through that step's own merge; land the stack "
+                    "from branches holding only their own commits, and do not "
+                    "receipt this merge."
+                )
         # The recorded push attribution describes the head this repair replaced,
         # so it is re-derived here rather than carried forward stale.
         repaired_github, repaired_attribution = verified_github_attribution(
@@ -28925,7 +29201,10 @@ def cmd_next(args) -> None:
         # carry a sync the controller has not receipted yet, and `done sync-run`
         # owns that topology, so the check stops when the stack does.
         landed = refuse_unreceipted_run_branch_movement(args.dir, state)
-        refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
+        tips = refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
+        refuse_carried_step_commits(
+            args.dir, state, directive.get("step") or 0, tips
+        )
         if landed is not None:
             # The directed merge has landed and only its receipt is owed. The
             # directive says so and carries the exact receipt, so an operator
@@ -29491,6 +29770,17 @@ def cmd_status(args) -> None:
         movement = unreceipted_run_branch_movement(args.dir, state)
         if movement is not None:
             print(f"STACK: {describe_run_branch_movement(movement)}")
+        # The same reader `next` refuses with, in report mode: one line per
+        # carried step, an unknown answer printed as unknown, nothing refused.
+        merged_steps = as_dict(state.get("integrate")).get("merged") or []
+        unmerged = [step["n"] for step in state["steps"] if step["n"] not in merged_steps]
+        carry = carried_step_observation(
+            args.dir, state, unmerged[0] if unmerged else 0, report=True
+        )
+        for entry in carry["carried"]:
+            print(f"CARRY: {describe_carried_step(entry)}")
+        for entry in carry["unknown"]:
+            print(f"CARRY: {describe_unknown_carry(entry)}")
         sync = as_dict(as_dict(state.get("integrate")).get("sync"))
         product = as_dict(sync.get("product_evidence"))
         revalidation = as_dict(sync.get("revalidation"))
