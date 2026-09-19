@@ -43,6 +43,24 @@
       "bytes": 19149,
       "sha256": "4235f9d249821ff6ab552c49f95690f5dc6cf107b4fbd8d3d669d0f0d6a9360d",
       "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/dokimasia/docs/dokimasia-study.md"
+    },
+    {
+      "path": "docs/kickoff/1374/capture.md",
+      "bytes": 14194,
+      "sha256": "79f1fa210f25cece3975ffd130b7e1c39edc11737c573e18a61cb47729d5cb44",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/docs/kickoff/1374/capture.md"
+    },
+    {
+      "path": "docs/kickoff/1374/capture.json",
+      "bytes": 31105,
+      "sha256": "ca9988ec1e9bbe02eeca35ae2628748b0a3f1e440ab9ca8d5ea14d0b8848a80d",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/docs/kickoff/1374/capture.json"
+    },
+    {
+      "path": "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md",
+      "bytes": 2657,
+      "sha256": "379a9b961d38a8cce0435b21778cf6fc552415a6c1b3bb88e3d0c957cc6e4e93",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/anamnesis/docs/decisions/ADR-003-source-rights.md"
     }
   ],
   "alexandria": {
@@ -54,14 +72,17 @@
     "remote_retrieval_operation": null
   },
   "capture": {
-    "selected_target": null,
     "source_revision": null,
     "manifest_sha256": null,
     "raw_bytes": null,
     "component_count": null,
     "component_census": null,
     "historical_343_component_case_source": null,
-    "split_parts": null
+    "split_parts": null,
+    "selected_targets": [
+      "wildcat-v1-ethereum-mainnet",
+      "wildcat-v2-ethereum-mainnet"
+    ]
   },
   "dokimasia": {
     "evidence_class": "recorded",
@@ -87,8 +108,8 @@
     "storage_destinations": null
   },
   "operator_decisions": {
-    "named_decision_maker": null,
-    "decision_reference": null,
+    "named_decision_maker": "the Creator",
+    "decision_reference": "Creator instruction in task 01a0bab4-76ef-71d3-923c-ea6001aa55bc on 2026-09-19; initial Miskatonic use and audience only",
     "store_provider": null,
     "account_or_namespace": null,
     "bucket_or_equivalent": null,
@@ -96,7 +117,13 @@
     "retrieval_identity_convention": null,
     "retention_policy": null,
     "retention_owner": null,
-    "access_policy": null,
+    "access_policy": {
+      "scope": "Initial Miskatonic contract source, RPC chain captures including #1731, internal query schemas and relationships derived across venues.",
+      "audience": "internal",
+      "external_sharing_authorised": false,
+      "named_reader_accounts": null,
+      "dokimasia_workbook_covered": false
+    },
     "access_owner": null,
     "rotation_policy": null,
     "rotation_owner": null,
@@ -109,11 +136,29 @@
     "issue_state_at_observation": "open",
     "accepted_target_matched_record": null,
     "record_sha256": null,
-    "intended_audience": null
+    "intended_audience": null,
+    "declared_target": "Anamnesis audit corpus selected in #1351",
+    "applicability_to_selected_inputs": "unresolved issue dependency; no inspected source match to Wildcat V1/V2 captures or the Dokimasia workbook. The initial chain-capture scope requests no generic Anamnesis sign-off.",
+    "alexandria_component_declarations": {
+      "access": [
+        "public",
+        "restricted",
+        "private"
+      ],
+      "redistribution": [
+        "permitted",
+        "restricted",
+        "prohibited",
+        "unknown"
+      ],
+      "delivered_capture_declarations": null
+    },
+    "dokimasia_workbook_use_decision": null,
+    "capture_specific_anamnesis_record_requested": false
   },
   "retrieval_rehearsal": {
     "status": "not-run",
-    "reason": "Selected capture, approved store and target-matched rights handoff are absent.",
+    "reason": "The Creator directed internal use for initial Miskatonic material. Capture manifests, named store and remaining operating decisions are pending from the #1731 handoff; the #1364 source match and separate workbook permissions remain unresolved.",
     "successful_object": null,
     "missing_object": null,
     "denied_object": null,
@@ -123,5 +168,60 @@
   "dependent_work": {
     "capture_storage_implementation": "https://github.com/wildcat-finance/skills/issues/1373",
     "workbook_reconstruction": "https://github.com/wildcat-finance/skills/issues/1380"
+  },
+  "handoff_observed_at": "2026-09-19T18:36:56Z",
+  "capture_store_handoff": {
+    "issue": "https://github.com/wildcat-finance/skills/issues/1731",
+    "state_at_observation": "open",
+    "status": "in-progress",
+    "routing_authority": "the Creator, in the current task on 2026-09-19",
+    "routing_task_id": "01a0bab4-76ef-71d3-923c-ea6001aa55bc",
+    "selection_record": "docs/kickoff/1374/capture.json",
+    "selected_targets": [
+      "wildcat-v1-ethereum-mainnet",
+      "wildcat-v2-ethereum-mainnet"
+    ],
+    "scope": "One bounded Wildcat V1 interval and one bounded Wildcat V2 interval; no completeness claim.",
+    "accepted_capture_record": null,
+    "accepted_store_policy": null,
+    "progress_pull_requests": [
+      {
+        "url": "https://github.com/wildcat-finance/skills/pull/1747",
+        "head": "e3bda259c8029fe553dd1401e644c7a1e84bb63b",
+        "state_at_observation": "open",
+        "subject": "Design records and conformance harness"
+      },
+      {
+        "url": "https://github.com/wildcat-finance/skills/pull/1753",
+        "head": "5caddcd7ede4f779e334ca16a020ed7a75d50e64",
+        "state_at_observation": "open",
+        "subject": "Registry dispatch"
+      }
+    ]
+  },
+  "record_responsibilities": {
+    "location": "docs/kickoff/1373/store.md",
+    "human_decisions": "Storage location, permitted readers, retention, credential ownership and spending limit. Choices may be supplied in the task or a linked decision record.",
+    "capture_producer": "Supply the files and manifest.",
+    "delivery_agent": "Record the decisions; run retrieval tests and record commands, results and digests.",
+    "reviewer": "Check the results against the acceptance criteria."
+  },
+  "initial_miskatonic_use_decision": {
+    "decision_maker": "the Creator",
+    "reference": "Creator instruction in task 01a0bab4-76ef-71d3-923c-ea6001aa55bc on 2026-09-19; initial Miskatonic use and audience only",
+    "sources": [
+      "selected contract source",
+      "chain data captured through RPC, including Wildcat V1/V2 under #1731"
+    ],
+    "internal_outputs": [
+      "query schemas",
+      "relationships derived across venues"
+    ],
+    "intended_use": "internal storage and analysis",
+    "audience": "internal",
+    "external_sharing_authorised": false,
+    "future_third_party_integrations_covered": false,
+    "third_party_licence_terms_asserted": false,
+    "dokimasia_workbook_covered": false
   }
 }
