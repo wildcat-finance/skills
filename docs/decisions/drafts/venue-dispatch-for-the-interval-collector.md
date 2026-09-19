@@ -9,10 +9,10 @@ set out.
 ## Context
 
 `plugins/alexandria/scripts/usdc_interval.py` collected only Ethereum USDC
-Comet intervals, so its `Builder` validated every deployment registry by
-importing `alexandria_lib.compound_registry.validate_registry` directly and
-its coverage-gap accounting for the `registry` component was one Compound-
-specific sentence written inline. [#1731](https://github.com/wildcat-finance/skills/issues/1731)
+Comet intervals. Its `Builder` validated every deployment registry by
+importing `alexandria_lib.compound_registry.validate_registry` directly, and
+its coverage-gap accounting for the `registry` component was one
+Compound-specific sentence written inline. [#1731](https://github.com/wildcat-finance/skills/issues/1731)
 asks the same collector to serve a second, Wildcat estate whose deployment
 registry carries neither Compound's declared format
 (`alexandria-compound-v3-registry/v1`) nor its pinned bytes
@@ -51,8 +51,8 @@ A plan naming a venue absent from `VENUES` refuses by name
 (`AlexandriaError: the interval plan names an unregistered venue ...`)
 rather than falling back to Compound's validator. A registry whose declared
 format does not match what the resolved venue's validator expects refuses
-inside that venue's own check — for Compound,
-`compound_registry.validate_registry`'s existing format check — rather than
+inside that venue's own check, which for Compound is
+`compound_registry.validate_registry`'s existing format check, rather than
 being compared against an unrelated venue's pinned bytes. The two refusal
 specimens already recorded at `docs/kickoff/1374/evidence/commands.json`
 (commands 5 and 6: a registry declaring the Wildcat V2 HooksFactory format,
