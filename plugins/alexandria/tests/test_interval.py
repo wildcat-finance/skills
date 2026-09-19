@@ -1052,6 +1052,124 @@ class SubjectSetTests(unittest.TestCase):
         with self.assertRaisesRegex(AlexandriaError, "names no subject"):
             interval.validate_epochs({}, 1000, 1099)
 
+    def test_an_epoch_cannot_belong_to_a_different_subject_than_its_key(self):
+        first, second = address_at(0), address_at(1)
+        for validator, make_epoch in (
+            (interval.validate_epochs, one_epoch),
+            (interval.validate_block_epochs, block_only_epoch),
+        ):
+            with self.subTest(validator=validator.__name__):
+                table = {first: [make_epoch(second, 1000, 1099, HASH, OTHER_HASH)]}
+                with self.assertRaisesRegex(AlexandriaError, "subject"):
+                    validator(table, 1000, 1099)
+
+    def test_a_log_cannot_claim_another_subjects_epoch(self):
+        first, second = address_at(0), address_at(1)
+        table = {first: [one_epoch(second, 1000, 1099, HASH, OTHER_HASH)]}
+        records = [log_record(first, 1000, 0, 0, HASH, OTHER_HASH)]
+        with self.assertRaisesRegex(AlexandriaError, "subject"):
+            interval.attribute_logs(records, [first, second], {"start": "1000", "end": "1099"}, table)
+
+    def test_an_undeclared_epoch_subject_refuses_even_without_logs(self):
+        first, second = address_at(0), address_at(1)
+        table = {
+            subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]
+            for subject in (first, second)
+        }
+        with self.assertRaisesRegex(AlexandriaError, "undeclared subject"):
+            interval.attribute_logs([], [first], {"start": "1000", "end": "1099"}, table)
+
+    def test_wrong_epoch_container_for_the_subject_form_refuses_by_name(self):
+        subject = address_at(0)
+        table = [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]
+        record = log_record(subject, 1000, 0, 0, HASH, OTHER_HASH)
+        for subjects, epochs in (([subject], table), (subject, {subject: table})):
+            for records in ([], [record]):
+                with self.subTest(subjects=subjects, records=len(records)):
+                    error = None
+                    try:
+                        interval.attribute_logs(records, subjects, {"start": "1000", "end": "1099"}, epochs)
+                    except Exception as caught:
+                        error = caught
+                    self.assertIsInstance(error, AlexandriaError)
+
+    def test_each_subject_can_reach_max_epochs_when_the_sum_exceeds_it(self):
+        table = {
+            subject: [
+                block_only_epoch(subject, 1000 + index, 1000 + index, HASH, OTHER_HASH)
+                for index in range(MAX_EPOCHS)
+            ]
+            for subject in (address_at(0), address_at(1))
+        }
+        interval.validate_block_epochs(table, 1000, 1000 + MAX_EPOCHS - 1)
+
+    def test_subject_attribution_rows_validate_without_losing_their_subject(self):
+        first, second = address_at(0), address_at(1)
+        table = {
+            subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]
+            for subject in (first, second)
+        }
+        records = [
+            log_record(first, 1000, 0, 0, HASH, OTHER_HASH),
+            log_record(second, 1000, 0, 1, HASH, OTHER_HASH),
+        ]
+        rows = interval.attribute_logs(records, [first, second], {"start": "1000", "end": "1099"}, table)
+        try:
+            interval.validate_attributions(rows)
+        except AlexandriaError as error:
+            self.fail(str(error))
+        self.assertEqual([row["subject"] for row in rows], [first, second])
+
+    def test_subject_attribution_rows_refuse_a_malformed_or_mixed_subject_shape(self):
+        subject = address_at(0)
+        table = {subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]}
+        records = [log_record(subject, 1000, 0, 0, HASH, OTHER_HASH)]
+        rows = interval.attribute_logs(records, [subject], {"start": "1000", "end": "1099"}, table)
+        malformed = deepcopy(rows)
+        malformed[0]["subject"] = "not-an-address"
+        with self.assertRaises(AlexandriaError):
+            interval.validate_attributions(malformed)
+        mixed = [deepcopy(rows[0]), deepcopy(rows[0])]
+        del mixed[1]["subject"]
+        with self.assertRaises(AlexandriaError):
+            interval.validate_attributions(mixed)
+
+    def test_one_subjects_upgrade_does_not_reject_another_subjects_log(self):
+        first, second = address_at(0), address_at(1)
+        upgrade = log_record(first, 1050, 0, 0, HASH, OTHER_HASH)
+        upgrade["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + second[2:]]
+        ordinary = log_record(second, 1050, 0, 1, HASH, OTHER_HASH)
+        try:
+            rows = interval.proxy_log_positions([upgrade, ordinary], [first, second], {"start": "1000", "end": "1099"})
+        except AlexandriaError as error:
+            self.fail(str(error))
+        self.assertEqual([row["kind"] for row in rows], ["upgrade-boundary", "proxy-log"])
+
+    def test_two_subjects_can_each_upgrade_in_the_same_block(self):
+        subjects = [address_at(0), address_at(1)]
+        records = []
+        for index, subject in enumerate(subjects):
+            record = log_record(subject, 1050, 0, index, HASH, OTHER_HASH)
+            record["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + address_at(2)[2:]]
+            records.append(record)
+        try:
+            rows = interval.proxy_log_positions(records, subjects, {"start": "1000", "end": "1099"})
+        except AlexandriaError as error:
+            self.fail(str(error))
+        self.assertEqual([row["subject"] for row in rows], subjects)
+
+    def test_upgrade_collisions_within_one_subject_still_refuse(self):
+        subject = address_at(0)
+        upgrade = log_record(subject, 1050, 0, 0, HASH, OTHER_HASH)
+        upgrade["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + address_at(1)[2:]]
+        ordinary = log_record(subject, 1050, 0, 1, HASH, OTHER_HASH)
+        duplicate_upgrade = deepcopy(ordinary)
+        duplicate_upgrade["topics"] = upgrade["topics"]
+        for other in (ordinary, duplicate_upgrade):
+            with self.subTest(kind=other["topics"][0]):
+                with self.assertRaises(AlexandriaError):
+                    interval.proxy_log_positions([upgrade, other], [subject], {"start": "1000", "end": "1099"})
+
 
 class SchemaTests(unittest.TestCase):
     def schema(self, name):

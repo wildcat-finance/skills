@@ -712,6 +712,25 @@ MAX_POSITION_INDEX = 10 ** MAX_INTEGER_DIGITS - 1
 MAX_POSITION_QUANTITY_LENGTH = len(hex(MAX_POSITION_INDEX))
 
 
+def _declared_subjects(subjects):
+    """Return the declared addresses after checking their shape and uniqueness."""
+    if isinstance(subjects, str):
+        return (_address(subjects, "position proxy"),)
+    if not isinstance(subjects, (list, tuple, set, frozenset)) or not subjects:
+        raise AlexandriaError("declared subjects must be a non-empty collection of addresses")
+    if len(subjects) > MAX_SUBJECTS:
+        raise AlexandriaError(f"declared subjects exceed the {MAX_SUBJECTS}-subject limit")
+    normalised = []
+    seen = set()
+    for subject in subjects:
+        address = _address(subject, "position subject")
+        if address in seen:
+            raise AlexandriaError(f"declared subject {address} is duplicated")
+        seen.add(address)
+        normalised.append(address)
+    return tuple(normalised)
+
+
 def proxy_log_positions(records, subjects, interval):
     """Validate every preserved proxy coordinate before deriving ownership.
 
@@ -722,20 +741,7 @@ def proxy_log_positions(records, subjects, interval):
     route it to that subject's own epoch table).
     """
     single = isinstance(subjects, str)
-    if single:
-        allowed = (_address(subjects, "position proxy"),)
-    else:
-        if not isinstance(subjects, (list, tuple, set, frozenset)) or not subjects:
-            raise AlexandriaError("declared subjects must be a non-empty collection of addresses")
-        normalised = []
-        seen = set()
-        for subject in subjects:
-            address = _address(subject, "position subject")
-            if address in seen:
-                raise AlexandriaError(f"declared subject {address} is duplicated")
-            seen.add(address)
-            normalised.append(address)
-        allowed = tuple(normalised)
+    allowed = _declared_subjects(subjects)
     allowed_set = set(allowed)
     if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
         raise AlexandriaError("position interval has an unknown shape")
@@ -789,9 +795,9 @@ def proxy_log_positions(records, subjects, interval):
             _upgrade_log(record, address, len(rows))
             if block == start:
                 raise AlexandriaError(f"first-block upgrade at {coordinate} has no preceding implementation evidence")
-            if block in upgrades:
+            if (address, block) in upgrades:
                 raise AlexandriaError(f"multiple upgrades in block {block} are unsupported")
-            upgrades[block] = tx
+            upgrades[(address, block)] = tx
         row = {"block_number": str(block), "block_hash": block_hash,
                "transaction_hash": tx_hash, "transaction_index": tx,
                "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"}
@@ -799,7 +805,8 @@ def proxy_log_positions(records, subjects, interval):
             row["subject"] = address
         rows.append(row)
     for row in rows:
-        if row["kind"] == "proxy-log" and upgrades.get(int(row["block_number"])) == row["transaction_index"]:
+        subject = allowed[0] if single else row["subject"]
+        if row["kind"] == "proxy-log" and upgrades.get((subject, int(row["block_number"]))) == row["transaction_index"]:
             raise AlexandriaError(f"ordinary proxy log at ({row['block_number']}, {row['transaction_index']}, {row['log_index']}) in an upgrade transaction is unsupported")
     return rows
 
@@ -863,8 +870,8 @@ def validate_epochs(epochs, start, end):
         if not epochs:
             raise AlexandriaError("epoch table names no subject")
         for subject, table in epochs.items():
-            _address(subject, "epoch table subject")
             _validate_position_table(table, start, end, pinned_start=False)
+            _validate_epoch_owner(subject, table)
         return
     _validate_position_table(epochs, start, end, pinned_start=True)
 
@@ -927,6 +934,41 @@ def _attribute_into(rows, epochs) -> None:
         row["epoch_index"] = index
 
 
+def _validate_epoch_owner(subject, table, *, single=False):
+    """Require every epoch in one keyed table to name that subject."""
+    if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+        raise AlexandriaError("epoch table subject is not a lowercase address")
+    if not isinstance(table, list) or not table:
+        raise AlexandriaError("epoch subject table must be a non-empty list")
+    for epoch in table:
+        if not isinstance(epoch, dict) or epoch.get("proxy") != subject:
+            if single:
+                raise AlexandriaError("an epoch does not belong to the plan's market")
+            raise AlexandriaError("an epoch does not belong to its table subject")
+
+
+def validate_epoch_subjects(epochs, subjects):
+    """Return the epochs after checking their subjects and container shape."""
+    allowed = _declared_subjects(subjects)
+    if isinstance(subjects, str):
+        if not isinstance(epochs, list):
+            raise AlexandriaError("a single subject requires a flat epoch list")
+        tables = {allowed[0]: epochs}
+    else:
+        if not isinstance(epochs, dict):
+            raise AlexandriaError("a subject set requires an epoch table keyed by subject")
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        if set(epochs) - set(allowed):
+            raise AlexandriaError("epoch table names an undeclared subject")
+        tables = epochs
+    entries = []
+    for subject, table in tables.items():
+        _validate_epoch_owner(subject, table, single=isinstance(subjects, str))
+        entries.extend(table)
+    return entries
+
+
 def attribute_logs(records, subjects, interval, epochs):
     """Assign each accepted log once; announcements mark boundaries only.
 
@@ -939,6 +981,11 @@ def attribute_logs(records, subjects, interval, epochs):
     for cannot own a log; one that claims it refuses.
     """
     validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    if isinstance(subjects, str):
+        if not isinstance(epochs, list):
+            raise AlexandriaError("a single subject requires a flat epoch list")
+    else:
+        validate_epoch_subjects(epochs, subjects)
     rows = proxy_log_positions(records, subjects, interval)
     if isinstance(subjects, str):
         _attribute_into(rows, epochs)
@@ -954,14 +1001,30 @@ def attribute_logs(records, subjects, interval, epochs):
     return rows
 
 
-def validate_attributions(rows):
-    """Reject open shapes and Python bool/integer equality before replay comparison."""
+def validate_attributions(rows, *, subjects=None):
+    """Reject open or mixed shapes and bool/integer equality before replay.
+
+    Supplying subjects also binds each row to the plan's subject form and set.
+    """
     required = {"block_number", "block_hash", "transaction_hash", "transaction_index", "log_index", "epoch_index", "kind"}
     if not isinstance(rows, list):
         raise AlexandriaError("log attributions are not a list")
+    allowed = None if subjects is None else set(_declared_subjects(subjects))
+    has_subject = (
+        not isinstance(subjects, str) if subjects is not None
+        else bool(rows and isinstance(rows[0], dict) and "subject" in rows[0])
+    )
+    if has_subject:
+        required = required | {"subject"}
     for row in rows:
         if not isinstance(row, dict) or set(row) != required:
             raise AlexandriaError("log attribution has an unknown shape")
+        if has_subject:
+            subject = row["subject"]
+            if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+                raise AlexandriaError("log attribution subject is not a lowercase address")
+            if allowed is not None and subject not in allowed:
+                raise AlexandriaError("log attribution names an undeclared subject")
         _decimal(row["block_number"], "attribution block")
         _hash(row["block_hash"], "attribution block hash")
         _hash(row["transaction_hash"], "attribution transaction hash")
@@ -1077,8 +1140,8 @@ def validate_block_epochs(epochs, start: int, end: int) -> None:
         if not epochs:
             raise AlexandriaError("epoch table names no subject")
         for subject, table in epochs.items():
-            _address(subject, "epoch table subject")
             _validate_block_table(table, start, end, pinned_start=False)
+            _validate_epoch_owner(subject, table)
         return
     _validate_block_table(epochs, start, end, pinned_start=True)
 
@@ -1624,6 +1687,7 @@ __all__ = [
     "log_identity",
     "validate_checkpoint",
     "validate_epochs",
+    "validate_epoch_subjects",
     "validate_evidence_classes",
     "validate_reconciliation",
     "validate_shard_coverage",

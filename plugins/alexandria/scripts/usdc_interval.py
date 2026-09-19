@@ -69,6 +69,7 @@ from alexandria_lib.interval import (
     slot_word_address,
     upgrade_logs,
     validate_epochs,
+    validate_epoch_subjects,
     validate_plan,
     validate_reconciliation,
     validate_shard_coverage,
@@ -1619,10 +1620,11 @@ def check_interval(release_root: Path) -> dict:
     if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT):
         raise AlexandriaError("the interval receipt has an unknown shape")
     (validate_block_epochs if legacy else validate_epochs)(receipt["epochs"], start, end)
-    if not legacy:
-        validate_attributions(receipt["log_attributions"])
     subjects = _plan_subjects(plan)
-    for epoch in receipt["epochs"]:
+    epoch_entries = validate_epoch_subjects(receipt["epochs"], subjects)
+    if not legacy:
+        validate_attributions(receipt["log_attributions"], subjects=subjects)
+    for epoch in epoch_entries:
         owned = epoch["proxy"] == subjects if isinstance(subjects, str) else epoch["proxy"] in subjects
         if not owned or epoch["chain"] != plan["chain"]:
             raise AlexandriaError("an epoch does not belong to the plan's market")
@@ -1646,7 +1648,7 @@ def check_interval(release_root: Path) -> dict:
     # the opening phase's header reads, the shard hash from what the collector
     # saw at that block while walking the shards.
     shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
-    for epoch in receipt["epochs"]:
+    for epoch in epoch_entries:
         boundary = int(epoch["end_block"])
         if boundary in shard_hashes and epoch["end_hash"] != shard_hashes[boundary]:
             raise AlexandriaError(
@@ -1952,7 +1954,7 @@ def check_interval(release_root: Path) -> dict:
 
     return {
         "receipt_semantics": "v1-block-only" if legacy else "v2-positional",
-        "epochs": len(receipt["epochs"]),
+        "epochs": len(epoch_entries),
         "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
         "reconciliation": reconciliation["reconciliation"]["status"],
@@ -2035,7 +2037,10 @@ def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
             raise AlexandriaError(f"the implementation-code component holds {address} twice")
         codes[address] = hashlib.sha256(runtime_code(record["code"], address)).hexdigest()
     implementations = {}
-    for epoch in receipt["epochs"]:
+    epoch_entries = receipt["epochs"]
+    if isinstance(epoch_entries, dict):
+        epoch_entries = validate_epoch_subjects(epoch_entries, list(epoch_entries))
+    for epoch in epoch_entries:
         address = epoch["implementation"]
         if address not in codes:
             raise AlexandriaError(
