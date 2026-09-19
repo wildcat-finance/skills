@@ -1,0 +1,656 @@
+{
+  "candidates": [
+    {
+      "id": "venue-module-registry",
+      "summary": "One VENUES table keyed by the plan's venue; each module owns its registry pin, subject set, epoch model and coverage gaps."
+    },
+    {
+      "id": "registry-format-dispatch",
+      "summary": "Dispatch on the registry document's own format string rather than on the plan's declared venue."
+    },
+    {
+      "id": "venue-parameter-table",
+      "summary": "Keep one code path and supply the subject set, epoch parameters and digest as an operator-side parameter document per estate."
+    },
+    {
+      "id": "separate-wildcat-collector",
+      "summary": "Leave usdc_interval.py untouched and ship a second collector serving both Wildcat estates."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "existing-build-check-path",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "venue-registry-agreement-checked",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "venue-pin-in-reviewed-code",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "scope-decision-invariant",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "venue-coupled-edit-sites",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "new-release-components",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "compound-path-still-builds",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "wildcat-v2-plan-builds-and-checks",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "wildcat-v1-plan-builds-and-checks",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "shared-subject-attributed-per-venue",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "v1-source-gap-declared",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "constructed-staging-declared-in-coverage",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "undeclared-venue-refuses",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "space",
+      "id": "component-budget-respected",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "venue-module-registry",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/venue-module-registry-existing-build-check-path.json",
+        "sha256": "741a7bfd008b207f912828040b4b5c5ea6a14a350bfc3c94ad5ba5aa61c39347"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-module-registry",
+      "criterion": "venue-registry-agreement-checked",
+      "report": {
+        "path": "reports/selection/venue-module-registry-venue-registry-agreement-checked.json",
+        "sha256": "52b0cb10ebaca4875e9b3f5531b28fb5d4db0e8565f89b9437bfb1855eed6ab8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-module-registry",
+      "criterion": "venue-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/venue-module-registry-venue-pin-in-reviewed-code.json",
+        "sha256": "85b4a73a780a1397bd91c19c1c9ca3899ecbd87b5bf786537adf8fe6aa77b856"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-module-registry",
+      "criterion": "scope-decision-invariant",
+      "report": {
+        "path": "reports/selection/venue-module-registry-scope-decision-invariant.json",
+        "sha256": "713695e4563f25bc4d1e013350e640bfa42a060ee9c5c1db3504a8791a5c0bca"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-module-registry",
+      "criterion": "venue-coupled-edit-sites",
+      "report": {
+        "path": "reports/selection/venue-module-registry-venue-coupled-edit-sites.json",
+        "sha256": "e99071c611ca0734d989a2b23fd13db8816c558725d28fb7250cb6054cabfbf9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-module-registry",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/venue-module-registry-new-release-components.json",
+        "sha256": "3e7cee16a938b2839bcd88af7f21869a107b3b5475ed9a4ff81ed15a79f5d8bf"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "compound-path-still-builds",
+      "report": "reports/conformance/venue-module-registry-compound-path-still-builds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py compound-path-still-builds --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "wildcat-v2-plan-builds-and-checks",
+      "report": "reports/conformance/venue-module-registry-wildcat-v2-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v2-plan-builds-and-checks --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "wildcat-v1-plan-builds-and-checks",
+      "report": "reports/conformance/venue-module-registry-wildcat-v1-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v1-plan-builds-and-checks --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "shared-subject-attributed-per-venue",
+      "report": "reports/conformance/venue-module-registry-shared-subject-attributed-per-venue.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py shared-subject-attributed-per-venue --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "v1-source-gap-declared",
+      "report": "reports/conformance/venue-module-registry-v1-source-gap-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v1-source-gap-declared --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "constructed-staging-declared-in-coverage",
+      "report": "reports/conformance/venue-module-registry-constructed-staging-declared-in-coverage.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py constructed-staging-declared-in-coverage --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "undeclared-venue-refuses",
+      "report": "reports/conformance/venue-module-registry-undeclared-venue-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py undeclared-venue-refuses --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-module-registry",
+      "criterion": "component-budget-respected",
+      "report": "reports/conformance/venue-module-registry-component-budget-respected.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py component-budget-respected --candidate venue-module-registry",
+      "state": "pending"
+    },
+    {
+      "candidate": "registry-format-dispatch",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/registry-format-dispatch-existing-build-check-path.json",
+        "sha256": "eb7d389f475d31779b34539e51559ad8cf239e3db463355038349ebf447bf0a2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-format-dispatch",
+      "criterion": "venue-registry-agreement-checked",
+      "report": {
+        "path": "reports/selection/registry-format-dispatch-venue-registry-agreement-checked.json",
+        "sha256": "a3d617685b2c99381dbebc964a97fe1a9fa2f62cab4719ca8aaf97156d0294f1"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "registry-format-dispatch",
+      "criterion": "venue-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/registry-format-dispatch-venue-pin-in-reviewed-code.json",
+        "sha256": "4e797c65838864248e63bfe9f5336768c038069b1fa0eb3c9fa18ad539f48cce"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-format-dispatch",
+      "criterion": "scope-decision-invariant",
+      "report": {
+        "path": "reports/selection/registry-format-dispatch-scope-decision-invariant.json",
+        "sha256": "b6a44144722a6e30d7efbe3c04bb7fa223f1e593655d48190b56d40eb2e8fcd0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-format-dispatch",
+      "criterion": "venue-coupled-edit-sites",
+      "report": {
+        "path": "reports/selection/registry-format-dispatch-venue-coupled-edit-sites.json",
+        "sha256": "ae747a6f7a64048c67f3f30447609b2b0827fbfa755284307680ce6fa1a49585"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-format-dispatch",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/registry-format-dispatch-new-release-components.json",
+        "sha256": "97d34724d6da420e999b62e47a2174d8a1f527d5ab6706b62c34b52feb87f4df"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "compound-path-still-builds",
+      "report": "reports/conformance/registry-format-dispatch-compound-path-still-builds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py compound-path-still-builds --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "wildcat-v2-plan-builds-and-checks",
+      "report": "reports/conformance/registry-format-dispatch-wildcat-v2-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v2-plan-builds-and-checks --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "wildcat-v1-plan-builds-and-checks",
+      "report": "reports/conformance/registry-format-dispatch-wildcat-v1-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v1-plan-builds-and-checks --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "shared-subject-attributed-per-venue",
+      "report": "reports/conformance/registry-format-dispatch-shared-subject-attributed-per-venue.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py shared-subject-attributed-per-venue --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "v1-source-gap-declared",
+      "report": "reports/conformance/registry-format-dispatch-v1-source-gap-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v1-source-gap-declared --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "constructed-staging-declared-in-coverage",
+      "report": "reports/conformance/registry-format-dispatch-constructed-staging-declared-in-coverage.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py constructed-staging-declared-in-coverage --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "undeclared-venue-refuses",
+      "report": "reports/conformance/registry-format-dispatch-undeclared-venue-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py undeclared-venue-refuses --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-format-dispatch",
+      "criterion": "component-budget-respected",
+      "report": "reports/conformance/registry-format-dispatch-component-budget-respected.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py component-budget-respected --candidate registry-format-dispatch",
+      "state": "pending"
+    },
+    {
+      "candidate": "venue-parameter-table",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/venue-parameter-table-existing-build-check-path.json",
+        "sha256": "3fc3e9d875475824673b6281d5373c58536de603145e66dd7ce95805a3f505c9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-parameter-table",
+      "criterion": "venue-registry-agreement-checked",
+      "report": {
+        "path": "reports/selection/venue-parameter-table-venue-registry-agreement-checked.json",
+        "sha256": "5cabf76c5bd401e3f07c2e1d23795765abf250b4c37e176749b8e41617be4b07"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "venue-parameter-table",
+      "criterion": "venue-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/venue-parameter-table-venue-pin-in-reviewed-code.json",
+        "sha256": "a20622e0c6826d4849fce7812ba2e2013b2a34b73554bbd6cea79d7c18a9dd77"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "venue-parameter-table",
+      "criterion": "scope-decision-invariant",
+      "report": {
+        "path": "reports/selection/venue-parameter-table-scope-decision-invariant.json",
+        "sha256": "a39166b743505fd0f01343bb1ff50a62bd25ea85b62f840ad20cce1e84ed4241"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-parameter-table",
+      "criterion": "venue-coupled-edit-sites",
+      "report": {
+        "path": "reports/selection/venue-parameter-table-venue-coupled-edit-sites.json",
+        "sha256": "b177ed6a5b7e3680e4fce78a53e24ba7d99a3c5e6d8326b58ec0a073742417a0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "venue-parameter-table",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/venue-parameter-table-new-release-components.json",
+        "sha256": "12b3496b7939c35560c7da20b143a38bf411356fe0aab8e92d3125202ca21fe7"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "compound-path-still-builds",
+      "report": "reports/conformance/venue-parameter-table-compound-path-still-builds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py compound-path-still-builds --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "wildcat-v2-plan-builds-and-checks",
+      "report": "reports/conformance/venue-parameter-table-wildcat-v2-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v2-plan-builds-and-checks --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "wildcat-v1-plan-builds-and-checks",
+      "report": "reports/conformance/venue-parameter-table-wildcat-v1-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v1-plan-builds-and-checks --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "shared-subject-attributed-per-venue",
+      "report": "reports/conformance/venue-parameter-table-shared-subject-attributed-per-venue.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py shared-subject-attributed-per-venue --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "v1-source-gap-declared",
+      "report": "reports/conformance/venue-parameter-table-v1-source-gap-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v1-source-gap-declared --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "constructed-staging-declared-in-coverage",
+      "report": "reports/conformance/venue-parameter-table-constructed-staging-declared-in-coverage.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py constructed-staging-declared-in-coverage --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "undeclared-venue-refuses",
+      "report": "reports/conformance/venue-parameter-table-undeclared-venue-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py undeclared-venue-refuses --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "venue-parameter-table",
+      "criterion": "component-budget-respected",
+      "report": "reports/conformance/venue-parameter-table-component-budget-respected.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py component-budget-respected --candidate venue-parameter-table",
+      "state": "pending"
+    },
+    {
+      "candidate": "separate-wildcat-collector",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/separate-wildcat-collector-existing-build-check-path.json",
+        "sha256": "9e4494126c3402f26a5c27ece9527593c9e47537236a7c525efd3a1ac57fa85f"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "separate-wildcat-collector",
+      "criterion": "venue-registry-agreement-checked",
+      "report": {
+        "path": "reports/selection/separate-wildcat-collector-venue-registry-agreement-checked.json",
+        "sha256": "dca76d437295fa1ae691caf1bd01e04358388550325a19d1cf3a3a4b68056034"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wildcat-collector",
+      "criterion": "venue-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/separate-wildcat-collector-venue-pin-in-reviewed-code.json",
+        "sha256": "fd7e11ca1b8e3bccdf70ab55463cf540452c89c9015066f0754d4ddeac7b2b3d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wildcat-collector",
+      "criterion": "scope-decision-invariant",
+      "report": {
+        "path": "reports/selection/separate-wildcat-collector-scope-decision-invariant.json",
+        "sha256": "98e6adce74afcefeaf9d539e479cf229688c418950a394f73504e71355e81d99"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wildcat-collector",
+      "criterion": "venue-coupled-edit-sites",
+      "report": {
+        "path": "reports/selection/separate-wildcat-collector-venue-coupled-edit-sites.json",
+        "sha256": "60e13981495893ea0f8bee9dc3626e724dc3101d413c4c151b0d63b4f486cd77"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wildcat-collector",
+      "criterion": "new-release-components",
+      "report": {
+        "path": "reports/selection/separate-wildcat-collector-new-release-components.json",
+        "sha256": "bfe9829dae1640ef3eec11dc50a1f50b9a42bcc53add291a5d517491ffbd01c2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "compound-path-still-builds",
+      "report": "reports/conformance/separate-wildcat-collector-compound-path-still-builds.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py compound-path-still-builds --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "wildcat-v2-plan-builds-and-checks",
+      "report": "reports/conformance/separate-wildcat-collector-wildcat-v2-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v2-plan-builds-and-checks --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "wildcat-v1-plan-builds-and-checks",
+      "report": "reports/conformance/separate-wildcat-collector-wildcat-v1-plan-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wildcat-v1-plan-builds-and-checks --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "shared-subject-attributed-per-venue",
+      "report": "reports/conformance/separate-wildcat-collector-shared-subject-attributed-per-venue.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py shared-subject-attributed-per-venue --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "v1-source-gap-declared",
+      "report": "reports/conformance/separate-wildcat-collector-v1-source-gap-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v1-source-gap-declared --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "constructed-staging-declared-in-coverage",
+      "report": "reports/conformance/separate-wildcat-collector-constructed-staging-declared-in-coverage.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py constructed-staging-declared-in-coverage --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "undeclared-venue-refuses",
+      "report": "reports/conformance/separate-wildcat-collector-undeclared-venue-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py undeclared-venue-refuses --candidate separate-wildcat-collector",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wildcat-collector",
+      "criterion": "component-budget-respected",
+      "report": "reports/conformance/separate-wildcat-collector-component-budget-respected.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py component-budget-respected --candidate separate-wildcat-collector",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "venue-module-registry",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

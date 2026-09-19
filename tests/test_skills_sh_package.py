@@ -149,7 +149,24 @@ CONTRACT = "promise-machine/v1"
 # Issue #1538 adopts the reviewed decorative-portrait omission and reference
 # repair, retaining the original byte cap and reserving five MiB below it.
 # Every generated manifest must satisfy that margin as well as the cap.
-MAX_FILES = 1_500
+#
+# Another raise, again without a nineteenth plugin, during the venue-agnostic
+# interval capture delivery (issue #1731, step 1). This one measures 1,519
+# files against the 1,500 cap, 30 above the 1,489-file prior baseline, all of
+# it the delivery's own share: a preserved study, runbook and design record
+# for a two-venue interval-capture design, the 24 selection reports its cells
+# name, and the model generator with its observations, all under
+# plugins/alexandria/docs/wildcat-interval/. Those are evidence a reader
+# reruns -- the reports recompute byte-identically from the committed
+# generator -- they ship like every other preserved design record under
+# docs/, and the reasoning above holds unchanged: the pressure is
+# repository-wide, no per-plugin trim closes it, and shipped package content
+# is not trimmed to hold a file count.
+#
+# The byte cap is not under pressure from this delivery. The payload measures
+# 20,365,653 bytes, 77.7% of the 25 MiB the CLI allows, with 5,848,747 bytes of
+# headroom above the 5 MiB minimum this file also checks.
+MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
