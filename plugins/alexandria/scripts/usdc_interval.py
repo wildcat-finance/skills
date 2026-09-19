@@ -73,7 +73,7 @@ from alexandria_lib.interval import (
     validate_reconciliation,
     validate_shard_coverage,
 )
-from alexandria_lib.compound_registry import validate_registry
+from alexandria_lib.venues import VENUES
 from alexandria_lib.paths import read_confined_file
 from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES, ingest, verify
 
@@ -1181,7 +1181,11 @@ class Builder:
         self.classes = declared_classes(plan)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
-        validate_registry(registry)
+        venue = plan["venue"]
+        if venue not in VENUES:
+            raise AlexandriaError(f"the interval plan names an unregistered venue {venue!r}")
+        self.venue = VENUES[venue]
+        self.venue.validate_registry(registry)
         self.registry = registry
         if not isinstance(created_at, str) or TIMESTAMP_RE.fullmatch(created_at) is None:
             raise AlexandriaError("the release creation time is not a UTC timestamp")
@@ -1358,7 +1362,7 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/shards",
             }]
-        gaps = _gaps(component, self.plan, self.registry, reconciliation)
+        gaps = _gaps(component, self.plan, self.registry, reconciliation, self.venue)
         unsupported = _unsupported(component)
         scope_interval = {
             "end": interval["end"],
@@ -1454,19 +1458,10 @@ def _unsupported(component: str) -> list:
     return []
 
 
-def _gaps(component: str, plan, registry, reconciliation) -> list:
+def _gaps(component: str, plan, registry, reconciliation, venue) -> list:
     gaps = []
     if component == "registry":
-        others = [
-            f"{entry['network']}/{entry['market']}"
-            for entry in registry["entries"]
-            if not (entry["network"] == "mainnet" and entry["market"] == "usdc")
-        ]
-        gaps.append(
-            f"{len(others)} of the {len(registry['entries'])} registry entries at the pin "
-            "were not collected; this release covers the Ethereum USDC Comet only"
-        )
-        return gaps
+        return venue.gaps(registry)
     for shard in reconciliation["shards"]:
         if shard["status"] != "complete":
             gaps.append(
