@@ -61,7 +61,7 @@ The source-owned Elenchus declaration supplies the exact command, report format 
 
 The latest complete replacement of a step's Exit or Tests field supplies its effective commands. Superseded commands retain their raw source, offset, digest and `superseded-source` status; their obsolete interfaces are not relabelled as currently valid. Commands outside those fields remain active. This selects effective source within the captured document without changing any earlier runbook bytes.
 
-The result retains `operation_ran:false`. That field states that the declared command did not execute; source parsing and interface checking cannot supply a test result. The full CLI and adapter bytes remain part of replay even when the visible argument declarations have not changed.
+The result retains `operation_ran:false`. That field states that the declared command did not execute; source parsing and interface checking cannot supply a test result. Replay still checks the complete CLI bytes when the visible argument declarations have not changed. New captures bind the full current adapter digest.
 
 After a checkpoint relocation, the receipt keeps its original `source_root` and absolute `execution_argv`. Replay checks that this historical operand still derives from the captured root and unchanged relative report declaration. It independently validates the report destination under the current root, including its path refusals. The stored operand grants no authority to execute at the historical root, and replay does not rewrite the receipt or relax full source matching. Fiat's checkpoint identity and ledger checks own relocation.
 
@@ -71,7 +71,26 @@ Newly initialized runs record `contracts.gate_commands` with `protasis-gate-comm
 
 Legacy runs without that marker retain their earlier contract. They do not receive fabricated validation records, and inserting gate evidence into an unmarked run refuses. This distinction preserves historical receipt bytes without describing them as newly checked interfaces.
 
-Historical gate records retain the exact command text, offset and digest from each captured runbook prefix. Current-interface replay validates the latest effective result against the current CLI and adapter source. A stale source or changed command/report binding cannot silently reuse its prior result. The repair workflow must produce freshly validated evidence through the owning runbook amendment process while keeping prior records intact.
+Historical gate records retain the exact command text, offset and digest from each captured runbook prefix. Current-interface replay validates the latest effective result against the current CLI and adapter source. A stale CLI source or changed command/report binding cannot reuse its prior result. Unknown adapter digests also refuse. These changes require freshly validated evidence through the owning runbook amendment process while keeping prior records intact.
+
+Replay also accepts two reviewed, released adapter digests when every other
+field agrees with current validation, subject to the relocation rules above:
+
+| Released source | Adapter SHA-256 |
+| --- | --- |
+| [Hexaemeron 1.6.54](https://github.com/wildcat-finance/skills/blob/41116f4f9901b7b70a22db9f42235af65951957e/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093` |
+| [Hexaemeron 1.6.58](https://github.com/wildcat-finance/skills/blob/04968a0bc5b3636687136661257897ea10e622cf/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6` |
+
+Those sources differ only in the module pin for the Hexaemeron test runner.
+`REPLAY_COMPATIBLE_ADAPTERS` records this closed compatibility decision. It
+does not admit an unknown adapter or relax CLI, command, argument, declaration,
+report or runbook matching. Replay uses the current validator, executes no old
+adapter, and leaves the historical receipt unchanged. A run whose commands
+still match can therefore retain its post-push checkpoint boundary without an
+amendment. Adding another digest requires review of that released source and
+regression evidence; equality of visible arguments alone does not suffice.
+This compatibility rule governs the gate receipt only. Success-criteria
+admission and execution retain their separate checks.
 
 Inspect the current boundary with plain `hexctl status` or `hexctl status --field gate_command_status`. The separate field reports `legacy`, `awaiting-runbook`, `current`, `stale-or-invalid` or `pending-amendment`; a pending amendment reports `validation:not-complete`. It is a derived observation, not a new state field or a full-status JSON mutation. Inspection does not clear a refusal or complete an interrupted amendment.
 
