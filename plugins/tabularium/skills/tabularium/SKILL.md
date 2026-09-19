@@ -10,7 +10,7 @@ description: >
   live data, infer who controls an address, rate a counterparty, authenticate a
   publisher or claim an independently proved chain boundary.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 <p align="center">
@@ -81,12 +81,23 @@ one-block canonical-proxy release, and
 activity release from the Euler V3 API. `Euler V2` names the protocol
 generation; `Euler V3` names the hosted API. Keep those fields separate.
 
+Those three were published under canonical event schema v2 and stay under it.
+[`aave-v4-v1`](../../examples/aave-v4-v1/README.md),
+[`euler-v1-v1`](../../examples/euler-v1-v1/README.md) and
+[`euler-v2-v1`](../../examples/euler-v2-v1/README.md) supersede them under
+schema v3, each built from its v0 `source.json` bytes. Read a v0 release when
+you need the bytes that were published; read its v1 successor when you need
+the current envelope.
+
 From the repository root:
 
 ```bash
 python3 plugins/tabularium/examples/aave-v4-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v1-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v2-v0/rebuild.py
+python3 plugins/tabularium/examples/aave-v4-v1/rebuild.py
+python3 plugins/tabularium/examples/euler-v1-v1/rebuild.py
+python3 plugins/tabularium/examples/euler-v2-v1/rebuild.py
 python3 plugins/tabularium/examples/compound-v3-phase0-v0/rebuild.py
 ```
 
@@ -111,6 +122,11 @@ python3 scripts/tabularium.py build \
 
 python3 scripts/tabularium.py verify <release-dir>/coverage.json
 ```
+
+`build` writes canonical event and coverage `schema_version` 3 unless
+`--event-schema` names another supported version, and `verify` reads 2 and 3.
+Build a new release under the default; pass `--event-schema 2` only to
+reproduce a release that was published under 2.
 
 `build` checks the capture's source digest, byte count, adapter and declared
 scope before it writes anything. Venue validation then checks the preserved

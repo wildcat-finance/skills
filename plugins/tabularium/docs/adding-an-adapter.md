@@ -27,11 +27,21 @@ the native record attached to every mapped row.
 6. **Publish a new release.** Add source, capture, canonical and coverage files
    under a new release directory. Do not alter an earlier interpretation.
 
-Aave v4 and Euler releases carry canonical event and coverage `schema_version`
-2. The current Aave v4 adapter maps preserved consensus logs; v2 supports block
-numbers and nullable hashes, multiple exact amount legs, owner/sub-account
-context and distinct debt-transfer and interest-accrual families. Add new schema versions rather than widening an old release's
-meaning in place.
+Three version axes stay separate, and a document that means one of them names
+it. The canonical event and coverage `schema_version` is the envelope a release
+was written to. The protocol generation is the venue's own deployment, such as
+`aave-v4` or `euler-v2`. The source API version is the service that answered
+the capture, such as `euler-v3`. Every release writes all three.
+
+`build` writes `schema_version` 3 and `verify` reads 2 and 3. The v0 Aave v4
+and Euler releases were published under 2 and stay under 2; their v1
+successors carry 3. Schema 3 keeps the v2 envelope -- block numbers and
+nullable hashes, multiple exact amount legs, owner and sub-account context, and
+distinct debt-transfer and interest-accrual families -- and closes the admitted
+vocabulary against the adapter tuple table, so venue, action, event family,
+mapping rule, instrument type and amount kind must be the constants of one
+registered adapter module. Add a new schema version rather than widening an old
+release's meaning in place.
 
 Review the venue's economic meaning as well as its JSON shape. If a common
 family would imply more than the native event establishes, narrow the action

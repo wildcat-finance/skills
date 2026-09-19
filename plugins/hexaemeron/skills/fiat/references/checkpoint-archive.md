@@ -154,6 +154,14 @@ verification recorded by the push receipt. No raw `gpg` output. Only the run's
 receipted commits (`push.verified_commits`) are covered; merges on the
 integration branch are never claimed.
 
+OpenPGP fingerprints remain 40 or 64 uppercase hexadecimal characters. SSH
+fingerprints use the canonical `SHA256:` form. Both formats still require a
+valid native Git signature and a fingerprint in the archive's pinned set.
+The configured `gpg.ssh.allowedSignersFile` may be outside the worktree, relative
+to its root, or use Git's `~` expansion. Export captures one bounded, stable,
+regular file through a path without symbolic links; multiple hard links also
+refuse. Inspection and restore use only the carried public key material.
+
 What the re-verification does and does not establish. `inspect` ignores the
 proof's own claimed status and re-runs `git verify-commit` in a disposable
 keyring, so a proof that asserts a status its commits do not have is caught.

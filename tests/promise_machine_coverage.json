@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "0cbfdb1ad15001f3b504fe8cb4517d8a6d53bc6782536ba87957c4ace86b31b2"
+        "sha256": "14c260c5c03942bedddec9817c5863978416fc4365c8cb5ae77147fd87c489fd"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "b263215028a19e08347624b339ebc35295d043db551350cdc2083757a4ad6234"
+        "sha256": "253912e655b83e931c65c69b0cda3ea01c318fe4a4baddf9c5dc6cfc0f0d62dc"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "6be46219f4885493a9ecdae86b8f62840d888cb189081ba580e9a6186bf98d77"
+        "sha256": "0069d394aabce24f8b1ad6b67cccf3e768d52a07524f575fe3dc6f3b7c40aaf3"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "0aa1160be3e77af8404106cc68e0f5936ce1f16b797339dccb3f711022622319"
+      "sha256": "2a1a8a60c1e4627dc4f2c17a441d5fb67bfbcc21ea86c5601e495d8390672849"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -4527,7 +4527,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "dc35d35fd3d69f4eebaf66ad3baa4495bed6d7b545138917f89111efd965ed5a"
+      "sha256": "057cdbce821b1f8763a9d7461087218fd242e3c45cd71f04dedfdf1be3bccf5a"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4543,7 +4543,7 @@
     },
     "reporter": {
       "path": "plugins/hexaemeron/tests/run_tests.py",
-      "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b"
+      "sha256": "c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8"
     },
     "tests": [
       {
@@ -5170,16 +5170,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "negative",
-        "sha256": "32d8291bbd3b77cc69bb887f9d484312041f23c2cfab4b57e18c92fa07b45a58"
+        "sha256": "5cde1c9c6e5c8ef835c666339d06e3ad25edc788ce149424407bf798f83168d4"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "positive",
-        "sha256": "32d8291bbd3b77cc69bb887f9d484312041f23c2cfab4b57e18c92fa07b45a58"
+        "sha256": "5cde1c9c6e5c8ef835c666339d06e3ad25edc788ce149424407bf798f83168d4"
       },
       "reader": "native-json-v1",
       "selector": "test_restore_from_archive_recreates_repository_and_controller_state",
-      "sha256": "e20e8913a25ac6746d22db3431cc9fe1fb3e452d5ddf8861a0095b118bdb90ad",
+      "sha256": "85edbbecc1cb830ee1ccec36bd0ef7f13f31f4a2b7b09b2ac618a593b2e2ebd2",
       "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py"
     },
     "fiat-controller-checkpoint": {
@@ -5346,12 +5346,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "302876cc70bb69b396ecb61dc5f84e47f2e3d452dcf1e1e35167c0b726a2709c"
+        "sha256": "3a7d983f375c6345e14f94af6f268b53b6cf885d290a376a46f4fc0af45a1fad"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "302876cc70bb69b396ecb61dc5f84e47f2e3d452dcf1e1e35167c0b726a2709c"
+        "sha256": "3a7d983f375c6345e14f94af6f268b53b6cf885d290a376a46f4fc0af45a1fad"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -6203,16 +6203,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "negative",
-        "sha256": "0c9e521b4186622a023385e7424dc2b78ea91422378ba295d5cb008f79a3d742"
+        "sha256": "2c51223c259c71ed5e3908c6cadd0e98ab88852762e837eb3d269c6cf27472e2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "positive",
-        "sha256": "0c9e521b4186622a023385e7424dc2b78ea91422378ba295d5cb008f79a3d742"
+        "sha256": "2c51223c259c71ed5e3908c6cadd0e98ab88852762e837eb3d269c6cf27472e2"
       },
       "reader": "native-json-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
-      "sha256": "992977f6fdd4c710eb262d8ef2d447e4ebe1daf4fb29585430796fb43739023a",
+      "sha256": "e89fedb8d713ae0baba6b1998d45123b8d26c25e7be0371b233d0735849128e1",
       "source": "plugins/tabularium/tests/test_release.py"
     },
     "tabularium-release-verification": {
@@ -6234,16 +6234,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "negative",
-        "sha256": "6cf755429e77009e7e87cf7830bdb16ad18e465e4f9e2202057fd5c26ecb27eb"
+        "sha256": "256b0400d71b2d0a7f501d9093f2461f4980ccbc78f61d00acc6952e709d68f2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "positive",
-        "sha256": "6cf755429e77009e7e87cf7830bdb16ad18e465e4f9e2202057fd5c26ecb27eb"
+        "sha256": "256b0400d71b2d0a7f501d9093f2461f4980ccbc78f61d00acc6952e709d68f2"
       },
       "reader": "native-json-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
-      "sha256": "992977f6fdd4c710eb262d8ef2d447e4ebe1daf4fb29585430796fb43739023a",
+      "sha256": "e89fedb8d713ae0baba6b1998d45123b8d26c25e7be0371b233d0735849128e1",
       "source": "plugins/tabularium/tests/test_release.py"
     }
   },

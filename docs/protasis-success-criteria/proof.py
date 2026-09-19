@@ -531,8 +531,8 @@ def check_joined_demonstration(root):
     signed fixture commit is available, and keeps every refusal bounded.  A
     small unsigned fixture is used by copy-mode tests; those tests still run
     the controller's init/readback surface and use the same execution adapter
-    with signature checking disabled.  No fixture output is treated as a
-    semantic judgement about the criterion.
+    with signature checking disabled, but cannot publish a joined proof.
+    No fixture output is treated as a semantic judgement about the criterion.
     """
     controller_path = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     executor_path = "plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py"
@@ -572,12 +572,13 @@ def check_joined_demonstration(root):
     def git_call(directory, *argv, check=False):
         try:
             return subprocess.run(
-                ["git", "-C", str(directory), *argv],
+                ["git", "-C", str(directory), "-c", "commit.gpgsign=false", *argv],
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 check=check,
+                timeout=20,
             )
         except (OSError, subprocess.SubprocessError) as error:
             raise Refusal("fixture-git-unavailable") from error
@@ -659,6 +660,10 @@ def check_joined_demonstration(root):
             process = git_call(origin, "commit", "-q", "-m", "fixture source")
             if process.returncode != 0:
                 raise Refusal("fixture-source-commit-refused")
+        for name, value in (("user.name", "Fixture"),
+                            ("user.email", "fixture@example.invalid"),
+                            ("commit.gpgsign", "false")):
+            git_call(origin, "config", "--local", name, value, check=True)
         init = controller_call(
             origin, "init", "--topic", "joined-demonstration", "--base", "main"
         )
@@ -671,7 +676,45 @@ def check_joined_demonstration(root):
             raise Refusal("controller-worktree-readback") from error
         return origin, worktree, init
 
-    def create_study_and_runbook(origin, worktree):
+    def configure_fixture_signing(origin, base, *, shared_clone):
+        """Keep the temporary signer and trust file inside fixture custody."""
+        if not shared_clone:
+            return False
+        tool = shutil.which("ssh-keygen", path=os.pathsep.join(
+            ("/usr/bin", "/bin", "/usr/local/bin", "/opt/homebrew/bin")
+        ))
+        if tool is None:
+            return False
+        key = base / "signer"
+        try:
+            tool = str(Path(tool).resolve(strict=True))
+            generated = subprocess.run(
+                [tool, "-q", "-t", "ed25519", "-N", "", "-C",
+                 "fixture@example.invalid", "-f", str(key)],
+                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, check=False, timeout=20,
+            )
+            if generated.returncode != 0:
+                return False
+            with key.with_suffix(".pub").open("r", encoding="ascii") as stream:
+                public_key = stream.read(4097)
+            if len(public_key) > 4096:
+                raise Refusal("fixture-public-key-bound")
+            signers = base / "allowed-signers"
+            signers.write_text(
+                'fixture@example.invalid namespaces="git" ' + public_key,
+                encoding="ascii",
+            )
+        except (OSError, UnicodeError, subprocess.SubprocessError):
+            return False
+        for name, value in (("gpg.format", "ssh"),
+                            ("user.signingkey", str(key)),
+                            ("gpg.ssh.program", tool),
+                            ("gpg.ssh.allowedSignersFile", str(signers))):
+            git_call(origin, "config", "--local", name, value, check=True)
+        return True
+
+    def create_study_and_runbook(origin, worktree, signing_ready):
         copy_design_record(worktree)
         command = (
             "python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py "
@@ -733,16 +776,16 @@ def check_joined_demonstration(root):
         # Source snapshots require a clean tree.  The controller state is
         # ignored by the fixture, while these three source files are committed
         # as one signed (or explicitly unsigned fallback) implementation base.
-        git_call(worktree, "config", "user.name", "Laurence Day")
-        git_call(worktree, "config", "user.email", "laurence@wildcat.finance")
-        git_call(worktree, "config", "user.signingkey", "B83B60AE16F5DD1A")
         git_call(worktree, "add", "study.md", "runbook.md", "steps.json")
-        signed = git_call(
-            worktree, "-c", "commit.gpgsign=true", "commit", "-S",
-            "-m", "fixture implementation source",
-        )
-        if signed.returncode != 0:
-            unsigned = git_call(worktree, "commit", "-m", "fixture implementation source")
+        signed = None
+        if signing_ready:
+            signed = git_call(
+                worktree, "-c", "commit.gpgsign=true", "commit", "-S",
+                "-m", "fixture implementation source",
+            )
+        if signed is None or signed.returncode != 0:
+            unsigned = git_call(worktree, "commit", "--no-gpg-sign", "-m",
+                                "fixture implementation source")
             if unsigned.returncode != 0:
                 raise Refusal("fixture-implementation-commit-refused")
             signed_commit = False
@@ -769,7 +812,10 @@ def check_joined_demonstration(root):
     with tempfile.TemporaryDirectory(prefix="criteria-joined-") as scratch:
         base = Path(scratch).resolve()
         origin, worktree, init_result = build_fixture(base, shared_clone=shared_clone)
-        command, state, implementation_commit, branch, signed_commit = create_study_and_runbook(origin, worktree)
+        signing_ready = configure_fixture_signing(origin, base, shared_clone=shared_clone)
+        command, state, implementation_commit, branch, signed_commit = create_study_and_runbook(
+            origin, worktree, signing_ready
+        )
         calls = [{"case": "controller-init", "result": init_result}]
 
         missing = controller_call(worktree, "next")
@@ -829,12 +875,9 @@ def check_joined_demonstration(root):
             )
             if not positive_attempt.get("settled"):
                 raise Refusal("adapter-positive-settlement-missing")
-            positive = {"status": "completed", "returncode": 0,
-                        "signature_required": False}
-            join = admission["join"]
-            run_id = positive_attempt["run_id"]
-            init_id = positive_attempt["init_id"]
-            calls.append({"case": "positive-execution", "result": positive})
+            # An unsigned adapter observation is not a controller settlement
+            # or a replayable terminal receipt. Keep the published proof gated.
+            raise Refusal("unsigned-fixture-not-admitted")
 
         wrong_step = refusal_case(
             "wrong-step",

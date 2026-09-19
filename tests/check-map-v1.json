@@ -114,7 +114,8 @@
       "cwd": ".",
       "kind": "suite",
       "script": "plugins/hexaemeron/tests/run_tests.py",
-      "jobs_flag": "--jobs"
+      "jobs_flag": "--jobs",
+      "timeout_seconds": 4200
     },
     "imprimatur-suite": {
       "title": "Imprimatur suite",

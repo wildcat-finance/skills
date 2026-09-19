@@ -209,10 +209,23 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("still pending" in f for f in findings), findings)
 
     def test_scope_approval_does_not_resolve_missing_source_evidence(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
         self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
+
+    def test_a_resolved_row_cannot_keep_a_blocker(self):
+        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        target["blocker"] = "a gap somebody forgot to clear"
+        self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
+
+    def test_a_resolved_contract_needs_a_source_commit(self):
+        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        contract = next(c for c in target["deployment"]["contracts"] if c["role"] == "hooks-instance")
+        contract["code_match"]["source_commit"] = None
+        findings = self.findings()
+        self.assertTrue(any("resolved without a source match" in f for f in findings), findings)
+
 
     def test_a_recorded_decision_without_a_reference_is_named(self):
         decision = self.registry["decisions"][0]
@@ -342,6 +355,183 @@ class MutationTests(unittest.TestCase):
             self.module.read_json(self.path, limit=64)
         with self.assertRaises(self.module.RegistryError):
             self.module.read_json(Path('/dev/null'))
+
+
+
+
+class EstateMapTests(unittest.TestCase):
+    """The 2026-09-18 estate map (#1590) is complete and bound to the resolved row."""
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        self.estate = json.loads((REGISTRY.parent / "evidence" / "ethereum-mainnet-1590.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((REGISTRY.parent / "evidence" / "source-match-1590.json").read_text(encoding="utf-8"))
+
+    def test_the_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(self.row["status"], "resolved")
+        for key in ("blocker", "unresolved", "documentation_gap"):
+            self.assertNotIn(key, self.row)
+        self.assertEqual(self.row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1590")
+
+    def test_every_instance_and_market_is_a_row_contract_with_a_source_commit(self):
+        contracts = {c["address"].lower(): c for c in self.row["deployment"]["contracts"]}
+        instances = self.estate["hooks_instances"]
+        markets = self.estate["markets"]
+        self.assertEqual(len(instances), 42)
+        self.assertEqual(len(markets), 80)
+        for entry in instances + markets:
+            with self.subTest(address=entry["address"]):
+                contract = contracts[entry["address"].lower()]
+                self.assertEqual(contract["code_keccak256"], entry["code_keccak256"])
+                self.assertTrue(contract["code_match"]["source_commit"])
+
+    def test_every_instance_and_market_reproduces_modulo_immutables(self):
+        for i in self.estate["hooks_instances"]:
+            self.assertEqual(i["runtime_vs_template_deployed_bytecode"]["differing_bytes_outside_immutables"], 0, i["address"])
+            self.assertIsNotNone(i["deployed"], i["address"])
+        for m in self.estate["markets"]:
+            self.assertEqual(m["runtime_vs_market_deployed_bytecode"]["differing_bytes_outside_immutables"], 0, m["address"])
+            self.assertTrue(m["listed_under_instance"], m["address"])
+            self.assertIsNotNone(m["deployed"], m["address"])
+
+    def test_the_market_and_instance_maps_agree_with_the_factory_events(self):
+        events = self.estate["factory_events"]
+        self.assertEqual(events["by_event"]["MarketDeployed"], len(self.estate["markets"]))
+        self.assertEqual(events["by_event"]["HooksInstanceDeployed"], len(self.estate["hooks_instances"]))
+        self.assertEqual(events["by_event"]["HooksTemplateAdded"], len(self.estate["hooks_factory"]["templates"]))
+        by_template = {t["template"]: t for t in self.estate["hooks_factory"]["templates"]}
+        for i in self.estate["hooks_instances"]:
+            self.assertIn(i["address"], by_template[i["template"]]["instances"])
+        for m in self.estate["markets"]:
+            self.assertIn(m["address"], by_template[m["template"]]["markets"])
+
+    def test_every_role_provider_is_either_the_borrower_or_the_matched_open_access_provider(self):
+        for provider in self.estate["role_providers"]:
+            with self.subTest(provider=provider["address"]):
+                if provider["address"] == "0x5620553d8881335f74ad19259daacd1d9b373101":
+                    self.assertEqual(provider["sourcify_match"], "match")
+                    self.assertEqual(self.matches["open_access_role_provider"]["reproduction"]["runtime_modulo_immutables"]["differing_bytes_outside_immutables"], 0)
+                else:
+                    self.assertTrue(provider["is_the_borrower_of_every_instance_using_it"])
+
+    def test_the_located_sources_reproduce_the_chain(self):
+        self.assertTrue(self.matches["wildcat_fee_recipient"]["deployed_bytecode"]["equals_onchain_runtime"])
+        collateral = self.matches["collateral"]
+        self.assertEqual(collateral["factory"]["runtime_modulo_immutables"]["differing_bytes_outside_immutables"], 0)
+        self.assertEqual(collateral["lens"]["runtime_modulo_immutables"]["differing_bytes_outside_immutables"], 0)
+        self.assertTrue(collateral["collateral_init_code_storage"]["compiled_creation_bytecode"]["keccak256_equals_stored_init_code"])
+        self.assertTrue(self.matches["third_fixed_term_template"]["reproduction"]["equals_stored_init_code"])
+        self.assertTrue(all(row["identical_at_all_six"] for row in self.matches["emitter_pin_binding"]["paths"] if row["path"] != "src/access/FixedTermHooks.sol"))
+
+
+class V1SourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-19 source recovery (#1748) closes the row's unresolved list."""
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v1-ethereum-mainnet")
+        self.matches = json.loads((REGISTRY.parent / "evidence" / "source-match-1748.json").read_text(encoding="utf-8"))
+
+    def test_the_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(self.row["status"], "resolved")
+        for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+            self.assertNotIn(key, self.row)
+        self.assertEqual(self.row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1748")
+
+    def test_every_deployment_contract_carries_a_source_commit(self):
+        for contract in self.row["deployment"]["contracts"]:
+            with self.subTest(address=contract["address"]):
+                self.assertTrue(contract["code_match"]["source_commit"], contract["name"])
+
+    def test_the_market_and_controller_init_code_reproduce_from_source(self):
+        contracts = {c["role"]: c for c in self.row["deployment"]["contracts"]}
+        for role, key in (("market-init-code-storage", "market_init_code"), ("controller-init-code-storage", "controller_init_code")):
+            with self.subTest(role=role):
+                evidence = self.matches[key]
+                self.assertTrue(evidence["result"]["equal"])
+                self.assertTrue(evidence["result"]["length_matches_recorded_init_code_length"])
+                commit = contracts[role]["code_match"]["source_commit"]
+                self.assertEqual(commit, evidence["source_commit"])
+                self.assertEqual(commit, self.row["source"]["commit"])
+
+    def test_the_market_lens_gap_is_the_recorded_one(self):
+        lens = next(c for c in self.row["deployment"]["contracts"] if c["role"] == "lens")
+        best = self.matches["market_lens"]["best_single_commit_match"]
+        self.assertEqual(lens["code_match"]["source_commit"], best["commit"])
+        self.assertEqual(best["equal"], 40)
+        self.assertEqual(best["of"], 46)
+        self.assertEqual(len(best["differing_paths"]), 6)
+        gap = self.matches["market_lens"]["why_no_commit_reaches_46_of_46"]
+        self.assertEqual(len(gap["group_a_pre_rewrite_only"]["paths"]) + len(gap["group_b_never_in_git"]["paths"]), 6)
+
+    def test_the_equivalent_commits_checkout_is_recorded_as_unresolvable(self):
+        checkout = self.matches["equivalent_commits_deployer_checkout"]
+        self.assertEqual(checkout["resolution"], "cannot select one of the five; recorded as unresolvable with the above evidence, per the issue's 'or record why one cannot be selected' acceptance path")
+        self.assertEqual(len(checkout["candidates"]), len(self.row["source"]["equivalent_commits"]) + 1)
+
+    def test_the_shared_chainalysis_oracle_is_confirmed(self):
+        v2 = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        v2_item = next(e for e in v2["protected_set_exclusions"] if "Chainalysis" in e["item"])
+        v1_item = next(e for e in self.row["protected_set_exclusions"] if "Chainalysis" in e["item"])
+        self.assertEqual(v1_item["item"], v2_item["item"])
+        self.assertIn("0x40c57923924b5c5c5455c48d93317139addac8fb", self.matches["protected_set_check"]["result"].lower())
+
+
+class V1InstanceReadTests(unittest.TestCase):
+    """The 2026-09-19 pass (#1589) reads every V1 controller and market instance."""
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v1-ethereum-mainnet")
+        self.matches = json.loads((REGISTRY.parent / "evidence" / "source-match-1589.json").read_text(encoding="utf-8"))
+        self.observations = json.loads((REGISTRY.parent / "evidence" / "ethereum-mainnet-1589.json").read_text(encoding="utf-8"))
+
+    def test_the_exclusion_naming_unread_instances_is_gone(self):
+        for exclusion in self.row["exclusions"]:
+            self.assertNotIn("was not read", exclusion)
+        self.assertEqual(self.row["instance_reads_completed_by"], "https://github.com/wildcat-finance/skills/issues/1589")
+
+    def test_every_controller_and_market_address_is_a_row_contract(self):
+        contracts = {c["address"].lower(): c for c in self.row["deployment"]["contracts"]}
+        controllers = self.row["deployment"]["instances"]["controllers"]
+        markets = self.row["deployment"]["instances"]["markets"]
+        self.assertEqual(len(controllers), 3)
+        self.assertEqual(len(markets), 7)
+        for address in controllers + markets:
+            with self.subTest(address=address):
+                contract = contracts[address.lower()]
+                self.assertTrue(contract["code_match"]["source_commit"])
+                self.assertEqual(contract["code_match"]["source_commit"], self.row["source"]["commit"])
+
+    def test_every_instance_reproduces_the_single_template_modulo_immutables(self):
+        for entry in self.matches["controllers"] + self.matches["markets"]:
+            with self.subTest(address=entry["address"]):
+                self.assertEqual(entry["differing_bytes_outside_immutables"], 0)
+
+    def test_there_is_exactly_one_template_per_role(self):
+        finding = self.matches["immutable_template_finding"]
+        self.assertIn("immutable", finding["market_init_code_hash"])
+        self.assertIn("immutable", finding["controller_init_code_hash"])
+        self.assertEqual(self.matches["reproduction_summary"]["instances_checked"], 10)
+        self.assertTrue(self.matches["reproduction_summary"]["all_zero"])
+
+    def test_the_observations_file_covers_every_instance_with_the_row_hash(self):
+        contracts = {c["address"].lower(): c for c in self.row["deployment"]["contracts"]}
+        self.assertEqual(self.observations["schema"], "wildcat.kickoff-targets.observations.v1")
+        self.assertEqual(self.observations["chain_id"], 1)
+        self.assertEqual(len(self.observations["code"]), 10)
+        for entry in self.observations["code"]:
+            with self.subTest(address=entry["address"]):
+                contract = contracts[entry["address"].lower()]
+                self.assertEqual(contract["code_keccak256"], entry["code_keccak256"])
+
+    def test_the_factory_deployment_timestamp_correction_is_recorded(self):
+        factory_deployment = self.matches.get("correction_note") or ""
+        self.assertIn("1701383255", factory_deployment + json.dumps(self.matches))
+        equivalence_note = self.row["source"]["equivalence_note"]
+        self.assertIn("2023-11-30T22:27:35Z", equivalence_note)
+        self.assertIn("corrected 2026-09-19", equivalence_note)
 
 
 if __name__ == "__main__":

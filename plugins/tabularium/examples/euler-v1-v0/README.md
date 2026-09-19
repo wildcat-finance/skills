@@ -9,6 +9,11 @@ This release preserves the canonical Euler v1 proxy response for borrower
 14,531,589. The response contains one `Borrow` log. Tabularium maps it to one
 canonical event v2 row and keeps the complete log beside that interpretation.
 
+It is superseded by [`euler-v1-v1`](../euler-v1-v1/README.md), release
+`euler-v1-borrow-block-14531589-v1`, which restates the same event under
+canonical event schema v3 from this same `source.json`. These bytes are
+unchanged and stay verifiable against the v2 schema they name.
+
 The scope is exactly one borrower, one block and the three requested Euler v1
 credit-event topics. It is not the borrower's complete history. The public RPC
 reported the block hash and log; this release does not independently prove the
