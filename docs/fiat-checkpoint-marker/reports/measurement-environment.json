@@ -1,0 +1,12 @@
+{
+  "python": "3.14.6 (main, Aug  4 2026, 18:27:20) [Clang 22.1.3 ]",
+  "platform": "Linux-6.8.0-139-generic-x86_64-with-glibc2.39",
+  "processor": "x86_64",
+  "base_sha": "e2307ed5966e18727434b3e49bec89db736f7b17",
+  "study_script_sha256": "9210186811edc6f965b48ae166f96a812016eb1cd5350ee5d0e202085bc0da4d",
+  "controller_sha256": "7633f59421ea1e648e2d1f86b5a268caf60fea7b177525f59b4c70d3d800b35a",
+  "measurement_scope": "Pure predicates and identical streaming geometry; no native archive run in selection.",
+  "timing_method": "Median of five sequential samples per candidate; no concurrent benchmark subprocesses.",
+  "allocation_method": "tracemalloc peak during streaming with corpus allocated before tracing; excludes process RSS and imported modules.",
+  "timing_rounding": "ceiling of median milliseconds; exact samples retained in observation report"
+}

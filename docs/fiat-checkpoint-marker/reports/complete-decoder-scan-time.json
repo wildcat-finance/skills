@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "complete-decoder",
+  "criterion": "scan-time",
+  "value": 60,
+  "unit": "milliseconds",
+  "command": "python3 .hexaemeron/measure_design.py --candidate complete-decoder --criterion scan-time --report .hexaemeron/reports/complete-decoder-scan-time.json",
+  "exit": 0
+}

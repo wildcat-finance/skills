@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "complete-decoder",
+  "criterion": "material-refusals",
+  "value": 229,
+  "unit": "count",
+  "command": "python3 .hexaemeron/measure_design.py --candidate complete-decoder --criterion material-refusals --report .hexaemeron/reports/complete-decoder-material-refusals.json",
+  "exit": 0
+}

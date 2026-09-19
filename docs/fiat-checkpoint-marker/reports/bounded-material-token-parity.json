@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bounded-material",
+  "criterion": "token-parity",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/measure_design.py --candidate bounded-material --criterion token-parity --report .hexaemeron/reports/bounded-material-token-parity.json",
+  "exit": 0
+}
