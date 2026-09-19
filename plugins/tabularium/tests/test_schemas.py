@@ -11,6 +11,7 @@ list would leave its values unchecked against the schema documents.
 
 import contextlib
 import copy
+import errno
 import io
 import json
 import os
@@ -638,6 +639,33 @@ class RejectionParityTests(unittest.TestCase):
         self.assertEqual(observation["schema_fields"], [expected_field], name)
         self.assertEqual(observation["library_field"], expected_field, name)
 
+    def test_every_declared_rejection_fixture_carries_a_case(self):
+        """The reporter's evidence set matches the tree and the cases below.
+
+        `prove_schema_v3.py` computes the value it attests by walking
+        `support.REJECTION_FIXTURES`, and nothing else reads that tuple.
+        Emptied, it left the suite green while the reporter wrote
+        `"value": true` over no fixtures at all, because `all(())` is true and
+        the closed `protasis-design-report/v1` key set has nowhere to record a
+        count.  The declared set is bound here to the committed fixture files
+        and to the case names, so the evidence set cannot shrink in silence.
+        """
+        declared = [name for name, _ in support.REJECTION_FIXTURES]
+        self.assertTrue(declared, "the reporter would attest a vacuous pass")
+        on_disk = {
+            path.stem
+            for path in support.SCHEMA_V3_FIXTURES.iterdir()
+            if path.suffix == ".json"
+        }
+        self.assertEqual(set(declared), on_disk)
+        cases = [name for name in dir(self) if name.startswith("test_")]
+        for fixture in declared:
+            with self.subTest(fixture=fixture):
+                self.assertTrue(
+                    any(fixture.replace("-", "_") in case for case in cases),
+                    "%s has no rejection case of its own" % fixture,
+                )
+
     def test_unknown_value_is_refused_by_both_validators(self):
         self.check_fixture("unknown-value", "provenance.mapping_rule")
 
@@ -697,6 +725,43 @@ class ReporterCommandTests(unittest.TestCase):
             "--candidate superseding-releases --criterion rejection-parity "
             "--report %s" % report,
         )
+
+
+class ReporterAtomicWriteTests(unittest.TestCase):
+    """A failed write leaves the report that was already there untouched."""
+
+    def test_a_failed_write_does_not_destroy_the_previous_report(self):
+        """Opened with `O_TRUNC`, the report was emptied before any byte landed.
+
+        The risk register's `partial-write` entry is the convention this
+        follows: a killed run leaves no half-written artefact.  The reporter
+        was the one writer in the tree that did not, so a failure after the
+        open left zero bytes where a valid report had been.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            prior = json.dumps({"schema": "protasis-design-report/v1"}) + "\n"
+            report.write_text(prior, encoding="utf-8")
+            written = os.write
+
+            def refuse(handle, payload):
+                raise OSError(errno.ENOSPC, "No space left on device")
+
+            os.write = refuse
+            try:
+                # The refusal's type is not what is under test and the parent
+                # let the OSError escape unwrapped, so the file state below is
+                # reached either way and is the assertion that matters.
+                with self.assertRaises(Exception):
+                    prove_schema_v3.write_report(report, {"value": True})
+            finally:
+                os.write = written
+            self.assertEqual(report.read_text(encoding="utf-8"), prior)
+            self.assertEqual(
+                [path.name for path in Path(directory).iterdir()],
+                [report.name],
+                "a staged file was left behind",
+            )
 
 
 class ReporterRefusalTests(unittest.TestCase):

@@ -72,17 +72,38 @@ def report_path(value):
 
 
 def write_report(path, report):
-    """Write one report, refusing to follow a symlink at the final component."""
+    """Write one report whole, or leave what was already there untouched.
+
+    Staged in the report's own directory and renamed into place, the way
+    `write_bytes_atomic` already writes a release, so an interrupted run
+    leaves no half-written report and destroys no earlier one.  Opening the
+    report itself with `O_TRUNC` emptied it before the first byte was written:
+    a failure anywhere after that left zero bytes where a valid report had
+    been.  `O_EXCL` refuses a staged path that already exists or is a symlink,
+    and the final component is checked again here, so the refusal
+    `report_path` makes survives the change of writer.
+    """
     payload = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW
+    staged = path.parent / ("%s.%d.tmp" % (path.name, os.getpid()))
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
     try:
-        handle = os.open(str(path), flags, 0o644)
+        handle = os.open(str(staged), flags, 0o644)
+    except OSError as exc:
+        raise ReportRefused("report path is not writable: %s: %s" % (staged, exc))
+    try:
+        try:
+            os.write(handle, payload)
+            os.fsync(handle)
+        finally:
+            os.close(handle)
+        if path.is_symlink():
+            raise ReportRefused("report path component is a symlink: %s" % path)
+        os.replace(str(staged), str(path))
     except OSError as exc:
         raise ReportRefused("report path is not writable: %s: %s" % (path, exc))
-    try:
-        os.write(handle, payload)
     finally:
-        os.close(handle)
+        if staged.exists():
+            staged.unlink()
 
 
 def resolver_command(args):
