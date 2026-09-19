@@ -56,10 +56,13 @@ spelled out.
 | `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition integration` | 0 |
 | `python3 plugins/tabularium/tests/run_tests.py --elenchus-report .elenchus/schema-v3-step-5-exit.json` | 0 |
 
-Three further exit commands need a committed tree and are recorded in the next
-section: `scripts/dead_code.py suppressions --check`, which `run_checks.py`
-selects in both scopes, refuses to analyse a checkout with modified tracked
-files, and `--head HEAD` names a commit.
+Three further exit commands were run against the committed tree and are
+recorded in the next section. Two of them need one. `run_checks.py --scope
+schemas` selects `scripts/dead_code.py suppressions --check`, which refuses to
+analyse a checkout with modified tracked files, and `plugin_release.py --head
+HEAD` names a commit. The `tabularium` scope selects four checks, the three
+lints and the Tabularium suite, and needs no commit; it is recorded there
+because it was run against the same committed bytes as the other two.
 
 The elenchus report at `.elenchus/schema-v3-step-5-exit.json` records 232
 tests, zero failures, zero errors, zero skips, and a complete run.
@@ -148,16 +151,19 @@ collects rather than their mean.
 ## What the selection evidence does not reproduce
 
 `docs/tabularium-schema-v3/design-probe.py` produced the 25 selection-stage
-reports in `reports/`. It cannot be run from the path it is committed at:
+files in `reports/`. It cannot be run from the path it is committed at:
 `ROOT = Path(__file__).resolve().parents[1]` resolves to `docs/`, so the import
 of `tabularium_lib` fails and the script exits 1 with `ModuleNotFoundError: No
 module named 'tabularium_lib'`. Its committed bytes are the preserved evidence
 of what produced those reports, not a copy anyone can run in place.
 
-Each of the 25 reports names, as its `command`, an absolute path to a copy of
-that script under the run worktree's `.hexaemeron/`, which Git ignores. No
-tracked artefact therefore reproduces the selection stage. The reports are
-readable and their inputs were the tree at
+Twenty-four of those 25 files are criterion reports, one per candidate and
+selection criterion, and each names as its `command` an absolute path to a copy
+of that script under the run worktree's `.hexaemeron/`, which Git ignores. The
+twenty-fifth, `selection-observations.json`, is the aggregate the same run
+wrote and carries no `command` field at all, so it names nothing that could be
+run again either. No tracked artefact therefore reproduces the selection stage.
+The files are readable and their inputs were the tree at
 `1d131b98a78c888b571f302e5b4c899aa2e47caf`, but re-deriving them needs a
 worktree this repository does not carry. That is a limitation of this record,
 recorded here because step 1's accepted finding S1-R1-02 asked for it and step
