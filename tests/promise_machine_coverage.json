@@ -371,7 +371,7 @@
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "f53d219fcf0d3bf4bcc66a2a070a2da35d649a06deb0f31c7ead23043d32cd08"
+      "sha256": "f6995e39ef49021bb4dc1843c122f64399650fdc1f831930a776559183a66c3f"
     },
     "tests": {
       "path": "tests/test_contributors.py",
@@ -414,7 +414,7 @@
         "test_wave_atlas_pull_requests_read_every_page",
         "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "89f0a98a6b00ee285e8aa5c546a2fe8874768a7d373f1df501e03db33e33aaee"
+      "sha256": "d86c1adefa4bbe61bd4f853361fc8bf6647b24006814b9794bb3c62ee0f199dd"
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
