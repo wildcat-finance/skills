@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 27951234,
+    "bytes_blob": 28017455,
     "bytes_generated": 98
   },
   "entries": [
@@ -866,6 +866,13 @@
       "evidence": "no newline in a 2048-byte window at offset 190902 of 381805 bytes",
       "grade": "candidate",
       "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log"
+    },
+    {
+      "bytes": 66221,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 33110",
+      "grade": "candidate",
+      "path": "plugins/alexandria/docs/wildcat-interval/runbook.md"
     },
     {
       "bytes": 59394,
