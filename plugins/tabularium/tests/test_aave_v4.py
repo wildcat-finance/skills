@@ -7,6 +7,7 @@ import unittest
 
 from . import support
 from tabularium_lib.adapters import aave_v4
+from tabularium_lib import CURRENT_EVENT_SCHEMA
 from tabularium_lib.core import TabulariumError
 
 
@@ -31,7 +32,7 @@ class AaveV4AdapterTests(unittest.TestCase):
         self.source, self.capture = load_release()
 
     def map(self, source=None):
-        return aave_v4.map_source(source or self.source, self.capture)
+        return aave_v4.map_source(source or self.source, self.capture, CURRENT_EVENT_SCHEMA)
 
     def test_checked_in_window_maps_every_captured_log(self):
         mapped = self.map()
@@ -194,7 +195,7 @@ class AaveV4AdapterTests(unittest.TestCase):
         capture = deepcopy(self.capture)
         capture["scope"]["chain"] = "base-mainnet"
         with self.assertRaisesRegex(TabulariumError, "names another chain"):
-            aave_v4.map_source(self.source, capture)
+            aave_v4.map_source(self.source, capture, CURRENT_EVENT_SCHEMA)
 
 
 if __name__ == "__main__":
