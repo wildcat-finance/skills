@@ -415,17 +415,33 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.65.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.66.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.65.1")
-        self.assertIn("skills#1273", current["evidence"])
-        self.assertIn("successor-controller demonstration", current["change"])
-        self.assertIn("does not claim semantic criterion sufficiency", current["change"])
+        self.assertEqual(current["version"], "fiat-v6.66.1")
+        self.assertIn("skills#1480", current["evidence"])
+        self.assertIn(
+            "refuse an unmerged step branch whose gained range holds a commit",
+            current["change"],
+        )
+        self.assertIn("a step whose push receipt records an early merge is excluded", current["change"])
+        self.assertIn("A cherry-picked copy under a new SHA is out of scope", current["change"])
         self.assertIn("held target stay unchanged", current["change"])
+        # The successor-controller demonstration was the newest row until the
+        # carried-commit generation; it moves neither the revision nor the job.
+        demonstration = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.65.1"
+        )
+        self.assertEqual(demonstration["axis"], "generation")
+        self.assertIn("skills#1273", demonstration["evidence"])
+        self.assertIn("successor-controller demonstration", demonstration["change"])
+        self.assertIn(
+            "does not claim semantic criterion sufficiency", demonstration["change"]
+        )
+        self.assertIn("held target stay unchanged", demonstration["change"])
         integration = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.63.1")
         self.assertIn("skills#1665", integration["evidence"])
         self.assertIn("terminal replay pins that ref privately", integration["change"])
