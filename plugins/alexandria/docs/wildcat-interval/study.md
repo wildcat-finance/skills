@@ -1101,3 +1101,33 @@ not a decision, and it is readable from the `VENUES` table. The narrowing to
 Wildcat V2 and its withdrawal are the capture maintainer's, recorded on
 https://github.com/wildcat-finance/skills/issues/1490 and
 https://github.com/wildcat-finance/skills/issues/1731 rather than here.
+
+### Amendment -- 2026-09-19
+
+**What changed.** Section 12's home for the dispatch, provenance, plan-version
+and shared-subject decisions is corrected from
+`docs/adr/<number>-venue-dispatch-for-the-interval-collector.md` to this
+repository's convention: the record begins as an unnumbered draft at
+`docs/decisions/drafts/<slug>.md` and becomes
+`docs/decisions/ADR-<NNN>-<slug>.md` when the integration composer numbers it.
+The clause allocating the number at the scaffold step against the default
+branch and re-checking it before pushing is corrected with the path: the author
+writes no number, and
+`plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py` assigns
+one in the final integration composition. Which decisions earn a record, how
+many there are, what each says, and the fifth decision's home in the alexandria
+evolution ledger are all unchanged.
+
+**Why.** No `docs/adr` directory exists anywhere in the tree, so the section
+named a home that is not there. The convention stated in
+`plugins/hexaemeron/skills/hypomnema/SKILL.md` and visible in the tree places
+102 numbered records directly under `docs/decisions/` and 3 unnumbered drafts
+under `docs/decisions/drafts/`, numbered only at integration. Step 1 ships this
+study into the repository under `plugins/alexandria/docs/wildcat-interval/`,
+where a pointer at an absent directory reads as though the home exists and was
+checked. Recorded as finding W1-R1-02 in the step 1 round 1 audit and left open
+there because the study is controller-pinned.
+
+**Steps touched.** Steps 1, 2, 3, 6 and 7.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds. Step 9: entry holds; exit holds. Step 10: entry holds; exit holds. Step 11: entry holds; exit holds.

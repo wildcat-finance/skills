@@ -164,7 +164,7 @@ CONTRACT = "promise-machine/v1"
 # is not trimmed to hold a file count.
 #
 # The byte cap is not under pressure from this delivery. The payload measures
-# 20,363,701 bytes, 77.7% of the 25 MiB the CLI allows, with 5,850,699 bytes of
+# 20,365,653 bytes, 77.7% of the 25 MiB the CLI allows, with 5,848,747 bytes of
 # headroom above the 5 MiB minimum this file also checks.
 MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
