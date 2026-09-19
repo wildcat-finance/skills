@@ -4,6 +4,13 @@ A checked-in, offline-verifiable Tabularium release built from Ethereum
 consensus logs: every Aave v4 borrow and repay in blocks `25855441` through
 `25870892`, mapped to canonical event schema v2.
 
+This release is superseded by
+[`aave-v4-v1`](../aave-v4-v1/README.md), release
+`aave-v4-mainnet-credit-window-v1`, which restates the same events under
+canonical event schema v3 from this same `source.json`. Nothing here was
+migrated: these bytes are the ones that were published, and they stay
+verifiable against the v2 schema they name.
+
 | Field | Value |
 | --- | --- |
 | Release | `aave-v4-mainnet-credit-window-v0` |

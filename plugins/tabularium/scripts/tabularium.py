@@ -4,6 +4,7 @@
 import argparse
 import sys
 
+from tabularium_lib import CURRENT_EVENT_SCHEMA, SUPPORTED_EVENT_SCHEMAS
 from tabularium_lib.builder import build
 from tabularium_lib.core import TabulariumError
 from tabularium_lib.verifier import verify
@@ -39,6 +40,16 @@ def make_parser():
         "--manifest", required=True, help="coverage manifest output"
     )
     build_parser.add_argument("--release", required=True, help="release identifier")
+    # The flag exists so a published schema 2 release can be rebuilt from its
+    # own preserved bytes; without it every build writes the current schema.
+    build_parser.add_argument(
+        "--event-schema",
+        type=int,
+        default=CURRENT_EVENT_SCHEMA,
+        choices=sorted(SUPPORTED_EVENT_SCHEMAS),
+        help="canonical event schema version to write (default: %d)"
+        % CURRENT_EVENT_SCHEMA,
+    )
     verify_parser = subcommands.add_parser(
         "verify",
         help="verify a release offline from its coverage manifest",
@@ -75,8 +86,8 @@ def main(argv=None):
             print("tabularium: verification failed: %s" % error, file=sys.stderr)
             return 1
         print(
-            "verified %s offline: %d event(s), sha256 %s"
-            % (report.release, report.rows, report.sha256)
+            "verified %s offline: %d event(s), schema %d, sha256 %s"
+            % (report.release, report.rows, report.schema_version, report.sha256)
         )
         return 0
     if args.command in ("compound-witness", "verify-compound-witness"):
@@ -105,6 +116,7 @@ def main(argv=None):
             args.manifest,
             args.release,
             args.adapter,
+            args.event_schema,
         )
     except (OSError, TabulariumError) as error:
         print("tabularium: %s" % error, file=sys.stderr)

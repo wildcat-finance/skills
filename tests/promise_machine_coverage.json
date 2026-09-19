@@ -6203,16 +6203,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "negative",
-        "sha256": "0c9e521b4186622a023385e7424dc2b78ea91422378ba295d5cb008f79a3d742"
+        "sha256": "2c51223c259c71ed5e3908c6cadd0e98ab88852762e837eb3d269c6cf27472e2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "positive",
-        "sha256": "0c9e521b4186622a023385e7424dc2b78ea91422378ba295d5cb008f79a3d742"
+        "sha256": "2c51223c259c71ed5e3908c6cadd0e98ab88852762e837eb3d269c6cf27472e2"
       },
       "reader": "native-json-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
-      "sha256": "992977f6fdd4c710eb262d8ef2d447e4ebe1daf4fb29585430796fb43739023a",
+      "sha256": "e89fedb8d713ae0baba6b1998d45123b8d26c25e7be0371b233d0735849128e1",
       "source": "plugins/tabularium/tests/test_release.py"
     },
     "tabularium-release-verification": {
@@ -6234,16 +6234,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "negative",
-        "sha256": "6cf755429e77009e7e87cf7830bdb16ad18e465e4f9e2202057fd5c26ecb27eb"
+        "sha256": "256b0400d71b2d0a7f501d9093f2461f4980ccbc78f61d00acc6952e709d68f2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "positive",
-        "sha256": "6cf755429e77009e7e87cf7830bdb16ad18e465e4f9e2202057fd5c26ecb27eb"
+        "sha256": "256b0400d71b2d0a7f501d9093f2461f4980ccbc78f61d00acc6952e709d68f2"
       },
       "reader": "native-json-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
-      "sha256": "992977f6fdd4c710eb262d8ef2d447e4ebe1daf4fb29585430796fb43739023a",
+      "sha256": "e89fedb8d713ae0baba6b1998d45123b8d26c25e7be0371b233d0735849128e1",
       "source": "plugins/tabularium/tests/test_release.py"
     }
   },
