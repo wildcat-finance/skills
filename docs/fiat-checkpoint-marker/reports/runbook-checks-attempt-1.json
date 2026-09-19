@@ -1,0 +1,32 @@
+[
+  {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "e448c4",
+      "wall_time_seconds": 0.00000541,
+      "exit_code": 1,
+      "original_token_count": 17,
+      "output": ".hexaemeron/runbook.md:1: P008 unregistered-executable\n1 finding(s)\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "de9110",
+      "wall_time_seconds": 0.000002845,
+      "exit_code": 0,
+      "original_token_count": 10,
+      "output": "known-failure-inventory: 0 finding(s)\n"
+    }
+  },
+  {
+    "status": "fulfilled",
+    "value": {
+      "chunk_id": "765d83",
+      "wall_time_seconds": 0.000001502,
+      "exit_code": 0,
+      "original_token_count": 2,
+      "output": "clean\n"
+    }
+  }
+]

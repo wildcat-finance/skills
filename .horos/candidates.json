@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 29917937,
+    "bytes_blob": 30070398,
     "bytes_generated": 98
   },
   "entries": [
@@ -812,6 +812,20 @@
       "path": "docs/fiat-508-residual/amended-runbook.md"
     },
     {
+      "bytes": 119058,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 119058 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-implementation-regression.observation.json"
+    },
+    {
+      "bytes": 32212,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 32212 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-native-archive-roundtrip.observation.json"
+    },
+    {
       "bytes": 459957,
       "category": "blob",
       "evidence": "no newline in a 2048-byte window at offset 229978 of 459957 bytes",
@@ -1015,9 +1029,9 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 82967,
+      "bytes": 84158,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 41483",
+      "evidence": "mean line length above 400 in a window at offset 42079",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
