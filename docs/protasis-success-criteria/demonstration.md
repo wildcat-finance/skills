@@ -12,6 +12,12 @@ settles all three from one child process, and its attempt names the signed
 fixture commit before and after the launch. The terminal receipt replays that
 attempt without starting the Exit again.
 
+The fixture creates its own temporary SSH key and trust file. Operator SSH
+and OpenPGP defaults do not supply its signing material. Copy mode and a
+missing or failed signer allow only an unsigned adapter observation;
+`unsigned-fixture-not-admitted` then refuses the joined proof before any report
+is published. Production signature checks remain required.
+
 ## Refusal observations
 
 The fixture records missing execution, withheld integration, unknown criterion,

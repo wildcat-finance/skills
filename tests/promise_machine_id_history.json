@@ -1421,7 +1421,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "5999a69d06e13fa7918cb00789a42a61609e4075776904ad5c1122841575a44d",
+        "semantic_sha256": "c6be807a4db65dea69d4aeaa675cdbbf05cf2f63760de69e9dc65d6f1b9294d2",
         "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
       },
       "entry": null,

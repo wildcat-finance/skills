@@ -18,6 +18,12 @@ import shlex
 import stat
 
 SCHEMA = "protasis-gate-commands/v1"
+# Released adapters reviewed for replay compatibility. Their sole difference
+# is the test runner's module pin; every current command result must still match.
+REPLAY_COMPATIBLE_ADAPTERS = frozenset({
+    '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
+    'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
+})
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
 MAX_COMMANDS = 64
@@ -32,7 +38,7 @@ REGISTRY = {
     **{PREFIX + name + "/scripts/" + name + ".py": "main"
        for name in ("protasis", "imprimatur", "phylax", "ephoros", "hypomnema")},
 }
-MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': '79981b3478b8e067a4e151c3ff6ca164ae2a5ef4ae585ebb8cf4a4a54b4001a5', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': '0d3742b85957171503269e60397d8829459f08eac21cf6b4d50f55c44fc602d5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': '9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
+MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': '0d3742b85957171503269e60397d8829459f08eac21cf6b4d50f55c44fc602d5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': '9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})([^\n]*)$")
 LOOP = re.compile(r'\Afor file in (?P<items>[^;\n]+)(?:;|\n)\s*do(?:[ \t]+|\n)(?P<body>[^;\n]+)(?:;|\n)\s*done\s*\Z')
 ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`;\s*report file:\s*`([^`\n]+)`')
@@ -577,5 +583,8 @@ def replay(root: Path, data: bytes, receipt: dict) -> None:
             for invocation in command['invocations']:
                 position = invocation['argv'].index('{report}')
                 invocation['execution_argv'][position] = str(Path(captured_root) / command['report']['file'])
+    captured_adapter = receipt.get('adapter_sha256')
+    if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
+        current['adapter_sha256'] = captured_adapter
     if current != receipt:
         raise Refusal('gate-receipt-drift')

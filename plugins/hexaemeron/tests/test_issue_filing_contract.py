@@ -407,7 +407,7 @@ class ContractParserTests(unittest.TestCase):
 
 
 class IssueQueueContractTests(unittest.TestCase):
-    """A Fiat filing uses the same four queues as every other filing."""
+    """A Fiat filing uses the same five queues as every other filing."""
 
     @classmethod
     def setUpClass(cls):
@@ -418,11 +418,16 @@ class IssueQueueContractTests(unittest.TestCase):
             title, list(labels), body() if text is None else text, "candidate"
         )
 
-    def test_all_four_title_and_label_shapes_pass(self):
+    def test_all_five_title_and_label_shapes_pass(self):
         cases = (
             ("fiat-next: Bind reused task names", ["held-job"], body()),
             ("fiat-13: Add a bounded report", ["wish"], body()),
             ("fiat-wish: Keep a later improvement", [], body()),
+            (
+                "kickoff/hermes-5: Freeze the selector set",
+                ["held-job", "kickoff"],
+                body(),
+            ),
             (
                 "framework-96: Check prose quantities",
                 ["observation"],
@@ -437,7 +442,12 @@ class IssueQueueContractTests(unittest.TestCase):
 
     def test_a_bare_or_malformed_title_is_refused(self):
         for title in ("A useful follow-up", "fiat-wish - no colon",
-                      "Fiat-wish: wrong case", "fiat-wish:no space"):
+                      "Fiat-wish: wrong case", "fiat-wish:no space",
+                      "kickoff/hermes-0: zero ordinal",
+                      "kickoff/Hermes-5: wrong case",
+                      "kickoff/hermes-next: not an ordinal",
+                      "kickoff/hermes-5:no space",
+                      "kickoff hermes-5: no slash"):
             with self.subTest(title=title):
                 _, faults = self.check(title)
                 self.assertTrue(any("title is not one of" in fault
@@ -449,6 +459,12 @@ class IssueQueueContractTests(unittest.TestCase):
             ("fiat-13: One", ["observation"], "wish"),
             ("fiat-wish: One", ["wish"], "no queue label"),
             ("framework-96: One", ["wish"], "observation"),
+            ("kickoff/hermes-5: One", ["held-job"],
+             "requires `held-job`, `kickoff`; its queue labels are `held-job`"),
+            ("kickoff/hermes-5: One", ["kickoff"],
+             "requires `held-job`, `kickoff`; its queue labels are `kickoff`"),
+            ("kickoff/hermes-5: One", ["held-job", "kickoff", "wish"],
+             "its queue labels are `held-job`, `kickoff`, `wish`"),
         )
         for title, labels, expected in cases:
             text = body()
@@ -463,6 +479,29 @@ class IssueQueueContractTests(unittest.TestCase):
             "fiat-wish: One", ["origin:ai", "only-pr-needed"]
         )
         self.assertEqual(faults, [], faults)
+
+    def test_a_kickoff_filing_keeps_held_job_semantics_and_names_its_skill(self):
+        """`kickoff` sits beside `held-job`; it does not replace it.
+
+        The 59 filings of 2026-09-06 (#1350 to #1409) all carry both labels,
+        and the ordinal after the skill is the entry's position in the list
+        the maintainer filed from, so the record keeps the skill as owner and
+        the queue name keeps the ordinal visible.
+        """
+        record, faults = self.check(
+            "kickoff/hermes-5: Freeze the selector set",
+            ["fiat-run-needed", "held-job", "kickoff", "origin:ai"],
+        )
+        self.assertEqual(faults, [], faults)
+        self.assertEqual(record["queue"], "kickoff/{skill}-N")
+        self.assertEqual(record["owner"], "hermes")
+
+    def test_kickoff_is_a_queue_label_for_every_other_queue_too(self):
+        """A `{skill}-next` carrying `kickoff` is two queues, not one."""
+        _, faults = self.check("fiat-next: One", ["held-job", "kickoff"])
+        self.assertTrue(any(
+            "requires `held-job`; its queue labels are `held-job`, `kickoff`"
+            in fault for fault in faults), faults)
 
     def test_framework_uses_the_exact_required_opening(self):
         _, faults = self.check(
@@ -565,6 +604,20 @@ class IssueCheckCommandTests(HexctlCase):
         self.assertIn("wildcat-finance/skills#1041: clean", proc.stdout)
         self.assertIn("queue: {skill}-wish", proc.stdout)
         self.assertIn("1 pointing at an existing issue", proc.stdout)
+
+    def test_a_filed_kickoff_issue_reads_clean_over_rest(self):
+        self.env["FAKE_GH_ISSUES"] = json.dumps({FILED: {
+            "title": "kickoff/hermes-5: Freeze the selector set",
+            "labels": [{"name": "fiat-run-needed"}, {"name": "held-job"},
+                       {"name": "kickoff"}, {"name": "origin:ai"}],
+            "body": body(),
+        }})
+        proc = self.run_ctl("issue-check", "--issue", FILED)
+        self.assertIn("wildcat-finance/skills#1041: clean", proc.stdout)
+        self.assertIn(
+            "queue: kickoff/{skill}-N (queue labels: held-job, kickoff)",
+            proc.stdout,
+        )
 
     def test_a_live_issue_rejects_candidate_title_or_labels(self):
         proc = self.run_ctl("issue-check", "--issue", ISSUE,

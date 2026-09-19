@@ -48,7 +48,6 @@ PYTHON_WORKFLOWS = {
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
-    "plugins.yml",
     "repo.yml",
     "synkrisis.yml",
 }
@@ -57,8 +56,10 @@ PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {
     "contributors.yml",
     "identity.yml",
 }
-# Required gates carry no path filter, so they have no filter to inspect.
-UNFILTERED_GATES = {"plugins.yml", "repo.yml"}
+# The one required gate carries no path filter, so it has no filter to
+# inspect. `invariants`, the job `repo.yml` declares, is the only context
+# the branch protection on `main` requires.
+UNFILTERED_GATES = {"repo.yml"}
 PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - UNFILTERED_GATES
 BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "janus-forge.yml",
@@ -395,79 +396,6 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 with self.subTest(workflow=name, event=event):
                     with self.assertRaises(ValueError):
                         workflow_event_paths(text, event)
-
-    def test_complete_plugin_gate_shards_the_one_declared_graph(self):
-        workflow = WORKFLOWS / "plugins.yml"
-        self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
-        text = workflow.read_text(encoding="utf-8")
-        self.assertEqual(text.count("  plugins:\n"), 1)
-        self.assertIn("permissions:\n  contents: read\n", text)
-        self.assertEqual(text.count("fetch-depth: 0"), 1)
-        self.assertIn("uses: actions/setup-node@v7", text)
-        self.assertIn('node-version: "26.6.0"', text)
-        self.assertIn("uses: foundry-rs/foundry-toolchain@v1", text)
-        self.assertIn("version: v1.7.1", text)
-        self.assertIn(
-            "run: python3 -m pip install --requirement "
-            "plugins/lazarus/requirements.lock",
-            text,
-        )
-        historical_key = (
-            ROOT
-            / "plugins"
-            / "hexaemeron"
-            / "tests"
-            / "fixtures"
-            / "signing-keys"
-            / "shoggoth-636ec19d.asc"
-        )
-        self.assertTrue(historical_key.is_file())
-        self.assertIn(
-            "EXPECTED_GPG_FINGERPRINT: "
-            "636EC19DE45DF10F3CE6206F57742DA1ABED6F46",
-            text,
-        )
-        self.assertIn(
-            "gpg --batch --import \"$key_path\"",
-            text,
-        )
-        # One shard per declared scope, each running the committed graph for
-        # that scope alone. The graph stays the only definition of a check, and
-        # no command is copied into the workflow. The budget is explicit because
-        # the automatic one grants the nested suite coordinator a single worker
-        # on a four-core runner, which no longer finishes inside the per-check
-        # timeout; it is a capacity flag and names no check.
-        self.assertEqual(
-            text.count(
-                "python3 scripts/run_checks.py\n"
-                "          --scope ${{ matrix.scope }}\n"
-                "          --jobs 14\n"
-                "          --report tmp/checks/${{ matrix.scope }}.json"
-            ),
-            1,
-        )
-        declared = set(
-            json.loads((ROOT / "tests" / "check-map-v1.json").read_text())["scopes"]
-        )
-        block = text[text.index("        scope:\n") : text.index("    runs-on:")]
-        sharded = set(re.findall(r"^\s+- ([a-z][a-z-]*)$", block, re.MULTILINE))
-        self.assertEqual(
-            sharded,
-            declared,
-            "every declared scope needs exactly one shard, and no shard may "
-            "name a scope the graph does not declare",
-        )
-        # The aggregate job is the required context and is green only when
-        # every shard reached terminal success.
-        self.assertIn("    needs: scope\n", text)
-        self.assertIn('test "$SHARDS" = success', text)
-        self.assertIn("fail-fast: false", text)
-        self.assertIn("if: always()", text)
-        self.assertIn("uses: actions/upload-artifact@v4", text)
-        self.assertIn("path: tmp/checks/${{ matrix.scope }}.json", text)
-        self.assertNotIn("continue-on-error", text)
-        self.assertNotIn("github.event.pull_request", text)
-        self.assertNotIn("--full", text)
 
     def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
         graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
