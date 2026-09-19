@@ -136,3 +136,44 @@ three different things.
 
 Nothing executable changes. The local checkpoint store remains the only
 transport, and this record adds a file.
+
+## Amendment, 2026-09-16: Adopt the R2 storage profile
+
+The [adopted #862 specification](../checkpoint-authority/specimens/adopted-specification.md)
+replaces this record's conflicting S3 version, retention, replication and
+permission clauses for P-862 and its service packets. All preceding bytes
+remain the historical prefix. The selected first service profile uses
+DigitalOcean compute in `lon1`, PostgreSQL 16, Cloudflare R2 and a separate
+AWS KMS P-256 signer in `eu-west-2`; production implementation and deployment
+evidence remain Skills #863.
+
+Primary and recovery permanent stores occupy separate Cloudflare accounts in
+the EU. They use content-addressed `sha256/<exact-object-sha256>` keys and
+indefinite bucket locks. This replaces the 365-day version-retention minimum,
+S3 version identifiers and provider-managed cross-region replication. Shared
+provider failure remains a risk; geographic independence within the EU is
+unproved. Runtime credentials cannot change the lock. Their coarse write
+permission is not a delete-deny IAM guarantee: the effective lock supplies
+overwrite and delete protection.
+
+Each permanent object is created by one conditional destination PUT. Full
+GET, byte length and SHA-256 verify each copy at its recorded time. ETag,
+metadata and HEAD alone cannot prove the bytes, continuing availability or
+retention configuration. Automatic multipart authority publication remains
+disabled pending a separate proof of its final conditional semantics.
+Quarantine is unlocked and expires; permanent upload and retrieval remain
+service mediated with no permanent URL or presigned bypass.
+
+Acceptance requires both archive copies, the exact signed receipt and both
+receipt copies, an independent signed finalization and both finalization
+copies. Finalization attests prior copies only, avoiding recursive claims
+about its own future replication. Exposure also requires current ordered
+eligibility after finalization. A complete signed control history determines
+authority; PostgreSQL is a derived index.
+
+Ordinary revocation appends signed denial and retains bytes. Emergency
+physical removal belongs to #866: global freeze, two operators, collateral
+inventory and the governed prefix or bucket lock-removal procedure. A signed
+outcome binds prior denial and incident authority, explains removed digests
+and never restores eligibility. This amendment authorizes no lock change,
+delete, account, access change, spend or deployment.

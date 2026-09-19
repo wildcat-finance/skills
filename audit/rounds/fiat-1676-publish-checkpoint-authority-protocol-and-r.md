@@ -1,0 +1,15 @@
+## Step 1, round 1 -- 2026-09-16T03:05:05Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: record-closure=reviewed; canonical-byte-confusion=not-applicable; dsse-prehash=not-applicable; key-hint-trust=not-applicable; key-history=not-applicable; actor-run-confusion=not-applicable; commit-denominator=not-applicable; native-private-evidence=not-applicable; native-containment=reviewed; prior-receipts=not-applicable; journal-completeness=not-applicable; decision-exclusivity=not-applicable; publication-cycle=not-applicable; copy-claim-trust=not-applicable; denial-stream-order=not-applicable; freshness=reviewed; test-production-separation=reviewed; ariadne-promise=reviewed; subprocess-files=reviewed; resource-exhaustion=reviewed; r2-governance=reviewed; fixture-oracle=reviewed; release-drift=reviewed
+
+Not checked: Solidity tools were waived because Step 1 contains no Solidity. Steps 2 through 5 remain unimplemented: signatures, native validation, authority replay, live eligibility and release interoperability. Production custody, cloud configuration and service enforcement were not exercised. Native #1647, #1648 and #1649 remain open. Caller ownership must exclude competing directory writers; descriptor checks detect observed namespace changes without making renames atomic. The copied study reports retain historical measurements, with no fresh conformance claim.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: ADR assignment for appended amendments is tracked by #1684 and PR #1685; its release is required before integration and is outside Step 1. Reviewed all 38 changed paths from commit 1d4e4eebcba1825d0eb3192bf08a6c509bdc0d74 to commit a9057b38eed4c148ff880ffc3e0531b510a5184a, 5 exact source copies, 4 preserved prefixes, 10 selection reports and the ordered-replay design lock. Phylax, Ephoros and Hypomnema whole-tree lints, plus the explicit study/design bridge, each exited 0. All 32 scaffold tests and 1,996 repository tests passed. Repository command: `python3 -m unittest discover -s tests`, Python 3.14.6, 1017.628 seconds; output SHA-256 61d22fcf29f0bb77aacdb9486706f85a65ea863482929d3185dc1e8e9753915c. Commands, checker hashes, source comparisons and raw logs are retained in `.hexaemeron/warden-step-1-round-1/`. No code fixes were needed.

@@ -1,0 +1,12 @@
+{
+  "schema": "checkpoint-authority-conformance-corpus/v1",
+  "candidate": "ordered-replay",
+  "criteria": [
+    "records-and-signatures",
+    "native-boundary-coverage",
+    "authority-replay",
+    "released-interoperability"
+  ],
+  "cases": [],
+  "implemented_criteria": []
+}

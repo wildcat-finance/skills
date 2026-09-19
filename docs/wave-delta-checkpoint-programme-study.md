@@ -251,3 +251,38 @@ than checkpoint identity. #899 and #901 are `hexctl` controller defects by their
 own titles; they leave milestone 64 for the Fiat frontier, because a controller
 defect is not programme work and tracking it here would make the programme look
 like it owns the controller.
+
+## Amendment, 2026-09-16: Adopt P-862 and the service construction sequence
+
+The [adopted specification](checkpoint-authority/specimens/adopted-specification.md)
+replaces conflicting #862 ownership and storage clauses in this study while
+preserving its preceding bytes. The repository `wildcat-finance/fiat-checkpoints`
+now exists; existence supplies no cloud or deployment authority. P-862 is
+Skills #1676 and must release its immutable portable protocol before service
+packets A, B and C in service issues #1, #2 and #3. Skills #862 stays open until
+all ten service steps, AC01 through AC20 and P-862 are complete.
+
+The [protocol study](checkpoint-authority/study.md) and
+[runbook](checkpoint-authority/runbook.md) hold the bounded design. The
+separate verifier authenticates exact signatures, derives complete native
+commit coverage and replays complete authority history. Ariadne checks
+registered evidence bindings. Minimal private inventory, exact retrieval and
+one-parent continuation belong to this release; full frontier, resolution
+and public discovery remain later capabilities. The three native identities
+and v1 formats stay distinct and unchanged. Native #1647, #1648 and #1649
+remain open containment obligations.
+
+ADR-071's dated R2 amendment replaces version-specific S3 retention with
+indefinite locks over content-addressed keys, single conditional PUT and full
+GET verification in separate EU Cloudflare accounts. Shared-provider risk and
+unproved geographic independence stay visible. Finite copy, receipt and
+finalization evidence precedes current eligibility. A database row cannot
+replace the complete signed policy and decision journal.
+
+Skills #863 retains the production signer, independent journal/fresh-head
+service and live storage evidence. #864 retains controller fencing, #865 the
+full graph, #866 recovery and authorized physical removal, and #867 public
+Atlas behavior. #859 closes last. #899, #901 and #1176 keep independent scope.
+The new delivery authority covers the adopted local construction and review
+sequence; it grants no cloud resources, keys, spending, access change,
+deployment or destructive removal.

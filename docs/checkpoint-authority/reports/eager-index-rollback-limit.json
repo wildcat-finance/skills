@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "eager-index",
+  "criterion": "rollback-limit",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/study-evidence/design_probe.py --out .hexaemeron/reports",
+  "exit": 0
+}
