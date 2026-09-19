@@ -1,4 +1,4 @@
-"""Run records/signatures and retain bounded evidence; later gates refuse."""
+"""Run implemented criteria and retain bounded evidence; unimplemented gates refuse."""
 
 from __future__ import annotations
 
@@ -306,7 +306,7 @@ def _validate_execution(value, root):
 
 
 def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
-    """Return 0 only for complete passing cases; later criteria retain exit 3."""
+    """Return 0 only for complete passing cases; unimplemented criteria retain exit 3."""
     parser = Parser(description=__doc__, allow_abbrev=False)
     parser.add_argument("--candidate", required=True)
     parser.add_argument("--criterion", required=True)
@@ -374,6 +374,9 @@ def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
         if inputs["implemented"] and args.criterion == "native-boundary-coverage":
             from . import native_conformance
             event = native_conformance.run(root, report)
+        if inputs["implemented"] and args.criterion == "authority-replay":
+            from . import replay_conformance
+            event = replay_conformance.run(root, report)
         _write(root, name, report, event)
     except (Refusal, OSError) as error:
         code = str(error) if isinstance(error, Refusal) else "unsafe-or-unavailable-file"

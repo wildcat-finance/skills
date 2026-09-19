@@ -45,11 +45,15 @@ After a passing verification:
 `runtime/MANIFEST.json` binds every copied file to its canonical source path,
 byte count, and SHA-256 digest. It also binds the installed-tree Horos boundary
 generated from those files. The package deliberately omits host discovery
-manifests, plugin development suites, historical audit records, and
-Alexandria's 16 MB Compound v3 Phase 0 trace inputs and built release. The
-example's explanation and rebuild entrypoint remain present, but they do not
-make the offline demonstration runnable. If a selected operation needs one of
-the omitted surfaces, stop and use a full checkout of
+manifests, plugin development suites, historical audit records, the checkpoint
+authority conformance corpora under
+`plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/` and
+`native-fixture/`, and Alexandria's 16 MB Compound v3 Phase 0 trace inputs and
+built release. The example's explanation and rebuild entrypoint remain present,
+but they do not make the offline demonstration runnable, and the checkpoint
+authority schemas, native profile and capability map remain present without
+the corpora their conformance reporters read. If a selected operation needs one
+of the omitted surfaces, stop and use a full checkout of
 `wildcat-finance/skills`; absence does not authorise a substitute claim.
 
 Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
