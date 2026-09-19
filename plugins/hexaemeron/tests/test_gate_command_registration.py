@@ -12,6 +12,7 @@ gates = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gates)
 CLI = 'scripts/verify.py'
 RELEASED_ADAPTERS = (
+    '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
     '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
     'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
 )
