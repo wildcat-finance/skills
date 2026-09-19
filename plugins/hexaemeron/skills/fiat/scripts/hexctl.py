@@ -112,7 +112,7 @@ FIAT_REQUIRED_LINE_RE = re.compile(
 FIAT_REQUIRED_VALUES = ("0", "1")
 ISSUE_BODY_BYTES_MAX = 262144
 ISSUE_TITLE_BYTES_MAX = 512
-ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation"))
+ISSUE_QUEUE_LABELS = frozenset(("held-job", "wish", "observation", "kickoff"))
 FRAMEWORK_ISSUE_OPENING = (
     "Protasis decides which skill or skills this observation upgrades. "
     "The filer is the wrong party to guess."
@@ -123,6 +123,15 @@ FRAMEWORK_ISSUE_TITLE_RE = re.compile(
 SKILL_ISSUE_TITLE_RE = re.compile(
     r"^(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
     r"(?P<kind>next|wish|[1-9][0-9]*): (?P<summary>\S.*)$"
+)
+# The fifth queue: a maintainer's kickoff filing for one held frontier job.
+# Its title keeps the `{skill}-{n}` ordinal under a `kickoff/` prefix, and it
+# carries `kickoff` beside `held-job`, because the filing keeps the frontier
+# semantics of the job it kicks off rather than replacing them. #1475 records
+# why neither `{skill}-next` nor `{skill}-N` could absorb the queue.
+KICKOFF_ISSUE_TITLE_RE = re.compile(
+    r"^kickoff/(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
+    r"(?P<number>[1-9][0-9]*): (?P<summary>\S.*)$"
 )
 
 # The status block ADR-014's amendment authorises: one span at the top of an open
@@ -502,6 +511,8 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.63.1",
         "fiat-v6.64.1",
         "fiat-v6.65.1",
+        "fiat-v6.66.1",
+        "fiat-v6.67.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -5739,13 +5750,15 @@ def issue_queue_contract(
 ) -> tuple[dict, list[str]]:
     """The canonical queue selected by one publishable issue title.
 
-    The repository has four queues, not a free-form title convention. Queue
-    labels are checked as one mutually exclusive set while unrelated labels
-    remain allowed. A framework observation also carries the exact opening
-    that leaves ownership for Protasis to decide.
+    The repository has five queues, not a free-form title convention. Queue
+    labels are checked as one exact set while unrelated labels remain
+    allowed: four queues take at most one queue label, and the kickoff queue
+    takes `kickoff` beside `held-job`. A framework observation also carries
+    the exact opening that leaves ownership for Protasis to decide.
     """
     faults: list[str] = []
-    queue = required_label = owner = None
+    queue = owner = None
+    required_labels: list[str] = []
     if not isinstance(title, str):
         return {}, [f"{label} carries a title that is not text"]
     if len(title.encode("utf-8")) > ISSUE_TITLE_BYTES_MAX:
@@ -5755,27 +5768,31 @@ def issue_queue_contract(
     if _contains_nonprinting_character(title):
         faults.append(f"{label} title contains a control character")
     framework = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
-    skill = None if framework else SKILL_ISSUE_TITLE_RE.fullmatch(title)
+    kickoff = None if framework else KICKOFF_ISSUE_TITLE_RE.fullmatch(title)
+    skill = None if framework or kickoff else SKILL_ISSUE_TITLE_RE.fullmatch(title)
     if framework:
-        queue, required_label, owner = "framework-N", "observation", "framework"
+        queue, required_labels, owner = "framework-N", ["observation"], "framework"
+    elif kickoff:
+        queue, owner = "kickoff/{skill}-N", kickoff.group("skill")
+        required_labels = ["held-job", "kickoff"]
     elif skill:
         owner = skill.group("skill")
         kind = skill.group("kind")
         if kind == "next":
-            queue, required_label = "{skill}-next", "held-job"
+            queue, required_labels = "{skill}-next", ["held-job"]
         elif kind == "wish":
             queue = "{skill}-wish"
         else:
-            queue, required_label = "{skill}-N", "wish"
+            queue, required_labels = "{skill}-N", ["wish"]
     else:
         faults.append(
             f"{label} title is not one of `{{skill}}-next: <summary>`, "
-            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, or "
-            "`framework-N: <summary>`"
+            f"`{{skill}}-N: <summary>`, `{{skill}}-wish: <summary>`, "
+            "`kickoff/{skill}-N: <summary>`, or `framework-N: <summary>`"
         )
 
     queue_labels = sorted(set(labels) & ISSUE_QUEUE_LABELS)
-    expected = [] if required_label is None else [required_label]
+    expected = sorted(required_labels)
     if queue is not None and queue_labels != expected:
         actual = ", ".join(f"`{value}`" for value in queue_labels) or "none"
         wanted = ", ".join(f"`{value}`" for value in expected) or "no queue label"
@@ -18219,12 +18236,67 @@ def expected_run_branch_tip(state: dict):
     return None
 
 
+def directed_merge_landing(base_dir: str, state: dict, expected: str, tip: str):
+    """The directed step merge sitting on the run branch ahead of its receipt.
+
+    Between the `merge-step` merge and `done merge-step`, the run branch tip is
+    a merge this run asked for but has not yet recorded. It is told apart from a
+    stray merge by its parents: the first is the tip the last receipt named,
+    and the second is the head the pending step's push receipt recorded. A tip
+    whose parents say anything else, or cannot be read, is not the directed
+    merge, and the caller treats it as unreceipted movement (issue 1614).
+
+    A step adopted at push does not merge again, so nothing on the run branch
+    can be its directed merge.
+    """
+    merged = as_dict(state.get("integrate")).get("merged") or []
+    step = next((step for step in state["steps"] if step["n"] not in merged), None)
+    if step is None:
+        return None
+    push_receipt = as_dict(step["receipts"].get("push"))
+    if as_dict(push_receipt.get("early_merge")):
+        return None
+    head = push_receipt.get("head_commit")
+    if not isinstance(head, str) or not COMMIT_RE.fullmatch(head):
+        return None
+    if run_branch_tip_parents(base_dir, tip) != [expected, head]:
+        return None
+    return {"step": step["n"], "merge_commit": tip, "head": head}
+
+
+def run_branch_tip_parents(base_dir: str, tip: str):
+    """The exact parents of a run branch tip, or ``None`` when unanswered.
+
+    The merge is made on the remote and the merge-step procedure never fetches
+    it, so GitHub's record of the commit is asked first, the same record the
+    receipt trusts for the merge's verification. The local object graph answers
+    only when GitHub did not. A read that neither source answers is ``None``
+    rather than an empty list, so a missing answer never passes for a root
+    commit.
+    """
+    try:
+        payload = github_commit_payload(base_dir, github_repository(base_dir), tip)
+    except SystemExit:
+        payload = None
+    if payload is not None:
+        parents = payload.get("parents")
+        if isinstance(parents, list):
+            shas = [as_dict(parent).get("sha") for parent in parents]
+            if all(isinstance(sha, str) and COMMIT_RE.fullmatch(sha) for sha in shas):
+                return shas
+    try:
+        return commit_parents(base_dir, tip, "run branch tip")
+    except SystemExit:
+        return None
+
+
 def unreceipted_run_branch_movement(base_dir: str, state: dict, landing=None):
     """Whether the run branch moved without a receipt naming the move.
 
     Every legitimate change to the run branch during integration is one this run
-    recorded: a merge-step receipt, or a sync. A tip that is neither means
-    something merged into it that the controller was never asked for.
+    recorded: a merge-step receipt, a sync, or the directed step merge that is
+    waiting for its own receipt. A tip that is none of these means something
+    merged into it that the controller was never asked for.
 
     A chained stack makes that unrecoverable rather than untidy. The topmost step
     branch holds every commit in the run, so merging the wrong one lands all of
@@ -18251,6 +18323,20 @@ def unreceipted_run_branch_movement(base_dir: str, state: dict, landing=None):
         return {"fault": "unreadable", "branch": branch, "expected": expected}
     if tip in accepted:
         return None
+    if landing is None:
+        # `next` and `status` run between the directed merge and its receipt, so
+        # the merge the directive asked for is where the loop left the branch.
+        # A receipt names its own landing and is not asked to guess one.
+        landed = directed_merge_landing(base_dir, state, expected, tip)
+        if landed is not None:
+            return {
+                "fault": "landed",
+                "branch": branch,
+                "expected": expected,
+                "tip": tip,
+                "step": landed["step"],
+                "head": landed["head"],
+            }
     return {"fault": "moved", "branch": branch, "expected": expected, "tip": tip}
 
 
@@ -18261,6 +18347,14 @@ def describe_run_branch_movement(fault: dict) -> str:
             f"the run branch '{fault['branch']}' could not be read, so whether it "
             f"still matches the receipted tip {fault['expected']} is unknown"
         )
+    if fault["fault"] == "landed":
+        return (
+            f"the run branch '{fault['branch']}' is at {fault['tip']}, the step "
+            f"{fault['step']} merge the directive named, merging {fault['head']} "
+            f"onto the receipted tip {fault['expected']}; its receipt is pending: "
+            f"hexctl done merge-step --step {fault['step']} "
+            f"--merge-commit {fault['tip']}"
+        )
     return (
         f"the run branch '{fault['branch']}' is at {fault['tip']} and this run's "
         f"last receipt names {fault['expected']}"
@@ -18269,11 +18363,18 @@ def describe_run_branch_movement(fault: dict) -> str:
 
 def refuse_unreceipted_run_branch_movement(
     base_dir: str, state: dict, landing=None
-) -> None:
-    """Stop the integrate phase when the run branch moved outside the loop."""
+) -> dict | None:
+    """Stop the integrate phase when the run branch moved outside the loop.
+
+    Returns the directed merge waiting for its receipt when that is what moved
+    the branch, so `next` can name the receipt instead of a halt; every other
+    movement refuses.
+    """
     fault = unreceipted_run_branch_movement(base_dir, state, landing)
     if fault is None:
-        return
+        return None
+    if fault["fault"] == "landed":
+        return fault
     if fault["fault"] == "unreadable":
         die(
             describe_run_branch_movement(fault)
@@ -26751,6 +26852,17 @@ def _checkpoint_archive_signature_format(base_dir: str) -> str:
     return value
 
 
+def _checkpoint_archive_fingerprint_valid(signature_format: str, fingerprint: str) -> bool:
+    """Match the native verifier's fingerprint encoding for this format."""
+    if signature_format == "openpgp":
+        return re.fullmatch(r"[0-9A-F]{40}(?:[0-9A-F]{24})?", fingerprint) is not None
+    if signature_format == "ssh":
+        # SHA-256 uses 43 unpadded base64 characters; the last one's low two
+        # bits are zero. Preserve case: base64 is not hexadecimal.
+        return re.fullmatch(r"SHA256:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]", fingerprint) is not None
+    return False
+
+
 def _checkpoint_archive_verifier_argv(argv: list[str]) -> list[str]:
     """One Git argv with the native verifier programs pinned ahead of it."""
     pinned = [item for setting in SIGNATURE_VERIFIER_CONFIG for item in ("-c", setting)]
@@ -26965,7 +27077,7 @@ def _checkpoint_archive_proof(base_dir: str, state: dict, step: dict, members: s
     fingerprints: list[str] = []
     for commit_sha in commits:
         _, fingerprint, _ = _checkpoint_archive_commit_read(base_dir, commit_sha, None)
-        if not re.fullmatch(r"[0-9A-F]{40}(?:[0-9A-F]{24})?", fingerprint):
+        if not _checkpoint_archive_fingerprint_valid(signature_format, fingerprint):
             _checkpoint_archive_refuse("signature-unverified")
         if fingerprint not in fingerprints:
             fingerprints.append(fingerprint)
@@ -27051,23 +27163,35 @@ def _checkpoint_archive_proof(base_dir: str, state: dict, step: dict, members: s
 def _checkpoint_archive_ssh_material(base_dir: str, members: str) -> str:
     """Carry the repository's own allowed-signers file as the SSH key material."""
     status, data = bounded_run(
-        base_dir, "git", ["config", "--get", "gpg.ssh.allowedSignersFile"]
+        base_dir, "git", ["config", "--null", "--path", "--get", "gpg.ssh.allowedSignersFile"]
     )
-    if status != 0:
+    if status != 0 or not data.endswith(b"\0") or data.count(b"\0") != 1:
         _checkpoint_archive_refuse("signature-unverified")
-    source = data.decode("utf-8", "replace").strip()
+    try:
+        source = data[:-1].decode("utf-8")
+    except UnicodeDecodeError:
+        _checkpoint_archive_refuse("signature-unverified")
     if not source:
         _checkpoint_archive_refuse("signature-unverified")
-    resolved = _checkpoint_archive_guarded(
-        "signature-unverified",
-        lambda: scoped_path(base_dir, source, "checkpoint archive allowed signers"),
-    )
-    try:
-        with open(resolved, "rb") as handle:
-            payload = handle.read(CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX + 1)
-    except OSError:
-        _checkpoint_archive_refuse("signature-unverified")
-    if not payload or len(payload) > CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX:
+    # Git permits a trust store outside the worktree. Expand Git's pathname
+    # syntax above, then capture one stable public file without following links.
+    # Keep source components: folding alias/.. before opening alias would skip
+    # the no-follow check and could capture a different file from Git's path.
+    components = os.path.join(os.path.abspath(base_dir), source).split(os.sep)[1:]
+
+    def capture():
+        label = "checkpoint archive allowed signers"
+        directory = _guard_open_directory(os.path.sep, components[:-1], label, create=False)
+        try:
+            payload, _ = _guard_read_leaf(
+                directory, components[-1], label, limit=CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX
+            )
+            return payload
+        finally:
+            os.close(directory)
+
+    payload = _checkpoint_archive_guarded("signature-unverified", capture)
+    if not payload:
         _checkpoint_archive_refuse("signature-unverified")
     _checkpoint_archive_write_member(
         members, CHECKPOINT_ARCHIVE_SIGNERS_ENTRY, payload
@@ -28110,7 +28234,11 @@ def _checkpoint_inspect_signatures(
     fingerprints = signer["fingerprints"]
     key_path = signer["key_path"]
     key_bytes = captured.get(key_path)
-    if not isinstance(fingerprints, list) or key_bytes is None:
+    if (
+        not isinstance(fingerprints, list)
+        or any(not _checkpoint_archive_fingerprint_valid(fmt, value) for value in fingerprints)
+        or key_bytes is None
+    ):
         _checkpoint_archive_refuse("signature-unverified")
     keys_dir = os.path.join(scratch, "keys")
     disk_key_path = os.path.join(keys_dir, os.path.basename(key_path))
@@ -28796,8 +28924,22 @@ def cmd_next(args) -> None:
         # be worked around. Once every step has merged the branch may legitimately
         # carry a sync the controller has not receipted yet, and `done sync-run`
         # owns that topology, so the check stops when the stack does.
-        refuse_unreceipted_run_branch_movement(args.dir, state)
+        landed = refuse_unreceipted_run_branch_movement(args.dir, state)
         refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
+        if landed is not None:
+            # The directed merge has landed and only its receipt is owed. The
+            # directive says so and carries the exact receipt, so an operator
+            # following it neither merges again nor halts a healthy run.
+            directive = dict(directive)
+            directive["landed_merge"] = landed["tip"]
+            directive["merge"] = (
+                f"already merged as {landed['tip']}; receipt it and do not "
+                "merge again"
+            )
+            directive["then"] = (
+                f"hexctl done merge-step --step {landed['step']} "
+                f"--merge-commit {landed['tip']}"
+            )
     out = delegation_packet(args.dir, state, directive)
     observed = getattr(args, "task_handle", None)
     if observed is not None:

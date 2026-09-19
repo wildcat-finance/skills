@@ -1,0 +1,86 @@
+{
+  "schema": "wildcat.kickoff-sources.v1",
+  "record": "docs/kickoff/1374/capture.md",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1490",
+  "source_revision": "f0fa0c6632bd5fbef7f35e731646c32741ef282a",
+  "repository": "wildcat-finance/skills",
+  "read_on": "2026-09-18",
+  "registry": {
+    "record": "docs/kickoff/1359/targets.md",
+    "data": "docs/kickoff/1359/targets.json",
+    "issue": "https://github.com/wildcat-finance/skills/issues/1482",
+    "consumed": "the nine admitted target rows, their statuses and blockers, and the two Wildcat deployment rows"
+  },
+  "files": [
+    {
+      "path": "docs/kickoff/1359/targets.json",
+      "bytes": 164821,
+      "sha256": "9e0d3c88c76ec727ea8aabe67fb8ac0648b039ef1fa9836a6a7f2f2ae4d4ca98"
+    },
+    {
+      "path": "docs/kickoff/1359/targets.md",
+      "bytes": 53142,
+      "sha256": "4bd599b1967819ac65db95cecce3b05d0c6ef60f4b145eb051a60668d22dc443"
+    },
+    {
+      "path": "docs/kickoff/1374/specimens/wildcat-v2-registry.json",
+      "bytes": 600,
+      "sha256": "f9d40ee4af8d728d8cd1e2c483325d833c11e5f5301f0ed8d87c345147a7f2b7"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",
+      "bytes": 722,
+      "sha256": "2b1f658bbe9156fa08072bd5c603cd8bd49309785319d4c0db87cec902e968a5"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/registry.json",
+      "bytes": 28233,
+      "sha256": "3eff07d0c032d8ab1b614d5ee7691b77e198daa31fa824c739ee7056340b848e"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/expected.json",
+      "bytes": 1089,
+      "sha256": "c003681d388fd5db8d10d15d9023baecaf09c1621427710eca5dd68afbfbdf87"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/demo.py",
+      "bytes": 7180,
+      "sha256": "e1e0e9ce2a077239594429db1eed2e1fedba1fc2fea528d05e483931b8b41f7a"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/checkpoint.json",
+      "bytes": 1173,
+      "sha256": "ecc2c1f036e1d31254d846641f0a7f07ca8ea25e55e0414a84584bb97e6ea644"
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/reconciliation/reconciliation.json",
+      "bytes": 1073,
+      "sha256": "e8eb64070a8fa60bf366871a2481c160081d1655227b8a4e7ea4bbef22257572"
+    },
+    {
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "bytes": 103886,
+      "sha256": "a7dbb2ba7b8ddba95528c6e81f7038b147850bf96f96ac6539c88b82024f98b4"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria.py",
+      "bytes": 4107,
+      "sha256": "ed87d8cf25eadafaf3af63915edb707461ee4488b386b5b8a7b748cbbc4a505e"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
+      "bytes": 69955,
+      "sha256": "b767f0568f13245ebccaa191cb1946e97f0f5a42aee57935674d7ed1bcfbda25"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
+      "bytes": 9361,
+      "sha256": "f01dfff7c51aa5178fde9fff478a0dc37cc04b14d71a78dc84617ae26206094a"
+    }
+  ],
+  "release_under_inventory": {
+    "release_id": "sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32",
+    "built_from": "plugins/alexandria/examples/usdc-interval-live-v0/staging",
+    "note": "the release directory is not checked in; it is rebuilt from the staging tree by command 1 and its identifier is fixed by those bytes and the pinned created-at timestamp"
+  }
+}

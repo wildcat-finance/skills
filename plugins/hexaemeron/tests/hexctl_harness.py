@@ -758,10 +758,14 @@ elif mode == "attribution-second-coauthor":
         "Co-authored-by: Kethcode <kethcode@example.invalid>\\n"
         "Wildcat-Origin: shoggoth"
     )
+# The same parent table the fake git's `show --format=%P` reads, so a fixture
+# that lands a merge describes it once for both transports.
+fake_parents = json.loads(os.environ.get("FAKE_GIT_PARENTS", "{}"))
 payload = {
     "sha": None if mode == "missing-sha" else sha,
     "author": account,
     "committer": committer_account,
+    "parents": [{"sha": parent} for parent in fake_parents.get(sha, [])],
     "commit": {
         "author": identity,
         "committer": committer_identity,

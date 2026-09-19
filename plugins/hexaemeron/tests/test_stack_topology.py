@@ -1,8 +1,9 @@
 """What the controller does when the run branch moves outside the loop.
 
-Issues 594 and 555. Every legitimate change to the run branch during integration
-is one the run recorded: a merge-step receipt, or a sync. A tip that is neither
-means something merged into it the controller was never asked for, and because a
+Issues 594, 555 and 1614. Every legitimate change to the run branch during
+integration is one the run recorded: a merge-step receipt, a sync, or the
+directed step merge waiting for its receipt. A tip that is none of these means
+something merged into it the controller was never asked for, and because a
 stack chains, that is unrecoverable rather than untidy.
 
 A new module rather than more of `test_hexctl.py`, which is close enough to the
@@ -232,6 +233,109 @@ class PrematureStackMergeTests(StackCase):
         self.assertEqual(expected(state), "a" * 40)
         state["integrate"]["merged"] = []
         self.assertIsNone(expected(state))
+
+
+class DirectedMergeAwaitingReceiptTests(StackCase):
+    """Issue 1614. Between the directed merge and its receipt, `next` must not halt.
+
+    The run branch tip is then a merge this run asked for and has not yet
+    recorded. Its parents tell it apart from a stray merge: the first is the
+    last receipted tip and the second is the head the pending step recorded at
+    push. Anything else on the branch is still unreceipted movement.
+    """
+
+    def land_step_two(self, first_parent=None, second_parent=None, tip="e" * 40):
+        """Put the step 2 merge on the run branch without receipting it."""
+        self.to_stack()
+        self.merge(1)
+        head = self.state()["steps"][1]["receipts"]["push"]["head_commit"]
+        self.fake_parents[tip] = [
+            first_parent or "1" * 40,
+            second_parent or head,
+        ]
+        self.move_run_branch(tip)
+        return tip, head
+
+    def test_next_names_the_pending_receipt_instead_of_a_halt(self):
+        tip, _ = self.land_step_two()
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "merge-step")
+        self.assertEqual(directive["step"], 2)
+        self.assertEqual(directive["landed_merge"], tip)
+        self.assertEqual(
+            directive["then"],
+            f"hexctl done merge-step --step 2 --merge-commit {tip}",
+        )
+        self.assertIn(f"already merged as {tip}", directive["merge"])
+        self.assertNotIn("gh pr merge", directive["merge"])
+
+    def test_the_named_receipt_then_lands_and_the_stack_continues(self):
+        tip, _ = self.land_step_two()
+        self.merge(2, tip)
+        self.assertEqual(self.state()["integrate"]["merged"], [1, 2])
+        self.assertEqual(self.next_json()["step"], 3)
+
+    def test_a_merge_of_another_pull_request_still_refuses(self):
+        """The issue 576 shape: the topmost branch merged and landed every step."""
+        head_three = "3" * 40
+        self.land_step_two(second_parent=head_three)
+        proc = self.run_ctl("next", expect=2)
+        self.assertIn("this run did not receipt", proc.stderr)
+        self.assertIn("e" * 40, proc.stderr)
+
+    def test_a_merge_not_onto_the_receipted_tip_still_refuses(self):
+        self.land_step_two(first_parent="9" * 40)
+        proc = self.run_ctl("next", expect=2)
+        self.assertIn("this run did not receipt", proc.stderr)
+
+    def test_a_tip_whose_parents_cannot_be_read_still_refuses(self):
+        self.to_stack()
+        self.merge(1)
+        self.move_run_branch("e" * 40)
+        proc = self.run_ctl("next", expect=2)
+        self.assertIn("this run did not receipt", proc.stderr)
+
+    def test_the_receipt_does_not_guess_a_landing_it_was_not_given(self):
+        """`done merge-step` names its own landing; a wrong one still refuses."""
+        self.land_step_two()
+        proc = self.merge(2, "f" * 40, expect=2)
+        self.assertIn("this run did not receipt", proc.stderr)
+
+    def test_the_landing_is_read_locally_when_github_does_not_answer(self):
+        """GitHub holds the merge it made; the local graph is the fallback."""
+        tip, _ = self.land_step_two()
+        self.env["FAKE_GH_MODE"] = "nonzero"
+        directive = self.next_json()
+        self.assertEqual(directive["landed_merge"], tip)
+
+    def test_status_reports_the_pending_receipt(self):
+        tip, _ = self.land_step_two()
+        proc = self.run_ctl("status")
+        self.assertIn("STACK:", proc.stdout)
+        self.assertIn("receipt is pending", proc.stdout)
+        self.assertIn(f"--merge-commit {tip}", proc.stdout)
+
+    def test_an_adopted_step_has_no_directed_merge_to_land(self):
+        """A step merged early does not merge again, so nothing can be its landing."""
+        module = __import__("test_hexctl").hexctl_module()
+        state = {
+            "integrate": {"merged": [1]},
+            "steps": [
+                {"n": 1, "receipts": {}},
+                {
+                    "n": 2,
+                    "receipts": {
+                        "push": {
+                            "head_commit": "2" * 40,
+                            "early_merge": {"merge_commit": "d" * 40},
+                        }
+                    },
+                },
+            ],
+        }
+        self.assertIsNone(
+            module.directed_merge_landing(self.target, state, "1" * 40, "e" * 40)
+        )
 
 
 class MergeCommandDirectiveTests(StackCase):

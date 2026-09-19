@@ -14,7 +14,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "6.13.1"
+  version: "6.14.1"
 ---
 
 <p align="center">
@@ -748,11 +748,11 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 ### protasis-gate-command-validation
 
 - Promise: A successful command check establishes that each effective declared invocation fits the registered CLI interface, with exact source and report bindings, without executing the declared commands or importing their target modules.
-- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
+- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, reviewed adapter compatibility when applicable, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
 - Evidence classes: checked, recorded
 - Boundary: Interface validity establishes supported argument and source shape. It does not establish command execution, executable behavior, test success, report truth, audit judgement or atomic protection against later source changes. Historical absolute argv records nonexecuted derivation and grants no authority to execute at an old root; checkpoint relocation belongs to Fiat. This Consequence 1 operation has no native runtime binding. Its actual interface result retains operation_ran:false because the declared commands were not executed.
 - Authorises: Supplying the exact interface result to Fiat as command-validation evidence for its separately governed runbook or amendment receipt.
 - Consequence: 1
-- Refuses: Unregistered commands, malformed or misplaced local registrations, registry overrides, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, source drift, bound violations or replay mismatch.
-- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a receipted run, use Fiat's permitted append-only amendment rather than editing earlier evidence.
+- Refuses: Unregistered commands, malformed or misplaced local registrations, registry overrides, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, CLI source drift, unknown adapter digests, bound violations or replay mismatch.
+- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a receipted run, use Fiat's permitted append-only amendment when the source or bindings changed. A released adapter listed in the [command reference](references/gate-commands.md) may replay unchanged evidence without amendment; earlier receipts remain intact.
 - Exceptions: none

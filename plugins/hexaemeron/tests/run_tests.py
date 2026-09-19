@@ -245,6 +245,8 @@ def bind_report_target(raw, parser):
     supports_follow_symlinks = getattr(os, "supports_follow_symlinks", ())
     if os.stat not in supports_follow_symlinks:
         missing.append("os.stat(follow_symlinks)")
+    if os.utime not in getattr(os, "supports_fd", ()):
+        missing.append("os.utime(fd)")
     if missing:
         parser.error(
             "--elenchus-report requires secure directory operations: "
@@ -383,6 +385,10 @@ def write_report(target, payload):
                 if written <= 0:
                     raise OSError("report write made no progress")
                 remaining = remaining[written:]
+            # Automatic inode timestamps can lag the wall clock on Linux.
+            # Stamp this completed write through its held descriptor so the
+            # reader's strict start-time cutoff can remain unchanged.
+            os.utime(descriptor, ns=(created.st_atime_ns, time.time_ns()))
             os.close(descriptor)
             descriptor = None
         except OSError:
