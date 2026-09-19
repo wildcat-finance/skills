@@ -273,6 +273,38 @@ class CollectionTests(CollectorTestCase):
             self.collect()
 
 
+class ShardRequestTests(CollectorTestCase):
+    """`shard_requests` filters by one proxy (v1, unchanged) or a declared subject array (v2)."""
+
+    def _by_name(self, plan, shard):
+        return {
+            name: (method, params)
+            for name, method, params in usdc_interval.shard_requests(plan, shard)
+        }
+
+    def test_a_v1_plan_filters_by_one_unwrapped_address(self):
+        shard = self.plan["shards"][0]
+        requests = self._by_name(self.plan, shard)
+        self.assertEqual(requests["logs"][1][0]["address"], self.plan["proxy"])
+        self.assertEqual(requests["traces"][1][0]["toAddress"], [self.plan["proxy"]])
+
+    def test_a_v2_plan_filters_by_the_whole_declared_array(self):
+        subjects = [self.plan["proxy"], "0x" + "22" * 20, "0x" + "33" * 20]
+        plan = {key: value for key, value in self.plan.items() if key != "proxy"}
+        plan["subjects"] = subjects
+        shard = plan["shards"][0]
+        requests = self._by_name(plan, shard)
+        self.assertEqual(requests["logs"][1][0]["address"], subjects)
+        self.assertEqual(requests["traces"][1][0]["toAddress"], subjects)
+
+    def test_plan_subjects_helper_reads_either_field(self):
+        self.assertEqual(usdc_interval._plan_subjects(self.plan), self.plan["proxy"])
+        subjects = [self.plan["proxy"]]
+        v2_plan = {key: value for key, value in self.plan.items() if key != "proxy"}
+        v2_plan["subjects"] = subjects
+        self.assertEqual(usdc_interval._plan_subjects(v2_plan), subjects)
+
+
 class ResponseRefusalTests(CollectorTestCase):
     def refuse(self, fault, pattern):
         label = "shard 0 logs"

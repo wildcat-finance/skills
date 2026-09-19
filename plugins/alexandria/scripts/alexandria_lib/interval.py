@@ -26,6 +26,7 @@ from .errors import AlexandriaError
 
 
 PLAN_FORMAT = "alexandria-interval-plan/v1"
+PLAN_FORMAT_V2 = "alexandria-interval-plan/v2"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
 LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
@@ -78,6 +79,7 @@ IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca5
 UPGRADED_TOPIC = "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
 ZERO_ADDRESS = "0x" + "0" * 40
 MAX_EPOCHS = 256
+MAX_SUBJECTS = 4096
 
 
 def plan_shards(start: int, end: int, width: int) -> list[dict]:
@@ -113,21 +115,32 @@ def plan_shards(start: int, end: int, width: int) -> list[dict]:
 
 
 def validate_plan(plan) -> None:
-    """Check one closed `alexandria-interval-plan/v1` document."""
-    required = {
+    """Check one closed interval plan document.
+
+    `alexandria-interval-plan/v1` carries one `proxy` address and means
+    exactly one subject; `alexandria-interval-plan/v2` carries a `subjects`
+    array instead and means each declared address. Every other field --
+    chain, deployment, venue, evidence classes, interval/shards, finality,
+    provider -- is shared and checked the same way under either format.
+    """
+    required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
-    if not isinstance(plan, dict) or set(plan) != required:
+    required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
+    if not isinstance(plan, dict) or set(plan) not in (required_v1, required_v2):
         raise AlexandriaError("interval plan has an unknown shape")
-    if plan["format"] != PLAN_FORMAT:
+    is_v2 = "subjects" in plan
+    if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
         raise AlexandriaError("interval plan format is not recognised")
     if not isinstance(plan["chain"], str) or CHAIN_RE.fullmatch(plan["chain"]) is None:
         raise AlexandriaError("interval plan chain is not an eip155 identifier")
     for field in ("deployment", "venue"):
         if not isinstance(plan[field], str) or NAME_RE.fullmatch(plan[field]) is None:
             raise AlexandriaError(f"interval plan {field} is not a name")
-    if not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
+    if is_v2:
+        _validate_subjects(plan["subjects"])
+    elif not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
         raise AlexandriaError("interval plan proxy is not a lowercase address")
     validate_evidence_classes(plan["evidence_classes"])
 
@@ -178,6 +191,21 @@ def validate_plan(plan) -> None:
         or HASH_RE.fullmatch(finality["block_hash"]) is None
     ):
         raise AlexandriaError("interval plan finality block hash is not a 32-byte hash")
+
+
+def _validate_subjects(subjects) -> None:
+    """Check a v2 plan's declared subject set: a non-empty list of distinct addresses."""
+    if not isinstance(subjects, list) or not subjects:
+        raise AlexandriaError("interval plan subjects must be a non-empty list of addresses")
+    if len(subjects) > MAX_SUBJECTS:
+        raise AlexandriaError(f"interval plan subjects exceed the {MAX_SUBJECTS}-subject limit")
+    seen = set()
+    for subject in subjects:
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("interval plan subject is not a lowercase address")
+        if subject in seen:
+            raise AlexandriaError(f"interval plan subject {subject} is declared twice")
+        seen.add(subject)
 
 
 def validate_evidence_classes(value) -> tuple:
@@ -684,9 +712,31 @@ MAX_POSITION_INDEX = 10 ** MAX_INTEGER_DIGITS - 1
 MAX_POSITION_QUANTITY_LENGTH = len(hex(MAX_POSITION_INDEX))
 
 
-def proxy_log_positions(records, proxy, interval):
-    """Validate every preserved proxy coordinate before deriving ownership."""
-    proxy = _address(proxy, "position proxy")
+def proxy_log_positions(records, subjects, interval):
+    """Validate every preserved proxy coordinate before deriving ownership.
+
+    `subjects` is one proxy address (v1: every record must be its log, and
+    each returned row keeps its original shape) or a non-empty collection of
+    declared addresses (v2: every record must be one of theirs, and each
+    returned row also carries which one under `subject`, so a caller can
+    route it to that subject's own epoch table).
+    """
+    single = isinstance(subjects, str)
+    if single:
+        allowed = (_address(subjects, "position proxy"),)
+    else:
+        if not isinstance(subjects, (list, tuple, set, frozenset)) or not subjects:
+            raise AlexandriaError("declared subjects must be a non-empty collection of addresses")
+        normalised = []
+        seen = set()
+        for subject in subjects:
+            address = _address(subject, "position subject")
+            if address in seen:
+                raise AlexandriaError(f"declared subject {address} is duplicated")
+            seen.add(address)
+            normalised.append(address)
+        allowed = tuple(normalised)
+    allowed_set = set(allowed)
     if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
         raise AlexandriaError("position interval has an unknown shape")
     if not isinstance(records, (list, tuple)):
@@ -699,9 +749,16 @@ def proxy_log_positions(records, proxy, interval):
     hashes, transactions, indexes = {}, {}, {}
     rows = []
     upgrades = {}
+    not_emitted = (
+        "a preserved log was not emitted by the proxy" if single
+        else "a preserved log was not emitted by a declared subject"
+    )
     for record in records:
-        if not isinstance(record, dict) or _address(record.get("address"), "log emitting contract") != proxy:
-            raise AlexandriaError("a preserved log was not emitted by the proxy")
+        if not isinstance(record, dict):
+            raise AlexandriaError(not_emitted)
+        address = _address(record.get("address"), "log emitting contract")
+        if address not in allowed_set:
+            raise AlexandriaError(not_emitted)
         values = []
         for field in ("blockNumber", "transactionIndex", "logIndex"):
             value = record.get(field)
@@ -729,15 +786,18 @@ def proxy_log_positions(records, proxy, interval):
             raise AlexandriaError(f"proxy log position {coordinate} has malformed topics")
         is_upgrade = bool(topics and topics[0] == UPGRADED_TOPIC)
         if is_upgrade:
-            _upgrade_log(record, proxy, len(rows))
+            _upgrade_log(record, address, len(rows))
             if block == start:
                 raise AlexandriaError(f"first-block upgrade at {coordinate} has no preceding implementation evidence")
             if block in upgrades:
                 raise AlexandriaError(f"multiple upgrades in block {block} are unsupported")
             upgrades[block] = tx
-        rows.append({"block_number": str(block), "block_hash": block_hash,
-                     "transaction_hash": tx_hash, "transaction_index": tx,
-                     "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"})
+        row = {"block_number": str(block), "block_hash": block_hash,
+               "transaction_hash": tx_hash, "transaction_index": tx,
+               "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"}
+        if not single:
+            row["subject"] = address
+        rows.append(row)
     for row in rows:
         if row["kind"] == "proxy-log" and upgrades.get(int(row["block_number"])) == row["transaction_index"]:
             raise AlexandriaError(f"ordinary proxy log at ({row['block_number']}, {row['transaction_index']}, {row['log_index']}) in an upgrade transaction is unsupported")
@@ -791,15 +851,37 @@ def discover_epochs(*, chain, deployment, proxy, interval, upgrade_logs, slot_re
 
 
 def validate_epochs(epochs, start, end):
-    """Check exclusive position tiling; block envelopes overlap at upgrades."""
+    """Check exclusive position tiling; block envelopes overlap at upgrades.
+
+    `epochs` is a flat list (one subject, tiling the whole interval from
+    `start` through `end`) or a `{subject: [epoch, ...]}` table (many
+    declared subjects, each list tiling from its own first in-interval
+    position through the interval's end; a subject with no in-interval
+    extent carries no key at all here, never an empty list).
+    """
+    if isinstance(epochs, dict):
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        for subject, table in epochs.items():
+            _address(subject, "epoch table subject")
+            _validate_position_table(table, start, end, pinned_start=False)
+        return
+    _validate_position_table(epochs, start, end, pinned_start=True)
+
+
+def _validate_position_table(epochs, start, end, *, pinned_start: bool) -> None:
     if not isinstance(epochs, list) or not epochs or len(epochs) > MAX_EPOCHS:
         raise AlexandriaError("epoch table is empty or exceeds the epoch limit")
-    expected = _position(start)
+    expected = _position(start) if pinned_start else None
     for index, epoch in enumerate(epochs):
         if not isinstance(epoch, dict) or set(epoch) != {"chain", "deployment", "proxy", "start_block", "end_block", "start_hash", "end_hash", "upgrade", "implementation", "implementation_code_sha256", "start_position", "end_position"}:
             raise AlexandriaError("positional epoch has an unknown shape")
         first, last = epoch["start_position"], epoch["end_position"]
         first_key, last_key = _position_key(first), _position_key(last)
+        if expected is None:
+            if not _position_key(_position(start)) <= first_key < _position_key(_position(end + 1)):
+                raise AlexandriaError("epoch table subject's own first position is outside the interval")
+            expected = first
         if first != expected or first_key >= last_key:
             raise AlexandriaError("epoch positions leave a gap or overlap")
         if index and first["transaction_index"] is None:
@@ -829,10 +911,8 @@ def validate_epochs(epochs, start, end):
         raise AlexandriaError("epoch positions leave the interval end uncovered")
 
 
-def attribute_logs(records, proxy, interval, epochs):
-    """Assign each accepted log once; announcements mark boundaries only."""
-    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
-    rows = proxy_log_positions(records, proxy, interval)
+def _attribute_into(rows, epochs) -> None:
+    """Walk one subject's own rows against its own epoch table, in place."""
     index = 0
     for row in rows:
         key = (int(row["block_number"]), row["transaction_index"], row["log_index"])
@@ -845,6 +925,32 @@ def attribute_logs(records, proxy, interval, epochs):
             if row["block_number"] == epoch[boundary + "_block"] and row["block_hash"] != epoch[boundary + "_hash"]:
                 raise AlexandriaError("proxy log hash contradicts its epoch boundary")
         row["epoch_index"] = index
+
+
+def attribute_logs(records, subjects, interval, epochs):
+    """Assign each accepted log once; announcements mark boundaries only.
+
+    `subjects`/`epochs` are one proxy address and its flat epoch list (v1:
+    exactly as before, one table, one walk) or a declared collection of
+    subject addresses and a `{subject: [epoch, ...]}` table (v2: each log is
+    grouped by its own emitting subject and walked against that subject's
+    own table alone, so two subjects sharing a block and transaction each
+    reach their own epoch independently). A subject the table carries no key
+    for cannot own a log; one that claims it refuses.
+    """
+    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    rows = proxy_log_positions(records, subjects, interval)
+    if isinstance(subjects, str):
+        _attribute_into(rows, epochs)
+        return rows
+    grouped: dict = {}
+    for row in rows:
+        grouped.setdefault(row["subject"], []).append(row)
+    for subject, subject_rows in grouped.items():
+        table = epochs.get(subject)
+        if not table:
+            raise AlexandriaError("proxy log has no positional epoch owner")
+        _attribute_into(subject_rows, table)
     return rows
 
 
@@ -959,7 +1065,25 @@ def discover_block_epochs(
 
 
 def validate_block_epochs(epochs, start: int, end: int) -> None:
-    """Check that an epoch table tiles its interval exactly, with no gap or overlap."""
+    """Check that an epoch table tiles its interval exactly, with no gap or overlap.
+
+    `epochs` is a flat list (one subject, tiling the whole interval from
+    `start` through `end`) or a `{subject: [epoch, ...]}` table (many
+    declared subjects, each list tiling from its own first in-interval block
+    through `end`; a subject with no in-interval extent carries no key at
+    all here). `MAX_EPOCHS` bounds each subject's own list, never their sum.
+    """
+    if isinstance(epochs, dict):
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        for subject, table in epochs.items():
+            _address(subject, "epoch table subject")
+            _validate_block_table(table, start, end, pinned_start=False)
+        return
+    _validate_block_table(epochs, start, end, pinned_start=True)
+
+
+def _validate_block_table(epochs, start: int, end: int, *, pinned_start: bool) -> None:
     if not isinstance(epochs, list) or not epochs:
         raise AlexandriaError("epoch table is empty")
     if len(epochs) > MAX_EPOCHS:
@@ -969,7 +1093,7 @@ def validate_block_epochs(epochs, start: int, end: int) -> None:
         "implementation_code_sha256", "proxy", "start_block", "start_hash",
         "upgrade",
     }
-    expected = start
+    expected = start if pinned_start else None
     for epoch in epochs:
         if not isinstance(epoch, dict) or set(epoch) != required:
             raise AlexandriaError("epoch has an unknown shape")
@@ -977,6 +1101,12 @@ def validate_block_epochs(epochs, start: int, end: int) -> None:
         last = _decimal(epoch["end_block"], "epoch end block")
         if last < first:
             raise AlexandriaError("epoch end block precedes its start block")
+        if expected is None:
+            if not start <= first <= end:
+                raise AlexandriaError(
+                    "epoch table subject's own first block is outside the interval"
+                )
+            expected = first
         if first != expected:
             raise AlexandriaError(
                 f"epoch table leaves block {expected} uncovered"
@@ -1479,6 +1609,7 @@ __all__ = [
     "MAX_SHARDS",
     "MAX_SHARD_WIDTH",
     "PLAN_FORMAT",
+    "PLAN_FORMAT_V2",
     "RECEIPT_FORMAT",
     "Staging",
     "contained",
