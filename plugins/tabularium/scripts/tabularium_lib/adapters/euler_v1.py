@@ -1,8 +1,9 @@
-"""Map a preserved Euler v1 canonical-proxy log response to event schema v2."""
+"""Map a preserved Euler v1 canonical-proxy log response to an event schema."""
 
 from collections import Counter
 from copy import deepcopy
 
+from .. import check_event_schema
 from ..core import TabulariumError
 from .euler_common import (
     MappingResult,
@@ -42,7 +43,7 @@ def _rpc_rows(source):
     return list_(required(source, "result", "Euler v1 source"), "Euler v1 source.result")
 
 
-def _log(raw, borrower, first_block, last_block, index):
+def _log(raw, borrower, first_block, last_block, index, schema_version):
     where = "Euler v1 source.result[%d]" % index
     raw = object_(raw, where)
     if raw.get("address", "").lower() != PROXY:
@@ -85,7 +86,7 @@ def _log(raw, borrower, first_block, last_block, index):
         amounts = [{"kind": "assets", "base_units": str(amount), "asset": underlying}]
     selector = "eth_getLogs[transactionHash=%s,logIndex=%d]" % (transaction_hash, log_index)
     return {
-        "schema_version": 2,
+        "schema_version": schema_version,
         "id": "tabularium:%s:%s:%s:%d:%s" % (CHAIN, ADAPTER, transaction_hash, log_index, rule),
         "event_family": family,
         "action": action,
@@ -119,13 +120,17 @@ def _log(raw, borrower, first_block, last_block, index):
     }
 
 
-def map_source(source, capture):
+def map_source(source, capture, schema_version):
+    check_event_schema(schema_version, "event schema version")
     scope = object_(required(capture, "scope", "capture manifest"), "capture manifest.scope")
     borrower = str(required(scope, "borrower", "capture manifest.scope")).lower()
     first_block = required(scope, "from_block", "capture manifest.scope")
     last_block = required(scope, "to_block", "capture manifest.scope")
     rows = _rpc_rows(source)
-    events = [_log(row, borrower, first_block, last_block, index) for index, row in enumerate(rows)]
+    events = [
+        _log(row, borrower, first_block, last_block, index, schema_version)
+        for index, row in enumerate(rows)
+    ]
     selectors = [event["provenance"]["source_selector"] for event in events]
     if len(selectors) != len(set(selectors)):
         raise TabulariumError("Euler v1 source repeats a transaction/log selector")
