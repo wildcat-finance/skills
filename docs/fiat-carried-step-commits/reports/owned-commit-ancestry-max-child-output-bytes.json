@@ -1,0 +1,1 @@
+{"candidate": "owned-commit-ancestry", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate owned-commit-ancestry --criterion max-child-output-bytes --out .hexaemeron/design/reports/owned-commit-ancestry-max-child-output-bytes.json", "criterion": "max-child-output-bytes", "exit": 0, "schema": "protasis-design-report/v1", "unit": "bytes", "value": 41}
