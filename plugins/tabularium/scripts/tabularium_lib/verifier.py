@@ -104,9 +104,11 @@ def _verify_release(manifest_path, raw_manifest, schema_version):
     if len(rows) != manifest["canonical"]["rows"]:
         raise TabulariumError("canonical row count does not match coverage manifest")
     # Every row is named and checked here, after the duplicate-key refusal in
-    # loads_json and the path confinement above, and before any byte
-    # comparison, so a refusal says which row and field rather than reporting
-    # that the ledger does not rebuild.
+    # loads_json and the path confinement above, and before the byte rebuild
+    # below, so a refusal says which row and field rather than reporting that
+    # the ledger does not rebuild. The artefact digests declared by the
+    # manifest are already checked in _release_artifacts, so this is not the
+    # first comparison of any kind, only the last one before the rebuild.
     selectors = []
     for index, row in enumerate(rows, start=1):
         validate_event_row(row, module, schema_version, index)

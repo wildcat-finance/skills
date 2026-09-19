@@ -11,11 +11,13 @@ from . import support
 from tabularium_lib import CURRENT_EVENT_SCHEMA, SUPPORTED_EVENT_SCHEMAS
 from tabularium_lib.builder import build
 from tabularium_lib.core import TabulariumError, canonical_json, jsonl_bytes, sha256_bytes
+from tabularium_lib.release_v2 import PROVENANCE_FIELDS
 from tabularium_lib.verifier import verify
 
 
 COMMAND = support.PLUGIN_ROOT / "scripts" / "tabularium.py"
 EXAMPLES = support.PLUGIN_ROOT / "examples"
+SCHEMAS = support.PLUGIN_ROOT / "schemas"
 SOURCE_FIXTURE = support.FIXTURES / "minimal-snapshot.json"
 CAPTURE_FIXTURE = support.FIXTURES / "minimal-capture-manifest.json"
 PUBLISHED_V0 = (
@@ -179,6 +181,25 @@ class SchemaVersionReleaseTests(unittest.TestCase):
             lambda row: row["provenance"].pop("source_api"),
             "canonical row 1 has no field provenance.source_api",
         )
+
+    def test_every_schema_required_provenance_field_is_refused_by_name(self):
+        """S2-R1-01: name each field the documents require, not just the tuple ones.
+
+        Without the full list a row missing one of the source-identity fields
+        reaches the byte rebuild, which can only say the ledger does not
+        reproduce.
+        """
+        document = json.loads(
+            (SCHEMAS / "canonical-event-v3.json").read_text(encoding="utf-8")
+        )
+        required = document["properties"]["provenance"]["required"]
+        self.assertEqual(sorted(required), sorted(PROVENANCE_FIELDS))
+        for field in required:
+            with self.subTest(field=field):
+                self.refuse_row(
+                    lambda row, field=field: row["provenance"].pop(field),
+                    "canonical row 1 has no field provenance.%s" % field,
+                )
 
     def test_an_unknown_evidence_class_is_refused_by_name(self):
         self.make()

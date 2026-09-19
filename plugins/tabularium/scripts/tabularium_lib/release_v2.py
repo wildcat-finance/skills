@@ -330,6 +330,9 @@ def validate_manifest(manifest, schema_version):
     return manifest
 
 
+# Every field the canonical-event schema documents require of provenance, so a
+# row that omits one is named here rather than reaching the byte rebuild, where
+# the refusal can only say that the ledger as a whole does not reproduce.
 PROVENANCE_FIELDS = (
     "adapter",
     "adapter_version",
@@ -337,6 +340,11 @@ PROVENANCE_FIELDS = (
     "source_api",
     "mapping_rule",
     "source_selector",
+    "source_kind",
+    "source_contract",
+    "source_entity",
+    "source_id",
+    "supporting_selectors",
 )
 
 
