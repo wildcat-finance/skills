@@ -16,6 +16,8 @@ import io
 import json
 import os
 from pathlib import Path
+import re
+import shlex
 import sys
 import tempfile
 import unittest
@@ -180,6 +182,34 @@ class SchemaDocumentTests(unittest.TestCase):
 
 class SchemaDocumentValidityTests(unittest.TestCase):
     """Every versioned document parses and is itself a valid draft 2020-12 schema."""
+
+    def test_the_declared_document_sets_match_the_schemas_directory(self):
+        """Emptied, the two lists below would assert nothing and still pass.
+
+        `ALL_SCHEMAS` and `DEPRECATED` drive loops whose bodies carry every
+        assertion in this class and in the supersession case, so an empty one
+        is a test that checks nothing rather than a test that fails.  Both are
+        bound here to the documents on disk: the versioned canonical family by
+        name, and the superseded set by the `deprecated` flag the documents
+        themselves carry.  The Compound v3 Phase 0 documents are not part of
+        the versioned canonical family and stay out.
+        """
+        versioned = {
+            path.name
+            for path in SCHEMA_DIRECTORY.iterdir()
+            if re.fullmatch(r"(canonical-event|coverage-manifest)-v\d+\.json", path.name)
+        }
+        self.assertTrue(ALL_SCHEMAS, "no document would be checked at all")
+        self.assertEqual(set(ALL_SCHEMAS), versioned)
+        superseded = {
+            name for name in versioned if load_schema(name).get("deprecated") is True
+        }
+        self.assertTrue(DEPRECATED, "no supersession would be checked at all")
+        self.assertEqual(set(DEPRECATED), superseded)
+        for name, successor in DEPRECATED.items():
+            with self.subTest(schema=name):
+                self.assertIn(successor, versioned)
+                self.assertIsNot(load_schema(successor).get("deprecated"), True)
 
     def test_every_versioned_document_parses_and_checks_as_a_schema(self):
         for name in ALL_SCHEMAS:
@@ -727,8 +757,60 @@ class ReporterCommandTests(unittest.TestCase):
         )
 
 
+    @REQUIRES_JSONSCHEMA
+    def test_a_report_path_with_a_space_is_recorded_as_one_argument(self):
+        """Joined with plain spaces, such a path read as two arguments.
+
+        The field names the command that produced the value, and a reader
+        splitting it on whitespace would have recovered a `--report` nobody
+        passed.  Quoting only where quoting is needed keeps every resolver
+        string the design record declares byte-identical.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection parity.json"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = prove_schema_v3.main(
+                    [
+                        "--candidate", "superseding-releases",
+                        "--criterion", "rejection-parity",
+                        "--report", str(report),
+                    ]
+                )
+            self.assertEqual(code, 0)
+            recorded = json.loads(report.read_text(encoding="utf-8"))["command"]
+        self.assertEqual(shlex.split(recorded)[-1], str(report))
+        self.assertIn("'%s'" % report, recorded)
+
+
 class ReporterAtomicWriteTests(unittest.TestCase):
     """A failed write leaves the report that was already there untouched."""
+
+    def test_a_failure_between_staging_and_renaming_keeps_the_old_report(self):
+        """The rename is the only moment the report changes.
+
+        Staging removed the truncation window; this covers the other half.  A
+        failure after the staged bytes are written and before they replace the
+        report leaves the earlier report whole and no staged file behind.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            prior = json.dumps({"schema": "protasis-design-report/v1"}) + "\n"
+            report.write_text(prior, encoding="utf-8")
+            replaced = os.replace
+
+            def refuse(source, target):
+                raise OSError(errno.EIO, "Input/output error")
+
+            os.replace = refuse
+            try:
+                with self.assertRaises(prove_schema_v3.ReportRefused):
+                    prove_schema_v3.write_report(report, {"value": True})
+            finally:
+                os.replace = replaced
+            self.assertEqual(report.read_text(encoding="utf-8"), prior)
+            self.assertEqual(
+                [path.name for path in Path(directory).iterdir()], [report.name]
+            )
 
     def test_a_failed_write_does_not_destroy_the_previous_report(self):
         """Opened with `O_TRUNC`, the report was emptied before any byte landed.

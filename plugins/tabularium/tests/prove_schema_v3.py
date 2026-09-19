@@ -28,6 +28,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import sys
 
 
@@ -115,17 +116,25 @@ def resolver_command(args):
     record whatever the host process was invoked with whenever `main` is called
     in process, which is a command that never ran and a place for an unrelated
     caller's arguments to land in a committed report.
+
+    `shlex.join` leaves a token that needs no quoting exactly as it is, so
+    every resolver string the design record declares is still reproduced byte
+    for byte, while a report path carrying a space is quoted rather than
+    recorded as two arguments nobody passed.
     """
     script = Path(__file__).resolve()
     try:
         script = script.relative_to(support.REPO_ROOT)
     except ValueError:
         pass
-    return "python3 %s --candidate %s --criterion %s --report %s" % (
-        script,
-        args.candidate,
-        args.criterion,
-        args.report,
+    return shlex.join(
+        [
+            "python3",
+            str(script),
+            "--candidate", args.candidate,
+            "--criterion", args.criterion,
+            "--report", args.report,
+        ]
     )
 
 
