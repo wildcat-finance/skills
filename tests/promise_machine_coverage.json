@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "04a5339fcbd427781d08ad922223180815eda577c0afdc72c83323ff2aefe081"
+        "sha256": "0df3176bdcddac1891e1df392335391075dba86087da907a2c94c308b39c474f"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "04671c71a4bdff88ae377e50fc4d40a92260d1df92bd1fa300005f266479eba8"
+        "sha256": "a7aa037740b7b6a3493bf431d561978c3782cac61d1749caf8b25eb6b0040ed6"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "19c04716403d0b3efe7c85e5ed51fca35e52506a1d6b70c1bcd10db50d162fec"
+        "sha256": "2d8222c7524113166b7bce4172d1f712232561ff19a53b94a208d089e77fc197"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "2e788fed17ce5bd472d4c363a81e92e4c80861b13329d61555756ee0109ecc2a"
+      "sha256": "37e2f6c1a075b1e045c21b7567b6831bf3039b24b8d83fd18c31c37b17602c77"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -4527,7 +4527,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4316050d26e14dff3e02f04c9702b7540d9fd438ef3677e0fd99e7ba6c2726c2"
+      "sha256": "7633f59421ea1e648e2d1f86b5a268caf60fea7b177525f59b4c70d3d800b35a"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4543,7 +4543,7 @@
     },
     "reporter": {
       "path": "plugins/hexaemeron/tests/run_tests.py",
-      "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b"
+      "sha256": "c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8"
     },
     "tests": [
       {
@@ -5170,16 +5170,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "negative",
-        "sha256": "32d8291bbd3b77cc69bb887f9d484312041f23c2cfab4b57e18c92fa07b45a58"
+        "sha256": "5cde1c9c6e5c8ef835c666339d06e3ad25edc788ce149424407bf798f83168d4"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "positive",
-        "sha256": "32d8291bbd3b77cc69bb887f9d484312041f23c2cfab4b57e18c92fa07b45a58"
+        "sha256": "5cde1c9c6e5c8ef835c666339d06e3ad25edc788ce149424407bf798f83168d4"
       },
       "reader": "native-json-v1",
       "selector": "test_restore_from_archive_recreates_repository_and_controller_state",
-      "sha256": "e20e8913a25ac6746d22db3431cc9fe1fb3e452d5ddf8861a0095b118bdb90ad",
+      "sha256": "85edbbecc1cb830ee1ccec36bd0ef7f13f31f4a2b7b09b2ac618a593b2e2ebd2",
       "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py"
     },
     "fiat-controller-checkpoint": {
@@ -5346,12 +5346,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "e2dd074b2d78d81e807940e2f13440084985e65a1125c3e276411affc62ce7e6"
+        "sha256": "a671579c5af5d5e0f5330b71efbb0b9f3887bd804b425198bf3bad794aee4703"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "e2dd074b2d78d81e807940e2f13440084985e65a1125c3e276411affc62ce7e6"
+        "sha256": "a671579c5af5d5e0f5330b71efbb0b9f3887bd804b425198bf3bad794aee4703"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",

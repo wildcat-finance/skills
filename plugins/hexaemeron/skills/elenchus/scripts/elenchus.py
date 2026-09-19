@@ -215,14 +215,14 @@ class ExecutableBinding:
     def stable(self) -> bool:
         try:
             for containing, name, descriptor, expected in self.directories:
-                if _file_identity(os.fstat(descriptor)) != expected:
+                if _executable_directory_identity(os.fstat(descriptor)) != expected:
                     return False
                 named = (
                     os.lstat(os.path.sep)
                     if containing is None
                     else os.stat(name, dir_fd=containing, follow_symlinks=False)
                 )
-                if _file_identity(named) != expected or not stat.S_ISDIR(named.st_mode):
+                if _executable_directory_identity(named) != expected or not stat.S_ISDIR(named.st_mode):
                     return False
             opened = os.fstat(self.descriptor)
             named = os.stat(
@@ -286,6 +286,17 @@ def _effective_execute_bit(observed: os.stat_result) -> int:
     return stat.S_IXOTH
 
 
+def _executable_directory_identity(observed: os.stat_result) -> tuple[int, ...]:
+    """Bind the directory and its access policy, independent of its entries.
+
+    Sibling creation and an ancestor move can change timestamps, size and link
+    count without changing the held executable. Its own full identity remains
+    required, and every directory name must still reach its held inode.
+    """
+    return (observed.st_dev, observed.st_ino, observed.st_mode,
+            observed.st_uid, observed.st_gid)
+
+
 def _trusted_executable(raw: str) -> ExecutableBinding:
     """Resolve and retain one executable through a no-follow descriptor walk."""
     if os.sep in raw or (os.altsep and os.altsep in raw):
@@ -320,9 +331,9 @@ def _trusted_executable(raw: str) -> ExecutableBinding:
     try:
         root_named = os.lstat(os.path.sep)
         root_fd = os.open(os.path.sep, directory_flags)
-        root_identity = _file_identity(os.fstat(root_fd))
+        root_identity = _executable_directory_identity(os.fstat(root_fd))
         if (
-            root_identity != _file_identity(root_named)
+            root_identity != _executable_directory_identity(root_named)
             or not stat.S_ISDIR(root_named.st_mode)
         ):
             os.close(root_fd)
@@ -332,8 +343,8 @@ def _trusted_executable(raw: str) -> ExecutableBinding:
         for component in resolved.parts[1:-1]:
             named = os.stat(component, dir_fd=parent_fd, follow_symlinks=False)
             child_fd = os.open(component, directory_flags, dir_fd=parent_fd)
-            identity = _file_identity(os.fstat(child_fd))
-            if identity != _file_identity(named) or not stat.S_ISDIR(named.st_mode):
+            identity = _executable_directory_identity(os.fstat(child_fd))
+            if identity != _executable_directory_identity(named) or not stat.S_ISDIR(named.st_mode):
                 os.close(child_fd)
                 raise OSError("an executable directory was replaced")
             directories.append((parent_fd, component, child_fd, identity))
