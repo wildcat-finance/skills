@@ -12,6 +12,7 @@ list would leave its values unchecked against the schema documents.
 import contextlib
 import copy
 import errno
+import hashlib
 import io
 import json
 import os
@@ -43,6 +44,22 @@ COVERAGE_V2 = "coverage-manifest-v2.json"
 EVENT_V3 = "canonical-event-v3.json"
 COVERAGE_V3 = "coverage-manifest-v3.json"
 ALL_SCHEMAS = (EVENT_V2, COVERAGE_V2, EVENT_V3, COVERAGE_V3)
+DOCS_REPORTS = support.REPO_ROOT / "docs" / "tabularium-schema-v3" / "reports"
+# The conformance reports the resolvers wrote, copied beside the
+# specification, each at the SHA-256 of the bytes that were copied.  The
+# resolvers write under `.hexaemeron/`, which Git ignores, so these copies are
+# the only tracked form of that evidence and the digests are what say the
+# copies were not edited afterwards.
+CONFORMANCE_REPORTS = {
+    "superseding-releases-legacy-v0-verify.json":
+        "89abec0fcd2c656f37354e8be767248083bcaa22462198a6898c15292b534008",
+    "superseding-releases-rejection-parity.json":
+        "da92d014e421bd534e3ea0750499049e38e9c190a194fda93372db3aa54b8dd7",
+    "superseding-releases-shipped-ledgers-validate-v3.json":
+        "16e7134219006bdcff6f6846dd1c8e017d1cf54be5bce6d344d7a2638300f037",
+    "superseding-releases-suite-wall-time.json":
+        "fe312a7d7ac84f6973f87e6f4cc52393ff079a7c29103a5737a955b57607ddff",
+}
 DEPRECATED = {EVENT_V2: EVENT_V3, COVERAGE_V2: COVERAGE_V3}
 REQUIRES_JSONSCHEMA = unittest.skipIf(jsonschema is None, support.JSONSCHEMA_ABSENT)
 
@@ -921,7 +938,12 @@ class ReporterCriterionTests(unittest.TestCase):
         self.assertEqual(
             set(prove_schema_v3.CRITERIA), set(prove_schema_v3.OBSERVERS)
         )
-        self.assertEqual(set(prove_schema_v3.CRITERIA.values()), {"boolean"})
+        self.assertEqual(
+            set(prove_schema_v3.CRITERIA.values()), {"boolean", "milliseconds"}
+        )
+        self.assertEqual(
+            prove_schema_v3.CRITERIA["suite-wall-time"], "milliseconds"
+        )
 
     def test_an_empty_evidence_collection_fails_rather_than_passing(self):
         """`all(())` is true, and a vacuous pass is the failure mode here.
@@ -929,28 +951,84 @@ class ReporterCriterionTests(unittest.TestCase):
         A criterion resolved over no observations attests nothing, and the
         report has nowhere to record that it attested nothing.  The reporter
         therefore refuses an empty collection rather than writing `true` over
-        it, and the exit code and recorded value say so together.
+        it.  A boolean criterion records the refusal as a false value with
+        exit 1; a millisecond criterion writes no report, because no duration
+        it could record was measured and a short one would read as a pass.
         """
-        for criterion in sorted(prove_schema_v3.CRITERIA):
+        for criterion, unit in sorted(prove_schema_v3.CRITERIA.items()):
             with self.subTest(criterion=criterion):
                 with scratch_directory() as directory:
                     report = Path(directory) / "empty.json"
+                    stderr = io.StringIO()
                     with mock.patch.dict(
                         prove_schema_v3.OBSERVERS, {criterion: list}
                     ):
-                        with contextlib.redirect_stdout(io.StringIO()):
-                            code = prove_schema_v3.main(
-                                [
-                                    "--candidate", "superseding-releases",
-                                    "--criterion", criterion,
-                                    "--report", str(report),
-                                ]
-                            )
+                        with contextlib.redirect_stderr(stderr):
+                            with contextlib.redirect_stdout(io.StringIO()):
+                                code = prove_schema_v3.main(
+                                    [
+                                        "--candidate", "superseding-releases",
+                                        "--criterion", criterion,
+                                        "--report", str(report),
+                                    ]
+                                )
                     self.assertEqual(code, 1)
+                    if unit != "boolean":
+                        self.assertFalse(
+                            report.exists(),
+                            "an unmeasured duration was written anyway",
+                        )
+                        self.assertIn(criterion, stderr.getvalue())
+                        continue
                     written = json.loads(report.read_text(encoding="utf-8"))
                 self.assertIs(written["value"], False)
                 self.assertEqual(written["exit"], 1)
                 self.assertEqual(written["criterion"], criterion)
+
+    def test_the_wall_time_criterion_does_not_time_itself(self):
+        """A guarded run collects nothing rather than forking its own suite.
+
+        The measurement is a subprocess running the whole Tabularium suite.
+        Reached from inside that suite it would start another, so the child
+        carries `TABULARIUM_SUITE_WALL_TIME` and a run that already sees it
+        set returns no observation, which the reporter then refuses.
+        """
+        with mock.patch.dict(
+            os.environ, {prove_schema_v3.SUITE_GUARD: "1"}
+        ):
+            self.assertEqual(prove_schema_v3.suite_wall_time(), [])
+
+    def test_the_wall_time_value_is_the_longest_run_not_an_average(self):
+        """Several observations cannot average a slow suite away.
+
+        The budget is a ceiling on what a reader waits, so the recorded value
+        is the longest run observed and the agreement is the budget
+        comparison, not the arithmetic mean of the runs.
+        """
+        observations = [
+            {"agreed": True, "elapsed_ms": 1200},
+            {"agreed": True, "elapsed_ms": 4300},
+        ]
+        value, code = prove_schema_v3.summarise("suite-wall-time", observations)
+        self.assertEqual(value, 4300)
+        self.assertEqual(code, 0)
+        observations[1]["agreed"] = False
+        value, code = prove_schema_v3.summarise("suite-wall-time", observations)
+        self.assertEqual(value, 4300)
+        self.assertEqual(code, 1)
+
+    def test_the_recorded_budget_is_the_one_the_design_record_declares(self):
+        """`.hexaemeron/` is ignored, so the number is repeated, not read.
+
+        A repeated constant is a constant that can drift from the record it
+        repeats.  The study is committed beside this suite and states the same
+        budget in prose, so the two are held together here.
+        """
+        self.assertEqual(prove_schema_v3.SUITE_BUDGET_MS, 60000)
+        study = (
+            support.REPO_ROOT / "docs" / "tabularium-schema-v3" / "study.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("at most 60,000 ms", study)
 
     def test_the_shipped_ledger_criterion_reads_every_superseding_release(self):
         observations = prove_schema_v3.shipped_ledgers_validate_v3()
@@ -1004,6 +1082,46 @@ class ReporterCriterionTests(unittest.TestCase):
             observation = support.document_observation("euler-v1-v1")
         self.assertEqual(observation["rows"], 0)
         self.assertFalse(observation["agreed"])
+
+
+class CommittedConformanceReportTests(unittest.TestCase):
+    """The conformance evidence committed beside the specification.
+
+    Each of the four conformance criteria was resolved by a run whose report
+    landed under the run worktree's ignored `.hexaemeron/reports/`.  The copies
+    under `docs/tabularium-schema-v3/reports/` are what a reader without that
+    worktree has, so this case holds them to the shape the record consumes and
+    to the bytes that were copied.
+    """
+
+    def test_every_committed_conformance_report_copy_matches_its_digest(self):
+        expected = set(CONFORMANCE_REPORTS)
+        self.assertEqual(
+            {name.split("superseding-releases-", 1)[1][: -len(".json")]
+             for name in expected},
+            set(prove_schema_v3.CRITERIA),
+            "a conformance criterion has no committed report copy",
+        )
+        for name, digest in sorted(CONFORMANCE_REPORTS.items()):
+            with self.subTest(report=name):
+                path = DOCS_REPORTS / name
+                raw = path.read_bytes()
+                self.assertEqual(
+                    hashlib.sha256(raw).hexdigest(),
+                    digest,
+                    "%s is not the bytes its digest records" % name,
+                )
+                report = json.loads(raw.decode("utf-8"))
+                self.assertEqual(
+                    report["schema"], prove_schema_v3.REPORT_SCHEMA
+                )
+                self.assertEqual(report["exit"], 0)
+                self.assertEqual(report["candidate"], "superseding-releases")
+                criterion = report["criterion"]
+                self.assertIn(criterion, prove_schema_v3.CRITERIA)
+                self.assertEqual(
+                    report["unit"], prove_schema_v3.CRITERIA[criterion]
+                )
 
 
 if __name__ == "__main__":
