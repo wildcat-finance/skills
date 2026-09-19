@@ -34,6 +34,27 @@ class AaveV4AdapterTests(unittest.TestCase):
     def map(self, source=None):
         return aave_v4.map_source(source or self.source, self.capture, CURRENT_EVENT_SCHEMA)
 
+    def test_the_two_schemas_map_the_same_window_to_the_same_rows(self):
+        """Schema 3 changed the admitted vocabulary, not the mapping.
+
+        The superseding v1 releases were built from the v0 source bytes, so a
+        row that differed anywhere except `schema_version` would mean the two
+        published releases disagree about the same logs.  Mapping the same
+        source under each version and comparing row for row is what says that
+        did not happen, without reading either committed release.
+        """
+        under_two = aave_v4.map_source(self.source, self.capture, 2).events
+        under_three = aave_v4.map_source(self.source, self.capture, 3).events
+        self.assertEqual(len(under_two), len(under_three))
+        for index, (two, three) in enumerate(zip(under_two, under_three)):
+            with self.subTest(row=index + 1):
+                self.assertEqual(two["schema_version"], 2)
+                self.assertEqual(three["schema_version"], 3)
+                self.assertEqual(
+                    {key: value for key, value in two.items() if key != "schema_version"},
+                    {key: value for key, value in three.items() if key != "schema_version"},
+                )
+
     def test_checked_in_window_maps_every_captured_log(self):
         mapped = self.map()
         self.assertEqual(len(mapped.events), 500)

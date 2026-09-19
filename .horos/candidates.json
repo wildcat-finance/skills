@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 28014147,
+    "bytes_blob": 29707515,
     "bytes_generated": 98
   },
   "entries": [
@@ -1210,6 +1210,20 @@
       "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
+    },
+    {
+      "bytes": 1232064,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/aave-v4-v1/events.jsonl"
+    },
+    {
+      "bytes": 461304,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 461304 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
     },
     {
       "bytes": 24559,

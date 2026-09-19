@@ -235,6 +235,19 @@ OMISSIONS = (
         "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
         "reason": "the offline trace release sources remain in the full source checkout",
     },
+    {
+        "pattern": (
+            "plugins/tabularium/examples/*-v1/"
+            "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}"
+        ),
+        "reason": (
+            "a superseding schema v3 release is built from the v0 release's own "
+            "source bytes, so shipping both payloads would carry the same "
+            "evidence twice; the v1 documents stay and the payload and its "
+            "rebuild demonstration remain in the full source checkout, which is "
+            "where those documents say to run them"
+        ),
+    },
 )
 
 
@@ -279,6 +292,19 @@ def _omitted(relative: Path) -> bool:
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
         return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
+        return True
+    if (
+        parts[:3] == ("plugins", "tabularium", "examples")
+        and len(parts) == 5
+        and parts[3].endswith("-v1")
+        and parts[4] in {
+            "capture.json",
+            "coverage.json",
+            "events.jsonl",
+            "rebuild.py",
+            "source.json",
+        }
+    ):
         return True
     example = parts[:4] == (
         "plugins",

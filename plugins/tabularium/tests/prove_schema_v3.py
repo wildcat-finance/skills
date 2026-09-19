@@ -16,11 +16,28 @@ before touching the report path, so a host without the package leaves no report
 at all rather than a passing one.  That string is the suite's only skip reason,
 which is what makes a skipped parity run visibly not a pass.
 
-`rejection-parity` is the only criterion this step resolves.  It holds when
-every committed rejection fixture is refused by `jsonschema` and by
-`validate_event_row`, and both name the one field the fixture is named for.  A
-fixture either validator admits is a disagreement, so the value is false, the
-report records exit 1, and the process exits 1.
+Three criteria are resolved here, one per run.
+
+`rejection-parity` holds when every committed rejection fixture is refused by
+`jsonschema` and by `validate_event_row`, and both name the one field the
+fixture is named for.  A fixture either validator admits is a disagreement.
+
+`shipped-ledgers-validate-v3` holds when every shipped release built under
+canonical event schema 3 has a `coverage.json` the v3 manifest schema admits
+and an `events.jsonl` whose every row the v3 event schema and
+`validate_event_row` both admit.
+
+`legacy-v0-verify` holds when every release published under schema 2 still
+verifies offline through the retained v2 read path and still carries the bytes
+it was published with.  That is the recovery half of the superseding design:
+the newer envelope is worth nothing if reading the older releases stops
+working, and it is worth less than nothing if their bytes moved.
+
+A criterion that disagrees anywhere makes the value false, the report record
+exit 1, and the process exit 1.  So does a criterion whose evidence collection
+is empty: `all(())` is true, and a closed `protasis-design-report/v1` object
+has nowhere to record that it attested nothing, so an empty collection is
+refused here rather than reported as a pass.
 """
 
 import argparse
@@ -40,9 +57,13 @@ from tests import support  # noqa: E402
 
 
 REPORT_SCHEMA = "protasis-design-report/v1"
-CRITERIA = {"rejection-parity": "boolean"}
+CRITERIA = {
+    "legacy-v0-verify": "boolean",
+    "rejection-parity": "boolean",
+    "shipped-ledgers-validate-v3": "boolean",
+}
 IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
-EVENT = "tabularium.schema-v3.rejection-parity"
+EVENT_PREFIX = "tabularium.schema-v3."
 
 
 class ReportRefused(Exception):
@@ -150,6 +171,31 @@ def rejection_parity():
     return observations
 
 
+def shipped_ledgers_validate_v3():
+    """One observation per shipped release built under schema 3."""
+    return [
+        support.document_observation(name)
+        for name in support.SUPERSEDING_RELEASES
+    ]
+
+
+def legacy_v0_verify():
+    """One observation per release published under schema 2."""
+    return [
+        support.verification_observation(
+            name, 2, support.release_published_digests(name)
+        )
+        for name in support.LEGACY_RELEASES
+    ]
+
+
+OBSERVERS = {
+    "legacy-v0-verify": legacy_v0_verify,
+    "rejection-parity": rejection_parity,
+    "shipped-ledgers-validate-v3": shipped_ledgers_validate_v3,
+}
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description="Resolve one Tabularium v3 schema design criterion.",
@@ -173,8 +219,10 @@ def main(argv=None):
         sys.stderr.write(str(exc) + "\n")
         return 2
 
-    observations = rejection_parity()
-    value = all(observation["agreed"] for observation in observations)
+    observations = OBSERVERS[args.criterion]()
+    value = bool(observations) and all(
+        observation["agreed"] for observation in observations
+    )
     code = 0 if value else 1
     report = {
         "candidate": args.candidate,
@@ -191,17 +239,18 @@ def main(argv=None):
         sys.stderr.write(str(exc) + "\n")
         return 2
 
+    event = EVENT_PREFIX + args.criterion
     for observation in observations:
         line = dict(observation)
-        line["event"] = EVENT
+        line["event"] = event
         sys.stdout.write(json.dumps(line, sort_keys=True) + "\n")
     sys.stdout.write(
         json.dumps(
             {
                 "candidate": args.candidate,
                 "criterion": args.criterion,
-                "event": EVENT + ".summary",
-                "fixtures": len(observations),
+                "event": event + ".summary",
+                "observations": len(observations),
                 "report": str(path),
                 "value": value,
             },

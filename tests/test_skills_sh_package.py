@@ -164,6 +164,8 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
+    "plugins/tabularium/examples/*-v1/"
+    "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}",
 }
 PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
@@ -490,6 +492,25 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertTrue((example / "rebuild.py").is_file())
         for omitted in ("input", "release", "source"):
             self.assertFalse((example / omitted).exists())
+        # A superseding Tabularium release is built from the v0 release's own
+        # source bytes, so the runtime would otherwise carry the same evidence
+        # twice.  Its documents stay: the skill links them.
+        for release in ("aave-v4-v1", "euler-v1-v1", "euler-v2-v1"):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            self.assertTrue((directory / "README.md").is_file(), release)
+            self.assertTrue((directory / "DATA-DICTIONARY.md").is_file(), release)
+            for omitted in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertFalse((directory / omitted).exists(), release)
+        for release in ("aave-v4-v0", "euler-v1-v0", "euler-v2-v0"):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            for kept in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertTrue((directory / kept).is_file(), release)
 
     def test_selected_directory_works_as_an_isolated_copy(self):
         with tempfile.TemporaryDirectory() as raw:
