@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "whole-lines-only",
+  "criterion": "material-refusals",
+  "value": 231,
+  "unit": "count",
+  "command": "python3 .hexaemeron/measure_design.py --candidate whole-lines-only --criterion material-refusals --report .hexaemeron/reports/whole-lines-only-material-refusals.json",
+  "exit": 0
+}

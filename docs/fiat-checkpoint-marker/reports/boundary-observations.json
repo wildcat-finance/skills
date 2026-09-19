@@ -1,0 +1,77 @@
+{
+  "schema": "fiat-1755-study-boundary-observation/v1",
+  "source_sha256": "9210186811edc6f965b48ae166f96a812016eb1cd5350ee5d0e202085bc0da4d",
+  "cases": [
+    {
+      "id": "old-16384-stripped-geometry",
+      "bytes": 12412,
+      "sha256": "5cbc7b489ca99f5220d2fda3add1e6d188777b41b09d85663e47f17fa6093a12",
+      "released": false,
+      "bounded-material": true
+    },
+    {
+      "id": "conservative-long-word",
+      "bytes": 78,
+      "sha256": "55535f1e58725945498883242d6aaa569789277071131db8ca476651639d108a",
+      "released": true,
+      "bounded-material": true
+    },
+    {
+      "id": "fifteen-glyph-prefix",
+      "bytes": 75,
+      "sha256": "4dbf2808937433648acb79d58e418f676cb8a2cea2f1340a8129008fb07aba74",
+      "released": true,
+      "bounded-material": false
+    },
+    {
+      "id": "sixteen-glyph-prefix",
+      "bytes": 76,
+      "sha256": "cde468252f07507816c4d680a19d6378046bc879cf9d22de388ca7df62144ef0",
+      "released": true,
+      "bounded-material": true
+    },
+    {
+      "id": "metadata-256",
+      "bytes": 334,
+      "sha256": "adb1ce671227a9fc1dd199c53b93dba30bb8737671c85085728b9f04c37b6dc6",
+      "released": true,
+      "bounded-material": true
+    },
+    {
+      "id": "metadata-257",
+      "bytes": 335,
+      "sha256": "8f0167ecde8049a017ff4c7c75dc1d6c10de71e5401431f10749aece8b5703c4",
+      "released": true,
+      "bounded-material": false
+    },
+    {
+      "id": "seven-metadata",
+      "bytes": 154,
+      "sha256": "4e200b557ce2719bc020ffc8f22701508d5fc1b431b5a957b64097943b36e8aa",
+      "released": true,
+      "bounded-material": true
+    },
+    {
+      "id": "eight-metadata",
+      "bytes": 165,
+      "sha256": "334fd8f907e9ef7f373a4920ac45728f801c65eabb30ef02df051ad2e1cf19f6",
+      "released": true,
+      "bounded-material": false
+    },
+    {
+      "id": "body-start-1791",
+      "bytes": 1867,
+      "sha256": "6b3eefb574a5a32304258897ac274c33d95980190fc4648c39efcf283f2cc090",
+      "released": true,
+      "bounded-material": true
+    },
+    {
+      "id": "body-start-1792",
+      "bytes": 1868,
+      "sha256": "f36ed4ff692deddcf3fb45f796d45e080f782ef8d7b25f8414c123ebcc3dd12e",
+      "released": true,
+      "bounded-material": false
+    }
+  ],
+  "boundary": "Boolean shape observations only; no source content or working private key persisted."
+}

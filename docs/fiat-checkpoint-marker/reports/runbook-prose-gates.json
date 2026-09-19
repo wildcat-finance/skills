@@ -1,0 +1,100 @@
+{
+  "schema": "fiat-1755-runbook-prose-gates/v1",
+  "subject": ".hexaemeron/runbook.md",
+  "protected_inventory": {
+    "headings": [
+      "## Step 1: Record the scanner policy and measured design",
+      "## Step 2: Guard and repair material recognition",
+      "## Step 3: Demonstrate recovery and prepare the release"
+    ],
+    "source_sha256": "3883304376895cfe963211b80773575885b68adb39d5ecad994cf418376cc4e6",
+    "exact_source_preserved": true
+  },
+  "sapheneia": {
+    "required_structure_retained": true,
+    "protected_items_retained": true,
+    "surface_changes": 0
+  },
+  "vulgate": {
+    "register": "neutral",
+    "content_comparison": "source and final bytes identical",
+    "surface_changes": 0
+  },
+  "imprimatur": [
+    {
+      "name": "imprimatur-before-vulgate",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "/tmp/fiat1755-runbook-shaped.md",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "result": {
+        "score": 100.0,
+        "defects": 0,
+        "weighted": 0,
+        "per_1000_words": 0.0,
+        "word_count": 1670,
+        "by_pass": {},
+        "by_family": {},
+        "hits": [],
+        "signals": [],
+        "cadence": {
+          "sentence_count": 114,
+          "mean_sentence_length": 14.6,
+          "length_variance": 44.0,
+          "variance_floor": 25.0,
+          "variance_below_floor": false,
+          "longest_similar_run": 6,
+          "max_allowed_run": 4,
+          "repeated_openers": {
+            "the parent": 4,
+            "tests elenchus": 3,
+            "disciplines phylax": 3
+          }
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "name": "imprimatur-final",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "/tmp/fiat1755-runbook-shaped.md",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "result": {
+        "score": 100.0,
+        "defects": 0,
+        "weighted": 0,
+        "per_1000_words": 0.0,
+        "word_count": 1670,
+        "by_pass": {},
+        "by_family": {},
+        "hits": [],
+        "signals": [],
+        "cadence": {
+          "sentence_count": 114,
+          "mean_sentence_length": 14.6,
+          "length_variance": 44.0,
+          "variance_floor": 25.0,
+          "variance_below_floor": false,
+          "longest_similar_run": 6,
+          "max_allowed_run": 4,
+          "repeated_openers": {
+            "the parent": 4,
+            "tests elenchus": 3,
+            "disciplines phylax": 3
+          }
+        }
+      },
+      "stderr": ""
+    }
+  ],
+  "brevitas": "Completeness-oriented runbook."
+}

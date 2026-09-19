@@ -1,0 +1,89 @@
+# Checkpoint marker repair runbook
+
+Implement issue 1755 from the receipted `.hexaemeron/study.md` and selected `bounded-material` design. The starting tree is `e2307ed5966e18727434b3e49bec89db736f7b17`. Use Python 3.14.6, locally `/home/kethcode/.local/bin/python3.14`. Existing toolchain pins, licence, hooks and CI remain the scaffold. The parent owns receipts, publication, checkpoints, stack merges and integration; workers act on native packets only.
+
+```design-lock
+schema | protasis-design-evidence/v1
+sha256 | 6df3280312489ce0c45a3281c776a782d59f3ec3bdb9324b11e009d9e6f4e6a8
+candidate | bounded-material
+```
+
+```version-relations
+fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | next-generation-after-integration-base
+```
+
+Known-failure assignment: `kf-1755-s2-r1b-01` -> Step 2
+
+Preserve the two public CP3 audit files and their recorded digests, the original service run, historical audit records and controller receipts. No path exemption, redaction, scan suppression or history rewrite is authorized. Issue 1676 owns service admission; issue 1756 owns native Codex currency observation. This run changes the scanner policy and its evidence only. Existing signing, destination-custody and concurrency carryovers remain with their recorded issues.
+
+Every new written record follows Sapheneia, Imprimatur, Vulgate and final Imprimatur, with applicable Brevitas checks. Generated records and digest-bound source copies retain their producer's exact bytes. Author signed commits as Dave Coleman using the configured kethcode SSH identity, verify locally before publication, and include the two repository provenance trailers exactly once. Run the checked repository runner before every push. Regenerate portable copies, source bindings and Horos records only when their owned inputs change.
+
+The installed controller remains the authority for this run. Build native demonstrations with the changed repository controller only in disposable fixture roots. New reports contain counts, case identifiers and digests, without private-key payloads or literal paired key-marker examples. Refer to preserved source evidence by path and digest. A complete native checkpoint is mandatory after each step's push receipt.
+
+## Step 1: Record the scanner policy and measured design
+
+**Goal.** Commit the checked specification and append the historical policy amendment before changing scanner behaviour.
+
+**Entry.** The native zero-assigned inoculation receipt has created the prescribed Step 1 branch at its exact `step_parent`. The study and immutable design record are receipted; no scanner guard or implementation is claimed.
+
+**Exit.** The study and runbook have byte-identical repository copies, and the selection evidence retains all four candidates, actual measurements, limits and pending conformance gates. Append a dated amendment to docs/fiat-checkpoint-archive-study.md that expressly replaces footer-only refusal for empty or prose-only pairs, retains independent body refusal, defines the selected material-prefix grammar and bounds, and withdraws the particular stripped 16,384-bit geometry expected failure. The prior document remains its exact prefix. Explain the measured cost and remaining recognition limits. Existing layout, licence, Python pin, hooks and CI continue to apply. Require `python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study .hexaemeron/study.md`, `python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py .hexaemeron/runbook.md --gate-root .` and `python3 scripts/run_checks.py --scope docs --report .hexaemeron/reports/step-1-checks.json` to exit zero. Stage the complete intended tree, pass .githooks/greenlight, then create and verify the signed commit. The controller independently runs its declared final-green suites before opening audit.
+
+**Files.** Create `docs/fiat-checkpoint-marker-study.md`, `docs/fiat-checkpoint-marker-runbook.md` and `docs/fiat-checkpoint-marker-evidence/` for exact design/report/probe copies and reproduction instructions. Keep every original controller evidence file unchanged. Explain that the copied measurement source is replayed at the pinned starting tree after placement at `.hexaemeron/measure_design.py`; running its old-baseline candidate against repaired code is not baseline reproduction. Append only to `docs/fiat-checkpoint-archive-study.md`. Refresh `.horos/boundary.json` and `.horos/census.json` as required by those inputs. Add an ownership row in `tests/check-map-v1.json` only if the checked runner reports a genuinely unowned new path. No scanner or guard code changes in this step.
+
+**Tests.** Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.elenchus/fiat-1755-step-1.json`. No new behavioural test is required for this scaffold. Check the exact document copies, historical prefix and report digests; apply the existing Protasis, design-lock, prose, discipline and generated-file checks. Preserve the current passing scanner tests, including the policy assertion awaiting Step 2.
+
+**Disciplines.** phylax: preserve input and evidence custody without changing ingestion. ephoros: retain actual selection counts, command exits and report digests. metron: carry the measured 2,852,093-byte workload and its timing/allocation limits without a speed claim. elenchus: preserve the reproduced failure and its Step 2 guard assignment without claiming inoculation ran. hypomnema: record the changed historical policy, rejected alternatives and decision home before implementation.
+
+## Step 2: Guard and repair material recognition
+
+**Goal.** Replace footer-only refusal with the selected bounded material witness while keeping existing body and token refusals.
+
+**Entry.** Step 1 is audited and pushed with a complete native checkpoint. Native inoculation creates the exact Step 2 branch and one signed guard-only commit changing precisely the two assigned guard paths. The parent retains the assertion failure against the exact Step parent and receipts inoculation. Implementation continues from that guard commit on the same branch.
+
+**Exit.** Both unchanged public audit files and the declared empty/prose-only specimens pass the shared scanner. Material-bearing specimens retain refusal across raw and escaped line breaks, short body segments, admitted metadata, truncated or absent footers, escaped solidi, repeated headers and chunk splits. Retain the four token patterns and independent whole-line witness. Implement the study's 16-glyph prefix, 1,792-byte start bound, seven metadata lines of at most 256 original content bytes, 9,984-byte lookahead, 65,536-byte chunks and 10,079-byte carry. No quote or filename is an exception. Replace the adjacent-marker and prose-only footer assertions with explicit benign assertions; convert the named stripped geometry expected failure into an ordinary guard. Resolve the selected implementation-regression cell through its exact immutable resolver before Step 3 can open. Product timing on the same host and workload must be at most four times its same-run released baseline, with traced peak below 1,048,576 bytes. Run `python3 scripts/run_checks.py --base e2307ed5966e18727434b3e49bec89db736f7b17 --report .hexaemeron/reports/step-2-checks.json` to exit zero, pass staged greenlight, and create a locally verified signed implementation commit. The parent obtains native final-green evidence before audit.
+
+**Files.** The inoculation union is only `plugins/hexaemeron/tests/test_checkpoint_marker_scan.py` and `plugins/hexaemeron/tests/emit_fiat1755_guard_report.py`; their parent reporter is the exact inventory command. Product work changes `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`, extends that test module and `plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`, and creates `plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py` for the exact declared conformance operations. The helper's native-roundtrip operation may remain pending until Step 3. Update `plugins/hexaemeron/skills/fiat/references/checkpoint-archive.md` and explanatory comments with the amended recognition rule and limits. Record the generation decision in `plugins/hexaemeron/skills/fiat/EVOLUTION.md` and matching `SKILL.md` metadata while preserving the held frontier. Update directly affected version assertions and compatibility declarations.
+
+Regenerate source-bound coverage and runtime fixtures under `tests/promise_machine_coverage.json`, `tests/fixtures/promise-machine/runtime/`, `docs/promise-machine/obligation-gates/` and `tests/fixtures/agent-instruction-v1/` only where their declared inputs changed. Preserve frozen model/profile/measurement/parity evidence; any historical outcome rebind must prove its prompt bytes unchanged and retain its original provenance. No model invocation is authorized for the frozen instruction corpus. Synchronize portable copies and refresh Horos records. Keep the check map valid; do not change a registered runner or adapter to avoid a gate. Preserve conformance evidence in the existing repair evidence directory and controller report paths.
+
+**Tests.** Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.elenchus/fiat-1755-step-2.json`. The separate inventory reporter must execute actual direct-scanner assertions on the two unchanged files, with nonzero executed tests and no errors, skips, expected failures or unexpected successes. Add the study's 436 refusal and 119 benign specimens, boundary and resource checks with truthful counts; distinguish the exercised 3,072-bit RSA key from relabelled and geometry specimens. Preserve existing archive/inspect/restore and signing tests. Require all assigned fixed-tree reports and the declared root/Hexaemeron suites to pass under the controller; retain failed attempts as evidence.
+
+**Disciplines.** phylax: inspect untrusted bytes within fixed bounds and preserve shared exporter/inspector controls. ephoros: retain the bounded refusal class and prove publication did not occur. metron: measure the implemented scanner against the same-run released baseline and enforce the stated regression bounds. elenchus: retain a genuine failing parent assertion, repair the cause and obtain complete positive fixed-tree evidence. hypomnema: document the amended grammar, compatibility, costs and remaining false-positive/negative limits in the owned reference and ledger.
+
+## Step 3: Demonstrate recovery and prepare the release
+
+**Goal.** Prove native archive creation, inspection and restore with the unchanged audit evidence, then prepare the signed release.
+
+**Entry.** Step 2 is audited and pushed, its native checkpoint exists, and its selected implementation conformance gate passed. Native zero-assigned inoculation has created the prescribed Step 3 branch at its exact Step 2 parent.
+
+**Exit.** Resolve the selected native-archive-roundtrip cell through its exact immutable resolver. A disposable signed fixture containing both unchanged public files completes actual archive, inspect, restore, verify, status and next commands; restored file hashes and semantic continuation match. Report actual native cryptographic verification separately from simulated GitHub/ref observations. Each declared negative material/token case runs alone, refuses with secret-shaped-member, publishes neither ZIP nor sidecar, and preserves state and ledger; a tampered carrier also refuses. Record the controller/source identities, command exits, timings, limits and remaining uncertainty. Bump the Hexaemeron package patch version consistently with the final integration base and retain the single governed generation relation. Run `python3 scripts/run_checks.py --base e2307ed5966e18727434b3e49bec89db736f7b17 --report .hexaemeron/reports/step-3-checks.json` to exit zero, pass staged greenlight, and create a locally verified signed commit. Independent audit and prose precede push and its complete native checkpoint.
+
+**Files.** Complete `plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py` and meaningful native regression cases in `plugins/hexaemeron/tests/test_checkpoint_marker_scan.py` or `plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`. Preserve the demonstration and bound observations under `docs/fiat-checkpoint-marker-evidence/`, with clear reproduction and recovery instructions. Update the Fiat demonstration/usage documentation where its current public contract requires it, retaining historical observations. Update the Hexaemeron entry in both marketplace manifests, its `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`, and directly affected release assertions. Reconcile the same owned generated bindings, portable copies and Horos records listed in Step 2 when their inputs change. Never modify the original service worktree or either public CP3 audit file.
+
+**Tests.** Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.elenchus/fiat-1755-step-3.json`. Exercise the native signed positive and individually isolated negatives. Require the exact selected design gates, existing signing-format suites, affected checked-runner selection, prose/discipline checks and release consistency checks to pass. Fixture evidence is not a claim that the preserved live service checkpoint has succeeded.
+
+**Disciplines.** phylax: retain disposable key isolation, exact source digests and native admission/refusal controls. ephoros: report native exits, publication state, restored digests and semantic continuation without payloads. metron: preserve existing native budgets and record measured command times without a universal latency claim. elenchus: investigate any failed demonstration and retain a reproducing guard before correction. hypomnema: document the demonstrated boundary, release identity and exact operational retry handoff.
+
+The parent integrates the reviewed stack in native order and publishes one run PR closing issue 1755, with explicit carryover for the original service retry, issue 1676 admission and issue 1756 currency repair. Install the released plugin through the host's supported route. The installed Fiat refresh rule then requires a new chat before the same saved service run is retried. Preserve a concrete handoff with release/install evidence and unchanged service state/ledger hashes; do not report that later retry or service Step 2 as complete.
+
+### Amendment -- 2026-09-19
+
+**What changed.** Complete replacement Files: Create `docs/fiat-checkpoint-marker-study.md`, `docs/fiat-checkpoint-marker-runbook.md` and `docs/fiat-checkpoint-marker/` for exact design/report/probe copies and reproduction instructions, and `docs/fiat-checkpoint-marker-measure-design.py` for the byte-identical measurement source. Keep every original controller evidence file unchanged. Explain that the copied measurement source is replayed at the pinned starting tree after placement at `.hexaemeron/measure_design.py`; running its old-baseline candidate against repaired code is not baseline reproduction. Append only to `docs/fiat-checkpoint-archive-study.md`. Refresh `.horos/boundary.json` and `.horos/census.json` as required by those inputs. Add an ownership row in `tests/check-map-v1.json` only if the checked runner reports a genuinely unowned new path. No scanner or guard code changes in this step.
+
+Complete replacement Disciplines: phylax: preserve input and evidence custody without changing ingestion. ephoros: retain actual selection counts, command exits and report digests. metron: carry the measured 2,852,105-byte workload and its timing/allocation limits without a speed claim. elenchus: preserve the reproduced failure and its Step 2 guard assignment without claiming inoculation ran. hypomnema: record the changed historical policy, rejected alternatives and decision home before implementation.
+
+**Why.** The final receipted study and measurement observations name a 2,852,105-byte workload. The derived runbook copied an earlier draft count of 2,852,093 bytes and used a different evidence directory. These corrections align Step 1 with the accepted study and preserve every source and report byte.
+
+**Steps touched.** Step 1 Files and Disciplines.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-09-19
+
+**What changed.** Complete replacement Files: Complete `plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py` and meaningful native regression cases in `plugins/hexaemeron/tests/test_checkpoint_marker_scan.py` or `plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py`. Preserve the demonstration and bound observations under `docs/fiat-checkpoint-marker/`, with clear reproduction and recovery instructions. Update the Fiat demonstration/usage documentation where its current public contract requires it, retaining historical observations. Update the Hexaemeron entry in both marketplace manifests, its `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`, and directly affected release assertions. Reconcile the same owned generated bindings, portable copies and Horos records listed in Step 2 when their inputs change. Never modify the original service worktree or either public CP3 audit file.
+
+**Why.** Use the evidence directory named by the accepted study and corrected Step 1 for the later native demonstration as well. This changes record placement only; the immutable design record, resolver commands, reports and integration gate remain unchanged.
+
+**Steps touched.** Step 3 Files.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds.
