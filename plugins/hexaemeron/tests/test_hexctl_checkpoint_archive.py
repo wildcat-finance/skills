@@ -1869,6 +1869,7 @@ class SignedRunFixture(HexctlCase):
         super().setUp()
         self.env["GNUPGHOME"] = self.key_home
         self.git("remote", "add", "origin", ORIGIN_URL)
+        self.git("config", "gpg.format", "openpgp")
         self.git("config", "user.signingkey", self.fingerprint)
         self.git("config", "gpg.program", self.tool_paths["gpg"])
         self.fake_refs["main"] = self.head_sha()
