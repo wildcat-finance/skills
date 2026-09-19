@@ -2,6 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wildcat.finance/schemas/tabularium/canonical-event-v2.json",
   "title": "Tabularium canonical credit event v2",
+  "description": "Superseded by canonical-event-v3.json on 2026-09-17. Kept to read schema_version 2 releases; the enums were corrected on that date to the adapter tuple table the v2 Python validator admitted.",
+  "deprecated": true,
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -31,7 +33,7 @@
       ]
     },
     "action": {"type": "string", "minLength": 1},
-    "venue": {"enum": ["euler-v1", "euler-v2"]},
+    "venue": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
     "chain": {"const": "ethereum-mainnet"},
     "transaction": {
       "type": "object",
@@ -131,9 +133,9 @@
           "items": {"type": "string", "minLength": 1}
         },
         "mapping_rule": {"type": "string", "minLength": 1},
-        "adapter": {"enum": ["euler-v1", "euler-v2"]},
-        "adapter_version": {"const": "1.0.0"},
-        "protocol_generation": {"enum": ["euler-v1", "euler-v2"]},
+        "adapter": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+        "adapter_version": {"enum": ["1.0.0", "2.0.0"]},
+        "protocol_generation": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
         "source_api": {"enum": ["ethereum-json-rpc", "euler-v3"]}
       }
     },

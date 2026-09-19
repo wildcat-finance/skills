@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/tabularium/canonical-event-v3.json",
+  "title": "Tabularium canonical credit event v3",
+  "description": "One credit event mapped by a registered adapter. The admitted vocabulary is the closed adapter tuple table: each oneOf branch pins venue and the provenance fields to one adapter module's constants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "event_family",
+    "action",
+    "venue",
+    "chain",
+    "transaction",
+    "parties",
+    "instrument",
+    "amounts",
+    "provenance",
+    "native_record"
+  ],
+  "properties": {
+    "schema_version": {"const": 3},
+    "id": {"type": "string", "minLength": 1},
+    "event_family": {
+      "enum": [
+        "borrowing",
+        "repayment",
+        "debt-resolution",
+        "debt-transfer",
+        "interest-accrual"
+      ]
+    },
+    "action": {"type": "string", "minLength": 1},
+    "venue": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+    "chain": {"const": "ethereum-mainnet"},
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hash",
+        "block_number",
+        "block_hash",
+        "transaction_index",
+        "log_index",
+        "timestamp"
+      ],
+      "properties": {
+        "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+        "block_number": {"type": "integer", "minimum": 0},
+        "block_hash": {
+          "oneOf": [
+            {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+            {"type": "null"}
+          ]
+        },
+        "transaction_index": {
+          "oneOf": [{"type": "integer", "minimum": 0}, {"type": "null"}]
+        },
+        "log_index": {"type": "integer", "minimum": 0},
+        "timestamp": {
+          "oneOf": [{"type": "string", "minLength": 1}, {"type": "null"}]
+        }
+      }
+    },
+    "parties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "address"],
+        "properties": {
+          "role": {"type": "string", "minLength": 1},
+          "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "id": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"}
+      }
+    },
+    "amounts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "base_units", "asset"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "base_units": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+          "asset": {
+            "oneOf": [
+              {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+              {"type": "null"}
+            ]
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "source_contract",
+        "source_entity",
+        "source_id",
+        "source_selector",
+        "supporting_selectors",
+        "mapping_rule",
+        "adapter",
+        "adapter_version",
+        "protocol_generation",
+        "source_api"
+      ],
+      "properties": {
+        "source_kind": {"type": "string", "minLength": 1},
+        "source_contract": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+        "source_entity": {"type": "string", "minLength": 1},
+        "source_id": {"type": "string", "minLength": 1},
+        "source_selector": {"type": "string", "minLength": 1},
+        "supporting_selectors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "mapping_rule": {
+          "enum": [
+            "aave-v4.borrow.v2",
+            "aave-v4.repay.v2",
+            "euler-v1.borrow.v1",
+            "euler-v1.liquidation.v1",
+            "euler-v1.repay.v1",
+            "euler-v2.borrow.v1",
+            "euler-v2.debt-socialized.v1",
+            "euler-v2.interest-accrued.v1",
+            "euler-v2.liquidation.v1",
+            "euler-v2.pull-debt.v1",
+            "euler-v2.repay.v1"
+          ]
+        },
+        "adapter": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+        "adapter_version": {"enum": ["1.0.0", "2.0.0"]},
+        "protocol_generation": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+        "source_api": {"enum": ["ethereum-json-rpc", "euler-v3"]}
+      }
+    },
+    "native_record": {"type": "object"}
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "venue": {"const": "aave-v4"},
+        "provenance": {
+          "properties": {
+            "adapter": {"const": "aave-v4"},
+            "adapter_version": {"const": "2.0.0"},
+            "protocol_generation": {"const": "aave-v4"},
+            "source_api": {"const": "ethereum-json-rpc"},
+            "mapping_rule": {"enum": ["aave-v4.borrow.v2", "aave-v4.repay.v2"]}
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {"const": "euler-v1"},
+        "provenance": {
+          "properties": {
+            "adapter": {"const": "euler-v1"},
+            "adapter_version": {"const": "1.0.0"},
+            "protocol_generation": {"const": "euler-v1"},
+            "source_api": {"const": "ethereum-json-rpc"},
+            "mapping_rule": {
+              "enum": [
+                "euler-v1.borrow.v1",
+                "euler-v1.liquidation.v1",
+                "euler-v1.repay.v1"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {"const": "euler-v2"},
+        "provenance": {
+          "properties": {
+            "adapter": {"const": "euler-v2"},
+            "adapter_version": {"const": "1.0.0"},
+            "protocol_generation": {"const": "euler-v2"},
+            "source_api": {"const": "euler-v3"},
+            "mapping_rule": {
+              "enum": [
+                "euler-v2.borrow.v1",
+                "euler-v2.debt-socialized.v1",
+                "euler-v2.interest-accrued.v1",
+                "euler-v2.liquidation.v1",
+                "euler-v2.pull-debt.v1",
+                "euler-v2.repay.v1"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
