@@ -353,6 +353,7 @@ pins stay separate: `native.source_commit`, `native.executable_sha256` and
 A mutable reference refuses before any digest is read. `main`, `latest`,
 `HEAD`, `v1` and a `refs/` path all answer `mutable-source-reference`. The
 other refusals are `component-drift`, `component-missing`, `component-unsafe`,
+`component-path` for a non-canonical or escaping relative path,
 `component-extra`, `manifest-stale`, `manifest-missing`, `mixed-components`,
 `unsupported-native-pin`, `unsupported-tool-pin`, `unsupported-python-pin`,
 `source-commit-mismatch`, `lock-fields` and `lock-limit`.
@@ -375,7 +376,7 @@ python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate
 ```
 
 The [interoperability manifest](../checkpoint-authority/fixtures/interoperability-manifest.json)
-binds seventeen files and fifty-seven case ids across
+binds seventeen files and fifty-nine case ids across
 `test_checkpoint_authority_release` and
 `test_checkpoint_authority_release_conformance`. Its consumer bundle is
 `demo-history.jsonl`, `demo-bootstrap.json`, `demo-native.json`,

@@ -148,6 +148,50 @@ class ReleasedTreeRefusalTests(unittest.TestCase):
         target.symlink_to(elsewhere)
         self.refuses("component-missing")
 
+    def test_transitive_paths_refuse_before_opening_any_component(self):
+        target = self.copy / release.MANIFEST
+        original = target.read_bytes()
+        sentinel = self.copy.parent / (self.copy.name + "-sentinel")
+        sentinel.write_bytes(b"outside the selected release\n")
+        self.addCleanup(sentinel.unlink)
+        for path in (str(sentinel), "../" + sentinel.name, "a/../../outside",
+                     "a/./b", "a//b", "a\\b", "a\x00b"):
+            value = json.loads(original)
+            value["transitive_files"].append({"path": path, "sha256": digest(sentinel.read_bytes())})
+            target.write_bytes(release.encode(value))
+            opened = []
+            reader = native_io.regular
+
+            def observe(name, maximum):
+                opened.append(Path(name))
+                return reader(name, maximum)
+
+            with self.subTest(path=path), mock.patch.object(native_io, "regular", observe):
+                self.refuses("component-path")
+                self.assertEqual(opened, [target])
+
+        target.write_bytes(original)
+        corpus_path = self.copy / release.CORPUS_MANIFESTS[0]
+        value = json.loads(corpus_path.read_bytes())
+        value["files"].append({"path": str(sentinel), "sha256": digest(sentinel.read_bytes())})
+        corpus_path.write_bytes(canonical(value, limit=release.MANIFEST_MAX))
+        with self.assertRaises(Refusal) as raised:
+            release.build(self.copy)
+        self.assertEqual(raised.exception.code, "component-path")
+
+    def test_malformed_transitive_rows_refuse_before_opening_any_component(self):
+        target = self.copy / release.MANIFEST
+        original = json.loads(target.read_bytes())
+        row = original["transitive_files"][0]
+        for rows in (None, {}, [], [None], [{**row, "path": []}],
+                     [{**row, "sha256": False}], [row, row],
+                     original["transitive_files"][::-1], [row] * 1025):
+            value = {**original, "transitive_files": rows}
+            target.write_bytes(release.encode(value))
+            with self.subTest(rows_type=type(rows).__name__), \
+                    mock.patch.object(release, "_hash", side_effect=AssertionError("component opened")):
+                self.refuses("manifest-shape")
+
 
 class ConsumerLockTests(unittest.TestCase):
     @classmethod
