@@ -3016,14 +3016,29 @@ class WildcatConformanceTests(ReleaseTestCase):
         self.assertNotEqual(str(format_raised.exception), str(pin_raised.exception))
 
     def test_venue_table_is_derived_from_registered_modules(self):
-        """`VENUES` is built from each module's own name, never a second list.
+        """Every `VENUES` key is the registered module's own `VENUE` name.
 
-        Guards the anti-pattern at `plugins/tabularium/scripts/tabularium.py`
-        (an argparse `choices` tuple) drifting from
-        `tabularium_lib/release_v2.py` (an adapter dict keyed by module
-        attribute): here there is only the one table, keyed the same way.
+        This does not establish derivation. A table built from the registered
+        modules and one restating the same pairs correctly by hand are the
+        same object at runtime, so no assertion here separates them; only
+        reading `venues/__init__.py` does, and it builds the table from
+        `module.VENUE`. What these assertions establish is the invariant a
+        second, hand-maintained list breaks first: a key that is not its own
+        module's declared name, which is how
+        `plugins/tabularium/scripts/tabularium.py`'s argparse `choices` tuple
+        drifted from `tabularium_lib/release_v2.py`'s adapter dict.
+
+        Stated over whatever entries the table holds rather than against a
+        fixed member set, so registering a second venue leaves this case
+        passing untouched instead of failing a one-element literal that would
+        have to be hand-edited in step with the table it guards.
         """
-        self.assertEqual(set(VENUES), {compound_v3.VENUE})
+        self.assertTrue(VENUES, "no venue module is registered")
+        for name, module in VENUES.items():
+            self.assertEqual(name, module.VENUE)
+            self.assertTrue(callable(module.validate_registry))
+            self.assertTrue(callable(module.gaps))
+        self.assertIn(compound_v3.VENUE, VENUES)
         self.assertIs(VENUES[compound_v3.VENUE], compound_v3)
         self.assertEqual(compound_v3.VENUE, "compound-v3")
 
