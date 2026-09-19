@@ -104,15 +104,16 @@
     "factory_deployment": {
       "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
       "block": 18687391,
-      "block_timestamp": 1701680039,
-      "block_timestamp_iso": "2023-12-04T08:53:59Z",
-      "transaction": "0xbf0b59d6c3c9790f57b1876cd3ab4a1738f22751b1f80bdd72edff05972e8733"
+      "block_timestamp": 1701383255,
+      "block_timestamp_iso": "2023-11-30T22:27:35Z",
+      "transaction": "0xbf0b59d6c3c9790f57b1876cd3ab4a1738f22751b1f80bdd72edff05972e8733",
+      "reverification_2026_09_19": "the #1748 pass recorded this block's timestamp as 1701680039 (2023-12-04T08:53:59Z), which was wrong; re-read against https://ethereum-rpc.publicnode.com via cast, https://rpc.mevblocker.io directly and https://eth.blockscout.com/api/v2/blocks/18687391 all agree on 1701383255 (2023-11-30T22:27:35Z), block hash 0x5e40a490e4e826873ba4aeb63ec85d2b6c7fc7e055a170629246e556f3ab5c53; the transaction's own receipt confirms blockNumber 18687391 and the same blockHash. No other commit lands on main between d46ecb80 (2023-11-30T21:22:29Z) and the corrected deployment timestamp, so the finding and resolution below are unaffected by the correction"
     },
     "main_commits_between_rewrite_and_deployment": [
       {"commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c", "date": "2023-11-30T21:21:45Z"},
       {"commit": "d46ecb80842c523b224d2d2e793db9750b611d0a", "date": "2023-11-30T21:22:29Z", "note": "merge of PR #71 (release-licensing); this is main's tip through the deployment"}
     ],
-    "finding": "the factory deployed 2023-12-04T08:53:59Z, four days after all five candidates and after the licence rewrite. Main's tip at deployment time was d46ecb80 (post-rewrite), but the deployed bytecode reproduces the pre-rewrite source (da74452a state), so the deployer used a checkout that was not main's tip at deploy time. Because the five candidates are blob-identical for every file that affects the compiled output, no on-chain or git evidence can distinguish which of the five was the deployer's actual working tree; source.equivalent_commits in targets.json records all five with da74452a retained as the primary reference.",
+    "finding": "the factory deployed 2023-11-30T22:27:35Z, about 1 hour and 5 minutes after the licence rewrite (6164ddd4, 21:21:45Z) and about 1 hour and 5 minutes after main's post-rewrite merge d46ecb80 (21:22:29Z). Main's tip at deployment time was d46ecb80 (post-rewrite), but the deployed bytecode reproduces the pre-rewrite source (da74452a state), so the deployer used a checkout that was not main's tip at deploy time. Because the five candidates are blob-identical for every file that affects the compiled output, no on-chain or git evidence can distinguish which of the five was the deployer's actual working tree; source.equivalent_commits in targets.json records all five with da74452a retained as the primary reference.",
     "resolution": "cannot select one of the five; recorded as unresolvable with the above evidence, per the issue's 'or record why one cannot be selected' acceptance path"
   },
   "protected_set_check": {
