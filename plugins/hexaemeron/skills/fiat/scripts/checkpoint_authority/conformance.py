@@ -371,6 +371,9 @@ def main(argv: list[str] | None = None, *, root: Path | None = None) -> int:
                          runner_exit=runner_exit, stdout_sha256=stdout_hash, stderr_sha256=stderr_hash,
                          design_report_sha256=hashlib.sha256(_json_bytes(report)).hexdigest())
         event.pop("implemented"); event.pop("cases")
+        if inputs["implemented"] and args.criterion == "native-boundary-coverage":
+            from . import native_conformance
+            event = native_conformance.run(root, report)
         _write(root, name, report, event)
     except (Refusal, OSError) as error:
         code = str(error) if isinstance(error, Refusal) else "unsafe-or-unavailable-file"
