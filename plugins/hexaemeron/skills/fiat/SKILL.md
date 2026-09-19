@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.65.1"
+  version: "6.67.1"
 ---
 
 <p align="center">
@@ -803,7 +803,7 @@ missing either configured id.
 
 Any issue the run files follows the target repository's ordinary issue
 publication contract; carryover and phase-of-origin create no exception. In
-`wildcat-finance/skills`, that means one of the four canonical queue titles
+`wildcat-finance/skills`, that means one of the five canonical queue titles
 with its exact queue label and required body opening, followed by exactly one
 `Fiat-Required` line and one fenced `carryover` block. Run the root publication
 order over the complete candidate, then `hexctl issue-check` with its exact

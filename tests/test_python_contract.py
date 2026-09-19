@@ -6,6 +6,12 @@ Current runtime prose points to those files instead of carrying another
 interpreter claim. Historical evidence keeps the versions it actually
 observed.
 
+The prose scan asks Git which Markdown it tracks before asking what class of
+prose a file is. A Fiat run's controller state under ``.hexaemeron/``, the
+agent worktrees Claude Code parks under ``.claude/worktrees/``, and any later
+scratch directory are outside the repository, so they are outside the scan
+without anybody naming them.
+
 The dependency half of this gate is deliberately narrower than a package
 audit. It proves that every declared Lazarus dependency is an exact pin, that
 the lock contains the same direct pin, and that CI installs the lock rather
@@ -15,8 +21,11 @@ packages are trustworthy or free of advisories.
 
 from pathlib import Path
 import json
+import os
 import re
+import subprocess
 import sys
+import tempfile
 import tomllib
 import unittest
 
@@ -39,7 +48,6 @@ PYTHON_WORKFLOWS = {
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
-    "plugins.yml",
     "repo.yml",
     "synkrisis.yml",
 }
@@ -48,8 +56,10 @@ PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {
     "contributors.yml",
     "identity.yml",
 }
-# Required gates carry no path filter, so they have no filter to inspect.
-UNFILTERED_GATES = {"plugins.yml", "repo.yml"}
+# The one required gate carries no path filter, so it has no filter to
+# inspect. `invariants`, the job `repo.yml` declares, is the only context
+# the branch protection on `main` requires.
+UNFILTERED_GATES = {"repo.yml"}
 PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - UNFILTERED_GATES
 BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "janus-forge.yml",
@@ -198,18 +208,56 @@ def workflow_event_branches(source, event):
     )
 
 
-def is_current_runtime_prose(path):
+def git_environment():
+    """Remove inherited Git routing so the query stays in this repository."""
+    environment = dict(os.environ)
+    for name in (
+        "GIT_DIR",
+        "GIT_INDEX_FILE",
+        "GIT_WORK_TREE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_COMMON_DIR",
+        "GIT_NAMESPACE",
+        "GIT_PREFIX",
+        "GIT_INTERNAL_SUPER_PREFIX",
+    ):
+        environment.pop(name, None)
+    return environment
+
+
+def tracked_markdown(root=ROOT):
+    """Every Markdown file Git tracks under ``root``, as paths below it.
+
+    Tracked means present in the index, which is what ships and what CI sees.
+    An untracked file is outside the scan whether or not something ignores it:
+    a Fiat run's controller state, a check runner's snapshot and a stray
+    scratch directory never enter a commit. A nested checkout, which is what a
+    Claude Code worktree under `.claude/worktrees/` is, is another repository,
+    and `git ls-files` does not descend into it. A path still in the index but
+    deleted from the working tree has no bytes to scan and is skipped.
+    """
+    listed = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+        ["git", "-C", str(root), "ls-files", "-z", "--cached", "--", "*.md"],
+        capture_output=True, check=True, env=git_environment(),
+    ).stdout
+    paths = (root / os.fsdecode(raw) for raw in listed.split(b"\0") if raw)
+    return sorted(path for path in paths if path.is_file())
+
+
+def is_current_runtime_prose(path, root=ROOT):
     """Exclude immutable evidence, receipted records, fixtures, and vendored skills."""
-    relative = path.relative_to(ROOT)
+    relative = path.relative_to(root)
     parts = relative.parts
     name = relative.name.lower()
     if parts[:4] == (".agents", "skills", "promise-machine", "runtime"):
         return False
-    # Controller state and scratch, both gitignored. A Fiat run's receipts and
-    # pull-request drafts quote the records they describe, including their
-    # runtime versions, and `tmp/` is the documented run-worktree home where
-    # scripts/run_checks.py stages its disposable snapshot. Scanning either made
-    # this case fail for anybody with a delivery or a check run in flight.
+    # Controller state and scratch. A Fiat run's receipts and pull-request
+    # drafts quote the records they describe, including their runtime versions,
+    # and `tmp/` is the documented run-worktree home where scripts/run_checks.py
+    # stages its disposable snapshot. Neither is tracked, so tracked_markdown()
+    # already leaves both out of the scan; this rule keeps the predicate honest
+    # for a caller that hands it such a path directly.
     if parts[0] in {".hexaemeron", "tmp"}:
         return False
     if "audit" in parts or "baseline" in parts:
@@ -234,6 +282,18 @@ def is_current_runtime_prose(path):
         ("plugins", "hexaemeron", "skills", "x-ray"),
     )
     return not any(parts[: len(prefix)] == prefix for prefix in vendored)
+
+
+def stale_runtime_claims(root=ROOT):
+    """Map each tracked current-prose file carrying a runtime claim to the claim."""
+    stale = {}
+    for path in tracked_markdown(root):
+        if not is_current_runtime_prose(path, root):
+            continue
+        match = RUNTIME_VERSION_CLAIM.search(path.read_text(encoding="utf-8"))
+        if match is not None:
+            stale[path.relative_to(root).as_posix()] = match.group(0)
+    return stale
 
 
 class PythonRuntimeContractTests(unittest.TestCase):
@@ -337,79 +397,6 @@ class PythonRuntimeContractTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         workflow_event_paths(text, event)
 
-    def test_complete_plugin_gate_shards_the_one_declared_graph(self):
-        workflow = WORKFLOWS / "plugins.yml"
-        self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
-        text = workflow.read_text(encoding="utf-8")
-        self.assertEqual(text.count("  plugins:\n"), 1)
-        self.assertIn("permissions:\n  contents: read\n", text)
-        self.assertEqual(text.count("fetch-depth: 0"), 1)
-        self.assertIn("uses: actions/setup-node@v7", text)
-        self.assertIn('node-version: "26.6.0"', text)
-        self.assertIn("uses: foundry-rs/foundry-toolchain@v1", text)
-        self.assertIn("version: v1.7.1", text)
-        self.assertIn(
-            "run: python3 -m pip install --requirement "
-            "plugins/lazarus/requirements.lock",
-            text,
-        )
-        historical_key = (
-            ROOT
-            / "plugins"
-            / "hexaemeron"
-            / "tests"
-            / "fixtures"
-            / "signing-keys"
-            / "shoggoth-636ec19d.asc"
-        )
-        self.assertTrue(historical_key.is_file())
-        self.assertIn(
-            "EXPECTED_GPG_FINGERPRINT: "
-            "636EC19DE45DF10F3CE6206F57742DA1ABED6F46",
-            text,
-        )
-        self.assertIn(
-            "gpg --batch --import \"$key_path\"",
-            text,
-        )
-        # One shard per declared scope, each running the committed graph for
-        # that scope alone. The graph stays the only definition of a check, and
-        # no command is copied into the workflow. The budget is explicit because
-        # the automatic one grants the nested suite coordinator a single worker
-        # on a four-core runner, which no longer finishes inside the per-check
-        # timeout; it is a capacity flag and names no check.
-        self.assertEqual(
-            text.count(
-                "python3 scripts/run_checks.py\n"
-                "          --scope ${{ matrix.scope }}\n"
-                "          --jobs 14\n"
-                "          --report tmp/checks/${{ matrix.scope }}.json"
-            ),
-            1,
-        )
-        declared = set(
-            json.loads((ROOT / "tests" / "check-map-v1.json").read_text())["scopes"]
-        )
-        block = text[text.index("        scope:\n") : text.index("    runs-on:")]
-        sharded = set(re.findall(r"^\s+- ([a-z][a-z-]*)$", block, re.MULTILINE))
-        self.assertEqual(
-            sharded,
-            declared,
-            "every declared scope needs exactly one shard, and no shard may "
-            "name a scope the graph does not declare",
-        )
-        # The aggregate job is the required context and is green only when
-        # every shard reached terminal success.
-        self.assertIn("    needs: scope\n", text)
-        self.assertIn('test "$SHARDS" = success', text)
-        self.assertIn("fail-fast: false", text)
-        self.assertIn("if: always()", text)
-        self.assertIn("uses: actions/upload-artifact@v4", text)
-        self.assertIn("path: tmp/checks/${{ matrix.scope }}.json", text)
-        self.assertNotIn("continue-on-error", text)
-        self.assertNotIn("github.event.pull_request", text)
-        self.assertNotIn("--full", text)
-
     def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
         graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
         plugins = {
@@ -457,6 +444,71 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 self.assertFalse(is_current_runtime_prose(ROOT / relative))
         self.assertTrue(is_current_runtime_prose(ROOT / "README.md"))
 
+    def test_the_prose_scan_covers_tracked_markdown_only(self):
+        """Untracked state and nested checkouts are outside the scan.
+
+        skills#897: `.hexaemeron/run-pr.md` is a run's pull-request body, is
+        not ignored and never enters a commit; `.claude/worktrees/<name>/` is
+        a nested checkout; `tmp/` is gitignored. Each held a superseded
+        runtime claim and each reddened the suite on a path absent from
+        `git ls-files`. The scratch repository below reproduces all three
+        beside one tracked file carrying the same claim and one file still in
+        the index but deleted from the tree, and the whole scan, not only the
+        enumeration, names the tracked file alone.
+        """
+        claim = "Built on Python 3.13.15.\n"
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw).resolve()
+
+            def git(*arguments):
+                subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
+                    ["git", "-C", str(root), *arguments],
+                    capture_output=True, check=True, env=git_environment(),
+                )
+
+            git("init", "-q", "-b", "main", ".")
+            git("config", "user.email", "suite@example.invalid")
+            git("config", "user.name", "suite")
+            (root / "README.md").write_text(claim, encoding="utf-8")
+            (root / "docs").mkdir()
+            (root / "docs" / "gone.md").write_text(claim, encoding="utf-8")
+            (root / ".gitignore").write_text("/tmp/\n", encoding="utf-8")
+            git("add", "-A")
+            git("commit", "-q", "-m", "seed")
+            (root / "docs" / "gone.md").unlink()
+
+            (root / ".hexaemeron").mkdir()
+            (root / ".hexaemeron" / "run-pr.md").write_text(claim, encoding="utf-8")
+            (root / "tmp").mkdir()
+            (root / "tmp" / "snapshot.md").write_text(claim, encoding="utf-8")
+            (root / ".claude" / "worktrees").mkdir(parents=True)
+            git("worktree", "add", "-q", ".claude/worktrees/stale", "HEAD")
+            (root / "new.md").write_text(claim, encoding="utf-8")
+
+            self.assertTrue((root / ".claude/worktrees/stale/README.md").is_file())
+            self.assertTrue((root / ".hexaemeron/run-pr.md").is_file())
+            self.assertEqual(tracked_markdown(root), [root / "README.md"])
+            self.assertEqual(
+                stale_runtime_claims(root), {"README.md": "Python 3.13.15"}
+            )
+
+            git("add", "new.md")
+            self.assertEqual(
+                tracked_markdown(root), [root / "README.md", root / "new.md"]
+            )
+            self.assertEqual(
+                stale_runtime_claims(root),
+                {"README.md": "Python 3.13.15", "new.md": "Python 3.13.15"},
+            )
+
+    def test_this_checkout_lists_the_prose_the_pin_test_names(self):
+        """The real enumeration covers the named prose and nothing outside Git."""
+        listed = {path.relative_to(ROOT).as_posix() for path in tracked_markdown()}
+        self.assertLessEqual(set(PIN_REFERENCING_PROSE), listed)
+        self.assertFalse(
+            {name for name in listed if name.startswith((".hexaemeron/", ".claude/worktrees/", "tmp/"))}
+        )
+
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):
             path = ROOT / relative
@@ -464,14 +516,7 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 self.assertTrue(path.is_file())
                 self.assertIn(".python-version", path.read_text(encoding="utf-8"))
 
-        stale = {}
-        for path in ROOT.rglob("*.md"):
-            if not is_current_runtime_prose(path):
-                continue
-            match = RUNTIME_VERSION_CLAIM.search(path.read_text(encoding="utf-8"))
-            if match is not None:
-                stale[path.relative_to(ROOT).as_posix()] = match.group(0)
-        self.assertEqual(stale, {})
+        self.assertEqual(stale_runtime_claims(), {})
 
 
 class PythonDependencyContractTests(unittest.TestCase):

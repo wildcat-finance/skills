@@ -76,11 +76,15 @@ head named by its push receipt, or when the native local object graph cannot
 answer that relation. A strict descendant remains eligible and earns fresh
 whole-range evidence when its own merge is receipted. A run branch carrying a
 merge this run did not receipt also refuses; `hexctl status` reports that second
-condition rather than refusing. Neither condition permits an out-of-order
-landing: a skipped step's pull request cannot be retargeted onto a branch its
-head already sits in, and cannot merge into a base it is an ancestor of. If that
-happens, halt with the reason and finish by hand rather than receipting a merge
-the loop did not make.
+condition rather than refusing. The merge the directive itself asked for is not
+that condition: between `gh pr merge` and `done merge-step` the run branch tip
+is a merge whose first parent is the last receipted tip and whose second parent
+is the head the step recorded at push, and `next` then names the pending
+receipt with its exact commit rather than a halt (issue 1614). Neither refusing
+condition permits an out-of-order landing: a skipped step's pull request cannot
+be retargeted onto a branch its head already sits in, and cannot merge into a
+base it is an ancestor of. If that happens, halt with the reason and finish by
+hand rather than receipting a merge the loop did not make.
 
 ## The stacked pull request
 
