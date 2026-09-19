@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.65.1"
+  version: "6.66.1"
 ---
 
 <p align="center">
@@ -865,6 +865,11 @@ cause. The current step still earns complete live-range local signature,
 GitHub verification, author, and committer evidence under
 `effective_push`. Ancestry supplies none of it and never rewrites the original
 push receipt.
+A waiting branch that gained a commit another step's push receipt owns refuses
+before any write. One bounded native gained-range read per moved tip settles
+that without a GitHub read, an adopted step owns nothing there, an
+unanswerable range refuses as unknown, and `done merge-step` intersects the
+same ownership set with the repaired range it receipts.
 Before the run is recorded as integrated, every primary author its push
 receipts recorded has to remain attributable from the recorded merge, and the
 receipt records which mechanism carried it. The separately recorded committer

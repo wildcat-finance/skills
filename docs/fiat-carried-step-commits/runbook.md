@@ -449,3 +449,83 @@ Step 2 stacked branch and this Exit keeps that property. The runbook copy joins
 Files because this amendment makes the Step 1 copy trail.
 **Steps touched.** Step 3.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-19
+
+**What changed.** Complete replacement Exit: Each command below exits 0, the checks runner reports outcome green, and the deliverables that follow hold:
+
+```sh
+python3 scripts/run_checks.py --base fiat/1480-refuse-a-later-step-s-commits-carried-into --scope root --scope hexaemeron --format json
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/references/push-discipline.md plugins/hexaemeron/skills/fiat/SKILL.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py plugins/hexaemeron/skills/fiat/references/push-discipline.md plugins/hexaemeron/skills/fiat/SKILL.md
+```
+
+- `plugins/hexaemeron/skills/fiat/references/push-discipline.md` gains one
+  paragraph after the evidence-boundary paragraph in "Bringing the stack
+  down" stating the gained-range rule, the ownership set, the adoption
+  exclusion, the unknown rule, the merge-time intersection and the `CARRY:`
+  status line, and that a cherry-picked copy is not detected.
+- `plugins/hexaemeron/skills/fiat/SKILL.md` gains one or two sentences in the
+  Integrate paragraph that starts "Before each merge, an unchanged waiting
+  head passes", after byte 29736 of the starting file. Nothing between bytes
+  18784 and 29736 changes except the frontmatter version line, which keeps
+  its byte length.
+- `plugins/hexaemeron/skills/fiat/EVOLUTION.md` gains exactly one row on the
+  `generation` axis and its `Current version` line names the same version.
+  The row keeps frontier revision `delegated-task-identity` and frontier
+  SHA-256 `a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1`,
+  names issue 1480, the draft record path and the committed study and runbook
+  copies as evidence, and states the rule, the evidence split and that the
+  held target is unchanged. The version is fixed by the version-relations
+  block above; no label is written here.
+- `plugins/hexaemeron/skills/fiat/SKILL.md` frontmatter `version` names that
+  same version, `CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS` in `hexctl.py`
+  gains it as its last entry, and `tests/test_evolution_contract.py` moves the
+  starting head's assertions into a by-version block and asserts the new head.
+- The re-pins land in the same commit: the ledger digest in
+  `tests/fixtures/promise-machine/runtime/fiat-final-integration.json`, the
+  agent-instruction chain in `tests/fixtures/agent-instruction-v1/manifest.json`
+  and the `fiat-study-runbook-phase` fixture's `compact.wai`, `model.json` and
+  `source-spans.json` with the recorded counts carried across the offset delta,
+  the rows in `tests/promise_machine_coverage.json` that name `SKILL.md`,
+  `EVOLUTION.md` or `hexctl.py`, and the `hexctl.py` digest cascade. No
+  measurement, parity run, tokenizer or model process runs.
+- The demo path of study section 1 holds on the finished tree: the test module
+  reports at least 18 tests and `OK` by hand, the conformance report copy
+  equals the receipted report, and the checks runner above is green.
+- The package bump and the three `.horos` artefacts are current.
+- The record lint is scoped to the two prose files this step writes because
+  the whole-skill walk carries seven findings this run did not cause: five
+  stable decision references with no record, one of them repeated, and one
+  comment citing a record that does not exist. The same seven are present at
+  this step's entry commit and at its head, in the same files, and the one
+  line-number shift is the compatibility-set line this step adds. Repairing
+  them means authoring or editing inherited decision records, which the study
+  forbids.
+
+Complete replacement Files: `plugins/hexaemeron/skills/fiat/references/push-discipline.md`,
+`plugins/hexaemeron/skills/fiat/SKILL.md`,
+`plugins/hexaemeron/skills/fiat/EVOLUTION.md`,
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py` (the compatibility set
+only), `tests/test_evolution_contract.py`,
+`tests/fixtures/promise-machine/runtime/fiat-final-integration.json`,
+`tests/fixtures/agent-instruction-v1/manifest.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json`,
+`tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json`,
+`tests/promise_machine_coverage.json`,
+`docs/promise-machine/obligation-gates/evaluation-run.json`,
+`docs/promise-machine/obligation-gates/integration-projection.json`,
+`docs/promise-machine/obligation-gates/integration-projection.md`,
+`plugins/hexaemeron/.claude-plugin/plugin.json`,
+`plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
+`.agents/plugins/marketplace.json`, `tests/test_version_propagation.py`,
+`plugins/hexaemeron/tests/test_phylax_model_proxy.py`, `.horos/boundary.json`,
+`.horos/candidates.json`, `.horos/census.json`,
+`docs/fiat-carried-step-commits/runbook.md`.
+
+**Why.** The Exit named a record lint over the whole Fiat skill directory, which cannot exit 0 on this run's base: seven findings sit in files earlier runs wrote, and clearing them means editing inherited decision records, which the study's boundaries forbid. The scoped command proves what this step writes. The runbook copy joins Files because this amendment makes the copy committed in Step 1 trail the receipted runbook.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 4: entry holds; exit holds.

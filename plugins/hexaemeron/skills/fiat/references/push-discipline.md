@@ -373,6 +373,23 @@ Both refusals name the branch and exact commits without guessing which external
 operation moved the history. ADR-021 still governs a genuine rewritten stack,
 and importing GitHub's public key remains the wrong repair.
 
+That ancestry check admits a later step's branch merged into a lower one, so a
+second boundary reads what the branch gained. For each unmerged step whose
+observed tip has left its recorded head, the controller enumerates
+`rev-list <recorded>..<tip>` once natively and intersects the result with the
+commits every other step's push receipt owns: that step's `verified_commits`,
+or only its `head_commit` when the receipt predates that list. A step whose
+push receipt records `early_merge` is excluded, because an adoption the run
+already receipted put its commits inside the branch below it. A failed start,
+a timeout, an output cap, a non-zero status or an answer above 500 commits
+refuses as unknown, names the exact `<recorded>..<tip>` pair and claims no
+cause. `done merge-step` intersects that same ownership set with the exact
+repaired range it is about to receipt, before any state or ledger byte moves.
+`status` reports the same observation and refuses nothing, one `CARRY:` line
+per carried or unknown step. A commit cherry-picked into a lower branch
+arrives under a new SHA that no receipt owns, and this boundary does not see
+it.
+
 **When GitHub has not claimed the chain**, the original order stands. For each
 step:
 
