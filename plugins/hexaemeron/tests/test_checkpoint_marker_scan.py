@@ -5,9 +5,12 @@ from __future__ import annotations
 from functools import cache
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import stat
+import subprocess
 import sys
+import tempfile
 import tracemalloc
 import unittest
 
@@ -274,6 +277,53 @@ class CheckpointMaterialTests(unittest.TestCase):
         finally:
             tracemalloc.stop()
         self.assertLess(peak, 1048576)
+
+
+class CheckpointMarkerNativeTests(unittest.TestCase):
+    def test_native_resolver_preserves_public_evidence_and_refuses_each_material_case(self):
+        resolver = ROOT / "plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py"
+        with tempfile.TemporaryDirectory(prefix="marker-native-report-") as temporary:
+            result = subprocess.run(
+                [sys.executable, str(resolver), "--candidate", "bounded-material",
+                 "--criterion", "native-archive-roundtrip", "--report", "result.json"],
+                cwd=temporary, capture_output=True, text=True, timeout=240,
+            )
+            report_path = Path(temporary) / "result.json"
+            observation_path = Path(temporary) / "result.observation.json"
+            observation = json.loads(observation_path.read_bytes()) if observation_path.exists() else {}
+            self.assertEqual(0, result.returncode,
+                             (result.stdout, result.stderr, observation.get("failure_code")))
+            report = json.loads(report_path.read_bytes())
+            self.assertIs(True, report["value"])
+            self.assertEqual("native-archive-roundtrip", report["criterion"])
+            self.assertIs(True, observation["complete"])
+            self.assertEqual({"openpgp", "ssh"}, {row["signature_format"] for row in observation["roundtrips"]})
+            for row in observation["roundtrips"]:
+                self.assertGreater(row["verified_signatures"], 0)
+                self.assertTrue(row["producer_keys_unavailable"])
+                self.assertTrue(row["next_matches"] and row["snapshot_id_matches"] and row["budget_pass"])
+                self.assertEqual(row["restored_before_reads"], row["restored_after_reads"])
+                self.assertEqual({AUDIT_SOURCE[2], AUDIT_SYNOPSIS[2]},
+                                 {source["restored_sha256"] for source in row["public_files"]})
+            cases = observation["negative_cases"]
+            self.assertEqual(21, len(cases))
+            self.assertEqual(21, len({row["case"] for row in cases}))
+            self.assertTrue({"token-0", "token-1", "token-2", "token-3"} <= {row["case"] for row in cases})
+            for row in cases:
+                self.assertEqual((1, "secret-shaped-member", 0),
+                                 (row["exit"], row["refusal"], row["published_files"]))
+                self.assertTrue(row["only_planted_member"])
+                self.assertEqual(row["before"], row["after"])
+            self.assertEqual(2, len(observation["tampered_carriers"]))
+            for row in observation["tampered_carriers"]:
+                self.assertEqual((1, "outer-digest-mismatch"), (row["exit"], row["refusal"]))
+                self.assertTrue(row["controller_unchanged"])
+            operations = {tuple(row["operation"]) for row in observation["commands"]}
+            self.assertEqual({("checkpoint", "archive"), ("checkpoint", "inspect"),
+                              ("checkpoint", "restore"), ("verify",), ("status",), ("next",)}, operations)
+            self.assertLess(observation_path.stat().st_size, 131072)
+            self.assertNotIn(b"-----BEGIN", observation_path.read_bytes())
+            self.assertEqual("not-run", observation["fixture_boundary"]["service_retry"])
 
 
 if __name__ == "__main__":

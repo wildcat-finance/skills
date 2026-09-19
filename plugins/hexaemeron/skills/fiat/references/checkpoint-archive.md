@@ -383,3 +383,7 @@ before the code that needs it, not by an edit to this reference.
   to issues #862 and #863.
 - The refusal class each hostile fixture maps to, beyond the classes the
   runbook names per inspector check.
+
+## Marker-repair demonstration
+
+The [issue 1755 native recovery record](../../../../../docs/fiat-checkpoint-marker/native-recovery.md) preserves two signed disposable round trips with the unchanged public CP3 source and synopsis, 21 separately planted material/token refusals and two tampered-carrier refusals. It runs the repository controller's archive, inspect, restore, verify, status and next commands with native OpenPGP and SSH verification; producer GitHub and ref observations remain simulated. The report records restored hashes, unchanged controller bytes, semantic continuation and the six existing budget measurements. Service admission, installation and a separately recorded service retry remain outside that demonstration.

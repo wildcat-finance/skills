@@ -109,3 +109,7 @@ remain at their original paths and digests, recorded in `provenance.json`.
 Service Step 2 remains blocked on issue 1676. The released plugin, installation
 and new-chat refresh precede a separately recorded retry of that saved service
 checkpoint; this evidence completes none of those operations.
+
+## Step 3 native recovery evidence
+
+The 2026-09-19 [native recovery demonstration](native-recovery.md) completes the selected native conformance operation with two signed round trips, 21 isolated refusal cases and two tampered-carrier refusals. Its new reports preserve the native/simulated boundary, restored public-file digests, semantic continuation and six budget observations. Earlier selection and implementation reports remain historical records with their original bytes. The service retry and admission remain pending under the recovery handoff.
