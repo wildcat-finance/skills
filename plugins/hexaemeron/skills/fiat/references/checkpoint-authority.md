@@ -375,7 +375,7 @@ python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate
 ```
 
 The [interoperability manifest](../checkpoint-authority/fixtures/interoperability-manifest.json)
-binds fifteen files and forty-eight case ids across
+binds seventeen files and fifty-seven case ids across
 `test_checkpoint_authority_release` and
 `test_checkpoint_authority_release_conformance`. Its consumer bundle is
 `demo-history.jsonl`, `demo-bootstrap.json`, `demo-native.json`,
@@ -397,8 +397,16 @@ all five released signature cases under `--offline --insecure-ignore-tlog`. It
 rebuilds the release manifest twice to identical bytes. Those six counts are
 deterministic for a given tree.
 
-Four measures are not, so the demonstration reports them per run rather than
-here: replay wall time in milliseconds, the JSON decode count, the traced
+Cosign also runs under macOS `sandbox-exec` with a fixed `(deny network*)`
+policy. Four IPv4 and IPv6 bind/connect probes must fail with `EPERM` under the
+same policy before signature agreement can pass. The evidence binds the
+launcher, policy and probe digests. Other hosts and missing mechanisms refuse
+`network-denial-unavailable`; an offline flag alone establishes no denial.
+This policy preserves the caller's filesystem and process permissions and
+does not establish native archive containment.
+
+The demonstration reports four measures per run: replay wall time in
+milliseconds, the JSON decode count, the traced
 Python allocation peak in bytes and the peak resident set size in bytes. The
 receipted values are in the `demonstration` block of
 `.hexaemeron/reports/ordered-replay-released-interoperability.evidence.json`.
@@ -409,6 +417,16 @@ other repository checks ran: they establish no production latency, throughput,
 archive validation time or provider cost. The Step 4 budget record remains the
 1,391-record measurement, and the study's 1,280-decode model comparison is
 preserved unchanged.
+
+The final criterion separately measures the complete study event schedule:
+1,280 events across 512 decisions, mapped to 9,225 signed protocol records
+with their required evidence. Three fresh processes replay identical committed
+bytes and retain no record-body collection. The `workload` block records each
+wall/RSS/allocation sample, median and nearest-rank p95, hardware/runtime,
+corpus and projection digests, and explicit carrier, signed-statement,
+additional-body and total JSON parse counts. A body is decoded once inside its
+signed statement. Every resident peak must remain below 512 MiB; host
+contention is recorded and no speed improvement is claimed.
 
 ## Transient tool spawn
 
@@ -434,7 +452,7 @@ runtime enforcement remain external obligations. An Ariadne pass binds evidence
 references and predicate gates and authenticates no signature: the predicate
 states in its own output that signatures, issuer authority, complete journal
 replay and current eligibility were not checked by Ariadne. Transparency log
-checking is disabled, so no keyless identity or transparency claim follows from
+checks are disabled, so no keyless identity or transparency claim follows from
 the cosign agreement. A historical result never becomes a current
 authorization: without freshness every accepted row stays `unknown`, and
 without the caller's own copy observations a complete publication stays

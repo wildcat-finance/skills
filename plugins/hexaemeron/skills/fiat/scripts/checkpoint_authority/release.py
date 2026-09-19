@@ -27,7 +27,7 @@ DOCS = "docs/checkpoint-authority/"
 MANIFEST = CORPUS + "release-manifest.json"
 LOCK_EXAMPLE = DOCS + "protocol.lock.json"
 MODULES = ("__init__", "canonical", "conformance", "coverage", "demo", "eligibility", "native",
-           "native_conformance", "native_io", "native_records", "parents", "records", "release",
+           "native_conformance", "native_io", "native_records", "network", "parents", "records", "release",
            "release_conformance", "replay", "replay_conformance", "schema", "signatures", "trust",
            "verifier", "wire")
 CORPUS_MANIFESTS = (CORPUS + "fixtures/manifest.json", CORPUS + "fixtures/replay-manifest.json",

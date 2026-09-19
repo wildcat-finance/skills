@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 25596033,
+    "bytes_blob": 52248953,
     "bytes_generated": 98
   },
   "entries": [
@@ -950,6 +950,13 @@
       "evidence": "no newline in the first 4096 bytes of 114016 bytes",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/replay-history.json"
+    },
+    {
+      "bytes": 26652920,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 26652920 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/study-workload.json"
     },
     {
       "bytes": 19687,

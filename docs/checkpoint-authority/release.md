@@ -14,15 +14,13 @@ recorded in
 [`release-manifest.json`](../../plugins/hexaemeron/skills/fiat/checkpoint-authority/release-manifest.json)
 lists every component by exact bytes under seven names:
 
-| Component | Holds |
-| --- | --- |
-| `schemas` | One closed JSON Schema per record type, nineteen in all. |
-| `verifier` | The `checkpoint_authority` package and its command line. |
-| `fixtures` | The four corpus manifests, which bind their own fixture files transitively. |
-| `capabilities` | The native capability and limit record. |
-| `native` | The native source pin, separate from the authority pin. |
-| `tools` | The cosign and schema-oracle tool profile. |
-| `documentation` | This guide, the protocol reference and the two corpus READMEs. |
+- `schemas`: one closed JSON Schema per record type, nineteen in all.
+- `verifier`: the `checkpoint_authority` package and its command line.
+- `fixtures`: the four corpus manifests, which bind their own fixture files transitively.
+- `capabilities`: the native capability and limit record.
+- `native`: the native source pin, separate from the authority pin.
+- `tools`: the cosign and schema-oracle tool profile.
+- `documentation`: this guide, the protocol reference and the two corpus READMEs.
 
 The manifest never hashes itself. Its `external_pins` field names the two
 values a consumer must hold elsewhere: `source_commit` and
@@ -106,6 +104,15 @@ cosign cases are a valid envelope, an altered payload, an untrusted key, a
 wrong payload type and a double-hashed payload. Transparency log checking is
 disabled, so no keyless identity or transparency claim follows.
 
+The demonstration uses macOS `sandbox-exec` with a fixed `(deny network*)`
+policy. Before cosign runs, four probes under that policy must receive `EPERM`
+for IPv4 and IPv6 bind and connect attempts. The report binds the launcher,
+policy and probe by SHA-256. Hosts without this implemented mechanism refuse
+with `network-denial-unavailable`; the ordinary history verifier does not
+depend on the demonstration's host mechanism. This policy denies network
+operations and keeps the caller's filesystem and process permissions. It does
+not establish native archive containment.
+
 Regenerate the corpus, the manifest and the lock example together, in that
 order, and check them without writing:
 
@@ -121,6 +128,27 @@ python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py \
   --candidate ordered-replay --criterion released-interoperability \
   --report .hexaemeron/reports/ordered-replay-released-interoperability.json
 ```
+
+The criterion also measures
+[`study-workload.json`](../../plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/study-workload.json).
+Its mapping covers the study's exact 1,280-event schedule across 512 decisions:
+256 authorize/finalize/permit/deny sequences and 256 cancellations. Required
+protocol evidence brings the complete history to 9,225 signed records and
+18,807,776 envelope bytes. The original unsigned study corpus and its
+measurements remain unchanged. The reporter reproduces that corpus's digest,
+checks every mapped event against its authenticated record, and compares the
+final decision projection with the study's digest.
+
+Three fresh processes replay the same committed bytes. The report preserves
+each wall time, traced allocation peak and peak resident set size, plus median
+and nearest-rank p95 wall time, hardware, runtime and host-contention limits.
+With three samples, p95 is the largest observed value. The criterion requires
+each resident peak below 512 MiB, zero retained record bodies and one
+journal-body decode per signed record. Each body is decoded inside its signed
+statement; envelope carriers require separate JSON parses. The report counts
+carriers, statements, additional body parses, native results and producer
+ledger lines separately, and includes the total JSON parses. These measurements
+establish no latency or throughput improvement.
 
 ## Supported limits
 

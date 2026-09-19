@@ -19,7 +19,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/fiat/scripts"))
 import checkpoint_authority_release_corpus as corpus
-from checkpoint_authority import demo, native_io, release, signatures, verifier, wire
+from checkpoint_authority import demo, native_io, network, release, signatures, verifier, wire
 from checkpoint_authority.canonical import Refusal, canonical, decode, digest
 from checkpoint_authority.signatures import ToolPin
 from test_checkpoint_authority_records import tool, tools as pinned_tools
@@ -367,6 +367,57 @@ class TransientToolSpawnTests(unittest.TestCase):
         self.assertNotIn(errno.EACCES, signatures.TRANSIENT_SPAWN)
 
 
+class NetworkDenialTests(unittest.TestCase):
+    def test_the_demonstration_blocks_a_verifier_that_attempts_a_real_socket(self):
+        directory, scratch = temporary_root(); self.addCleanup(directory.cleanup)
+        marker = scratch / "network-created"
+        valid = json.loads((ROOT / demo.COSIGN_ENVELOPE).read_bytes())
+        source = "#!" + sys.executable + "\n" + """import errno, json, pathlib, socket, sys
+marker = pathlib.Path(%r)
+try:
+    with socket.socket() as connection:
+        connection.bind(('127.0.0.1', 0))
+except OSError as error:
+    if error.errno not in (errno.EPERM, errno.EACCES):
+        raise
+else:
+    marker.write_text('network creation succeeded')
+bundle = json.loads(pathlib.Path('bundle.json').read_bytes())
+valid = %r
+key = sys.argv[sys.argv.index('--key') + 1]
+sys.exit(0 if bundle['dsseEnvelope'] == valid and key == 'trusted.pem' else 1)
+""" % (str(marker), valid)
+        executable = scratch / "cosign-probe"; executable.write_text(source); executable.chmod(0o700)
+        pin = ToolPin("cosign", str(executable), digest(executable.read_bytes()))
+        self.assertTrue(demo.interoperability(ROOT, pin)["agreed"])
+        self.assertFalse(marker.exists(), "the alleged denied-network verifier created a socket")
+
+    def test_an_unsupported_host_refuses_to_claim_network_denial(self):
+        with mock.patch.object(network.sys, "platform", "unsupported"), self.assertRaises(Refusal) as raised:
+            network.prepare()
+        self.assertEqual(raised.exception.code, "network-denial-unavailable")
+
+    def test_a_failed_or_incomplete_network_probe_refuses(self):
+        directory, scratch = temporary_root(); self.addCleanup(directory.cleanup)
+        boundary = network.prepare()
+        for value in ((1, network.PROBE_OUTPUT, b""), (0, b"", b""),
+                      (0, network.PROBE_OUTPUT[:-1], b"")):
+            with self.subTest(exit=value[0]), mock.patch.object(network.Boundary, "run", return_value=value), \
+                    self.assertRaises(Refusal) as raised:
+                boundary.probe(scratch)
+            self.assertEqual(raised.exception.code, "network-denial-probe")
+
+    def test_a_changed_network_launcher_refuses(self):
+        directory, scratch = temporary_root(); self.addCleanup(directory.cleanup)
+        boundary = network.Boundary("0" * 64)
+        with self.assertRaises(Refusal) as raised:
+            boundary.run(pinned_tools()["openssl"], ["version"], scratch, timeout=5)
+        self.assertEqual(raised.exception.code, "network-denial-changed")
+
+    def test_an_absent_independent_verifier_never_claims_network_denial(self):
+        self.assertEqual(demo.interoperability(ROOT, None)["network"], "not-established")
+
+
 class InstalledPluginTests(unittest.TestCase):
     """The released verifier must run from an isolated copy of its own components."""
 
@@ -458,6 +509,7 @@ class DemonstrationTests(unittest.TestCase):
             "records": history["records"], "accepted": history["accepted"],
             "eligible": history["eligible"], "hostile_refused": len(outcome["hostile"]),
             "interoperability_cases": len(outcome["interoperability"]["cases"]),
+            "network_boundary": outcome["interoperability"]["network_boundary"],
             "current_eligibility_withheld":
                 not outcome["withheld_evidence"]["without_freshness"]["current_eligibility_established"],
             "wall_ms": history["measured"]["wall_ms"],
@@ -477,6 +529,8 @@ class DemonstrationTests(unittest.TestCase):
         interoperability = self.outcome["interoperability"]
         self.assertTrue(interoperability["agreed"])
         self.assertEqual(interoperability["network"], "denied")
+        self.assertEqual(interoperability["network_boundary"]["probe_operations"], 4)
+        self.assertEqual(interoperability["network_boundary"]["probe_exit"], 0)
         self.assertEqual(interoperability["transparency_log"], "not-consulted")
         self.assertEqual([row["id"] for row in interoperability["cases"]],
                          [case[0] for case in demo.COSIGN_CASES])

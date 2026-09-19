@@ -17,7 +17,7 @@ import tempfile
 import time
 import tracemalloc
 
-from . import native_io as io, release, signatures, verifier
+from . import native_io as io, network, release, signatures, verifier
 from .canonical import Refusal, canonical, decode, digest
 from .schema import HASH, PREDICATE, enum, obj, validate
 
@@ -202,7 +202,7 @@ def hostile(root, lock_bytes):
 def interoperability(root, cosign):
     """Agree with one independent pinned verifier offline; no transparency log is consulted."""
     if cosign is None:
-        return {"verifier": None, "network": "denied", "cases": [], "agreed": False,
+        return {"verifier": None, "network": "not-established", "cases": [], "agreed": False,
                 "code": "independent-verifier-not-supplied"}
     validate(cosign.name, enum("cosign"))
     cosign.check()
@@ -211,8 +211,10 @@ def interoperability(root, cosign):
     keys = {"trusted": _bytes(root, TRUSTED_KEY, 16384), "wrong": _bytes(root, WRONG_KEY, 16384)}
     blob = _bytes(root, COSIGN_BLOB, verifier.LIMITS["record_bytes"])
     rows = []
+    boundary = network.prepare()
     with tempfile.TemporaryDirectory(prefix="checkpoint-release-demo-") as temporary:
         directory = Path(temporary)
+        denial = boundary.probe(directory)
         (directory / "blob").write_bytes(blob)
         for name, data in keys.items():
             (directory / (name + ".pem")).write_bytes(data)
@@ -226,7 +228,7 @@ def interoperability(root, cosign):
             bundle = {"mediaType": "application/vnd.dev.sigstore.bundle.v0.3+json",
                       "verificationMaterial": {"publicKey": {"hint": ""}}, "dsseEnvelope": envelope}
             (directory / "bundle.json").write_bytes(canonical(bundle, limit=131072))
-            exit_code = signatures._run(cosign, [
+            exit_code = boundary.run(cosign, [
                 "verify-blob-attestation", "--offline", "--insecure-ignore-tlog",
                 "--key", key + ".pem", "--bundle", "bundle.json", "--type", PREDICATE, "blob",
             ], directory, timeout=COSIGN_TIMEOUT)[0]
@@ -234,7 +236,8 @@ def interoperability(root, cosign):
                 raise Refusal("demonstration-interoperability-disagreement", STAGE)
             rows.append({"id": case, "expected_exit": expected_exit, "exit": exit_code, "agreed": True})
     return {"verifier": {"name": cosign.name, "sha256": cosign.sha256}, "network": "denied",
-            "transparency_log": "not-consulted", "cases": rows, "agreed": True, "code": "verifiers-agree"}
+            "network_boundary": denial, "transparency_log": "not-consulted",
+            "cases": rows, "agreed": True, "code": "verifiers-agree"}
 
 
 def run(root, *, tools_bytes, cosign=None):

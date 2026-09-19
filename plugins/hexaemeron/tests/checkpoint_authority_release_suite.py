@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/fiat/scripts"))
 import test_checkpoint_authority_release as release_cases
 import test_checkpoint_authority_release_conformance as conformance_cases
+import checkpoint_authority_release_workload as workload
 
 
 class Result(unittest.TextTestResult):
@@ -49,7 +50,8 @@ def main():
     result = unittest.TextTestRunner(stream=output, verbosity=2, resultclass=Result).run(suite)
     complete = len(result.started) == len(result.completed) == len(set(result.started)) == result.testsRun > 0
     demonstrated = release_cases.DEMONSTRATED
-    passed = (complete and result.wasSuccessful() and demonstrated is not None
+    measured = workload.benchmark() if result.wasSuccessful() else None
+    passed = (complete and result.wasSuccessful() and demonstrated is not None and measured is not None
               and not (result.skipped or result.expectedFailures or result.unexpectedSuccesses))
     report = {"schema": "checkpoint-authority-release-execution/v1", "complete": complete,
               "passed": bool(passed), "tests_run": result.testsRun, "subtests_run": result.subtests,
@@ -59,7 +61,7 @@ def main():
               "skips": len(result.skipped), "expected_failures": len(result.expectedFailures),
               "unexpected_successes": len(result.unexpectedSuccesses),
               "output_sha256": hashlib.sha256(output.getvalue().encode()).hexdigest(),
-              "demonstration": demonstrated, "python": sys.version.split()[0]}
+              "demonstration": demonstrated, "workload": measured, "python": sys.version.split()[0]}
     print(json.dumps(report, sort_keys=True, separators=(",", ":")))
     if not passed:
         print("released-interoperability execution failed", file=sys.stderr)

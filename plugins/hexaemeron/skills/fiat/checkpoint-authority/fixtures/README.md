@@ -36,10 +36,21 @@ Machine runtime omits this directory and `../native-fixture/`; the reporters
 that read them run from a full checkout, under
 `adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime`.
 
-## Deferred criteria
+## Released interoperability
+
+`interoperability-manifest.json` binds the release demonstration and its case
+inventory. `study-workload.json` maps the original study's 1,280 events across
+512 decisions to 9,225 signed records. It includes 256 accepted, finalized,
+permitted and denied decisions and 256 cancellations. The metadata file fixes
+its digest and counts. The release reporter measures three fresh processes,
+checks the original corpus and projection digests, and counts transport and
+body decodes separately. The original `replay-budget.json` remains unchanged;
+the complete study schedule is measured by `released-interoperability`.
+
+## Criterion boundaries
 
 The historical empty corpus remains a refusal fixture in the scaffold tests.
 Native admission and full authority replay have their own criteria and
-reports; released interoperability retains a separate unresolved criterion. A
+reports; released interoperability has a separate source-bound criterion. A
 passing record, native or replay report proves no later transition and no
 current production eligibility.
