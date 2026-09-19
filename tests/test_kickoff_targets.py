@@ -425,5 +425,58 @@ class EstateMapTests(unittest.TestCase):
         self.assertTrue(all(row["identical_at_all_six"] for row in self.matches["emitter_pin_binding"]["paths"] if row["path"] != "src/access/FixedTermHooks.sol"))
 
 
+class V1SourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-19 source recovery (#1748) closes the row's unresolved list."""
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v1-ethereum-mainnet")
+        self.matches = json.loads((REGISTRY.parent / "evidence" / "source-match-1748.json").read_text(encoding="utf-8"))
+
+    def test_the_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(self.row["status"], "resolved")
+        for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+            self.assertNotIn(key, self.row)
+        self.assertEqual(self.row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1748")
+
+    def test_every_deployment_contract_carries_a_source_commit(self):
+        for contract in self.row["deployment"]["contracts"]:
+            with self.subTest(address=contract["address"]):
+                self.assertTrue(contract["code_match"]["source_commit"], contract["name"])
+
+    def test_the_market_and_controller_init_code_reproduce_from_source(self):
+        contracts = {c["role"]: c for c in self.row["deployment"]["contracts"]}
+        for role, key in (("market-init-code-storage", "market_init_code"), ("controller-init-code-storage", "controller_init_code")):
+            with self.subTest(role=role):
+                evidence = self.matches[key]
+                self.assertTrue(evidence["result"]["equal"])
+                self.assertTrue(evidence["result"]["length_matches_recorded_init_code_length"])
+                commit = contracts[role]["code_match"]["source_commit"]
+                self.assertEqual(commit, evidence["source_commit"])
+                self.assertEqual(commit, self.row["source"]["commit"])
+
+    def test_the_market_lens_gap_is_the_recorded_one(self):
+        lens = next(c for c in self.row["deployment"]["contracts"] if c["role"] == "lens")
+        best = self.matches["market_lens"]["best_single_commit_match"]
+        self.assertEqual(lens["code_match"]["source_commit"], best["commit"])
+        self.assertEqual(best["equal"], 40)
+        self.assertEqual(best["of"], 46)
+        self.assertEqual(len(best["differing_paths"]), 6)
+        gap = self.matches["market_lens"]["why_no_commit_reaches_46_of_46"]
+        self.assertEqual(len(gap["group_a_pre_rewrite_only"]["paths"]) + len(gap["group_b_never_in_git"]["paths"]), 6)
+
+    def test_the_equivalent_commits_checkout_is_recorded_as_unresolvable(self):
+        checkout = self.matches["equivalent_commits_deployer_checkout"]
+        self.assertEqual(checkout["resolution"], "cannot select one of the five; recorded as unresolvable with the above evidence, per the issue's 'or record why one cannot be selected' acceptance path")
+        self.assertEqual(len(checkout["candidates"]), len(self.row["source"]["equivalent_commits"]) + 1)
+
+    def test_the_shared_chainalysis_oracle_is_confirmed(self):
+        v2 = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        v2_item = next(e for e in v2["protected_set_exclusions"] if "Chainalysis" in e["item"])
+        v1_item = next(e for e in self.row["protected_set_exclusions"] if "Chainalysis" in e["item"])
+        self.assertEqual(v1_item["item"], v2_item["item"])
+        self.assertIn("0x40c57923924b5c5c5455c48d93317139addac8fb", self.matches["protected_set_check"]["result"].lower())
+
+
 if __name__ == "__main__":
     unittest.main()
