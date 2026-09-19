@@ -58,6 +58,7 @@ RESOURCE_LIMITS = {
 """Declared supported ceilings for a released verification; none is a measured result."""
 ROW = obj(path=string(maximum=512), sha256=HASH,
           bytes={"type": "integer", "minimum": 0, "maximum": FILE_MAX})
+REFERENCE = obj(path=string(maximum=512), sha256=HASH)
 ASSET = obj(sha256=HASH, bytes={"type": "integer", "minimum": 1, "maximum": 2**31})
 VERSION = string(r"^[0-9]+\.[0-9]+\.[0-9]+$", 32)
 AUTHORITY = obj(source_commit=string(maximum=128), release_manifest_sha256=HASH,
@@ -70,7 +71,17 @@ PLACEHOLDER_COMMIT = "0" * 40
 """The example lock's own authority commit; a consumer replaces it with the merged commit."""
 
 
+def _path(path):
+    """Manifest paths name canonical relative leaves below the caller's release root."""
+    if (path.startswith("/") or "\\" in path
+            or any(part in ("", ".", "..") for part in path.split("/"))
+            or any(ord(char) < 32 or ord(char) == 127 for char in path)):
+        raise Refusal("component-path", STAGE)
+    return path
+
+
 def _hash(root, path):
+    path = _path(path)
     try:
         return io.hash_file(root / path, FILE_MAX)
     except Refusal as error:
@@ -109,6 +120,7 @@ def _corpus_rows(root):
                 raise Refusal("corpus-manifest-shape", STAGE)
             validate(row["path"], string(maximum=512))
             validate(row["sha256"], HASH)
+            _path(row["path"])
             if covered.setdefault(row["path"], row["sha256"]) != row["sha256"]:
                 raise Refusal("corpus-manifest-conflict", STAGE)
     return covered
@@ -241,8 +253,20 @@ def check(root):
         for row in rows:
             validate(row, ROW)
             listed[row["path"]] = row["sha256"]
-    for row in value.get("transitive_files", ()):
-        if type(row) is not dict or set(row) != {"path", "sha256"}:
+    rows = value.get("transitive_files")
+    if type(rows) is not list or not 1 <= len(rows) <= 256 * len(CORPUS_MANIFESTS):
+        raise Refusal("manifest-shape", STAGE)
+    for row in rows:
+        try:
+            validate(row, REFERENCE)
+        except Refusal:
+            raise Refusal("manifest-shape", STAGE) from None
+        _path(row["path"])
+    paths = [row["path"] for row in rows]
+    if paths != sorted(set(paths)):
+        raise Refusal("manifest-shape", STAGE)
+    for row in rows:
+        if row["path"] in listed and listed[row["path"]] != row["sha256"]:
             raise Refusal("manifest-shape", STAGE)
         listed.setdefault(row["path"], row["sha256"])
     for path, expected in listed.items():
