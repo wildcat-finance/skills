@@ -415,16 +415,20 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.66.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.67.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.66.1")
-        self.assertIn("skills#1738", current["evidence"])
-        self.assertIn("canonical SSH fingerprints", current["change"])
+        self.assertEqual(current["version"], "fiat-v6.67.1")
+        self.assertIn("skills#1742", current["evidence"])
+        self.assertIn("unsigned-fixture-not-admitted", current["change"])
         self.assertIn("held target stay unchanged", current["change"])
+        signing = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.66.1")
+        self.assertIn("skills#1738", signing["evidence"])
+        self.assertIn("canonical SSH fingerprints", signing["change"])
+        self.assertIn("held target stay unchanged", signing["change"])
         demonstration = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.65.1")
         self.assertIn("skills#1273", demonstration["evidence"])
         self.assertIn("successor-controller demonstration", demonstration["change"])
@@ -740,7 +744,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "elenchus" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.8.0")
+        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.9.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(
             field(ledger, "Frontier revision"), "observed-failure-root-cause"
