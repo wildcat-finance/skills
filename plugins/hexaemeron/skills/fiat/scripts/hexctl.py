@@ -27174,7 +27174,9 @@ def _checkpoint_archive_ssh_material(base_dir: str, members: str) -> str:
         _checkpoint_archive_refuse("signature-unverified")
     # Git permits a trust store outside the worktree. Expand Git's pathname
     # syntax above, then capture one stable public file without following links.
-    components = os.path.abspath(os.path.join(base_dir, source)).split(os.sep)[1:]
+    # Keep source components: folding alias/.. before opening alias would skip
+    # the no-follow check and could capture a different file from Git's path.
+    components = os.path.join(os.path.abspath(base_dir), source).split(os.sep)[1:]
 
     def capture():
         label = "checkpoint archive allowed signers"

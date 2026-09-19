@@ -231,6 +231,34 @@ class CheckpointSshSigningTests(ArchiveSigningCases, SshSignedRunFixture):
 
 
 class CheckpointSignerInputTests(unittest.TestCase):
+    def test_allowed_signers_capture_refuses_a_symlink_before_dotdot(self):
+        module = hexctl_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "actual" / "child").mkdir(parents=True)
+            (root / "alias").symlink_to(root / "actual" / "child", target_is_directory=True)
+            (root / "actual" / "allowed").write_bytes(b"configured public material\n")
+            (root / "allowed").write_bytes(b"different public material\n")
+            source = root / "alias" / ".." / "allowed"
+            with mock.patch.object(module, "bounded_run", return_value=(0, os.fsencode(source) + b"\0")):
+                with redirect_stderr(StringIO()) as error, self.assertRaises(SystemExit) as refused:
+                    module._checkpoint_archive_ssh_material(str(root), str(root / "members"))
+            self.assertEqual(1, refused.exception.code)
+            self.assertEqual("signature-unverified\n", error.getvalue())
+            self.assertFalse((root / "members").exists())
+
+    def test_allowed_signers_capture_accepts_parent_components_without_links(self):
+        module = hexctl_module()
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "child").mkdir()
+            payload = b"configured public material\n"
+            (root / "allowed").write_bytes(payload)
+            source = root / "child" / ".." / "allowed"
+            with mock.patch.object(module, "bounded_run", return_value=(0, os.fsencode(source) + b"\0")):
+                member = module._checkpoint_archive_ssh_material(str(root), str(root / "members"))
+            self.assertEqual(payload, (root / "members" / member).read_bytes())
+
     def test_fingerprints_are_canonical_and_format_specific(self):
         valid = hexctl_module()._checkpoint_archive_fingerprint_valid
         for fingerprint in ("A" * 40, "F" * 64):
