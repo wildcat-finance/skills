@@ -1,9 +1,12 @@
 """The versioned JSON Schema documents carry the intended envelope.
 
 The admitted vocabulary of the v3 documents is the closed adapter tuple table.
-That table is derived here from the adapter modules at test time, never
-copied, so a schema that disagrees with what an adapter emits fails with the
-schema file, the field and the disagreeing value named.
+That table is derived here at test time from `release_v2.ADAPTERS`, the
+registry a new adapter is registered in, never copied, so a schema that
+disagrees with what a registered adapter emits fails with the schema file, the
+field and the disagreeing value named. Reading the registry rather than a
+fixed module list is what makes registering a fourth adapter visible here: a
+list would leave its values unchecked against the schema documents.
 """
 
 import copy
@@ -22,7 +25,7 @@ except ImportError:  # pragma: no cover - exercised only where the package is ab
 
 
 SCHEMA_DIRECTORY = support.PLUGIN_ROOT / "schemas"
-ADAPTER_MODULES = (aave_v4, euler_v1, euler_v2)
+ADAPTER_MODULES = tuple(release_v2.ADAPTERS[name] for name in sorted(release_v2.ADAPTERS))
 DRAFT = "https://json-schema.org/draft/2020-12/schema"
 EVENT_V2 = "canonical-event-v2.json"
 COVERAGE_V2 = "coverage-manifest-v2.json"
@@ -323,6 +326,22 @@ class V3SchemaTupleTableTests(TupleTableChecks):
         self.assertEqual(len(rows), 3)
         self.assertEqual(len({row["venue"] for row in rows}), 3)
         self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 11)
+
+    def test_every_registered_adapter_reaches_the_tuple_table_and_the_v3_schemas(self):
+        """A registered adapter the v3 documents do not name is the drift."""
+        registered = sorted(release_v2.ADAPTERS)
+        self.assertEqual(
+            column(tuple_table(), "venue"),
+            registered,
+            "the tuple table does not cover every adapter in release_v2.ADAPTERS",
+        )
+        for name, pointer in (
+            (EVENT_V3, "properties/venue"),
+            (EVENT_V3, "properties/provenance/properties/adapter"),
+            (COVERAGE_V3, "properties/versions/properties/adapter/properties/name"),
+        ):
+            with self.subTest(schema=name, field=pointer):
+                self.assert_enum_equals(name, pointer, load_schema(name), registered)
 
     def test_event_v3_enums_consts_and_branches_equal_the_tuple_table(self):
         self.check_event_v3(EVENT_V3, load_schema(EVENT_V3))
