@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 25344997,
+    "bytes_blob": 25256796,
     "bytes_generated": 98
   },
   "entries": [
@@ -917,18 +917,18 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 77252,
+      "bytes": 78122,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 38626",
+      "evidence": "mean line length above 400 in a window at offset 39061",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 108758,
+      "bytes": 19687,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 106710",
+      "evidence": "no newline in the first 4096 bytes of 19687 bytes",
       "grade": "candidate",
-      "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/trust-prefix.json"
     },
     {
       "bytes": 38122,

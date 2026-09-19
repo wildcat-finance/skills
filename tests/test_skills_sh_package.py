@@ -149,7 +149,12 @@ CONTRACT = "promise-machine/v1"
 # Issue #1538 adopts the reviewed decorative-portrait omission and reference
 # repair, retaining the original byte cap and reserving five MiB below it.
 # Every generated manifest must satisfy that margin as well as the cap.
-MAX_FILES = 1_500
+# A sixth raise records the checkpoint authority corpus: 1,534 files,
+# 20,219,205 bytes and 5,995,195 bytes of headroom. The local file tripwire
+# moves to 1,600; the 25 MiB byte cap and five MiB reserve stay unchanged.
+# Required shipped content, omission rules and source bindings stay intact.
+# This does not make the 1,000-file archive and download routes compatible.
+MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
