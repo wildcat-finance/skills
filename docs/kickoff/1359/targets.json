@@ -1727,7 +1727,8 @@
               "lib/forge-std": "3b20d60d14b343ee4f908cb8079495c07f5e8981",
               "lib/solady": "be154cdd703f345d378b9934e8f7e3d73c42283a"
             },
-            "retrievability": "private repository; retrievable to wildcat-finance members through the GitHub API; blob SHA-1s and SHA-256s recorded so a copy can be checked without the repository"
+            "retrievability": "private repository; retrievable to wildcat-finance members through the GitHub API; blob SHA-1s and SHA-256s recorded so a copy can be checked without the repository",
+            "build_command": "solc --standard-json < deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/standard-input.json, outputSelection widened; run 2026-09-19"
           },
           {
             "component": "WildcatMarketCollateralFactory, SimpleMarketCollateralMultiParty init code, CollateralLens",
@@ -2051,7 +2052,7 @@
             "code_length": 1649,
             "observed_block_number": 25960042,
             "code_match": {
-              "method": "fee-recipient-contract deployments/mainnet output.json deployedBytecode equals the on-chain runtime byte for byte (1649 bytes, no immutables); its standard-input.json sources equal the Sourcify full-match sources byte for byte; solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none",
+              "method": "recompiling the fee-recipient-contract verification input with solc 0.8.25 (runs 200, viaIR, cancun, bytecodeHash none) reproduces the recorded output.json creation and deployed bytecode byte for byte; that deployed bytecode equals the on-chain runtime byte for byte, 1649 bytes with no immutables; the input sources equal the Sourcify full-match sources byte for byte",
               "source_commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
               "sourcify": "match",
               "deployment_block": 21854968,
@@ -6009,7 +6010,7 @@
     "docs/kickoff/1359/evidence/consumer-inputs.json": "a11720023981f8904a610f695ad5a6878fdda9f1e45b080bb96c5e867f5aa477",
     "docs/kickoff/1359/evidence/recovery-issues.json": "a921e6ec46be87fb4dae040a8516f1dd36bc3ee924d3d64c33995548f8f6c8c5",
     "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70",
-    "docs/kickoff/1359/evidence/source-match-1590.json": "3d9a17ad9fce5306129e9975fe36f8ca8e95cacb647daca7d408b3682fdc38af"
+    "docs/kickoff/1359/evidence/source-match-1590.json": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e"
   },
   "scope": {
     "approval_evidence": "docs/kickoff/1359/evidence/scope-approval.json",
