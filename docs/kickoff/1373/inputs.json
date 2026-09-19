@@ -1,0 +1,127 @@
+{
+  "status": "blocked",
+  "observed_at": "2026-09-19T17:30:41Z",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1489",
+  "record_repository": "https://github.com/wildcat-finance/skills",
+  "source_revision": "e2307ed5966e18727434b3e49bec89db736f7b17",
+  "producer": {
+    "agent": "Codex",
+    "task_id": "01a0bab4-76ef-71d3-923c-ea6001aa55bc"
+  },
+  "review": {
+    "producer_self_review": "completed",
+    "independent_reviewer": null,
+    "operator_acceptance": null
+  },
+  "sources": [
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/release.py",
+      "bytes": 26858,
+      "sha256": "ac9cd42f1c9611e9171c33ab7efb760ae0d558841ba225cc241254d7808ab3e2",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/alexandria/scripts/alexandria_lib/release.py"
+    },
+    {
+      "path": "plugins/alexandria/skills/alexandria/SKILL.md",
+      "bytes": 22698,
+      "sha256": "7e6b12a9fd12514a8a4ab26ac4be57239cf1fb54ca8419a4a1a3027edba6337b",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/alexandria/skills/alexandria/SKILL.md"
+    },
+    {
+      "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.scrutiny.json",
+      "bytes": 1581,
+      "sha256": "eb0ad475c7015c4ac6f08ebf6ab1cec2bed1de125bb8e472fd4fc850519fb920",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/dokimasia/docs/evidence/wildcat-app-v2.scrutiny.json"
+    },
+    {
+      "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.dispositions.json",
+      "bytes": 103646,
+      "sha256": "8dccfbc425d1c084d33234b91a3e36e2f99519096949b51885b3b3fc5b4dcc32",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/dokimasia/docs/evidence/wildcat-app-v2.dispositions.json"
+    },
+    {
+      "path": "plugins/dokimasia/docs/dokimasia-study.md",
+      "bytes": 19149,
+      "sha256": "4235f9d249821ff6ab552c49f95690f5dc6cf107b4fbd8d3d669d0f0d6a9360d",
+      "url": "https://github.com/wildcat-finance/skills/blob/e2307ed5966e18727434b3e49bec89db736f7b17/plugins/dokimasia/docs/dokimasia-study.md"
+    }
+  ],
+  "alexandria": {
+    "skill_version": "3.5.0",
+    "max_component_bytes": 67108864,
+    "max_components": 128,
+    "max_raw_component_bytes_per_release": 8589934592,
+    "local_object_path": "objects/sha256/<first-two-hex>/<sha256-hex>",
+    "remote_retrieval_operation": null
+  },
+  "capture": {
+    "selected_target": null,
+    "source_revision": null,
+    "manifest_sha256": null,
+    "raw_bytes": null,
+    "component_count": null,
+    "component_census": null,
+    "historical_343_component_case_source": null,
+    "split_parts": null
+  },
+  "dokimasia": {
+    "evidence_class": "recorded",
+    "primary_inputs_retrieved": false,
+    "application_repository": "https://github.com/wildcat-finance/wildcat-app-v2",
+    "application_commit": "bb9685fb7dbe9cd2f5b7683a9b3f164509dc2de9",
+    "checkout_archive_sha256": null,
+    "raw_workbook": {
+      "label": "wildcat_v25_uat_v2-jack.xlsx",
+      "sha256": "9da2f2e8bbdb0271fac8d9a71f3f4129ca2d4ad79a4c1ee2f46412e831212a25"
+    },
+    "normalised_workbook_sha256": "21493992f97e97124ccd0f8170cc447c44f204c09c3b29f2953a9bb938dd2eba",
+    "inventory_sha256": "88325a449814d9e869a905e3fce73727b32014156a36746ab55e417b148c0ce9",
+    "coverage_sha256": "0c015a799121a78f74225a1a23944755ef7be37a238801dbc1d8ef8e1eba91f7",
+    "scrutiny_logical_sha256": "881ac25514daa197f3b54c00ba3ef904f5295f318386f091dcf403d3d812841d",
+    "scrutiny_file_sha256": "eb0ad475c7015c4ac6f08ebf6ab1cec2bed1de125bb8e472fd4fc850519fb920",
+    "scrutiny_schema": "dokimasia-scrutiny/v1",
+    "scrutiny_skill_version": "3.1.0",
+    "rules_projection_sha256": "65d095d82b5e10c846fd189d00d51432775b219075f2f24879de825c503583d6",
+    "rules_projection_encoding": "UTF-8; json.dumps(rules, sort_keys=True, ensure_ascii=False, separators=(comma, colon)); one LF terminator",
+    "rules_source": "plugins/dokimasia/docs/evidence/wildcat-app-v2.dispositions.json",
+    "primary_input_disclosure": "not authorised for republication by this record",
+    "storage_destinations": null
+  },
+  "operator_decisions": {
+    "named_decision_maker": null,
+    "decision_reference": null,
+    "store_provider": null,
+    "account_or_namespace": null,
+    "bucket_or_equivalent": null,
+    "object_key_convention": null,
+    "retrieval_identity_convention": null,
+    "retention_policy": null,
+    "retention_owner": null,
+    "access_policy": null,
+    "access_owner": null,
+    "rotation_policy": null,
+    "rotation_owner": null,
+    "existing_split_parts_disposition": null,
+    "authorised_cost": null,
+    "authorised_capacity": null
+  },
+  "rights_handoff": {
+    "issue": "https://github.com/wildcat-finance/skills/issues/1364",
+    "issue_state_at_observation": "open",
+    "accepted_target_matched_record": null,
+    "record_sha256": null,
+    "intended_audience": null
+  },
+  "retrieval_rehearsal": {
+    "status": "not-run",
+    "reason": "Selected capture, approved store and target-matched rights handoff are absent.",
+    "successful_object": null,
+    "missing_object": null,
+    "denied_object": null,
+    "corrupt_object": null,
+    "command_results": []
+  },
+  "dependent_work": {
+    "capture_storage_implementation": "https://github.com/wildcat-finance/skills/issues/1373",
+    "workbook_reconstruction": "https://github.com/wildcat-finance/skills/issues/1380"
+  }
+}
