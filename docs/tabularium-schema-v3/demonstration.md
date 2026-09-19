@@ -56,13 +56,17 @@ spelled out.
 | `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition integration` | 0 |
 | `python3 plugins/tabularium/tests/run_tests.py --elenchus-report .elenchus/schema-v3-step-5-exit.json` | 0 |
 
-Three further exit commands were run against the committed tree and are
-recorded in the next section. Two of them need one. `run_checks.py --scope
-schemas` selects `scripts/dead_code.py suppressions --check`, which refuses to
-analyse a checkout with modified tracked files, and `plugin_release.py --head
-HEAD` names a commit. The `tabularium` scope selects four checks, the three
-lints and the Tabularium suite, and needs no commit; it is recorded there
-because it was run against the same committed bytes as the other two.
+Three further exit commands need a committed tree and are recorded in the next
+section. `plugin_release.py --head HEAD` names a commit outright. Both
+`run_checks.py` rows need one through the planner, which unions the requested
+scope with the scope owning each changed path and then closes over consumers.
+The three `.horos/` artefacts this step regenerates resolve to the `root`
+scope, and `root` draws in `dead-code` as a consumer, so while they are
+uncommitted `scripts/dead_code.py suppressions --check` is selected under
+either `--scope` and refuses to analyse a checkout with modified tracked
+files. On the committed tree no path has changed, and `--scope tabularium`
+then selects four checks, the three lints and the Tabularium suite, while
+`--scope schemas` selects nine.
 
 The elenchus report at `.elenchus/schema-v3-step-5-exit.json` records 232
 tests, zero failures, zero errors, zero skips, and a complete run.
