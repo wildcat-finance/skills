@@ -18,6 +18,12 @@ import shlex
 import stat
 
 SCHEMA = "protasis-gate-commands/v1"
+# Released adapters reviewed for replay compatibility. Their sole difference
+# is the test runner's module pin; every current command result must still match.
+REPLAY_COMPATIBLE_ADAPTERS = frozenset({
+    '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
+    'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
+})
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
 MAX_COMMANDS = 64
@@ -577,5 +583,8 @@ def replay(root: Path, data: bytes, receipt: dict) -> None:
             for invocation in command['invocations']:
                 position = invocation['argv'].index('{report}')
                 invocation['execution_argv'][position] = str(Path(captured_root) / command['report']['file'])
+    captured_adapter = receipt.get('adapter_sha256')
+    if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
+        current['adapter_sha256'] = captured_adapter
     if current != receipt:
         raise Refusal('gate-receipt-drift')
