@@ -2,10 +2,12 @@
 
 from copy import deepcopy
 import hashlib
+import importlib.util
 import io
 import json
 import os
 from pathlib import Path
+import re
 import socket
 import subprocess
 import sys
@@ -31,6 +33,7 @@ from alexandria_lib.interval import (  # noqa: E402
     plan_digest,
     validate_checkpoint,
 )
+from alexandria_lib.venues import VENUES, compound_v3  # noqa: E402
 import usdc_interval  # noqa: E402
 from usdc_interval import (  # noqa: E402
     CODE_COMPONENT,
@@ -2906,6 +2909,136 @@ class CheckpointOpeningOffsetTests(CollectorTestCase):
     def test_a_completed_checkpoint_is_accepted(self):
         self.collect()
         validate_checkpoint(checkpoint(self.root), plan_digest(self.plan), len(self.plan["shards"]), JOURNAL_CLASSES)
+
+
+REPO_ROOT = PLUGIN.parents[1]
+KICKOFF_COMMANDS = REPO_ROOT / "docs" / "kickoff" / "1374" / "evidence" / "commands.json"
+LIVE_EXAMPLE = PLUGIN / "examples" / "usdc-interval-live-v0"
+
+
+def kickoff_command(command_id):
+    """One recorded refusal specimen from the kickoff evidence, read fresh.
+
+    Never copy its `stderr` or path fields into a literal: this run's own
+    known-trap discipline is to re-derive them from the committed record.
+    """
+    if not KICKOFF_COMMANDS.is_file():
+        raise AssertionError(f"the kickoff evidence commands record is missing at {KICKOFF_COMMANDS}")
+    commands = json.loads(KICKOFF_COMMANDS.read_text(encoding="utf-8"))["commands"]
+    for entry in commands:
+        if entry["id"] == command_id:
+            return entry
+    raise AssertionError(f"kickoff evidence command {command_id} is not recorded at {KICKOFF_COMMANDS}")
+
+
+def load_live_demo():
+    """`usdc-interval-live-v0/demo.py`, loaded by path under its own module name.
+
+    A second `sys.path` entry and a bare `import demo` would collide with
+    `test_demo.py`'s own differently named demonstration module in the same
+    process; loading by file location the way `test_demo.py` itself does
+    avoids that collision.
+    """
+    driver = LIVE_EXAMPLE / "demo.py"
+    specification = importlib.util.spec_from_file_location(
+        "alexandria_usdc_interval_live_demo_conformance", driver
+    )
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+class WildcatConformanceTests(ReleaseTestCase):
+    """Venue dispatch: the plan's venue selects Compound's own, unmoved path.
+
+    `test_unregistered_venue_refuses_by_name` and
+    `test_compound_demonstration_builds_and_checks` are loaded by name: the
+    Step 1 conformance harness resolves `undeclared-venue-refuses` and
+    `compound-path-still-builds` against them.
+    """
+
+    def test_unregistered_venue_refuses_by_name(self):
+        plan = deepcopy(self.plan)
+        plan["venue"] = "wildcat-v2"
+        with self.assertRaises(AlexandriaError) as raised:
+            Builder(plan, self.scratch("unregistered-venue"), self.registry, created_at=CREATED_AT)
+        self.assertIn("wildcat-v2", str(raised.exception))
+
+    def test_registry_format_disagreement_refuses_by_name(self):
+        entry = kickoff_command(5)
+        self.assertEqual(entry["exit_status"], 1)
+        match = re.search(r"--registry\s+(\S+)", entry["command"])
+        self.assertIsNotNone(match, "kickoff command 5 no longer names a --registry path")
+        registry_document = json.loads((REPO_ROOT / match.group(1)).read_text(encoding="utf-8"))
+        self.assertNotEqual(registry_document.get("format"), "alexandria-compound-v3-registry/v1")
+        with self.assertRaises(AlexandriaError) as raised:
+            Builder(self.plan, self.scratch("format-disagreement"), registry_document, created_at=CREATED_AT)
+        self.assertEqual(f"usdc-interval: {raised.exception}", entry["stderr"])
+        self.assertIn("format", str(raised.exception))
+
+    def test_compound_demonstration_builds_and_checks(self):
+        demo = load_live_demo()
+        expected = json.loads((LIVE_EXAMPLE / "expected.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as scratch:
+            output = Path(scratch) / "rebuilt"
+            summary = demo.build(output)
+            self.assertEqual(summary["release_id"], expected["release_id"])
+            derived = demo.verify(output)
+            self.assertEqual(derived["release_id"], expected["release_id"])
+            checked = check_interval(output / "release")
+            self.assertEqual(checked["release_id"], expected["release_id"])
+
+    def test_compound_registry_refusals_still_fire(self):
+        prefix = "usdc-interval: "
+
+        format_entry = kickoff_command(5)
+        format_match = re.search(r"--registry\s+(\S+)", format_entry["command"])
+        format_registry = json.loads((REPO_ROOT / format_match.group(1)).read_text(encoding="utf-8"))
+        with self.assertRaises(AlexandriaError) as format_raised:
+            Builder(self.plan, self.scratch("refusal-5"), format_registry, created_at=CREATED_AT)
+        self.assertEqual(f"{prefix}{format_raised.exception}", format_entry["stderr"])
+
+        pin_entry = kickoff_command(6)
+        recipe = pin_entry["mutation_recipe"]
+        source_match = re.search(r"pathlib\.Path\('([^']+)'\)\.read_text", recipe)
+        mutation_match = re.search(
+            r"r\['entries'\]\[(\d+)\]\['([a-z_]+)'\]\s*=\s*'([^']+)'", recipe
+        )
+        self.assertIsNotNone(source_match, "kickoff command 6's mutation recipe changed shape")
+        self.assertIsNotNone(mutation_match, "kickoff command 6's mutation recipe changed shape")
+        pin_registry = json.loads((REPO_ROOT / source_match.group(1)).read_text(encoding="utf-8"))
+        index, key, value = int(mutation_match.group(1)), mutation_match.group(2), mutation_match.group(3)
+        pin_registry["entries"][index][key] = value
+        with self.assertRaises(AlexandriaError) as pin_raised:
+            Builder(self.plan, self.scratch("refusal-6"), pin_registry, created_at=CREATED_AT)
+        self.assertEqual(f"{prefix}{pin_raised.exception}", pin_entry["stderr"])
+
+        self.assertNotEqual(str(format_raised.exception), str(pin_raised.exception))
+
+    def test_venue_table_is_derived_from_registered_modules(self):
+        """`VENUES` is built from each module's own name, never a second list.
+
+        Guards the anti-pattern at `plugins/tabularium/scripts/tabularium.py`
+        (an argparse `choices` tuple) drifting from
+        `tabularium_lib/release_v2.py` (an adapter dict keyed by module
+        attribute): here there is only the one table, keyed the same way.
+        """
+        self.assertEqual(set(VENUES), {compound_v3.VENUE})
+        self.assertIs(VENUES[compound_v3.VENUE], compound_v3)
+        self.assertEqual(compound_v3.VENUE, "compound-v3")
+
+    def test_compound_gap_sentence_is_unchanged(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        gaps = {capture["id"]: capture["coverage"]["gaps"] for capture in manifest["captures"]}
+        self.assertEqual(
+            gaps["registry"],
+            [
+                "27 of the 28 registry entries at the pin were not collected; this release "
+                "covers the Ethereum USDC Comet only"
+            ],
+        )
 
 
 if __name__ == "__main__":
