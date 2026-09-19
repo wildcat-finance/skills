@@ -9,12 +9,23 @@ fixed module list is what makes registering a fourth adapter visible here: a
 list would leave its values unchecked against the schema documents.
 """
 
+import contextlib
 import copy
+import errno
+import io
 import json
+import os
+from pathlib import Path
+import re
+import shlex
+import sys
+import tempfile
 import unittest
+from unittest import mock
 
+from . import prove_schema_v3
 from . import support
-from tabularium_lib import release_v2
+from tabularium_lib import SUPPORTED_EVENT_SCHEMAS, release_v2
 from tabularium_lib.adapters import aave_v4, euler_v1, euler_v2
 from tabularium_lib.release_v2 import KNOWN_GAPS
 
@@ -33,6 +44,20 @@ EVENT_V3 = "canonical-event-v3.json"
 COVERAGE_V3 = "coverage-manifest-v3.json"
 ALL_SCHEMAS = (EVENT_V2, COVERAGE_V2, EVENT_V3, COVERAGE_V3)
 DEPRECATED = {EVENT_V2: EVENT_V3, COVERAGE_V2: COVERAGE_V3}
+REQUIRES_JSONSCHEMA = unittest.skipIf(jsonschema is None, support.JSONSCHEMA_ABSENT)
+
+
+def scratch_directory(prefix: str = "tabularium-schema-v3-"):
+    """Transient space with no symlinked component and no status entry.
+
+    The reporter refuses a symlinked path component, and on macOS the platform
+    temporary directory is reached through one, so scratch is anchored at the
+    ignored top-level tmp/ of this checkout instead.  That directory is
+    confined and `git status` never sees it.
+    """
+    scratch = support.REPO_ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
 
 
 def tuple_table():
@@ -157,6 +182,34 @@ class SchemaDocumentTests(unittest.TestCase):
 
 class SchemaDocumentValidityTests(unittest.TestCase):
     """Every versioned document parses and is itself a valid draft 2020-12 schema."""
+
+    def test_the_declared_document_sets_match_the_schemas_directory(self):
+        """Emptied, the two lists below would assert nothing and still pass.
+
+        `ALL_SCHEMAS` and `DEPRECATED` drive loops whose bodies carry every
+        assertion in this class and in the supersession case, so an empty one
+        is a test that checks nothing rather than a test that fails.  Both are
+        bound here to the documents on disk: the versioned canonical family by
+        name, and the superseded set by the `deprecated` flag the documents
+        themselves carry.  The Compound v3 Phase 0 documents are not part of
+        the versioned canonical family and stay out.
+        """
+        versioned = {
+            path.name
+            for path in SCHEMA_DIRECTORY.iterdir()
+            if re.fullmatch(r"(canonical-event|coverage-manifest)-v\d+\.json", path.name)
+        }
+        self.assertTrue(ALL_SCHEMAS, "no document would be checked at all")
+        self.assertEqual(set(ALL_SCHEMAS), versioned)
+        superseded = {
+            name for name in versioned if load_schema(name).get("deprecated") is True
+        }
+        self.assertTrue(DEPRECATED, "no supersession would be checked at all")
+        self.assertEqual(set(DEPRECATED), superseded)
+        for name, successor in DEPRECATED.items():
+            with self.subTest(schema=name):
+                self.assertIn(successor, versioned)
+                self.assertIsNot(load_schema(successor).get("deprecated"), True)
 
     def test_every_versioned_document_parses_and_checks_as_a_schema(self):
         for name in ALL_SCHEMAS:
@@ -520,6 +573,313 @@ class V2SchemaDeprecationTests(unittest.TestCase):
                     len(KNOWN_GAPS[row["adapter"]]),
                     schema["properties"]["known_gaps"]["minItems"],
                 )
+
+
+@REQUIRES_JSONSCHEMA
+class ShippedDocumentParityTests(unittest.TestCase):
+    """Every shipped document validates against the schema its version names.
+
+    A release says which envelope it was written to in `schema_version`, so the
+    document is validated against that version's schema file, not against the
+    current one.  The three v0 releases say 2, which is what the corrected and
+    superseded v2 files describe.
+    """
+
+    maxDiff = None
+
+    def check_release(self, name):
+        manifest, rows = support.release_documents(name)
+        version = manifest["schema_version"]
+        self.assertIn(version, SUPPORTED_EVENT_SCHEMAS, name)
+        self.assertEqual(manifest["versions"]["event_schema"], version, name)
+        self.assertEqual(
+            support.schema_refusal_fields(support.coverage_schema(version), manifest),
+            [],
+            "%s: coverage.json is refused by coverage-manifest-v%d.json"
+            % (name, version),
+        )
+        schema = support.event_schema(version)
+        adapter_module = release_v2.ADAPTERS[manifest["versions"]["adapter"]["name"]]
+        self.assertTrue(rows, "%s: events.jsonl is empty" % name)
+        for index, row in enumerate(rows, start=1):
+            with self.subTest(row=index):
+                self.assertEqual(row["schema_version"], version)
+                self.assertEqual(
+                    support.schema_refusal_fields(schema, row),
+                    [],
+                    "%s: row %d is refused by canonical-event-v%d.json"
+                    % (name, index, version),
+                )
+                self.assertIsNone(
+                    support.library_refusal_field(
+                        row, adapter_module, version, index
+                    ),
+                    "%s: row %d is refused by validate_event_row" % (name, index),
+                )
+
+    def test_every_shipped_release_directory_carries_a_parity_case(self):
+        """The declared release list matches the tree and the cases above.
+
+        `Exit` asks for every shipped `events.jsonl` row and `coverage.json`,
+        and the cases below name their releases one at a time.  A fourth
+        canonical release would be covered by nothing and fail nothing, so the
+        declared list is bound here to what is on disk and to the case names,
+        and it is this test rather than a silent gap that reports the drift.
+        A directory with no `coverage.json` is not a canonical release: the
+        Compound v3 Phase 0 witness is a different artefact and stays out.
+        """
+        on_disk = {
+            directory.name
+            for directory in support.EXAMPLES.iterdir()
+            if (directory / "coverage.json").is_file()
+        }
+        self.assertEqual(set(support.SHIPPED_RELEASES), on_disk)
+        cases = [name for name in dir(self) if name.startswith("test_")]
+        for release in support.SHIPPED_RELEASES:
+            with self.subTest(release=release):
+                self.assertTrue(
+                    any(release.replace("-", "_") in case for case in cases),
+                    "%s has no parity case of its own" % release,
+                )
+
+    def test_aave_v4_v0_documents_validate_against_their_named_schema(self):
+        self.check_release("aave-v4-v0")
+
+    def test_euler_v1_v0_documents_validate_against_their_named_schema(self):
+        self.check_release("euler-v1-v0")
+
+    def test_euler_v2_v0_documents_validate_against_their_named_schema(self):
+        self.check_release("euler-v2-v0")
+
+
+@REQUIRES_JSONSCHEMA
+class RejectionParityTests(unittest.TestCase):
+    """Both validators refuse each committed fixture, naming the same field."""
+
+    maxDiff = None
+
+    def assert_parity(self, row, expected_field):
+        observation = support.parity_observation(row, expected_field)
+        self.assertTrue(observation["agreed"], support.parity_disagreement(observation))
+        return observation
+
+    def check_fixture(self, name, expected_field):
+        row = support.load_rejection_fixture(name)
+        observation = self.assert_parity(row, expected_field)
+        self.assertEqual(observation["schema_fields"], [expected_field], name)
+        self.assertEqual(observation["library_field"], expected_field, name)
+
+    def test_every_declared_rejection_fixture_carries_a_case(self):
+        """The reporter's evidence set matches the tree and the cases below.
+
+        `prove_schema_v3.py` computes the value it attests by walking
+        `support.REJECTION_FIXTURES`, and nothing else reads that tuple.
+        Emptied, it left the suite green while the reporter wrote
+        `"value": true` over no fixtures at all, because `all(())` is true and
+        the closed `protasis-design-report/v1` key set has nowhere to record a
+        count.  The declared set is bound here to the committed fixture files
+        and to the case names, so the evidence set cannot shrink in silence.
+        """
+        declared = [name for name, _ in support.REJECTION_FIXTURES]
+        self.assertTrue(declared, "the reporter would attest a vacuous pass")
+        on_disk = {
+            path.stem
+            for path in support.SCHEMA_V3_FIXTURES.iterdir()
+            if path.suffix == ".json"
+        }
+        self.assertEqual(set(declared), on_disk)
+        cases = [name for name in dir(self) if name.startswith("test_")]
+        for fixture in declared:
+            with self.subTest(fixture=fixture):
+                self.assertTrue(
+                    any(fixture.replace("-", "_") in case for case in cases),
+                    "%s has no rejection case of its own" % fixture,
+                )
+
+    def test_unknown_value_is_refused_by_both_validators(self):
+        self.check_fixture("unknown-value", "provenance.mapping_rule")
+
+    def test_wrong_version_is_refused_by_both_validators(self):
+        self.check_fixture("wrong-version", "schema_version")
+
+    def test_malformed_provenance_is_refused_by_both_validators(self):
+        self.check_fixture("malformed-provenance", "provenance.source_selector")
+
+    def test_a_row_only_one_validator_refuses_fails_the_parity_check(self):
+        """A one-sided refusal is a disagreement, never a pass.
+
+        The row carries one provenance key the closed v3 key set does not name.
+        `jsonschema` refuses it by name through `additionalProperties`;
+        `validate_event_row` checks the tuple table and the presence of the
+        eleven named provenance fields and does not police the key set, so it
+        admits the row.  The parity assertion has to fail on that, which is what
+        keeps a fixture either validator accepts out of a passing report.
+        """
+        row = support.load_rejection_fixture("unknown-value")
+        row["provenance"]["mapping_rule"] = "aave-v4.borrow.v2"
+        row["provenance"]["operator_note"] = "not a field of the closed key set"
+        observation = support.parity_observation(row, "provenance.operator_note")
+        self.assertEqual(observation["schema_fields"], ["provenance.operator_note"])
+        self.assertIsNone(observation["library_field"])
+        with self.assertRaises(self.failureException):
+            self.assert_parity(row, "provenance.operator_note")
+
+
+class ReporterCommandTests(unittest.TestCase):
+    """The report's `command` names the arguments that produced its value."""
+
+    @REQUIRES_JSONSCHEMA
+    def test_the_report_command_names_the_arguments_it_was_given(self):
+        """Read from `sys.argv`, the field would name a command that never ran.
+
+        `design_evidence.py` compares this string against the resolver the
+        design record binds, so it is evidence.  Calling `main` in process is
+        what the suite does, and under the host's own `sys.argv` the report
+        would carry the runner's arguments instead of the reporter's.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = prove_schema_v3.main(
+                    [
+                        "--candidate", "superseding-releases",
+                        "--criterion", "rejection-parity",
+                        "--report", str(report),
+                    ]
+                )
+            self.assertEqual(code, 0)
+            written = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(
+            written["command"],
+            "python3 plugins/tabularium/tests/prove_schema_v3.py "
+            "--candidate superseding-releases --criterion rejection-parity "
+            "--report %s" % report,
+        )
+
+
+    @REQUIRES_JSONSCHEMA
+    def test_a_report_path_with_a_space_is_recorded_as_one_argument(self):
+        """Joined with plain spaces, such a path read as two arguments.
+
+        The field names the command that produced the value, and a reader
+        splitting it on whitespace would have recovered a `--report` nobody
+        passed.  Quoting only where quoting is needed keeps every resolver
+        string the design record declares byte-identical.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection parity.json"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = prove_schema_v3.main(
+                    [
+                        "--candidate", "superseding-releases",
+                        "--criterion", "rejection-parity",
+                        "--report", str(report),
+                    ]
+                )
+            self.assertEqual(code, 0)
+            recorded = json.loads(report.read_text(encoding="utf-8"))["command"]
+        self.assertEqual(shlex.split(recorded)[-1], str(report))
+        self.assertIn("'%s'" % report, recorded)
+
+
+class ReporterAtomicWriteTests(unittest.TestCase):
+    """A failed write leaves the report that was already there untouched."""
+
+    def test_a_failure_between_staging_and_renaming_keeps_the_old_report(self):
+        """The rename is the only moment the report changes.
+
+        Staging removed the truncation window; this covers the other half.  A
+        failure after the staged bytes are written and before they replace the
+        report leaves the earlier report whole and no staged file behind.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            prior = json.dumps({"schema": "protasis-design-report/v1"}) + "\n"
+            report.write_text(prior, encoding="utf-8")
+            replaced = os.replace
+
+            def refuse(source, target):
+                raise OSError(errno.EIO, "Input/output error")
+
+            os.replace = refuse
+            try:
+                with self.assertRaises(prove_schema_v3.ReportRefused):
+                    prove_schema_v3.write_report(report, {"value": True})
+            finally:
+                os.replace = replaced
+            self.assertEqual(report.read_text(encoding="utf-8"), prior)
+            self.assertEqual(
+                [path.name for path in Path(directory).iterdir()], [report.name]
+            )
+
+    def test_a_failed_write_does_not_destroy_the_previous_report(self):
+        """Opened with `O_TRUNC`, the report was emptied before any byte landed.
+
+        The risk register's `partial-write` entry is the convention this
+        follows: a killed run leaves no half-written artefact.  The reporter
+        was the one writer in the tree that did not, so a failure after the
+        open left zero bytes where a valid report had been.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            prior = json.dumps({"schema": "protasis-design-report/v1"}) + "\n"
+            report.write_text(prior, encoding="utf-8")
+            written = os.write
+
+            def refuse(handle, payload):
+                raise OSError(errno.ENOSPC, "No space left on device")
+
+            os.write = refuse
+            try:
+                # The refusal's type is not what is under test and the parent
+                # let the OSError escape unwrapped, so the file state below is
+                # reached either way and is the assertion that matters.
+                with self.assertRaises(Exception):
+                    prove_schema_v3.write_report(report, {"value": True})
+            finally:
+                os.write = written
+            self.assertEqual(report.read_text(encoding="utf-8"), prior)
+            self.assertEqual(
+                [path.name for path in Path(directory).iterdir()],
+                [report.name],
+                "a staged file was left behind",
+            )
+
+
+class ReporterRefusalTests(unittest.TestCase):
+    """The design reporter's two refusals, both of which write nothing."""
+
+    def report_argv(self, path):
+        return [
+            "--candidate", "superseding-releases",
+            "--criterion", "rejection-parity",
+            "--report", str(path),
+        ]
+
+    def test_the_reporter_refuses_to_write_when_jsonschema_is_absent(self):
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            stderr = io.StringIO()
+            with mock.patch.dict(sys.modules, {"jsonschema": None}):
+                with contextlib.redirect_stderr(stderr):
+                    code = prove_schema_v3.main(self.report_argv(report))
+            self.assertEqual(code, 1)
+            self.assertEqual(stderr.getvalue().strip(), support.JSONSCHEMA_ABSENT)
+            self.assertFalse(report.exists(), "a skip left a report behind")
+
+    @REQUIRES_JSONSCHEMA
+    def test_the_reporter_refuses_a_symlinked_report_component(self):
+        with scratch_directory() as directory:
+            root = Path(directory)
+            (root / "real").mkdir()
+            os.symlink(root / "real", root / "link")
+            report = root / "link" / "rejection-parity.json"
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                code = prove_schema_v3.main(self.report_argv(report))
+            self.assertEqual(code, 2)
+            self.assertIn("symlink", stderr.getvalue())
+            self.assertFalse((root / "real" / "rejection-parity.json").exists())
 
 
 if __name__ == "__main__":
