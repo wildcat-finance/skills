@@ -1106,7 +1106,7 @@
       "id": "kickoff-consumer-target",
       "question": "Which deployed estate supplies the emitter and protected-estate consumers?",
       "decision_maker_role": "target maintainer for the Wildcat protocol",
-      "evidence_summary": "Dave Coleman approved Wildcat V2 on Ethereum mainnet, including all registered templates, instances, hooks and role providers. The approval settles scope; #1590 owns remaining deployment/source gaps.",
+      "evidence_summary": "Dave Coleman approved Wildcat V2 on Ethereum mainnet, including all registered templates, instances, hooks and role providers. The approval settles scope; #1590 completed the deployment/source map on 2026-09-18 (revisions[0]).",
       "options": [
         {
           "id": "ethereum-only",
@@ -1474,8 +1474,8 @@
       "id": "wildcat-v2-ethereum-mainnet",
       "venue": "Wildcat",
       "generation": "V2",
-      "label": "Wildcat V2 HooksFactory estate on Ethereum mainnet",
-      "status": "blocked",
+      "label": "Wildcat V2 HooksFactory estate on Ethereum mainnet: factory, three templates, 42 hooks instances, 80 markets, 32 role providers, fee recipient, collateral factory and both lenses",
+      "status": "resolved",
       "consumers": [
         1354,
         1355,
@@ -1696,15 +1696,137 @@
             "blob_sha1": "904b886f6d22798451b9f83ee347eeafd5422866"
           }
         ],
-        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json"
+        "retrievability_evidence": "docs/kickoff/1359/evidence/source-refs.json",
+        "components": [
+          {
+            "component": "WildcatFeeRecipient",
+            "repository": "https://github.com/wildcat-finance/fee-recipient-contract",
+            "visibility": "private to the wildcat-finance organisation",
+            "relation": "deployed",
+            "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+            "compiler": {
+              "solc": "0.8.25+commit.b61c2a91",
+              "evm_version": "cancun",
+              "optimizer_runs": 200,
+              "via_ir": true,
+              "bytecode_hash": "none",
+              "append_cbor": true,
+              "compilation_target": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient"
+            },
+            "build_inputs": [
+              {
+                "path": "deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/standard-input.json",
+                "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+                "blob_sha1": "3c6c62e5b5f755b953b49930cc290338682c14aa",
+                "sha256": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d",
+                "bytes": 11708,
+                "compilation_target": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient"
+              }
+            ],
+            "submodules": {
+              "lib/forge-std": "3b20d60d14b343ee4f908cb8079495c07f5e8981",
+              "lib/solady": "be154cdd703f345d378b9934e8f7e3d73c42283a"
+            },
+            "retrievability": "private repository; retrievable to wildcat-finance members through the GitHub API; blob SHA-1s and SHA-256s recorded so a copy can be checked without the repository"
+          },
+          {
+            "component": "WildcatMarketCollateralFactory, SimpleMarketCollateralMultiParty init code, CollateralLens",
+            "repository": "https://github.com/wildcat-finance/collateral-contract",
+            "visibility": "public",
+            "relation": "deployed",
+            "branch": "multi-exchange",
+            "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+            "compiler": {
+              "solc": "0.8.28+commit.7893614a",
+              "evm_version": "cancun",
+              "optimizer_runs": 50000,
+              "via_ir": true,
+              "bytecode_hash": "none",
+              "foundry_profile": "ir"
+            },
+            "build_command": "FOUNDRY_PROFILE=ir FOUNDRY_SOLC=0.8.28 FOUNDRY_EVM_VERSION=cancun forge build --skip test --skip script",
+            "build_inputs": [
+              {
+                "path": "src/WildcatMarketCollateralFactory.sol",
+                "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+                "blob_sha1": "94c5228482e0eaa804a47e63f7fc0367b37eef30",
+                "sha256": null,
+                "bytes": null
+              },
+              {
+                "path": "src/SimpleMarketCollateralMultiParty.sol",
+                "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+                "blob_sha1": "c745896b8a9e44a4e423eda8d81306826adb42bc",
+                "sha256": null,
+                "bytes": null
+              },
+              {
+                "path": "src/lens/CollateralLens.sol",
+                "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+                "blob_sha1": "707ff2b8a547dc30249b74eb87113c4643ec3c76",
+                "sha256": null,
+                "bytes": null
+              },
+              {
+                "path": "foundry.toml",
+                "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+                "blob_sha1": "9306d1ffc5687adc7c9442072a588569fc162d0d",
+                "sha256": null,
+                "bytes": null
+              }
+            ],
+            "submodules": {
+              "lib/forge-std": "1eea5bae12ae557d589f9f0f0edae2faa47cb262",
+              "lib/openzeppelin-contracts": "69c8def5f222ff96f2b5beff05dfba996368aa79",
+              "lib/solady": "513f581675374706dbe947284d6b12d19ce35a2a",
+              "lib/solmate": "c93f7716c9909175d45f6ef80a34a650e2d24e56",
+              "lib/v2-protocol": "f5c39bcd224c558d18cb53568c785efac0db0835"
+            },
+            "note": "the matched sources were committed on 2025-11-24; the factory, its init-code storage and the lens were deployed on 2025-08-18, so the deployer built from a tree committed later; the branches audit_2026_feb and kethic/underflow-fix carry the same factory and lens blobs but a different SimpleMarketCollateralMultiParty blob (854f88e418263e26ebf2251bc01f72b1a9bafd0a) whose creation code does not hash to the stored init code; the default branch main (6f8c1213b4ee339eaab4b34b5d73e7b12e2ee7fe) carries none of the three deployed sources"
+          },
+          {
+            "component": "OpenAccessRoleProvider",
+            "repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
+            "visibility": "private to the wildcat-finance organisation",
+            "relation": "deployed",
+            "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+            "compiler": {
+              "solc": "0.8.25+commit.b61c2a91",
+              "evm_version": "cancun",
+              "optimizer_runs": 200,
+              "via_ir": true,
+              "bytecode_hash": "none"
+            },
+            "build_inputs": [
+              {
+                "path": "src/OpenAccessRoleProvider.sol",
+                "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+                "blob_sha1": "5d2597a098d871857898389af97ef31831c3aa01",
+                "sha256": "07bc4c91edb64b1255d61173c35e0523ee33f12f49a59d320834256f510e3b9d",
+                "bytes": 837,
+                "compilation_target": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider"
+              }
+            ],
+            "note": "same declarations; the repository blob differs in indentation, an UNLICENSED rather than MIT SPDX line, and isPullProvider declared view rather than pure"
+          }
+        ],
+        "third_template_source": {
+          "commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+          "branch": "plasma",
+          "blob": {
+            "src/access/FixedTermHooks.sol": "6c486910069ca36eea0731f23ae0ca0b35876bbc"
+          },
+          "build_input": "the v2.0.0 FixedTermHooks verification input with that one file swapped in"
+        },
+        "emitter_pin_binding": "every emitter, interface and hooks-base path is blob-identical at f5a26146, a70f297f (v2.0.0), 8dc8e449, c7be4039 (v2.1.0), 5838b2f3 and e1f77540; docs/kickoff/1359/evidence/source-match-1590.json emitter_pin_binding"
       },
       "deployment": {
         "chain_id": 1,
         "chain": "Ethereum mainnet",
         "observed_block": {
-          "number": 25960042,
-          "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
-          "timestamp": 1789200599
+          "hash": "0x3d069f254a10d98ad19eff0f397cf28db3613fd98bff1df48c798920552f4ec5",
+          "number": 26006289,
+          "timestamp": 1789757399
         },
         "start_block": {
           "number": 21788182,
@@ -1929,22 +2051,2486 @@
             "code_length": 1649,
             "observed_block_number": 25960042,
             "code_match": {
-              "method": "Sourcify full match (0.8.25, runs 200); src/WildcatFeeRecipient.sol is in no v2-protocol tree read, so the source repository is not located",
-              "source_commit": null,
+              "method": "fee-recipient-contract deployments/mainnet output.json deployedBytecode equals the on-chain runtime byte for byte (1649 bytes, no immutables); its standard-input.json sources equal the Sourcify full-match sources byte for byte; solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none",
+              "source_commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
               "sourcify": "match",
-              "deployment_block": 21854968
-            }
+              "deployment_block": 21854968,
+              "deployment_transaction": "0x73c699aeaab6114275145e74de6e95acff50714e376393e20aaaeabf9cda24dd",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1590.json wildcat_fee_recipient"
+            },
+            "source_repository": "https://github.com/wildcat-finance/fee-recipient-contract",
+            "source_repository_visibility": "private to the wildcat-finance organisation"
           },
           {
             "role": "collateral-factory",
-            "name": "CollateralFactory (subgraph)",
+            "name": "WildcatMarketCollateralFactory (WildcatCollateralFactoryV1)",
             "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
             "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
             "code_length": 7615,
             "observed_block_number": 25960042,
             "code_match": {
-              "method": "code hash recorded only; not on Sourcify; the collateral-contract repository was not inspected",
-              "source_commit": null,
+              "method": "forge build of collateral-contract branch multi-exchange under its ir profile (solc 0.8.28, viaIR, 50000 runs, cancun, bytecodeHash none) reproduces the 7615-byte runtime modulo 4 immutable slots; the immutables read back as the factory's own CREATE2 prefix, the collateral init-code storage, the collateral init code hash and the arch controller; not on Sourcify",
+              "source_commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+              "sourcify": null,
+              "deployment_block": 23167812,
+              "deployment_transaction": "0xaea55b36bec52d404a78bc0b20c2490a15ec2de13a4b5cb01de76f3f96b63902",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1590.json collateral"
+            },
+            "source_repository": "https://github.com/wildcat-finance/collateral-contract"
+          },
+          {
+            "role": "collateral-init-code-storage",
+            "name": "SimpleMarketCollateralMultiParty init code",
+            "address": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+            "code_keccak256": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+            "code_length": 9581,
+            "observed_block_number": 26006289,
+            "stored_init_code": {
+              "leading_byte": "0x00",
+              "init_code_length": 9580,
+              "init_code_keccak256": "0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52"
+            },
+            "source_repository": "https://github.com/wildcat-finance/collateral-contract",
+            "code_match": {
+              "method": "stored code is 0x00 followed by the creation bytecode of SimpleMarketCollateralMultiParty built from collateral-contract branch multi-exchange under its ir profile; the keccak256 of the rest equals WildcatMarketCollateralFactory.collateralInitCodeHash(); the audit_2026_feb and kethic/underflow-fix branches carry a different blob whose creation code does not hash to it",
+              "source_commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+              "sourcify": null,
+              "evidence": "docs/kickoff/1359/evidence/source-match-1590.json collateral.collateral_init_code_storage"
+            }
+          },
+          {
+            "role": "collateral-lens",
+            "name": "CollateralLens",
+            "address": "0x422489ba6bddd5954c379c41b6c97ab0e4494f90",
+            "code_keccak256": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8",
+            "code_length": 8287,
+            "observed_block_number": 26006289,
+            "source_repository": "https://github.com/wildcat-finance/collateral-contract",
+            "code_match": {
+              "method": "forge build of collateral-contract branch multi-exchange under its ir profile reproduces the 8287-byte runtime modulo 1 immutable slot, which reads back as the collateral factory; not on Sourcify",
+              "source_commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+              "sourcify": null,
+              "deployment_block": 23168260,
+              "deployment_transaction": "0xbf91860b11fd56867517cc2519d67a3e5864cd74ba0964620f18f800bff3cd8a",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1590.json collateral.lens"
+            }
+          },
+          {
+            "role": "role-provider",
+            "name": "OpenAccessRoleProvider",
+            "address": "0x5620553d8881335f74ad19259daacd1d9b373101",
+            "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+            "code_length": 564,
+            "observed_block_number": 26006289,
+            "source_repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
+            "source_repository_visibility": "private to the wildcat-finance organisation",
+            "used_by_hooks_instances": 37,
+            "pull_provider_time_to_live_seconds": 7776000,
+            "immutable_chainalysis_oracle": "0x40c57923924b5c5c5455c48d93317139addac8fb",
+            "code_match": {
+              "method": "Sourcify full match (solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none); the chainalysis-ofac-role-provider blob compiled alone with those settings reproduces the runtime modulo the 2 oracle immutable slots; the blob differs from the Sourcify source only in indentation, the SPDX line and a view-versus-pure mutability keyword",
+              "source_commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+              "sourcify": "match",
+              "deployment_block": 21825574,
+              "deployment_transaction": "0x11fbd050956fcec7a1d8f90a0ca083c5d195f6703dd33b85d0c384d2e355325f",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1590.json open_access_role_provider"
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: CMS USDT",
+            "address": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+            "code_keccak256": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0xde8845ff1d67b84e755a57481097e712460ac21b",
+            "markets": [
+              "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+              "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4"
+            ],
+            "deployment_block": 22181288,
+            "deployment_transaction": "0xf185049ccb508b92259b34ad8069b13b31abab62bea764e524bd5f2ae76545dc",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: CMS USDC",
+            "address": "0x00a84b8f40ee4285aed9104a39bdf0e2615bba49",
+            "code_keccak256": "0xd6c63a73df3850e27a5d7c6d295e4a10a60c227a8a53bb1a087c373d0e2adef4",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0xde8845ff1d67b84e755a57481097e712460ac21b",
+            "markets": [
+              "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+              "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d"
+            ],
+            "deployment_block": 22089305,
+            "deployment_transaction": "0xf16dcd99aeff7206b94879ff7a4c6f1f4c35c473f418afcd5c9ca84376f854ff",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 365-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Private Credit portfolio Open",
+            "address": "0x05bfbce741c85dfc6c5457da63732943dd4fe8f0",
+            "code_keccak256": "0xa748984ac0546054902b887373a9aa678f270cdcf4c74535b19f9a56673b944b",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x6402b6e82c1564e6a47498e922112f98c84b18b8",
+            "markets": [
+              "0x9e047d2e8970300f0461314e1b72abf7ef7792e9"
+            ],
+            "deployment_block": 23520115,
+            "deployment_transaction": "0x220013ffd16d24bb630a0987b84e1ae378abd5b18a1948f1ddf3e0823cb31dcd",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: Democratize Market-Making with onchain LP",
+            "address": "0x07c9fcf40d032ed65b3e44cec16766327c4aab93",
+            "code_keccak256": "0x2fb8673ed1c82113488f6af35e3adfba3e091d0eeac9153bd01cfe24e4609c69",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x8c6c8a2f67337f8fb1828d915a99a0b782eb234d",
+            "markets": [
+              "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7"
+            ],
+            "deployment_block": 22225107,
+            "deployment_transaction": "0xe81accda42354f2ae4d8f79a9500ef1aa6dca7baf01b436808fcea26ec44540f",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: MNNC Trading USD Coin",
+            "address": "0x0d7a820f97714f879454790d8b3887b1c50b4dad",
+            "code_keccak256": "0xdf7388e8dd4634a4c6d09a7682f311dcd412eb72e919a6dc18267a43ed8b60bf",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xf783818e62d9793f119a3a9656cbdab93ff3e993",
+            "markets": [
+              "0xb3b823ec39f3edeb4354f76997031b3826b615c2"
+            ],
+            "deployment_block": 22089954,
+            "deployment_transaction": "0x0b09395fef1ec20b8e14cf0eff35f7c7a5a9f7d8688d2276962c33513f68b036",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: SC Market",
+            "address": "0x0eaa734e23be6a5c216f18edce127e3f624a6303",
+            "code_keccak256": "0x0cb009cebc419cfe9fe91cb8404ddfa5f91e30b9d74ec3cc920a9f24c1ea8c7e",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0xb52d0370c1169f27cb31e91d3c7a0108bb4a1459",
+            "markets": [
+              "0x55a365f3997b2f015001c53cf6a73335e593ad8a"
+            ],
+            "deployment_block": 22638973,
+            "deployment_transaction": "0x5c4a3b6c31a5b3a6e2ee71c725fccffddb87ac248de43d688042c15493d678a2",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: CREDI Fixed Market",
+            "address": "0x1234df5b1d967f432547c8a22bd0573e3ffce5cd",
+            "code_keccak256": "0xe88db700551888ef7332fba817206251ccb6fa6235c24ee6e89569f6429109cd",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x6402b6e82c1564e6a47498e922112f98c84b18b8",
+            "markets": [
+              "0x9aa7f58561812f01f1221e9718011aca78c28c17"
+            ],
+            "deployment_block": 22773985,
+            "deployment_transaction": "0x7a1262c2d5315e0a373bd2ec34001a58edc170408612f0f1b1100e6229585061",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: Bodhi USDC",
+            "address": "0x13df803310dcef45c85d2904eedad54b116d7c36",
+            "code_keccak256": "0xea6d970a0856cc83e609aad97c3211400089a2bd6cd1e2d2834cace0c9e44b9f",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x51036545beb6e4ce8d1cfdaca4b981624ee51cc1",
+            "markets": [
+              "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3"
+            ],
+            "deployment_block": 22430622,
+            "deployment_transaction": "0xc37655ac726a380ddce917135e278a144e27df0c27ff763ddaa9df6b415bb61a",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Kain Warwick Private LP fund",
+            "address": "0x1c1822e065ac62d0006f931ceff04a198484f445",
+            "code_keccak256": "0x79f8592371e498303adefb8ce60c649a6d35711be6ec69521c2e199c8d3828f3",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x51036545beb6e4ce8d1cfdaca4b981624ee51cc1",
+            "markets": [
+              "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+              "0xeafa12cc0905baabed8618584f0796f5d19da3c4"
+            ],
+            "deployment_block": 22825844,
+            "deployment_transaction": "0x63f0c4d6c9fe242b552c4f9b76d5be4764d9dc418eec48d685060627262463d1",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: KappaLab Ethena USDe",
+            "address": "0x2c3612ca197fd462d81a38e3590d193d6e8c7a21",
+            "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x29e8f953d1a9236f8ed344f200defdaf5d24a453",
+            "markets": [
+              "0xe79ca848ae0182fce1db61a968b89627c9a0c948"
+            ],
+            "deployment_block": 24520188,
+            "deployment_transaction": "0x622fa3e40a3358ab027176cf54355377898baa4013e81cfb8ba8c226a10b648f",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Hyperithm Private",
+            "address": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "markets": [
+              "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+              "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+              "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+              "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+              "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+              "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c"
+            ],
+            "deployment_block": 22986090,
+            "deployment_transaction": "0x566852daf8f063fa887532cbb4dac824bd67354850047a5daf891efdb48bfa14",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: Wildcat Foundation Policy",
+            "address": "0x38fcd48cfa4be537ceeafb4b2badab7eba4d5efd",
+            "code_keccak256": "0x65418dab9ebd13a04a217fdb823c9239e083256fd9d25bc3defd29094434ce56",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+            "markets": [
+              "0x0b6c6d557109f9e793297d54ee3fbde2e315b070"
+            ],
+            "deployment_block": 21923723,
+            "deployment_transaction": "0x343bbbbfc05d1849a5ad4f264940a02c253ef2fb6dbf05217f267dce9081d3eb",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 365-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Stablecoin loan",
+            "address": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+            "code_keccak256": "0x2ff81f1befbb848d6e25d82e29b5801c667220c4926154c26852452569ddb66d",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x0443084cf31b622fe5b33d247699b6c9d5152436",
+            "markets": [
+              "0xb3beb373d241378f5f1fd68ed865349257602476",
+              "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+              "0x603b29847659618813f039c73379746585b78875"
+            ],
+            "deployment_block": 22679460,
+            "deployment_transaction": "0xf7b12f4880f3976116bb6ba0aa71f8c293a603bcc08c59f08f8e35dd9532679c",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: KeyUSDC-Policy",
+            "address": "0x59106481fefec5d523f9d8b5214ebe42182e6585",
+            "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "markets": [
+              "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+              "0x6053e88b1ac0dce4ccac47122cbecd6598365c70"
+            ],
+            "deployment_block": 23239776,
+            "deployment_transaction": "0x08f46825488b10709785849544a9a9233268879b4cdfdf4219ec3f3bedfce52a",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Rifbid Loan",
+            "address": "0x67fb662a7ea704b811899ebe8eb4173b2ec555fb",
+            "code_keccak256": "0x23360672e474bea6a46db9e1b30d65d1ca20e3443e26cd1661ca27f9fb5c2a39",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x34b06b444f4241a5a33edf38314b89fdba36261a",
+            "markets": [
+              "0x44239265e4c63573070048fecd83a6b1e324412c"
+            ],
+            "deployment_block": 25041481,
+            "deployment_transaction": "0x2030e01fdfde93ee27b6f72e994c834fa680f850086c89accf43627f13f8b5a6",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: MiningStore - Parent",
+            "address": "0x71cf8be0840bab347b45f946345e97fabfef4682",
+            "code_keccak256": "0xe85fd29af377bdcb97efe2803c965d3bfbe7335e4bfca811fc88530770f17bec",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x5cc05268c03e1a8c7ce05c7e79c125bab48a1d50",
+            "markets": [
+              "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc"
+            ],
+            "deployment_block": 22586073,
+            "deployment_transaction": "0x47fd5de51039ef46d0ad23d5608f99e0068e0a533fc9c8f4485dee6162332b69",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Hyperithm Default Policy",
+            "address": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "markets": [
+              "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+              "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+              "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+              "0x69e56f526637b430561e8293f3307765a046d750",
+              "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+              "0x923237220cc79c6301c59851af3574d0a487c966",
+              "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+              "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+              "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+              "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+              "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd"
+            ],
+            "deployment_block": 22536250,
+            "deployment_transaction": "0xb93c31c5565dd8c2f626bc6a88cd8018a180cee601c96715739a41695b20e11e",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Maseer Finance - CANA Market USDT",
+            "address": "0x840146e12437e97374d1a12577c7f0b7cd1e0e87",
+            "code_keccak256": "0xbac5120f7189c8d55d1d1ad5de1045a499a59c52c22e99df86926aeca4b32d55",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb324284a938807b40c713c159d6df2cc25014167",
+            "markets": [
+              "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+              "0x7244b84918dbfb50e62320fc0e6031a449deea28"
+            ],
+            "deployment_block": 23120561,
+            "deployment_transaction": "0x24c213fe63d55cf455980c75c0f6b8c06886cf5fd73a0e6e136a8f7115939de2",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Dialectic Chronograph",
+            "address": "0x8cb27994564ddeb7cba130f1c213bd6e809223ad",
+            "code_keccak256": "0xf781ee05bfab29e0d27a173375e5c4f8652b445dbf1fb5d1975ecb51f5149bd4",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x3d1743df036b4b343cac208ca53e4f9b52995dbd",
+            "markets": [
+              "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce"
+            ],
+            "deployment_block": 22383208,
+            "deployment_transaction": "0xa92e36b2a86bf26ce4c927e9e779c263d1a2062a5173799829ba58b0791099da",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Selini",
+            "address": "0x8e3dec859aa3ab5716c5f9d9436ea452b2598be5",
+            "code_keccak256": "0xedaeb9665c454bd24bddd7317dc3c514898c2226c1098b5e6ff48f9eb73616c9",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb2e5ad55e08d5ea90b8570a3421a790a110d7661",
+            "markets": [
+              "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+              "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724"
+            ],
+            "deployment_block": 22152303,
+            "deployment_transaction": "0x9e4a4ec6a9ba5ecb2911ed971ffd0c27de715890ad6176be385485b7051843ea",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: 9% USDT open term",
+            "address": "0x92b272ba90722e32095edb7aecd4af3717d5d90b",
+            "code_keccak256": "0x4cb3849b7f29bf38c3ef869a83f0d9c22bbb83c3029102174f99ceb6090abd10",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xa7147252442fde5cca1962def847db58d9922ba0",
+            "markets": [
+              "0xaa4677627d05775dafc410d7e3aff5702aae27f8"
+            ],
+            "deployment_block": 24341269,
+            "deployment_transaction": "0x398e6da46881c62519e18660911f01207ce8b08e3f4a8586dd2ced0eb3e87325",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: Mithras Fixed Loan",
+            "address": "0x9f93483da03aa66254341a730e7867f0c12fd894",
+            "code_keccak256": "0xa6efc92699594cc391ca72551df5d3e1791752a740293e83d6b05353bc669896",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x0792dcb7080466e4bbc678bdb873fe7d969832b8",
+            "markets": [
+              "0x5a516928be2005e9852e342f71bfcc52ca5bdace"
+            ],
+            "deployment_block": 23147144,
+            "deployment_transaction": "0xa22b2ea82fe39af0d8874d63444314bbd1be8503352de25e8cbaf323ade3c3f6",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: KappaLab USDC ",
+            "address": "0xa4195278a9891bc2787625aace203c1d676ff714",
+            "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x29e8f953d1a9236f8ed344f200defdaf5d24a453",
+            "markets": [
+              "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+              "0xa8139699360b255c5c02d0616e75f20b92adf1c3"
+            ],
+            "deployment_block": 25272731,
+            "deployment_transaction": "0x8474e85fe471e266b0c03bcdedde8face89e1f8328b0c03b45f9bcd652fe6fc3",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Closed",
+            "address": "0xa5eeb866981d1c46d0d5153872559d88e37c25ad",
+            "code_keccak256": "0xd3a7c1dec5bfcdc73dbb441663eedbd51af1b6e087c1dfcd9b3063b55925c1c5",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x9b88093d249169d5ce3c609e45fb27446a3649cf",
+            "markets": [
+              "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b"
+            ],
+            "deployment_block": 25251018,
+            "deployment_transaction": "0x9b6db14fc8040229cd227bbc1d78a40794fa2f41b2c916b3f048f7b5a4c76087",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: 6MO-Levered AA SUKUK-OPEN",
+            "address": "0xadee85002320ef1093f090067873544376f09ff5",
+            "code_keccak256": "0x029ee3fb3fa7349d6d0758dda84443c36d1a2e496ae133e54336ec42ca543095",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "markets": [
+              "0x8c06d86596d671798a67e80dc44a281c8d822fd3"
+            ],
+            "deployment_block": 23435305,
+            "deployment_transaction": "0xd385f2758fbc4fcc7615d8853c2d5c765d8aa1504da2a27773363faaa66f1e52",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Open Term",
+            "address": "0xb428c5239be400e74f32c46cfa6c7e8b481aca0d",
+            "code_keccak256": "0xbb1f0d13278be09c06876c59736a2b112f3b41e6cad74a82b0895a950ec6a797",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xfc2472474f95b73672630cbac12c41533df80430",
+            "markets": [
+              "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed"
+            ],
+            "deployment_block": 25336236,
+            "deployment_transaction": "0xa2c5e27da4f52f662f5616a7f160f04d20f0b6b06a6853d49b2857c4281de615",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: 6MO-Levered AAA SUKUK",
+            "address": "0xb7ce16d0a1250e261c3dfa6299a96a17dd1741dc",
+            "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "markets": [
+              "0x7e496c5678b1722289d9c4a13c9aa53631ca7607"
+            ],
+            "deployment_block": 23378343,
+            "deployment_transaction": "0xecb2ac9e4a33820d7c2eb7655cffcd62ec108080deddebc4ffa60e6eb7c9f644",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Elk Crypto USDT",
+            "address": "0xb92ad23d6b84c9ca8b687128e45ebbcd49b4c091",
+            "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x03d1820340bf20ed322a954461bd002ef4f9bfaf",
+            "markets": [
+              "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505"
+            ],
+            "deployment_block": 22876793,
+            "deployment_transaction": "0x91a0ac48a982b3efada23987bdc659126836369cc82bf573d74cb2bed2e46184",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: LAB Loan",
+            "address": "0xb9f4e923cc42fca0d35a5d176c90d0caaae99849",
+            "code_keccak256": "0x88940075fc3cc9e7f91f4e6a53a03114a764696827b84b625f3bdc4feeb4f40a",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x31859419ccfb678b0e1897962c571e4c1bca2d7d",
+            "markets": [
+              "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef"
+            ],
+            "deployment_block": 24534806,
+            "deployment_transaction": "0xe8348af3e15d487831d2bbecfd923b764ee1670c81f11de6d7cebd16a2131811",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: 6MO-Levered AAA SUKUK",
+            "address": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+            "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "markets": [
+              "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+              "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+              "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+              "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+              "0x3747a7d6c887348fe249fdff29145b25cf0311f9"
+            ],
+            "deployment_block": 23378321,
+            "deployment_transaction": "0xe4f15dc5cc272cd4c889dfef6e8c5ce207e8cf7398c8792cfe6142511b1431c9",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: KeyEURC-Policy",
+            "address": "0xc02efc345fadd4b1261889524557ed541d87546a",
+            "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "markets": [
+              "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd"
+            ],
+            "deployment_block": 23332270,
+            "deployment_transaction": "0x10daedd56a2b723d69affeadcf212d16ba2929425295588569240dd735ee608d",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: KeyEURC",
+            "address": "0xc2e71d157cab47a3c76ebbedb29352ae9c157072",
+            "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "markets": [
+              "0x12d64e3143fa6b8a7949982d8f80b658b1535651"
+            ],
+            "deployment_block": 23333344,
+            "deployment_transaction": "0x334c61381050be675a1b4bf2be2a1ede6bd1b76590605ee2f02e3370654114ae",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Seve Ethereum Loan 1",
+            "address": "0xc6eb4b199c1a56aa099fd1ede3e4c1fe702c11fb",
+            "code_keccak256": "0x24ab271d2a81d680e98c326f222c4a708888cc22eb1ca4a85567c8cc5670767b",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x16d9ba632757914c3a1ba9291f23fa075f24c3bc",
+            "markets": [
+              "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d"
+            ],
+            "deployment_block": 25895380,
+            "deployment_transaction": "0x1d8e7b51fffb2fa79c37d4864d34221bfa2e2262be749acaf76f4649188e15a4",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Amber USD Coin",
+            "address": "0xdd87c59d295b0b4c1acf1ac29358d435e4d85459",
+            "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x9025d3c84f24a9cf2a95bcdc4c91cbfec763b58f",
+            "markets": [
+              "0xf76a7887521a91b47c62060ba57549dec1dc88c7"
+            ],
+            "deployment_block": 22723615,
+            "deployment_transaction": "0x990efbeb7d3edd3c193f170d8e4f4f034fb88f8e66c432b8d72d1c359add5ec8",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: 0dlabs-ArcX",
+            "address": "0xe0c3f69317b86654bf42e9c99534f5ad0a97a2e6",
+            "code_keccak256": "0x8930aecad55e4dc8fc6cd908a25984f54a949af80bee5e22d9aa2b200207678d",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb061d777f2db9cfb5d834b2a1e9f8da566b1eafb",
+            "markets": [
+              "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25"
+            ],
+            "deployment_block": 25020151,
+            "deployment_transaction": "0x8782039ecdbef421d9962df7b1242e245727a6ffd862bdee5d037b8b6b212788",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: Kinto Phoenix Policy",
+            "address": "0xe46e615a3632aa5dc28dec2a0fedb898332077ef",
+            "code_keccak256": "0x1e50d68f0c0a642539c488e3700f6d3fc4188a3c3af7ad2d220247745a42604b",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x2e7111ef34d39b36ec84c656b947ca746e495ff6",
+            "markets": [
+              "0x262dd546703760adda0c06279508e04bd1f60dee"
+            ],
+            "deployment_block": 22946907,
+            "deployment_transaction": "0x4d3fb1bd1ccb93ea4bfef100598385d23f7a9a4de2f1368828e14c07eb051dbb",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Open Term Permissionless",
+            "address": "0xec6f30250269069b62d7b969a6af731214d20af9",
+            "code_keccak256": "0x987b8e1b1eecaeb1c655a892949410ab843754304e42054300efca85cc4a428e",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x5b15f94efc3a6e2c82d7db8efd8d5ba55da11feb",
+            "markets": [
+              "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+              "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+              "0xbad1b632e90ce02af868f07c572adb067eb98353",
+              "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+              "0x33ac9b224c8a189d2332aecf021897f1535373ab"
+            ],
+            "deployment_block": 21989438,
+            "deployment_transaction": "0xb01f34cbc6e36d8e6f01854e417a9dd8c2670ab8f9b7baa82bc42239ce7ebfb4",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: Tradevu Capital",
+            "address": "0xee2fd06d9380f407b33506bbcd559843e6ac84b7",
+            "code_keccak256": "0xf2d2c33c77b286f909164b3392297fd1518640fcce6944a047af4b83d1991a18",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x2a9eaa626d911d968a06cc98ee9d3c99efa1954e",
+            "markets": [
+              "0x2d958e4b289b188a110367208689bb6b560586a3"
+            ],
+            "deployment_block": 23883785,
+            "deployment_transaction": "0x7ce69ea2ba7c8b187c9b8ddd152687d3cc0a7b4cf7a418330f2caa0187929e75",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Elk Crypto",
+            "address": "0xf459164eb4a386d0cbea4deb0709cb9821d97ca3",
+            "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x03d1820340bf20ed322a954461bd002ef4f9bfaf",
+            "markets": [
+              "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+              "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a"
+            ],
+            "deployment_block": 22884262,
+            "deployment_transaction": "0x14fee99e9f7d145c4d70b572d919651283f1e2e858040406ab0ec0a53416e4fc",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Amber Trading Tether USD",
+            "address": "0xf54967b93d777932e707972052bf07e1e51c1121",
+            "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x9025d3c84f24a9cf2a95bcdc4c91cbfec763b58f",
+            "markets": [
+              "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513"
+            ],
+            "deployment_block": 22723556,
+            "deployment_transaction": "0x574b0ec611ddf677d98b30d76eb9ae8c7da376f8c4b9028d4f9c3096c4cffe73",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "OpenTermHooks instance: Auros Default",
+            "address": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "code_keccak256": "0x25e91b1eb3dfbc0cbf806f15fc211b500894839726a0627c107c6ce3da2c2ab7",
+            "code_length": 17849,
+            "observed_block_number": 26006289,
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "markets": [
+              "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+              "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+              "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+              "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+              "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+              "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a"
+            ],
+            "deployment_block": 22915494,
+            "deployment_transaction": "0x851bc86a3a1e9a5c45f97b77ae0041d618472bf2c87cb483b30570d6528ebb3c",
+            "code_match": {
+              "method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "hooks-instance",
+            "name": "FixedTermHooks instance: V2 Launch Test Policy",
+            "address": "0xfe5156595795a282b7a5aab6ae94a9c273111a32",
+            "code_keccak256": "0xf853094ce9f3deb8ea07641f65625945b3c4750416dd9c6bbff5b8713f94d185",
+            "code_length": 19751,
+            "observed_block_number": 26006289,
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0x569e7cb1a1c839133012de4adee8361389b0113b",
+            "markets": [
+              "0xfe7cf5680d2e59500f3938c2539fda4754876f94"
+            ],
+            "deployment_block": 21866550,
+            "deployment_transaction": "0xdaf2e91a7d080510f36bf595d62bfcf891e5b52a84770e06943a56956e328e77",
+            "code_match": {
+              "method": "runtime equals the FixedTermHooks 365-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Halal Cash Levered Tether USD (HALALUSDTUSDT)",
+            "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+            "code_keccak256": "0x7ba7deeac75dd71940724cb588abbb4433079d77e33469616a55710e1976c57b",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 24488593,
+            "deployment_transaction": "0x1da6e50dbae55dafca999e5d54c89a3e5d07d5da7f5a199766fdbe20c476174a",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Dialectic Chronograph USD Coin (ChronoUSDC)",
+            "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+            "code_keccak256": "0x17ec8c7900c66e45194ea88c78681521fce9e236fa00c92507bae2d73509bee6",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x8cb27994564ddeb7cba130f1c213bd6e809223ad",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x3d1743df036b4b343cac208ca53e4f9b52995dbd",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22383208,
+            "deployment_transaction": "0xa92e36b2a86bf26ce4c927e9e779c263d1a2062a5173799829ba58b0791099da",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Halalcash Levered USD Coin (HALALUSDCUSDC)",
+            "address": "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+            "code_keccak256": "0xeb26a1baef5a4c987131348b171f0e612971306e7d993eb5d3cafc6fe4182305",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 24488621,
+            "deployment_transaction": "0xa03c67fccc0ddfbcc240e41e9702ba6817ae04993325a18eaf9bd535178a6571",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Wildcat Foundation USD Coin (wldUSDC)",
+            "address": "0x0b6c6d557109f9e793297d54ee3fbde2e315b070",
+            "code_keccak256": "0xbb183afe804f1d2321038696b23723031049c9a3ef63d272e6a47b6e7f9cc57e",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x38fcd48cfa4be537ceeafb4b2badab7eba4d5efd",
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 21923723,
+            "deployment_transaction": "0x343bbbbfc05d1849a5ad4f264940a02c253ef2fb6dbf05217f267dce9081d3eb",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: KappaLab USD Coin (kappalabUSDC)",
+            "address": "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+            "code_keccak256": "0x71effa5d1d0574c5a250dac8847765294bfa4a8e3a2050ab240d718c8fd8d3ff",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xa4195278a9891bc2787625aace203c1d676ff714",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x29e8f953d1a9236f8ed344f200defdaf5d24a453",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25272731,
+            "deployment_transaction": "0x8474e85fe471e266b0c03bcdedde8face89e1f8328b0c03b45f9bcd652fe6fc3",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Keyrock Euro Coin (KeyEURC)",
+            "address": "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+            "code_keccak256": "0xb7609f74aa5bf8a0ee08f314e7a8d1bb77baa86053339a707e3236fa0ded500f",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xc2e71d157cab47a3c76ebbedb29352ae9c157072",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "asset": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+            "deployment_block": 23333344,
+            "deployment_transaction": "0x334c61381050be675a1b4bf2be2a1ede6bd1b76590605ee2f02e3370654114ae",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Kain Warwick USD Coin (KAIUSDC)",
+            "address": "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+            "code_keccak256": "0xc696565eee88eb5996352c40622758fb2fb9dc072e6394f57c6e2f84f2befe33",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x1c1822e065ac62d0006f931ceff04a198484f445",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x51036545beb6e4ce8d1cfdaca4b981624ee51cc1",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22825844,
+            "deployment_transaction": "0x63f0c4d6c9fe242b552c4f9b76d5be4764d9dc418eec48d685060627262463d1",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Bodhi USD Coin (bodhiUSDC)",
+            "address": "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3",
+            "code_keccak256": "0x305f4c1e4368f803afeccbf18c099c4220264dd00df57a615d3bd566b7bc79cb",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x13df803310dcef45c85d2904eedad54b116d7c36",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x51036545beb6e4ce8d1cfdaca4b981624ee51cc1",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22430622,
+            "deployment_transaction": "0xc37655ac726a380ddce917135e278a144e27df0c27ff763ddaa9df6b415bb61a",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Auros Ethena USDe (aurosUSDe)",
+            "address": "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+            "code_keccak256": "0x37b4579a45e0ed19c7c7efad080dbb722adaacb0cdedf7c7fb83ab6f18cc5791",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "asset": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+            "deployment_block": 23924002,
+            "deployment_transaction": "0x1817994ed35fbdc27232b07260b537bacd285e5a26e6e64d0fc2f856b6e1bce8",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: LAB USD Coin (LABUSDC)",
+            "address": "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef",
+            "code_keccak256": "0x8c0a46d9dbc9f9da82ef3fd36f153e8a3bb3e8b23f1cf75ec81d0148b7abbd2f",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xb9f4e923cc42fca0d35a5d176c90d0caaae99849",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x31859419ccfb678b0e1897962c571e4c1bca2d7d",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 24534806,
+            "deployment_transaction": "0xe8348af3e15d487831d2bbecfd923b764ee1670c81f11de6d7cebd16a2131811",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Private USD Coin (hyperPrivateUSDC)",
+            "address": "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+            "code_keccak256": "0x3cf292844cfd7c37d3c569c2e28106eeef9ce68c39c83c75fe116861c6e49184",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22986090,
+            "deployment_transaction": "0x566852daf8f063fa887532cbb4dac824bd67354850047a5daf891efdb48bfa14",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Seve USD Coin (sevUSDUSDC)",
+            "address": "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d",
+            "code_keccak256": "0xe29f6ecacb4755d69c82cf886770d009cd548d8039b3b27602484c9adba54fb1",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xc6eb4b199c1a56aa099fd1ede3e4c1fe702c11fb",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x16d9ba632757914c3a1ba9291f23fa075f24c3bc",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25895380,
+            "deployment_transaction": "0x1d8e7b51fffb2fa79c37d4864d34221bfa2e2262be749acaf76f4649188e15a4",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: 0d Arcx USD Coin (0dArcxUSDC)",
+            "address": "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25",
+            "code_keccak256": "0x50ce362d270c0a6b35b3977f0be1dea189efe2fc11d65ac645c53068f19b10f3",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xe0c3f69317b86654bf42e9c99534f5ad0a97a2e6",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb061d777f2db9cfb5d834b2a1e9f8da566b1eafb",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25020151,
+            "deployment_transaction": "0x8782039ecdbef421d9962df7b1242e245727a6ffd862bdee5d037b8b6b212788",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat Coinbase Wrapped BTC (hyperWildcatcbBTC)",
+            "address": "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+            "code_keccak256": "0xd8c360c6dc3e91b0b28f0ae6ec2b854c7fae16cdcf29ceb4fd1a41ce3675bbcc",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+            "deployment_block": 22536455,
+            "deployment_transaction": "0x3ad89f0fefc1517b248aa5a6c4f39fe22cdc50996f921c133a6e3fadb439ef39",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Kinto Phoenix Facility USD Coin (kPhoenixUSDC)",
+            "address": "0x262dd546703760adda0c06279508e04bd1f60dee",
+            "code_keccak256": "0xd661f187de6d360c01de8707a6f0c668070ffbc7dd4be799bef2d90ebbc26b04",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xe46e615a3632aa5dc28dec2a0fedb898332077ef",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x2e7111ef34d39b36ec84c656b947ca746e495ff6",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22946907,
+            "deployment_transaction": "0x4d3fb1bd1ccb93ea4bfef100598385d23f7a9a4de2f1368828e14c07eb051dbb",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat Private 1 Tether USD (hyperWildcatPrivate1USDT)",
+            "address": "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+            "code_keccak256": "0xb57bf14a96ea975707c82f75f03707092a3ef9fdceb7818201e760f31cc87a42",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 23631612,
+            "deployment_transaction": "0xcfa77dfcc917871b1834708b0df1cae15017af5948f5bebdf36c05ddb6c9f1ab",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Private 2 USD Coin (hyperPrivate2USDC)",
+            "address": "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+            "code_keccak256": "0x6d5fccb57d11b46c993bcac8d8021bca4cfc3c9f396567903bff827a0b7db2ab",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23582160,
+            "deployment_transaction": "0xc74e5145a4c627756093e1715fac9c2e3538a9fa3eabcb8722e4f43b0dfc69dd",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Tradevu Capital USD Coin (tvcUSDC)",
+            "address": "0x2d958e4b289b188a110367208689bb6b560586a3",
+            "code_keccak256": "0xa96990a804ea55b344597a6fdb1eafe1ce61e6519c1f1eae99b96443d020cd5a",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xee2fd06d9380f407b33506bbcd559843e6ac84b7",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x2a9eaa626d911d968a06cc98ee9d3c99efa1954e",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23883785,
+            "deployment_transaction": "0x7ce69ea2ba7c8b187c9b8ddd152687d3cc0a7b4cf7a418330f2caa0187929e75",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Selini Tether USD (SLNUSDT)",
+            "address": "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+            "code_keccak256": "0x17382dce919e2d2e9c29a49096631242a1bd79efec1f8fa8e03424d044f42576",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x8e3dec859aa3ab5716c5f9d9436ea452b2598be5",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb2e5ad55e08d5ea90b8570a3421a790a110d7661",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22152328,
+            "deployment_transaction": "0x79e671f9b05f263f475570f51615b079bf086a6e6c32c2d4b80f1adafa4100ea",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Wintermute Trading Wrapped BTC (wmtWBTC)",
+            "address": "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+            "code_keccak256": "0x244687e07e3efcc9588c23a80b5a1b20c90a78400868cd9cf867203f36497b20",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xec6f30250269069b62d7b969a6af731214d20af9",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x5b15f94efc3a6e2c82d7db8efd8d5ba55da11feb",
+            "asset": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+            "deployment_block": 24628116,
+            "deployment_transaction": "0xc06f699ac589b12634f587c540d372ec8bafdb2c9acd58698887527e07febcc7",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: HalalCash Staked USDe (HALALsUSDe)",
+            "address": "0x3747a7d6c887348fe249fdff29145b25cf0311f9",
+            "code_keccak256": "0x01c7c38e8f0d976cb4c5e9f291c453384e76d8c11bb5862339e5a9a62fad1dfc",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0x9d39a5de30e57443bff2a8307a4256c8797a3497",
+            "deployment_block": 24589812,
+            "deployment_transaction": "0x6ffc2608077edb36bfa867d2f69f3e64525d2ed869dec973849abe2a55afb07c",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Auros STBL_USST - USST Token (aurosUSST)",
+            "address": "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+            "code_keccak256": "0x54e7241b59a021d1636d884d8348119e854dc6372cc782964befc541150a2e5c",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "asset": "0xf9d82660828d8f5d121b14a9dc9c677d91f60065",
+            "deployment_block": 24082208,
+            "deployment_transaction": "0xd8705f9b02778081d25a517cb98b206cd6c2703c8d0580ac61ba2e93890291b7",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Rifbid USD Coin (RifUSDC)",
+            "address": "0x44239265e4c63573070048fecd83a6b1e324412c",
+            "code_keccak256": "0x091651b0461e76eebdb88c8b49b3d3329283ac14e4cd74bc89b75f82b70ce249",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x67fb662a7ea704b811899ebe8eb4173b2ec555fb",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x34b06b444f4241a5a33edf38314b89fdba36261a",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25041481,
+            "deployment_transaction": "0x2030e01fdfde93ee27b6f72e994c834fa680f850086c89accf43627f13f8b5a6",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: HyperithmWildcatFast Wrapped Ether (HyperithmWildcatFastWETH)",
+            "address": "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+            "code_keccak256": "0xf0d248827326e271248b42e9c9b23761f2308c57b62ac5cb28b2b3ae30dafc55",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+            "deployment_block": 23097875,
+            "deployment_transaction": "0x5e8ff7934a13bad7b189486fe80c21452d35efd176773e86a92daa939d0d4069",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Auros USD Coin (aurosUSDC)",
+            "address": "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+            "code_keccak256": "0x676d7d4fc3b8018d2bb28a8bfc56623fa48dc9a99a29c507b6c801f5a2f0548e",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22915494,
+            "deployment_transaction": "0x851bc86a3a1e9a5c45f97b77ae0041d618472bf2c87cb483b30570d6528ebb3c",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Maseer Finance Cana Market Tether USD (wildcanaUSDT)",
+            "address": "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+            "code_keccak256": "0x6aef3c3b4bc027e8cca4bb55990afec92daa9985d9fcd953ae15e7f2f5c3a2ba",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x840146e12437e97374d1a12577c7f0b7cd1e0e87",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb324284a938807b40c713c159d6df2cc25014167",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 23120561,
+            "deployment_transaction": "0x24c213fe63d55cf455980c75c0f6b8c06886cf5fd73a0e6e136a8f7115939de2",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: DVC USD Coin (DVCUSDC)",
+            "address": "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed",
+            "code_keccak256": "0xd377ebcd7cd28f38603a5b1d730f2625a4a9e7d4b5a5d42c76b16e6a7fd2dd47",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xb428c5239be400e74f32c46cfa6c7e8b481aca0d",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xfc2472474f95b73672630cbac12c41533df80430",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25336236,
+            "deployment_transaction": "0xa2c5e27da4f52f662f5616a7f160f04d20f0b6b06a6853d49b2857c4281de615",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Split Capital Plasma TVL USD Coin (scpUSDC)",
+            "address": "0x55a365f3997b2f015001c53cf6a73335e593ad8a",
+            "code_keccak256": "0xc818a1f99aa21c120eb182c1ab4aedcfbf33cbf85b95cb54c47b557fe7759a64",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x0eaa734e23be6a5c216f18edce127e3f624a6303",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0xb52d0370c1169f27cb31e91d3c7a0108bb4a1459",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22638973,
+            "deployment_transaction": "0x5c4a3b6c31a5b3a6e2ee71c725fccffddb87ac248de43d688042c15493d678a2",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Auros Wrapped Ether (aurosWETH)",
+            "address": "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+            "code_keccak256": "0x06b20e94c5d6f0197b08050872464a36847da4234eaf0a6cd34816608b80f258",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "asset": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+            "deployment_block": 22979268,
+            "deployment_transaction": "0x4d13f4c98da58f35f3bbc5a19b67442450d3fd379e324f93ccb3e8dcbc90f1df",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: TRV USD Coin (TRVUSDC)",
+            "address": "0x5a516928be2005e9852e342f71bfcc52ca5bdace",
+            "code_keccak256": "0x74812ad0ac52bf7ed97591aa110ce838743b53d9b40240479eb87867821199ac",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x9f93483da03aa66254341a730e7867f0c12fd894",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x0792dcb7080466e4bbc678bdb873fe7d969832b8",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23147144,
+            "deployment_transaction": "0xa22b2ea82fe39af0d8874d63444314bbd1be8503352de25e8cbaf323ade3c3f6",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Wintermute Trading Tether USD (wmtUSDT)",
+            "address": "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+            "code_keccak256": "0x75c5bd51b224a9de5498e68da4559afd2cb044babc26880eb88220a1e8d50fd1",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xec6f30250269069b62d7b969a6af731214d20af9",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x5b15f94efc3a6e2c82d7db8efd8d5ba55da11feb",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 21989547,
+            "deployment_transaction": "0x84e906984c7d82fa2b900b7ab5799795db3a01c4c21ce5dd21701f7952fca497",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Amber Tether USD (amberUSDT)",
+            "address": "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513",
+            "code_keccak256": "0x0f51c2526087fe6cc4de603c2cfceefec12e250b42e69350d53500c5f042a886",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xf54967b93d777932e707972052bf07e1e51c1121",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x9025d3c84f24a9cf2a95bcdc4c91cbfec763b58f",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22723556,
+            "deployment_transaction": "0x574b0ec611ddf677d98b30d76eb9ae8c7da376f8c4b9028d4f9c3096c4cffe73",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Elk Crypto Tether USD (elkUSDT)",
+            "address": "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+            "code_keccak256": "0x7c75de40a4fe045b52ec0b461c2eb1f78484a21ff53f93c7b801700ec249be5d",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xf459164eb4a386d0cbea4deb0709cb9821d97ca3",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x03d1820340bf20ed322a954461bd002ef4f9bfaf",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22884262,
+            "deployment_transaction": "0x14fee99e9f7d145c4d70b572d919651283f1e2e858040406ab0ec0a53416e4fc",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Little Engine Trading High Yield USD Coin (lilengHYUSDC)",
+            "address": "0x603b29847659618813f039c73379746585b78875",
+            "code_keccak256": "0x5026746b82f622ae07599be6e062a3ae03efb21db088d8bc000b59c122cab9f3",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x0443084cf31b622fe5b33d247699b6c9d5152436",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23336702,
+            "deployment_transaction": "0xc5a27a5c8ef37c18b27cafd5499bbf09ae9e893611e25c03aedc62a2f99e75e1",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Key USD Coin (KeyUSDC)",
+            "address": "0x6053e88b1ac0dce4ccac47122cbecd6598365c70",
+            "code_keccak256": "0x4e3fb293dac49b06196a08e67e09ea06e7bcafe876df9a08ea750bc67347900c",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x59106481fefec5d523f9d8b5214ebe42182e6585",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 24833847,
+            "deployment_transaction": "0x246c1ac50db793eaf30fe339ab8c5477b25c5ebd10c82b4ee61ad3a514ccb138",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat USD Coin (hyperWildcatUSDC)",
+            "address": "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+            "code_keccak256": "0x681ee925b0c83a5ef469a7806f7dc9ca5853bce3a883a490b42d8611601ffe19",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22536250,
+            "deployment_transaction": "0xb93c31c5565dd8c2f626bc6a88cd8018a180cee601c96715739a41695b20e11e",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Private 3 Tether USD (hyperWildcatPrivate3USDT)",
+            "address": "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c",
+            "code_keccak256": "0x05586c61a18a5610e707d1867fdaa4a1d4a4c0c065dc6f119a84749997c74758",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 23637219,
+            "deployment_transaction": "0xf62f6fbcda543eb5d8ce64f3d4e3c78c8c579b08c7375e19c726f7ff0dc1f15f",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat Wrapped Ether (hyperWildcatWETH)",
+            "address": "0x69e56f526637b430561e8293f3307765a046d750",
+            "code_keccak256": "0xa73d42b5927dba50ce68c12e4b5556db5df0e6ef612958333468c6ca1a469ad6",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+            "deployment_block": 22536494,
+            "deployment_transaction": "0x9c72f56f0c0c18d8c99bfff42f2be212eab3b73650094ee5a2c8455ea40ad664",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Selini USD Coin (SLNUSDC)",
+            "address": "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+            "code_keccak256": "0x91e9887a435668711270861fd86a7b92503eba22d5c3e7dfd33f4f4f9bb90f64",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x8e3dec859aa3ab5716c5f9d9436ea452b2598be5",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb2e5ad55e08d5ea90b8570a3421a790a110d7661",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22152303,
+            "deployment_transaction": "0x9e4a4ec6a9ba5ecb2911ed971ffd0c27de715890ad6176be385485b7051843ea",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: CMSsep Tether USD (cmsSepUSDT)",
+            "address": "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4",
+            "code_keccak256": "0x7b82c227bd1fd20d05828efe3808bcef470c6669866320356bea98d0e201a0b1",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0xde8845ff1d67b84e755a57481097e712460ac21b",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22532288,
+            "deployment_transaction": "0x76a3a2ae8d1d8d77672e6cfbea477ee46e519131d122392234b70890e006dd7b",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Democratize Market Making with onchain LP USD Coin (GaspUSDC)",
+            "address": "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7",
+            "code_keccak256": "0xfffb9ccfa0ae816d63cdb00b1d05ceb35bf768efe5ebb694d9d8c0dca3b266a8",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x07c9fcf40d032ed65b3e44cec16766327c4aab93",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x8c6c8a2f67337f8fb1828d915a99a0b782eb234d",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22225107,
+            "deployment_transaction": "0xe81accda42354f2ae4d8f79a9500ef1aa6dca7baf01b436808fcea26ec44540f",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Private 3 USD Coin (hyperPrivate3USDC)",
+            "address": "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+            "code_keccak256": "0xf5d6e0b9c7d0fb620ac72fc0f3488e0555d68efe0fad553da527898a441e4a45",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23582176,
+            "deployment_transaction": "0x2576d004d9179e8c42541ecb208a2cc3be551e5427d019e572c84b3f43bda5d4",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: CANA Redemption Buffer Tether USD (canaBufferUSDT)",
+            "address": "0x7244b84918dbfb50e62320fc0e6031a449deea28",
+            "code_keccak256": "0x8460f431247d9cffd55012db7b18e309ea16647c1294f9fccf49ab01f05f0ebe",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x840146e12437e97374d1a12577c7f0b7cd1e0e87",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb324284a938807b40c713c159d6df2cc25014167",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 24729786,
+            "deployment_transaction": "0x307bcdc741278cfd8970d0d9f7faf4b3edae7279199379b6471b031de8d5330c",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Private 2 Tether USD (hyperWildcatPrivate2USDT)",
+            "address": "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+            "code_keccak256": "0x8bacf23202aced1bfbc208f75a8cce9453a7c6c82a281d38f6dcead5b7a63fe4",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 23637191,
+            "deployment_transaction": "0x5218d749963e61824a487ad7e9a9a559b73dcdec3c465bed3f5a830470852ba5",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Halalcash Levered USD Coin (HALALUSDC)",
+            "address": "0x7e496c5678b1722289d9c4a13c9aa53631ca7607",
+            "code_keccak256": "0x3e550b7a9061a187b7eb74993ee5a8ac980a36a82f387f3a8fce57889bc49275",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xb7ce16d0a1250e261c3dfa6299a96a17dd1741dc",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23378343,
+            "deployment_transaction": "0xecb2ac9e4a33820d7c2eb7655cffcd62ec108080deddebc4ffa60e6eb7c9f644",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Open Term Halalcash Tether USD (OPENHALALUSDT)",
+            "address": "0x8c06d86596d671798a67e80dc44a281c8d822fd3",
+            "code_keccak256": "0xb28b68b19875dbfa5ed005ff40b3aafde2f466fc7e3477beb1e0c053a844cce5",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xadee85002320ef1093f090067873544376f09ff5",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 23435305,
+            "deployment_transaction": "0xd385f2758fbc4fcc7615d8853c2d5c765d8aa1504da2a27773363faaa66f1e52",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm WildcatFast Wrapped BTC (hyperWildcatFastWBTC)",
+            "address": "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+            "code_keccak256": "0x7a290654e9640205304d7e94763d2d29ed3e2deae422099c553da7aa6cf46272",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+            "deployment_block": 23098366,
+            "deployment_transaction": "0x97de22143ae5b95cab466301b9155ad7eeaf16946280ada718c7eb6bda301951",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: CMS Tether USD (cmsUSDT)",
+            "address": "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+            "code_keccak256": "0xc58fdf4b90e42915f51ba5e9af72a54ccfd720bc8ed2395ba558242fb357ec03",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0xde8845ff1d67b84e755a57481097e712460ac21b",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22181288,
+            "deployment_transaction": "0xf185049ccb508b92259b34ad8069b13b31abab62bea764e524bd5f2ae76545dc",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat Wrapped SOL (hyperWildcatSOL)",
+            "address": "0x923237220cc79c6301c59851af3574d0a487c966",
+            "code_keccak256": "0xfc4569b1b4011bd45381c29d374cd1530042a08d77eefb2ffc1bcd19091fd1ea",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xd31a59c85ae9d8edefec411d448f90841571b89c",
+            "deployment_block": 22578888,
+            "deployment_transaction": "0x30fbf016311d693f593a2e71d10521a7826808e8da02320d0c5aac8f30cef0f9",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Halalcash Levered USD Coin USD Coin (HALALUSDCUSDC)",
+            "address": "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+            "code_keccak256": "0xf4de045ae82e999752e966f03f48d8e3e996ad16ae2f14d6293754df875859a7",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 24317750,
+            "deployment_transaction": "0xa7b693fc613773b4f72829ce0c5a3e6ad8752accee04ceebda9a57c4a99160cf",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Auros Tether USD (aurosUSDT)",
+            "address": "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+            "code_keccak256": "0x905ed68436297e79fa83a19bdedd4dc3fac206289b71d7b8618b7bb63d9bfe42",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22979221,
+            "deployment_transaction": "0x63f6442aee393c00c177ab39a1b5b1a9ed63e5506803f232ae7c38f0593cd2e1",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: USDC USD Coin (USDCUSDC)",
+            "address": "0x9aa7f58561812f01f1221e9718011aca78c28c17",
+            "code_keccak256": "0xe855049956bd7e4829fff75a484285ac1991bb4b5fdcd1d01fdbbc7e90ce0334",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x1234df5b1d967f432547c8a22bd0573e3ffce5cd",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x6402b6e82c1564e6a47498e922112f98c84b18b8",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22773985,
+            "deployment_transaction": "0x7a1262c2d5315e0a373bd2ec34001a58edc170408612f0f1b1100e6229585061",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: USDC USD Coin (USDCUSDC)",
+            "address": "0x9e047d2e8970300f0461314e1b72abf7ef7792e9",
+            "code_keccak256": "0x40f8cab51009922867fac1492c6964aacaad95b8fa900c1c75ea26336974d01f",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x05bfbce741c85dfc6c5457da63732943dd4fe8f0",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x6402b6e82c1564e6a47498e922112f98c84b18b8",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23520115,
+            "deployment_transaction": "0x220013ffd16d24bb630a0987b84e1ae378abd5b18a1948f1ddf3e0823cb31dcd",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm WildcatFast USD Coin (hyperWildcatFastUSDC)",
+            "address": "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+            "code_keccak256": "0x15770f5993c9d779a80e8c6fad2e45f96c3e2731373878dae8ae7ab314fe8bab",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23098075,
+            "deployment_transaction": "0x720db8eb4a3006cbf2eaa368c55745523643486222db8318faf7083d5d50162c",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat USDe (hyperWildcatUSDe)",
+            "address": "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd",
+            "code_keccak256": "0x803790c45e120855255a720c4eccadebf18d6252992651d85c2167bf81d46e20",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+            "deployment_block": 23218928,
+            "deployment_transaction": "0x3ed95dc7905c95cd51c71089582481b1f00e72ceddc81810d7a89de6aa5e6775",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: KappaLab USD Coin (KappaLabUSDC)",
+            "address": "0xa8139699360b255c5c02d0616e75f20b92adf1c3",
+            "code_keccak256": "0xf39b3b989db88dbd34f8e09571fbcc57046357117f781a8b7b01158ea1f9155c",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xa4195278a9891bc2787625aace203c1d676ff714",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x29e8f953d1a9236f8ed344f200defdaf5d24a453",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25272777,
+            "deployment_transaction": "0xeaa43ee208388d386de231179f4e179857f82f424f8ee2033f1292941027a615",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Neptune Tether USD (NeptuneUSDT)",
+            "address": "0xaa4677627d05775dafc410d7e3aff5702aae27f8",
+            "code_keccak256": "0x787f632356abfc97357de2419da1b39d248c3cf905833b212c27cd7bea360da0",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x92b272ba90722e32095edb7aecd4af3717d5d90b",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xa7147252442fde5cca1962def847db58d9922ba0",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 24341269,
+            "deployment_transaction": "0x398e6da46881c62519e18660911f01207ce8b08e3f4a8586dd2ced0eb3e87325",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: MNNC Trading USD Coin (mnncUSDC)",
+            "address": "0xb3b823ec39f3edeb4354f76997031b3826b615c2",
+            "code_keccak256": "0xa275e11915c41d2e5841b3bc2454007bfd3394adbc9ae13b62ab63b98f8dc9f9",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x0d7a820f97714f879454790d8b3887b1c50b4dad",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xf783818e62d9793f119a3a9656cbdab93ff3e993",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22089954,
+            "deployment_transaction": "0x0b09395fef1ec20b8e14cf0eff35f7c7a5a9f7d8688d2276962c33513f68b036",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Little Engine Trading Tether USD (lilengUSDT)",
+            "address": "0xb3beb373d241378f5f1fd68ed865349257602476",
+            "code_keccak256": "0x86416099433ae213a265765cf2b8b0fdc53baa6a0471e08124ee1be6a5605813",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x0443084cf31b622fe5b33d247699b6c9d5152436",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22679460,
+            "deployment_transaction": "0xf7b12f4880f3976116bb6ba0aa71f8c293a603bcc08c59f08f8e35dd9532679c",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Wintermute Trading Wrapped Ether (wmtWETH)",
+            "address": "0xbad1b632e90ce02af868f07c572adb067eb98353",
+            "code_keccak256": "0x70f66d66dab6518fba0b2851969392a1611844fbbdf574785f1fc807c2d00873",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xec6f30250269069b62d7b969a6af731214d20af9",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x5b15f94efc3a6e2c82d7db8efd8d5ba55da11feb",
+            "asset": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+            "deployment_block": 21989700,
+            "deployment_transaction": "0x7a8da76ea8d214cb869a4a49d2eca8d1f86053658c56fd2a356b6db0b4b214dd",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Halalcash Levered Tether USD (HALALUSDT)",
+            "address": "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+            "code_keccak256": "0xc17c6c6fdda8e1283f865e8b5330f63653a74ff7090bbcfe637e335e6f81cfff",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x40a42340c7829d1b31eed3860928b4862715e5de",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 23378321,
+            "deployment_transaction": "0xe4f15dc5cc272cd4c889dfef6e8c5ce207e8cf7398c8792cfe6142511b1431c9",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat Wrapped BTC (hyperWildcatWBTC)",
+            "address": "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+            "code_keccak256": "0xe041259ea3327bc4ae36140ec7b48937affed18cfb1215e1288d65b579de2993",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+            "deployment_block": 22536428,
+            "deployment_transaction": "0x92f408c56187f1b76289002492370cba3d404b93952693a0422a6780c9c87dc5",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm WildcatFast Coinbase Wrapped BTC (hyperWildcatFastcbBTC)",
+            "address": "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+            "code_keccak256": "0xe14987152bba4684ebbb095d6265aa349344fda4230d123fd17f6fc7a196bd3a",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+            "deployment_block": 22766942,
+            "deployment_transaction": "0xce0588cdc7f2b3da4baf5185e2e8d51c7d8ce00b9e4506ed4af906c5de07bc4c",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Wintermute Trading USD Coin (wmtUSDC)",
+            "address": "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+            "code_keccak256": "0x2625a3730824958bfbd2f3aef50e1aa2f8cb94ed0791daf7c41aa477309bc820",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xec6f30250269069b62d7b969a6af731214d20af9",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x5b15f94efc3a6e2c82d7db8efd8d5ba55da11feb",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 21989438,
+            "deployment_transaction": "0xb01f34cbc6e36d8e6f01854e417a9dd8c2670ab8f9b7baa82bc42239ce7ebfb4",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Elk Crypto USD Coin (elkUSDC)",
+            "address": "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a",
+            "code_keccak256": "0x5316c748cde515f6d457db3e9b8742628c69bdfd9ea68ccfbeb9265eff6c2478",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xf459164eb4a386d0cbea4deb0709cb9821d97ca3",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x03d1820340bf20ed322a954461bd002ef4f9bfaf",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22884355,
+            "deployment_transaction": "0xfdbeafd85200a353f85b2a9b96cb649898e51abec2d96953cb0ece75209e6020",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Wintermute Trading Coinbase Wrapped BTC (wmtcbBTC)",
+            "address": "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+            "code_keccak256": "0xc5fcaa9ce6b867e2678c9aaf110c2912b7a4b1aa7656ff8b2e243819f625aa87",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xec6f30250269069b62d7b969a6af731214d20af9",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x5b15f94efc3a6e2c82d7db8efd8d5ba55da11feb",
+            "asset": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+            "deployment_block": 22016397,
+            "deployment_transaction": "0xca9ac903686f7663f3c5839b9f9996ad6143e21d58cabe6ee2a2737e82fb6950",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: CMSsep USD Coin (cmsSepUSDC)",
+            "address": "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d",
+            "code_keccak256": "0x79ad8059d4d8cec4bf7a95cac63e84fe0ed086e7c84d10994fe6d3496df6219f",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x00a84b8f40ee4285aed9104a39bdf0e2615bba49",
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0xde8845ff1d67b84e755a57481097e712460ac21b",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22332630,
+            "deployment_transaction": "0x4729c6ab8e3b6ac617c00bb332c9d8e90528f1954d72c87e69385cc6fefc616e",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Little Engine Trading USD Coin (lilengUSDC)",
+            "address": "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+            "code_keccak256": "0xa5f8f4f88a82b26826b756552ff89e1b5fc11a1c61636f613d460a9491e84efd",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x0443084cf31b622fe5b33d247699b6c9d5152436",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22918004,
+            "deployment_transaction": "0x30995ece592d5d6e802df6aaf5fe4a6ef7e44833e635d07be43e78ba95e5d932",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: keyrock USD Coin (KeyUSDC)",
+            "address": "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+            "code_keccak256": "0xa3a863d47c68ddf54c431a94d6051737296f9c33d89ed4166cc8f91639f31ab0",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x59106481fefec5d523f9d8b5214ebe42182e6585",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 23239776,
+            "deployment_transaction": "0x08f46825488b10709785849544a9a9233268879b4cdfdf4219ec3f3bedfce52a",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: KappaLab Ethena USDe (kappalabUSDe)",
+            "address": "0xe79ca848ae0182fce1db61a968b89627c9a0c948",
+            "code_keccak256": "0x56e2e5db51b715593960fb55d9ade5054378e3e5d81a03de78fa9f0f4c0f239a",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x2c3612ca197fd462d81a38e3590d193d6e8c7a21",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x29e8f953d1a9236f8ed344f200defdaf5d24a453",
+            "asset": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3",
+            "deployment_block": 24520188,
+            "deployment_transaction": "0x622fa3e40a3358ab027176cf54355377898baa4013e81cfb8ba8c226a10b648f",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: CMS USD Coin (cmsUSDC)",
+            "address": "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+            "code_keccak256": "0x2b79d3272b5425fb0535e5637a7d230ed8c1c331183bd2e378c5b7afb6c780ac",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x00a84b8f40ee4285aed9104a39bdf0e2615bba49",
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0xde8845ff1d67b84e755a57481097e712460ac21b",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22089305,
+            "deployment_transaction": "0xf16dcd99aeff7206b94879ff7a4c6f1f4c35c473f418afcd5c9ca84376f854ff",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Auros Coinbase Wrapped BTC (auroscbBTC)",
+            "address": "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+            "code_keccak256": "0xbedb50a16c7098ee7cf8bf1e38c6c24b8e3b7b3d0b70f251d183b15836ac98f1",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x76ec802b3602c22b94c9ecb2707aa3ca01601a43",
+            "asset": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf",
+            "deployment_block": 22915688,
+            "deployment_transaction": "0x35e6f7af9f39c653409fc1381dceb1873a3efcc23754a6ea688fbcd0fe141874",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Kain Warwick 2 USD Coin (KAI2USDC)",
+            "address": "0xeafa12cc0905baabed8618584f0796f5d19da3c4",
+            "code_keccak256": "0x2d4897e946020409e3b4ce7c06689a33b0153a1bad44f25fc54a26520b77a126",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x1c1822e065ac62d0006f931ceff04a198484f445",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x51036545beb6e4ce8d1cfdaca4b981624ee51cc1",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22988595,
+            "deployment_transaction": "0x5bf2aab3425671b9dd2e9186082aa4d217c07c7e59b969d9b257c6d1f4509942",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: GardePrime USD Coin (GPrimeUSDC)",
+            "address": "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b",
+            "code_keccak256": "0xf575a007f58c89fa5df56bf3cdd1c0316cec013c3f8979c42a281c943708f99c",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xa5eeb866981d1c46d0d5153872559d88e37c25ad",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x9b88093d249169d5ce3c609e45fb27446a3649cf",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 25251018,
+            "deployment_transaction": "0x9b6db14fc8040229cd227bbc1d78a40794fa2f41b2c916b3f048f7b5a4c76087",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: MiningStore USD Coin (MiningStoreUSDC)",
+            "address": "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc",
+            "code_keccak256": "0xc9a4fd9a115502f4650499d99cd9784fc92a84791e4d32f953a5ee4eef2c9d1a",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x71cf8be0840bab347b45f946345e97fabfef4682",
+            "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+            "borrower": "0x5cc05268c03e1a8c7ce05c7e79c125bab48a1d50",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22586073,
+            "deployment_transaction": "0x47fd5de51039ef46d0ad23d5608f99e0068e0a533fc9c8f4485dee6162332b69",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Hyperithm Wildcat Tether USD (hyperWildcatUSDT)",
+            "address": "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+            "code_keccak256": "0xd267604a4279b01d5226fef93ccb846501f57be86167d91b6b20446796b0163a",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xb602facd3da8626b6a39e340ae13e6a3309944e6",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22536567,
+            "deployment_transaction": "0x79ca606d2b370965928021b671b0619f618f4b8869cceb9ec08f1be885e10ca6",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: keyrock EUR coin Euro Coin (KeyEURCEURC)",
+            "address": "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd",
+            "code_keccak256": "0x4ee78af4d0506ffdf96c2edc9747dcbc17cad8661927e7a112e2f59f75a4fe11",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xc02efc345fadd4b1261889524557ed541d87546a",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0xe0287b986c3a81ffba1447abe9be1f6d37c8fddf",
+            "asset": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+            "deployment_block": 23332270,
+            "deployment_transaction": "0x10daedd56a2b723d69affeadcf212d16ba2929425295588569240dd735ee608d",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: USDT Tether USD (USDTUSDT)",
+            "address": "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505",
+            "code_keccak256": "0x8cd1346343df93a26a9e5833e5d292ae1aa202e2c165ca5314e2eac814e8fb2a",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xb92ad23d6b84c9ca8b687128e45ebbcd49b4c091",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x03d1820340bf20ed322a954461bd002ef4f9bfaf",
+            "asset": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+            "deployment_block": 22876793,
+            "deployment_transaction": "0x91a0ac48a982b3efada23987bdc659126836369cc82bf573d74cb2bed2e46184",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Amber USD Coin (amberUSDC)",
+            "address": "0xf76a7887521a91b47c62060ba57549dec1dc88c7",
+            "code_keccak256": "0x9a147257d1a230491263a477389d11f489ff55140083e72babcee8a71da0920f",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xdd87c59d295b0b4c1acf1ac29358d435e4d85459",
+            "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+            "borrower": "0x9025d3c84f24a9cf2a95bcdc4c91cbfec763b58f",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 22723615,
+            "deployment_transaction": "0x990efbeb7d3edd3c193f170d8e4f4f034fb88f8e66c432b8d72d1c359add5ec8",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+              "sourcify": null
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket: Trinity Test USD Coin (trinityUSDC)",
+            "address": "0xfe7cf5680d2e59500f3938c2539fda4754876f94",
+            "code_keccak256": "0xcb844e708468f13686c586a2a9188974e0859df356c88a0ec32f8569eb545e50",
+            "code_length": 21999,
+            "observed_block_number": 26006289,
+            "hooks_instance": "0xfe5156595795a282b7a5aab6ae94a9c273111a32",
+            "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+            "borrower": "0x569e7cb1a1c839133012de4adee8361389b0113b",
+            "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "deployment_block": 21866550,
+            "deployment_transaction": "0xdaf2e91a7d080510f36bf595d62bfcf891e5b52a84770e06943a56956e328e77",
+            "code_match": {
+              "method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template",
+              "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
               "sourcify": null
             }
           }
@@ -1970,9 +4556,9 @@
             }
           },
           "v2_market_count": 80,
-          "v2_markets_sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+          "v2_markets_sha256": "fd7174beb547e841a6f1b9716b4d13e5d861279f38b3d355d761dd6755a96ec0",
           "registered_markets_count": 87,
-          "registered_markets_sha256": "5a073d47686a971966098cf4d09189cc3048543ea6099751f52a70209cb171cc",
+          "registered_markets_sha256": "3f542d10ef4f938c690d5b0bffbf1757b6814808a7e2f52c5d7a1cee56290c8a",
           "registered_borrowers_count": 54,
           "registered_controller_factories": [
             "0xfd31007613c9f671df6a8d4234901324986bfd13",
@@ -1985,7 +4571,62 @@
             "0xdd7dd3b5076cf89440d05585ff56d246386207be"
           ],
           "arch_controller_owner": "0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
-          "market_lists": "docs/kickoff/1359/evidence/ethereum-mainnet.json hooks_factory.templates[].markets"
+          "market_lists": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json hooks_factory.templates[].markets and hooks_instances[].markets",
+          "hooks_templates_registered": [
+            {
+              "template": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+              "name": "OpenTermHooks",
+              "created_block": 21788183,
+              "registered_block": 21788203,
+              "registration_transaction": "0x64a832f9a335993f6bfb3c4698989bf336aa74570d39988892f3841686c9d75d",
+              "instances": 28,
+              "markets": 60
+            },
+            {
+              "template": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+              "name": "FixedTermHooks",
+              "created_block": 21788194,
+              "registered_block": 21788204,
+              "registration_transaction": "0xd82bd8a66de64acb8117ce6158767c6b53fa354356cb552c86b1cd2e4b85ece6",
+              "instances": 3,
+              "markets": 4
+            },
+            {
+              "template": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+              "name": "FixedTermHooks",
+              "created_block": 22081282,
+              "registered_block": 22094295,
+              "registration_transaction": "0x1d9aee83f68194a287314d553f72f96e742a6b917a30ae1799199504117d7175",
+              "instances": 11,
+              "markets": 16
+            }
+          ],
+          "hooks_instances_count": 42,
+          "hooks_instances_sha256": "e5827c094ab8594a7951ba3b8a0bc5e2ce1bb3600f615fc3976660ddca57e469",
+          "role_providers_count": 32,
+          "role_providers_note": "31 of the 32 distinct providers are each instance's own borrower, installed as its push provider at initialisation with an unbounded time to live; the one shared pull provider is the OpenAccessRoleProvider with a 90-day credential; 5 instances carry no pull provider; 5 instances belong to borrowers no longer registered at the observed block and were reached through their markets' hooks() immutable",
+          "sha256_method": "sha256 over json.dumps(sorted(lowercase addresses), separators=(',',':'))",
+          "prior_observation": {
+            "block": 25960042,
+            "v2_markets_sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+            "registered_markets_sha256": "5a073d47686a971966098cf4d09189cc3048543ea6099751f52a70209cb171cc",
+            "note": "the same 80 markets and 87 registered markets; the digests differ because the earlier record hashed a different serialisation"
+          }
+        },
+        "prior_observed_block": {
+          "number": 25960042,
+          "hash": "0x3f817acb8a79c8158643f8ecdc0f1cd812ba00cf39078e76d816bf4cd7c198eb",
+          "timestamp": 1789200599
+        },
+        "observed_block_note": "The 2026-09-18 estate observation. Every contract recorded at the prior block 25960042 has the same runtime code at this block; the instance, market and role-provider reads exist only at this block.",
+        "epochs": {
+          "core_deployment_set": "blocks 21788178 to 21788205 (2025-02-06), deployer 0x240334405021f4242d57a3785df39edc23e1b607 nonces 1 to 9: market init code, HooksFactory, OpenTermHooks and FixedTermHooks templates, MarketLens 0xc672760757da93b5f3275dc97203d145806dae33; templates registered at 21788203 and 21788204 with the deployer as fee recipient at 1000 bips",
+          "fee_recipient": "OpenAccessRoleProvider at 21825574 and WildcatFeeRecipient at 21854968 (2025-02-11, 2025-02-15); template fees moved to the recipient at 500 bips at 21873682 through the arch controller owner Safe",
+          "third_template": "FixedTermHooks 730-day init code created at 22081282 and registered at 22094295 (2025-03-19, 2025-03-21) through the arch controller owner Safe",
+          "first_instance_and_market": "block 21866550 (2025-02-17); last at the observed block: 25895380 (2026-09-03)",
+          "lens_and_collateral": "MarketLens 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7 at 23121577 (2025-08-11); collateral factory at 23167812 and CollateralLens at 23168260 (2025-08-18)",
+          "wrapper_factory": "Wildcat4626WrapperFactory at 24750455 (2026-03-27)",
+          "evidence": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json creation_epochs, template_registrations, template_fee_updates, hooks_instances[].deployed, markets[].deployed"
         }
       },
       "documentation": [
@@ -2019,15 +4660,9 @@
       ],
       "exclusions": [
         "Sepolia (11155111) deployments",
-        "the 80 market instances' and every hooks instance's own code hashes were not read; each market is deployed from the recorded init code and carries its own immutables",
-        "role-provider instances beyond the templates were not enumerated",
         "Etherscan was not queried",
-        "template registration blocks were not established (the log query did not answer)"
-      ],
-      "unresolved": [
-        "The third FixedTermHooks template is included by the approval of all registered templates. #1590 still owns its registration epoch and instance coverage; Hermes derives the protected set from that evidence.",
-        "Both MarketLens deployments remain recorded; #1590 maps their epochs and consumer use rather than selecting one by document precedence.",
-        "WildcatFeeRecipient and CollateralFactory sources are not located in this pass"
+        "the collateral instances the collateral factory deployed were not enumerated",
+        "the V1 controller factory, controllers and 7 V1 markets registered with the shared arch controller belong to wildcat-v1-ethereum-mainnet"
       ],
       "existing_skills_records": [
         "plugins/janus/harness/manifests/wildcat-open-term.json (host wildcat-v2.5, hook OpenTermHooks-shaped)",
@@ -2043,13 +4678,13 @@
         "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
         "docs/kickoff/1359/evidence/upstream/factory-inventory.json",
         "docs/kickoff/1359/evidence/source-refs.json",
-        "docs/kickoff/1359/evidence/recovery-issues.json"
+        "docs/kickoff/1359/evidence/recovery-issues.json",
+        "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json",
+        "docs/kickoff/1359/evidence/source-match-1590.json"
       ],
       "decision": "kickoff-consumer-target",
-      "recovery": "https://github.com/wildcat-finance/skills/issues/1590",
-      "blocker": "The existing row matches core factory and stored init code but lacks the complete instance, hook and role-provider inventory. WildcatFeeRecipient and CollateralFactory source identity remains unestablished.",
       "corpus_directory": "corpora/wildcat-v2-ethereum-mainnet",
-      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity.",
+      "deployment_note": "Use the recorded observations. Every contract in this row carries a source commit whose compiled bytecode reproduces the on-chain code byte for byte or modulo immutables; instance-level identity is the recorded code hash at the observed block, and a repository head is still not deployed identity.",
       "emitter_source": {
         "repository": "https://github.com/wildcat-finance/v2-protocol",
         "commit": "f5a26146987926f4811b72a795d662813dedfe85",
@@ -2062,8 +4697,51 @@
           "src/spherex/SphereXConfig.sol"
         ],
         "emitter_count_recorded": 27,
-        "boundary": "The earlier study records source identity and equivalence to v2.1.0; #1590 still binds the relevant deployed epochs."
-      }
+        "boundary": "The earlier study records source identity and equivalence to v2.1.0; the 2026-09-18 pass binds the pin to every deployed epoch of this estate (source-match-1590.json emitter_pin_binding)."
+      },
+      "recovery_completed_by": "https://github.com/wildcat-finance/skills/issues/1590",
+      "protected_set_exclusions": [
+        {
+          "item": "borrower push providers: 31 accounts (20 with no code, 11 contracts, 9 of them Safe proxies) that are each instance's own borrower",
+          "owner": "each borrower",
+          "reason": "not protocol code; identity is recorded by address and code hash at the observed block, with the Sourcify or indexer label where one exists; no source is claimed"
+        },
+        {
+          "item": "arch controller owner 0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+          "owner": "Wildcat Labs operations",
+          "reason": "a Safe proxy (Sourcify exact_match), not Wildcat source; it signed the template registration and fee update transactions and is the fee recipient's owner"
+        },
+        {
+          "item": "Chainalysis SanctionsList 0x40c57923924b5c5c5455c48d93317139addac8fb",
+          "owner": "Chainalysis",
+          "reason": "third-party oracle read through the OpenAccessRoleProvider's immutable; code hash and Sourcify status recorded only"
+        },
+        {
+          "item": "SphereX engine 0x4f90c0a26cc2ad22ee98398dcc02bbe314a1766a",
+          "owner": "SphereX",
+          "reason": "third-party engine the HooksFactory named in its creation transaction; code hash and Sourcify status recorded only"
+        },
+        {
+          "item": "Bebop settlement 0xbbbbbbb520d69a9775e85b458c58c648259fad5f",
+          "owner": "Bebop",
+          "reason": "approved exchange named in the collateral factory's creation logs; address recorded only"
+        },
+        {
+          "item": "WildcatArchcontrollerDelegator (protocol-ownership repository)",
+          "owner": "Wildcat Labs",
+          "reason": "no mainnet deployment located; the arch controller owner is a Safe, so no protected-set member derives from it"
+        },
+        {
+          "item": "MarketLens V1 0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+          "owner": "wildcat-v1-ethereum-mainnet row",
+          "reason": "V1 lens, deprecated in Wildcat's release map; recorded so the three lens names are told apart"
+        },
+        {
+          "item": "collateral instances deployed by the collateral factory",
+          "owner": "no kickoff consumer",
+          "reason": "outside the HooksFactory estate the consumers name; the factory, its stored init code and lens are recorded, the instances are not enumerated"
+        }
+      ]
     },
     {
       "id": "aave-v3",
@@ -3329,7 +6007,9 @@
     "docs/kickoff/1359/evidence/scope-approval.json": "df147d44ba5cfbff58df62c91afc6937358701773ca760f84ff32ce7dcf73450",
     "docs/kickoff/1359/evidence/source-refs.json": "1bb2c1951adc4433e351fc5aee75ba0eab52895de1e3baf7149423a195755347",
     "docs/kickoff/1359/evidence/consumer-inputs.json": "a11720023981f8904a610f695ad5a6878fdda9f1e45b080bb96c5e867f5aa477",
-    "docs/kickoff/1359/evidence/recovery-issues.json": "a921e6ec46be87fb4dae040a8516f1dd36bc3ee924d3d64c33995548f8f6c8c5"
+    "docs/kickoff/1359/evidence/recovery-issues.json": "a921e6ec46be87fb4dae040a8516f1dd36bc3ee924d3d64c33995548f8f6c8c5",
+    "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70",
+    "docs/kickoff/1359/evidence/source-match-1590.json": "3d9a17ad9fce5306129e9975fe36f8ca8e95cacb647daca7d408b3682fdc38af"
   },
   "scope": {
     "approval_evidence": "docs/kickoff/1359/evidence/scope-approval.json",
@@ -3728,6 +6408,16 @@
       "issue": 1498,
       "disposition": "mapped",
       "reason": "See the consumer row and its target-specific boundary."
+    }
+  ],
+  "revisions": [
+    {
+      "date": "2026-09-18",
+      "issue": "https://github.com/wildcat-finance/skills/issues/1590",
+      "producer": "Shoggoth as Surveyor under Protasis",
+      "publisher": "Dr Laurence E. Day (laurenceday), Wildcat Labs: committer and signer of the commit carrying this revision",
+      "reviewer": "the reviewer of the pull request that carries this revision",
+      "change": "wildcat-v2-ethereum-mainnet moves from blocked to resolved: complete factory, template, hooks-instance, market and role-provider map at block 26006257 with deployment epochs; fee recipient, collateral factory, collateral init code, collateral lens and open-access role provider sources located and reproduced; both MarketLens epochs and consumers mapped; the PR #1460 emitter pin bound to every deployed epoch"
     }
   ]
 }

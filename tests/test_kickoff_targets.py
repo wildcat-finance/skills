@@ -209,10 +209,23 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("still pending" in f for f in findings), findings)
 
     def test_scope_approval_does_not_resolve_missing_source_evidence(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
         self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
+
+    def test_a_resolved_row_cannot_keep_a_blocker(self):
+        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        target["blocker"] = "a gap somebody forgot to clear"
+        self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
+
+    def test_a_resolved_contract_needs_a_source_commit(self):
+        target = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        contract = next(c for c in target["deployment"]["contracts"] if c["role"] == "hooks-instance")
+        contract["code_match"]["source_commit"] = None
+        findings = self.findings()
+        self.assertTrue(any("resolved without a source match" in f for f in findings), findings)
+
 
     def test_a_recorded_decision_without_a_reference_is_named(self):
         decision = self.registry["decisions"][0]
@@ -342,6 +355,74 @@ class MutationTests(unittest.TestCase):
             self.module.read_json(self.path, limit=64)
         with self.assertRaises(self.module.RegistryError):
             self.module.read_json(Path('/dev/null'))
+
+
+
+
+class EstateMapTests(unittest.TestCase):
+    """The 2026-09-18 estate map (#1590) is complete and bound to the resolved row."""
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "wildcat-v2-ethereum-mainnet")
+        self.estate = json.loads((REGISTRY.parent / "evidence" / "ethereum-mainnet-1590.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((REGISTRY.parent / "evidence" / "source-match-1590.json").read_text(encoding="utf-8"))
+
+    def test_the_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(self.row["status"], "resolved")
+        for key in ("blocker", "unresolved", "documentation_gap"):
+            self.assertNotIn(key, self.row)
+        self.assertEqual(self.row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1590")
+
+    def test_every_instance_and_market_is_a_row_contract_with_a_source_commit(self):
+        contracts = {c["address"].lower(): c for c in self.row["deployment"]["contracts"]}
+        instances = self.estate["hooks_instances"]
+        markets = self.estate["markets"]
+        self.assertEqual(len(instances), 42)
+        self.assertEqual(len(markets), 80)
+        for entry in instances + markets:
+            with self.subTest(address=entry["address"]):
+                contract = contracts[entry["address"].lower()]
+                self.assertEqual(contract["code_keccak256"], entry["code_keccak256"])
+                self.assertTrue(contract["code_match"]["source_commit"])
+
+    def test_every_instance_and_market_reproduces_modulo_immutables(self):
+        for i in self.estate["hooks_instances"]:
+            self.assertEqual(i["runtime_vs_template_deployed_bytecode"]["differing_bytes_outside_immutables"], 0, i["address"])
+            self.assertIsNotNone(i["deployed"], i["address"])
+        for m in self.estate["markets"]:
+            self.assertEqual(m["runtime_vs_market_deployed_bytecode"]["differing_bytes_outside_immutables"], 0, m["address"])
+            self.assertTrue(m["listed_under_instance"], m["address"])
+            self.assertIsNotNone(m["deployed"], m["address"])
+
+    def test_the_market_and_instance_maps_agree_with_the_factory_events(self):
+        events = self.estate["factory_events"]
+        self.assertEqual(events["by_event"]["MarketDeployed"], len(self.estate["markets"]))
+        self.assertEqual(events["by_event"]["HooksInstanceDeployed"], len(self.estate["hooks_instances"]))
+        self.assertEqual(events["by_event"]["HooksTemplateAdded"], len(self.estate["hooks_factory"]["templates"]))
+        by_template = {t["template"]: t for t in self.estate["hooks_factory"]["templates"]}
+        for i in self.estate["hooks_instances"]:
+            self.assertIn(i["address"], by_template[i["template"]]["instances"])
+        for m in self.estate["markets"]:
+            self.assertIn(m["address"], by_template[m["template"]]["markets"])
+
+    def test_every_role_provider_is_either_the_borrower_or_the_matched_open_access_provider(self):
+        for provider in self.estate["role_providers"]:
+            with self.subTest(provider=provider["address"]):
+                if provider["address"] == "0x5620553d8881335f74ad19259daacd1d9b373101":
+                    self.assertEqual(provider["sourcify_match"], "match")
+                    self.assertEqual(self.matches["open_access_role_provider"]["reproduction"]["runtime_modulo_immutables"]["differing_bytes_outside_immutables"], 0)
+                else:
+                    self.assertTrue(provider["is_the_borrower_of_every_instance_using_it"])
+
+    def test_the_located_sources_reproduce_the_chain(self):
+        self.assertTrue(self.matches["wildcat_fee_recipient"]["deployed_bytecode"]["equals_onchain_runtime"])
+        collateral = self.matches["collateral"]
+        self.assertEqual(collateral["factory"]["runtime_modulo_immutables"]["differing_bytes_outside_immutables"], 0)
+        self.assertEqual(collateral["lens"]["runtime_modulo_immutables"]["differing_bytes_outside_immutables"], 0)
+        self.assertTrue(collateral["collateral_init_code_storage"]["compiled_creation_bytecode"]["keccak256_equals_stored_init_code"])
+        self.assertTrue(self.matches["third_fixed_term_template"]["reproduction"]["equals_stored_init_code"])
+        self.assertTrue(all(row["identical_at_all_six"] for row in self.matches["emitter_pin_binding"]["paths"] if row["path"] != "src/access/FixedTermHooks.sol"))
 
 
 if __name__ == "__main__":
