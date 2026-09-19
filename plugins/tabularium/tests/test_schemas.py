@@ -586,6 +586,31 @@ class ShippedDocumentParityTests(unittest.TestCase):
                     "%s: row %d is refused by validate_event_row" % (name, index),
                 )
 
+    def test_every_shipped_release_directory_carries_a_parity_case(self):
+        """The declared release list matches the tree and the cases above.
+
+        `Exit` asks for every shipped `events.jsonl` row and `coverage.json`,
+        and the cases below name their releases one at a time.  A fourth
+        canonical release would be covered by nothing and fail nothing, so the
+        declared list is bound here to what is on disk and to the case names,
+        and it is this test rather than a silent gap that reports the drift.
+        A directory with no `coverage.json` is not a canonical release: the
+        Compound v3 Phase 0 witness is a different artefact and stays out.
+        """
+        on_disk = {
+            directory.name
+            for directory in support.EXAMPLES.iterdir()
+            if (directory / "coverage.json").is_file()
+        }
+        self.assertEqual(set(support.SHIPPED_RELEASES), on_disk)
+        cases = [name for name in dir(self) if name.startswith("test_")]
+        for release in support.SHIPPED_RELEASES:
+            with self.subTest(release=release):
+                self.assertTrue(
+                    any(release.replace("-", "_") in case for case in cases),
+                    "%s has no parity case of its own" % release,
+                )
+
     def test_aave_v4_v0_documents_validate_against_their_named_schema(self):
         self.check_release("aave-v4-v0")
 
@@ -640,6 +665,38 @@ class RejectionParityTests(unittest.TestCase):
         self.assertIsNone(observation["library_field"])
         with self.assertRaises(self.failureException):
             self.assert_parity(row, "provenance.operator_note")
+
+
+class ReporterCommandTests(unittest.TestCase):
+    """The report's `command` names the arguments that produced its value."""
+
+    @REQUIRES_JSONSCHEMA
+    def test_the_report_command_names_the_arguments_it_was_given(self):
+        """Read from `sys.argv`, the field would name a command that never ran.
+
+        `design_evidence.py` compares this string against the resolver the
+        design record binds, so it is evidence.  Calling `main` in process is
+        what the suite does, and under the host's own `sys.argv` the report
+        would carry the runner's arguments instead of the reporter's.
+        """
+        with scratch_directory() as directory:
+            report = Path(directory) / "rejection-parity.json"
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = prove_schema_v3.main(
+                    [
+                        "--candidate", "superseding-releases",
+                        "--criterion", "rejection-parity",
+                        "--report", str(report),
+                    ]
+                )
+            self.assertEqual(code, 0)
+            written = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual(
+            written["command"],
+            "python3 plugins/tabularium/tests/prove_schema_v3.py "
+            "--candidate superseding-releases --criterion rejection-parity "
+            "--report %s" % report,
+        )
 
 
 class ReporterRefusalTests(unittest.TestCase):

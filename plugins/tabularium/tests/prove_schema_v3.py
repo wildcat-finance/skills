@@ -85,6 +85,29 @@ def write_report(path, report):
         os.close(handle)
 
 
+def resolver_command(args):
+    """The command these arguments name, built from the arguments themselves.
+
+    The design record binds each pending result to an exact resolver string and
+    `design_evidence.py` compares the report's `command` against it, so the
+    field is evidence rather than decoration.  Reading it from `sys.argv` would
+    record whatever the host process was invoked with whenever `main` is called
+    in process, which is a command that never ran and a place for an unrelated
+    caller's arguments to land in a committed report.
+    """
+    script = Path(__file__).resolve()
+    try:
+        script = script.relative_to(support.REPO_ROOT)
+    except ValueError:
+        pass
+    return "python3 %s --candidate %s --criterion %s --report %s" % (
+        script,
+        args.candidate,
+        args.criterion,
+        args.report,
+    )
+
+
 def rejection_parity():
     """One observation per committed rejection fixture."""
     observations = []
@@ -125,7 +148,7 @@ def main(argv=None):
     code = 0 if value else 1
     report = {
         "candidate": args.candidate,
-        "command": "python3 " + " ".join(sys.argv),
+        "command": resolver_command(args),
         "criterion": args.criterion,
         "exit": code,
         "schema": REPORT_SCHEMA,
