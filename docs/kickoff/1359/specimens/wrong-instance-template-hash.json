@@ -1,0 +1,8 @@
+{
+  "target": "wildcat-v2-ethereum-mainnet",
+  "generation": "V2",
+  "chain_id": 1,
+  "address": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+  "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+  "note": "the same hooks instance carrying its template's stored-init-code hash instead of its own runtime hash; expected rejected on code hash"
+}
