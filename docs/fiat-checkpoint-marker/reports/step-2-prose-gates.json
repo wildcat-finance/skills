@@ -1,0 +1,60 @@
+{
+  "controller_scope": "Exact owned attribute and function prose extracted with source ranges because the controller exceeds the 1 MiB source-extraction limit. No whole-controller lint claim.",
+  "imprimatur_cleared_defects": 0,
+  "imprimatur_final_defects": 0,
+  "imprimatur_initial_defects": 4,
+  "inputs": [
+    {
+      "path": "plugins/hexaemeron/skills/fiat/references/checkpoint-archive.md",
+      "sha256": "b4b5bd08ddc74cd19582db38c8320ab81bb496cfc690e6b4d553be6b009ceaf3"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+      "sha256": "a005a062a134be6cd77f86bdcf761f4524f6ebcf3000dfa449ee51c40af3921d"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_checkpoint_marker_scan.py",
+      "sha256": "61bf7eba523472abd9712c52fec7b1fbfe91055bac33a78d4515b4d7df2d3714"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py",
+      "sha256": "2e608a4898fe24ab91fd94ed109dc576a98147159b33754364a77bcf924518ee"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py",
+      "sha256": "fdb9fc10b9348c186c66ae305772792bc4f8319391c0df5cb74c1adb214bc4d6"
+    },
+    {
+      "path": "tests/test_evolution_contract.py",
+      "sha256": "9f0eb9bd3a230f9fe5ca6bf126ecaa714074031c3de0bef3433a63e96798249c"
+    }
+  ],
+  "protected_content": "Recognition limits, compatibility, findings, identifiers, measurements and qualifications retained.",
+  "reports": [
+    {
+      "path": ".hexaemeron/reports/step-2-prose-candidate.json",
+      "sha256": "f5866c9f03b0423324f89abfebf3c896c1239635d3e438f0dd370172da8ded74"
+    },
+    {
+      "path": ".hexaemeron/reports/step-2-imprimatur-first.json",
+      "sha256": "1caca7398749f1e34be3b375425a2604011e084cd92c6e6890a525c49a8caf78"
+    },
+    {
+      "path": ".hexaemeron/reports/step-2-imprimatur-cleared.json",
+      "sha256": "d69fb39417fa276688e8344ac299435f435354fea6e5b088b46212e6f2c97c64"
+    },
+    {
+      "path": ".hexaemeron/reports/step-2-imprimatur-final.json",
+      "sha256": "d69fb39417fa276688e8344ac299435f435354fea6e5b088b46212e6f2c97c64"
+    }
+  ],
+  "sapheneia": "Owned reference states the two witnesses, fixed limits and remaining recognition gaps.",
+  "schema": "fiat1755-implementation-prose/v1",
+  "sequence": [
+    "sapheneia-durable-record-shape",
+    "imprimatur",
+    "vulgate",
+    "imprimatur"
+  ],
+  "vulgate": "Surface reviewed after clearing four flagged comments; protected content unchanged."
+}

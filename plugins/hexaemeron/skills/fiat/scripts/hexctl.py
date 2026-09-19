@@ -513,6 +513,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.65.1",
         "fiat-v6.66.1",
         "fiat-v6.67.1",
+        "fiat-v6.68.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -951,14 +952,11 @@ CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS = (
     re.compile(rb"-----BEGIN (?:" + CHECKPOINT_ARCHIVE_SECRET_LABEL + rb" )?PRIVATE KEY-----"),
     re.compile(rb"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
 )
-"""The two armour headers, which refuse only with key material after them.
+"""Recognized headers need an independent body line or a material prefix.
 
-These match a header and nothing more, so on their own they cannot tell a key
-from a document that names one. The study's second 2026-09-09 amendment settles
-that: these two forms count as secret-shaped only as a block, meaning the header
-plus at least one line of base64 body or its matching `-----END` marker. A
-header named in prose or quoted in a code span is not a secret, which is what
-lets a run archive its own specification text.
+The 2026-09-19 study amendment removes footer-only evidence: public audit
+quotations carried matching markers without any key material. No filename,
+quote or Markdown context exempts bytes from either remaining witness.
 """
 CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS = (
     re.compile(rb"ghp_[A-Za-z0-9]{36}"),
@@ -1018,17 +1016,10 @@ that reads only the carriage-return byte stops one escape short of the line
 feed behind it, so a CRLF key in a JSON string value published while an
 otherwise identical line-feed key refused. That was S2-R4-02.
 
-The second 2026-09-10 amendment adds the numeric escapes. `\\u000a` is as
-legal a JSON spelling of a line feed as `\\n`, `json.loads` returns the same
-key from either, and the hex digits may be written in either case, so a
-witness that read only the two-character form let a key through on the choice
-of escape. That was S2-R6-01. The third 2026-09-10 amendment closed the
-residue this set alone leaves. A body carrying no line delimiter in any of these forms,
-such as a key whose line breaks were stripped rather than encoded, is refused
-on its footer, which the separate footer reach of 9,984 bytes puts in view for
-every key up to the declared largest of 8,192 bits. What the set still does not
-see is a key whose modulus exceeds that declared size, and the study states
-that residue rather than implying the class is shut.
+The second 2026-09-10 amendment adds the numeric escapes. The independent
+whole-line witness keeps that delimiter set. The material-prefix witness
+also reads CR-only forms, short segments and escaped solidi, as required by
+the 2026-09-19 amendment.
 """
 CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
     rb"(?:\A|(?<=\x0a)|(?<=\\n)|(?<=\\u000[aA]))"
@@ -1039,9 +1030,9 @@ CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
 
 The line rather than a run: a bare run of base64 characters is also what a
 SHA-256 digest, a commit id and half the identifiers in this repository look
-like, and a document quoting an armour header near one of those is exactly the
-false refusal the amendment removes. A body line is the whole line, so prose
-around a header never supplies one.
+like. Requiring a whole line limits matches on surrounding prose. A quoted
+header near such a line can still refuse, including a line holding a digest;
+this independent witness does not interpret prose.
 
 Both delimiters are zero-width, so a match still starts at the body's first
 byte and the lookahead comparison against the header below is unchanged. The
@@ -1055,71 +1046,40 @@ a line that begins after it, and a lookbehind naming only the byte and the
 two-character escape would find the first body line and none after it.
 """
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
-"""The longest line the scan will read between a header and the key material.
-
-RFC 4880 armour puts optional `Version`, `Comment`, `MessageID`, `Hash` and
-`Charset` lines after the header, and a `Comment` is free text; PEM and OpenSSH
-put none. This bounds one of them.
-"""
+"""Maximum original content bytes in one admitted metadata line."""
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES = 7
-"""How many such lines: the five armour headers, one blank line, one body line."""
+"""Maximum admitted metadata lines; blank lines consume the byte allowance."""
 CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD = (
     CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE * CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES
 )
-"""Bytes after a header in which the body has to start.
-
-This bounds where the key material begins, which is what the armour lines
-above measure. It is not how far the footer may sit, because the footer sits
-past the whole body and the body is the larger distance by an order of
-magnitude; `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD` below carries that.
-"""
+"""The first body byte must start fewer than 1,792 bytes after its header."""
 CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY = 8192
-"""The largest RSA modulus, in bits, whose footer the scan undertakes to reach.
+"""Retained historical allowance used to derive the unchanged scan window.
 
-Measured on keys generated in process, as the distance from the end of the
-header to the start of the footer, in the worst spelling a JSON string value
-can give a line break, the twelve bytes of two numeric escapes: 1,900 bytes at
-2,048 bits, 2,812 at 3,072, 3,732 at 4,096 and 7,380 at 8,192. The reach below
-covers the largest of those with room, and a key beyond this size is stated
-residue rather than a silent gap.
+This value originally bounded footer reach. It is no longer a key-size claim:
+the material prefix can reject a larger or truncated body without a footer.
 """
 CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD = (
     CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD + CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY
 )
-"""Bytes after a header in which that header's own footer has to appear.
+"""The retained 9,984-byte maximum read after a header, including the prefix.
 
-The armour allowance plus the largest body, because the two distances compose:
-the body may start anywhere inside the armour lines, and then runs its own
-length before the footer.
-
-Separating this from the block lookahead is S2-R7-01. While the two were one
-constant at 1,792 bytes, the footer of any key of 3,072 bits or more lay out of
-reach -- 2,356 to 2,812 bytes past the header at 3,072 bits and 3,132 to 3,732
-at 4,096 -- so for exactly the sizes in use the block rule had only its body
-witness and no second one. Each spelling of a line break the body witness could
-not read was therefore a complete bypass rather than a degradation, which is
-what produced S2-R4-02 and S2-R6-01 in successive rounds. Over the 164 paths
-and 7,717,110 bytes this run's own export scans, best of five, the scan takes
-42.07 ms at the old 1,792 and 39.07 ms at 8,192 and refuses none of them at
-either, so the reach costs no measurable time and adds no false refusal.
+The historical name remains for existing bindings; no footer is a witness.
 """
 CHECKPOINT_ARCHIVE_SECRET_WINDOW = (
     max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
     + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
 )
-"""Bytes carried between scan chunks: the longest header plus its lookahead.
+"""Carry the longest header plus the maximum read so chunk splits keep both."""
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK = re.compile(
+    rb"\\u000[dD]\\u000[aA]|\\r\\n|\r\n|\\u000[aAdD]|\\[nr]|[\r\n]"
+)
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_RUN = re.compile(rb"[A-Za-z0-9+/=]+")
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_ARMOUR = re.compile(
+    rb"(?:Version|Comment|MessageID|Hash|Charset|Proc-Type|DEK-Info):[^\n]*\n"
+)
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS = 16
 
-Derived rather than declared, so a pattern whose header outgrows the carry
-cannot be added without moving it. Both terms are load-bearing. A match of n
-bytes that straddles a boundary leaves at most n - 1 of them in the chunk
-before it, so the header term brings the whole header into one search. Block
-semantics then need the bytes after it as well, and a header sitting more than
-the lookahead before the end of a chunk would otherwise be dropped from the
-carry while its body lies in the next chunk, so the carry has to cover the
-header and everything the block decision reads after it. That is the footer
-reach rather than the block lookahead, because the footer is the further of
-the two the decision consults.
-"""
 CHECKPOINT_ARCHIVE_README = """Fiat checkpoint archive
 
 This archive carries one Fiat run at one accepted boundary: the controller
@@ -26566,40 +26526,90 @@ def _checkpoint_archive_elapsed_ms(started: float) -> int:
     return max(0, int((time.monotonic() - started) * 1000))
 
 
+def _checkpoint_archive_material_prefix(data: bytes, start: int) -> bool:
+    """Recognize a bounded body prefix independently of a closing marker.
+
+    The study selected this lexical witness rather than a complete decoder:
+    truncated keys and bodies without a footer still need to refuse. Original
+    byte offsets govern every limit, including encoded line delimiters.
+    """
+    stop = min(len(data), start + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD)
+    raw = data[start:stop]
+    pos = 0
+    armour_count = 0
+    while pos < len(raw):
+        while pos < len(raw) and raw[pos] in b" \t":
+            pos += 1
+        line_break = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.match(raw, pos)
+        if line_break:
+            pos = line_break.end()
+            continue
+        tail = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.sub(
+            b"\n", raw[pos:pos + CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE + 12]
+        )
+        armour = CHECKPOINT_ARCHIVE_SECRET_PREFIX_ARMOUR.match(tail)
+        if armour:
+            original_break = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.search(raw, pos)
+            if (
+                original_break is None
+                or original_break.start() - pos > CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE
+            ):
+                return False
+            armour_count += 1
+            if armour_count > CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES:
+                return False
+            pos = original_break.end()
+            continue
+        break
+    if pos >= CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD:
+        return False
+    count = 0
+    while pos < len(raw):
+        escaped = False
+        run = CHECKPOINT_ARCHIVE_SECRET_PREFIX_RUN.match(raw, pos)
+        if run:
+            count += run.end() - pos
+            pos = run.end()
+            if count >= CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS:
+                return True
+        elif raw[pos:pos + 2] == b"\\/":
+            escaped = True
+            count += 1
+            pos += 2
+            if count >= CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS:
+                return True
+        else:
+            return False
+        end_of_segment = pos
+        while pos < len(raw) and raw[pos] in b" \t":
+            pos += 1
+        line_break = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.match(raw, pos)
+        if line_break:
+            pos = line_break.end()
+            while pos < len(raw) and raw[pos] in b" \t":
+                pos += 1
+            continue
+        if raw[pos:pos + 2] == b"\\/":
+            if pos != end_of_segment:
+                return False
+            continue
+        if (
+            escaped
+            and pos == end_of_segment
+            and CHECKPOINT_ARCHIVE_SECRET_PREFIX_RUN.match(raw, pos)
+        ):
+            continue
+        return False
+    return False
+
+
 def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
-    """Whether these bytes carry one of the study's six secret shapes.
+    """Apply the shared token, independent whole-line and material-prefix rules.
 
-    A token match is the whole answer. An armour header is only half of one:
-    the study's second 2026-09-09 amendment requires the block, so the header
-    refuses only when its own `-----END` marker or a whole line of base64 body
-    follows it. The two have their own reaches and the difference is the point.
-    A body has to *start* within `CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD`,
-    which the armour lines bound. A footer sits past the whole body, so it has
-    until `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD`, which adds the largest
-    body the scan undertakes to reach. Holding both to the armour figure was
-    S2-R7-01: it put the footer of every key of 3,072 bits or more out of
-    range, leaving the body witness as the only witness for exactly the sizes
-    in use. The footer is derived from the header that matched rather than
-    looked for generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not
-    completed by an unrelated `-----END CERTIFICATE-----` further down the
-    file.
-
-    A body line ends at a line feed as a byte, as the two-character escape or
-    as the six-character numeric escape in either letter case, and at the
-    carriage return that may precede it in the matching form. The study's
-    third 2026-09-09 amendment requires the escape, its first 2026-09-10
-    amendment the carriage return and its second the numeric escapes: a key
-    carried as a JSON string value supplies no newline byte, and past the
-    lookahead it supplies no footer either, so before those three the block
-    rule published it. A body with no line delimiter in any of these forms
-    refuses on its footer alone, which since S2-R7-01 the footer reach
-    actually covers up to `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY` bits. The
-    residue that remains is a key larger than that.
-
-    The body positions are found once for the whole buffer and then walked with
-    one forward index per pattern, because `finditer` yields matches in
-    increasing order. Searching the lookahead separately for every header would
-    make a member of repeated headers cost work in the square of their count.
+    Footer proximity alone rejected two preserved public audit files. The
+    2026-09-19 amendment replaces it with the selected bounded prefix while
+    retaining each earlier token and whole-line refusal. Whole-line positions
+    are indexed once per buffer, so repeated headers do not rescan that buffer.
     """
     for pattern in CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS:
         if pattern.search(data):
@@ -26614,13 +26624,11 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
         for match in pattern.finditer(data):
             start = match.end()
             body_limit = start + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
-            footer_limit = start + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
-            footer = b"-----END " + match.group(0)[len(b"-----BEGIN ") :]
-            if data.find(footer, start, footer_limit) != -1:
-                return True
             while index < len(bodies) and bodies[index] < start:
                 index += 1
             if index < len(bodies) and bodies[index] < body_limit:
+                return True
+            if _checkpoint_archive_material_prefix(data, start):
                 return True
     return False
 
