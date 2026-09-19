@@ -2,7 +2,7 @@
 
 Policy: [../VERSIONING.md](../VERSIONING.md)
 
-- Current version: `elenchus-v1.7.0`
+- Current version: `elenchus-v1.8.0`
 - Frontier status: `mature`
 - Frontier revision: `observed-failure-root-cause`
 - Current frontier: A check overlays a fix's changed tests onto the parent and classifies unittest, Forge and Node guards from fresh runner-owned reports, while diagnostics remain inert evidence.
@@ -26,3 +26,5 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 | `elenchus-v1.6.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [known-failure inoculation study](../../../../docs/known-failure-inoculation-study.md), [guard evidence tests](../../tests/test_guard_evidence.py), [release demonstration](../../docs/known-failure-inoculation/proof.md) | Adds the narrow `elenchus-parent-guard-evidence` promise: Fiat supplies an exact parent, replacement-free raw blob rows and a closed reporter contract; Elenchus streams a bounded parent, represents gitlinks without requiring foreign submodule objects, overlays and runs the guard in a detached worktree, then returns the fresh raw report bytes, counters, exit and unchanged verdict. Fiat retains ownership of Step-wide Git binding, numeric admission, persistence and receipts. The mature frontier and `None -- mature` stay. The disposable release demonstration drives this contract through the checked-in controller end to end; the delivery that built the contract ran on an older controller under the manual bootstrap procedure, so nothing here claims that controller enforced it. |
 
 | `elenchus-v1.7.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1198](https://github.com/wildcat-finance/skills/issues/1198), [regression tests](../../tests/test_elenchus_digest_rebinds.py) | The commit-based check records verified JSON digest rebinds and qualifies verdicts when their targets retain parent bytes. Runner counts and verdicts remain unchanged; assertion attribution stays unknown. The caller-bound parent-guard contract and mature frontier stay. |
+
+| `elenchus-v1.8.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1739](https://github.com/wildcat-finance/skills/issues/1739), [directory custody tests](../../tests/test_elenchus_executable_binding.py) | Executable directory bindings retain device, inode, mode and ownership while allowing changes to directory entries and timestamps. Every directory name must still reach its held inode, and the executable retains its full identity check. Linux ancestor-substitution guards and negative replacement and permission tests cover the boundary. The mature frontier and `None -- mature` stay. |

@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.7.0"
+  version: "1.8.0"
 ---
 
 <p align="center">

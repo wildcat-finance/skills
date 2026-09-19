@@ -740,7 +740,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "elenchus" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.7.0")
+        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.8.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(
             field(ledger, "Frontier revision"), "observed-failure-root-cause"
