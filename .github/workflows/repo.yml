@@ -11,7 +11,9 @@ name: repo
 #     pull request forever. Requiring a path-filtered check would wedge every
 #     change outside the filter.
 #
-# The job takes one to two minutes, so running it unconditionally is cheap.
+# The job took 5m24s on pull request 1721 and 4m57s on 1716, not the one to
+# two minutes recorded here before, so running it unconditionally is still
+# affordable but no longer free. A superseded run is cancelled below.
 
 on:
   push:
@@ -22,6 +24,14 @@ on:
 
 permissions:
   contents: read
+
+# A pull request's own later push supersedes the run behind it, and only the
+# newest head decides whether the gate is met. Pushes to `main` fall in their
+# own group per ref and are never cancelled, because each is the only record
+# that a merged commit passed.
+concurrency:
+  group: repo-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   invariants:

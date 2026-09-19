@@ -333,6 +333,26 @@ the map is stale, or the map is malformed; fix `tests/check-map-v1.json` in
 the same change. Hosted CI is unchanged by this entrypoint. The suites below
 are the inventory the map declares, and each remains directly runnable.
 
+### Most of these suites are a local gate only
+
+The map declares what a check is. It does not say anything about what hosted CI
+runs, and for most scopes the answer is nothing. Do not read a scope out of
+`tests/check-map-v1.json` and conclude a pull request will run it.
+
+Hosted CI covers `root` through the `invariants` job in `.github/workflows/repo.yml`,
+`dead-code`, and the `janus`, `lazarus`, `pandects` and `synkrisis` plugin suites
+through their own path-filtered workflows, plus the Hexaemeron harness tests
+through `hexaemeron-forge.yml`. Everything else, about 7,000 test methods across
+thirteen plugin suites and most of Hexaemeron, runs only where a contributor runs
+it. `invariants` is the one context the branch protection on `main` requires.
+
+So run `python3 scripts/run_checks.py` before you push. A green pull request is
+not evidence that a plugin suite passed, and a suite can go red on `main` without
+any check reporting it.
+
+The aggregate gate that used to shard every scope was removed; see the decision
+record beside this one for why, and open an issue rather than restoring it.
+
 Every `python3` command below means the exact interpreter recorded in
 [`.python-version`](.python-version). The supported minor is declared in
 [`pyproject.toml`](pyproject.toml); do not substitute a different ambient
