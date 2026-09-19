@@ -1,12 +1,15 @@
-# Checkpoint authority records, signatures, native verification and replay
+# Checkpoint authority records, signatures, native verification, replay and release
 
 ## Scope
 
-Step 2 implements `records-and-signatures`, Step 3 `native-boundary-coverage`
-and Step 4 `authority-replay` for `ordered-replay`, under
-`adr/verify-checkpoint-authority-by-ordered-replay`. Native checkpoint v1 is
-unchanged. Released interoperability remains unresolved at its later
-criterion, and no local result establishes current production eligibility.
+Step 2 implements `records-and-signatures`, Step 3 `native-boundary-coverage`,
+Step 4 `authority-replay` and Step 5 `released-interoperability` for
+`ordered-replay`, under `adr/verify-checkpoint-authority-by-ordered-replay`.
+Native checkpoint v1 is unchanged. No local result establishes current
+production eligibility.
+
+The public consumer guide is
+[docs/checkpoint-authority/release.md](../../../../../docs/checkpoint-authority/release.md).
 
 ## Records and bytes
 
@@ -91,8 +94,8 @@ transparency claim.
 
 A pass requires every manifest case to start and finish, with zero failures,
 errors, skips or expected failures. Evidence binds actual source, fixture,
-tool, runtime, counter and output identities. Empty historical corpora and the
-released-interoperability criterion still return 3. Malformed or unsafe invocations return 2;
+tool, runtime, counter and output identities. An empty historical corpus still
+returns 3. Malformed or unsafe invocations return 2;
 completed failing cases return 1. Outputs contain fixed codes, test identities
 and hashes; raw failure messages stay inside the test runner.
 
@@ -326,3 +329,113 @@ observation precondition returns `FOB001`; no current four-command success or
 service admission follows from its old transport result. The fixture Linux
 environment permits executable temporary files for upstream producer tools;
 that is test support, not an adopted production isolation profile.
+
+## Released interoperability
+
+The release is a digest-bound inventory plus one consumer lock.
+[`release-manifest.json`](../checkpoint-authority/release-manifest.json) names
+seven component classes: `schemas`, `verifier`, `fixtures`, `capabilities`,
+`native`, `tools` and `documentation`. It never hashes itself; its
+`external_pins` field names the two values the consumer holds instead,
+`source_commit` and `release_manifest_sha256`. The `fixtures` class lists the
+four corpus manifests, and their own `files` rows bind every fixture
+transitively, so a fixture change moves the release digest without being
+enumerated twice.
+
+[`protocol.lock.json`](../../../../../docs/checkpoint-authority/protocol.lock.json)
+is the example consumer lock. Its `authority.source_commit` is forty zeros
+because no file inside a release can name the commit that contains it; the
+consumer replaces it with the merged commit and the verifier compares it
+against the commit the caller asserts. It never runs Git. Authority and native
+pins stay separate: `native.source_commit`, `native.executable_sha256` and
+`native.profile` pin the native checkpoint release, which versions on its own.
+
+A mutable reference refuses before any digest is read. `main`, `latest`,
+`HEAD`, `v1` and a `refs/` path all answer `mutable-source-reference`. The
+other refusals are `component-drift`, `component-missing`, `component-unsafe`,
+`component-extra`, `manifest-stale`, `manifest-missing`, `mixed-components`,
+`unsupported-native-pin`, `unsupported-tool-pin`, `unsupported-python-pin`,
+`source-commit-mismatch`, `lock-fields` and `lock-limit`.
+
+## Bounded command line
+
+`plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority.py` offers exactly
+four operations: `verify`, `release`, `lock` and `demonstrate`. Every operand
+is a path, a digest or a commit. Reads follow no link, refuse a special file or
+a hard-linked leaf, and stay inside the caller's named files. A `--out` report
+is created exclusively at mode 600 and never replaces an existing path.
+Exit 0 is a completed operation, 1 an evidence refusal and 2 a rejected
+invocation, which prints a fixed code and never echoes the operand.
+
+## Reproduce the released criterion
+
+```bash
+python3 plugins/hexaemeron/tests/checkpoint_authority_release_corpus.py --check
+python3 plugins/hexaemeron/tests/checkpoint_authority_conformance.py --candidate ordered-replay --criterion released-interoperability --report .hexaemeron/reports/ordered-replay-released-interoperability.json
+```
+
+The [interoperability manifest](../checkpoint-authority/fixtures/interoperability-manifest.json)
+binds fifteen files and forty-eight case ids across
+`test_checkpoint_authority_release` and
+`test_checkpoint_authority_release_conformance`. Its consumer bundle is
+`demo-history.jsonl`, `demo-bootstrap.json`, `demo-native.json`,
+`demo-freshness.json`, `demo-presence.json` and `demo-expected.json`, all
+re-encoded from the committed positive history: the generator signs nothing
+new, so a regeneration produces the same bytes.
+[Its hostile file](../checkpoint-authority/fixtures/release-hostile.json)
+records eighteen one-change lock mutations with the code each must refuse by.
+Regenerate the bundle, the hostile record, the interoperability manifest, the
+release manifest and the lock example together with `--write`, in that order;
+`--check` recomputes all six without writing.
+
+## Demonstration observations
+
+The demonstration replays 39 released records from files alone through 82 JSON
+decodes, accepts one history, reports one eligible row under fresh evidence,
+refuses all eighteen hostile lock cases and agrees with pinned cosign 3.1.3 on
+all five released signature cases under `--offline --insecure-ignore-tlog`. It
+rebuilds the release manifest twice to identical bytes. Those six counts are
+deterministic for a given tree.
+
+Four measures are not, so the demonstration reports them per run rather than
+here: replay wall time in milliseconds, the JSON decode count, the traced
+Python allocation peak in bytes and the peak resident set size in bytes. The
+receipted values are in the `demonstration` block of
+`.hexaemeron/reports/ordered-replay-released-interoperability.evidence.json`.
+The criterion refuses a peak resident set at or above the declared 512 MiB
+ceiling. That RSS figure covers the whole reporting process, not the replay
+alone, and every one of the four is a single-machine observation taken while
+other repository checks ran: they establish no production latency, throughput,
+archive validation time or provider cost. The Step 4 budget record remains the
+1,391-record measurement, and the study's 1,280-decode model comparison is
+preserved unchanged.
+
+## Transient tool spawn
+
+Eight concurrent copies of the release suite on 2026-09-19 refused three times
+with `tool-unavailable` raised by `openssl dgst`, in the released demonstration
+and in the Step 4 replay suite alike, because host process pressure made
+`subprocess.Popen` fail with `EAGAIN`. Host exhaustion is not evidence about a
+pinned executable, so `signatures._spawn` now retries only
+`EAGAIN`, `ENOMEM`, `EMFILE`, `ENFILE` and `EINTR`, inside the caller's one
+existing deadline, and any other errno or a failure that persists to that
+deadline still refuses `tool-unavailable`. The guard cases are in
+`TransientToolSpawnTests`; the preserved counterexample is
+`.hexaemeron/reports/step-5-superseded/transient-tool-spawn-counterexample.log`.
+The same exposure remains unrepaired in `native_io.execute`, which no observed
+failure has reached.
+
+## Released boundaries
+
+The committed fixtures are signed with ephemeral test keys and carry synthetic
+native attestations; no native command ran and no private key is retained.
+Production issuer roots, cloud retention, live storage independence and service
+runtime enforcement remain external obligations. An Ariadne pass binds evidence
+references and predicate gates and authenticates no signature: the predicate
+states in its own output that signatures, issuer authority, complete journal
+replay and current eligibility were not checked by Ariadne. Transparency log
+checking is disabled, so no keyless identity or transparency claim follows from
+the cosign agreement. A historical result never becomes a current
+authorization: without freshness every accepted row stays `unknown`, and
+without the caller's own copy observations a complete publication stays
+`unavailable`.

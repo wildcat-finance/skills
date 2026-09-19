@@ -162,6 +162,14 @@ CONTRACT = "promise-machine/v1"
 # gives a complete package of 1,510 files and 20,855,576 bytes (5,358,824 bytes
 # below the cap) whose runtime manifest records 1,503 files and 20,392,692
 # total_bytes; the cap, reserve and file tripwire stay unchanged.
+# 2026-09-19: Step 5 of issue #1676 adds the released verifier, its command
+# line and the release manifest. The `checkpoint-authority/fixtures/**`
+# omission already covers the new interoperability corpus, so the complete
+# package measures 1,516 files and 20,956,745 bytes and its runtime manifest
+# records 1,509 files and 20,492,076 total_bytes, leaving 479,444 bytes below
+# the reserve and 91 files below the tripwire. The cap, reserve, file tripwire
+# and omission rules stay unchanged. That margin is thin; the next payload
+# raise owns it.
 MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024

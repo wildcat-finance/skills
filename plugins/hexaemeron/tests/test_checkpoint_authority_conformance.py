@@ -42,12 +42,22 @@ class ImplementedConformanceTests(unittest.TestCase):
         self.assertEqual({row['name'] for row in event['execution']['tools']},{'openssl','ssh-keygen','gpg','cosign'})
         self.assertEqual(event['fixture_manifest'],subject._inputs(self.root)['fixture_manifest'])
 
-    def test_later_criteria_still_refuse_without_execution(self):
-        with mock.patch.object(subject,'_execute',side_effect=AssertionError('later gate executed')):
-            for criterion in subject.CRITERIA[3:]:
-                status,event=self.invoke(criterion)
-                self.assertEqual(status,3);self.assertFalse(event['complete'])
-                self.assertEqual(event['executed_cases'],[])
+    def test_every_declared_criterion_is_implemented_and_an_unknown_one_refuses(self):
+        # Step 5 implements the last criterion, so no criterion returns 3 for being
+        # unimplemented any more. Incomplete execution still refuses, in each
+        # criterion's own conformance tests.
+        self.assertEqual(subject.CRITERIA[3:],('released-interoperability',))
+        status,event=self.invoke('frontier-eligibility')
+        self.assertEqual(status,2);self.assertFalse(event['complete'])
+        self.assertEqual(event['code'],'unknown-criterion')
+        self.assertNotIn('executed_cases',event)
+
+    def test_the_release_criterion_refuses_without_its_own_released_corpus(self):
+        with mock.patch.object(subject,'_execute',side_effect=AssertionError('record gate executed')):
+            status,event=self.invoke('released-interoperability')
+        self.assertEqual(status,2);self.assertFalse(event['complete'])
+        self.assertEqual(event['stage'],'invocation')
+        self.assertNotIn('executed_cases',event)
 
     def test_missing_inventory_or_changed_fixture_refuses_before_execution(self):
         path=self.root/subject.MANIFEST_PATH

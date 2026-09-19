@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 25484901,
+    "bytes_blob": 25596033,
     "bytes_generated": 98
   },
   "entries": [
@@ -159,6 +159,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
+    },
+    {
+      "bytes": 30577,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1676-publish-checkpoint-authority-protocol-and-r.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -929,6 +936,13 @@
       "evidence": "mean line length above 400 in a window at offset 39061",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
+    },
+    {
+      "bytes": 80555,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/demo-history.jsonl"
     },
     {
       "bytes": 114016,
