@@ -13,3 +13,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: The ten boundary observations lack their original construction command; the README states that limitation and Step 2 owes executable guards. The generation ledger entry is assigned to Step 2. Product conformance and the native demonstration remain pending, and issue 1676 still owns service admission. Reviewed the full 70-file diff at Git commit `d4b1b011cc7b0dcffbd9d548ddbfa159b60f101d` against `e2307ed5966e18727434b3e49bec89db736f7b17`: all 65 preserved copies and four baseline helper digests match, both public audit files are unchanged, and the 76,382-byte historical document remains an exact prefix. Replayed 436 refusal and 119 benign cases for all four candidates; their complete mismatch lists match the retained reports. Four token probes and input digests agree. The 24 selection cells remain recorded and eight conformance cells remain pending; historical timing was inspected, not remeasured. Phylax, Ephoros, Hypomnema, the design-lock check and the explicit study bridge each exited 0. The required root suite ran 2,070 tests in 150.552 seconds with four skips and exit 0 under Python 3.14.6. Commands, outputs and custody/replay reports are retained under `.hexaemeron/reports/step-1-warden-round-1/`. No fixes were needed.
+
+## Step 2, round 1 -- 2026-09-19T20:40:54Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: marker-without-material=reviewed; material-without-footer=reviewed; short-lines-and-metadata=reviewed; chunk-carry=reviewed; repeated-markers=reviewed; token-parity=reviewed; evidence-custody=reviewed; archive-admission=reviewed; diagnostic-content=reviewed; policy-amendment=reviewed; demo-boundary=reviewed; release-and-retry=reviewed
+
+Not checked: Step 3 native archive demonstration and restored public-file digests; release, installation, host refresh and live service retry. Solidity tooling was waived because this step contains no Solidity. These results cover the declared scanner specimens and existing archive/signing tests.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Step 3 retains the signed native demonstration; issue 1676 retains service admission. Reviewed all 29 changed paths between Git commits `1c2bbb2a5431ed23ea4c1aaf35f7bc0275f415c3` and `09c84241bc8bebab0f8f49f944d30c4deddd53bd` against `bounded-material`. The prior amendment and both public audit files remain unchanged. Token patterns, the independent whole-line pattern and scan bounds match the released controller. Replayed 436 refusal, 119 benign and 14 boundary cases; all input digests and outcomes match the preserved observation. The 13 scanner methods and two dedicated public-file guards passed without skips or errors. Five same-host samples over 2,852,105 bytes gave medians of 91.158266 ms released and 160.880956 ms implemented, ratio 1.764853184021732; traced peak was 164,877 bytes, within the fourfold and 1,048,576-byte limits. The frozen six-file instruction evidence and all 11 evaluation prompts match the Step parent; the historical evaluation changed only its tree digest. Phylax, Ephoros and Hypomnema each exited 0. The root suite passed 2,070 tests in 148.142 seconds with four skips; scanner/archive/signing passed 131 tests in 353.235 seconds without skips. Independent reports are under `.hexaemeron/reports/step-2-warden-round-1/`. No fixes were needed. Applied `--audit-filter sapheneia:sapheneia`.
