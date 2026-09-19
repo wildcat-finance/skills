@@ -1173,7 +1173,7 @@
       "venue": "Wildcat",
       "generation": "V1",
       "label": "Wildcat V1 controller-factory estate on Ethereum mainnet (deprecated on the docs page)",
-      "status": "blocked",
+      "status": "resolved",
       "consumers": [
         1359,
         1365,
@@ -1222,7 +1222,7 @@
           "e962bf37866483a3573016a3087331c5de9f0929",
           "016d0658d6d442b8f42e3bb68f01fae43c150307"
         ],
-        "equivalence_note": "the controller factory's 37 and the arch controller's 8 in-tree Sourcify sources have identical blobs at these five commits; the licence-header commit 6164ddd4 changes every file's comment bytes and the sentinel's Sourcify sources match from there to the head 488b30d0 (bytecode is unaffected because bytecodeHash is none)",
+        "equivalence_note": "the controller factory's 37 and the arch controller's 8 in-tree Sourcify sources have identical blobs at these five commits; the licence-header commit 6164ddd4 changes every file's comment bytes and the sentinel's Sourcify sources match from there to the head 488b30d0 (bytecode is unaffected because bytecodeHash is none). The deployer's exact checkout among the five cannot be determined: the factory deployed at block 18687391 (2023-12-04T08:53:59Z), four days after all five candidates and after 6164ddd4 too, and main's only intervening commits (6164ddd4, d46ecb80) carry the post-rewrite blobs the deployed bytecode does not match, so the deployer used a checkout that was not main's tip at deploy time and none of the five can be distinguished from on-chain evidence; see docs/kickoff/1359/evidence/source-match-1748.json equivalent_commits_deployer_checkout",
         "default_branch_head": {
           "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
           "date": "2024-02-15T01:35:23Z"
@@ -1361,8 +1361,9 @@
               "init_code_keccak256": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93"
             },
             "code_match": {
-              "method": "stored init code keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; not reproduced from source in this pass",
-              "source_commit": null
+              "method": "stored init code (0x00 + 23650 bytes) keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; solc 0.8.22+commit.4fc1097e recompiling the factory's Sourcify stdJsonInput (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706, outputSelection widened to emit every contract) reproduces WildcatMarket's evm.bytecode.object byte for byte, 23650 bytes, keccak256 0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1748.json market_init_code"
             }
           },
           {
@@ -1378,8 +1379,9 @@
               "init_code_keccak256": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371"
             },
             "code_match": {
-              "method": "stored init code keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; not reproduced from source in this pass",
-              "source_commit": null
+              "method": "stored init code (0x00 + 16250 bytes) keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; solc 0.8.22+commit.4fc1097e recompiling the factory's Sourcify stdJsonInput (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706, outputSelection widened to emit every contract) reproduces WildcatMarketController's evm.bytecode.object byte for byte, 16250 bytes, keccak256 0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1748.json controller_init_code"
             }
           },
           {
@@ -1391,8 +1393,8 @@
             "observed_block_number": 25960042,
             "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
             "code_match": {
-              "method": "sourcify full match; 40 of 46 in-tree Sourcify sources equal the wildcat-protocol head 488b30d0 and six library files differ, so no commit is pinned",
-              "source_commit": null,
+              "method": "sourcify full match; best single-commit match is head 488b30d0 at 40 of 46 in-tree sources; the remaining 6 cannot be reconciled at any commit (checked across main, all 8 named branches and all 37 pull requests, merged and unmerged): 4 (ReentrancyGuard.sol, FeeMath.sol, MathUtils.sol, SafeCastLib.sol) match only the pre-license-rewrite state at da74452a and the other four equivalent commits, and 2 (MarketErrors.sol, MarketEvents.sol) differ from every known commit by exactly one added line, `// SPDX-License-Identifier: Apache-2.0`, that no commit ever applied to those two files; see docs/kickoff/1359/evidence/source-match-1748.json market_lens",
+              "source_commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
               "sourcify": "match",
               "deployment_block": 18687391
             }
@@ -1442,13 +1444,7 @@
       ],
       "exclusions": [
         "Sepolia (11155111) V1 deployments",
-        "code of the three controllers and seven markets was not read",
-        "market and controller init code were not recompiled from source"
-      ],
-      "unresolved": [
-        "V1 market and controller init code hashes are recorded but not reproduced from the pinned source",
-        "the V1 MarketLens source commit is not pinned",
-        "one of the 37-source and 8-source blob sets pins five equivalent commits, not one; the deployer's exact checkout is unknown"
+        "code of the three controllers and seven markets was not read; historical instance epochs remain open in https://github.com/wildcat-finance/skills/issues/1589"
       ],
       "existing_skills_records": [
         "plugins/probitas/scripts/probitas_lib/endpoints.py (arch controller and start block 18686645)",
@@ -1462,13 +1458,20 @@
         "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
         "docs/kickoff/1359/evidence/upstream/factory-inventory.json",
         "docs/kickoff/1359/evidence/source-refs.json",
-        "docs/kickoff/1359/evidence/recovery-issues.json"
+        "docs/kickoff/1359/evidence/recovery-issues.json",
+        "docs/kickoff/1359/evidence/source-match-1748.json"
       ],
       "decision": "lemma-9-venue-order",
-      "recovery": "https://github.com/wildcat-finance/skills/issues/1589",
-      "blocker": "V1 controller and market init-code source matches have not been reproduced. The preserved Ethereum observation at block 25960042 identifies candidate contracts but does not establish all historical implementation epochs.",
       "corpus_directory": "corpora/wildcat-v1-ethereum-mainnet",
-      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity."
+      "deployment_note": "Use the recorded observations where present. The three controllers and seven markets were not independently read; historical instance epochs remain open in issue 1589. A repository head is not deployed identity.",
+      "recovery_completed_by": "https://github.com/wildcat-finance/skills/issues/1748",
+      "protected_set_exclusions": [
+        {
+          "item": "Chainalysis SanctionsList 0x40c57923924b5c5c5455c48d93317139addac8fb",
+          "owner": "Chainalysis",
+          "reason": "third-party oracle read through the V1 sentinel's immutable chainalysisSanctionsList(), confirmed on-chain; already recorded as a protected-set member under wildcat-v2-ethereum-mainnet, which shares the same oracle"
+        }
+      ]
     },
     {
       "id": "wildcat-v2-ethereum-mainnet",
@@ -6010,7 +6013,8 @@
     "docs/kickoff/1359/evidence/consumer-inputs.json": "a11720023981f8904a610f695ad5a6878fdda9f1e45b080bb96c5e867f5aa477",
     "docs/kickoff/1359/evidence/recovery-issues.json": "a921e6ec46be87fb4dae040a8516f1dd36bc3ee924d3d64c33995548f8f6c8c5",
     "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70",
-    "docs/kickoff/1359/evidence/source-match-1590.json": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e"
+    "docs/kickoff/1359/evidence/source-match-1590.json": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e",
+    "docs/kickoff/1359/evidence/source-match-1748.json": "ffc6f35b77ff248ec7e2f26d09fdce34bf977945494876f2521bd42d07476c59"
   },
   "scope": {
     "approval_evidence": "docs/kickoff/1359/evidence/scope-approval.json",
@@ -6419,6 +6423,14 @@
       "publisher": "Dr Laurence E. Day (laurenceday), Wildcat Labs: committer and signer of the commit carrying this revision",
       "reviewer": "the reviewer of the pull request that carries this revision",
       "change": "wildcat-v2-ethereum-mainnet moves from blocked to resolved: complete factory, template, hooks-instance, market and role-provider map at block 26006257 with deployment epochs; fee recipient, collateral factory, collateral init code, collateral lens and open-access role provider sources located and reproduced; both MarketLens epochs and consumers mapped; the PR #1460 emitter pin bound to every deployed epoch"
+    },
+    {
+      "date": "2026-09-19",
+      "issue": "https://github.com/wildcat-finance/skills/issues/1748",
+      "producer": "Shoggoth as Surveyor under Protasis",
+      "publisher": "Dr Laurence E. Day (laurenceday), Wildcat Labs: committer and signer of the commit carrying this revision",
+      "reviewer": "the reviewer of the pull request that carries this revision",
+      "change": "wildcat-v1-ethereum-mainnet moves from blocked to resolved: WildcatMarket and WildcatMarketController init code reproduced byte for byte from the pinned da74452a source via the factory's own Sourcify build input; the MarketLens source commit cannot be pinned to a single commit and is recorded as a source state with the closest single-commit reference (488b30d0, 40 of 46) and the exact per-file evidence; the deployer's checkout among the five factory-equivalent commits cannot be selected and is recorded as unresolvable with block-timing evidence; the V1 sentinel's Chainalysis oracle is confirmed shared with the existing wildcat-v2-ethereum-mainnet protected-set entry"
     }
   ]
 }
