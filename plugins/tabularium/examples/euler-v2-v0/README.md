@@ -10,6 +10,11 @@ This release preserves a fixed Euler V3 API response for EVC owner
 `interest_accrued` row. Tabularium maps both without turning interest into a
 fresh draw.
 
+It is superseded by [`euler-v2-v1`](../euler-v2-v1/README.md), release
+`euler-v2-owner-activity-1786933919-v1`, which restates the same two events
+under canonical event schema v3 from this same `source.json`. These bytes
+are unchanged and stay verifiable against the v2 schema they name.
+
 `Euler V2` is the protocol generation. `Euler V3` is the hosted source API
 version. The two fields remain separate in every canonical row and manifest.
 The response reports complete index coverage for its source categories across

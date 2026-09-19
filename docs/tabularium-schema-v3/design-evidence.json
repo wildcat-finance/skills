@@ -1,0 +1,484 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "superseding-releases",
+      "summary": "Cut canonical-event-v3 and coverage-manifest-v3 with the closed adapter tuple table; build emits 3, verify reads 2 and 3; publish three superseding v1 release directories from the unchanged v0 sources; keep every v0 byte; mark and correct the v2 schema files as superseded."
+    },
+    {
+      "id": "in-place-migration",
+      "summary": "Rewrite the three v0 release directories to schema_version 3 in place, drop the v2 read path and delete the v2 schema files."
+    },
+    {
+      "id": "repair-v2-only",
+      "summary": "Widen the v2 schema enums in place to the emitted values and add JSON Schema parity tests; cut no v3 and supersede nothing."
+    },
+    {
+      "id": "v3-without-shipped-examples",
+      "summary": "Cut the v3 schemas and make build emit 3 and verify read 2 and 3, but ship no v3 release directory; v3 is exercised only from test fixtures in temporary builds."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "emitted-values-admitted",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "shipped-v3-ledgers",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "count",
+      "comparator": "at-least",
+      "threshold": 3,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "published-release-bytes-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "v3-schema-files-declared",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "legacy-v2-read-path",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "added-example-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "rejection-parity",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "shipped-ledgers-validate-v3",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:5"
+    },
+    {
+      "id": "legacy-v0-verify",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:5"
+    },
+    {
+      "id": "suite-wall-time",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "at-most",
+      "threshold": 60000,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "superseding-releases",
+      "criterion": "emitted-values-admitted",
+      "state": "pass",
+      "report": {
+        "path": "reports/superseding-releases-emitted-values-admitted.json",
+        "sha256": "1cb036dd4301f71a430d9712544462d3e5301f59ea01d0dd4a081d58e4f49ab8"
+      }
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "shipped-v3-ledgers",
+      "state": "pass",
+      "report": {
+        "path": "reports/superseding-releases-shipped-v3-ledgers.json",
+        "sha256": "c6eb71957edf1a1bc7f302534bf3c99501ae018aafcf5cbf0e85afd981cf8ad0"
+      }
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "published-release-bytes-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "reports/superseding-releases-published-release-bytes-unchanged.json",
+        "sha256": "223f8afa05387b7bfdf40286b769d57bdc6ca63aa5c470e56ffa4cefa2d03974"
+      }
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "v3-schema-files-declared",
+      "state": "pass",
+      "report": {
+        "path": "reports/superseding-releases-v3-schema-files-declared.json",
+        "sha256": "0f714d8e3cba6ce5200dbddff0691931098662dc0406249e334af53c445f1541"
+      }
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "legacy-v2-read-path",
+      "state": "pass",
+      "report": {
+        "path": "reports/superseding-releases-legacy-v2-read-path.json",
+        "sha256": "4a492ea51707b3fae34d8e2a16926d1bef7f5e6eca2f89badb22788494e846e6"
+      }
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "added-example-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/superseding-releases-added-example-bytes.json",
+        "sha256": "986b31c68001d6c13a97cda1ad27eb375bb9e7881226d2ab442f661080b0fe23"
+      }
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "rejection-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate superseding-releases --criterion rejection-parity --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/superseding-releases-rejection-parity.json",
+      "report": "reports/superseding-releases-rejection-parity.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "shipped-ledgers-validate-v3",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate superseding-releases --criterion shipped-ledgers-validate-v3 --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/superseding-releases-shipped-ledgers-validate-v3.json",
+      "report": "reports/superseding-releases-shipped-ledgers-validate-v3.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "legacy-v0-verify",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate superseding-releases --criterion legacy-v0-verify --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/superseding-releases-legacy-v0-verify.json",
+      "report": "reports/superseding-releases-legacy-v0-verify.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "superseding-releases",
+      "criterion": "suite-wall-time",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate superseding-releases --criterion suite-wall-time --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/superseding-releases-suite-wall-time.json",
+      "report": "reports/superseding-releases-suite-wall-time.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "emitted-values-admitted",
+      "state": "pass",
+      "report": {
+        "path": "reports/in-place-migration-emitted-values-admitted.json",
+        "sha256": "851feceefa88afbc7c0c504158057658fcc6c5035f208c8a841fb4d01e096ac0"
+      }
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "shipped-v3-ledgers",
+      "state": "pass",
+      "report": {
+        "path": "reports/in-place-migration-shipped-v3-ledgers.json",
+        "sha256": "6c017bfce2a34bf697d1a4b84f48d9fa84d9d2c3cea7f97f9a16c20ee4fdcb72"
+      }
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "published-release-bytes-unchanged",
+      "state": "fail",
+      "report": {
+        "path": "reports/in-place-migration-published-release-bytes-unchanged.json",
+        "sha256": "f76fd4de2956d4b506e2ae762bd16c4c10f9e2eaff9186c3bb60ecb45fa18e0d"
+      }
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "v3-schema-files-declared",
+      "state": "pass",
+      "report": {
+        "path": "reports/in-place-migration-v3-schema-files-declared.json",
+        "sha256": "4853259ef81482aab8ee27f67d90db0cea375b46726346eea5c6c2a9590fbaee"
+      }
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "legacy-v2-read-path",
+      "state": "fail",
+      "report": {
+        "path": "reports/in-place-migration-legacy-v2-read-path.json",
+        "sha256": "a5150440fdbd051c50db6dc5d209af65f447e4d7b40f01c2e2aab1419858a54d"
+      }
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "added-example-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/in-place-migration-added-example-bytes.json",
+        "sha256": "88f348df274b2b214bf5ff5c3b8d412439a305588af6d87c6108d22f6041587e"
+      }
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "rejection-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate in-place-migration --criterion rejection-parity --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/in-place-migration-rejection-parity.json",
+      "report": "reports/in-place-migration-rejection-parity.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "shipped-ledgers-validate-v3",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate in-place-migration --criterion shipped-ledgers-validate-v3 --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/in-place-migration-shipped-ledgers-validate-v3.json",
+      "report": "reports/in-place-migration-shipped-ledgers-validate-v3.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "legacy-v0-verify",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate in-place-migration --criterion legacy-v0-verify --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/in-place-migration-legacy-v0-verify.json",
+      "report": "reports/in-place-migration-legacy-v0-verify.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "in-place-migration",
+      "criterion": "suite-wall-time",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate in-place-migration --criterion suite-wall-time --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/in-place-migration-suite-wall-time.json",
+      "report": "reports/in-place-migration-suite-wall-time.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "emitted-values-admitted",
+      "state": "pass",
+      "report": {
+        "path": "reports/repair-v2-only-emitted-values-admitted.json",
+        "sha256": "a2430541de71069dced332cdadc0b52a890cabd61fd141e60e6d55a059749927"
+      }
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "shipped-v3-ledgers",
+      "state": "fail",
+      "report": {
+        "path": "reports/repair-v2-only-shipped-v3-ledgers.json",
+        "sha256": "fdfe9a2650486282aef1a7a1f2c723bf9a4695d4f7a61b5ab2554f9ac254f157"
+      }
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "published-release-bytes-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "reports/repair-v2-only-published-release-bytes-unchanged.json",
+        "sha256": "382e92eea4584ec67f9498d49b0d12a0d8ee103d3ad696bec55a39893a6f86c0"
+      }
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "v3-schema-files-declared",
+      "state": "fail",
+      "report": {
+        "path": "reports/repair-v2-only-v3-schema-files-declared.json",
+        "sha256": "5f6860b43cc3e4e04968e839bcbc284a8f543cd6723ef6645ff6a593ae4f80bf"
+      }
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "legacy-v2-read-path",
+      "state": "pass",
+      "report": {
+        "path": "reports/repair-v2-only-legacy-v2-read-path.json",
+        "sha256": "2ee8db919bddb653d337eeac11d6961d08e38f014a098204fbf49e69c3585d31"
+      }
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "added-example-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/repair-v2-only-added-example-bytes.json",
+        "sha256": "e7498b49d1ee3425ea978f6d091899ff9374ef5402de2f8586dbf4c6f0002495"
+      }
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "rejection-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate repair-v2-only --criterion rejection-parity --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/repair-v2-only-rejection-parity.json",
+      "report": "reports/repair-v2-only-rejection-parity.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "shipped-ledgers-validate-v3",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate repair-v2-only --criterion shipped-ledgers-validate-v3 --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/repair-v2-only-shipped-ledgers-validate-v3.json",
+      "report": "reports/repair-v2-only-shipped-ledgers-validate-v3.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "legacy-v0-verify",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate repair-v2-only --criterion legacy-v0-verify --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/repair-v2-only-legacy-v0-verify.json",
+      "report": "reports/repair-v2-only-legacy-v0-verify.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "repair-v2-only",
+      "criterion": "suite-wall-time",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate repair-v2-only --criterion suite-wall-time --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/repair-v2-only-suite-wall-time.json",
+      "report": "reports/repair-v2-only-suite-wall-time.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "emitted-values-admitted",
+      "state": "pass",
+      "report": {
+        "path": "reports/v3-without-shipped-examples-emitted-values-admitted.json",
+        "sha256": "c9e90cfb9f8d9cab8deefea40cbdb8161376c5f4bcf09aa603a51ef19e60d59d"
+      }
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "shipped-v3-ledgers",
+      "state": "fail",
+      "report": {
+        "path": "reports/v3-without-shipped-examples-shipped-v3-ledgers.json",
+        "sha256": "a60b96d2a5a89e521f86c0f896ad59ee77127fe038e1f0b6ba30e56c49ba0efe"
+      }
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "published-release-bytes-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "reports/v3-without-shipped-examples-published-release-bytes-unchanged.json",
+        "sha256": "03541e8fe2f19c7ae38cbf45fc4ce5b2d340df46791d227646ec737a32755a0d"
+      }
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "v3-schema-files-declared",
+      "state": "pass",
+      "report": {
+        "path": "reports/v3-without-shipped-examples-v3-schema-files-declared.json",
+        "sha256": "f66f84d3db807a7e0d44616120c643a2d23fa55d732eef3d6077cb3c9d247a54"
+      }
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "legacy-v2-read-path",
+      "state": "pass",
+      "report": {
+        "path": "reports/v3-without-shipped-examples-legacy-v2-read-path.json",
+        "sha256": "f5b9cafb51d2b6a0299086715bae85ec38dff0091f4cbb05c4ef1c2d24fc1291"
+      }
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "added-example-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/v3-without-shipped-examples-added-example-bytes.json",
+        "sha256": "cbd19b696cd1bc2eb96cb178aded76091b2f09fc01b3b6e3181c3302427777db"
+      }
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "rejection-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate v3-without-shipped-examples --criterion rejection-parity --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/v3-without-shipped-examples-rejection-parity.json",
+      "report": "reports/v3-without-shipped-examples-rejection-parity.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "shipped-ledgers-validate-v3",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate v3-without-shipped-examples --criterion shipped-ledgers-validate-v3 --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/v3-without-shipped-examples-shipped-ledgers-validate-v3.json",
+      "report": "reports/v3-without-shipped-examples-shipped-ledgers-validate-v3.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "legacy-v0-verify",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate v3-without-shipped-examples --criterion legacy-v0-verify --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/v3-without-shipped-examples-legacy-v0-verify.json",
+      "report": "reports/v3-without-shipped-examples-legacy-v0-verify.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "v3-without-shipped-examples",
+      "criterion": "suite-wall-time",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_schema_v3.py --candidate v3-without-shipped-examples --criterion suite-wall-time --report /Users/c0rtexzer0/Documents/GitHub/skills/.claude/worktrees/frontier-jobs-ranking-871146/tmp/fiat/fiat-1362-tabularium-canonical-event-v3-and-coverage/.hexaemeron/reports/v3-without-shipped-examples-suite-wall-time.json",
+      "report": "reports/v3-without-shipped-examples-suite-wall-time.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "superseding-releases",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

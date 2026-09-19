@@ -510,7 +510,14 @@ elif (
 elif args and args[0] == "rev-list":
     pair = next(value for value in args if ".." in value)
     base, head = pair.split("..", 1)
-    if mode == "malformed-range":
+    # A range named in FAKE_GIT_REV_LIST (JSON, keyed by the exact
+    # "<base>..<head>" operand) answers with exactly the listed lines; every
+    # other pair keeps the mode-keyed answers below.
+    ranges = json.loads(os.environ.get("FAKE_GIT_REV_LIST", "{{}}"))
+    if pair in ranges:
+        for line in ranges[pair]:
+            print(line)
+    elif mode == "malformed-range":
         print("not-a-sha")
     elif mode == "intermediate":
         print(hashlib.sha1(b"middle").hexdigest())

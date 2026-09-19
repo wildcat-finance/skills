@@ -1,0 +1,1 @@
+{"candidate": "gained-range-ownership", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate gained-range-ownership --criterion refuses-partial-carry --out .hexaemeron/design/reports/gained-range-ownership-refuses-partial-carry.json", "criterion": "refuses-partial-carry", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

@@ -1,0 +1,1 @@
+{"candidate": "gained-range-ownership", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate gained-range-ownership --criterion no-new-github-reads --out .hexaemeron/design/reports/gained-range-ownership-no-new-github-reads.json", "criterion": "no-new-github-reads", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

@@ -415,19 +415,29 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.68.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.69.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.68.1")
+        self.assertEqual(current["version"], "fiat-v6.69.1")
         self.assertIn("skills#1755", current["evidence"])
         self.assertIn("bounded material prefix", current["change"])
+        carried = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.68.1")
+        self.assertIn("skills#1480", carried["evidence"])
+        self.assertIn(
+            "refuse an unmerged step branch whose gained range holds a commit",
+            carried["change"],
+        )
+        self.assertIn("a step whose push receipt records an early merge is excluded", carried["change"])
+        self.assertIn("A cherry-picked copy under a new SHA is out of scope", carried["change"])
+        self.assertIn("held target stay unchanged", carried["change"])
+        self.assertIn("held target stay unchanged", current["change"])
         isolation = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.67.1")
         self.assertIn("skills#1742", isolation["evidence"])
         self.assertIn("unsigned-fixture-not-admitted", isolation["change"])
-        self.assertIn("held target stay unchanged", current["change"])
+        self.assertIn("held target stay unchanged", isolation["change"])
         signing = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.66.1")
         self.assertIn("skills#1738", signing["evidence"])
         self.assertIn("canonical SSH fingerprints", signing["change"])
