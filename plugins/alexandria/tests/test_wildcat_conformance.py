@@ -166,6 +166,16 @@ class WildcatConformanceHarnessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             dest = Path(directory)
             shutil.copytree(ROOT, dest, dirs_exist_ok=True)
+            paths = ["design-evidence.json", "design/model-observations.json"]
+            paths += [str(p.relative_to(ROOT)) for p in (ROOT / "reports/selection").glob("*.json")]
+            self.assertEqual(len(paths), 26)
+            # The copy carries the committed outputs, so they go before the
+            # generator runs.  Left in place they are what the comparison below
+            # reads, and a generator that wrote nothing at all would be compared
+            # against its own committed bytes and pass.
+            for relative in paths:
+                (dest / relative).unlink()
+                self.assertFalse((dest / relative).exists())
             spec = importlib.util.spec_from_file_location(
                 "wildcat_model", dest / "design/build_design_evidence.py"
             )
@@ -173,11 +183,9 @@ class WildcatConformanceHarnessTests(unittest.TestCase):
             spec.loader.exec_module(model)
             with contextlib.redirect_stdout(io.StringIO()):
                 model.main()
-            paths = ["design-evidence.json", "design/model-observations.json"]
-            paths += [str(p.relative_to(ROOT)) for p in (ROOT / "reports/selection").glob("*.json")]
-            self.assertEqual(len(paths), 26)
             for relative in paths:
                 with self.subTest(path=relative):
+                    self.assertTrue((dest / relative).is_file())
                     self.assertEqual((ROOT / relative).read_bytes(), (dest / relative).read_bytes())
             record = json.loads((dest / "design-evidence.json").read_text())
             self.assertEqual(len(record["results"]), 56)
