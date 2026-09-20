@@ -71,9 +71,8 @@ registry pin, format check and gap wording are delegated unedited, so its
 release identity and refusals are unchanged. An unregistered venue is a
 fail-closed refusal naming that venue, never a silent default to Compound.
 
-One further decision this design record covers is expected as an additional
-section here, from a later step of this run: preserved provenance declared
-per deployment in reviewed code.
+One further decision this design record covers is recorded below:
+[preserved provenance declared per deployment](#preserved-provenance-is-declared-per-deployment-in-reviewed-code).
 
 ## Plan format: a second version carries a subject set
 
@@ -136,3 +135,59 @@ cardinality of 137 and the V1 estate's 16
 (`docs/kickoff/1359/targets.json`'s `wildcat-v2-ethereum-mainnet` and
 `wildcat-v1-ethereum-mainnet` rows), not against either estate's real
 registry. That remains later steps' work.
+
+## Preserved provenance is declared per deployment, in reviewed code
+
+### Context
+
+A Wildcat release has to be testable offline before any collection and after
+one. Its tests therefore collect from a constructed transport state,
+`plugins/alexandria/tests/fixtures/wildcat-interval-transport.json`, whose
+hashes, logs and code were written rather than observed. The registry beside
+it is real, generated from merged records. Nothing in a release's bytes
+separates a constructed journal from a collected one, so a constructed release
+could pass as preserved chain evidence.
+[#1442](https://github.com/wildcat-finance/skills/issues/1442) carries the
+wider concern, release labels that no test holds. This section answers it for
+the one label this run adds, and that issue stays open.
+
+A plan field could not carry the distinction, because whoever writes the
+staging tree also writes the plan. A per-venue flag could not either: once a
+real capture lands, the flag flips for the whole venue and the fixture
+inherits it.
+
+### Decision
+
+Each venue module names, in reviewed code, the set of plan `deployment` names
+whose staging it admits as preserved. For Wildcat V2 that is
+`PRESERVED_DEPLOYMENTS` in
+`plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v2.py`, and it is
+empty. Every other deployment name under the venue carries the
+constructed-staging gap on every evidence scope, through the venue's
+`evidence_gaps` contribution. `check` re-derives that contribution from the
+release's own plan, registry and preserved logs. It refuses a release whose
+coverage drops a sentence the venue owes.
+
+The granularity is the deployment name, not the venue. Admitting one collected
+interval therefore leaves every fixture, under its own name, still labelled.
+
+`compound-v3` contributes no such gap, and its releases are unchanged byte for
+byte. Its two demonstrations predate this decision.
+
+### Consequences
+
+Admitting a deployment is a reviewed change to one constant. No plan field,
+registry field or operator document can add a name, and a plan carrying an
+unknown field refuses when it is validated.
+
+Admitting a name changes what every later build under that name claims. A
+constructed tree that reused an admitted name would build without the label.
+A name is therefore admitted only for staging that was collected, and a
+fixture never takes an admitted name. A release built before its name was
+admitted still carries the gap, and `check` accepts a gap the venue no longer
+owes.
+
+The same contribution carries what the venue's registry could not establish.
+It names the one subject with no recorded creation block, each subject
+deployed after the interval's end, and each disagreement between the preserved
+`MarketDeployed` logs and the registry's declared markets.

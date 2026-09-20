@@ -25,6 +25,10 @@ file handed in at build time; it is now derived from bytes the collector read
 and journaled itself, so there is nothing left for an operator to supply and
 the argument is retired rather than deprecated.
 
+`collect` and `reconcile` also accept `--registry <registry>`. A venue that
+plans its opening reads from its deployment registry requires it; see
+[per-subject epochs](#per-subject-epochs-under-an-immutable-code-venue).
+
 `collect` and `reconcile` are the two network paths, and each reads its endpoint
 from `ALEXANDRIA_COMPOUND_RPC_URL` alone. The endpoint reaches no file, no
 receipt and no message. `build` and `check` are offline.
@@ -235,6 +239,66 @@ The check result names `receipt_semantics` as `v1-block-only` or
 `v2-positional`. V1 verification retains its block-only meaning and immutable
 schema; a valid v1 release gains no positional guarantee. The reasons for the v2 format and
 these refusals live in the [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision).
+
+## Per-subject epochs under an immutable-code venue
+
+A venue module names its epoch model. `compound-v3` names `eip1967-proxy`, the
+model every section above describes. `wildcat-v2` names `immutable-code` and
+owns its opening reads and its epoch derivation, in
+`alexandria_lib/venues/wildcat_v2.py`. Every path that plans, replays or
+re-derives opening reads dispatches on the plan's venue first: `collect`,
+`reconcile`, `build` and `check`. A subject-set plan under `compound-v3` and a
+single-proxy plan under `wildcat-v2` both refuse by name before any request is
+made.
+
+The rule is one epoch per declared subject. The epoch names no upgrade, and
+its implementation is the subject's own address. Its code digest is the
+SHA-256 of the runtime code read at the epoch's first block. That block is the
+later of the interval's start and the subject's own deployment block, which
+the venue's pinned registry carries. The epoch runs through the interval's end
+and opens at a block sentinel, so every log in its first block has an owner.
+A subject deployed after the interval's end has no epoch and no key in the
+table. Every evidence scope names it as outside the interval. A log from a
+subject before its own first block refuses, because no epoch owns it.
+
+One `wildcat-v2` subject has no creation block in the merged records: the
+collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
+Its epoch starts at the interval's start. The registry capture and every
+evidence scope name the missing deployment block as a gap rather than guess
+it.
+
+The opening reads are the interval's first header, one header per distinct
+later first block, and each in-interval subject's `eth_getCode` at its own
+first block. This model issues no `eth_getStorageAt` and compares no log topic
+with the ERC-1967 announcement. A subject's log carrying that topic is an
+ordinary `proxy-log`. `reconcile` asks the second provider for every one of
+these reads, header and code alike. A disagreement is recorded as
+`first-block-hash` or `code-digest`.
+
+Because the first blocks come from the registry, `collect` and `reconcile`
+take `--registry <registry>` for this venue and refuse without it. The
+registry is validated against the digest pinned in
+`alexandria_lib/wildcat_registry.py` before any of it is read. `check`
+validates the release's own `registry` component the same way before it
+re-derives the table.
+
+A subject-set release carries `alexandria-interval-receipt/v3`. Its `epochs`
+is keyed by subject, and every `log_attributions` row names the `subject` that
+emitted the log. Two subjects that emit in one block and one transaction each
+reach their own epoch. `check` reports `receipt_semantics` as
+`v3-subject-positional`. It refuses a v3 receipt under a single-proxy plan and
+a v2 receipt under a subject-set plan.
+
+The venue also contributes gaps to every evidence scope, and `check` refuses a
+release that drops one. The first is the constructed-staging gap: the venue
+module holds the set of `deployment` names it admits as preserved, and that
+set is empty today. Every `wildcat-v2` release therefore says its staging
+bytes are declared constructed rather than collected from a chain. The second
+compares the HooksFactory's preserved `MarketDeployed` logs with the 80
+markets the registry declares. A declared market deployed inside the interval
+with no such log is named as a gap. So is a log naming a market the registry
+does not declare. A plan that omits the factory says the markets were not
+compared.
 
 ## Resuming, and rewinding
 

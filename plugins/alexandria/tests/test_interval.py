@@ -1522,6 +1522,68 @@ class SubjectSetTests(unittest.TestCase):
                     interval.proxy_log_positions([upgrade, other], [subject], {"start": "1000", "end": "1099"})
 
 
+class SubjectFirstPositionTests(unittest.TestCase):
+    """A subject's own table opens at a block sentinel, as the single-proxy table does."""
+
+    def table(self, first_position):
+        subject = address_at(0)
+        epoch = one_epoch(subject, 1050, 1099, HASH, OTHER_HASH)
+        epoch["start_position"] = first_position
+        return {subject: [epoch]}
+
+    def test_a_subjects_first_epoch_at_a_transaction_position_refuses(self):
+        sentinel = {"block_number": "1050", "transaction_index": None, "log_index": None}
+        interval.validate_epochs(self.table(sentinel), 1000, 1099)
+        for position in (
+            {"block_number": "1050", "transaction_index": 0, "log_index": 0},
+            {"block_number": "1050", "transaction_index": 4, "log_index": 9},
+        ):
+            with self.subTest(position=position):
+                with self.assertRaisesRegex(AlexandriaError, "not a block sentinel"):
+                    interval.validate_epochs(self.table(position), 1000, 1099)
+
+    def test_the_single_proxy_table_still_pins_the_interval_start_sentinel(self):
+        epoch = one_epoch(PROXY, 1000, 1099, HASH, OTHER_HASH)
+        interval.validate_epochs([epoch], 1000, 1099)
+        epoch["start_position"] = {"block_number": "1000", "transaction_index": 0, "log_index": 0}
+        with self.assertRaisesRegex(AlexandriaError, "gap or overlap"):
+            interval.validate_epochs([epoch], 1000, 1099)
+
+    def test_a_log_before_the_transaction_position_would_have_had_no_owner(self):
+        """Why the sentinel is required: the refused table leaves this log unowned."""
+        subject = address_at(0)
+        record = log_record(subject, 1050, 0, 0, HASH, "0x" + "22" * 32)
+        table = self.table({"block_number": "1050", "transaction_index": 3, "log_index": 5})
+        with self.assertRaises(AlexandriaError):
+            interval.attribute_logs([record], [subject], {"start": "1000", "end": "1099"}, table)
+
+
+class UpgradeTopicTests(unittest.TestCase):
+    """`upgrade_topic=None` is the immutable-code model: no log is read as an upgrade."""
+
+    def records(self):
+        subject = address_at(0)
+        announcement = log_record(subject, 1000, 0, 0, HASH, "0x" + "22" * 32)
+        announcement["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + address_at(1)[2:]]
+        return subject, [announcement, log_record(subject, 1000, 0, 1, HASH, "0x" + "22" * 32)]
+
+    def test_the_default_still_reads_the_erc1967_topic_as_a_boundary(self):
+        subject, records = self.records()
+        with self.assertRaisesRegex(AlexandriaError, "no preceding implementation evidence"):
+            interval.proxy_log_positions(records, [subject], {"start": "1000", "end": "1099"})
+
+    def test_none_reads_every_log_as_an_ordinary_one(self):
+        subject, records = self.records()
+        scope = {"start": "1000", "end": "1099"}
+        rows = interval.proxy_log_positions(records, [subject], scope, upgrade_topic=None)
+        self.assertEqual([row["kind"] for row in rows], ["proxy-log", "proxy-log"])
+        epochs = {subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]}
+        owned = interval.attribute_logs(records, [subject], scope, epochs, upgrade_topic=None)
+        self.assertEqual([row["epoch_index"] for row in owned], [0, 0])
+        with self.assertRaises(AlexandriaError):
+            interval.attribute_logs(records, [subject], scope, epochs)
+
+
 class SchemaTests(unittest.TestCase):
     def schema(self, name):
         return json.loads((PLUGIN / "schemas" / f"{name}.schema.json").read_text())
@@ -1613,6 +1675,33 @@ class SchemaTests(unittest.TestCase):
         for key in checkpoint["offsets"]:
             self.assertRegex(key, pattern)
         self.assertGreater(offsets["maxProperties"], self.schema("interval-checkpoint-v1")["properties"]["offsets"]["maxProperties"])
+
+    def test_the_subject_receipt_schema_is_closed_named_and_keyed_by_subject(self):
+        schema = self.schema("interval-receipt-v3")
+        single = self.schema("interval-receipt-v2")
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["properties"]["format"]["const"], interval.SUBJECT_RECEIPT_FORMAT)
+        self.assertEqual(set(schema["required"]), set(single["required"]))
+        epochs = schema["properties"]["epochs"]
+        self.assertEqual(epochs["type"], "object")
+        self.assertFalse(epochs["additionalProperties"])
+        self.assertEqual(epochs["maxProperties"], interval.MAX_SUBJECTS)
+        pattern, table = next(iter(epochs["patternProperties"].items()))
+        self.assertRegex(address_at(0), pattern)
+        self.assertEqual(table["maxItems"], MAX_EPOCHS)
+        rows = schema["properties"]["log_attributions"]["items"]
+        self.assertEqual(
+            set(rows["required"]) - set(single["properties"]["log_attributions"]["items"]["required"]),
+            {"subject"},
+        )
+        # The epoch and position definitions are the v2 ones, unedited.
+        for section in ("epoch", "position", "shard", "reconciliation"):
+            self.assertEqual(schema["$defs"][section], single["$defs"][section])
+
+    def test_the_schema_catalogue_indexes_the_subject_receipt(self):
+        catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")
+        self.assertIn("`interval-receipt-v3.schema.json`", catalogue)
+        self.assertIn(f"`{interval.SUBJECT_RECEIPT_FORMAT}`", catalogue)
 
     def test_the_schema_catalogue_indexes_the_v2_checkpoint(self):
         catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")

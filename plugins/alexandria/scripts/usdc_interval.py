@@ -55,7 +55,10 @@ from alexandria_lib.interval import (
     MAX_DISPUTES,
     OPENING_CLASS,
     RECEIPT_FORMAT,
+    SUBJECT_RECEIPT_FORMAT,
+    UPGRADED_TOPIC,
     LEGACY_RECEIPT_FORMAT,
+    OpeningRefusal,
     discover_block_epochs,
     validate_block_epochs,
     proxy_log_positions,
@@ -316,13 +319,40 @@ def opening_result(plan, position: int, response: str, parse_label: str):
     )
 
 
-class OpeningRefusal(AlexandriaError):
-    """An opening read the collector will not believe, named by its receipt code."""
+# The epoch model this module's own `OpeningPhase` implements. A venue naming
+# any other model owns its opening reads and epoch derivation.
+EIP1967_MODEL = "eip1967-proxy"
 
-    def __init__(self, code: str, block: int, message: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.block = block
+
+def plan_venue(plan):
+    """The registered venue module a plan names, or a refusal naming the venue."""
+    venue = plan["venue"]
+    if venue not in VENUES:
+        raise AlexandriaError(f"the interval plan names an unregistered venue {venue!r}")
+    return VENUES[venue]
+
+
+def opening_phase(plan, staged_logs, *, registry=None, legacy=False):
+    """The opening reads one plan owes, from the venue that owns its epoch model.
+
+    Every path that plans, replays or re-derives opening reads comes through
+    here, so a subject-set plan never reaches the single-proxy phase's
+    `plan["proxy"]` and a single-proxy plan never reaches a venue's
+    subject-keyed one. Either mismatch refuses by name.
+    """
+    venue = plan_venue(plan)
+    if venue.EPOCH_MODEL == EIP1967_MODEL:
+        if "subjects" in plan:
+            raise AlexandriaError(
+                f"the {venue.VENUE} venue derives its epochs from one proxy's implementation "
+                "slot, so a subject-set plan has no opening reads under it"
+            )
+        return OpeningPhase(plan, staged_logs, legacy=legacy)
+    if legacy:
+        raise AlexandriaError(
+            f"the {venue.VENUE} venue has no block-only receipt; its epochs are positional"
+        )
+    return venue.opening_phase(plan, registry, staged_logs)
 
 
 class OpeningPhase:
@@ -334,6 +364,9 @@ class OpeningPhase:
     accepted, because they name the implementations the slots revealed.
     Nothing here touches a transport or a file.
     """
+
+    # The first topic this epoch model reads as an epoch boundary.
+    upgrade_topic = UPGRADED_TOPIC
 
     def __init__(self, plan, staged_logs, *, legacy=False) -> None:
         self.plan = plan
@@ -428,6 +461,34 @@ class OpeningPhase:
             return digest
         raise AlexandriaError(f"unknown opening read kind {kind!r}")
 
+    def compare(self, read, value, second):
+        """Whether the second provider's answer binds the same thing, and the kind it is."""
+        kind = read["kind"]
+        block = read["block"]
+        if kind == "first-block-header":
+            # The header has to be the first block's own: the right hash under
+            # another number is a provider describing some other block.
+            agreed = isinstance(second, dict) and second.get("hash") == value
+            if agreed:
+                try:
+                    agreed = _hex(second.get("number"), "first block number") == block
+                except AlexandriaError:
+                    agreed = False
+            return agreed, "first-block-hash", f"block {block}"
+        if kind == "implementation-slot":
+            try:
+                agreed = slot_word_address(second, block) == value
+            except AlexandriaError:
+                agreed = False
+            return agreed, "slot-word", f"implementation slot at block {block}"
+        if kind == "implementation-code":
+            try:
+                agreed = hashlib.sha256(runtime_code(second, read["address"])).hexdigest() == value
+            except AlexandriaError:
+                agreed = False
+            return agreed, "code-digest", f"code of {read['address']} at block {block}"
+        raise AlexandriaError(f"opening read kind {kind!r} is not compared")
+
 
 def staged_results(staging: Staging, name: str) -> list:
     """The `result` of every staged response of one class, in journal order."""
@@ -478,7 +539,7 @@ def require_committed_journals(staging: Staging, state: dict, purpose: str) -> N
             )
 
 
-def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]:
+def replay_opening(plan, staging: Staging, classes, registry=None) -> tuple[OpeningPhase, list]:
     """Replay the committed opening reads against the plan they were made from.
 
     Returns the phase, holding every accepted value, and one
@@ -486,7 +547,7 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
     journal that stops short of the plan, runs past it, or holds a record the
     plan does not name at that position. Reads no network and changes no file.
     """
-    phase = OpeningPhase(plan, staged_log_records(staging, classes))
+    phase = opening_phase(plan, staged_log_records(staging, classes), registry=registry)
     entries = list(staging.entries(OPENING_CLASS))
     virtual = len(plan["shards"])
     replayed = []
@@ -498,7 +559,7 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
                 "epoch-evidence journal cannot be believed"
             )
         entry = entries[position]
-        payload = phase.request(position, read)
+        payload = opening_request(plan, position, read)
         if (
             not isinstance(entry, dict)
             or set(entry) != {"class", "request", "response", "shard"}
@@ -522,8 +583,18 @@ def replay_opening(plan, staging: Staging, classes) -> tuple[OpeningPhase, list]
     return phase, replayed
 
 
-def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str, *, legacy=False) -> list:
+def opening_request(plan, position: int, read) -> bytes:
+    """The request bytes of one opening read, whichever venue planned it."""
+    return request_bytes(
+        opening_identifier(len(plan["shards"]), position), read["method"], read["params"]
+    )
+
+
+def epochs_from_opening(plan, phase, end_hash: str, *, legacy=False):
     """The epoch table the preserved opening reads derive, and nothing else.
+
+    A venue-owned phase derives its own table, keyed by subject; what follows
+    describes the single-proxy phase.
 
     Every input is a value `OpeningPhase.accept` took from a journaled read:
     the upgrade logs the shards preserved, the slot word at each boundary, the
@@ -532,6 +603,10 @@ def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str, *, legacy=Fals
     last shard's boundary read, which is the one hash the opening phase does
     not make itself.
     """
+    if not isinstance(phase, OpeningPhase):
+        if legacy:
+            raise AlexandriaError("a venue-owned opening phase derives no block-only epoch table")
+        return phase.epochs(end_hash)
     interval = plan["interval"]
     block_hashes = {str(block): value for block, value in phase.hashes.items()}
     block_hashes[str(int(interval["end"]))] = end_hash
@@ -596,9 +671,15 @@ def declared_classes(plan) -> tuple:
 class Collector:
     """One bounded collection over one plan, against one transport."""
 
-    def __init__(self, plan, staging_root, transport, *, receipts_root=None) -> None:
+    def __init__(self, plan, staging_root, transport, *, receipts_root=None, registry=None) -> None:
         validate_plan(plan)
         self.plan = plan
+        self.registry = registry
+        # The opening reads come after the last shard. A plan whose venue
+        # cannot plan them -- an unregistered venue, a subject set under a
+        # single-proxy venue, a registry the venue refuses -- is refused here,
+        # before a shard is requested, rather than after every shard is paid for.
+        opening_phase(plan, [], registry=registry)
         self.digest = plan_digest(plan)
         self.classes = declared_classes(plan)
         # The release this collection is for has to be buildable: a split that
@@ -843,6 +924,18 @@ class Collector:
         )
 
     def collect(self) -> dict:
+        """Collect, and release every journal handle this run opened however it ends.
+
+        `Staging` keeps one open handle per physical journal until `close`. A
+        refusal used to leave them to the garbage collector, and a split plan
+        owns one per component, so the refusal path closes them here.
+        """
+        try:
+            return self._collect()
+        finally:
+            self.staging.close()
+
+    def _collect(self) -> dict:
         self._started = time.monotonic()
         self.bind_finality()
         start = self._settle_start()
@@ -864,7 +957,6 @@ class Collector:
                 self.staging.record(index, name, payload, data)
             self.staging.commit(index, shard["end"], boundary)
         opening = self._open_interval()
-        self.staging.close()
         return {
             "collected_shards": len(shards) - start,
             "opening_reads": opening,
@@ -894,15 +986,21 @@ class Collector:
             raise AlexandriaError("the opening phase needs every shard committed first")
         virtual = len(self.plan["shards"])
         try:
-            phase = OpeningPhase(self.plan, staged_log_records(self.staging, self.classes))
+            phase = opening_phase(
+                self.plan, staged_log_records(self.staging, self.classes), registry=self.registry
+            )
         except AlexandriaError:
-            self.record_error(virtual, OPENING_CLASS, "malformed-upgrade-log")
+            code = (
+                "malformed-upgrade-log" if plan_venue(self.plan).EPOCH_MODEL == EIP1967_MODEL
+                else "malformed-staged-log"
+            )
+            self.record_error(virtual, OPENING_CLASS, code)
             raise
         committed = list(self.staging.entries(OPENING_CLASS))
         issued = 0
         position = 0
         for read in phase.reads():
-            payload = phase.request(position, read)
+            payload = opening_request(self.plan, position, read)
             label = opening_label(position, read)
             if position < len(committed):
                 entry = committed[position]
@@ -961,9 +1059,11 @@ class Reconciler:
     disagreed and both sets of bytes are kept.
     """
 
-    def __init__(self, plan, staging_root, transport, provider_class) -> None:
+    def __init__(self, plan, staging_root, transport, provider_class, *, registry=None) -> None:
         validate_plan(plan)
         self.plan = plan
+        self.registry = registry
+        opening_phase(plan, [], registry=registry)
         self.transport = transport
         if not isinstance(provider_class, str) or not 1 <= len(provider_class) <= 256:
             raise AlexandriaError("the second provider class is not a bounded name")
@@ -1023,37 +1123,9 @@ class Reconciler:
             )
         return envelope["result"], data
 
-    def _opening(self) -> list:
-        """The committed opening reads, replayed; see `replay_opening`."""
-        return replay_opening(self.plan, self.staging, self.classes)[1]
-
-    def _compare_opening(self, read, value, second) -> tuple[bool, str, str]:
-        """Whether the second provider's answer binds the same thing, and the kind it is."""
-        kind = read["kind"]
-        block = read["block"]
-        if kind == "first-block-header":
-            # The header has to be the first block's own: the right hash under
-            # another number is a provider describing some other block.
-            agreed = isinstance(second, dict) and second.get("hash") == value
-            if agreed:
-                try:
-                    agreed = _hex(second.get("number"), "first block number") == block
-                except AlexandriaError:
-                    agreed = False
-            return agreed, "first-block-hash", f"block {block}"
-        if kind == "implementation-slot":
-            try:
-                agreed = slot_word_address(second, block) == value
-            except AlexandriaError:
-                agreed = False
-            return agreed, "slot-word", f"implementation slot at block {block}"
-        if kind == "implementation-code":
-            try:
-                agreed = hashlib.sha256(runtime_code(second, read["address"])).hexdigest() == value
-            except AlexandriaError:
-                agreed = False
-            return agreed, "code-digest", f"code of {read['address']} at block {block}"
-        raise AlexandriaError(f"opening read kind {kind!r} is not compared")
+    def _opening(self) -> tuple:
+        """The opening phase and its committed reads, replayed; see `replay_opening`."""
+        return replay_opening(self.plan, self.staging, self.classes, self.registry)
 
     def _keep(self, shard_index: int, name: str, data: bytes) -> None:
         """Preserve the second provider's bytes for a shard that disagreed."""
@@ -1098,7 +1170,11 @@ class Reconciler:
                     raise AlexandriaError(
                         f"shard {index} has no staged {name} response to reconcile"
                     )
-        opening = self._opening()
+        phase, opening = self._opening()
+        # The address every shard read filters on, in the form the plan
+        # declares it: one proxy, or the whole subject set.
+        subjects = _plan_subjects(self.plan)
+        upgrade_topic = phase.upgrade_topic
 
         compared = 0
         matched = 0
@@ -1119,12 +1195,20 @@ class Reconciler:
                 if "logs" in self.classes:
                     second_logs, logs_bytes = self._second(
                         index, "logs", "eth_getLogs",
-                        [{"address": self.plan["proxy"], "fromBlock": hex(shard["start"]), "toBlock": hex(shard["end"])}],
+                        # The primary's own filter, derived from the plan as
+                        # the collector derived it: one proxy or every subject.
+                        dict(
+                            (name, params) for name, _method, params in shard_requests(self.plan, shard)
+                        )["logs"],
                     )
                 if isinstance(logs, list):
-                    proxy_log_positions(logs, self.plan["proxy"], self.plan["interval"])
+                    proxy_log_positions(
+                        logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic
+                    )
                 if isinstance(second_logs, list):
-                    proxy_log_positions(second_logs, self.plan["proxy"], self.plan["interval"])
+                    proxy_log_positions(
+                        second_logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic
+                    )
             except AlexandriaError:
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
@@ -1187,7 +1271,7 @@ class Reconciler:
             except AlexandriaError:
                 return self._unreconciled(shards, counts, staged, compared, matched, disputed)
             compared += 1
-            agreed, kind, identity = self._compare_opening(read, value, second)
+            agreed, kind, identity = phase.compare(read, value, second)
             if agreed:
                 matched += 1
             else:
@@ -1271,15 +1355,16 @@ class Builder:
         self.components = journal_components(plan, self.classes)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
-        venue = plan["venue"]
-        if venue not in VENUES:
-            raise AlexandriaError(f"the interval plan names an unregistered venue {venue!r}")
-        self.venue = VENUES[venue]
+        self.venue = plan_venue(plan)
         self.venue.validate_registry(registry)
         self.registry = registry
+        # The plan's subject form and the venue's epoch model have to agree
+        # before any staged byte is read; see `opening_phase`.
+        opening_phase(plan, [], registry=registry)
         if not isinstance(created_at, str) or TIMESTAMP_RE.fullmatch(created_at) is None:
             raise AlexandriaError("the release creation time is not a UTC timestamp")
         self.created_at = created_at
+        self.logs = []
 
     def _reconciliation(self) -> dict:
         path = self.root / RECONCILIATION_DIRECTORY / RECONCILIATION_RECORD
@@ -1329,23 +1414,29 @@ class Builder:
             "records": records,
         }
 
-    def _opening(self, state: dict) -> OpeningPhase:
+    def _opening(self, state: dict):
         """The opening phase the journal committed, or a refusal naming what is missing."""
         if state["offsets"].get(OPENING_CLASS, 0) == 0:
             raise AlexandriaError(
                 "the staging tree has no committed epoch-evidence journal; the opening "
                 "phase has not been collected, so there is no release to build"
             )
-        return replay_opening(self.plan, self.staging, self.classes)[0]
+        return replay_opening(self.plan, self.staging, self.classes, self.registry)[0]
 
-    def _epochs(self, phase: OpeningPhase, end_hash: str) -> list:
+    def _epochs(self, phase, end_hash: str):
         """The epoch table, derived from the opening reads; see `epochs_from_opening`."""
         return epochs_from_opening(self.plan, phase, end_hash)
 
-    def _code_component(self, epochs, phase: OpeningPhase) -> dict:
+    def _code_component(self, epochs, phase) -> dict:
         """Each implementation's runtime bytes as the collector read them, keyed by address."""
         records = []
-        for address in sorted({epoch["implementation"] for epoch in epochs}):
+        # A subject-keyed table is read through its entries, never iterated
+        # as though its keys were epochs.
+        entries = (
+            validate_epoch_subjects(epochs, _plan_subjects(self.plan))
+            if isinstance(epochs, dict) else epochs
+        )
+        for address in sorted({epoch["implementation"] for epoch in entries}):
             code = phase.codes.get(address)
             if code is None:
                 raise AlexandriaError(
@@ -1381,6 +1472,8 @@ class Builder:
         for component, part in self.components.items():
             documents[component] = self._journal(part["class"], part["index"])
         boundaries = {"end_hash": end_hash, "start_hash": start_hash}
+        # The preserved logs, for the venue's own gap contribution.
+        self.logs = phase.logs
 
         parent = output.absolute().parent
         parent.mkdir(parents=True, exist_ok=True)
@@ -1416,8 +1509,17 @@ class Builder:
         validate_epochs(epochs, start, end)
 
     def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
-        return {"epochs": epochs, "format": RECEIPT_FORMAT,
-                "log_attributions": attribute_logs(phase.logs, self.plan["proxy"], self.plan["interval"], epochs),
+        subjects = _plan_subjects(self.plan)
+        attributions = attribute_logs(
+            phase.logs, subjects, self.plan["interval"], epochs,
+            upgrade_topic=phase.upgrade_topic,
+        )
+        # Every retained row passes the runtime validator before it is
+        # written, under the plan's own subject form.
+        validate_attributions(attributions, subjects=subjects)
+        return {"epochs": epochs,
+                "format": SUBJECT_RECEIPT_FORMAT if "subjects" in self.plan else RECEIPT_FORMAT,
+                "log_attributions": attributions,
                 "implementation_code": {"component": CODE_COMPONENT,
                                         "sha256": hashlib.sha256(code_bytes).hexdigest()},
                 "reconciliation": reconciliation["reconciliation"], "shards": shards}
@@ -1439,6 +1541,18 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/records",
             }]
+        elif component == "epoch-table" and isinstance(document["epochs"], dict):
+            # A subject-keyed table is one counted list per subject, because a
+            # coverage selector has to resolve to a list.
+            collections = [
+                {
+                    "name": f"epochs-{subject}",
+                    "record_count": len(table),
+                    "selector": f"/epochs/{subject}",
+                }
+                for subject, table in sorted(document["epochs"].items())
+            ]
+            record_count = sum(item["record_count"] for item in collections)
         elif component == "epoch-table":
             record_count = len(document["epochs"])
             collections = [{
@@ -1463,7 +1577,10 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/shards",
             }]
-        gaps = _gaps(journal, self.plan, self.registry, reconciliation, self.venue, part)
+        gaps = _gaps(
+            journal, self.plan, self.registry, reconciliation, self.venue, part,
+            logs=self.logs,
+        )
         unsupported = _unsupported(journal)
         scope_interval = {
             "end": interval["end"],
@@ -1559,10 +1676,10 @@ def _unsupported(component: str) -> list:
     return []
 
 
-def _gaps(component: str, plan, registry, reconciliation, venue, part=None) -> list:
+def _gaps(component: str, plan, registry, reconciliation, venue, part=None, *, logs=()) -> list:
     gaps = []
     if component == "registry":
-        return venue.gaps(registry)
+        return venue.gaps(registry, plan)
     for shard in reconciliation["shards"]:
         if shard["status"] != "complete":
             gaps.append(
@@ -1584,6 +1701,9 @@ def _gaps(component: str, plan, registry, reconciliation, venue, part=None) -> l
                 )
         if part is not None and part["index"] is not None:
             gaps.append(component_gap(plan, part))
+        # What the venue itself says these bytes do not establish: whether
+        # they were collected at all, and what its registry could not supply.
+        gaps.extend(venue.evidence_gaps(plan, registry, logs))
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
@@ -1686,6 +1806,7 @@ def check_interval(release_root: Path) -> dict:
         max_bytes=MAX_RAW_COMPONENT_BYTES,
     )
     validate_plan(plan)
+    venue = plan_venue(plan)
     classes = declared_classes(plan)
     # The journal components, and the shard range each one holds, come from
     # the plan and nothing else; the manifest's own list is compared with them,
@@ -1717,8 +1838,17 @@ def check_interval(release_root: Path) -> dict:
     required = {"epochs", "format", "implementation_code", "reconciliation", "shards"}
     if not legacy:
         required.add("log_attributions")
-    if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT):
+    if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (
+        LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT,
+    ):
         raise AlexandriaError("the interval receipt has an unknown shape")
+    # A subject-set plan's receipt is the subject-keyed format and a
+    # single-proxy plan's is not; either one under the other plan is a receipt
+    # some other plan's build wrote.
+    if ("subjects" in plan) != (receipt["format"] == SUBJECT_RECEIPT_FORMAT):
+        raise AlexandriaError(
+            "the interval receipt format does not match the plan's subject form"
+        )
     (validate_block_epochs if legacy else validate_epochs)(receipt["epochs"], start, end)
     subjects = _plan_subjects(plan)
     epoch_entries = validate_epoch_subjects(receipt["epochs"], subjects)
@@ -2071,13 +2201,33 @@ def check_interval(release_root: Path) -> dict:
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
 
-    if not legacy and receipt["log_attributions"] != attribute_logs(phase.logs, _plan_subjects(plan), interval, derived_epochs):
+    if not legacy and receipt["log_attributions"] != attribute_logs(
+        phase.logs, _plan_subjects(plan), interval, derived_epochs,
+        upgrade_topic=phase.upgrade_topic,
+    ):
         raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
+
+    # The gaps the venue owes every evidence scope, re-derived from the
+    # release's own plan, registry and preserved logs: a release whose
+    # coverage dropped one -- the constructed-staging label above all -- is
+    # refused here rather than read as preserved evidence.
+    owed = venue.evidence_gaps(plan, documents["registry"], phase.logs)
+    for name in journal_names:
+        declared_gaps = captures[name]["coverage"]["gaps"]
+        for sentence in owed:
+            if sentence not in declared_gaps:
+                raise AlexandriaError(
+                    f"the {name} coverage does not name a gap its venue owes: {sentence[:160]}"
+                )
 
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
 
     return {
-        "receipt_semantics": "v1-block-only" if legacy else "v2-positional",
+        "receipt_semantics": (
+            "v1-block-only" if legacy
+            else "v3-subject-positional" if receipt["format"] == SUBJECT_RECEIPT_FORMAT
+            else "v2-positional"
+        ),
         "epochs": len(epoch_entries),
         "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
@@ -2090,7 +2240,7 @@ def check_interval(release_root: Path) -> dict:
     }
 
 
-def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False) -> OpeningPhase:
+def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False):
     """Replay the release's `epoch-evidence` records against its plan, offline.
 
     The staged logs are read from every `logs` component in shard order, so a
@@ -2108,7 +2258,9 @@ def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=F
                 result = envelope.get("result") if isinstance(envelope, dict) else None
                 if isinstance(result, list):
                     logs.extend(result)
-    phase = OpeningPhase(plan, logs, legacy=legacy)
+    # A venue that owns its opening reads derives them from the release's own
+    # registry component, which it validates against its pinned digest first.
+    phase = opening_phase(plan, logs, registry=documents["registry"], legacy=legacy)
     entries = documents[OPENING_CLASS]["records"]
     position = 0
     for read in phase.reads():
@@ -2117,7 +2269,7 @@ def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=F
                 "the epoch-evidence journal stops short of the opening reads the plan names"
             )
         entry = entries[position]
-        if entry["request"].encode() != phase.request(position, read):
+        if entry["request"].encode() != opening_request(plan, position, read):
             raise AlexandriaError(
                 f"epoch-evidence record {position} is not the opening read the plan names there"
             )
@@ -2328,12 +2480,20 @@ def parser() -> argparse.ArgumentParser:
     collect = commands.add_parser("collect", help="collect the plan's interval from the explicit RPC endpoint")
     collect.add_argument("--plan", required=True, type=Path)
     collect.add_argument("--staging", required=True, type=Path)
+    collect.add_argument(
+        "--registry", type=Path,
+        help="the deployment registry, for a venue that plans its opening reads from one",
+    )
     reconcile = commands.add_parser(
         "reconcile", help="run the collected interval past a second provider"
     )
     reconcile.add_argument("--plan", required=True, type=Path)
     reconcile.add_argument("--staging", required=True, type=Path)
     reconcile.add_argument("--provider-class", required=True)
+    reconcile.add_argument(
+        "--registry", type=Path,
+        help="the deployment registry, for a venue that plans its opening reads from one",
+    )
     build = commands.add_parser("build", help="build the Alexandria release offline")
     build.add_argument("--plan", required=True, type=Path)
     build.add_argument("--staging", required=True, type=Path)
@@ -2358,19 +2518,26 @@ def main(argv=None) -> int:
         plan = load_control(args.plan, "interval plan")
         validate_plan(plan)
         if args.command == "build":
-            registry = load_control(args.registry, "Compound registry")
+            registry = load_control(args.registry, "deployment registry")
             release_id = Builder(
                 plan, args.staging, registry, created_at=args.created_at
             ).build(args.output)
             print(release_id)
             return 0
+        registry = (
+            None if args.registry is None else load_control(args.registry, "deployment registry")
+        )
+        # Refused before the endpoint is read: see `opening_phase`.
+        opening_phase(plan, [], registry=registry)
         transport = HttpsTransport.from_environment(plan["provider"]["timeout_seconds"])
         if args.command == "reconcile":
-            document = Reconciler(plan, args.staging, transport, args.provider_class).reconcile()
+            document = Reconciler(
+                plan, args.staging, transport, args.provider_class, registry=registry
+            ).reconcile()
             sys.stdout.buffer.write(canonical_bytes(document))
             return 0
         args.staging.mkdir(parents=True, exist_ok=True)
-        summary = Collector(plan, args.staging, transport).collect()
+        summary = Collector(plan, args.staging, transport, registry=registry).collect()
         sys.stdout.buffer.write(canonical_bytes(summary))
         return 0
     except (AlexandriaError, OSError) as error:

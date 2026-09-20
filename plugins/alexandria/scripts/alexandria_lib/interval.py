@@ -41,6 +41,10 @@ CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
 CHECKPOINT_FORMAT_V2 = "alexandria-interval-checkpoint/v2"
 LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
+# The receipt a subject-set plan's release carries: the v2 positional rules,
+# with `epochs` keyed by subject and every attribution row naming its own
+# subject. A single-proxy plan keeps writing v2 byte for byte.
+SUBJECT_RECEIPT_FORMAT = "alexandria-interval-receipt/v3"
 
 # Every class this collector knows how to request. A plan declares the ordered
 # subset it collects; a class it omits is a named coverage gap, never a journal
@@ -892,7 +896,7 @@ def _declared_subjects(subjects):
     return tuple(normalised)
 
 
-def proxy_log_positions(records, subjects, interval):
+def proxy_log_positions(records, subjects, interval, *, upgrade_topic=UPGRADED_TOPIC):
     """Validate every preserved proxy coordinate before deriving ownership.
 
     `subjects` is one proxy address (v1: every record must be its log, and
@@ -900,6 +904,11 @@ def proxy_log_positions(records, subjects, interval):
     declared addresses (v2: every record must be one of theirs, and each
     returned row also carries which one under `subject`, so a caller can
     route it to that subject's own epoch table).
+
+    `upgrade_topic` is the first topic that marks an epoch boundary under the
+    caller's epoch model. The default is the ERC-1967 announcement. A venue
+    whose subjects cannot be upgraded passes None: no topic is compared, no
+    log is read as an upgrade, and every row is an ordinary `proxy-log`.
     """
     single = isinstance(subjects, str)
     allowed = _declared_subjects(subjects)
@@ -951,7 +960,7 @@ def proxy_log_positions(records, subjects, interval):
         topics = record.get("topics")
         if not isinstance(topics, list) or any(not isinstance(topic, str) or HASH_RE.fullmatch(topic) is None for topic in topics):
             raise AlexandriaError(f"proxy log position {coordinate} has malformed topics")
-        is_upgrade = bool(topics and topics[0] == UPGRADED_TOPIC)
+        is_upgrade = bool(upgrade_topic is not None and topics and topics[0] == upgrade_topic)
         if is_upgrade:
             _upgrade_log(record, address, len(rows))
             if block == start:
@@ -1049,6 +1058,14 @@ def _validate_position_table(epochs, start, end, *, pinned_start: bool) -> None:
         if expected is None:
             if not _position_key(_position(start)) <= first_key < _position_key(_position(end + 1)):
                 raise AlexandriaError("epoch table subject's own first position is outside the interval")
+            # A subject's extent opens before every log of its first block,
+            # exactly as the single-proxy table's does at the interval start.
+            # A transaction position here would leave that block's earlier
+            # logs with no owner while the table still read as tiling.
+            if first["transaction_index"] is not None or first["log_index"] is not None:
+                raise AlexandriaError(
+                    "epoch table subject's own first position is not a block sentinel"
+                )
             expected = first
         if first != expected or first_key >= last_key:
             raise AlexandriaError("epoch positions leave a gap or overlap")
@@ -1130,7 +1147,7 @@ def validate_epoch_subjects(epochs, subjects):
     return entries
 
 
-def attribute_logs(records, subjects, interval, epochs):
+def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC):
     """Assign each accepted log once; announcements mark boundaries only.
 
     `subjects`/`epochs` are one proxy address and its flat epoch list (v1:
@@ -1147,7 +1164,7 @@ def attribute_logs(records, subjects, interval, epochs):
             raise AlexandriaError("a single subject requires a flat epoch list")
     else:
         validate_epoch_subjects(epochs, subjects)
-    rows = proxy_log_positions(records, subjects, interval)
+    rows = proxy_log_positions(records, subjects, interval, upgrade_topic=upgrade_topic)
     if isinstance(subjects, str):
         _attribute_into(rows, epochs)
         return rows
@@ -1519,6 +1536,19 @@ OPENING_READ_KINDS = (
 )
 
 
+class OpeningRefusal(AlexandriaError):
+    """An opening read the collector will not believe, named by its receipt code.
+
+    Defined here so a venue module that owns its opening reads raises the
+    same refusal the collector already records an error receipt for.
+    """
+
+    def __init__(self, code: str, block: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.block = block
+
+
 def upgrade_logs(records, proxy: str) -> list[dict]:
     """The proxy's `Upgraded(address)` logs among staged log records, in block order.
 
@@ -1819,6 +1849,7 @@ __all__ = [
     "MAX_EPOCHS",
     "OPENING_CLASS",
     "OPENING_READ_KINDS",
+    "OpeningRefusal",
     "UPGRADED_TOPIC",
     "EVIDENCE_CLASSES",
     "FINALITY_POLICIES",
@@ -1836,6 +1867,7 @@ __all__ = [
     "PLAN_FORMAT",
     "PLAN_FORMAT_V2",
     "RECEIPT_FORMAT",
+    "SUBJECT_RECEIPT_FORMAT",
     "SPLIT_FIELD",
     "Staging",
     "component_name",
