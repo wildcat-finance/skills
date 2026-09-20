@@ -330,11 +330,20 @@ class GateReceiptTests(HexctlCase):
         self.assertEqual(restored_state['receipts']['runbook']['gate_commands'], receipt)
         gates.replay(restored, (restored / '.hexaemeron/runbook.md').read_bytes(), receipt)
 
-    def current_run(self):
+    def current_run(self, *, with_criteria=False):
         self.run_ctl('init', '--topic', 'Current gate fixture')
         self.write_design_evidence()
         self.write(BREVITAS, (ROOT / BREVITAS).read_text())
-        study = self.write('study.md', '# Study\n\n```risk-register\ncommand-drift | gate | compare source\n```\n')
+        text = '# Study\n\n```risk-register\ncommand-drift | gate | compare source\n```\n'
+        if with_criteria:
+            text += '\n```success-criteria\n' + json.dumps({
+                'schema': 'protasis-success-criteria/v1',
+                'criteria': [{
+                    'id': 'checked', 'claim': 'The command succeeds.',
+                    'step': 1, 'command': COMMAND,
+                }],
+            }) + '\n```\n'
+        study = self.write('study.md', text)
         self.run_ctl('done', 'study', '--artifact', study, '--skills', 'hexaemeron:protasis')
         return self.state()
 
@@ -458,6 +467,119 @@ class GateReceiptTests(HexctlCase):
         candidate = self.write('candidate.md', Path(self.target, runbook).read_text() + self.runbook_amendment(verdicts='Step 1: entry holds; exit holds.', what='Complete replacement Exit: Run `' + COMMAND + '`.', touched='Step 1.'))
         self.run_ctl('amend', 'runbook', '--artifact', candidate)
         self.run_ctl('verify')
+
+    def criteria_amendment_fixture(self):
+        self.current_run(with_criteria=True)
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        candidate = self.write(
+            'candidate.md', Path(self.target, runbook).read_text()
+            + self.runbook_amendment(
+                verdicts='Step 1: entry holds; exit holds.',
+                what='Complete replacement Files: file.py and notes.md.',
+                touched='Step 1.',
+            ),
+        )
+        return runbook, candidate
+
+    def test_criteria_replay_uses_the_baseline_runbook_gate(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        before = self.state()['receipts']['runbook']
+        ledger = Path(self.target, '.hexaemeron/ledger.jsonl')
+        previous_events = ledger.read_bytes()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('verify')
+        after = self.state()['receipts']['runbook']
+        self.assertEqual(after['gate_commands'], before['gate_commands'])
+        self.assertEqual(after['success_criteria']['history']['versions'][0],
+                         before['success_criteria']['history']['versions'][0])
+        self.assertEqual(after['success_criteria']['attempts'], [])
+        self.assertNotEqual(after['success_criteria']['gate_commands']['artifact_sha256'],
+                            before['success_criteria']['gate_commands']['artifact_sha256'])
+        self.assertTrue(ledger.read_bytes().startswith(previous_events))
+
+    def test_criteria_replay_keeps_prior_cli_identity_after_amendment(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        before = self.state()['receipts']['runbook']['success_criteria']['gate_commands']
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\n# changed source, same parser\n')
+        self.run_ctl('verify', expect=1)
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('verify')
+        after = self.state()['receipts']['runbook']['success_criteria']['gate_commands']
+        self.assertNotEqual(before['commands'][0]['invocations'][0]['cli']['sha256'],
+                            after['commands'][0]['invocations'][0]['cli']['sha256'])
+
+    def test_criteria_amendment_recovers_after_receipt_commit(self):
+        import argparse
+        import os
+        from unittest.mock import patch
+        runbook, candidate = self.criteria_amendment_fixture()
+        module = hexctl_module()
+        with patch.dict(os.environ, self.env), patch.object(
+                module, 'clear_amendment_pending',
+                side_effect=RuntimeError('fixture interruption after receipt')):
+            with self.assertRaisesRegex(RuntimeError, 'after receipt'):
+                module.cmd_amend_runbook(argparse.Namespace(
+                    dir=self.target, artifact=str(Path(self.target, candidate))))
+        ledger = Path(self.target, '.hexaemeron/ledger.jsonl')
+        before = ledger.read_bytes()
+        self.assertTrue(module.pending_amendments(self.target))
+        self.run_ctl('amend', 'runbook', '--artifact', runbook)
+        self.assertFalse(module.pending_amendments(self.target))
+        self.assertEqual(ledger.read_bytes(), before)
+        self.run_ctl('verify')
+
+    def test_criteria_baseline_gate_forgery_still_refuses(self):
+        self.criteria_amendment_fixture()
+        module = hexctl_module()
+        entries = [json.loads(line) for line in Path(
+            self.target, '.hexaemeron/ledger.jsonl').read_text().splitlines()]
+        event = copy.deepcopy(next(row['data'] for row in entries
+                                   if row['event'] == 'done:runbook'))
+        event['success_criteria']['gate_commands']['artifact_sha256'] = '0' * 64
+        with self.assertRaises(SystemExit) as refused:
+            module.verify_success_criteria(
+                self.target, self.state(), entries[0], event, [], [])
+        self.assertEqual(refused.exception.code, 1)
+
+    def test_criteria_active_gate_forgery_still_refuses(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        module = hexctl_module()
+        state = self.state()
+        state['receipts']['runbook']['success_criteria']['gate_commands']['artifact_sha256'] = '0' * 64
+        module.commit(self.target, state, 'fixture:criteria-gate-forgery', {})
+        paths = [Path(self.target, '.hexaemeron', name)
+                 for name in ('state.json', 'ledger.jsonl')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('verify', expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+
+    def test_criteria_amendment_still_checks_the_new_cli_before_writing(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\nbuild_parser_alias = build_parser\n')
+        paths = [Path(self.target, name) for name in (
+            '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'runbook.md')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('amend', 'runbook', '--artifact', candidate, expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(hexctl_module().pending_amendments(self.target))
+
+    def test_criteria_amendment_refuses_changed_join_before_writing(self):
+        _runbook, candidate = self.criteria_amendment_fixture()
+        module = hexctl_module()
+        state = self.state()
+        state['receipts']['runbook']['success_criteria']['join']['criteria'][0]['claim'] = 'forged'
+        module.commit(self.target, state, 'fixture:criteria-join-forgery', {})
+        paths = [Path(self.target, name) for name in (
+            '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'runbook.md')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('amend', 'runbook', '--artifact', candidate, expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(module.pending_amendments(self.target))
 
     def test_pending_amendment_recovers_after_actual_source_replacement(self):
         import argparse
