@@ -33,6 +33,23 @@ plans its opening reads from its deployment registry requires it; see
 from `ALEXANDRIA_COMPOUND_RPC_URL` alone. The endpoint reaches no file, no
 receipt and no message. `build` and `check` are offline.
 
+An optional bearer credential rides the hosted path alone: set
+`ALEXANDRIA_RPC_BEARER` and the transport adds it as one `Authorization` header
+on every request, over HTTPS only. It lives on that one transport instance,
+never on a module constant, and it reaches no file, no receipt and no message
+any more than the endpoint does.
+
+A second, bounded path exists beside the hosted one: an explicit opt-in local
+loopback path, for a node reachable only from this machine. Set
+`ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` together with an
+`ALEXANDRIA_COMPOUND_RPC_URL` whose host is the literal `127.0.0.1` or `::1`
+-- not `localhost`, not a hostname that merely resolves there by DNS, and not
+a differently-written form of the same address. That path carries no bearer,
+ignores `HTTP_PROXY`/`http_proxy`, follows no redirect, and refuses every
+other host, URL user information and malformed authority before opening a
+connection. Any other `ALEXANDRIA_COMPOUND_RPC_URL` still falls to the hosted
+path's own HTTPS-only rule.
+
 Two historical demonstrations run the whole path with no network at all:
 `examples/usdc-interval-v0/demo.py` over synthetic fixtures, and
 `examples/usdc-interval-live-v0/demo.py` over the preserved bytes of a real
@@ -53,11 +70,14 @@ version>`, built at import from the plugin manifest. Two of the five providers
 the study probed answer HTTP 403 to Python's default `User-Agent`, so a
 constant one is the difference between a run and a refusal.
 
-No header value comes from the environment, and there is no argument, variable
-or plan field that adds one. A provider that requires a credential header is
-therefore out of scope rather than awkward: the collector cannot send one. The
-only thing the environment supplies is the endpoint, and that is never written
-down.
+Every request over the hosted path also carries an `Authorization` header once
+`ALEXANDRIA_RPC_BEARER` is set; the local loopback path never adds one, and
+refuses to build at all if one is present. No other header value comes from
+the environment, and there is no argument or plan field that adds one. Neither
+the bearer token nor the endpoint reaches a log, a receipt, an error message
+or any file the collector, reconciler or builder writes: the environment
+supplies both, and the token reaches exactly one HTTP header on the request
+that needs it.
 
 A release names the provider by class, not by operator. The plan carries a
 non-secret `provider.class` string, such as `archive gateway, public tier, no

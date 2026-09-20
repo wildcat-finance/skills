@@ -1355,6 +1355,49 @@ class BoundsTests(CollectorTestCase):
         with self.assertRaisesRegex(TransportError, "redirected"):
             handler.redirect_request(None, None, 302, "Found", {}, "https://elsewhere.invalid")
 
+    def test_the_cli_dispatch_still_builds_the_hosted_transport_with_no_opt_in(self):
+        """The CLI transport-selection boundary: no loopback opt-in means the
+        hosted `HttpsTransport` path, exactly as before this step.
+        """
+        plan_path = self.root / "plan.json"
+        plan_path.write_bytes(canonical_bytes(self.plan))
+        staging = self.root / "staging"
+        env = {"ALEXANDRIA_COMPOUND_RPC_URL": "http://127.0.0.1:1/rpc"}
+        stderr = io.StringIO()
+        with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(sys, "stderr", stderr):
+            exit_code = usdc_interval.main(
+                ["collect", "--plan", str(plan_path), "--staging", str(staging)]
+            )
+        self.assertEqual(exit_code, 1)
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertIn("HTTPS endpoint", lines[0])
+        self.assertNotIn("127.0.0.1", lines[0])
+
+    def test_the_cli_dispatch_refuses_a_bad_loopback_endpoint_under_the_opt_in(self):
+        """The CLI transport-selection boundary the other way: the opt-in
+        selects the local path, and a hostile endpoint under it refuses
+        before any collection, one sanitised line, naming neither endpoint.
+        """
+        plan_path = self.root / "plan.json"
+        plan_path.write_bytes(canonical_bytes(self.plan))
+        staging = self.root / "staging"
+        env = {
+            "ALEXANDRIA_COMPOUND_RPC_URL": "http://93.184.216.34:8545/rpc",
+            "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP": "1",
+        }
+        stderr = io.StringIO()
+        with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(sys, "stderr", stderr):
+            exit_code = usdc_interval.main(
+                ["collect", "--plan", str(plan_path), "--staging", str(staging)]
+            )
+        self.assertEqual(exit_code, 1)
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertIn("127.0.0.1 or ::1", lines[0])
+        self.assertNotIn("93.184.216.34", lines[0])
+        self.assertFalse(staging.exists())
+
 
 class FinalityRebindTests(CollectorTestCase):
     """The conformance evidence for `finality-rebinds-after-tag-advance`.

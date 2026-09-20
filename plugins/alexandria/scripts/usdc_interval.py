@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Collect a bounded Ethereum USDC Comet block interval, resumably.
 
-The network path is explicit and lives in one place: `HttpsTransport`, built
-from an environment variable that is never written anywhere. Every other path
-in this module takes a transport it was handed, so the whole collector is
-exercised offline against a fixture provider and no test opens a socket.
+The network path is explicit and lives in two places: the hosted
+`HttpsTransport`, built from an environment variable that is never written
+anywhere, and the bounded, explicit opt-in local `LoopbackHttpTransport`,
+reached only over a literal loopback address. `transport_from_environment`
+chooses between them from the environment alone. Every other path in this
+module takes a transport it was handed, so the whole collector is exercised
+offline against a fixture provider and no test but the loopback wiring proof
+itself opens a socket.
 
 The loop is the one `docs/compound-v3-harvest.md` specifies. It binds the end
 boundary under a named finality policy before it asks for a shard, walks the
@@ -37,6 +41,7 @@ from pathlib import Path
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -95,6 +100,9 @@ from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES, inge
 
 
 ENDPOINT_ENV = "ALEXANDRIA_COMPOUND_RPC_URL"
+BEARER_ENV = "ALEXANDRIA_RPC_BEARER"  # phylax: allow the environment variable's name, never a credential value
+LOOPBACK_ALLOW_ENV = "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP"
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1"})
 MAX_COLLECT_SECONDS = 3_600
 MAX_COLLECT_BYTES = 512 * 1024 * 1024
 MAX_RESPONSE_NODES = 2_000_000
@@ -223,17 +231,100 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class HttpsTransport:
-    """The one network path. The endpoint reaches no file, receipt or message."""
+    """The hosted network path: HTTPS only, with an optional per-instance bearer.
 
-    def __init__(self, endpoint: str, timeout: int) -> None:
+    The endpoint reaches no file, receipt or message. Neither does the bearer:
+    it lives on this instance alone, reaches one `Authorization` header on a
+    copy of the request headers, and never touches the module-level
+    `REQUEST_HEADERS` constant, which stays exactly what a transport built
+    without a bearer still sends.
+    """
+
+    def __init__(self, endpoint: str, timeout: int, bearer: str | None = None) -> None:
         if not endpoint.startswith("https://") or any(c.isspace() for c in endpoint):
             raise AlexandriaError(f"{ENDPOINT_ENV} must name an HTTPS endpoint")
+        if bearer is not None and (
+            any(character.isspace() for character in bearer) or not bearer.isprintable()
+        ):
+            raise AlexandriaError(f"{BEARER_ENV} must carry no whitespace and only printable bytes")
         self._endpoint = endpoint
         self._timeout = timeout
+        self._bearer = bearer
         self._opener = urllib.request.build_opener(_NoRedirect)
 
     @classmethod
     def from_environment(cls, timeout: int, environ=None) -> "HttpsTransport":
+        values = os.environ if environ is None else environ
+        raw_bearer = values.get(BEARER_ENV)
+        return cls(values.get(ENDPOINT_ENV, ""), timeout, raw_bearer if raw_bearer else None)
+
+    def request(self, payload: bytes, label: str) -> bytes:
+        headers = dict(REQUEST_HEADERS)
+        if self._bearer is not None:
+            headers["Authorization"] = f"Bearer {self._bearer}"
+        message = urllib.request.Request(
+            self._endpoint,
+            data=payload,
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with self._opener.open(message, timeout=self._timeout) as response:
+                if response.status != 200:
+                    raise TransportError(f"{label} returned HTTP {response.status}")
+                return response.read(MAX_RAW_COMPONENT_BYTES + 1)
+        except urllib.error.URLError as error:
+            raise TransportError(f"{label} transport failed") from error
+
+
+def _validate_loopback_endpoint(endpoint: str) -> None:
+    """Refuse anything but a literal-loopback HTTP endpoint, before any connection.
+
+    A hostname that merely resolves to loopback is refused by its spelling
+    alone -- this never resolves DNS, so a moved or spoofed record cannot
+    change the answer. Malformed authority, URL user information and every
+    other scheme or host are refused the same way, and none of these messages
+    repeats the endpoint the caller supplied.
+    """
+    if not endpoint or any(character.isspace() for character in endpoint):
+        raise AlexandriaError("the local loopback endpoint must name a literal loopback address")
+    try:
+        parts = urllib.parse.urlsplit(endpoint)
+        username = parts.username
+        password = parts.password
+        hostname = parts.hostname
+        _ = parts.port
+    except ValueError as exc:
+        raise AlexandriaError("the local loopback endpoint has a malformed authority") from exc
+    if parts.scheme != "http":
+        raise AlexandriaError("the local loopback endpoint must use plain HTTP")
+    if username is not None or password is not None or "@" in parts.netloc:
+        raise AlexandriaError("the local loopback endpoint must carry no user information")
+    if hostname not in LOOPBACK_HOSTS:
+        raise AlexandriaError("the local loopback endpoint must literally name 127.0.0.1 or ::1")
+
+
+class LoopbackHttpTransport:
+    """The bounded, explicit opt-in local path: literal loopback HTTP, never a bearer.
+
+    Reached only through `transport_from_environment`, when the operator opts
+    in with `ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` and the endpoint is a
+    literal `127.0.0.1` or `::1` HTTP address. Environment proxy settings are
+    never honored here and no redirect is ever followed, and it applies the
+    same request, response and timeout bounds `HttpsTransport` does.
+    """
+
+    def __init__(self, endpoint: str, timeout: int) -> None:
+        _validate_loopback_endpoint(endpoint)
+        self._endpoint = endpoint
+        self._timeout = timeout
+        # An explicit empty proxy mapping overrides whatever HTTP_PROXY/
+        # http_proxy (and friends) the environment carries; build_opener adds
+        # no default ProxyHandler once one is supplied explicitly.
+        self._opener = urllib.request.build_opener(_NoRedirect, urllib.request.ProxyHandler({}))
+
+    @classmethod
+    def from_environment(cls, timeout: int, environ=None) -> "LoopbackHttpTransport":
         values = os.environ if environ is None else environ
         return cls(values.get(ENDPOINT_ENV, ""), timeout)
 
@@ -251,6 +342,26 @@ class HttpsTransport:
                 return response.read(MAX_RAW_COMPONENT_BYTES + 1)
         except urllib.error.URLError as error:
             raise TransportError(f"{label} transport failed") from error
+
+
+def transport_from_environment(timeout: int, environ=None):
+    """The collector's one network path, chosen from the environment alone.
+
+    The hosted `HttpsTransport` is the default. The bounded local path opens
+    only when `ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` accompanies a literal
+    loopback HTTP endpoint; any other endpoint under that opt-in refuses here,
+    before any connection opens, rather than falling through to the hosted
+    path's own HTTPS-only refusal. A bearer is never accepted alongside the
+    opt-in.
+    """
+    values = os.environ if environ is None else environ
+    if values.get(LOOPBACK_ALLOW_ENV) == "1":
+        endpoint = values.get(ENDPOINT_ENV, "")
+        _validate_loopback_endpoint(endpoint)
+        if values.get(BEARER_ENV):
+            raise AlexandriaError("the local loopback endpoint accepts no bearer credential")
+        return LoopbackHttpTransport(endpoint, timeout)
+    return HttpsTransport.from_environment(timeout, environ)
 
 
 def request_bytes(identifier: int, method: str, params) -> bytes:
@@ -2602,7 +2713,7 @@ def main(argv=None) -> int:
         )
         # Refused before the endpoint is read: see `opening_phase`.
         opening_phase(plan, [], registry=registry)
-        transport = HttpsTransport.from_environment(plan["provider"]["timeout_seconds"])
+        transport = transport_from_environment(plan["provider"]["timeout_seconds"])
         if args.command == "reconcile":
             document = Reconciler(
                 plan, args.staging, transport, args.provider_class, registry=registry
