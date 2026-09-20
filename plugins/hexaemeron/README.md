@@ -355,3 +355,12 @@ Phylax ships the [bounded publisher](skills/phylax/references/github-issue-publi
 and [macOS deployment kit](skills/phylax/deployment/macos/README.md). Its 32
 injected conformance cases retain the exact #855 refusal and separate component
 success from live installation and isolation, which remain unestablished.
+
+## CHECKPOINT CONFORMANCE ON LINUX AND MACOS
+
+Checkpoint release conformance uses apt's `bubblewrap` with the native x86_64
+seccomp policy on Linux and the existing `sandbox-exec` policy on macOS.
+The focused workflow requires Ubuntu 24.04 x86_64 and macOS 15 arm64, with
+real network-denial probes and complete release execution on each.
+[Hosted evidence and recovery](../../docs/checkpoint-sandbox/hosted-evidence.md)
+describes fresh GitHub admission and the exact limits of those results.

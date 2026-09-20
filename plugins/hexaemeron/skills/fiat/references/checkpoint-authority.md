@@ -470,3 +470,20 @@ the cosign agreement. A historical result never becomes a current
 authorization: without freshness every accepted row stays `unknown`, and
 without the caller's own copy observations a complete publication stays
 `unavailable`.
+
+## Hosted release evidence
+
+The focused `checkpoint-conformance.yml` workflow runs the actual release suite
+on Ubuntu 24.04 x86_64 and macOS 15 arm64. It retains raw direct and executed
+descendant probe streams, release streams and the test log, plus exact checkout,
+source, fixture, runner and tool identities. Both jobs require complete
+execution without skips, all five cosign comparisons and the unchanged
+three-process workload.
+
+The selected hosted resolvers authenticate fresh GitHub run, attempt, job and
+artifact reads. They check the downloaded archive digest and source inventory
+before emitting a passing design report. Offline parser fixtures establish no
+hosted result. GitHub attests the artifact's run; its association with a job
+uses the checked workflow, unique attempt name and successful job time window.
+The [hosted evidence guide](../../../../../docs/checkpoint-sandbox/hosted-evidence.md)
+names the commands, fixed evidence paths, caps and recovery route.

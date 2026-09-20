@@ -27,3 +27,7 @@ New measurements have their own evidence; never replace the accepted reports.
 The local product and hostile criteria must pass before Step 2 opens. Actual
 hosted Ubuntu 24.04 x86_64 and macOS 15 arm64 evidence must pass before
 integration. A unit fixture or a report's shape cannot supply either execution.
+
+The [hosted evidence guide](hosted-evidence.md) covers the two required CI
+profiles, raw artifacts, authenticated admission and recovery after a refused
+run. Each accepted report remains bound to its exact checkout and source bytes.

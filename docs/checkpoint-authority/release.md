@@ -127,9 +127,11 @@ namespaces, a new session and dropped capabilities accompany the filter;
 existing timeout, output and process cleanup limits still apply.
 
 The macOS policy remains `(version 1)(allow default)(deny network*)` on its
-existing arm64 and x86_64 backends. The measured Linux profile is Ubuntu 24.04
-x86_64. Fresh hosted Ubuntu 24.04 x86_64 and macOS 15 arm64 conformance remain
-integration gates for this delivery; no new macOS x86_64 execution is claimed.
+existing arm64 and x86_64 backends. The hosted workflow requires Ubuntu 24.04
+x86_64 and macOS 15 arm64 execution; no new macOS x86_64 execution is claimed.
+The [hosted evidence guide](../checkpoint-sandbox/hosted-evidence.md) explains
+artifact admission, limits and recovery. Acceptance requires fresh authenticated
+GitHub readback and complete source-bound evidence for both profiles.
 Report-shape fixtures construct an explicit descriptor without preparing a
 host. Positive conformance still prepares and executes the actual backend.
 
