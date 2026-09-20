@@ -48,6 +48,10 @@ SOURCE_PATHS = tuple(sorted(set(native.SOURCES) | {
     *(release.SCRIPTS + "checkpoint_authority/" + name + ".py" for name in release.MODULES)}))
 TOOL_NAMES = ("python", "cosign", "sandbox", "git", "gpg", "gpgconf", "ssh-keygen", "openssl")
 ASSOCIATION = "Run association is authenticated; job association uses the checked workflow, unique attempt artifact name and successful job time window. GitHub artifact REST rows do not directly attest the producing job."
+APPARMOR_PROFILE = "/etc/apparmor.d/bwrap-userns-restrict"
+APPARMOR_SHA256 = "11d39094f044f0cda0febb3ad517b830301da6b2ce929664af09ee9e4dd264f9"
+LINUX_SETUP = {"apparmor_profile_sha256": APPARMOR_SHA256,
+               "userns_restriction": 1, "local_overrides": "absent"}
 
 
 def refuse(code):
@@ -185,6 +189,28 @@ def policy_descriptor(policy):
             "policy_sha256": policy.sha256}
 
 
+def sandbox_setup(system):
+    """Observe the reviewed Ubuntu profile without changing host policy."""
+    if system != "linux":
+        return None
+    if bounded.hash_file(APPARMOR_PROFILE, 4096)[0] != APPARMOR_SHA256:
+        refuse("apparmor-profile")
+    for name in ("bwrap-userns-restrict", "unpriv_bwrap"):
+        if os.path.lexists("/etc/apparmor.d/local/" + name):
+            refuse("apparmor-override")
+    # Procfs reports zero size; read its fixed kernel leaf with a separate cap.
+    with bounded.directory(Path("/proc/sys/kernel")) as (parent, check):
+        fd = os.open("apparmor_restrict_unprivileged_userns", bounded.FILE_FLAGS, dir_fd=parent)
+        try:
+            value = os.read(fd, 3)
+        finally:
+            os.close(fd)
+        check()
+    if value != b"1\n":
+        refuse("userns-restriction")
+    return dict(LINUX_SETUP)
+
+
 def positive(value, root, expected):
     """Structural validation alone deliberately admits failures; hosted success does not."""
     native._validate(value, root, expected)
@@ -241,6 +267,7 @@ def _collect(root, profile, destination, context):
         attempt = integer(int(os.environ["GITHUB_RUN_ATTEMPT"]), "attempt", 10000)
     except (ValueError, KeyError): refuse("run")
     context.update(run_id=run_id, run_attempt=attempt)
+    setup = sandbox_setup(system)
     event_head = commit(os.environ.get("CHECKPOINT_EVENT_HEAD", ""))
     event_sha = commit(os.environ.get("GITHUB_SHA", ""))
     merge = os.environ.get("CHECKPOINT_EVENT_MERGE", "")
@@ -275,7 +302,8 @@ def _collect(root, profile, destination, context):
     if hashlib.sha256(files["tests.log"]).hexdigest() != value["output_sha256"]: refuse("test-log")
     if result.stderr: refuse("release-stderr")
     for tool in pins.values(): tool.check()
-    if inventory(root) != source or checkout(root) != head or network.prepare().expected() != boundary.expected():
+    if (inventory(root) != source or checkout(root) != head
+            or network.prepare().expected() != boundary.expected() or sandbox_setup(system) != setup):
         refuse("source-changed")
     host = {"schema": "checkpoint-hosted-execution/v1", "profile": profile,
             "repository": REPOSITORY, "run_id": run_id, "run_attempt": attempt,
@@ -283,6 +311,7 @@ def _collect(root, profile, destination, context):
             "event_head_sha": event_head, "event_merge_sha": merge or None,
             "runner": {"os": runner_os, "arch": runner_arch, "name": text(os.environ.get("RUNNER_NAME"), "runner-name", 256)},
             "runtime": {"platform": system, "machine": machine, "os_version": version, "python": sys.version.split()[0]},
+            "sandbox_setup": setup,
             "started_at": started, "completed_at": now(), "source": source,
             "tools": tools, "policy": policy_descriptor(boundary.policy),
             "network": boundary.expected(), "release_exit": result.exit,
@@ -323,7 +352,7 @@ def validate_files(root, profile, files):
     host = decode(files["host.json"])
     closed(host, ("schema", "profile", "repository", "run_id", "run_attempt", "checkout_sha", "event", "event_sha",
                   "event_head_sha", "event_merge_sha", "runner", "runtime", "started_at", "completed_at", "source",
-                  "tools", "policy", "network", "release_exit", "files"), "host-shape")
+                  "tools", "policy", "network", "release_exit", "files", "sandbox_setup"), "host-shape")
     if host["schema"] != "checkpoint-hosted-execution/v1" or host["profile"] != profile or host["repository"] != REPOSITORY: refuse("host-profile")
     integer(host["run_id"], "run"); integer(host["run_attempt"], "attempt", 10000)
     commit(host["checkout_sha"]); commit(host["event_sha"]); commit(host["event_head_sha"])
@@ -343,6 +372,8 @@ def validate_files(root, profile, files):
     text(runtime["os_version"], "runtime-version", 32)
     if (system == "linux" and runtime["os_version"] != "24.04") or (system == "darwin" and runtime["os_version"].split(".")[0] != "15"): refuse("runtime-version")
     if runtime["python"] != bounded.read(root / ".python-version", 32).decode().strip(): refuse("python")
+    if encode(host["sandbox_setup"]) != encode(LINUX_SETUP if system == "linux" else None):
+        refuse("sandbox-setup")
     if encode(host["source"]) != encode(inventory(root)): refuse("source-drift")
     if type(host["tools"]) is not list or len(host["tools"]) != len(TOOL_NAMES): refuse("tools")
     tools = {}
@@ -394,6 +425,10 @@ def metadata_subjects(profile, request, run, jobs, artifact, archive_sha):
     if type(steps) is not list or not 1 <= len(steps) <= 100: refuse("job-steps")
     executed = [step for step in steps if type(step) is dict and step.get("name") == "Run checkpoint conformance"]
     if len(executed) != 1 or executed[0].get("status") != "completed" or executed[0].get("conclusion") != "success": refuse("job-execution")
+    if profile == "ubuntu-24.04":
+        setup = [step for step in steps if type(step) is dict and step.get("name") == "Prepare the Linux sandbox policy"]
+        if len(setup) != 1 or setup[0].get("status") != "completed" or setup[0].get("conclusion") != "success":
+            refuse("job-setup")
     if (type(artifact) is not dict or artifact.get("id") != request["artifact_id"]
             or type(artifact.get("id")) is not int or artifact.get("expired") is not False
             or artifact.get("name") != artifact_name(profile, request["run_id"], request["run_attempt"])

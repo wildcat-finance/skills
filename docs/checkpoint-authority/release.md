@@ -116,8 +116,13 @@ bubblewrap`. The measured package is `0.9.0-1ubuntu0.3`; each execution hashes
 the actual installed binary and proves the policy works. The caller needs
 unprivileged namespace creation and kernel seccomp support. The verifier does
 not run with sudo, and the program does not change host security settings.
-An absent package, denied namespace capability or unsupported ABI refuses;
-there is no unsandboxed retry. Linux arm64 is not a supported backend.
+Ubuntu hosts with AppArmor user-namespace restrictions also need the packaged
+`apparmor-profiles` policy for Bubblewrap. The
+[hosted setup](../checkpoint-sandbox/hosted-evidence.md) names its reviewed
+profile, digest and preparation checks; loading that profile is an administrator
+setup action, separate from verifier execution. An absent package, denied
+namespace capability or unsupported ABI refuses; there is no unsandboxed
+retry. Linux arm64 is not a supported backend.
 
 The Linux filter checks its syscall ABI, refuses x32 and other architectures,
 and denies socket operations and io_uring submission. Bubblewrap consumes
