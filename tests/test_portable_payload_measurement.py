@@ -282,6 +282,42 @@ class LinkKeptSafetyTests(unittest.TestCase):
         self.assertIn("resolves outside the checkout", message)
         self.assertIn("_zzz_leak.json", message)
 
+    def test_oversized_packaged_markdown_refuses_generation(self):
+        """The per-file read is capped, not just the regex's own match groups.
+
+        `MARKDOWN_LINK_SCAN_MAX_BYTES` bounds bytes read before they ever
+        reach the regex; confirm a file one byte over that cap refuses
+        outright instead of being scanned with no ceiling.
+        """
+        module = load_generator()
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            document = Path("plugins/x/examples/DOC.md")
+            (root / document).parent.mkdir(parents=True)
+            oversized = b"a" * (module.MARKDOWN_LINK_SCAN_MAX_BYTES + 1)
+            (root / document).write_bytes(oversized)
+            with self.assertRaises(module.PackageError) as caught:
+                module._link_kept_examples(root, {document}, [document])
+        message = str(caught.exception)
+        self.assertIn(str(module.MARKDOWN_LINK_SCAN_MAX_BYTES), message)
+        self.assertIn("DOC.md", message)
+
+    def test_file_at_exactly_the_cap_is_still_scanned(self):
+        """The boundary byte itself must not be refused -- only the first byte past it."""
+        module = load_generator()
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            document = Path("plugins/x/examples/DOC.md")
+            (root / document).parent.mkdir(parents=True)
+            link = "[ok](target.json)"
+            padding = b"a" * (module.MARKDOWN_LINK_SCAN_MAX_BYTES - len(link))
+            (root / document).write_bytes(padding + link.encode("ascii"))
+            self.assertEqual(
+                (root / document).stat().st_size, module.MARKDOWN_LINK_SCAN_MAX_BYTES,
+            )
+            found = module._link_kept_examples(root, {document}, [document])
+        self.assertEqual(found, {Path("plugins/x/examples/target.json")})
+
     def test_link_targets_that_escape_the_tree_are_never_treated_as_example_links(self):
         module = load_generator()
         with tempfile.TemporaryDirectory() as raw:

@@ -64,6 +64,15 @@ EXAMPLE_ROOT = re.compile(r"^plugins/[^/]+/examples/")
 MARKDOWN_LINK = re.compile(
     r'\[[^\]\n]{0,1000}\]\(([^)\s]{1,1000})(?:\s+"[^"\n]{0,500}")?\)'
 )
+# The regex groups above bound one *match*; nothing bounded the file this
+# reads in *bytes* before this cap existed, so a single enormous packaged
+# Markdown file had no ceiling on the memory or (still-linear) time this scan
+# spent on it. The largest packaged Markdown file today is 272,388 bytes; this
+# leaves comfortable headroom over that, over the >1MB hostile fixture
+# `test_oversized_or_hostile_markdown_link_scan_completes_quickly` already
+# exercises, and stays a small fraction of the whole 25 MiB runtime budget.
+# Same discipline as Phylax's own `TYPESCRIPT_MAX_BYTES` boundary.
+MARKDOWN_LINK_SCAN_MAX_BYTES = 8 * 1024 * 1024
 PORTRAIT_TRANSFORM = "remove-decorative-portrait-images/v1"
 EVALUATION_TRANSFORM = "replay-unchanged-evaluation-prompts/v1"
 EVALUATION_RUN = "docs/promise-machine/obligation-gates/evaluation-run.json"
@@ -376,9 +385,10 @@ def check_duplicate_fixture_payload(root: Path, tracked: list[Path]) -> None:
 def _link_kept_examples(root: Path, packaged: set[Path], tracked: list[Path]) -> set[Path]:
     """Return every example payload a packaged Markdown document links.
 
-    Reads each already-selected Markdown file and follows its ordinary links
-    with one linear pattern over that file's bytes -- no network, no
-    recursion into a found target's own content. A link is a file candidate
+    Reads each already-selected Markdown file, up to
+    `MARKDOWN_LINK_SCAN_MAX_BYTES`, and follows its ordinary links with one
+    linear pattern over that file's bytes -- no network, no recursion into a
+    found target's own content. A link is a file candidate
     only when it resolves, relative to its own document, to a non-Markdown
     path under `plugins/*/examples/`; everything this finds is handed to the
     caller, which lets the existing source validation in `_source_candidates`
@@ -395,7 +405,13 @@ def _link_kept_examples(root: Path, packaged: set[Path], tracked: list[Path]) ->
     linked: set[Path] = set()
     directories: set[str] = set()
     for relative in sorted(path for path in packaged if path.suffix == ".md"):
-        data = (root / relative).read_bytes()
+        with (root / relative).open("rb") as handle:
+            data = handle.read(MARKDOWN_LINK_SCAN_MAX_BYTES + 1)
+        if len(data) > MARKDOWN_LINK_SCAN_MAX_BYTES:
+            raise PackageError(
+                "packaged Markdown exceeds the "
+                f"{MARKDOWN_LINK_SCAN_MAX_BYTES}-byte link-scan cap: {relative}"
+            )
         text = data.decode("utf-8", errors="replace")
         document_dir = relative.parent.as_posix()
         for raw in MARKDOWN_LINK.findall(text):
