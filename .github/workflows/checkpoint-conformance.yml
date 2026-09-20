@@ -59,7 +59,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes bubblewrap apparmor-profiles
           test "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = 1
-          if /usr/bin/bwrap --unshare-net --unshare-pid --bind / / --dev-bind /dev / --die-with-parent --new-session --cap-drop ALL -- /usr/bin/true; then
+          if /usr/bin/bwrap --unshare-net --unshare-pid --bind / / --dev-bind /dev /dev --die-with-parent --new-session --cap-drop ALL -- /usr/bin/true; then
             printf '%s\n' 'Initial namespace setup succeeded.'
           else
             printf '%s\n' 'Initial namespace setup failed; retaining kernel diagnostics before profile setup.'

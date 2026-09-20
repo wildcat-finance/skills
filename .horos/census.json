@@ -80,7 +80,7 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 72853,
+      "bytes": 72856,
       "files": 15,
       "suffix": ".yml"
     },
@@ -237,6 +237,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 156014418,
+  "total_bytes": 156014421,
   "total_files": 4608
 }
