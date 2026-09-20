@@ -384,6 +384,36 @@ class TableTests(GateCase):
         self.assertIn("It is not privilege\nisolation", text)
 
 
+# Written out here, not read from the gate: the instruction each code carries,
+# so a line attached to another code fails.
+RECOVERY_PHRASES = {
+    "preimage-malformed": "pass the verified state digest",
+    "command-unknown": "no rule for the requested mutation",
+    "directive-shape-unknown": "a directive carries only",
+    "directive-unknown": "outside this controller's vocabulary",
+    "round-out-of-range": "close the audit, halt, or use another",
+    "command-field-unknown": "the rule names every field it admits",
+    "command-field-missing": "supply the field the rule requires",
+    "command-value-malformed": "pass each value as a string",
+    "evidence-field-unknown": "the rule names all the evidence it admits",
+    "promise-unknown": "name a Promise declared in Fiat's SKILL.md",
+    "promise-mismatch": "name the Promise the rule for this command carries",
+    "consequence-unknown": "name a consequence from",
+    "consequence-mismatch": "name the consequence the rule's Promise declares",
+    "recovery-path-unknown": "not one this controller can recover",
+    "recovery-pending": "rerun the command that owns the pending record",
+    "directive-not-authorised": "does not authorise it at the current directive",
+    "config-path-immutable": "audit policy is fixed at init",
+    "resume-needs-named-exit": "the halt covers an exhausted audit loop",
+    "resume-exit-unknown": "the only typed exit",
+    "resume-exit-mismatch": "the halt does not cover",
+    "audit-close-needs-a-round": "no round is recorded for this step",
+    "audit-close-needs-no-further-leads": "findings are open",
+    "checkpoint-boundary-unaccepted": "export or archive only immediately after",
+    "grant-oversized": "shorten the command values",
+}
+
+
 class RecoveryLineTests(GateCase):
     """A recovery line is what the operator acts on, so it cannot be empty or stale."""
 
@@ -395,6 +425,14 @@ class RecoveryLineTests(GateCase):
             with self.subTest(code=code):
                 self.assertIs(type(line), str)
                 self.assertGreaterEqual(len(line.split()), 5)
+
+    def test_each_line_belongs_to_the_code_written_here_and_to_no_other(self):
+        self.assertEqual(set(RECOVERY_PHRASES), set(gate.REFUSALS))
+        for code, phrase in RECOVERY_PHRASES.items():
+            with self.subTest(code=code):
+                self.assertGreaterEqual(len(phrase.split()), 3)
+                holders = {other for other, line in gate.REFUSALS.items() if phrase in line}
+                self.assertEqual(holders, {code})
 
     def test_a_line_names_the_value_of_each_constant_it_depends_on(self):
         lines = gate.REFUSALS
@@ -739,8 +777,13 @@ FIELDS = {
     ("cmd_run_exit", None): ({"criterion"}, {"criterion"}),
 }
 TAIL_EVENT_RULES = {("cmd_checkpoint_export", None), ("cmd_checkpoint_archive", None)}
-HOSTILE_FIELDS = {"max_rounds", "round", "loop", "force", "dir", "zz"}
-HOSTILE_EVIDENCE = {"authority", "user", "loop", "round", "max_rounds", "reason", "zz"}
+# Each list also carries the other vocabulary's names, so an evidence name
+# admitted as a command field, or a command field admitted as evidence, fails.
+EVIDENCE_NAMES = {"promise", "consequence", "recovery", "tail_event", "authority", "user"}
+HOSTILE_FIELDS = {"max_rounds", "round", "loop", "force", "dir", "zz"} | EVIDENCE_NAMES
+HOSTILE_EVIDENCE = {"authority", "user", "loop", "round", "max_rounds", "reason", "zz"}.union(
+    *(fields for fields, _ in FIELDS.values())
+)
 
 
 class CommandFieldTests(GateCase):
@@ -772,7 +815,8 @@ class CommandFieldTests(GateCase):
                     else:
                         self.assertEqual(code, "command-field-unknown")
         self.assertEqual(decided, 29 * len(names))
-        self.assertGreater(len(names), 50)
+        self.assertGreater(len(names), 56)
+        self.assertLessEqual(EVIDENCE_NAMES, set(names))
 
     def test_each_rule_requires_the_fields_written_here_and_no_other(self):
         decided = 0
@@ -803,10 +847,13 @@ class CommandFieldTests(GateCase):
                     self.assertEqual(code, "evidence-field-unknown")
 
     def test_each_rule_admits_the_evidence_written_here_and_no_other(self):
+        names = sorted(HOSTILE_EVIDENCE | {"tail_event"})
+        self.assertGreater(len(names), 56)
+        self.assertLessEqual({"to", "request", "out", "reason", "path"}, set(names))
         decided = 0
         for key, (granted, _) in CASES.items():
             directive, command, evidence = granted
-            for name in sorted(HOSTILE_EVIDENCE | {"tail_event"}):
+            for name in names:
                 decided += 1
                 with self.subTest(key=key, evidence=name):
                     code = self.code(key, directive, command, {**evidence, name: "x"})
@@ -814,7 +861,7 @@ class CommandFieldTests(GateCase):
                         self.assertEqual(code, "checkpoint-boundary-unaccepted")
                     else:
                         self.assertEqual(code, "evidence-field-unknown")
-        self.assertEqual(decided, 29 * 8)
+        self.assertEqual(decided, 29 * len(names))
 
     def test_no_ledger_event_but_the_two_boundaries_is_an_accepted_tail(self):
         events = ("init", "record", "config-set", "halt", "resume", "retire", "observe", "amend:study",
