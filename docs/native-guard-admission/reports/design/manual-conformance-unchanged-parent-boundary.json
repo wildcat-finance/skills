@@ -1,0 +1,9 @@
+{
+  "candidate": "manual-conformance",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate manual-conformance --criterion unchanged-parent-boundary --report .hexaemeron/reports/design/manual-conformance-unchanged-parent-boundary.json",
+  "criterion": "unchanged-parent-boundary",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

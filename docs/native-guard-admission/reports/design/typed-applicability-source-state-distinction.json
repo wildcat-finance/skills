@@ -1,0 +1,9 @@
+{
+  "candidate": "typed-applicability",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate typed-applicability --criterion source-state-distinction --report .hexaemeron/reports/design/typed-applicability-source-state-distinction.json",
+  "criterion": "source-state-distinction",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

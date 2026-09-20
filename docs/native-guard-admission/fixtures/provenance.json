@@ -1,0 +1,145 @@
+{
+  "artifacts": [
+    {
+      "origin": "reviewed-decision",
+      "path": "docs/decisions/drafts/route-audit-obligations-to-their-evidence.md",
+      "sha256": "61adc63c827aed78ca7d1c05e8dc6558100eec129e6981eca74ce63daefa98d1"
+    },
+    {
+      "origin": "scaffold-source",
+      "path": "docs/native-guard-admission/README.md",
+      "sha256": "4dcaf8baf6e9df2daa87b823f9997aab486f3b09a88d675b39f0d8ffc0193954"
+    },
+    {
+      "origin": "scaffold-source",
+      "path": "docs/native-guard-admission/contract.md",
+      "sha256": "3114a68fa9620bce0762459afa77ae05bcb40b7943ea07e81f18231e66123057"
+    },
+    {
+      "origin": "accepted-design-evidence",
+      "path": "docs/native-guard-admission/design-evidence.json",
+      "sha256": "4f5aba14c308c63b3d1ea62aa682f380b996f68230601bd9a8fe7fb3e3c014ab"
+    },
+    {
+      "origin": "authored-synthetic-fixture",
+      "path": "docs/native-guard-admission/fixtures/applicability.json",
+      "sha256": "f0b58b697a8288f04ff4b2dc1beec36ec89beae12649aab9de8e308bad87e836"
+    },
+    {
+      "origin": "authored-synthetic-fixture",
+      "path": "docs/native-guard-admission/fixtures/source-view.md",
+      "sha256": "5017668dec7febcd7aaab5ba6bbd26826cb81ee7cfffe244842702480998c806"
+    },
+    {
+      "origin": "authored-synthetic-fixture",
+      "path": "docs/native-guard-admission/fixtures/source.md",
+      "sha256": "3ef1954c638743708a05e4febae5ac5e64c31786b912339b48096bc621da35f1"
+    },
+    {
+      "origin": "authored-synthetic-fixture",
+      "path": "docs/native-guard-admission/fixtures/targets.json",
+      "sha256": "50d7468541cdf36efcdef0ed0e6322f83b14e0ab118a295e1349fbd02d0c405c"
+    },
+    {
+      "origin": "scaffold-source",
+      "path": "docs/native-guard-admission/proof.py",
+      "sha256": "38605c22a42793f48443c45757ae20c9cfeec5f45169a849ba60d4e75512d0ac"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/manual-conformance-controller-owned-observation.json",
+      "sha256": "1988ff1ec8ec70eba422383576ff297f234397c78be5a7824c552e3bde20ba8d"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/manual-conformance-new-execution-engines.json",
+      "sha256": "6c12ac780e3e419492d9e3d8037dba335d4a5bec9c81b37d1c91fabed8d142bd"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/manual-conformance-sample-representation-bytes.json",
+      "sha256": "c7394a8cf4072ba713f80229fb39e2bd40b74c77aea567817aeba91a877fdb08"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/manual-conformance-source-state-distinction.json",
+      "sha256": "ad975a692421748bfcad2735554ed8695bfd58e5d619dea12c9758497f5b9c4a"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/manual-conformance-unchanged-parent-boundary.json",
+      "sha256": "2b5708355e2d0c84efc1c811231c23f0856480bd66a92e28d9a11723151bd727"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/process-parent-runner-controller-owned-observation.json",
+      "sha256": "29342e377f5c36190c30ab7067bbff4faf17004d254495981149b814d5b5f011"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/process-parent-runner-new-execution-engines.json",
+      "sha256": "c1bc14415633c08d59e27dbc298ce2fa0ac346a21031f0786cba1e348d5a6fe4"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/process-parent-runner-sample-representation-bytes.json",
+      "sha256": "b2b68eb684a99a4cdd95ed8c92a962ee10c0e4587f70529e1d7cdc089ec25ae1"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/process-parent-runner-source-state-distinction.json",
+      "sha256": "876078de8bbb2716e9cc3a63d0d8bb160418a045c6ff89f9b21c198a4aa849dc"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/process-parent-runner-unchanged-parent-boundary.json",
+      "sha256": "9957d0113e4c5a2f8e926830b98f2f8091a7a54cddf538e051d4b36a94e048bf"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/typed-applicability-controller-owned-observation.json",
+      "sha256": "f32af5f7e937cac346848d57019917c9b2bb0caab366200e4d0fee4038bd8228"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/typed-applicability-new-execution-engines.json",
+      "sha256": "c1355b80df1f6013509e31e1e1c7bb0ee05df99ab001cfa1c747fb3d27b2ea22"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/typed-applicability-sample-representation-bytes.json",
+      "sha256": "1fe18ce123c62d3cc4aaef3c01676b6726a1b3789a7883e26f83e085d0d2a2a6"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/typed-applicability-source-state-distinction.json",
+      "sha256": "63f739a0058d8e7d81349ca0d97511b8165f5295f8a043cfc06592bb186d7ece"
+    },
+    {
+      "origin": "executed-synthetic-selection",
+      "path": "docs/native-guard-admission/reports/design/typed-applicability-unchanged-parent-boundary.json",
+      "sha256": "507268f098c0383224e508bdc35027d4a65489cba8de82cba213216a4fcadc97"
+    },
+    {
+      "origin": "authored-synthetic-selection-source",
+      "path": "docs/native-guard-admission/research/candidate-models.json",
+      "sha256": "74f5ce61a07ff3bddf88439a7c220d996fc88f656c46892cd59e27216ab25da7"
+    },
+    {
+      "origin": "authored-synthetic-selection-source",
+      "path": "docs/native-guard-admission/research/design_probe.py",
+      "sha256": "8b9971eb56cf3e62e56b44b89e6001af4aad451998423f209e9bb533f6662353"
+    },
+    {
+      "origin": "accepted-runbook",
+      "path": "docs/native-guard-admission/runbook.md",
+      "sha256": "62982d5f7cf3a4fec1dbdc7a20f255a814c58e2c4aa71c0b16ba03973f6e81b2"
+    },
+    {
+      "origin": "accepted-study",
+      "path": "docs/native-guard-admission/study.md",
+      "sha256": "45e864d1acdd4a66e1a8034dd1662235d811229d2c7ab87cc62115c0e6dada2f"
+    }
+  ],
+  "schema": "native-guard-admission-provenance/v1"
+}

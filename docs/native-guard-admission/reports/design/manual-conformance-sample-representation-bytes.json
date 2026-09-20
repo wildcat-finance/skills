@@ -1,0 +1,9 @@
+{
+  "candidate": "manual-conformance",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate manual-conformance --criterion sample-representation-bytes --report .hexaemeron/reports/design/manual-conformance-sample-representation-bytes.json",
+  "criterion": "sample-representation-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 620
+}

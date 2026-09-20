@@ -1,0 +1,9 @@
+{
+  "candidate": "manual-conformance",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate manual-conformance --criterion controller-owned-observation --report .hexaemeron/reports/design/manual-conformance-controller-owned-observation.json",
+  "criterion": "controller-owned-observation",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

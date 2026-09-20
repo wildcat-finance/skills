@@ -396,6 +396,7 @@
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
     {"path": "docs/checkpoint-authority", "scope": "hexaemeron"},
+    {"path": "docs/native-guard-admission", "scope": "hexaemeron"},
     {"path": "docs/protasis-success-criteria", "scope": "root"},
     {"path": "docs/agent-instruction-reconciliation", "scope": "promise-machine"},
     {"path": "docs/decisions/ADR-092-stage-reviewed-corpus-reconciliation.md", "scope": "promise-machine"},

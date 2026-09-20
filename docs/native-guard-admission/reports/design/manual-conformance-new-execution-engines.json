@@ -1,0 +1,9 @@
+{
+  "candidate": "manual-conformance",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate manual-conformance --criterion new-execution-engines --report .hexaemeron/reports/design/manual-conformance-new-execution-engines.json",
+  "criterion": "new-execution-engines",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

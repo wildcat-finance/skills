@@ -1,0 +1,9 @@
+{
+  "candidate": "process-parent-runner",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate process-parent-runner --criterion controller-owned-observation --report .hexaemeron/reports/design/process-parent-runner-controller-owned-observation.json",
+  "criterion": "controller-owned-observation",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

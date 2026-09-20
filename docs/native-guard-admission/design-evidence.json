@@ -1,0 +1,426 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "process-parent-runner",
+      "summary": "Treat every source concern as a regression and add a process-capable parent runner."
+    },
+    {
+      "id": "manual-conformance",
+      "summary": "Classify source concerns but accept manually supplied conformance results."
+    },
+    {
+      "id": "typed-applicability",
+      "summary": "Bind reviewed source applicability to unchanged regression guards or existing observed criteria execution."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "source-state-distinction",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "controller-owned-observation",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "unchanged-parent-boundary",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "new-execution-engines",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "sample-representation-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "applicability-parser",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "frozen-controller-join",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "bounded-reader",
+      "concern": "space",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "native-execution",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "bounded-execution",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "legacy-and-hostile-replay",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "fiat",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "source-state-distinction",
+      "state": "fail",
+      "report": {
+        "path": "reports/design/process-parent-runner-source-state-distinction.json",
+        "sha256": "876078de8bbb2716e9cc3a63d0d8bb160418a045c6ff89f9b21c198a4aa849dc"
+      }
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "controller-owned-observation",
+      "state": "fail",
+      "report": {
+        "path": "reports/design/process-parent-runner-controller-owned-observation.json",
+        "sha256": "29342e377f5c36190c30ab7067bbff4faf17004d254495981149b814d5b5f011"
+      }
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "unchanged-parent-boundary",
+      "state": "fail",
+      "report": {
+        "path": "reports/design/process-parent-runner-unchanged-parent-boundary.json",
+        "sha256": "9957d0113e4c5a2f8e926830b98f2f8091a7a54cddf538e051d4b36a94e048bf"
+      }
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "new-execution-engines",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/process-parent-runner-new-execution-engines.json",
+        "sha256": "c1bc14415633c08d59e27dbc298ce2fa0ac346a21031f0786cba1e348d5a6fe4"
+      }
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "sample-representation-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/process-parent-runner-sample-representation-bytes.json",
+        "sha256": "b2b68eb684a99a4cdd95ed8c92a962ee10c0e4587f70529e1d7cdc089ec25ae1"
+      }
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "applicability-parser",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate process-parent-runner --criterion applicability-parser --report .hexaemeron/reports/design/process-parent-runner-applicability-parser.json",
+      "report": "reports/design/process-parent-runner-applicability-parser.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "frozen-controller-join",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate process-parent-runner --criterion frozen-controller-join --report .hexaemeron/reports/design/process-parent-runner-frozen-controller-join.json",
+      "report": "reports/design/process-parent-runner-frozen-controller-join.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "bounded-reader",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate process-parent-runner --criterion bounded-reader --report .hexaemeron/reports/design/process-parent-runner-bounded-reader.json",
+      "report": "reports/design/process-parent-runner-bounded-reader.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "native-execution",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate process-parent-runner --criterion native-execution --report .hexaemeron/reports/design/process-parent-runner-native-execution.json",
+      "report": "reports/design/process-parent-runner-native-execution.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "bounded-execution",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate process-parent-runner --criterion bounded-execution --report .hexaemeron/reports/design/process-parent-runner-bounded-execution.json",
+      "report": "reports/design/process-parent-runner-bounded-execution.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "process-parent-runner",
+      "criterion": "legacy-and-hostile-replay",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate process-parent-runner --criterion legacy-and-hostile-replay --report .hexaemeron/reports/design/process-parent-runner-legacy-and-hostile-replay.json",
+      "report": "reports/design/process-parent-runner-legacy-and-hostile-replay.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "source-state-distinction",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/manual-conformance-source-state-distinction.json",
+        "sha256": "ad975a692421748bfcad2735554ed8695bfd58e5d619dea12c9758497f5b9c4a"
+      }
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "controller-owned-observation",
+      "state": "fail",
+      "report": {
+        "path": "reports/design/manual-conformance-controller-owned-observation.json",
+        "sha256": "1988ff1ec8ec70eba422383576ff297f234397c78be5a7824c552e3bde20ba8d"
+      }
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "unchanged-parent-boundary",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/manual-conformance-unchanged-parent-boundary.json",
+        "sha256": "2b5708355e2d0c84efc1c811231c23f0856480bd66a92e28d9a11723151bd727"
+      }
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "new-execution-engines",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/manual-conformance-new-execution-engines.json",
+        "sha256": "6c12ac780e3e419492d9e3d8037dba335d4a5bec9c81b37d1c91fabed8d142bd"
+      }
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "sample-representation-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/manual-conformance-sample-representation-bytes.json",
+        "sha256": "c7394a8cf4072ba713f80229fb39e2bd40b74c77aea567817aeba91a877fdb08"
+      }
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "applicability-parser",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate manual-conformance --criterion applicability-parser --report .hexaemeron/reports/design/manual-conformance-applicability-parser.json",
+      "report": "reports/design/manual-conformance-applicability-parser.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "frozen-controller-join",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate manual-conformance --criterion frozen-controller-join --report .hexaemeron/reports/design/manual-conformance-frozen-controller-join.json",
+      "report": "reports/design/manual-conformance-frozen-controller-join.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "bounded-reader",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate manual-conformance --criterion bounded-reader --report .hexaemeron/reports/design/manual-conformance-bounded-reader.json",
+      "report": "reports/design/manual-conformance-bounded-reader.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "native-execution",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate manual-conformance --criterion native-execution --report .hexaemeron/reports/design/manual-conformance-native-execution.json",
+      "report": "reports/design/manual-conformance-native-execution.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "bounded-execution",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate manual-conformance --criterion bounded-execution --report .hexaemeron/reports/design/manual-conformance-bounded-execution.json",
+      "report": "reports/design/manual-conformance-bounded-execution.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "manual-conformance",
+      "criterion": "legacy-and-hostile-replay",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate manual-conformance --criterion legacy-and-hostile-replay --report .hexaemeron/reports/design/manual-conformance-legacy-and-hostile-replay.json",
+      "report": "reports/design/manual-conformance-legacy-and-hostile-replay.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "source-state-distinction",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/typed-applicability-source-state-distinction.json",
+        "sha256": "63f739a0058d8e7d81349ca0d97511b8165f5295f8a043cfc06592bb186d7ece"
+      }
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "controller-owned-observation",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/typed-applicability-controller-owned-observation.json",
+        "sha256": "f32af5f7e937cac346848d57019917c9b2bb0caab366200e4d0fee4038bd8228"
+      }
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "unchanged-parent-boundary",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/typed-applicability-unchanged-parent-boundary.json",
+        "sha256": "507268f098c0383224e508bdc35027d4a65489cba8de82cba213216a4fcadc97"
+      }
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "new-execution-engines",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/typed-applicability-new-execution-engines.json",
+        "sha256": "c1355b80df1f6013509e31e1e1c7bb0ee05df99ab001cfa1c747fb3d27b2ea22"
+      }
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "sample-representation-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/design/typed-applicability-sample-representation-bytes.json",
+        "sha256": "1fe18ce123c62d3cc4aaef3c01676b6726a1b3789a7883e26f83e085d0d2a2a6"
+      }
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "applicability-parser",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion applicability-parser --report .hexaemeron/reports/design/typed-applicability-applicability-parser.json",
+      "report": "reports/design/typed-applicability-applicability-parser.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "frozen-controller-join",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion frozen-controller-join --report .hexaemeron/reports/design/typed-applicability-frozen-controller-join.json",
+      "report": "reports/design/typed-applicability-frozen-controller-join.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "bounded-reader",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion bounded-reader --report .hexaemeron/reports/design/typed-applicability-bounded-reader.json",
+      "report": "reports/design/typed-applicability-bounded-reader.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "native-execution",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion native-execution --report .hexaemeron/reports/design/typed-applicability-native-execution.json",
+      "report": "reports/design/typed-applicability-native-execution.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "bounded-execution",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion bounded-execution --report .hexaemeron/reports/design/typed-applicability-bounded-execution.json",
+      "report": "reports/design/typed-applicability-bounded-execution.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "typed-applicability",
+      "criterion": "legacy-and-hostile-replay",
+      "state": "pending",
+      "resolver": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion legacy-and-hostile-replay --report .hexaemeron/reports/design/typed-applicability-legacy-and-hostile-replay.json",
+      "report": "reports/design/typed-applicability-legacy-and-hostile-replay.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "typed-applicability",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

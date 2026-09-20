@@ -1,0 +1,30 @@
+{
+  "schema": "native-guard-admission-selection-model/v1",
+  "boundary": "These authored models compare proposed routing, preserved source states, additional execution engines and serialized sample size. They do not implement or measure product behavior.",
+  "candidates": {
+    "process-parent-runner": {
+      "classification": "all-regressions",
+      "execution_owner": "new-process-parent-runner",
+      "changes_elenchus_runner": true,
+      "new_execution_engines": 1
+    },
+    "manual-conformance": {
+      "classification": "typed",
+      "execution_owner": "operator-report",
+      "changes_elenchus_runner": false,
+      "new_execution_engines": 0
+    },
+    "typed-applicability": {
+      "classification": "typed",
+      "execution_owner": "existing-criteria-execution",
+      "changes_elenchus_runner": false,
+      "new_execution_engines": 0
+    }
+  },
+  "sample_sources": [
+    {"id": "observed-local-failure", "source_status": "open", "reviewed_applicability": "local-regression"},
+    {"id": "new-native-boundary", "source_status": "not checked", "reviewed_applicability": "integration-requirement"},
+    {"id": "inherited-repair", "source_status": "fixed in the recorded source", "reviewed_applicability": "historical"},
+    {"id": "unchanged-upstream-limit", "source_status": "open upstream", "reviewed_applicability": "out-of-scope"}
+  ]
+}
