@@ -100,8 +100,9 @@ carrying `proxy` still validates unchanged and still means exactly one
 subject, because `validate_plan` compares the plan's exact key set against
 whichever of the two required sets it matches before checking anything
 else. `shard_requests` filters `eth_getLogs`'s `address` and
-`trace_filter`'s `toAddress` by the whole declared array for a v2 plan and
-by the one address, unwrapped, for a v1 plan, exactly as before.
+`trace_filter`'s `toAddress` by the whole declared array for a v2 plan. A
+v1 plan keeps one unwrapped `address` and a one-element `toAddress` list,
+exactly as before.
 
 `proxy_log_positions` accepts a log from any address in the declared set (a
 plain string for v1, any non-empty collection for v2) and tags each row
