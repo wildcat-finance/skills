@@ -518,6 +518,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.69.1",
         "fiat-v6.70.1",
         "fiat-v6.71.1",
+        "fiat-v6.72.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14268,11 +14269,40 @@ def _criteria_amendment_candidate(
     return updated, updated_history["amendments"][-1]
 
 
+def _criteria_recovery_admission(
+    base_dir: str, study: bytes, runbook: bytes, admission: dict, gate: dict
+) -> dict:
+    """Rejoin source bytes to the gate already checked by recovery preflight."""
+    adapter = criteria_execution_module()
+    parser, _ = adapter.adapters(Path(base_dir).resolve())
+    if gate.get("artifact_sha256") != hashlib.sha256(runbook).hexdigest():
+        raise adapter.Refusal("recovery-gate-source")
+    declaration = parser.parse(study)
+    joined = parser.join(declaration, runbook, command_records=gate.get("commands"))
+    if declaration is None or joined is None:
+        raise adapter.Refusal("success-criteria-missing")
+    joined["adapter_sha256"] = gate.get("adapter_sha256")
+    current = {
+        "schema": adapter.ADMISSION_SCHEMA,
+        "gate_commands": gate,
+        "declaration": declaration,
+        "declaration_sha256": parser.declaration_digest(declaration),
+        "join": joined,
+        "operation_ran": False,
+        "study_sha256": hashlib.sha256(study).hexdigest(),
+        "runbook_sha256": hashlib.sha256(runbook).hexdigest(),
+    }
+    if _criteria_admission_projection(admission) != current:
+        raise adapter.Refusal("recovery-admission-drift")
+    return current
+
+
 def verify_success_criteria(base_dir: str, state: dict,
                             initial_entry: dict | None,
                             runbook_event: dict | None,
                             execution_events: list[dict],
-                            amendment_events: list[dict] | None = None) -> None:
+                            amendment_events: list[dict] | None = None,
+                            *, recovery_gate: dict | None = None) -> None:
     """Replay admission, amendments and attempts without executing commands."""
     marker = as_dict(state.get("contracts")).get("success_criteria")
     original = as_dict(
@@ -14322,6 +14352,17 @@ def verify_success_criteria(base_dir: str, state: dict,
             "study_sha256": baseline["study_sha256"],
             "runbook_sha256": baseline["runbook_sha256"],
         })
+        if as_dict(state.get("contracts")).get("gate_commands"):
+            # Gate replay checks this independent receipt against the original
+            # runbook bytes. Keep that gate with the criteria baseline; the
+            # current admission, including its current gate, is checked below.
+            baseline_gate = as_dict(runbook_event).get("gate_commands")
+            if (
+                not isinstance(baseline_gate, dict)
+                or baseline_gate.get("artifact_sha256") != baseline["runbook_sha256"]
+            ):
+                die("success criteria baseline has no matching runbook gate", 1)
+            baseline_projection["gate_commands"] = baseline_gate
         if event_projection != baseline_projection:
             die("success criteria baseline admission disagrees with its ledger event", 1)
     study = receipted_source(base_dir, state, "study")
@@ -14330,14 +14371,19 @@ def verify_success_criteria(base_dir: str, state: dict,
         die("success criteria admission has no receipted source", 1)
     adapter = criteria_execution_module()
     try:
-        current = adapter.validate_admission(
-            Path(base_dir).resolve(), study["text"].encode(),
-            runbook["text"].encode(),
-        {
-            key: value for key, value in receipt.items()
-            if key not in {"attempts", "history"}
-        },
-        )
+        if recovery_gate is not None:
+            # Only amendment preflight supplies this checked historical gate.
+            # Candidate capture and final verification still check fresh CLI
+            # source before an amendment can complete.
+            current = _criteria_recovery_admission(
+                base_dir, study["text"].encode(), runbook["text"].encode(),
+                receipt, recovery_gate,
+            )
+        else:
+            current = adapter.validate_admission(
+                Path(base_dir).resolve(), study["text"].encode(),
+                runbook["text"].encode(), _criteria_admission_projection(receipt),
+            )
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission does not replay: {exc}", 1)
     if current.get("operation_ran") is not False:
@@ -14899,6 +14945,10 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     verify_success_criteria(
         base_dir, state, entries[0], events[-1] if events else None, criteria_events,
         criteria_amendments,
+        recovery_gate=(
+            as_dict(amendments[-1] if amendments else receipt).get("gate_commands")
+            if allow_source_drift else None
+        ),
     )
 
 
