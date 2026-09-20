@@ -70,14 +70,14 @@ the chain.
 
 A second plan format, `interval-plan-v2.schema.json` (format
 `alexandria-interval-plan/v2`), replaces the single `proxy` address with a
-non-empty, duplicate-free `subjects` array of up to 4096 declared addresses;
-every other field is unchanged. The collector filters `eth_getLogs` and
+non-empty, duplicate-free `subjects` array of up to 4096 declared addresses.
+Every other field is unchanged. The collector filters `eth_getLogs` and
 `trace_filter` by the whole declared array rather than one address, accepts a
 log from any declared subject and refuses one from outside the set, and
 attributes each preserved log to the epoch of its own subject. The epoch
 table then carries one list per subject rather than one list for the whole
-interval: each tiles from that subject's own first in-interval position
-through the interval's end, `MAX_EPOCHS` bounds each subject's own list
+interval. Each tiles from that subject's own first in-interval position
+through the interval's end. `MAX_EPOCHS` bounds each subject's own list
 rather than their sum, and a subject whose extent starts after the interval
 end carries no list at all. A v1 plan validates exactly as before and still
 means one subject. `interval-checkpoint-v1.schema.json` covers the
