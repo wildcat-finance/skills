@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 28314400,
+    "bytes_blob": 28338214,
     "bytes_generated": 98
   },
   "entries": [
@@ -175,14 +175,14 @@
       "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
     },
     {
-      "bytes": 146523,
+      "bytes": 158408,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 73261",
+      "evidence": "no newline in a 2048-byte window at offset 79204 of 158408 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1731-venue-agnostic-interval-capture-for-both-wi.md"
     },
     {
-      "bytes": 147556,
+      "bytes": 159485,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
