@@ -149,17 +149,42 @@ CONTRACT = "promise-machine/v1"
 # Issue #1538 adopts the reviewed decorative-portrait omission and reference
 # repair, retaining the original byte cap and reserving five MiB below it.
 # Every generated manifest must satisfy that margin as well as the cap.
-MAX_FILES = 1_500
+# A sixth raise records the checkpoint authority corpus: 1,534 files,
+# 20,219,205 bytes and 5,995,195 bytes of headroom. The local file tripwire
+# moves to 1,600; the 25 MiB byte cap and five MiB reserve stay unchanged.
+# Required shipped content, omission rules and source bindings stay intact.
+# This does not make the 1,000-file archive and download routes compatible.
+# 2026-09-18: Step 4 of issue #1676 measured 21,187,330 package bytes, 215,810
+# over the maximum the reserve leaves. Omitting the checkpoint authority
+# conformance corpora (`checkpoint-authority/fixtures/**` and
+# `native-fixture/**`, read only by reporters the package already omits) under
+# adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime
+# gives a complete package of 1,510 files and 20,855,576 bytes (5,358,824 bytes
+# below the cap) whose runtime manifest records 1,503 files and 20,392,692
+# total_bytes; the cap, reserve and file tripwire stay unchanged.
+# 2026-09-19: Step 5 of issue #1676 adds the released verifier, its command
+# line and the release manifest. The `checkpoint-authority/fixtures/**`
+# omission already covers the new interoperability corpus. At signed commit
+# 4c45438d562ffecdfe9ca97385a8b00c583c837e the complete package measured
+# 1,517 files and 20,968,483 bytes; its runtime held 1,510 files and 20,503,519
+# bytes. That left 3,037 bytes beyond the 5 MiB reserve and 83 files below the
+# tripwire. These counts belong to that commit; later changes require fresh
+# owner regeneration. The cap, reserve, tripwire and omission rules stay fixed.
+MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/lazarus/examples/aave-v4-spoke-v1/"
+    "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",
     "assets/characters/*.{png,webp}",
     "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
     "plugins/anamnesis/specimens/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
     "plugins/*/tests/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
@@ -220,6 +245,28 @@ def load_generator():
 
 
 class SkillsShPackageTests(unittest.TestCase):
+    def test_lazarus_keeps_the_complete_release_and_one_payload_copy(self):
+        generator = load_generator()
+        source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
+        release = Path("plugins/lazarus/examples/aave-v4-spoke-v1-release")
+        for original in (ROOT / release).rglob("*"):
+            if original.is_file():
+                self.assertEqual(
+                    original.read_bytes(),
+                    (RUNTIME / original.relative_to(ROOT)).read_bytes(),
+                )
+        for name in generator.DUPLICATE_LAZARUS_PAYLOADS:
+            self.assertFalse((RUNTIME / source / name).exists())
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / release / "fixture" / name).read_bytes(),
+            )
+        for name in ("manifest.json", "demo.py"):
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / source / name).read_bytes(),
+            )
+
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
         self.assertEqual(manifest["schema"], SCHEMA)

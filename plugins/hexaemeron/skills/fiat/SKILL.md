@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.69.1"
+  version: "6.70.1"
 ---
 
 <p align="center">
@@ -1384,3 +1384,12 @@ receipt.
 - Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync or decision-assignment receipt, a missing or non-replaying sync resolution guard, a missing, stale or non-replaying active decision assignment, a superseded assignment in active ancestry, missing, extra, duplicate or unsorted path acknowledgements, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded primary author carried by nothing, a `## Carried forward` section holding no `carryover` block or a row that disposes of its item in neither a filed issue, an existing issue nor a stated reason, a new `filed` Skills issue whose remote title, labels, opening or body contract does not replay, or integration without explicit delivery authority.
 - Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, inspect and acknowledge the exact sync-risk paths the controller names, rerun its integration-sensitive checks, receipt that revalidation, then resolve declared versions without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, inspect every old-composition/base-advance intersection path, rerun bounded revalidation and supersede the exact active sync with a reason; the old sync and version-resolution receipts remain in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none
+
+## Checkpoint authority conformance
+
+The [record and signature reference](references/checkpoint-authority.md) owns
+the closed Step 2 record inventory, exact byte and key profiles, external
+bootstrap rules and mandatory conformance toolchain. A passing
+`records-and-signatures` report permits only its named design transition.
+Native admission, complete authority replay and release conformance remain
+separate gates; native checkpoint v1 formats remain unchanged.

@@ -1,22 +1,22 @@
 {
   "rows": [
     {
+      "boundary_bytes": 64487,
+      "bytes": 47256996,
+      "files": 1732,
+      "suffix": ".json"
+    },
+    {
+      "boundary_bytes": 1485,
+      "bytes": 26799234,
+      "files": 1230,
+      "suffix": ".md"
+    },
+    {
       "boundary_bytes": 26584973,
       "bytes": 26584973,
       "files": 40,
       "suffix": ".png"
-    },
-    {
-      "boundary_bytes": 1485,
-      "bytes": 26456249,
-      "files": 1216,
-      "suffix": ".md"
-    },
-    {
-      "boundary_bytes": 64487,
-      "bytes": 19955856,
-      "files": 1630,
-      "suffix": ".json"
     },
     {
       "boundary_bytes": 17299058,
@@ -26,20 +26,20 @@
     },
     {
       "boundary_bytes": 73,
-      "bytes": 16556181,
-      "files": 721,
+      "bytes": 17106343,
+      "files": 771,
       "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
-      "bytes": 8098538,
-      "files": 119,
+      "bytes": 8098584,
+      "files": 120,
       "suffix": "(no suffix)"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 5376078,
-      "files": 70,
+      "bytes": 5456633,
+      "files": 71,
       "suffix": ".jsonl"
     },
     {
@@ -83,6 +83,12 @@
       "bytes": 67842,
       "files": 14,
       "suffix": ".yml"
+    },
+    {
+      "boundary_bytes": 59603,
+      "bytes": 59603,
+      "files": 1,
+      "suffix": ".zip"
     },
     {
       "boundary_bytes": 58214,
@@ -164,9 +170,15 @@
     },
     {
       "boundary_bytes": 108,
-      "bytes": 630,
-      "files": 3,
+      "bytes": 836,
+      "files": 4,
       "suffix": ".lock"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 749,
+      "files": 4,
+      "suffix": ".pem"
     },
     {
       "boundary_bytes": 0,
@@ -179,6 +191,12 @@
       "bytes": 446,
       "files": 8,
       "suffix": ".tsx"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 239,
+      "files": 1,
+      "suffix": ".gpg"
     },
     {
       "boundary_bytes": 146,
@@ -213,6 +231,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 127452217,
-  "total_files": 4397
+  "total_bytes": 155787902,
+  "total_files": 4572
 }

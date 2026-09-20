@@ -9,7 +9,7 @@ description: >
   new kind of artefact needs a predicate of its own. Ariadne neither signs nor
   verifies signatures; those operations belong to cosign.
 metadata:
-  version: "3.3.0"
+  version: "3.4.0"
 ---
 
 <p align="center">
@@ -109,13 +109,14 @@ python3 scripts/ariadne.py verify <statement-or-envelope.json>
 python3 scripts/ariadne.py replay <statement.json> [--allow-execution --project <dir>]
 ```
 
-`predicates` lists the predicate types this build understands. Five are registered:
+`predicates` lists the predicate types this build understands. Six are registered:
 `https://ariadne.wildcat.finance/solidity-release/v1`,
 `https://ariadne.wildcat.finance/dataset/v1`,
 `https://ariadne.wildcat.finance/state-fixture/v1`,
-`https://ariadne.wildcat.finance/state-fixture/v2`, and
-`https://ariadne.wildcat.finance/grounded-agent/v1`. A statement of any other type
-still parses and still gets its core gates.
+`https://ariadne.wildcat.finance/state-fixture/v2`,
+`https://ariadne.wildcat.finance/grounded-agent/v1`, and
+`https://wildcat.finance/attestations/checkpoint-authority/v1`. A statement of
+any other type still parses and still gets its core gates.
 
 `capture` reads a Foundry project's build output into a release statement that
 `verify` accepts unedited. It does not decide whether your tests passed: a
@@ -330,6 +331,22 @@ reason; promotion projects only non-conclusion identity metadata.
 publishes the field and gate contract. The bounded local capture path is in
 [`docs/capturing-a-grounded-agent.md`](../../docs/capturing-a-grounded-agent.md).
 
+## Checkpoint authority predicate
+
+`https://wildcat.finance/attestations/checkpoint-authority/v1` binds one of the
+nineteen closed checkpoint authority records the Hexaemeron protocol signs
+inside a DSSE envelope. Gate 2 requires every timestamp to name a UTC instant
+inside its declared interval; gate 5 requires predecessor, parent and head
+relations to name both sides; `subject-roles`, `evidence-references` and
+`required-coverage` hold the three digest roles, typed evidence references and
+copy or coverage inventories to the record's own fields. The schema is a
+release copy of the owner's, held by a checkout parity test, and no sibling
+plugin is imported. Signature authentication, native execution, storage
+observations, complete journal replay and current eligibility are reported
+unchecked on every run; there is no capture path.
+[`docs/checkpoint-authority.md`](../../docs/checkpoint-authority.md) publishes
+the field and gate contract.
+
 ## Examples
 
 [`examples/`](../../examples) holds four attestations: two over the fixture
@@ -346,10 +363,12 @@ fails a named gate.
 
 Named so the edge is visible rather than implied.
 
-The registry holds five predicates, reached through four local capture paths.
-Grounded-agent capture binds a bounded local `berean-release/v1` tree; it does
-not import or run Berean, execute an agent, regrade evaluation or promotion
-evidence, or reach a network.
+The registry holds six predicates, five of them reached through four local
+capture paths. Grounded-agent capture binds a bounded local `berean-release/v1`
+tree; it does not import or run Berean, execute an agent, regrade evaluation or
+promotion evidence, or reach a network. The checkpoint authority predicate has
+no capture path and checks one record's own bytes; it authenticates no
+signature, replays no journal and decides no current eligibility.
 
 Nothing confirms a deployment against a chain, nothing signs, and nothing runs
 as a GitHub Action. Each of those is a deliberate boundary rather than an
