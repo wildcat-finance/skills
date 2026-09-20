@@ -1,6 +1,7 @@
 """Check published scaffold custody and refusals without claiming conformance."""
 
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,11 +12,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[3]
 DOCS = ROOT / "docs/native-guard-admission"
 DECISION = "docs/decisions/drafts/route-audit-obligations-to-their-evidence.md"
+DECISION_SLUG = "route-audit-obligations-to-their-evidence"
 PROOF = DOCS / "proof.py"
 EXPECTED_DIGESTS = {
     "study.md": "45e864d1acdd4a66e1a8034dd1662235d811229d2c7ab87cc62115c0e6dada2f",
@@ -26,6 +29,36 @@ EXPECTED_DIGESTS = {
 
 def load(path):
     return json.loads(path.read_text())
+
+
+def load_module(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+HYPOMNEMA = load_module(
+    ROOT / "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+    "native_admission_scaffold_hypomnema",
+)
+ASSIGNMENTS = load_module(
+    ROOT / "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py",
+    "native_admission_scaffold_assignments",
+)
+
+
+def decision_source_bytes(root):
+    data, path, error = HYPOMNEMA._read_stable_adr(root, "adr/" + DECISION_SLUG)
+    if data is None:
+        raise AssertionError(error)
+    if path.as_posix() != DECISION:
+        prefix = ("# " + path.name[:7] + ": ").encode("ascii")
+        if not data.startswith(prefix):
+            raise AssertionError("assigned decision heading does not match its path")
+        data = b"# Decision: " + data[len(prefix):]
+    return data
 
 
 class NativeGuardAdmissionScaffoldTests(unittest.TestCase):
@@ -69,7 +102,7 @@ class NativeGuardAdmissionScaffoldTests(unittest.TestCase):
             f"record | {DECISION}\n",
         ])
         self.assertEqual(design["selection"]["candidate"], "typed-applicability")
-        decision = (ROOT / DECISION).read_text()
+        decision = decision_source_bytes(ROOT).decode("utf-8")
         self.assertTrue(decision.startswith("# Decision: Route audit obligations to their evidence\n"))
         for heading in ("Status", "Context", "Decision", "Alternatives", "Consequences"):
             self.assertEqual(decision.count("\n## " + heading + "\n"), 1)
@@ -177,10 +210,47 @@ class NativeGuardAdmissionScaffoldTests(unittest.TestCase):
             self.assertTrue(row["path"].startswith("docs/native-guard-admission/") or row["path"] == DECISION)
             self.assertNotIn("..", Path(row["path"]).parts)
             self.assertIn(Path(row["path"]).suffix, (".md", ".py", ".json"))
-            raw = (ROOT / row["path"]).read_bytes()
+            raw = decision_source_bytes(ROOT) if row["path"] == DECISION else (ROOT / row["path"]).read_bytes()
             self.assertEqual(hashlib.sha256(raw).hexdigest(), row["sha256"])
         self.assertEqual(sum(row["origin"] == "executed-synthetic-selection" for row in manifest["artifacts"]), 15)
         self.assertEqual(sum(row["origin"] == "authored-synthetic-selection-source" for row in manifest["artifacts"]), 2)
+
+    def assigned_fixture(self):
+        docs = self.root / "docs/native-guard-admission"
+        shutil.copytree(DOCS, docs)
+        decision = self.root / "docs/decisions" / ("ADR-999-" + DECISION_SLUG + ".md")
+        decision.parent.mkdir(parents=True, exist_ok=True)
+        decision.write_bytes(ASSIGNMENTS.transformed(decision_source_bytes(ROOT), "999"))
+        return docs, decision
+
+    def test_required_assignment_preserves_scaffold_checks(self):
+        docs, _ = self.assigned_fixture()
+        with mock.patch.object(sys.modules[__name__], "ROOT", self.root), \
+                mock.patch.object(sys.modules[__name__], "DOCS", docs):
+            self.test_selected_design_has_one_canonical_decision()
+            self.test_provenance_covers_only_declared_public_files()
+
+    def test_assignment_still_refuses_changed_decision_body(self):
+        docs, decision = self.assigned_fixture()
+        decision.write_bytes(decision.read_bytes() + b"\nChanged decision content.\n")
+        with mock.patch.object(sys.modules[__name__], "ROOT", self.root), \
+                mock.patch.object(sys.modules[__name__], "DOCS", docs):
+            with self.assertRaises(AssertionError):
+                self.test_provenance_covers_only_declared_public_files()
+
+    def test_assignment_still_refuses_duplicate_decision_homes(self):
+        _, decision = self.assigned_fixture()
+        draft = self.root / DECISION
+        draft.parent.mkdir()
+        draft.write_bytes(decision_source_bytes(ROOT))
+        with self.assertRaisesRegex(AssertionError, "more than one canonical"):
+            decision_source_bytes(self.root)
+
+    def test_assignment_still_refuses_heading_number_mismatch(self):
+        _, decision = self.assigned_fixture()
+        decision.write_bytes(decision.read_bytes().replace(b"# ADR-999: ", b"# ADR-998: ", 1))
+        with self.assertRaisesRegex(AssertionError, "heading does not match"):
+            decision_source_bytes(self.root)
 
     def test_all_eighteen_pending_operations_refuse_without_creating_files(self):
         design = load(DOCS / "design-evidence.json")
