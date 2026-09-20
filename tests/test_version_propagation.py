@@ -45,7 +45,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "dokimasia": "3.1.0",
     "hermes": "0.1.1",
     "hexaemeron": "1.6.68",
-    "homologia": "1.1.0",
+    "homologia": "1.1.1",
     "horos": "0.1.1",
     "janus": "0.1.1",
     "lazarus": "1.1.4",
