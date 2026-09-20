@@ -1,16 +1,28 @@
 # Hosted checkpoint evidence
 
 `checkpoint-conformance.yml` runs the owned release suite on `ubuntu-24.04`
-x86_64 and `macos-15` arm64. Linux installs `bubblewrap` through apt. Both jobs
-use the interpreter in `.python-version`, the test dependency lock and the
-platform asset from the cosign profile. Missing tools, denied namespace
-creation and ineffective network denial fail the job. No host setting is
-relaxed and no positive case may skip.
+x86_64 and `macos-15` arm64. Linux installs `bubblewrap` and
+`apparmor-profiles` through apt. It loads the packaged ABI 4.0
+`bwrap-userns-restrict` profile after checking SHA-256
+`11d39094f044f0cda0febb3ad517b830301da6b2ce929664af09ee9e4dd264f9`.
+That profile permits Bubblewrap setup and denies capabilities to its children.
+The global `kernel.apparmor_restrict_unprivileged_userns` setting stays `1`,
+both profile-local override files must be absent, and the verifier runs
+without sudo. The workflow checks that both `bwrap` and `unpriv_bwrap` are
+loaded in enforce mode.
+
+Both jobs use the interpreter in `.python-version`, the test dependency lock
+and the platform asset from the cosign profile. Missing tools, profile drift,
+denied namespace creation and ineffective network denial fail the job. No
+positive case may skip.
 
 The workflow checks out the pull request head explicitly. `host.json` records
 that actual Git object separately from the event SHA, event head and event
 merge SHA. The collector checks the host OS, architecture, tool hashes, source
-inventory and fixtures around execution. Event identities are recorded context;
+inventory and fixtures around execution. On Ubuntu, `sandbox_setup` also binds
+the installed profile digest, absent local overrides and enabled global user-
+namespace restriction before and after execution. GitHub metadata must show
+the policy preparation step succeeded. Event identities are recorded context;
 the authenticated run's head and the checked source inventory bind the tested
 checkout.
 

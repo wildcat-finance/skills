@@ -219,9 +219,18 @@ os.close(read)
 """ + leader
 
     def test_leader_exit_cleanup(self):
-        result = self.run_python(self.descendant("os._exit(0)\n"))
-        self.assertEqual(result[0], 0)
-        self.assert_lock_released()
+        # Direct execution retains the pipe-holder on Linux too; its PID
+        # namespace would otherwise hide the Darwin leader-exit failure.
+        source = self.descendant("print('complete', flush=True)\nos._exit(0)\n")
+        for sandboxed in (False, True):
+            with self.subTest(sandboxed=sandboxed):
+                if sandboxed:
+                    result = self.run_python(source, timeout=2)
+                else:
+                    result = network.signatures._run(self.python, ["-I", "-c", source],
+                                                     self.root, timeout=2)
+                self.assertEqual(result, (0, b"complete\n", b""))
+                self.assert_lock_released()
 
     def test_timeout_cleanup(self):
         start = time.monotonic()
