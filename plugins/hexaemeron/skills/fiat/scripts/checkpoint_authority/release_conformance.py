@@ -18,7 +18,8 @@ WORKLOAD_METADATA = demo.BUNDLE + "study-workload-metadata.json"
 STUDY_SHA = "cf56704482a20f2d7d7d03d26c1eed8f54d9bf9d5d2d45bb64c18c1d3e8474ae"
 PROJECTION_SHA = "3e51e417e044849260c320091812df58257cdf79ce112470e16eca2c3e2e54f8"
 MANIFEST = demo.BUNDLE + "interoperability-manifest.json"
-MODULES = ("test_checkpoint_authority_release", "test_checkpoint_authority_release_conformance")
+MODULES = ("test_checkpoint_authority_release", "test_checkpoint_authority_release_conformance",
+           "test_checkpoint_network")
 BUNDLE_FILES = (demo.HISTORY, demo.BOOTSTRAP, demo.NATIVE, demo.FRESHNESS, demo.PRESENCE,
                 demo.EXPECTED, demo.HOSTILE)
 SIGNATURE_FILES = (demo.COSIGN_ENVELOPE, demo.COSIGN_DOUBLE, demo.COSIGN_BLOB,
@@ -30,17 +31,20 @@ FILES = tuple(sorted((*BUNDLE_FILES, *SIGNATURE_FILES, WORKLOAD, WORKLOAD_METADA
 """The consumer lock is absent by construction: it is derived from the manifest this binds."""
 MAX_FILE_BYTES = 1024 * 1024
 SOURCES = tuple("plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/" + name + ".py"
-                for name in ("canonical", "schema", "signatures", "network", "trust", "replay", "verifier",
+                for name in ("canonical", "schema", "signatures", "network", "network_policy", "trust", "replay", "verifier",
                              "release", "demo", "release_conformance", "conformance")) + (
     "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority.py",
     "plugins/hexaemeron/tests/checkpoint_authority_conformance.py",
     "plugins/hexaemeron/tests/checkpoint_authority_release_corpus.py",
     "plugins/hexaemeron/tests/checkpoint_authority_release_suite.py",
+    "plugins/hexaemeron/tests/checkpoint_network_design_report.py",
     "plugins/hexaemeron/tests/checkpoint_authority_release_workload.py",
     "plugins/hexaemeron/tests/checkpoint_authority_replay_fixture.py",
     "plugins/hexaemeron/tests/test_checkpoint_authority_records.py",
     "plugins/hexaemeron/tests/test_checkpoint_authority_release.py",
     "plugins/hexaemeron/tests/test_checkpoint_authority_release_conformance.py",
+    "plugins/hexaemeron/tests/test_checkpoint_network.py",
+    "plugins/hexaemeron/tests/test_checkpoint_network_reports.py",
     ".python-version")
 CASE = re.compile(r"(?:" + "|".join(MODULES) + r")\.[A-Za-z]+\.test_[a-z0-9_]+\Z")
 HEX = re.compile(r"[0-9a-f]{64}\Z")
@@ -87,6 +91,8 @@ def inputs(root):
 
 
 def execute(root):
+    boundary = network.prepare()
+    expected_boundary = boundary.expected()
     python = Path(sys.executable).resolve(strict=True)
     tool = io.NativeTool("python", str(python), io.hash_file(python, 268435456)[0])
     try:
@@ -97,11 +103,13 @@ def execute(root):
         value = json.loads(result.stdout, object_pairs_hook=owner._unique_object)
     except (ReleaseRefusal, ValueError, UnicodeError):
         raise owner.Refusal("release-execution-unavailable") from None
-    _validate(value, root)
+    _validate(value, root, expected_boundary)
+    if network.prepare().expected() != expected_boundary:
+        raise owner.Refusal("release-network-changed")
     return value, result.exit, hashlib.sha256(result.stdout).hexdigest(), hashlib.sha256(result.stderr).hexdigest()
 
 
-def _validate(value, root):
+def _validate(value, root, expected_boundary):
     counters = ("tests_run", "subtests_run", "failures", "errors", "skips", "expected_failures",
                 "unexpected_successes")
     fields = {"schema", "complete", "passed", "started", "completed", "failure_cases", "error_cases",
@@ -142,16 +150,10 @@ def _validate(value, root):
     expected = json.loads(owner._read(root, demo.EXPECTED), object_pairs_hook=owner._unique_object)
     if any(demonstration[key] != expected[key] for key in ("history_sha256", "head_sha256", "records")):
         raise owner.Refusal("release-execution-report")
-    denial = demonstration["network_boundary"]
-    if (type(denial) is not dict or set(denial) != {"mechanism", "launcher_sha256", "policy_sha256",
-                                                  "probe_sha256", "probe_exit", "probe_operations"}
-            or denial["mechanism"] != "macos-sandbox-exec-deny-network"
-            or denial["launcher_sha256"] != network.prepare().launcher_sha256
-            or denial["policy_sha256"] != hashlib.sha256(network.POLICY.encode()).hexdigest()
-            or denial["probe_sha256"] != hashlib.sha256(network.PROBE.encode()).hexdigest()
-            or type(denial["probe_exit"]) is not int or denial["probe_exit"] != 0
-            or type(denial["probe_operations"]) is not int or denial["probe_operations"] != 4):
-        raise owner.Refusal("release-execution-report")
+    try:
+        network.validate_observation(demonstration["network_boundary"], expected_boundary)
+    except ReleaseRefusal:
+        raise owner.Refusal("release-execution-report") from None
 
 
 def _validate_workload(value, root):

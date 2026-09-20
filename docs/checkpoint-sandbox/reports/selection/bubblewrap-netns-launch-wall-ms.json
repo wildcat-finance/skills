@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bubblewrap-netns",
+  "criterion": "launch-wall-ms",
+  "value": 41,
+  "unit": "milliseconds",
+  "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion launch-wall-ms --report .hexaemeron/reports/selection/bubblewrap-netns-launch-wall-ms.json",
+  "exit": 0
+}

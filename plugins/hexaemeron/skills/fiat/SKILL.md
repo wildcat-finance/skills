@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.70.1"
+  version: "6.71.1"
 ---
 
 <p align="center">
@@ -1393,3 +1393,10 @@ bootstrap rules and mandatory conformance toolchain. A passing
 `records-and-signatures` report permits only its named design transition.
 Native admission, complete authority replay and release conformance remain
 separate gates; native checkpoint v1 formats remain unchanged.
+
+The released interoperability demonstration retains the macOS network-denial
+policy and supports Linux x86_64 through the packaged Bubblewrap launcher plus
+an inherited seccomp filter. Direct and executed-descendant probes, exact
+policy/tool identity and complete conformance remain required. The reference
+above owns supported profiles, refusals and the separate fixture-validation
+boundary; this does not widen native archive or service containment.

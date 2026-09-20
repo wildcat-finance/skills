@@ -1,8 +1,8 @@
 {
   "counts": {
     "bytes_asset": 138,
-    "bytes_binary": 9962,
-    "bytes_blob": 56980060,
+    "bytes_binary": 10354,
+    "bytes_blob": 56980803,
     "bytes_generated": 98
   },
   "entries": [
@@ -805,6 +805,13 @@
       "path": "docs/agent-instruction-reconciliation/study-evidence/audit-read-inventory.json"
     },
     {
+      "bytes": 392,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/checkpoint-sandbox/linux-feasibility/x86_64-deny-network.bpf"
+    },
+    {
       "bytes": 79048,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 39524",
@@ -1043,9 +1050,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 85028,
+      "bytes": 85771,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 42514",
+      "evidence": "mean line length above 400 in a window at offset 42885",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

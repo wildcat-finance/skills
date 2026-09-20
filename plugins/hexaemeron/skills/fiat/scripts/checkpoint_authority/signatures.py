@@ -150,6 +150,26 @@ def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
             deadline = time.monotonic() + timeout
             process = _spawn([pin.path, *args], source, directory, environment, deadline)
             buffers = {"stdout": bytearray(), "stderr": bytearray()}
+            cleanup_started = False
+
+            def stop_group():
+                nonlocal cleanup_started
+                if cleanup_started:
+                    return
+                cleanup_started = True
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                except PermissionError:
+                    # Darwin can reject a group containing only an unreaped leader.
+                    process.wait(timeout=max(0.0, deadline - time.monotonic()))
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                process.wait()
+
             try:
                 with selectors.DefaultSelector() as selector:
                     selector.register(process.stdout, selectors.EVENT_READ, "stdout")
@@ -158,6 +178,11 @@ def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
                         remaining = deadline - time.monotonic()
                         if remaining <= 0:
                             raise Refusal("tool-timeout", "signature")
+                        # An exited verifier cannot finish through EOF while a
+                        # descendant still owns its pipe. Stop that group first,
+                        # then drain the bytes already written under the same cap.
+                        if process.poll() is not None:
+                            stop_group()
                         for key, _ in selector.select(min(remaining, 0.1)):
                             chunk = os.read(key.fileobj.fileno(), 8192)
                             if not chunk:
@@ -169,20 +194,8 @@ def _run(pin, args, directory, *, input_bytes=b"", timeout=10):
                                 raise Refusal("tool-output-limit", "signature")
                     exit_code = process.wait(timeout=max(0.001, deadline - time.monotonic()))
             finally:
-                # An exited leader can leave descendants holding output pipes.
                 try:
-                    try:
-                        os.killpg(process.pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
-                    except PermissionError:
-                        # Darwin can reject a group containing only an unreaped leader.
-                        process.wait(timeout=max(0.0, deadline - time.monotonic()))
-                        try:
-                            os.killpg(process.pid, signal.SIGKILL)
-                        except ProcessLookupError:
-                            pass
-                    process.wait()
+                    stop_group()
                 finally:
                     process.stdout.close()
                     process.stderr.close()
