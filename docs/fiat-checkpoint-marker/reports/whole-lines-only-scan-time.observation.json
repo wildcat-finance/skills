@@ -1,0 +1,20 @@
+{
+  "positive_count": 436,
+  "negative_count": 119,
+  "source_sha256": {
+    "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.md": "bce008b201071b1ded3e656e24c0bfabb67923932a2cb3a994cb260172d6709c",
+    "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.synopsis.md": "86bab9bce5db6b37a67527336bbfb1f65036a4f3ff504e50914be416be3934b2"
+  },
+  "seeded_rsa_bits": 3072,
+  "candidate": "whole-lines-only",
+  "criterion": "scan-time",
+  "samples_ms": [
+    75.837994,
+    75.9796,
+    76.623301,
+    76.571623,
+    76.446028
+  ],
+  "workload_bytes": 2852105,
+  "method": "streaming 65536-byte chunks with unchanged 10079-byte carry; allocations exclude prebuilt input corpus"
+}

@@ -1,0 +1,1 @@
+{"candidate": "pull-request-merge-state", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate pull-request-merge-state --criterion max-child-output-bytes --out .hexaemeron/design/reports/pull-request-merge-state-max-child-output-bytes.json", "criterion": "max-child-output-bytes", "exit": 0, "schema": "protasis-design-report/v1", "unit": "bytes", "value": 0}

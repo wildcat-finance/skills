@@ -1,0 +1,1 @@
+{"candidate": "pull-request-merge-state", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate pull-request-merge-state --criterion refuses-whole-carry --out .hexaemeron/design/reports/pull-request-merge-state-refuses-whole-carry.json", "criterion": "refuses-whole-carry", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": false}

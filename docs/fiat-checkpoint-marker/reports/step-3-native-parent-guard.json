@@ -1,0 +1,25 @@
+{
+  "boundary": "Parent resolver and report support with only the current native regression overlaid; no complete parent suite or Elenchus classification claimed.",
+  "guard_path": "plugins/hexaemeron/tests/test_checkpoint_marker_scan.py",
+  "guard_sha256": "629b7cfd2d965c991896e52052c876487fa78adb11550f2105279c81f316f499",
+  "observed": {
+    "counts": {
+      "complete": true,
+      "errors": 0,
+      "expectedFailures": 0,
+      "failures": 1,
+      "schema": "elenchus.unittest.v1",
+      "skipped": 0,
+      "testsRun": 1,
+      "unexpectedSuccesses": 0
+    },
+    "output_sha256": "868646fcfa9eaec7f89a7f66f44735270081c00e37d51ed2074ae400c2eaab1f"
+  },
+  "parent_commit": "33f551f87a433c79c65ac5289d35d3be2eb67a9d",
+  "parent_sources": {
+    "plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py": "fdb9fc10b9348c186c66ae305772792bc4f8319391c0df5cb74c1adb214bc4d6",
+    "tests/__init__.py": "dcd7f82a00ec26a2767168bbf833e21705e158c6fcbd2fcae799fc43836d768a",
+    "tests/emit_run_observation_report.py": "c18dffd0f05fa8b652380af9534b9b2a660699447aef4aa7072c4d7ba208e63f"
+  },
+  "schema": "checkpoint-marker-native-parent-guard/v1"
+}

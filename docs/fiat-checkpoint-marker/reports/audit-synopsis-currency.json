@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "/home/kethcode/.local/bin/python3.14",
+    "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
+    "--check",
+    "."
+  ],
+  "exit": 0,
+  "stdout_sha256": "9ebaee2a01eb97a57815d5507d5e2088784696632e9567ac8bdbf621d3a317f5",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
