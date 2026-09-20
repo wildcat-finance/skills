@@ -1,0 +1,9 @@
+{
+  "candidate": "external-writer-broker",
+  "command": "python3 .hexaemeron/design/resolve_gate.py --candidate external-writer-broker --criterion max-grant-bytes --out .hexaemeron/design/reports/external-writer-broker-max-grant-bytes.json",
+  "criterion": "max-grant-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 493
+}

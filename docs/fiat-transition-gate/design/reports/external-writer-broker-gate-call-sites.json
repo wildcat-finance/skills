@@ -1,0 +1,9 @@
+{
+  "candidate": "external-writer-broker",
+  "command": "python3 .hexaemeron/design/resolve_gate.py --candidate external-writer-broker --criterion gate-call-sites --out .hexaemeron/design/reports/external-writer-broker-gate-call-sites.json",
+  "criterion": "gate-call-sites",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}
