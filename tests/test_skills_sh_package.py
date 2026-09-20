@@ -510,6 +510,7 @@ class SkillsShPackageTests(unittest.TestCase):
                     self.assertTrue(path.is_relative_to(plugin), path)
 
     def test_authoritative_runtime_links_close_inside_the_package(self):
+        generator = load_generator()
         documents = [
             RUNTIME / "AGENTS.md",
             RUNTIME / ".agents/skills/promise-machine/SKILL.md",
@@ -529,10 +530,31 @@ class SkillsShPackageTests(unittest.TestCase):
                 if document.parent.name == "x-ray" and link == "invariants.md":
                     continue
                 target = (document.parent / link).resolve()
-                if not target.exists():
-                    missing.append(
-                        f"{document.relative_to(RUNTIME).as_posix()} -> {raw}"
-                    )
+                if target.exists():
+                    continue
+                # A link naming a plain directory under plugins/*/examples/ is
+                # ordinary navigation to a demonstration tree, not a payload
+                # reference (study section 6, "Link-kept"); the
+                # example-payload-class correctly omits a directory the
+                # package keeps no file from, so the link is allowed to name
+                # nothing shipped -- the same trade PORTABLE.md already states
+                # for omitted example content ("needs a full checkout").  Only
+                # a link naming a specific file must still resolve.
+                try:
+                    relative = target.relative_to(RUNTIME).as_posix()
+                except ValueError:
+                    relative = None
+                if relative is not None:
+                    source = ROOT / relative
+                    if (
+                        generator.EXAMPLE_ROOT.match(relative)
+                        and source.is_dir()
+                        and not source.is_symlink()
+                    ):
+                        continue
+                missing.append(
+                    f"{document.relative_to(RUNTIME).as_posix()} -> {raw}"
+                )
         self.assertEqual(missing, [])
 
     def test_declared_omissions_are_absent(self):
@@ -926,37 +948,30 @@ class SkillsShPackageTests(unittest.TestCase):
                     )
         self.assertGreater(checked, 0)
 
-    def test_directory_link_without_an_already_kept_file_pulls_back_the_smallest_tracked_file(self):
-        """A directory-shaped example link must still resolve inside the package.
+    def test_directory_shaped_link_keeps_nothing_on_its_own(self):
+        """A directory-shaped example link is ordinary navigation, not a keep.
 
         `plugins/horos/skills/horos/SKILL.md` links `../../examples/fixture/`
-        and no file under it is Markdown or otherwise linked, so the class
-        would otherwise drop the whole tree and leave that link dangling.
-        `plugins/lazarus/README.md` and `docs/chain-anchors.md` do the same for
-        `examples/multi-provider-anchor-v0`. Both keep exactly their smallest
-        tracked file, `.hexaemeron/design/resolve.py`'s own tie-break.
+        and `plugins/lazarus/README.md`/`docs/chain-anchors.md` link
+        `examples/multi-provider-anchor-v0`; neither packaged document links
+        any specific file inside either directory. The class predicate (study
+        section 6, "Link-kept") and `.hexaemeron/design/resolve.py`'s
+        `class-leaks` criterion both count a link as keeping a payload only
+        when it resolves to a file, never a directory, so this must omit the
+        whole tree rather than guess at a file to keep back in its place.
         """
-        cases = {
-            "plugins/horos/examples/fixture": "plugins/horos/examples/fixture/lib/dep.py",
-            "plugins/lazarus/examples/multi-provider-anchor-v0": (
-                "plugins/lazarus/examples/multi-provider-anchor-v0/rpc.jsonl"
-            ),
-        }
-        for directory, expected in cases.items():
+        directories = (
+            "plugins/horos/examples/fixture",
+            "plugins/lazarus/examples/multi-provider-anchor-v0",
+        )
+        manifest = load_manifest()
+        linked = {row["path"] for row in manifest["kept_by_link"]}
+        for directory in directories:
             with self.subTest(directory=directory):
-                sized = sorted(
-                    (path.stat().st_size, path.relative_to(ROOT).as_posix())
-                    for path in (ROOT / directory).rglob("*")
-                    if path.is_file()
+                self.assertFalse((RUNTIME / directory).exists())
+                self.assertFalse(
+                    any(path.startswith(directory + "/") for path in linked), directory,
                 )
-                self.assertEqual(sized[0][1], expected)
-                kept = RUNTIME / expected
-                self.assertTrue(kept.is_file())
-                self.assertEqual(kept.read_bytes(), (ROOT / expected).read_bytes())
-                siblings = [
-                    path for path in (RUNTIME / directory).rglob("*") if path.is_file()
-                ] if (RUNTIME / directory).is_dir() else []
-                self.assertEqual([p.relative_to(RUNTIME).as_posix() for p in siblings], [expected])
 
     def test_oversized_or_hostile_markdown_link_scan_completes_quickly(self):
         """The link scan is one linear pattern; a hostile document stays bounded.
@@ -982,7 +997,7 @@ class SkillsShPackageTests(unittest.TestCase):
             target.parent.mkdir(parents=True)
             target.write_bytes(hostile)
             started = time.monotonic()
-            found = generator._link_kept_examples(root, {relative}, [relative])
+            found = generator._link_kept_examples(root, {relative})
             elapsed = time.monotonic() - started
         self.assertLess(elapsed, 15.0, elapsed)
         # The 2,000 well-formed links at the end are still found correctly;
