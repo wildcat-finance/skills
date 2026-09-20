@@ -166,11 +166,29 @@ CONTRACT = "promise-machine/v1"
 # The byte cap is not under pressure from this delivery. The payload measures
 # 20,365,653 bytes, 77.7% of the 25 MiB the CLI allows, with 5,848,747 bytes of
 # headroom above the 5 MiB minimum this file also checks.
+#
+# 2026-09-20: step 6 of the same delivery (issue #1731) met the byte ceiling
+# that note did not expect. At signed commit
+# 1fd0abdad1acfdac6f560ba80d5667f6df00e7a0 the complete package measured 1,533
+# files and 20,971,411 bytes; its runtime held 1,526 files and 20,500,639
+# bytes. That left 109 bytes beyond the 5 MiB reserve, after the step's audit
+# had shortened prose in packaged files to fit, and restoring that prose made
+# 20,973,160 bytes, 1,640 over. Omitting the six duplicate Lazarus payloads
+# under adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime, which
+# origin/main already carries, gives a complete package of 1,527 files and
+# 19,987,263 bytes whose runtime holds 1,520 files and 19,516,852 bytes, with
+# 984,257 bytes beyond the reserve. With the prose restored in the same commit
+# the package is 19,989,012 bytes and the runtime 19,518,601, with 982,508
+# bytes beyond the reserve and 73 files below the tripwire. These counts
+# belong to that tree; later changes require fresh measurement. The cap,
+# reserve, tripwire and every other omission rule stay unchanged.
 MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/lazarus/examples/aave-v4-spoke-v1/"
+    "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",
     "assets/characters/*.{png,webp}",
     "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
@@ -235,6 +253,28 @@ def load_generator():
 
 
 class SkillsShPackageTests(unittest.TestCase):
+    def test_lazarus_keeps_the_complete_release_and_one_payload_copy(self):
+        generator = load_generator()
+        source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
+        release = Path("plugins/lazarus/examples/aave-v4-spoke-v1-release")
+        for original in (ROOT / release).rglob("*"):
+            if original.is_file():
+                self.assertEqual(
+                    original.read_bytes(),
+                    (RUNTIME / original.relative_to(ROOT)).read_bytes(),
+                )
+        for name in generator.DUPLICATE_LAZARUS_PAYLOADS:
+            self.assertFalse((RUNTIME / source / name).exists())
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / release / "fixture" / name).read_bytes(),
+            )
+        for name in ("manifest.json", "demo.py"):
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / source / name).read_bytes(),
+            )
+
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
         self.assertEqual(manifest["schema"], SCHEMA)

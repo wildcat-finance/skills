@@ -161,7 +161,7 @@ A row's `opening` is `interval-start`, with a null `empty_block`, or `observed-b
 Every `log_attributions` row adds the required `subject` that emitted the log, and `epoch_index` counts within that subject's own list.
 `check` refuses a v3 receipt under a single-proxy plan and a v2 receipt under a subject-set plan, by name.
 A single-proxy plan keeps writing v2 byte for byte.
-The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt; under v3 its `record_count` is the number of subject rows.
+The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt; under v3 its `record_count` is the number of subject rows, the length of that list.
 The collection list does not grow with the subject set, so the plan's 4096-subject limit bounds a release's subjects.
 
 The interval release itself enters through the ordinary capture plan. Its

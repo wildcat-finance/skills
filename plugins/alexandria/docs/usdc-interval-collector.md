@@ -283,7 +283,8 @@ block and runtime code at the next, both read and preserved. It does not
 establish the contract's first creation. Code destroyed before the interval's
 start, or between two blocks the bisection did not read, is not seen. The receipt's `first_code`
 rows say which opening applied, `interval-start` or `observed-block`, and name
-the pair. The registry capture names the missing deployment block as a gap.
+the pair. The registry capture names the missing deployment block as a gap
+rather than guess it.
 Every evidence scope does too, and says which opening applied, so an observed
 block is never presented as a recorded one. `reconcile` asks the second
 provider for every probe; a different answer is a `code-digest` dispute.
@@ -336,13 +337,14 @@ not compared.
 A capture holds at most 256 gap sentences, so four kinds of gap are bounded:
 subjects deployed after the interval's end, declared markets with no deploy
 log, deploy logs at another block, and deploy logs naming an undeclared
-market. Each names up to 16, and one further sentence counts the rest and the
-total. `check` re-derives the same sentences.
+market. Each kind names up to 16, and one further sentence per kind counts the
+rest and the total. `check` re-derives the same sentences.
 
-Every code read lands in the one `epoch-evidence` journal, which holds
+Every code read lands in the one `epoch-evidence` journal, which holds at most
 67,108,864 bytes. From the registry's code lengths, `collect`, `reconcile` and
 `build` refuse a subject set whose code cannot fit while the plan is
-validated, before any request. The 137 subjects need about 5.5 MB.
+validated, before any request. The Wildcat V2 estate's 137 subjects need about
+5.5 MB of it.
 
 ## Resuming, and rewinding
 

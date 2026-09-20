@@ -20,7 +20,7 @@
     },
     "epochs": {
       "type": "array",
-      "description": "One row per declared subject with an extent inside the interval, in strictly ascending subject order; one list, so coverage counts it through /epochs.",
+      "description": "One row per declared subject with an extent inside the interval, in strictly ascending subject order, so no subject repeats. Each row's epochs tile from that subject's own first block, opened by a block sentinel, through the interval's end. A subject deployed after the interval end carries no row. The table is one list so that a release's coverage counts it through the single selector /epochs, whatever the subject count.",
       "minItems": 1,
       "maxItems": 4096,
       "items": {
@@ -29,7 +29,7 @@
     },
     "first_code": {
       "type": "array",
-      "description": "Where each subject with no recorded creation block was opened, in ascending subject order; check re-derives every row.",
+      "description": "One row per subject whose registry records no creation block, in strictly ascending subject order; empty when every subject has one. It says where that subject's epoch was opened, so an observed block is never read as a recorded one. check re-derives every row from the preserved epoch-evidence reads.",
       "maxItems": 4096,
       "items": {
         "$ref": "#/$defs/first_code"
@@ -257,7 +257,7 @@
     },
     "first_code": {
       "type": "object",
-      "description": "interval-start: code at the interval's first block, empty_block null. observed-block: empty code at empty_block, code at code_block, the next block.",
+      "description": "interval-start: runtime code was read at the interval's first block, code_block is that block and empty_block is null. observed-block: empty code was read at empty_block and runtime code at code_block, the next block, and the epoch opens at code_block. Either way code_block is the start_block of the subject's first epoch.",
       "additionalProperties": false,
       "required": [
         "code_block",

@@ -860,8 +860,9 @@ class Staging:
     def close(self) -> None:
         """Release every journal handle, then name every journal that failed.
 
-        One failed flush must not leave the others open, and a second failure
-        is not lost behind the first.
+        A flush that fails on one journal must not leave the others open: a
+        split plan owns one handle per component. Every failing journal is
+        named, so a second failure is not lost behind the first.
         """
         failures = []
         for name, handle in self._handles.items():
@@ -1176,10 +1177,12 @@ def subject_epoch_rows(epochs) -> list:
 def subject_epoch_table(rows) -> dict:
     """The `{subject: [epoch, ...]}` table a receipt's subject rows declare.
 
-    Refuses anything but the form `subject_epoch_rows` writes: a non-empty
-    list of closed rows under `MAX_SUBJECTS`, in strictly ascending subject
-    order, so a repeated subject and an unsorted table refuse here.
-    `validate_epochs` and `validate_epoch_subjects` read the table returned.
+    Refuses anything but the one form `subject_epoch_rows` writes: a
+    non-empty list of closed rows under `MAX_SUBJECTS`, each naming a
+    lowercase address and a list, in strictly ascending subject order, so a
+    repeated subject and an unsorted table are both refused here. What each
+    list holds, and whether its subject was declared, is for `validate_epochs`
+    and `validate_epoch_subjects`, which read the table this returns.
     """
     if not isinstance(rows, list):
         raise AlexandriaError("a subject set requires a list of subject epoch rows")

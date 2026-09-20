@@ -56,10 +56,13 @@ PRESERVED_DEPLOYMENTS = frozenset()
 # `docs/kickoff/1359/evidence/ethereum-mainnet-1590.json` preserves under
 # `factory_events`. Topic two is the hooks template and topic three the market.
 MARKET_DEPLOYED_TOPIC = "0x6f8c7c94fc16393d1ebec38de9899ba8c6bd860a025aa60063b7cf4c40a16c09"
-# A capture holds at most 256 gap sentences. Each of the four kinds of gap that
-# grow with the subjects or the logs names this many and counts the rest.
+# A capture's coverage holds at most 256 gap sentences, and four kinds of gap
+# here grow with the subject set or with what the logs hold. Each kind lists
+# this many by name and states the rest as one counted sentence, so the gaps
+# this venue owes stay bounded whatever the plan declares.
 LISTED_GAPS = 16
-# What one journaled `eth_getCode` exchange adds beyond the code's digits.
+# What one journaled `eth_getCode` exchange adds beyond the code's own
+# hexadecimal digits: the request, the envelope and the entry around them.
 OPENING_ENTRY_OVERHEAD = 512
 FIRST_CODE_PROBE = "first-code-probe"
 OPENED_AT_START = "interval-start"
@@ -271,7 +274,8 @@ class ImmutableCodeOpening:
 
         Code at the start opens the epoch there. Otherwise the end is read,
         `accept` refusing an empty one, and the range between a block read
-        empty and a block read with code is halved until they are adjacent.
+        empty and a block read with code is halved until they are adjacent:
+        both ends of the reported boundary are reads this phase accepted.
         """
         yield self._probe(subject, self.start)
         if self._has_code(subject, self.start):
@@ -466,10 +470,12 @@ def market_deploy_report(plan, registry, logs) -> dict:
     `expected` is every declared market whose deployment block is inside the
     interval, `observed` every market a preserved HooksFactory
     `MarketDeployed` log names. `missing` and `undeclared` are the two ways
-    the lists can disagree; `misplaced` is a declared market a preserved log
-    deploys at another block than the registry records, whose epoch start
-    followed the registry. `compared` is false when the factory is not a
-    declared subject, because its logs were then never requested.
+    the lists can disagree. `misplaced` is the third disagreement: a declared
+    market that a preserved log deploys at another block than the registry
+    records, whichever side of the interval the registry's block is on. Its
+    epoch start came from the registry's block, so the release says so.
+    `compared` is false when the factory is not a declared subject, because
+    its logs were then never requested.
     """
     _declared(plan, registry)
     start = int(plan["interval"]["start"])
@@ -546,7 +552,12 @@ def gaps(registry, plan=None) -> list[str]:
 
 
 def _missing_block_gap(address: str, row=None) -> str:
-    """One unrecorded subject's gap; with `row`, which opening applied."""
+    """One unrecorded subject's gap; with `row`, which opening applied.
+
+    The registry capture owes the first clause alone: it holds no opening
+    read. An evidence scope says which opening applied, so an observed block
+    is never read as a recorded one.
+    """
     missing = (
         f"the merged records carry no creation block for subject {address}, so its deployment "
         "block is not established"
@@ -581,10 +592,12 @@ def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
     """The venue's contribution to every evidence scope's declared gaps.
 
     `first_code` is the phase's `first_code_rows()`; a release always supplies
-    it, and then every unrecorded declared subject has to have a row.
+    it, and then every unrecorded declared subject has to have a row. Without
+    it the sentence names neither opening.
 
-    Bounded: each of the four kinds that scale names `LISTED_GAPS` and counts
-    the rest.
+    Bounded: a fixed number of sentences plus, for each of the four kinds that
+    scale, `LISTED_GAPS` named ones and one count. `market_deploy_report` still
+    names every member from the release's own components.
     """
     blocks = first_blocks(plan, registry)
     result = []
