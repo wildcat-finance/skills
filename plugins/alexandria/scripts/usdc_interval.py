@@ -82,6 +82,8 @@ from alexandria_lib.interval import (
     upgrade_logs,
     validate_epochs,
     validate_epoch_subjects,
+    subject_epoch_rows,
+    subject_epoch_table,
     validate_plan,
     validate_reconciliation,
     validate_shard_coverage,
@@ -938,7 +940,7 @@ class Collector:
             # error does not replace the refusal.
             try:
                 self.staging.close()
-            except OSError:
+            except AlexandriaError:
                 pass
             raise
         self.staging.close()
@@ -1526,7 +1528,9 @@ class Builder:
         # Every retained row passes the runtime validator before it is
         # written, under the plan's own subject form.
         validate_attributions(attributions, subjects=subjects)
-        return {"epochs": epochs,
+        # A subject-keyed table is written as one list of subject rows, so its
+        # coverage is one collection however many subjects the plan declares.
+        return {"epochs": subject_epoch_rows(epochs) if isinstance(epochs, dict) else epochs,
                 "format": SUBJECT_RECEIPT_FORMAT if "subjects" in self.plan else RECEIPT_FORMAT,
                 "log_attributions": attributions,
                 "implementation_code": {"component": CODE_COMPONENT,
@@ -1550,19 +1554,10 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/records",
             }]
-        elif component == "epoch-table" and isinstance(document["epochs"], dict):
-            # A subject-keyed table is one counted list per subject, because a
-            # coverage selector has to resolve to a list.
-            collections = [
-                {
-                    "name": f"epochs-{subject}",
-                    "record_count": len(table),
-                    "selector": f"/epochs/{subject}",
-                }
-                for subject, table in sorted(document["epochs"].items())
-            ]
-            record_count = sum(item["record_count"] for item in collections)
         elif component == "epoch-table":
+            # One list under either receipt: a single proxy's epochs, or one
+            # row per in-interval subject. The count is the length of `/epochs`
+            # and never grows the collection list with the subject set.
             record_count = len(document["epochs"])
             collections = [{
                 "name": "epochs",
@@ -1851,16 +1846,21 @@ def check_interval(release_root: Path) -> dict:
         LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT,
     ):
         raise AlexandriaError("the interval receipt has an unknown shape")
-    # A subject-set plan's receipt is the subject-keyed format and a
+    # A subject-set plan's receipt is the subject-row format and a
     # single-proxy plan's is not; either one under the other plan is a receipt
     # some other plan's build wrote.
     if ("subjects" in plan) != (receipt["format"] == SUBJECT_RECEIPT_FORMAT):
         raise AlexandriaError(
             "the interval receipt format does not match the plan's subject form"
         )
-    (validate_block_epochs if legacy else validate_epochs)(receipt["epochs"], start, end)
+    # A subject-set receipt writes its table as one list of subject rows; the
+    # table those rows declare is what every check below reads.
+    receipt_epochs = (
+        subject_epoch_table(receipt["epochs"]) if "subjects" in plan else receipt["epochs"]
+    )
+    (validate_block_epochs if legacy else validate_epochs)(receipt_epochs, start, end)
     subjects = _plan_subjects(plan)
-    epoch_entries = validate_epoch_subjects(receipt["epochs"], subjects)
+    epoch_entries = validate_epoch_subjects(receipt_epochs, subjects)
     if not legacy:
         validate_attributions(receipt["log_attributions"], subjects=subjects)
     for epoch in epoch_entries:
@@ -2202,10 +2202,10 @@ def check_interval(release_root: Path) -> dict:
     # table as a whole is compared, so a digest the bytes do not carry is
     # refused under its own name.
     implementations = _recheck_implementation_code(
-        receipt, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
+        receipt, epoch_entries, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
     )
     derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"], legacy=legacy)
-    if derived_epochs != receipt["epochs"]:
+    if derived_epochs != receipt_epochs:
         raise AlexandriaError(
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
@@ -2293,7 +2293,7 @@ def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=F
     return phase
 
 
-def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
+def _recheck_implementation_code(receipt, epoch_entries, component, data: bytes) -> dict:
     """Re-hash the component and every implementation's bytes; refuse by name what disagrees."""
     named = receipt["implementation_code"]
     if not isinstance(named, dict) or set(named) != {"component", "sha256"}:
@@ -2329,9 +2329,6 @@ def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
             raise AlexandriaError(f"the implementation-code component holds {address} twice")
         codes[address] = hashlib.sha256(runtime_code(record["code"], address)).hexdigest()
     implementations = {}
-    epoch_entries = receipt["epochs"]
-    if isinstance(epoch_entries, dict):
-        epoch_entries = validate_epoch_subjects(epoch_entries, list(epoch_entries))
     for epoch in epoch_entries:
         address = epoch["implementation"]
         if address not in codes:

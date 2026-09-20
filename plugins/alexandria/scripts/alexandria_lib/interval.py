@@ -42,7 +42,7 @@ CHECKPOINT_FORMAT_V2 = "alexandria-interval-checkpoint/v2"
 LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
 # The receipt a subject-set plan's release carries: the v2 positional rules,
-# with `epochs` keyed by subject and every attribution row naming its own
+# with `epochs` one row per subject and every attribution row naming its own
 # subject. A single-proxy plan keeps writing v2 byte for byte.
 SUBJECT_RECEIPT_FORMAT = "alexandria-interval-receipt/v3"
 
@@ -858,25 +858,26 @@ class Staging:
                 )
 
     def close(self) -> None:
-        """Release every journal handle, then report the first one that failed.
+        """Release every journal handle, then name every journal that failed.
 
         A flush that fails on one journal must not leave the others open: a
-        split plan owns one handle per component.
+        split plan owns one handle per component. Every failing journal is
+        named, so a second failure is not lost behind the first.
         """
-        failure = None
-        for handle in self._handles.values():
-            try:
-                handle.flush()
-            except OSError as error:
-                failure = failure or error
-            try:
-                handle.close()
-            except OSError as error:
-                failure = failure or error
+        failures = []
+        for name, handle in self._handles.items():
+            for step in (handle.flush, handle.close):
+                try:
+                    step()
+                except OSError as error:
+                    failures.append((name, error))
         self._handles = {}
         self._sizes = {}
-        if failure is not None:
-            raise failure
+        if failures:
+            names = ", ".join(sorted({name for name, _error in failures}))
+            raise AlexandriaError(
+                f"journal {names} could not be flushed and closed: {failures[0][1]}"
+            ) from failures[0][1]
 
     def __enter__(self) -> "Staging":
         return self
@@ -1159,6 +1160,55 @@ def validate_epoch_subjects(epochs, subjects):
         _validate_epoch_owner(subject, table, single=isinstance(subjects, str))
         entries.extend(table)
     return entries
+
+
+def subject_epoch_rows(epochs) -> list:
+    """A subject-keyed epoch table as the receipt writes it: one row per subject.
+
+    The receipt holds `[{"epochs": [...], "subject": address}, ...]` in
+    ascending subject order, a single list, so a release's coverage counts
+    the table through one selector however many subjects it declares. A table
+    keyed by subject in the document itself would need one coverage collection
+    per key, and a capture's collections are bounded far below `MAX_SUBJECTS`.
+    """
+    if not isinstance(epochs, dict) or not epochs:
+        raise AlexandriaError("epoch table names no subject")
+    return [{"epochs": epochs[subject], "subject": subject} for subject in sorted(epochs)]
+
+
+def subject_epoch_table(rows) -> dict:
+    """The `{subject: [epoch, ...]}` table a receipt's subject rows declare.
+
+    Refuses anything but the one form `subject_epoch_rows` writes: a
+    non-empty list of closed rows under `MAX_SUBJECTS`, each naming a
+    lowercase address and a list, in strictly ascending subject order, so a
+    repeated subject and an unsorted table are both refused here. What each
+    list holds, and whether its subject was declared, is for `validate_epochs`
+    and `validate_epoch_subjects`, which read the table this returns.
+    """
+    if not isinstance(rows, list):
+        raise AlexandriaError("a subject set requires a list of subject epoch rows")
+    if not rows:
+        raise AlexandriaError("epoch table names no subject")
+    if len(rows) > MAX_SUBJECTS:
+        raise AlexandriaError(f"epoch table subject rows exceed the {MAX_SUBJECTS}-subject limit")
+    table = {}
+    previous = None
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"epochs", "subject"}:
+            raise AlexandriaError("epoch table subject row has an unknown shape")
+        subject = row["subject"]
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("epoch table subject is not a lowercase address")
+        if previous is not None and subject <= previous:
+            raise AlexandriaError(
+                "epoch table subject rows repeat a subject or are not in ascending subject order"
+            )
+        if not isinstance(row["epochs"], list):
+            raise AlexandriaError("epoch subject table must be a non-empty list")
+        previous = subject
+        table[subject] = row["epochs"]
+    return table
 
 
 def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC):
@@ -1882,6 +1932,8 @@ __all__ = [
     "PLAN_FORMAT_V2",
     "RECEIPT_FORMAT",
     "SUBJECT_RECEIPT_FORMAT",
+    "subject_epoch_rows",
+    "subject_epoch_table",
     "SPLIT_FIELD",
     "Staging",
     "component_name",

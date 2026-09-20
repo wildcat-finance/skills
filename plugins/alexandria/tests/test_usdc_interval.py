@@ -40,6 +40,7 @@ from alexandria_lib.interval import (  # noqa: E402
     plan_shards,
     validate_checkpoint,
 )
+from alexandria_lib import interval as interval_module  # noqa: E402
 from alexandria_lib import release as release_module  # noqa: E402
 from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES  # noqa: E402
 from alexandria_lib.venues import VENUES, compound_v3  # noqa: E402
@@ -2277,9 +2278,9 @@ class CodeHashRecheckTests(ReleaseTestCase):
             plan["subjects"] = [plan.pop("proxy")]
 
         def subject_receipt(receipt):
-            # A subject-set plan's receipt is the subject-keyed format.
+            # A subject-set plan's receipt is the subject-row format.
             receipt["format"] = SUBJECT_RECEIPT_FORMAT
-            receipt["epochs"] = {proxy: receipt["epochs"]}
+            receipt["epochs"] = [{"epochs": receipt["epochs"], "subject": proxy}]
             for row in receipt["log_attributions"]:
                 row["subject"] = proxy
 
@@ -2305,16 +2306,26 @@ class CodeHashRecheckTests(ReleaseTestCase):
         receipt = component_document(output, "epoch-table")
         component = component_document(output, CODE_COMPONENT)
         data = component_path(output, CODE_COMPONENT).read_bytes()
-        expected = usdc_interval._recheck_implementation_code(receipt, component, data)
-        receipt["epochs"] = {self.plan["proxy"]: receipt["epochs"]}
+        proxy = self.plan["proxy"]
+        expected = usdc_interval._recheck_implementation_code(
+            receipt, receipt["epochs"], component, data
+        )
+        # The subject form is one row per subject; its epochs are reached
+        # through the table the rows declare, never by iterating the rows.
+        rows = [{"epochs": receipt["epochs"], "subject": proxy}]
+
+        def entries():
+            table = interval_module.subject_epoch_table(rows)
+            return interval_module.validate_epoch_subjects(table, [proxy])
+
         try:
-            observed = usdc_interval._recheck_implementation_code(receipt, component, data)
+            observed = usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
         except (TypeError, KeyError) as error:
             self.fail(str(error))
         self.assertEqual(observed, expected)
-        receipt["epochs"][self.plan["proxy"]][0]["implementation_code_sha256"] = "0" * 64
+        rows[0]["epochs"][0]["implementation_code_sha256"] = "0" * 64
         with self.assertRaisesRegex(AlexandriaError, "names implementation code digest"):
-            usdc_interval._recheck_implementation_code(receipt, component, data)
+            usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
 
     def test_a_single_proxy_receipt_still_refuses_subject_attribution_fields(self):
         output = self.released("legacy-subject-field")

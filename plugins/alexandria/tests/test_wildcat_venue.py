@@ -22,7 +22,7 @@ import unittest
 from unittest import mock
 
 from tests import test_usdc_interval as existing
-from alexandria_lib import interval, wildcat_registry
+from alexandria_lib import interval, release as release_module, wildcat_registry
 from alexandria_lib.canonical import canonical_bytes
 from alexandria_lib.errors import AlexandriaError
 from alexandria_lib.interval import (
@@ -71,6 +71,15 @@ def _registry_bytes():
 def registry():
     """The generated registry, a fresh copy each time so no case edits another's."""
     return json.loads(_registry_bytes())
+
+
+def epoch_table(receipt):
+    """The `{subject: [epoch, ...]}` table a released receipt's subject rows declare."""
+    return interval.subject_epoch_table(receipt["epochs"])
+
+
+def epoch_row(receipt, subject):
+    return next(row for row in receipt["epochs"] if row["subject"] == subject)
 
 
 def v2_row():
@@ -367,7 +376,7 @@ class RegistryGeneratorTests(unittest.TestCase):
 
 class EpochModelTests(WildcatCase):
     def epochs(self, output):
-        return existing.component_document(output, "epoch-table")["epochs"]
+        return epoch_table(existing.component_document(output, "epoch-table"))
 
     def test_every_subject_has_one_epoch_that_tiles_its_own_extent(self):
         output, _release_id = self.released()
@@ -426,7 +435,8 @@ class EpochModelTests(WildcatCase):
                 with self.assertRaises(AlexandriaError):
                     validate_epochs(epochs, start, end)
                 self.rewrite(
-                    output, "epoch-table", lambda receipt: receipt.__setitem__("epochs", epochs)
+                    output, "epoch-table",
+                    lambda receipt: receipt.__setitem__("epochs", interval.subject_epoch_rows(epochs)),
                 )
                 with self.assertRaises(AlexandriaError):
                     self.check_without_verify(output)
@@ -500,7 +510,7 @@ class EpochModelTests(WildcatCase):
         state["logs"] = {str(index): [] for index in range(4)}
         state["traces"] = {str(index): [] for index in range(4)}
         output, _release_id = self.released("earlier", state)
-        epochs = existing.component_document(output, "epoch-table")["epochs"]
+        epochs = epoch_table(existing.component_document(output, "epoch-table"))
         self.assertNotIn(NEW_MARKET, epochs)
         self.assertNotIn(NEW_HOOKS, epochs)
         self.assertEqual(len(epochs), 135)
@@ -942,8 +952,11 @@ class CollectorConnectionTests(WildcatCase):
         # receipt below is one the schema refuses too.
         for label, edit in {
             "a row without its subject": lambda r: r["log_attributions"][0].pop("subject"),
-            "a flat epoch list": lambda r: r.__setitem__("epochs", r["epochs"][NEW_MARKET]),
-            "a key that is not an address": lambda r: r["epochs"].__setitem__("market", r["epochs"][NEW_MARKET]),
+            "a flat epoch list": lambda r: r.__setitem__("epochs", epoch_row(r, NEW_MARKET)["epochs"]),
+            "a table keyed by subject": lambda r: r.__setitem__("epochs", epoch_table(r)),
+            "a subject that is not an address": lambda r: r["epochs"][0].__setitem__("subject", "market"),
+            "a row with an undeclared field": lambda r: r["epochs"][0].__setitem__("count", 1),
+            "a subject with no epochs": lambda r: r["epochs"][0].__setitem__("epochs", []),
             "the single-proxy format": lambda r: r.__setitem__("format", "alexandria-interval-receipt/v2"),
         }.items():
             with self.subTest(specimen=label):
@@ -972,17 +985,45 @@ class CollectorConnectionTests(WildcatCase):
         stranger = "0x" + "12" * 20
 
         def undeclared_key(receipt):
-            receipt["epochs"][stranger] = deepcopy(receipt["epochs"][NEW_MARKET])
-            receipt["epochs"][stranger][0].update(proxy=stranger, implementation=stranger)
+            table = epoch_table(receipt)
+            table[stranger] = deepcopy(table[NEW_MARKET])
+            table[stranger][0].update(proxy=stranger, implementation=stranger)
+            receipt["epochs"] = interval.subject_epoch_rows(table)
 
         def wrong_owner(receipt):
-            receipt["epochs"][NEW_MARKET][0]["proxy"] = NEW_HOOKS
+            epoch_row(receipt, NEW_MARKET)["epochs"][0]["proxy"] = NEW_HOOKS
+
+        def repeated(receipt):
+            receipt["epochs"].insert(1, deepcopy(receipt["epochs"][0]))
+
+        def unsorted(receipt):
+            receipt["epochs"][0], receipt["epochs"][1] = receipt["epochs"][1], receipt["epochs"][0]
 
         specimens = {
             "an undeclared subject key": (undeclared_key, "undeclared subject"),
             "an epoch owned by another subject": (wrong_owner, "does not belong to its table subject"),
-            "a flat epoch list": (lambda r: r.__setitem__("epochs", r["epochs"][NEW_MARKET]), "epoch"),
-            "an empty subject table": (lambda r: r["epochs"].__setitem__(NEW_MARKET, []), "epoch"),
+            "a subject row repeated": (repeated, "repeat a subject or are not in ascending"),
+            "subject rows out of order": (unsorted, "repeat a subject or are not in ascending"),
+            "a table keyed by subject": (
+                lambda r: r.__setitem__("epochs", epoch_table(r)), "list of subject epoch rows",
+            ),
+            "a row with an undeclared field": (
+                lambda r: r["epochs"][0].__setitem__("count", 1), "subject row has an unknown shape",
+            ),
+            "a subject that is not an address": (
+                lambda r: r["epochs"][0].__setitem__("subject", "market"), "not a lowercase address",
+            ),
+            "a flat epoch list": (
+                lambda r: r.__setitem__("epochs", epoch_row(r, NEW_MARKET)["epochs"]),
+                "subject row has an unknown shape",
+            ),
+            "an empty subject table": (
+                lambda r: epoch_row(r, NEW_MARKET).__setitem__("epochs", []), "epoch",
+            ),
+            "a subject's epochs that are not a list": (
+                lambda r: epoch_row(r, NEW_MARKET).__setitem__("epochs", {}), "non-empty list",
+            ),
+            "no subject rows": (lambda r: r.__setitem__("epochs", []), "names no subject"),
             "a null epoch table": (lambda r: r.__setitem__("epochs", None), "epoch"),
             "a row without its subject": (
                 lambda r: r["log_attributions"][0].pop("subject"), "unknown shape",
@@ -998,7 +1039,9 @@ class CollectorConnectionTests(WildcatCase):
                 lambda r: r.__setitem__("format", "alexandria-interval-receipt/v2"),
                 "does not match the plan's subject form",
             ),
-            "a missing subject's epochs": (lambda r: r["epochs"].pop(NEW_MARKET), "which no epoch names"),
+            "a missing subject's epochs": (
+                lambda r: r["epochs"].remove(epoch_row(r, NEW_MARKET)), "which no epoch names",
+            ),
         }
         output, _release_id = self.released()
         original = existing.component_path(output, "epoch-table").read_bytes()
@@ -1339,6 +1382,14 @@ class DeployLogBlockTests(WildcatCase):
         clean = wildcat_v2.market_deploy_report(self.plan, self.registry, self.logs(self.state))
         self.assertEqual(clean["misplaced"], [])
 
+    def test_a_deploy_log_with_no_block_number_refuses(self):
+        state = deepcopy(self.state)
+        for value in (None, "25895380", "0xzz"):
+            with self.subTest(block_number=value):
+                self.deploy_log(state)["blockNumber"] = value
+                with self.assertRaisesRegex(AlexandriaError, "carries no block number"):
+                    wildcat_v2.market_deploy_report(state["plan"], self.registry, self.logs(state))
+
     def test_only_the_factorys_own_log_names_a_deployed_market(self):
         stranger = "0x" + "12" * 20
         state = deepcopy(self.state)
@@ -1370,8 +1421,15 @@ class JournalCloseTests(WildcatCase):
         names = ["boundary-blocks", "logs", "traces"]
         handles = [staging._handle(name) for name in names]
         staging._handles[names[0]] = self.FailingFlush(handles[0])
-        with self.assertRaisesRegex(OSError, "constructed flush failure"):
+        staging._handles[names[2]] = self.FailingFlush(handles[2])
+        with self.assertRaises(Exception) as raised:
             staging.close()
+        # Both failing journals are named; the second is not lost behind the first.
+        self.assertIsInstance(raised.exception, AlexandriaError)
+        self.assertRegex(
+            str(raised.exception),
+            "journal boundary-blocks, traces could not be flushed and closed: constructed flush failure",
+        )
         self.assertTrue(all(handle.closed for handle in handles))
         self.assertEqual(staging._handles, {})
 
@@ -1431,6 +1489,172 @@ class JournalCloseTests(WildcatCase):
                 with self.assertRaisesRegex(OSError, "constructed close failure"):
                     collector.collect()
         self.assertEqual(finished[0]["total"], 139)
+
+
+class ManySubjectTests(WildcatCase):
+    """A subject set larger than a capture's collection limit, collected through checked.
+
+    The pinned registry lists 137 subjects, so the set is constructed: a
+    registry of the same entry shape, admitted by replacing the venue's pin
+    check for the length of one case, over code and blocks generated here.
+    Nothing but the pin check is replaced; every other path is the venue's own.
+    """
+
+    IN_INTERVAL = 280
+    AFTER_END = 20
+
+    def many(self):
+        start, end = (int(self.plan["interval"][key]) for key in ("start", "end"))
+        shape = self.registry["entries"][0]
+        addresses = [f"0x{index + 1:040x}" for index in range(self.IN_INTERVAL + self.AFTER_END)]
+        entries = []
+        for index, address in enumerate(addresses):
+            entry = dict(shape, address=address, name=f"constructed subject {index}", code_length=24)
+            entry["role"] = "factory" if index == 0 else "market"
+            entry["deployment_block"] = (
+                start - 1 - index if index < self.IN_INTERVAL else end + 1 + index
+            )
+            entry["deployment_block_source"] = "contract-record"
+            entries.append(entry)
+        many = dict(self.registry, entries=entries)
+        state = deepcopy(self.state)
+        # Declared in descending order, so the receipt's ascending rows are its own.
+        state["plan"]["subjects"] = list(reversed(addresses))
+        state["plan"]["deployment"] = "wildcat-v2-constructed-many-subjects"
+        state["logs"] = {str(index): [] for index in range(len(state["plan"]["shards"]))}
+        state["traces"] = dict(state["logs"])
+        state["code"] = {address: "0x6080604052" + address[2:] for address in addresses}
+        interval.validate_plan(state["plan"])
+        return state, many, addresses
+
+    def released_many(self, name):
+        state, many, addresses = self.many()
+        self.registry = many
+        output, release_id = self.released(name, state)
+        return state, addresses, output, release_id
+
+    def test_a_release_over_more_subjects_than_the_collection_limit_builds_and_checks(self):
+        self.assertGreater(self.IN_INTERVAL, release_module.MAX_COLLECTIONS)
+        few_output, _few = self.released("few")
+        few = {name: len(c["coverage"]["collections"]) for name, c in self.captures(few_output).items()}
+        with mock.patch.object(wildcat_v2, "validate_registry", lambda registry: None):
+            state, addresses, output, release_id = self.released_many("many")
+            summary = check_interval(output)
+        self.assertEqual(summary["release_id"], release_id)
+        self.assertEqual(summary["epochs"], self.IN_INTERVAL)
+        self.assertEqual(summary["receipt_semantics"], "v3-subject-positional")
+        receipt = existing.component_document(output, "epoch-table")
+        in_interval = sorted(addresses[:self.IN_INTERVAL])
+        self.assertEqual([row["subject"] for row in receipt["epochs"]], in_interval)
+        self.assertTrue(all(len(row["epochs"]) == 1 for row in receipt["epochs"]))
+        captures = self.captures(output)
+        # One collection, whose count a reader recomputes as the length of `/epochs`.
+        self.assertEqual(
+            captures["epoch-table"]["coverage"]["collections"],
+            [{"name": "epochs", "record_count": self.IN_INTERVAL, "selector": "/epochs"}],
+        )
+        self.assertEqual(captures["epoch-table"]["coverage"]["record_count"], len(receipt["epochs"]))
+        # No capture's collection list grew with the subject set.
+        self.assertEqual(
+            {name: len(c["coverage"]["collections"]) for name, c in captures.items()}, few
+        )
+        schema = json.loads((PLUGIN / "schemas" / "interval-receipt-v3.schema.json").read_text())
+        self.assertEqual(schema_errors(schema, receipt), [])
+
+    def test_the_plans_own_subject_limit_is_the_bound_on_a_release(self):
+        self.IN_INTERVAL, self.AFTER_END = interval.MAX_SUBJECTS, 0
+        with mock.patch.object(wildcat_v2, "validate_registry", lambda registry: None):
+            _state, _addresses, output, release_id = self.released_many("limit")
+            summary = check_interval(output)
+            self.assertEqual((summary["release_id"], summary["epochs"]), (release_id, interval.MAX_SUBJECTS))
+            # One more subject is refused while the plan is validated, by name.
+            self.IN_INTERVAL += 1
+            with self.assertRaisesRegex(AlexandriaError, "4096-subject limit"):
+                self.many()
+        self.assertEqual(
+            self.captures(output)["epoch-table"]["coverage"]["collections"],
+            [{"name": "epochs", "record_count": interval.MAX_SUBJECTS, "selector": "/epochs"}],
+        )
+
+    def test_the_gaps_a_large_subject_set_owes_stay_bounded(self):
+        with mock.patch.object(wildcat_v2, "validate_registry", lambda registry: None):
+            state, addresses, output, _release_id = self.released_many("bounded")
+            owed = wildcat_v2.evidence_gaps(state["plan"], self.registry, [])
+        outside = [gap for gap in owed if "after the interval end" in gap]
+        self.assertEqual(len(outside), wildcat_v2.LISTED_GAPS + 1)
+        listed = [a for a in state["plan"]["subjects"] if a in addresses[self.IN_INTERVAL:]]
+        self.assertEqual(len(listed), self.AFTER_END)
+        for address, gap in zip(listed[:wildcat_v2.LISTED_GAPS], outside):
+            self.assertIn(address, gap)
+        self.assertIn(
+            f"{self.AFTER_END - wildcat_v2.LISTED_GAPS} further declared subjects, "
+            f"{self.AFTER_END} in all",
+            outside[-1],
+        )
+        for name in EVIDENCE_COMPONENTS:
+            gaps = self.captures(output)[name]["coverage"]["gaps"]
+            self.assertEqual([gap for gap in gaps if "after the interval end" in gap], outside)
+            self.assertLess(len(gaps), release_module.MAX_GAPS)
+
+    def test_each_kind_of_deploy_gap_is_bounded_and_still_counted(self):
+        factory = next(e["address"] for e in self.registry["entries"] if e["role"] == "factory")
+        template = next(
+            record for record in self.state["logs"]["2"]
+            if record["topics"][0] == wildcat_v2.MARKET_DEPLOYED_TOPIC
+        )
+        self.assertEqual(template["address"], factory)
+        earlier = [
+            e["address"] for e in self.registry["entries"]
+            if e["role"] == "market" and e["deployment_block"] < int(self.plan["interval"]["start"])
+        ]
+        count = wildcat_v2.LISTED_GAPS + 5
+        self.assertGreaterEqual(len(earlier), count)
+        logs = []
+        for index in range(count):
+            for market in (f"0x{0xabc000 + index:040x}", earlier[index]):
+                record = deepcopy(template)
+                record["topics"][2] = "0x" + "0" * 24 + market[2:]
+                logs.append(record)
+        owed = wildcat_v2.evidence_gaps(self.plan, self.registry, logs)
+        for phrase, summary in (
+            ("is not one of the 80 markets", "name a market the registry does not declare"),
+            ("its epoch start follows the registry", "at another block than the registry records"),
+        ):
+            with self.subTest(kind=summary):
+                self.assertEqual(sum(1 for gap in owed if phrase in gap), wildcat_v2.LISTED_GAPS)
+                counted = [gap for gap in owed if summary in gap]
+                self.assertEqual(len(counted), 1)
+                self.assertIn(f"5 further preserved MarketDeployed logs, {count} in all", counted[0])
+        self.assertTrue(all(len(gap) <= 1000 for gap in owed))
+        report = wildcat_v2.market_deploy_report(self.plan, self.registry, logs)
+        self.assertEqual((len(report["undeclared"]), len(report["misplaced"])), (count, count))
+
+    def test_a_subject_set_whose_code_cannot_fit_refuses_before_any_request(self):
+        entries = wildcat_registry.subject_entries(self.registry)
+        needed = sum(
+            2 * entries[subject]["code_length"] + wildcat_v2.OPENING_ENTRY_OVERHEAD
+            for subject in wildcat_v2.first_blocks(self.plan, self.registry)
+        )
+        self.assertLess(needed, wildcat_v2.MAX_JOURNAL_BYTES)
+        # The overhead constant is measured, not assumed: no journaled code
+        # read here adds more than it beyond the code's own digits.
+        staging = self.staged("measured")
+        lines = (staging / "journals" / f"{OPENING_CLASS}.jsonl").read_bytes().splitlines()
+        code_lines = [line for line in lines if b"eth_getCode" in line]
+        self.assertEqual(len(code_lines), 137)
+        for line in code_lines:
+            subject = json.loads(json.loads(line)["request"])["params"][0]
+            digits = len(self.state["code"][subject]) - 2
+            self.assertLessEqual(len(line) + 1 - digits, wildcat_v2.OPENING_ENTRY_OVERHEAD)
+        transport = WildcatTransport(self.state)
+        with mock.patch.object(wildcat_v2, "MAX_JOURNAL_BYTES", needed - 1):
+            with self.assertRaisesRegex(AlexandriaError, "above the .* journal limit"):
+                Collector(self.plan, self.scratch("too-much-code"), transport, registry=self.registry)
+            with self.assertRaisesRegex(AlexandriaError, "declare fewer subjects per plan"):
+                Builder(self.plan, staging, self.registry, created_at=CREATED_AT)
+        self.assertEqual(transport.calls, [])
+        with mock.patch.object(wildcat_v2, "MAX_JOURNAL_BYTES", needed):
+            Collector(self.plan, self.scratch("just-fits"), transport, registry=self.registry)
 
 
 class FixtureTests(unittest.TestCase):

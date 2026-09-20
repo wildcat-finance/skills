@@ -150,15 +150,16 @@ builds v2 releases and pins each log's owner.
 
 A subject-set plan's release carries `interval-receipt-v3.schema.json`, format
 `alexandria-interval-receipt/v3`, instead.
-Its `epochs` is an object keyed by declared subject address rather than one list.
-Each value is that subject's own epoch list under the v2 epoch and position rules, unedited.
+Its `epochs` is one list of subject rows, `{"epochs": [...], "subject": "<address>"}`, in strictly ascending subject order.
+`check` refuses a repeated subject, rows out of order, a row with any other field and a subject the plan did not declare.
+Each row's `epochs` is that subject's own epoch list under the v2 epoch and position rules, unedited, and the 256-epoch limit bounds each subject's list, never their sum.
 A subject's first epoch opens at a block sentinel, as the single-proxy table's does at the interval start.
-A subject with no extent inside the interval carries no key.
+A subject with no extent inside the interval carries no row.
 Every `log_attributions` row adds the required `subject` that emitted the log, and `epoch_index` counts within that subject's own list.
 `check` refuses a v3 receipt under a single-proxy plan and a v2 receipt under a subject-set plan, by name.
 A single-proxy plan keeps writing v2 byte for byte.
-The epoch-table capture counts one collection per subject, `/epochs/<address>`, because a coverage selector has to resolve to a list.
-A release therefore carries at most 256 in-interval subjects, Alexandria's collection limit, below the plan's 4096-subject limit.
+The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt. Under v3 its `record_count` is the number of subject rows, the length of that list.
+The collection list therefore does not grow with the subject set, and the plan's own 4096-subject limit is the bound on a release's subjects.
 
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format

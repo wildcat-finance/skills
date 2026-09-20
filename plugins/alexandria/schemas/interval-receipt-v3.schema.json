@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://wildcat.finance/schemas/alexandria/interval-receipt-v3.schema.json",
   "title": "Alexandria interval receipt v3",
-  "description": "The v2 positional receipt for a subject-set plan: exclusive positional epochs keyed by declared subject, and independently rederived ownership of every preserved log under the subject that emitted it.",
+  "description": "The v2 positional receipt for a subject-set plan: exclusive positional epochs in one row per declared subject, and independently rederived ownership of every preserved log under the subject that emitted it.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -18,20 +18,12 @@
       "const": "alexandria-interval-receipt/v3"
     },
     "epochs": {
-      "type": "object",
-      "description": "One epoch list per declared subject with an extent inside the interval. Each list tiles from that subject's own first block, opened by a block sentinel, through the interval's end. A subject deployed after the interval end carries no key.",
-      "minProperties": 1,
-      "maxProperties": 4096,
-      "additionalProperties": false,
-      "patternProperties": {
-        "^0x[0-9a-f]{40}$": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 256,
-          "items": {
-            "$ref": "#/$defs/epoch"
-          }
-        }
+      "type": "array",
+      "description": "One row per declared subject with an extent inside the interval, in strictly ascending subject order, so no subject repeats. Each row's epochs tile from that subject's own first block, opened by a block sentinel, through the interval's end. A subject deployed after the interval end carries no row. The table is one list so that a release's coverage counts it through the single selector /epochs, whatever the subject count.",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/subject_epochs"
       }
     },
     "shards": {
@@ -230,6 +222,27 @@
         },
         "end_position": {
           "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "subject_epochs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "epochs",
+        "subject"
+      ],
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/address"
+        },
+        "epochs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/epoch"
+          }
         }
       }
     },

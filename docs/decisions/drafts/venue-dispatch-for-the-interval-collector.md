@@ -190,4 +190,38 @@ owes.
 The same contribution carries what the venue's registry could not establish.
 It names the one subject with no recorded creation block, each subject
 deployed after the interval's end, and each disagreement between the preserved
-`MarketDeployed` logs and the registry's declared markets.
+`MarketDeployed` logs and the registry's declared markets. Each kind that
+grows with the subject set lists 16 by name and then counts the rest, because
+a capture holds at most 256 gap sentences.
+
+## The subject receipt writes its epoch table as one list
+
+### Context
+
+`alexandria-interval-receipt/v3` first wrote `epochs` as an object keyed by
+subject. A coverage selector has to resolve to a list, so that shape needed
+one coverage collection per subject, and a capture holds at most 256
+collections. A release was therefore capped at 256 in-interval subjects while
+the plan admits 4096, and the build refused only after a whole collection.
+`docs/kickoff/1359/targets.json` admits targets whose Ethereum contract counts
+reach and pass that cap. No v3 receipt had been released when this was found.
+
+### Decision
+
+The receipt writes `epochs` as one list of `{"epochs": [...], "subject":
+"<address>"}` rows in strictly ascending subject order, counted by one
+collection at `/epochs`. `subject_epoch_rows` and `subject_epoch_table` in
+`alexandria_lib/interval.py` convert between that list and the
+`{subject: [epoch, ...]}` table every validator reads, so the Step 3
+primitives are unchanged.
+
+Raising the collection limit lost: it bounds every release already built, and
+any fixed limit would still sit below the plan's. One collection per shard of
+subjects lost: it keeps a growing list and adds a second split to explain.
+
+### Consequences
+
+The plan's subject limit is the bound on a release's subjects. The row order
+is part of the format: `check` refuses a repeated subject and rows out of
+order, so one table has one encoding. Once Steps 9 and 10 release captures in
+this format its shape is fixed, and a later change is a v4.

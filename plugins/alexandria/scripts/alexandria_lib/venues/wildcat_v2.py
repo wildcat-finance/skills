@@ -28,6 +28,7 @@ from ..errors import AlexandriaError
 from ..interval import (
     HASH_RE,
     MAX_BLOCK,
+    MAX_JOURNAL_BYTES,
     OpeningRefusal,
     attribute_logs,
     proxy_log_positions,
@@ -45,6 +46,14 @@ PRESERVED_DEPLOYMENTS = frozenset()
 # `docs/kickoff/1359/evidence/ethereum-mainnet-1590.json` preserves under
 # `factory_events`. Topic two is the hooks template and topic three the market.
 MARKET_DEPLOYED_TOPIC = "0x6f8c7c94fc16393d1ebec38de9899ba8c6bd860a025aa60063b7cf4c40a16c09"
+# A capture's coverage holds at most 256 gap sentences, and four kinds of gap
+# here grow with the subject set or with what the logs hold. Each kind lists
+# this many by name and states the rest as one counted sentence, so the gaps
+# this venue owes stay bounded whatever the plan declares.
+LISTED_GAPS = 16
+# What one journaled `eth_getCode` exchange adds beyond the code's own
+# hexadecimal digits: the request, the envelope and the entry around them.
+OPENING_ENTRY_OVERHEAD = 512
 FIRST_BLOCK_HEADER = "first-block-header"
 SUBJECT_HEADER = "subject-first-block-header"
 SUBJECT_CODE = "implementation-code"
@@ -172,6 +181,21 @@ class ImmutableCodeOpening:
         self.first_blocks = first_blocks(plan, registry)
         if not self.first_blocks:
             raise AlexandriaError("no declared subject has an extent inside the interval")
+        # Every code read lands in the one epoch-evidence journal. The
+        # registry records each subject's code length, so a subject set whose
+        # code cannot fit is refused while the plan is validated, not by the
+        # journal ceiling after every shard has been collected.
+        entries = subject_entries(registry)
+        owed = sum(
+            2 * entries[subject]["code_length"] + OPENING_ENTRY_OVERHEAD
+            for subject in self.first_blocks
+        )
+        if owed > MAX_JOURNAL_BYTES:
+            raise AlexandriaError(
+                f"the {len(self.first_blocks)} in-interval subjects' runtime code needs about "
+                f"{owed} bytes of epoch-evidence journal, above the {MAX_JOURNAL_BYTES}-byte "
+                "journal limit; declare fewer subjects per plan"
+            )
         self.logs = staged_logs
         proxy_log_positions(staged_logs, plan["subjects"], plan["interval"], upgrade_topic=None)
         self.hashes: dict[int, str] = {}
@@ -382,8 +406,22 @@ def _missing_block_gap(address: str) -> str:
     )
 
 
+def _bounded(sentences: list, rest: str) -> list:
+    """At most `LISTED_GAPS` named sentences, then one that counts the others."""
+    if len(sentences) <= LISTED_GAPS:
+        return sentences
+    return sentences[:LISTED_GAPS] + [
+        rest.format(rest=len(sentences) - LISTED_GAPS, total=len(sentences))
+    ]
+
+
 def evidence_gaps(plan, registry, logs) -> list[str]:
-    """The venue's contribution to every evidence scope's declared gaps."""
+    """The venue's contribution to every evidence scope's declared gaps.
+
+    Bounded: a fixed number of sentences plus, for each of the four kinds that
+    scale, `LISTED_GAPS` named ones and one count. `market_deploy_report` and
+    `first_blocks` still name every member from the release's own components.
+    """
     blocks = first_blocks(plan, registry)
     result = []
     if plan["deployment"] not in PRESERVED_DEPLOYMENTS:
@@ -392,32 +430,47 @@ def evidence_gaps(plan, registry, logs) -> list[str]:
         if address in blocks:
             result.append(_missing_block_gap(address))
     entries = subject_entries(registry)
-    for subject in plan["subjects"]:
-        if subject not in blocks:
-            result.append(
-                f"subject {subject} was deployed at block {entries[subject]['deployment_block']}, "
-                "after the interval end, so it has no epoch and is outside the interval"
-            )
+    result.extend(_bounded(
+        [
+            f"subject {subject} was deployed at block {entries[subject]['deployment_block']}, "
+            "after the interval end, so it has no epoch and is outside the interval"
+            for subject in plan["subjects"] if subject not in blocks
+        ],
+        "{rest} further declared subjects, {total} in all, were deployed after the interval end, "
+        "have no epoch and are outside the interval; the plan and registry components name each",
+    ))
     report = market_deploy_report(plan, registry, logs)
     if not report["compared"]:
         result.append(
             f"the HooksFactory {report['factory']} is not a declared subject, so no "
             "MarketDeployed log was requested and the declared markets were not compared"
         )
-    for address in report["missing"]:
-        result.append(
+    result.extend(_bounded(
+        [
             f"the registry declares market {address} deployed at block "
             f"{entries[address]['deployment_block']} inside the interval, but no preserved "
             "MarketDeployed log names it"
-        )
-    for address, block, declared in report["misplaced"]:
-        result.append(
+            for address in report["missing"]
+        ],
+        "{rest} further declared markets, {total} in all, were deployed inside the interval with "
+        "no preserved MarketDeployed log; the registry and logs components name each",
+    ))
+    result.extend(_bounded(
+        [
             f"a preserved MarketDeployed log at block {block} names market {address}, which the "
             f"registry declares deployed at block {declared}; its epoch start follows the registry"
-        )
-    for address, block in report["undeclared"]:
-        result.append(
+            for address, block, declared in report["misplaced"]
+        ],
+        "{rest} further preserved MarketDeployed logs, {total} in all, name a declared market at "
+        "another block than the registry records; the registry and logs components name each",
+    ))
+    result.extend(_bounded(
+        [
             f"a preserved MarketDeployed log at block {block} names market {address}, which is "
             f"not one of the {report['declared']} markets the registry declares"
-        )
+            for address, block in report["undeclared"]
+        ],
+        "{rest} further preserved MarketDeployed logs, {total} in all, name a market the registry "
+        "does not declare; the logs components name each",
+    ))
     return result

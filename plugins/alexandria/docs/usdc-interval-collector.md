@@ -257,7 +257,7 @@ SHA-256 of the runtime code read at the epoch's first block. That block is the
 later of the interval's start and the subject's own deployment block, which
 the venue's pinned registry carries. The epoch runs through the interval's end
 and opens at a block sentinel, so every log in its first block has an owner.
-A subject deployed after the interval's end has no epoch and no key in the
+A subject deployed after the interval's end has no epoch and no row in the
 table. Every evidence scope names it as outside the interval. A log from a
 subject before its own first block refuses, because no epoch owns it.
 
@@ -283,8 +283,13 @@ validates the release's own `registry` component the same way before it
 re-derives the table.
 
 A subject-set release carries `alexandria-interval-receipt/v3`. Its `epochs`
-is keyed by subject, and every `log_attributions` row names the `subject` that
-emitted the log. Two subjects that emit in one block and one transaction each
+is one list with a row per in-interval subject, `{"epochs": [...], "subject":
+"<address>"}`, in ascending subject order. `check` refuses a repeated subject,
+rows out of order and an undeclared subject. The list is one coverage
+collection at `/epochs` whose count is its number of rows, so a release's
+collections do not grow with its subjects and the plan's 4096-subject limit is
+the bound. Every `log_attributions` row names the `subject` that emitted the
+log, and its `epoch_index` counts within that subject's own list. Two subjects that emit in one block and one transaction each
 reach their own epoch. `check` reports `receipt_semantics` as
 `v3-subject-positional`. It refuses a v3 receipt under a single-proxy plan and
 a v2 receipt under a subject-set plan.
@@ -300,6 +305,19 @@ with no such log is named as a gap. So is a log naming a market the registry
 does not declare, and a log that deploys a declared market at another block
 than the registry records. A plan that omits the factory says the markets were
 not compared.
+
+A capture holds at most 256 gap sentences, so the gaps that grow with a
+subject set are bounded. Subjects deployed after the interval's end, declared
+markets with no deploy log, deploy logs at another block and deploy logs
+naming an undeclared market are each listed by name up to 16. One further
+sentence per kind then counts the rest and the total. `check` re-derives the
+same bounded sentences.
+
+Every code read lands in the one `epoch-evidence` journal, which holds at most
+67,108,864 bytes. The registry records each subject's code length, so
+`collect`, `reconcile` and `build` refuse a subject set whose code cannot fit
+while the plan is validated, before any request. The Wildcat V2 estate's 137
+subjects need about 5.5 MB of it.
 
 ## Resuming, and rewinding
 

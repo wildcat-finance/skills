@@ -21,6 +21,7 @@ from alexandria_lib.interval import (  # noqa: E402
     EVIDENCE_CLASSES,
     IMPLEMENTATION_SLOT,
     MAX_EPOCHS,
+    MAX_SUBJECTS,
     UPGRADED_TOPIC,
     discover_block_epochs as discover_epochs,
     validate_block_epochs as validate_epochs,
@@ -1558,6 +1559,58 @@ class SubjectFirstPositionTests(unittest.TestCase):
             interval.attribute_logs([record], [subject], {"start": "1000", "end": "1099"}, table)
 
 
+class SubjectEpochRowTests(unittest.TestCase):
+    """The receipt's one list of subject rows, and the table it declares."""
+
+    def table(self, count=3):
+        return {
+            address_at(index): [one_epoch(address_at(index), 1000, 1099, HASH, OTHER_HASH)]
+            for index in reversed(range(count))
+        }
+
+    def test_rows_are_ascending_by_subject_and_declare_the_same_table(self):
+        table = self.table()
+        rows = interval.subject_epoch_rows(table)
+        self.assertEqual([row["subject"] for row in rows], sorted(table))
+        self.assertEqual([set(row) for row in rows], [{"epochs", "subject"}] * 3)
+        self.assertEqual(interval.subject_epoch_table(rows), table)
+        interval.validate_epochs(interval.subject_epoch_table(rows), 1000, 1099)
+        for empty in ({}, [], None):
+            with self.assertRaisesRegex(AlexandriaError, "names no subject"):
+                interval.subject_epoch_rows(empty)
+
+    def test_anything_but_that_one_form_refuses(self):
+        rows = interval.subject_epoch_rows(self.table())
+        specimens = {
+            "a table keyed by subject": (self.table(), "list of subject epoch rows"),
+            "no rows": ([], "names no subject"),
+            "a repeated subject": ([rows[0], rows[0], rows[1]], "repeat a subject"),
+            "rows out of order": ([rows[1], rows[0]], "ascending subject order"),
+            "a row that is not an object": ([rows[0], "row"], "unknown shape"),
+            "a row with another field": ([dict(rows[0], count=1)], "unknown shape"),
+            "a row without its epochs": ([{"subject": rows[0]["subject"]}], "unknown shape"),
+            "an uppercase subject": (
+                [dict(rows[0], subject=rows[0]["subject"].upper())], "not a lowercase address",
+            ),
+            "a subject that is not a string": ([dict(rows[0], subject=7)], "not a lowercase address"),
+            "epochs that are not a list": ([dict(rows[0], epochs={})], "non-empty list"),
+        }
+        for label, (specimen, message) in specimens.items():
+            with self.subTest(specimen=label):
+                with self.assertRaises(Exception) as raised:
+                    interval.subject_epoch_table(specimen)
+                self.assertIsInstance(raised.exception, AlexandriaError)
+                self.assertRegex(str(raised.exception), message)
+
+    def test_the_row_count_is_bounded_by_the_subject_limit(self):
+        rows = [
+            {"epochs": [], "subject": f"0x{index + 1:040x}"} for index in range(MAX_SUBJECTS + 1)
+        ]
+        self.assertEqual(len(interval.subject_epoch_table(rows[:MAX_SUBJECTS])), MAX_SUBJECTS)
+        with self.assertRaisesRegex(AlexandriaError, f"{MAX_SUBJECTS}-subject limit"):
+            interval.subject_epoch_table(rows)
+
+
 class UpgradeTopicTests(unittest.TestCase):
     """`upgrade_topic=None` is the immutable-code model: no log is read as an upgrade."""
 
@@ -1682,13 +1735,21 @@ class SchemaTests(unittest.TestCase):
         self.assertFalse(schema["additionalProperties"])
         self.assertEqual(schema["properties"]["format"]["const"], interval.SUBJECT_RECEIPT_FORMAT)
         self.assertEqual(set(schema["required"]), set(single["required"]))
+        # One list of subject rows, so the table's coverage is one collection
+        # at `/epochs` however many subjects a plan declares.
         epochs = schema["properties"]["epochs"]
-        self.assertEqual(epochs["type"], "object")
-        self.assertFalse(epochs["additionalProperties"])
-        self.assertEqual(epochs["maxProperties"], interval.MAX_SUBJECTS)
-        pattern, table = next(iter(epochs["patternProperties"].items()))
-        self.assertRegex(address_at(0), pattern)
-        self.assertEqual(table["maxItems"], MAX_EPOCHS)
+        self.assertEqual(epochs["type"], "array")
+        self.assertEqual((epochs["minItems"], epochs["maxItems"]), (1, interval.MAX_SUBJECTS))
+        self.assertEqual(epochs["items"], {"$ref": "#/$defs/subject_epochs"})
+        row = schema["$defs"]["subject_epochs"]
+        self.assertFalse(row["additionalProperties"])
+        self.assertEqual(set(row["required"]), {"epochs", "subject"})
+        self.assertEqual(row["properties"]["subject"], {"$ref": "#/$defs/address"})
+        self.assertRegex(address_at(0), schema["$defs"]["address"]["pattern"])
+        # The epoch limit bounds each subject's own list, never their sum.
+        self.assertEqual(row["properties"]["epochs"]["maxItems"], MAX_EPOCHS)
+        self.assertEqual(row["properties"]["epochs"]["items"], {"$ref": "#/$defs/epoch"})
+        self.assertEqual(set(schema["$defs"]) - set(single["$defs"]), {"subject_epochs"})
         rows = schema["properties"]["log_attributions"]["items"]
         self.assertEqual(
             set(rows["required"]) - set(single["properties"]["log_attributions"]["items"]["required"]),
