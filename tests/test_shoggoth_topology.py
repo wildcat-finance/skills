@@ -376,29 +376,41 @@ class RefusalTests(unittest.TestCase):
         )
         self.assertIn("sundial", derived.phase_ids)
 
-    def test_bytecode_caches_are_invisible_to_discovery(self):
-        """A lint run's `__pycache__` must move nothing this reader derives.
+    def test_a_plugin_at_the_cap_still_reads_beside_bytecode_caches(self):
+        """Real entries at the cap plus a lint run's caches must still read.
 
         The observed failure: running a bundled Python lint from the tree
         writes `__pycache__` under `plugins/<id>/skills`, and those
         directories counted toward the entry cap on a diff that touched
-        nothing under `plugins/`.
+        nothing under `plugins/`. The tree here holds exactly the cap in real
+        entries, so a cache that counted would be the one entry over. One
+        real entry more must still refuse, or the cap has been loosened
+        rather than the caches skipped.
         """
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             plant(root, self.specimen["plugins"])
-            before = self._read(root)
-            cache = (
-                root / "plugins" / "quarry" / "skills" / "granite" / "__pycache__"
+            skills = root / "plugins" / "quarry" / "skills"
+            planted = sum(
+                len(directories) + len(files)
+                for _, directories, files in os.walk(skills)
             )
-            cache.mkdir()
-            (cache / "module.cpython-312.pyc").write_bytes(b"\x00")
-            nested = root / "plugins" / "quarry" / "skills" / "__pycache__"
-            nested.mkdir()
-            (nested / "other.cpython-312.pyc").write_bytes(b"\x00")
-            after = self._read(root)
-        self.assertEqual(after.counts(), before.counts())
-        self.assertEqual(after.governed, before.governed)
+            for index in range(shoggoth_topology.MAX_SKILLS_PER_PLUGIN - planted):
+                (skills / f"filler-{index:04d}").touch()
+            for cache in (skills / "__pycache__", skills / "granite" / "__pycache__"):
+                cache.mkdir()
+                (cache / "module.cpython-312.pyc").write_bytes(b"\x00")
+
+            derived = self._read(root)
+
+            (skills / "one-real-entry-too-many").touch()
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(derived.counts()["governed"], 6)
+        self.assertEqual(caught.exception.code, "tree-oversized")
+        self.assertEqual(
+            caught.exception.detail, shoggoth_topology.MAX_SKILLS_PER_PLUGIN + 1
+        )
 
     def test_a_bytecode_cache_cannot_trip_the_entry_cap(self):
         """However many files it holds, `__pycache__` never reaches the walk.
