@@ -7,6 +7,13 @@ killed between a record and its checkpoint leaves bytes no resumed run keeps,
 because resume truncates every journal back to its recorded offset before it
 returns the next shard.
 
+A plan may declare `shards_per_component`.  Each shard class's journal is then
+kept as one file per plan-derived component, a contiguous shard range, and
+released as one component per file, so a logical journal larger than the
+per-file ceiling is collected and shipped without any single file exceeding
+it.  The boundaries derive from the plan's shard count and that one field, so
+they move only when the plan changes.  The opening reads are never split.
+
 Nothing here reaches a network.  The collector that does is built on top of
 this module and supplies its own transport.
 """
@@ -28,6 +35,10 @@ from .errors import AlexandriaError
 PLAN_FORMAT = "alexandria-interval-plan/v1"
 PLAN_FORMAT_V2 = "alexandria-interval-plan/v2"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
+# The checkpoint a split tree writes: the same fields, with `offsets` keyed by
+# journal component rather than by class, because a split tree has one file
+# per class and component. An unsplit tree keeps writing v1 byte for byte.
+CHECKPOINT_FORMAT_V2 = "alexandria-interval-checkpoint/v2"
 LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
 
@@ -50,6 +61,12 @@ FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 MIN_SHARD_WIDTH = 1
 MAX_SHARD_WIDTH = 50_000
 MAX_SHARDS = 4_096
+# The optional plan field that splits each shard-class journal into release
+# components of at most this many shards. Absent means one component per
+# class under the class's own name; present, it is a positive integer bounded
+# by the shard limit, and the component ranges derive from it and the shard
+# count alone, never from how many bytes a collection returned.
+SPLIT_FIELD = "shards_per_component"
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # How far back a reorg can be walked before the collector refuses instead of
@@ -114,6 +131,70 @@ def plan_shards(start: int, end: int, width: int) -> list[dict]:
     return shards
 
 
+def component_ranges(shard_count, shards_per_component):
+    """The contiguous shard ranges each journal component holds, from the plan alone.
+
+    None when the plan declares no split, so an unsplit plan keeps one
+    component per class under the class's own name. Otherwise the ranges tile
+    shard indexes 0 through `shard_count - 1` in order, every range but the
+    last holding exactly `shards_per_component` shards, so the boundaries move
+    only when the plan changes and never because a re-collection returned one
+    more record.
+    """
+    if shards_per_component is None:
+        return None
+    if (
+        not isinstance(shards_per_component, int)
+        or isinstance(shards_per_component, bool)
+        or not 1 <= shards_per_component <= MAX_SHARDS
+    ):
+        raise AlexandriaError(
+            f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+        )
+    if not isinstance(shard_count, int) or isinstance(shard_count, bool) or shard_count < 1:
+        raise AlexandriaError("journal components need a positive shard count")
+    return [
+        (first, min(first + shards_per_component, shard_count) - 1)
+        for first in range(0, shard_count, shards_per_component)
+    ]
+
+
+def plan_partition(plan):
+    """The plan's component ranges, or None for a plan that declares no split."""
+    return component_ranges(len(plan["shards"]), plan.get(SPLIT_FIELD))
+
+
+def component_name(name: str, index: int) -> str:
+    """The journal component holding one contiguous shard range of one class."""
+    return f"{name}.{index}"
+
+
+def component_of(ranges, shard: int) -> int:
+    """Which component holds one shard; the ranges tile the shards, so exactly one does."""
+    for index, (first, last) in enumerate(ranges):
+        if first <= shard <= last:
+            return index
+    raise AlexandriaError(f"shard {shard} is outside every journal component")
+
+
+def journal_names(classes, ranges=None) -> tuple:
+    """The physical journals a tree holds: one per class, or one per class and component.
+
+    The opening reads are never split: they are staged under the virtual shard
+    index and their number is bounded by the epoch count rather than the shard
+    count, so no plan-derived shard range can hold them.
+    """
+    if ranges is None:
+        return tuple(classes)
+    names = []
+    for name in classes:
+        if name == OPENING_CLASS:
+            names.append(name)
+        else:
+            names.extend(component_name(name, index) for index in range(len(ranges)))
+    return tuple(names)
+
+
 def validate_plan(plan) -> None:
     """Check one closed interval plan document.
 
@@ -122,13 +203,15 @@ def validate_plan(plan) -> None:
     array instead and means each declared address. Every other field --
     chain, deployment, venue, evidence classes, interval/shards, finality,
     provider -- is shared and checked the same way under either format.
+    Either format may carry the optional `shards_per_component`; a plan
+    without it declares no split and validates exactly as before.
     """
     required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
-    if not isinstance(plan, dict) or set(plan) not in (required_v1, required_v2):
+    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD} not in (required_v1, required_v2):
         raise AlexandriaError("interval plan has an unknown shape")
     is_v2 = "subjects" in plan
     if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
@@ -153,6 +236,14 @@ def validate_plan(plan) -> None:
     expected = plan_shards(start, end, width if isinstance(width, int) else 0)
     if plan["shards"] != expected:
         raise AlexandriaError("interval plan shards do not tile its declared interval")
+    if SPLIT_FIELD in plan:
+        # Present means declared: a null is not "no split", it is a field this
+        # collector cannot read. The bounds are checked before any use.
+        if plan[SPLIT_FIELD] is None:
+            raise AlexandriaError(
+                f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+            )
+        component_ranges(len(expected), plan[SPLIT_FIELD])
 
     finality = plan["finality"]
     if not isinstance(finality, dict):
@@ -244,11 +335,17 @@ def journal_classes(declared) -> tuple:
 
 def validate_checkpoint(
     checkpoint, expected_digest: str, shard_count: int, classes=EVIDENCE_CLASSES,
+    ranges=None,
 ) -> None:
-    """Check one closed `alexandria-interval-checkpoint/v1` document.
+    """Check one closed interval checkpoint document.
 
     `classes` is the plan's declared evidence classes; the checkpoint's offsets
     cover exactly those, so a plan that omits a class carries no journal for it.
+    `ranges` is the plan's component partition: None for an unsplit plan, whose
+    checkpoint is `alexandria-interval-checkpoint/v1` keyed by class, or the
+    plan-derived shard ranges, whose checkpoint is `/v2` keyed by journal
+    component. A checkpoint of the other format belongs to a tree laid out
+    differently from the one the plan describes and is refused by name.
     """
     required = {
         "format", "history", "last_accepted", "next_shard", "offsets",
@@ -256,10 +353,23 @@ def validate_checkpoint(
     }
     if not isinstance(checkpoint, dict) or set(checkpoint) != required:
         raise AlexandriaError("interval checkpoint has an unknown shape")
-    if checkpoint["format"] != CHECKPOINT_FORMAT:
+    if checkpoint["format"] not in (CHECKPOINT_FORMAT, CHECKPOINT_FORMAT_V2):
         raise AlexandriaError("interval checkpoint format is not recognised")
     if checkpoint["plan_sha256"] != expected_digest:
         raise AlexandriaError("interval checkpoint belongs to a different plan")
+    # The plan's digest covers its split field, so a checkpoint of the wrong
+    # format for the plan it names is a tree laid out by other code.
+    expected_format = CHECKPOINT_FORMAT if ranges is None else CHECKPOINT_FORMAT_V2
+    if checkpoint["format"] != expected_format:
+        raise AlexandriaError(
+            "interval checkpoint format does not match the journal split the plan declares"
+        )
+    journals = set(journal_names(classes, ranges))
+    coverage = (
+        "interval checkpoint offsets do not cover every evidence class the plan declares"
+        if ranges is None
+        else "interval checkpoint offsets do not cover every journal component the plan derives"
+    )
     for field in ("next_shard", "records"):
         value = checkpoint[field]
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
@@ -267,8 +377,8 @@ def validate_checkpoint(
     if checkpoint["next_shard"] > shard_count:
         raise AlexandriaError("interval checkpoint names a shard outside its plan")
     offsets = checkpoint["offsets"]
-    if not isinstance(offsets, dict) or set(offsets) != set(classes):
-        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class the plan declares")
+    if not isinstance(offsets, dict) or set(offsets) != journals:
+        raise AlexandriaError(coverage)
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
@@ -310,10 +420,8 @@ def validate_checkpoint(
         if not isinstance(entry["records"], int) or isinstance(entry["records"], bool) or entry["records"] < 0:
             raise AlexandriaError("interval checkpoint history record count is not a count")
         entry_offsets = entry["offsets"]
-        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(classes):
-            raise AlexandriaError(
-                "interval checkpoint history offsets do not cover every evidence class the plan declares"
-            )
+        if not isinstance(entry_offsets, dict) or set(entry_offsets) != journals:
+            raise AlexandriaError("interval checkpoint history " + coverage.removeprefix("interval checkpoint "))
         for name, value in entry_offsets.items():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise AlexandriaError(
@@ -395,7 +503,14 @@ def contained(root: Path, candidate) -> Path:
 
 
 class Staging:
-    """One append-only journal per evidence class, checkpointed by byte offset."""
+    """One append-only journal per evidence class, checkpointed by byte offset.
+
+    Under a plan that declares `shards_per_component`, each shard class is kept
+    as one file per plan-derived component instead, so no file outgrows
+    `MAX_JOURNAL_BYTES` while the class's logical journal may. Readers see the
+    logical journal through `entries`, one component file at a time; nothing
+    ever joins the components into one file.
+    """
 
     def __init__(self, root, plan) -> None:
         validate_plan(plan)
@@ -406,6 +521,10 @@ class Staging:
         # opening reads, which every plan owes and no plan declares.
         self.declared = validate_evidence_classes(plan["evidence_classes"])
         self.classes = journal_classes(self.declared)
+        # The plan-derived split, if any, and the physical journals it implies.
+        self.ranges = plan_partition(plan)
+        self.journal_names = journal_names(self.classes, self.ranges)
+        self.checkpoint_format = CHECKPOINT_FORMAT if self.ranges is None else CHECKPOINT_FORMAT_V2
         self.root = resolve_root(root)
         self.journals = self.root / JOURNAL_DIRECTORY
         try:
@@ -424,9 +543,16 @@ class Staging:
     # -- journals ---------------------------------------------------------
 
     def _journal_path(self, name: str) -> Path:
-        if name not in JOURNAL_CLASSES:
-            raise AlexandriaError(f"unknown evidence class {name!r}")
+        """Where one physical journal lives: a class, or a class and component."""
+        if name not in self.journal_names:
+            raise AlexandriaError(f"unknown journal {name!r}")
         return self.journals / f"{name}.jsonl"
+
+    def _physical(self, shard: int, name: str) -> str:
+        """The journal file one record lands in: its class, or its class and component."""
+        if self.ranges is None or name == OPENING_CLASS:
+            return name
+        return component_name(name, component_of(self.ranges, shard))
 
     def _handle(self, name: str):
         if name not in self._handles:
@@ -480,13 +606,18 @@ class Staging:
             "shard": shard,
         }
         data = canonical_bytes(entry)
-        handle = self._handle(name)
-        if self._sizes[name] + len(data) > MAX_JOURNAL_BYTES:
+        # The ceiling is per file. A split class's components are separate
+        # files, so a logical journal may pass the ceiling while every file it
+        # is kept in stays under it; a single record that no file can hold
+        # still refuses here, before anything is written.
+        physical = self._physical(shard, name)
+        handle = self._handle(physical)
+        if self._sizes[physical] + len(data) > MAX_JOURNAL_BYTES:
             raise AlexandriaError(
-                f"journal {name} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
+                f"journal {physical} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
             )
         handle.write(data)
-        self._sizes[name] += len(data)
+        self._sizes[physical] += len(data)
         self._records += 1
 
     def last_accepted(self):
@@ -517,7 +648,7 @@ class Staging:
         if not isinstance(block_hash, str) or HASH_RE.fullmatch(block_hash) is None:
             raise AlexandriaError("committed block hash is not a 32-byte hash")
         offsets = {}
-        for name in self.classes:
+        for name in self.journal_names:
             handle = self._handles.get(name)
             if handle is None:
                 path = self._journal_path(name)
@@ -537,7 +668,7 @@ class Staging:
         })
         self._history = history[-MAX_HISTORY:]
         checkpoint = {
-            "format": CHECKPOINT_FORMAT,
+            "format": self.checkpoint_format,
             "history": list(self._history),
             "last_accepted": {"block_hash": block_hash, "block_number": number},
             "next_shard": shard + 1,
@@ -545,7 +676,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": self._records,
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -555,7 +686,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            for name in self.classes:
+            for name in self.journal_names:
                 path = self._journal_path(name)
                 if path.is_file():
                     _truncate(path, 0)
@@ -567,8 +698,8 @@ class Staging:
             raise AlexandriaError("interval checkpoint is not a regular file")
         data = _read_control(self.checkpoint_path, "interval checkpoint")
         checkpoint = load_bytes(data, "interval checkpoint")
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
-        for name in self.classes:
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        for name in self.journal_names:
             path = self._journal_path(name)
             offset = checkpoint["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -598,14 +729,14 @@ class Staging:
         if not self.checkpoint_path.exists():
             return {
                 "history": [], "last_accepted": None, "next_shard": 0,
-                "offsets": {name: 0 for name in self.classes}, "records": 0,
+                "offsets": {name: 0 for name in self.journal_names}, "records": 0,
             }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
         checkpoint = load_bytes(
             _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
         )
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         return {
             "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
@@ -615,7 +746,7 @@ class Staging:
         }
 
     def journal_bytes(self, name: str) -> int:
-        """The bytes one class journal holds on disk, committed or not; zero when absent."""
+        """The bytes one physical journal holds on disk, committed or not; zero when absent."""
         path = self._journal_path(name)
         return path.stat().st_size if path.is_file() else 0
 
@@ -636,7 +767,11 @@ class Staging:
             )
         entry = matches[0]
         self.close()
-        for name in self.classes:
+        # A boundary inside an earlier component leaves every later component
+        # at its recorded offset of zero, so a rewind across a component
+        # boundary empties the later file rather than leaving records that the
+        # re-collection would then write beside.
+        for name in self.journal_names:
             path = self._journal_path(name)
             offset = entry["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -647,7 +782,7 @@ class Staging:
         self._records = entry["records"]
         self._history = [item for item in self._history if item["shard"] <= shard]
         checkpoint = {
-            "format": CHECKPOINT_FORMAT,
+            "format": self.checkpoint_format,
             "history": list(self._history),
             "last_accepted": {
                 "block_hash": entry["block_hash"],
@@ -658,7 +793,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": entry["records"],
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -667,7 +802,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         self.close()
-        for name in self.classes:
+        for name in self.journal_names:
             path = self._journal_path(name)
             if path.is_file():
                 _truncate(path, 0)
@@ -678,9 +813,35 @@ class Staging:
         self._resumed = True
         return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
 
-    def entries(self, name: str):
-        """Yield the staged entries of one class, in the order they were kept."""
-        path = self._journal_path(name)
+    def entries(self, name: str, component=None):
+        """Yield the staged entries of one class, in the order they were kept.
+
+        Under a split plan the class's components are read in shard order, one
+        file at a time, so the logical journal is never assembled on disk.
+        `component` narrows the read to one plan-derived range; it is refused
+        for the opening reads and for an unsplit plan, which have no components
+        to name.
+        """
+        if name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
+        if self.ranges is None or name == OPENING_CLASS:
+            if component is not None:
+                raise AlexandriaError(f"journal {name} is not split into components")
+            journals = [name]
+        elif component is None:
+            journals = [component_name(name, index) for index in range(len(self.ranges))]
+        else:
+            if (
+                not isinstance(component, int) or isinstance(component, bool)
+                or not 0 <= component < len(self.ranges)
+            ):
+                raise AlexandriaError(f"journal {name} has no component {component!r}")
+            journals = [component_name(name, component)]
+        for journal in journals:
+            yield from self._journal_entries(journal)
+
+    def _journal_entries(self, journal: str):
+        path = self._journal_path(journal)
         if not path.is_file():
             return
         for line in _read_journal(path).splitlines():
@@ -689,7 +850,7 @@ class Staging:
                 # entry. Reading under the smaller control limit would refuse a
                 # record this module had already accepted.
                 yield load_bytes(
-                    line + b"\n", f"journal {name} entry", max_bytes=MAX_JOURNAL_BYTES
+                    line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES
                 )
 
     def close(self) -> None:
@@ -1652,6 +1813,7 @@ def read_regular(path: Path, label: str, maximum: int) -> bytes:
 
 __all__ = [
     "CHECKPOINT_FORMAT",
+    "CHECKPOINT_FORMAT_V2",
     "IMPLEMENTATION_SLOT",
     "JOURNAL_CLASSES",
     "MAX_EPOCHS",
@@ -1674,10 +1836,16 @@ __all__ = [
     "PLAN_FORMAT",
     "PLAN_FORMAT_V2",
     "RECEIPT_FORMAT",
+    "SPLIT_FIELD",
     "Staging",
+    "component_name",
+    "component_of",
+    "component_ranges",
     "contained",
     "discover_epochs",
+    "journal_names",
     "plan_digest",
+    "plan_partition",
     "plan_shards",
     "read_regular",
     "resolve_root",

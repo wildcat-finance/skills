@@ -18,6 +18,13 @@ resumed like a shard and reconciled like one. `build` discovers the epochs
 from that journal alone, ships each implementation's runtime bytes as a
 component the epoch table names by digest, and binds every evidence scope to
 the first block's hash and the last shard's; `check` re-hashes the bytes.
+
+A plan that declares `shards_per_component` ships each shard-class journal as
+one release component per plan-derived shard range, named `<class>.<k>`, so a
+journal larger than the component ceiling is released in parts. `check`
+re-derives those ranges from the plan alone, refuses components that do not
+tile the shard range exactly, and compares every component's byte count with
+the ceiling.
 """
 
 from __future__ import annotations
@@ -56,6 +63,7 @@ from alexandria_lib.interval import (
     validate_attributions,
     Staging,
     ZERO_ADDRESS,
+    component_name,
     discover_epochs,
     log_identity,
     FINALITY_POLICIES,
@@ -64,6 +72,7 @@ from alexandria_lib.interval import (
     opening_code_reads,
     opening_prefix,
     plan_digest,
+    plan_partition,
     read_regular,
     runtime_code,
     slot_word_address,
@@ -76,7 +85,7 @@ from alexandria_lib.interval import (
 )
 from alexandria_lib.venues import VENUES
 from alexandria_lib.paths import read_confined_file
-from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES, ingest, verify
+from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES, ingest, verify
 
 
 ENDPOINT_ENV = "ALEXANDRIA_COMPOUND_RPC_URL"
@@ -112,6 +121,64 @@ OMISSION_REASONS = {
     ),
     "traces": "no internal call to the proxy was preserved",
 }
+
+
+
+def journal_components(plan, classes) -> dict:
+    """The release's journal components, derived from the plan alone.
+
+    Maps each component name to `{"class", "index", "first", "last"}`: the
+    class whose records it holds, its position among that class's components
+    (None where the class is one component), and the inclusive shard range it
+    covers. A plan that declares no `shards_per_component` yields one component
+    per class under the class's own name, so every existing release keeps the
+    names it was built with. A split plan yields `<class>.<k>` for each
+    contiguous shard range the plan derives, in shard order. The opening
+    journal is one component either way, under the virtual shard index.
+
+    Refuses a plan whose components would exceed the release limit, so a
+    collection cannot run to its end and then have no release to build.
+    """
+    shard_count = len(plan["shards"])
+    ranges = plan_partition(plan)
+    components = {}
+    for name in classes:
+        if ranges is None:
+            components[name] = {"class": name, "index": None, "first": 0, "last": shard_count - 1}
+            continue
+        for index, (first, last) in enumerate(ranges):
+            components[component_name(name, index)] = {
+                "class": name, "index": index, "first": first, "last": last,
+            }
+    components[OPENING_CLASS] = {
+        "class": OPENING_CLASS, "index": None, "first": shard_count, "last": shard_count,
+    }
+    total = len(FIXED_COMPONENTS) + len(components)
+    if total > MAX_COMPONENTS:
+        raise AlexandriaError(
+            f"the plan derives {len(components)} journal components, so its release would carry "
+            f"{total} components, above the {MAX_COMPONENTS}-component limit"
+        )
+    return components
+
+
+def component_gap(plan, part) -> str:
+    """What one split component does not hold, named on its own coverage.
+
+    A split component's scope binds the whole interval's two boundary hashes,
+    because those are the hashes the collector read and the journal as a whole
+    covers the interval. This sentence says which shards the component itself
+    carries, so a reader of one component alone does not take it for the
+    journal. `check` derives the same sentence from the plan and requires it.
+    """
+    shards = plan["shards"]
+    return (
+        f"component {part['index']} of the {part['class']} journal holds shards "
+        f"{part['first']} to {part['last']}, blocks {shards[part['first']]['start']} to "
+        f"{shards[part['last']]['end']}; the journal's other components hold the interval's "
+        "other shards"
+    )
+
 
 FINALITY_TAGS = {"finalized": "finalized", "safe": "safe"}
 TIMESTAMP_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
@@ -396,7 +463,7 @@ def require_committed_journals(staging: Staging, state: dict, purpose: str) -> N
     collector does not stand behind. A journal shorter than its offset is a
     tree something else has cut.
     """
-    for name in staging.classes:
+    for name in staging.journal_names:
         size = staging.journal_bytes(name)
         offset = state["offsets"].get(name, 0)
         if size > offset:
@@ -534,6 +601,9 @@ class Collector:
         self.plan = plan
         self.digest = plan_digest(plan)
         self.classes = declared_classes(plan)
+        # The release this collection is for has to be buildable: a split that
+        # derives more components than a release may carry refuses here.
+        journal_components(plan, self.classes)
         self.transport = transport
         self.provider = plan["provider"]
         self.staging = Staging(staging_root, plan)
@@ -901,6 +971,7 @@ class Reconciler:
             raise AlexandriaError("the second provider class must not carry an endpoint")
         self.provider_class = provider_class
         self.classes = declared_classes(plan)
+        journal_components(plan, self.classes)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
         directory = self.root / RECONCILIATION_DIRECTORY
@@ -1195,6 +1266,9 @@ class Builder:
         validate_plan(plan)
         self.plan = plan
         self.classes = declared_classes(plan)
+        # One release component per plan-derived journal component, named
+        # from the plan and nothing else.
+        self.components = journal_components(plan, self.classes)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
         venue = plan["venue"]
@@ -1238,8 +1312,13 @@ class Builder:
             if line
         ]
 
-    def _journal(self, name: str) -> dict:
-        records = list(self.staging.entries(name))
+    def _journal(self, name: str, component=None) -> dict:
+        """One journal document: a whole class, or one plan-derived component of it.
+
+        A component reads its own staging file alone, so a split journal is
+        released without ever being joined into one oversized document.
+        """
+        records = list(self.staging.entries(name, component))
         for record in records:
             if set(record) != {"class", "request", "response", "shard"}:
                 raise AlexandriaError(f"a staged {name} record has an unknown shape")
@@ -1299,8 +1378,8 @@ class Builder:
             "reconciliation": reconciliation,
             "registry": self.registry,
         }
-        for name in self.staging.classes:
-            documents[name] = self._journal(name)
+        for component, part in self.components.items():
+            documents[component] = self._journal(part["class"], part["index"])
         boundaries = {"end_hash": end_hash, "start_hash": start_hash}
 
         parent = output.absolute().parent
@@ -1312,13 +1391,14 @@ class Builder:
             for component, document in sorted(documents.items()):
                 relative = f"{component}.json"
                 (staging / relative).write_bytes(canonical_bytes(document))
+                part = self.components.get(component)
                 components.append({
                     "access": "public",
                     "media_type": "application/json",
                     "name": component,
                     "path": relative,
                     "redistribution": "permitted",
-                    "role": _role(component),
+                    "role": _role(component if part is None else part["class"]),
                 })
                 captures.append(self._capture(component, document, reconciliation, boundaries))
             plan_document = {
@@ -1344,7 +1424,12 @@ class Builder:
 
     def _capture(self, component: str, document, reconciliation, boundaries) -> dict:
         interval = self.plan["interval"]
-        evidence = component in JOURNAL_CLASSES
+        # A journal component is named `<class>` or `<class>.<k>`; its class
+        # decides its role, its scope and its gaps, and its own name is the
+        # capture it is filed under.
+        part = self.components.get(component)
+        journal = component if part is None else part["class"]
+        evidence = journal in JOURNAL_CLASSES
         collections = []
         record_count = 0
         if evidence or component in ("error-receipts", CODE_COMPONENT):
@@ -1378,8 +1463,8 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/shards",
             }]
-        gaps = _gaps(component, self.plan, self.registry, reconciliation, self.venue)
-        unsupported = _unsupported(component)
+        gaps = _gaps(journal, self.plan, self.registry, reconciliation, self.venue, part)
+        unsupported = _unsupported(journal)
         scope_interval = {
             "end": interval["end"],
             "kind": "block-range",
@@ -1474,7 +1559,7 @@ def _unsupported(component: str) -> list:
     return []
 
 
-def _gaps(component: str, plan, registry, reconciliation, venue) -> list:
+def _gaps(component: str, plan, registry, reconciliation, venue, part=None) -> list:
     gaps = []
     if component == "registry":
         return venue.gaps(registry)
@@ -1497,6 +1582,8 @@ def _gaps(component: str, plan, registry, reconciliation, venue) -> list:
                     f"the {name} evidence class was not declared by the plan, so it was "
                     f"never requested or preserved; {OMISSION_REASONS[name]}"
                 )
+        if part is not None and part["index"] is not None:
+            gaps.append(component_gap(plan, part))
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
@@ -1585,13 +1672,26 @@ def check_interval(release_root: Path) -> dict:
         read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
         "manifest",
     )
+    # The manifest already carries every component's byte count; comparing it
+    # with the ceiling here, before any component is read, makes the budget a
+    # refusal by name rather than a figure left to a reader.
+    for item in manifest["components"]:
+        if item["bytes"] > MAX_RAW_COMPONENT_BYTES:
+            raise AlexandriaError(
+                f"component {item['name']} holds {item['bytes']} bytes, above the "
+                f"{MAX_RAW_COMPONENT_BYTES}-byte component ceiling"
+            )
     plan = load_bytes(
         _component(release_root, manifest, "interval-plan"), "component interval-plan",
         max_bytes=MAX_RAW_COMPONENT_BYTES,
     )
     validate_plan(plan)
     classes = declared_classes(plan)
-    journal_names = (*classes, OPENING_CLASS)
+    # The journal components, and the shard range each one holds, come from
+    # the plan and nothing else; the manifest's own list is compared with them,
+    # never believed.
+    journal_parts = journal_components(plan, classes)
+    journal_names = tuple(journal_parts)
     expected_components = set(FIXED_COMPONENTS) | set(journal_names)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
@@ -1737,15 +1837,18 @@ def check_interval(release_root: Path) -> dict:
     proxy = _plan_subjects(plan)
     reads = {}
     virtual = len(plan["shards"])
-    for name in journal_names:
+    for name, part in journal_parts.items():
         journal = documents[name]
+        # `name` is the component, `kind` the class whose records it holds;
+        # they differ only under a split, where the plan derives `<class>.<k>`.
+        kind = part["class"]
         if (
             not isinstance(journal, dict)
             or set(journal) != {"class", "format", "interval", "records"}
             or journal["format"] != JOURNAL_FORMAT
         ):
             raise AlexandriaError(f"the {name} component is not an interval journal")
-        if journal["class"] != name:
+        if journal["class"] != kind:
             raise AlexandriaError(
                 f"the {name} component carries a {str(journal['class'])[:64]} journal, "
                 "so the plan and the journals disagree about the declared classes"
@@ -1774,22 +1877,35 @@ def check_interval(release_root: Path) -> dict:
                 raise AlexandriaError(
                     f"a {name} journal record carries a shard index that is not a whole number"
                 )
-            if record["class"] != name:
+            if record["class"] != kind:
                 raise AlexandriaError(
                     f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
                     "plan and the journals disagree about the declared classes"
                 )
         staged = {record["shard"] for record in journal["records"]}
-        if name == OPENING_CLASS:
+        if kind == OPENING_CLASS:
             if staged and staged != {virtual}:
                 raise AlexandriaError(
                     "the epoch-evidence journal holds a record outside the virtual shard index"
                 )
         else:
-            if staged != {shard["index"] for shard in plan["shards"]}:
-                raise AlexandriaError(f"the {name} journal does not cover every shard")
+            # The component holds exactly the shards the plan derives for it:
+            # a shard from another range is an overlap or a repeated range, a
+            # missing one is a gap, and either leaves a journal that does not
+            # reassemble from its components.
+            expected_shards = set(range(part["first"], part["last"] + 1))
+            for index in sorted(staged - expected_shards):
+                raise AlexandriaError(
+                    f"the {name} component holds shard {index}, outside the shards "
+                    f"{part['first']} to {part['last']} the plan derives for it"
+                )
+            for index in sorted(expected_shards - staged):
+                raise AlexandriaError(
+                    f"the {name} component does not cover shard {index} of the shards "
+                    f"{part['first']} to {part['last']} the plan derives for it"
+                )
             for record in journal["records"]:
-                if record["request"].encode() != planned_requests[(record["shard"], name)]:
+                if record["request"].encode() != planned_requests[(record["shard"], kind)]:
                     raise AlexandriaError(
                         f"the {name} record filed under shard {record['shard']} is not the "
                         "read the plan names there"
@@ -1804,7 +1920,7 @@ def check_interval(release_root: Path) -> dict:
                 # rule rather than two that drift apart.
                 result = preserved_result(
                     record["response"],
-                    request_identifier(record["shard"], name),
+                    request_identifier(record["shard"], kind),
                     plan["provider"]["page_limit"],
                     f"{name} response for shard {record['shard']}",
                     f"{name} result for shard {record['shard']}",
@@ -1813,21 +1929,21 @@ def check_interval(release_root: Path) -> dict:
                 # A `logs` or `trace_filter` answer is a list of entries, and
                 # the entries are read below. A result of any other shape was
                 # counted as one read and never looked at.
-                if name in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
+                if kind in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
                     raise AlexandriaError(
                         f"the {name} result for shard {record['shard']} is not a list of entries"
                     )
-                reads[(record["shard"], name)] = reads.get((record["shard"], name), 0) + 1
+                reads[(record["shard"], kind)] = reads.get((record["shard"], kind), 0) + 1
                 # Two records of one class for one shard are two reads, so
                 # their sizes add. Assigning here declared the last record's
                 # size alone, so a journal could carry a shard's evidence
                 # twice while the receipt's count named one read of it.
-                derived[record["shard"]][name] = derived[record["shard"]].get(name, 0) + (
+                derived[record["shard"]][kind] = derived[record["shard"]].get(kind, 0) + (
                     len(result) if isinstance(result, list) else 1
                 )
-                if name == BOUNDARY_CLASS:
+                if kind == BOUNDARY_CLASS:
                     boundary_headers[record["shard"]] = result
-                if name in ENTRY_BLOCK_CLASSES:
+                if kind in ENTRY_BLOCK_CLASSES:
                     # An entry the read could not have returned: the record's
                     # own request bounds the blocks its result can carry, and
                     # an entry outside them contradicts the read it sits in.
@@ -1849,7 +1965,7 @@ def check_interval(release_root: Path) -> dict:
                         # names one address, so an entry naming another is one
                         # the read could not have returned. The block was
                         # bound and the address was not.
-                        address = _entry_address(entry, name, label)
+                        address = _entry_address(entry, kind, label)
                         if isinstance(proxy, str):
                             if address != proxy:
                                 raise AlexandriaError(
@@ -1878,6 +1994,14 @@ def check_interval(release_root: Path) -> dict:
                 raise AlexandriaError(
                     f"the plan omits {omitted} but the {name} coverage does not name the gap"
                 )
+        # A split component's coverage names the shards it holds, in the words
+        # the plan derives, so a reader of one component is not left to take
+        # it for the whole journal its scope binds.
+        if part["index"] is not None and component_gap(plan, part) not in gaps:
+            raise AlexandriaError(
+                f"the {name} coverage does not name the shards {part['first']} to "
+                f"{part['last']} the plan derives for it"
+            )
 
     for shard in shards:
         if shard["record_counts"] != derived[shard["index"]]:
@@ -1930,7 +2054,7 @@ def check_interval(release_root: Path) -> dict:
     # the first block's hash and derive the epoch table the receipt has to
     # match, so nothing the receipt declares about an epoch is believed on
     # its own word.
-    phase = _replay_release_opening(plan, documents, classes, legacy=legacy)
+    phase = _replay_release_opening(plan, documents, classes, journal_parts, legacy=legacy)
     first_hash = phase.hashes[start]
 
     # The implementation code, re-hashed from the component's bytes: the
@@ -1966,17 +2090,24 @@ def check_interval(release_root: Path) -> dict:
     }
 
 
-def _replay_release_opening(plan, documents, classes, *, legacy=False) -> OpeningPhase:
-    """Replay the release's `epoch-evidence` records against its plan, offline."""
+def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False) -> OpeningPhase:
+    """Replay the release's `epoch-evidence` records against its plan, offline.
+
+    The staged logs are read from every `logs` component in shard order, so a
+    split journal reaches the opening phase exactly as its unsplit twin would.
+    """
     logs = []
     if "logs" in classes:
-        for record in documents["logs"]["records"]:
-            envelope = load_bytes(
-                record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
-            )
-            result = envelope.get("result") if isinstance(envelope, dict) else None
-            if isinstance(result, list):
-                logs.extend(result)
+        for name, part in journal_parts.items():
+            if part["class"] != "logs":
+                continue
+            for record in documents[name]["records"]:
+                envelope = load_bytes(
+                    record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
+                )
+                result = envelope.get("result") if isinstance(envelope, dict) else None
+                if isinstance(result, list):
+                    logs.extend(result)
     phase = OpeningPhase(plan, logs, legacy=legacy)
     entries = documents[OPENING_CLASS]["records"]
     position = 0

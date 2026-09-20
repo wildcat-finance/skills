@@ -80,7 +80,24 @@ interval. Each tiles from that subject's own first in-interval position
 through the interval's end. `MAX_EPOCHS` bounds each subject's own list
 rather than their sum, and a subject whose extent starts after the interval
 end carries no list at all. A v1 plan validates exactly as before and still
-means one subject. `interval-checkpoint-v1.schema.json` covers the
+means one subject.
+
+Either plan format may carry one optional field, `shards_per_component`, an
+integer from 1 to 4096. It splits each shard-class journal (`boundary-blocks`,
+`logs`, `traces`) into release components of at most that many shards each:
+the component count is derived from the shard count and this field alone, each
+component holds a contiguous shard range, and their concatenation in shard
+order is the journal, so the boundaries move only when the plan changes and
+never because a re-collection returned one more record. The components are
+named `<class>.<k>` in shard order. A plan without the field declares no
+split and yields one component per class under the class's own name, which is
+how every release before this field was built. The `epoch-evidence` journal is
+never split. `check` re-derives the ranges from the plan, refuses a component
+the plan does not derive, one missing, one holding a shard outside its range
+and one holding a shard twice, and refuses any component above the release
+ceiling by name.
+
+`interval-checkpoint-v1.schema.json` covers the
 working state a killed collection resumes from: the next shard, the last
 accepted block and hash, and each journal's committed byte offset. The
 offsets cover the declared classes and a fourth journal, `epoch-evidence`,
@@ -91,7 +108,14 @@ each implementation's runtime code. Those reads are staged under the virtual
 shard index one past the plan's last, so a checkpoint whose next shard is one
 past the plan says the shards are done and its `epoch-evidence` offset says
 how many opening reads are committed. It is not
-release truth and no release names it. The immutable
+release truth and no release names it. A plan that declares
+`shards_per_component` stages one file per class and component and writes
+`interval-checkpoint-v2.schema.json` (format
+`alexandria-interval-checkpoint/v2`) instead: the same fields, with `offsets`
+and each history entry's offsets keyed by physical journal, `<class>.<k>` and
+`epoch-evidence`, up to 128 of them. A v1 checkpoint is refused for a split
+plan and a v2 one for an unsplit plan, and an unsplit plan keeps writing v1
+byte for byte. The immutable
 `interval-receipt-v1.schema.json` covers the original block-only receipt: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. A dispute names one of six kinds: the
@@ -127,7 +151,9 @@ builds v2 releases and pins each log's owner.
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one
-record per preserved exchange under `/records`; the `epoch-evidence` journal of
+record per preserved exchange under `/records`, or one such journal document
+per plan-derived component, `<class>.<k>`, when the plan declares
+`shards_per_component`; the `epoch-evidence` journal of
 opening reads, in the same format; and six more -- the interval receipt, the
 `implementation-code` component carrying each implementation's runtime bytecode
 under `/records`, the reconciliation record, the error receipts, the plan and

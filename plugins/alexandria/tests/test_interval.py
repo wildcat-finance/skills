@@ -17,6 +17,7 @@ from alexandria_lib import interval  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import (  # noqa: E402
     CHECKPOINT_FORMAT,
+    CHECKPOINT_FORMAT_V2,
     EVIDENCE_CLASSES,
     IMPLEMENTATION_SLOT,
     MAX_EPOCHS,
@@ -29,8 +30,11 @@ from alexandria_lib.interval import (  # noqa: E402
     PLAN_FORMAT,
     PLAN_FORMAT_V2,
     LEGACY_RECEIPT_FORMAT as RECEIPT_FORMAT,
+    SPLIT_FIELD,
     Staging,
+    component_ranges,
     contained,
+    journal_names,
     plan_digest,
     plan_shards,
     resolve_root,
@@ -699,6 +703,353 @@ class StagingGuardTests(unittest.TestCase):
 
 
 
+def split_plan(shards_per_component, **overrides):
+    """The four-shard plan above, declaring a journal split."""
+    return plan(1000, 1099, 25, **{SPLIT_FIELD: shards_per_component}, **overrides)
+
+
+def journal_files(root):
+    """Every physical journal under a staging root, by file name, with its bytes."""
+    return {
+        path.name: path.read_bytes()
+        for path in sorted((Path(root) / "journals").iterdir())
+        if path.is_file()
+    }
+
+
+class JournalSplitPlanTests(unittest.TestCase):
+    """`shards_per_component`: optional under both plan formats, bounded, and the only source of the split."""
+
+    def test_a_plan_without_the_field_validates_unchanged_and_derives_no_split(self):
+        for document in (plan(), plan_v2()):
+            with self.subTest(format=document["format"]):
+                validate_plan(document)
+                self.assertNotIn(SPLIT_FIELD, document)
+                self.assertIsNone(interval.plan_partition(document))
+
+    def test_both_plan_formats_accept_the_field(self):
+        for document in (split_plan(2), plan_v2(**{SPLIT_FIELD: 2})):
+            with self.subTest(format=document["format"]):
+                validate_plan(document)
+                self.assertEqual(interval.plan_partition(document), [(0, 1), (2, 3)])
+
+    def test_the_field_changes_the_plan_digest(self):
+        """A split plan is another plan: its checkpoints and reconciliation bind to it alone."""
+        self.assertNotEqual(plan_digest(plan()), plan_digest(split_plan(2)))
+        self.assertNotEqual(plan_digest(split_plan(2)), plan_digest(split_plan(3)))
+
+    def test_a_null_zero_negative_boolean_string_float_or_oversized_field_refuses(self):
+        for value in (None, 0, -1, True, "2", 2.0, MAX_SHARDS + 1):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(
+                    AlexandriaError, f"{SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+                ):
+                    validate_plan(split_plan(value))
+
+    def test_a_split_wider_than_the_plan_derives_one_component(self):
+        validate_plan(split_plan(MAX_SHARDS))
+        self.assertEqual(interval.plan_partition(split_plan(4)), [(0, 3)])
+        self.assertEqual(interval.plan_partition(split_plan(MAX_SHARDS)), [(0, 3)])
+
+    def test_component_ranges_tile_the_shards_exactly_and_only_the_last_is_short(self):
+        ranges = component_ranges(10, 4)
+        self.assertEqual(ranges, [(0, 3), (4, 7), (8, 9)])
+        covered = [shard for first, last in ranges for shard in range(first, last + 1)]
+        self.assertEqual(covered, list(range(10)))
+        self.assertEqual(component_ranges(4, 1), [(0, 0), (1, 1), (2, 2), (3, 3)])
+        self.assertIsNone(component_ranges(4, None))
+        with self.assertRaisesRegex(AlexandriaError, "positive shard count"):
+            component_ranges(0, 2)
+
+    def test_the_boundaries_depend_on_the_shard_count_and_the_field_alone(self):
+        """Nothing a collection returns can move them; only the plan can."""
+        self.assertEqual(
+            interval.plan_partition(split_plan(3)),
+            interval.plan_partition(plan_v2(**{SPLIT_FIELD: 3})),
+        )
+        self.assertEqual(interval.plan_partition(split_plan(3)), [(0, 2), (3, 3)])
+        wider = plan(1000, 1199, 25, **{SPLIT_FIELD: 3})
+        self.assertEqual(interval.plan_partition(wider), [(0, 2), (3, 5), (6, 7)])
+
+    def test_journal_names_expand_shard_classes_and_never_the_opening_reads(self):
+        classes = ("boundary-blocks", "logs", "epoch-evidence")
+        self.assertEqual(journal_names(classes), classes)
+        self.assertEqual(
+            journal_names(classes, [(0, 1), (2, 3)]),
+            ("boundary-blocks.0", "boundary-blocks.1", "logs.0", "logs.1", "epoch-evidence"),
+        )
+
+    def test_component_of_names_the_one_range_holding_a_shard(self):
+        ranges = component_ranges(5, 2)
+        self.assertEqual([interval.component_of(ranges, shard) for shard in range(5)], [0, 0, 1, 1, 2])
+        with self.assertRaisesRegex(AlexandriaError, "outside every journal component"):
+            interval.component_of(ranges, 5)
+
+
+class SplitCheckpointValidationTests(unittest.TestCase):
+    """A split tree's checkpoint is v2, keyed by journal component, and only for a split plan."""
+
+    RANGES = [(0, 1), (2, 3)]
+
+    def checkpoint(self, **overrides):
+        offsets = {name: 0 for name in journal_names(EVIDENCE_CLASSES, self.RANGES)}
+        value = {
+            "format": CHECKPOINT_FORMAT_V2,
+            "history": [{
+                "block_hash": HASH,
+                "block_number": "1024",
+                "offsets": dict(offsets),
+                "records": 3,
+                "shard": 0,
+            }],
+            "last_accepted": {"block_hash": HASH, "block_number": "1024"},
+            "next_shard": 1,
+            "offsets": offsets,
+            "plan_sha256": "a" * 64,
+            "records": 3,
+        }
+        value.update(overrides)
+        return value
+
+    def test_a_well_formed_split_checkpoint_is_accepted(self):
+        validate_checkpoint(self.checkpoint(), "a" * 64, 4, EVIDENCE_CLASSES, self.RANGES)
+
+    def test_a_v1_checkpoint_for_a_split_plan_refuses(self):
+        offsets = {name: 0 for name in EVIDENCE_CLASSES}
+        checkpoint = self.checkpoint(format=CHECKPOINT_FORMAT, offsets=offsets)
+        checkpoint["history"][0]["offsets"] = dict(offsets)
+        with self.assertRaisesRegex(AlexandriaError, "does not match the journal split"):
+            validate_checkpoint(checkpoint, "a" * 64, 4, EVIDENCE_CLASSES, self.RANGES)
+
+    def test_a_v2_checkpoint_for_an_unsplit_plan_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "does not match the journal split"):
+            validate_checkpoint(self.checkpoint(), "a" * 64, 4, EVIDENCE_CLASSES)
+
+    def test_an_unknown_format_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "format is not recognised"):
+            validate_checkpoint(
+                self.checkpoint(format="alexandria-interval-checkpoint/v3"),
+                "a" * 64, 4, EVIDENCE_CLASSES, self.RANGES,
+            )
+
+    def test_offsets_missing_a_component_refuse(self):
+        checkpoint = self.checkpoint()
+        del checkpoint["offsets"]["logs.1"]
+        with self.assertRaisesRegex(AlexandriaError, "offsets do not cover every journal component"):
+            validate_checkpoint(checkpoint, "a" * 64, 4, EVIDENCE_CLASSES, self.RANGES)
+
+    def test_offsets_keyed_by_class_alone_refuse_under_a_split(self):
+        checkpoint = self.checkpoint(offsets={name: 0 for name in EVIDENCE_CLASSES})
+        with self.assertRaisesRegex(AlexandriaError, "offsets do not cover every journal component"):
+            validate_checkpoint(checkpoint, "a" * 64, 4, EVIDENCE_CLASSES, self.RANGES)
+
+    def test_history_offsets_missing_a_component_refuse(self):
+        checkpoint = self.checkpoint()
+        del checkpoint["history"][0]["offsets"]["traces.0"]
+        with self.assertRaisesRegex(
+            AlexandriaError, "history offsets do not cover every journal component"
+        ):
+            validate_checkpoint(checkpoint, "a" * 64, 4, EVIDENCE_CLASSES, self.RANGES)
+
+
+class StagingSplitTests(unittest.TestCase):
+    """One file per class and component; the ceiling is per file; resume and rewind cross boundaries."""
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.root = Path(self.directory.name)
+        self.addCleanup(self.directory.cleanup)
+        self.plan = split_plan(2)
+
+    def fresh(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        return Path(directory.name)
+
+    def clean(self, plan=None, shards=4):
+        root = self.fresh()
+        with Staging(root, plan or self.plan) as staging:
+            collect(staging, shards)
+        return root
+
+    def test_records_land_in_one_file_per_class_and_component(self):
+        with Staging(self.root, self.plan) as staging:
+            self.assertEqual(
+                staging.journal_names,
+                ("boundary-blocks.0", "boundary-blocks.1", "logs.0", "logs.1",
+                 "traces.0", "traces.1", "epoch-evidence"),
+            )
+            collect(staging, 4)
+        files = journal_files(self.root)
+        self.assertEqual(
+            sorted(files),
+            ["boundary-blocks.0.jsonl", "boundary-blocks.1.jsonl", "logs.0.jsonl",
+             "logs.1.jsonl", "traces.0.jsonl", "traces.1.jsonl"],
+        )
+        for name, data in files.items():
+            self.assertEqual(len(data.splitlines()), 2, name)
+        self.assertEqual(
+            [json.loads(line)["shard"] for line in files["logs.1.jsonl"].splitlines()], [2, 3]
+        )
+        self.assertFalse((self.root / "journals" / "logs.jsonl").exists())
+
+    def test_the_checkpoint_is_v2_and_keys_every_component_by_its_own_offset(self):
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 3)
+        checkpoint = json.loads((self.root / "checkpoint.json").read_text())
+        self.assertEqual(checkpoint["format"], CHECKPOINT_FORMAT_V2)
+        self.assertEqual(
+            set(checkpoint["offsets"]),
+            set(journal_names(tuple(EVIDENCE_CLASSES) + ("epoch-evidence",), [(0, 1), (2, 3)])),
+        )
+        for name, offset in checkpoint["offsets"].items():
+            journal = self.root / "journals" / f"{name}.jsonl"
+            self.assertEqual(offset, journal.stat().st_size if journal.is_file() else 0, name)
+        self.assertEqual(checkpoint["history"][-1]["offsets"], checkpoint["offsets"])
+        self.assertEqual(checkpoint["next_shard"], 3)
+        # Shard 2 opened the second component; the first is closed at its size.
+        self.assertGreater(checkpoint["offsets"]["logs.1"], 0)
+        self.assertEqual(
+            checkpoint["offsets"]["logs.0"], (self.root / "journals" / "logs.0.jsonl").stat().st_size
+        )
+
+    def test_an_unsplit_plan_keeps_the_v1_layout_byte_for_byte(self):
+        """A plan without the field writes what it wrote before this field existed."""
+        with Staging(self.root, plan()) as staging:
+            self.assertEqual(staging.journal_names, staging.classes)
+            self.assertIsNone(staging.ranges)
+            collect(staging, 4)
+        self.assertEqual(
+            sorted(journal_files(self.root)),
+            ["boundary-blocks.jsonl", "logs.jsonl", "traces.jsonl"],
+        )
+        checkpoint = json.loads((self.root / "checkpoint.json").read_text())
+        self.assertEqual(checkpoint["format"], CHECKPOINT_FORMAT)
+        self.assertEqual(set(checkpoint["offsets"]), set(EVIDENCE_CLASSES) | {"epoch-evidence"})
+
+    def test_no_file_exceeds_the_ceiling_while_the_logical_journal_does(self):
+        """The ceiling is measured from the split's own largest file, never restated."""
+        measured = journal_files(self.clean())
+        for name, data in measured.items():
+            self.assertLessEqual(len(data), interval.MAX_JOURNAL_BYTES, name)
+        ceiling = max(len(data) for data in measured.values())
+        logical = sum(len(data) for name, data in measured.items() if name.startswith("logs."))
+        self.assertGreater(logical, ceiling)
+        with mock.patch("alexandria_lib.interval.MAX_JOURNAL_BYTES", ceiling):
+            with Staging(self.root, self.plan) as staging:
+                collect(staging, 4)
+            files = journal_files(self.root)
+            self.assertEqual(files, measured)
+            for name, data in files.items():
+                self.assertLessEqual(len(data), ceiling, name)
+            self.assertGreater(sum(len(data) for name, data in files.items() if name.startswith("logs.")), ceiling)
+            unsplit = self.fresh()
+            # The helper stages every class in equal records, so the unsplit
+            # tree refuses on the first class to reach its third record.
+            with Staging(unsplit, plan()) as staging:
+                with self.assertRaisesRegex(AlexandriaError, "journal boundary-blocks would exceed"):
+                    collect(staging, 4)
+
+    def test_a_single_record_no_file_can_hold_still_refuses(self):
+        first_line = journal_files(self.clean(split_plan(1)))["logs.0.jsonl"].splitlines()[0]
+        one_record = len(first_line) + 1
+        with mock.patch("alexandria_lib.interval.MAX_JOURNAL_BYTES", one_record - 1):
+            for document in (split_plan(1), plan()):
+                with self.subTest(split=SPLIT_FIELD in document):
+                    root = self.fresh()
+                    with Staging(root, document) as staging:
+                        with self.assertRaisesRegex(AlexandriaError, "would exceed"):
+                            collect(staging, 4)
+                    for name, data in journal_files(root).items():
+                        if name.startswith("logs"):
+                            self.assertEqual(data, b"", name)
+
+    def test_entries_read_the_components_in_shard_order_or_one_at_a_time(self):
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 4)
+            self.assertEqual([entry["shard"] for entry in staging.entries("logs")], [0, 1, 2, 3])
+            self.assertEqual([entry["shard"] for entry in staging.entries("logs", 1)], [2, 3])
+            self.assertEqual([entry["shard"] for entry in staging.entries("logs", 0)], [0, 1])
+            with self.assertRaisesRegex(AlexandriaError, "has no component 2"):
+                list(staging.entries("logs", 2))
+            with self.assertRaisesRegex(AlexandriaError, "has no component True"):
+                list(staging.entries("logs", True))
+            with self.assertRaisesRegex(AlexandriaError, "is not split into components"):
+                list(staging.entries("epoch-evidence", 0))
+        with Staging(self.fresh(), plan()) as staging:
+            with self.assertRaisesRegex(AlexandriaError, "is not split into components"):
+                list(staging.entries("logs", 0))
+        with Staging(self.fresh(), plan(evidence_classes=["boundary-blocks", "logs"])) as staging:
+            with self.assertRaisesRegex(AlexandriaError, "not declared by the plan"):
+                list(staging.entries("traces"))
+
+    def test_a_kill_inside_a_split_shard_leaves_nothing_a_resumed_run_keeps(self):
+        expected = journal_files(self.clean())
+        for torn in (2, 3):
+            with self.subTest(torn=torn):
+                root = self.fresh()
+                with Staging(root, self.plan) as staging:
+                    collect(staging, 4, torn=torn)
+                self.assertNotEqual(journal_files(root), expected)
+                with Staging(root, self.plan) as staging:
+                    self.assertEqual(staging.resume()["next_shard"], torn)
+                    collect(staging, 4)
+                self.assertEqual(journal_files(root), expected)
+
+    def test_a_kill_on_a_component_boundary_resumes_into_the_next_component(self):
+        expected = journal_files(self.clean())
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 2)
+        before = journal_files(self.root)
+        self.assertNotIn("logs.1.jsonl", before)
+        self.assertEqual(before["logs.0.jsonl"], expected["logs.0.jsonl"])
+        with Staging(self.root, self.plan) as staging:
+            self.assertEqual(staging.resume()["next_shard"], 2)
+            collect(staging, 4)
+        self.assertEqual(journal_files(self.root), expected)
+
+    def test_a_rewind_across_a_component_boundary_empties_the_later_component(self):
+        expected = journal_files(self.clean())
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 4)
+            checkpoint = staging.rewind_to(1)
+        self.assertEqual(checkpoint["format"], CHECKPOINT_FORMAT_V2)
+        self.assertEqual(checkpoint["next_shard"], 2)
+        files = journal_files(self.root)
+        for name in ("boundary-blocks.1.jsonl", "logs.1.jsonl", "traces.1.jsonl"):
+            self.assertEqual(files[name], b"", name)
+            self.assertEqual(checkpoint["offsets"][name.removesuffix(".jsonl")], 0)
+        for name in ("boundary-blocks.0.jsonl", "logs.0.jsonl", "traces.0.jsonl"):
+            self.assertEqual(files[name], expected[name], name)
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 4)
+        self.assertEqual(journal_files(self.root), expected)
+
+    def test_a_split_tree_resumed_under_the_unsplit_plan_refuses(self):
+        """The checkpoint is bound to the plan that wrote it, split field included."""
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 2)
+        with Staging(self.root, plan()) as staging:
+            with self.assertRaisesRegex(AlexandriaError, "different plan"):
+                staging.resume()
+
+    def test_a_component_shorter_than_its_committed_offset_refuses(self):
+        with Staging(self.root, self.plan) as staging:
+            collect(staging, 4)
+        with open(self.root / "journals" / "logs.1.jsonl", "r+b") as handle:
+            handle.truncate(4)
+        with Staging(self.root, self.plan) as staging:
+            with self.assertRaisesRegex(AlexandriaError, "journal logs.1 is shorter than its committed offset"):
+                staging.resume()
+
+    def test_split_staging_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            with Staging(self.root, self.plan) as staging:
+                collect(staging, 4)
+                staging.rewind_to(1)
+                collect(staging, 4)
+
+
 EPOCH_FIXTURE = PLUGIN / "tests" / "fixtures" / "usdc-epochs.json"
 
 
@@ -1235,6 +1586,38 @@ class SchemaTests(unittest.TestCase):
     def test_the_schema_catalogue_indexes_the_v2_plan(self):
         catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")
         self.assertIn("`interval-plan-v2.schema.json`", catalogue)
+
+    def test_both_plan_schemas_carry_the_optional_split_field(self):
+        for name, document in (("interval-plan-v1", plan()), ("interval-plan-v2", plan_v2())):
+            with self.subTest(schema=name):
+                schema = self.schema(name)
+                field = schema["properties"][SPLIT_FIELD]
+                self.assertNotIn(SPLIT_FIELD, schema["required"])
+                self.assertEqual(set(schema["required"]), set(document))
+                self.assertEqual((field["type"], field["minimum"], field["maximum"]), ("integer", 1, MAX_SHARDS))
+                self.assertFalse(schema["additionalProperties"])
+
+    def test_the_checkpoint_v2_schema_is_closed_named_and_accepts_a_split_trees_fields(self):
+        schema = self.schema("interval-checkpoint-v2")
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["properties"]["format"]["const"], CHECKPOINT_FORMAT_V2)
+        self.assertEqual(set(schema["required"]), set(self.schema("interval-checkpoint-v1")["required"]))
+        with tempfile.TemporaryDirectory() as name:
+            with Staging(Path(name), split_plan(2)) as staging:
+                collect(staging, 3)
+                checkpoint = staging.commit(2, 1002, HASH)
+        self.assertEqual(set(schema["required"]), set(checkpoint))
+        offsets = schema["properties"]["offsets"]
+        pattern = next(iter(offsets["patternProperties"]))
+        self.assertLessEqual(len(checkpoint["offsets"]), offsets["maxProperties"])
+        for key in checkpoint["offsets"]:
+            self.assertRegex(key, pattern)
+        self.assertGreater(offsets["maxProperties"], self.schema("interval-checkpoint-v1")["properties"]["offsets"]["maxProperties"])
+
+    def test_the_schema_catalogue_indexes_the_v2_checkpoint(self):
+        catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")
+        self.assertIn("`interval-checkpoint-v2.schema.json`", catalogue)
+        self.assertIn(f"`{SPLIT_FIELD}`", catalogue)
 
 
 if __name__ == "__main__":

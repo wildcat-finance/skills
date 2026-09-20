@@ -85,6 +85,42 @@ scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
 
+## Splitting a journal across components
+
+Every staging journal and every release component is capped at 67,108,864
+bytes: `MAX_JOURNAL_BYTES` in `alexandria_lib/interval.py` and
+`MAX_RAW_COMPONENT_BYTES` in `alexandria_lib/release.py`. A long interval's logs
+can outgrow that, so a plan may declare `shards_per_component`, an integer from
+1 to 4,096. Each shard class's journal is then kept and released as one
+component per contiguous range of at most that many shards, named `<class>.<k>`
+in shard order: `logs.0`, `logs.1` and so on. The component count is derived
+from the shard count and that one field, so the boundaries are fixed by the
+plan and move only when the plan changes. A byte-driven split would move them
+whenever a re-collection returned one more record, and the release would stop
+being reproducible from its plan.
+
+The staging tree carries the same partition: one file per class and component,
+each under `MAX_JOURNAL_BYTES` on its own while the class's logical journal may
+pass it, and a checkpoint in the `alexandria-interval-checkpoint/v2` format
+whose offsets are keyed by those files. A record no single file can hold still
+refuses where it would be written. Resume, reorg rewind, reconciliation, the
+opening reads, `build` and `check` all read the components in shard order, one
+file at a time; nothing joins them into one oversized file. The
+`epoch-evidence` journal is never split, because its records sit under the
+virtual shard index rather than in any shard range.
+
+A plan without the field declares no split and produces exactly one component
+per class under the class's own name, as every release before the field did,
+so the preserved demonstrations verify unchanged. `check` re-derives the
+ranges from the plan alone and refuses a component the plan does not derive, a
+component the release lacks, one holding a shard outside its range, one
+holding a shard twice, and one whose coverage does not name the shards it
+holds. It also compares every component's byte count in the manifest with the
+ceiling and refuses one above it by name. Each split component's scope binds
+the whole interval's two boundary hashes, because those are the hashes the
+collector read; its coverage names which shards and blocks the component holds
+and says the journal's other components hold the rest.
+
 ## The opening reads
 
 After the last shard commits, `collect` makes one more pass, journaled and
@@ -257,7 +293,8 @@ reached, and says so.
 
 `build` emits an ordinary `alexandria-capture-plan/v1` document and calls the
 existing `ingest`. Its components are one JSON journal per declared evidence
-class, each carrying the interval and one record per preserved exchange; the
+class, each carrying the interval and one record per preserved exchange, or one
+per plan-derived shard range when the plan declares `shards_per_component`; the
 `epoch-evidence` journal of opening reads; and six more -- the interval receipt,
 the implementation code, the reconciliation record, the error receipts, the plan
 and the pinned registry.
@@ -274,7 +311,9 @@ every shard's record counts from the journals, because a release rebuilt with an
 inflated receipt would otherwise be self-consistent.
 
 `check` runs Alexandria's own verification first, then the things only an
-interval release can be wrong about: shards contiguous and non-overlapping
+interval release can be wrong about: every component at or below the byte
+ceiling, journal components tiling the plan's shard range exactly, shards
+contiguous and non-overlapping
 across the declared interval, epochs tiling it under their declared receipt
 version and naming this market's proxy,
 each epoch's declared code hash re-derived from the `implementation-code`
