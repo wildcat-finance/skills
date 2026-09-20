@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 28083888,
+    "bytes_blob": 28090546,
     "bytes_generated": 98
   },
   "entries": [
@@ -175,7 +175,7 @@
       "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
     },
     {
-      "bytes": 63567,
+      "bytes": 70225,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
