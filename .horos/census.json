@@ -2,7 +2,7 @@
   "rows": [
     {
       "boundary_bytes": 64487,
-      "bytes": 47290088,
+      "bytes": 47289332,
       "files": 1751,
       "suffix": ".json"
     },
@@ -26,7 +26,7 @@
     },
     {
       "boundary_bytes": 73,
-      "bytes": 17154383,
+      "bytes": 17154375,
       "files": 777,
       "suffix": ".py"
     },
@@ -237,6 +237,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 155934736,
+  "total_bytes": 155933972,
   "total_files": 4601
 }

@@ -18,22 +18,22 @@ from checkpoint_authority.canonical import Refusal
 import test_checkpoint_authority_release_conformance as report_fixtures
 
 
-class NetworkFixtureTests(unittest.TestCase):
-    def test_fixture_is_host_independent(self):
+class FixtureTests(unittest.TestCase):
+    def test_fixture_without_host(self):
         specimen = report_fixtures.ReleaseConformanceTests("test_a_peak_above_the_declared_ceiling_refuses")
         specimen.setUp()
         self.addCleanup(specimen.doCleanups)
         with patch.object(network, "prepare", side_effect=AssertionError("fixture prepared host sandbox")):
             self.assertIsInstance(specimen.value()["demonstration"]["network_boundary"], dict)
 
-    def test_validation_is_host_independent(self):
+    def test_validation_without_host(self):
         specimen = report_fixtures.ReleaseConformanceTests("test_a_peak_above_the_declared_ceiling_refuses")
         specimen.setUp()
         self.addCleanup(specimen.doCleanups)
         with patch.object(network, "prepare", side_effect=AssertionError("validation prepared host sandbox")):
             self.assertEqual(specimen.execute(specimen.value())[0], specimen.value())
 
-    def test_fields_and_types_are_exact(self):
+    def test_exact_fields(self):
         boundary = network.Boundary("a" * 64, network_policy.for_host("linux", "x86_64"))
         expected = boundary.expected()
         for key, original in expected.items():
@@ -53,7 +53,7 @@ class NetworkFixtureTests(unittest.TestCase):
         child.assert_not_called()
 
 
-class NetworkPolicyTests(unittest.TestCase):
+class PolicyTests(unittest.TestCase):
     def test_unknown_host_refuses(self):
         for system, machine in (("linux", "aarch64"), ("linux", "i686"),
                                 ("linux", ""), ("win32", "x86_64"), ("darwin", "unknown")):
@@ -61,14 +61,14 @@ class NetworkPolicyTests(unittest.TestCase):
                 network_policy.for_host(system, machine)
             self.assertEqual(caught.exception.code, "network-denial-unavailable")
 
-    def test_macos_policy_is_preserved(self):
+    def test_macos_policy(self):
         for abi in ("arm64", "x86_64"):
             policy = network_policy.for_host("darwin", abi)
             self.assertEqual(policy.launcher, "/usr/bin/sandbox-exec")
             self.assertEqual(policy.argv, ("-p", "(version 1)(allow default)(deny network*)"))
             self.assertEqual(policy.filter_bytes, b"")
 
-    def test_policy_binds_launch_inputs(self):
+    def test_policy_identity(self):
         policy = network_policy.for_host("linux", "x86_64")
         mutations = ({"abi": "aarch64"}, {"platform": "darwin"}, {"mechanism": "other"},
                      {"launcher": "/other"}, {"argv": policy.argv[:-1]},
@@ -79,7 +79,7 @@ class NetworkPolicyTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(policy.filter_bytes).hexdigest(),
                          "8b97e4880f19e22990d9994580127bd38249e9f51594f1e3f63218edcd286412")
 
-    def test_filter_enforces_abi_and_calls(self):
+    def test_filter_abi_calls(self):
         # Interpret the emitted Linux classic-BPF subset against independent
         # seccomp_data inputs; this checks jump behavior without executing x32.
         instructions = list(struct.iter_unpack("<HBBI", network_policy.linux_filter()))
@@ -118,7 +118,7 @@ class NetworkPolicyTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "network-denial-unavailable")
 
 
-class NetworkExecutionTests(unittest.TestCase):
+class NativeTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="checkpoint-network-test-")
         self.addCleanup(temporary.cleanup)
@@ -130,14 +130,14 @@ class NetworkExecutionTests(unittest.TestCase):
     def run_python(self, source, timeout=10):
         return self.boundary.run(self.python, ["-I", "-c", source], self.root, timeout=timeout)
 
-    def test_native_direct_and_exec_denial(self):
+    def test_direct_exec_denial(self):
         observed = self.boundary.probe(self.root)
         network.validate_observation(observed, self.boundary.expected())
         self.assertEqual(observed["probe_operations"], 4)
         self.assertEqual(observed["descendant_probe_operations"], 4)
         self.assertEqual(observed["descendant_probe_exit"], 0)
 
-    def test_native_allow_all_refuses(self):
+    def test_allow_all_refuses(self):
         if sys.platform == "linux":
             weak = patch.object(network_policy, "linux_filter", return_value=struct.pack("<HBBI", 0x06, 0, 0, 0x7fff0000))
         else:
