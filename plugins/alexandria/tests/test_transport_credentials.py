@@ -467,6 +467,48 @@ class LoopbackCliCollectionTests(existing.CollectorTestCase):
         self.assertEqual(exit_code, 1)
         self.assertFalse((staging / "checkpoint.json").exists())
 
+    def test_a_genuine_non_2xx_response_from_a_real_server_names_neither_endpoint_nor_bearer(self):
+        """Every other HTTP-status assertion in this module (and in
+        `test_usdc_interval.py`) drives `.request()` through a hand-built
+        response object whose `.status` a mock sets directly, which never
+        goes near `urllib`'s own error handling. A real connection behaves
+        differently: `urllib.request`'s default `HTTPErrorProcessor` (never
+        overridden here -- only `HTTPRedirectHandler` and `ProxyHandler` are)
+        turns any non-2xx response into an `urllib.error.HTTPError`, a
+        `URLError` subclass, before `LoopbackHttpTransport.request`'s own
+        `if response.status != 200` line ever runs; that line is therefore
+        unreachable over a real socket, and a genuine non-2xx response is
+        instead caught by the generic `except urllib.error.URLError` branch,
+        producing the transport-failure message rather than the
+        HTTP-status one. Both messages carry only the caller's label, never
+        the endpoint or a bearer, so the credential-absence guarantee this
+        step's Tests names holds either way -- but only this test proves it
+        against what a live server actually returns, rather than a stand-in
+        that cannot occur outside a test.
+        """
+        def _fail(_envelope):
+            raise usdc_interval.TransportError("fixture-forced failure for a live non-2xx probe")
+
+        backing = existing.FixtureTransport(self.state, faults={"probe read": _fail})
+        server = http.server.HTTPServer(("127.0.0.1", 0), _bound_handler(backing))
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(thread.join, 5)
+        self.addCleanup(server.shutdown)
+        port = server.server_address[1]
+        endpoint = f"http://127.0.0.1:{port}/rpc"
+
+        transport = LoopbackHttpTransport(endpoint, 5)
+        with self.assertRaises(TransportError) as caught:
+            transport.request(b'{"id": 0}', "probe read")
+        message = str(caught.exception)
+        # This is the actual, observed behavior: the dead branch never fires,
+        # so the message is the generic one, not "returned HTTP 500".
+        self.assertEqual(message, "probe read transport failed")
+        self.assertNotIn(endpoint, message)
+        self.assertNotIn(str(port), message)
+
 
 if __name__ == "__main__":
     unittest.main()

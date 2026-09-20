@@ -230,6 +230,24 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         raise TransportError("the Compound RPC endpoint redirected")
 
 
+def _close_transport_error(error: urllib.error.URLError) -> None:
+    """Release the socket a raised `URLError` may still be holding open.
+
+    `urlopen`'s default error handling turns any non-2xx response into an
+    `HTTPError`, a `URLError` subclass that is itself the file-like response
+    object -- it never closes on its own, unlike the `with` block's own
+    response on the success path. Neither transport reads its body, so
+    closing it here costs nothing and the label-only message stays exactly
+    what it was; leaving it open instead keeps the socket alive until an
+    unpredictable later garbage-collection pass reclaims it, printing a
+    `ResourceWarning` wherever `sys.stderr` happens to point at that moment,
+    in this process or a caller's.
+    """
+    close = getattr(error, "close", None)
+    if callable(close):
+        close()
+
+
 class HttpsTransport:
     """The hosted network path: HTTPS only, with an optional per-instance bearer.
 
@@ -274,6 +292,7 @@ class HttpsTransport:
                     raise TransportError(f"{label} returned HTTP {response.status}")
                 return response.read(MAX_RAW_COMPONENT_BYTES + 1)
         except urllib.error.URLError as error:
+            _close_transport_error(error)
             raise TransportError(f"{label} transport failed") from error
 
 
@@ -341,6 +360,7 @@ class LoopbackHttpTransport:
                     raise TransportError(f"{label} returned HTTP {response.status}")
                 return response.read(MAX_RAW_COMPONENT_BYTES + 1)
         except urllib.error.URLError as error:
+            _close_transport_error(error)
             raise TransportError(f"{label} transport failed") from error
 
 
