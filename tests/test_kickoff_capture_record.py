@@ -99,13 +99,17 @@ def findings(root: Path) -> list[str]:
         if row["sha256"] != hashlib.sha256(data).hexdigest():
             found.append(f"input-sha256:{path}")
 
-    captured = {row["target"]: row for row in capture["required_capture"]}
-    if tuple(captured) != ESTATES:
+    # Read the rows as the list they are. Keyed by target, a stale second row
+    # for one estate was dropped in favour of the last and never compared.
+    rows = capture["required_capture"]
+    if tuple(row["target"] for row in rows) != ESTATES:
         found.append("required-capture-targets")
-    for target in ESTATES:
-        row = captured.get(target)
+    for row in rows:
+        target = row["target"]
+        if target not in ESTATES:
+            continue
         source = registry_row(registry, target)
-        if row is None or source is None:
+        if source is None:
             found.append(f"row-missing:{target}")
             continue
         for field, expected in derive(source).items():
@@ -244,6 +248,47 @@ class MutationTests(unittest.TestCase):
                         lambda row, field=field, value=value: row.__setitem__(
                             field, value))
                     self.assertIn(f"{field}:{target}", findings(self.root))
+
+    def test_a_stale_second_row_for_one_estate_is_found(self):
+        """Before or after the current row, the stale one is still compared."""
+        for target in ESTATES:
+            for offset in (0, 1):
+                with self.subTest(target=target, offset=offset):
+                    self.fresh()
+                    def add(document, target=target, offset=offset):
+                        rows = document["required_capture"]
+                        index = [row["target"] for row in rows].index(target)
+                        stale = json.loads(json.dumps(rows[index]))
+                        stale["registry_status"] = "blocked"
+                        rows.insert(index + offset, stale)
+                    self.edit_json(CAPTURE, add)
+                    found = findings(self.root)
+                    self.assertIn("required-capture-targets", found)
+                    self.assertIn(f"registry_status:{target}", found)
+
+    def test_a_capture_row_for_an_undeclared_target_is_found(self):
+        def add(document):
+            row = json.loads(json.dumps(document["required_capture"][0]))
+            row["target"] = "undeclared"
+            document["required_capture"].append(row)
+        self.edit_json(CAPTURE, add)
+        self.assertEqual(findings(self.root), ["required-capture-targets"])
+
+    def test_capture_rows_out_of_place_are_found(self):
+        self.edit_json(
+            CAPTURE, lambda document: document["required_capture"].reverse())
+        self.assertEqual(findings(self.root), ["required-capture-targets"])
+
+    def test_a_capture_row_that_disappears_is_found(self):
+        for index in (0, 1):
+            with self.subTest(dropped=ESTATES[index]):
+                self.fresh()
+                self.edit_json(
+                    CAPTURE,
+                    lambda document, index=index: document[
+                        "required_capture"].pop(index))
+                self.assertEqual(
+                    findings(self.root), ["required-capture-targets"])
 
     def test_a_blocker_or_unresolved_typed_where_the_registry_has_none(self):
         for target in ESTATES:
