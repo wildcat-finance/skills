@@ -411,9 +411,19 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertTrue(hasattr(generator, "require_byte_headroom"))
         self.assertEqual(generator.MAX_RUNTIME_BYTES, MAX_BYTES)
         self.assertEqual(generator.MIN_BYTE_HEADROOM, MIN_HEADROOM)
-        generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM)
-        with self.assertRaisesRegex(generator.PackageError, "headroom"):
-            generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM + 1)
+        line = MAX_BYTES - MIN_HEADROOM
+        generator.require_byte_headroom(line)
+        with self.assertRaises(generator.PackageError) as caught:
+            generator.require_byte_headroom(line + 1)
+        message = str(caught.exception)
+        self.assertIn(str(line + 1), message)
+        self.assertIn(str(line), message)
+        self.assertIn("margin", message)
+        self.assertIn("measure", message)
+
+    def test_file_tripwire_matches_the_generator_constant(self):
+        generator = load_generator()
+        self.assertEqual(generator.FILE_TRIPWIRE, MAX_FILES)
 
     def test_complete_package_reserves_headroom_for_manifest_and_outer_files(self):
         total = sum(path.stat().st_size for path in GENERATED.rglob("*") if path.is_file())
@@ -422,8 +432,11 @@ class SkillsShPackageTests(unittest.TestCase):
         generator = load_generator()
         at_boundary = {"probe.txt": b"x" * (MAX_BYTES - MIN_HEADROOM)}
         with mock.patch.object(generator, "expected_files", return_value=(at_boundary, b"{}\n")):
-            with self.assertRaisesRegex(generator.PackageError, "headroom"):
+            with self.assertRaises(generator.PackageError) as caught:
                 generator._package_bytes(ROOT, "a" * 40)
+        message = str(caught.exception)
+        self.assertIn("margin", message)
+        self.assertIn("measure", message)
 
     def test_isolated_runtime_evaluation_accepts_derived_record(self):
         completed = subprocess.run(  # phylax: allow subprocess: fixed isolated runtime checker argv

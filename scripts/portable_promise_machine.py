@@ -37,6 +37,13 @@ PACKAGE_AUTHORED = (
 PORTABLE_BOUNDARY = ".horos/boundary.json"
 MAX_RUNTIME_BYTES = 25 * 1024 * 1024
 MIN_BYTE_HEADROOM = 5 * 1024 * 1024
+# The local file-count tripwire on the complete package's file count.
+# tests/test_skills_sh_package.py keeps its own MAX_FILES as an independent
+# mirror and asserts the two are equal, the same pattern it uses for
+# MAX_RUNTIME_BYTES and MIN_BYTE_HEADROOM; that test file carries the
+# historical figures behind the current value.
+FILE_TRIPWIRE = 1_600
+MEASUREMENT_SCHEMA = "portable-payload-measurement/v1"
 DUPLICATE_LAZARUS_PAYLOADS = (
     "anchors.jsonl", "header.json", "plan.json", "proofs.jsonl",
     "receipt-witness.json", "rpc.jsonl",
@@ -457,11 +464,18 @@ def transform_portrait_images(relative: Path, data: bytes, omitted: set[str]) ->
 
 
 def require_byte_headroom(total_bytes: int) -> None:
-    """Refuse a runtime that spends any of the reserved five MiB margin."""
-    if total_bytes > MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM:
+    """Refuse a payload that spends any of the reserved five MiB margin.
+
+    Names the bytes measured, the line it must stay under and the margin it
+    missed by, and points at `measure` for the current figures on any tree.
+    """
+    line = MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM
+    margin = line - total_bytes
+    if margin < 0:
         raise PackageError(
-            f"portable runtime uses {total_bytes} bytes; maximum with "
-            f"{MIN_BYTE_HEADROOM} bytes headroom is {MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM}"
+            f"portable payload uses {total_bytes} bytes, past the {line}-byte "
+            f"line by {-margin} bytes (margin {margin}); run "
+            f"`python3 {GENERATOR} measure` for the current margin"
         )
 
 
@@ -548,7 +562,7 @@ def _render_portable_boundary(root: Path, payload: dict[str, bytes]) -> bytes:
     return (json.dumps(document, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
-def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
+def expected_files(root: Path, *, enforce_headroom: bool = True) -> tuple[dict[str, bytes], bytes]:
     """Return payload bytes and the deterministic manifest bytes."""
     payload: dict[str, bytes] = {}
     rows = []
@@ -601,7 +615,8 @@ def expected_files(root: Path) -> tuple[dict[str, bytes], bytes]:
         }
     )
     rows.sort(key=lambda row: row["path"])
-    require_byte_headroom(total_bytes)
+    if enforce_headroom:
+        require_byte_headroom(total_bytes)
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "contract": CONTRACT_ID,
@@ -841,6 +856,20 @@ def source_commit(root: Path) -> str:
     return commit
 
 
+def _tree_status_clean(root: Path) -> bool:
+    """True when `git status --porcelain` reports nothing outstanding."""
+    result = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+        ["git", "-C", str(root), "status", "--porcelain"],
+        check=False,
+        capture_output=True,
+        env=_git_environment(),
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise PackageError(f"git could not read the working tree status: {detail}")
+    return result.stdout == b""
+
+
 def _package_config() -> bytes:
     """The grouping the published package carries, independent of this tree."""
     document = {
@@ -896,7 +925,9 @@ Changes belong upstream. Open issues and pull requests against
     return text.encode("utf-8")
 
 
-def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str, int]]:
+def _package_bytes(
+    root: Path, commit: str, *, enforce_headroom: bool = True
+) -> tuple[dict[str, bytes], dict[str, int]]:
     """Return every path the published package carries, keyed relative to it.
 
     The second mapping carries the permission bits of the entries that come
@@ -905,7 +936,7 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
     only the key cannot find the origin to read its mode from.  Both paths are
     in hand here, which is the only place the pairing can be recorded.
     """
-    payload, manifest = expected_files(root)
+    payload, manifest = expected_files(root, enforce_headroom=enforce_headroom)
     files: dict[str, bytes] = {}
     modes: dict[str, int] = {}
     for relative in PACKAGE_AUTHORED:
@@ -926,7 +957,8 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
     files[(runtime / "MANIFEST.json").as_posix()] = manifest
     files[SKILLS_CONFIG.as_posix()] = _package_config()
     files["README.md"] = _package_readme(commit)
-    require_byte_headroom(sum(len(data) for data in files.values()))
+    if enforce_headroom:
+        require_byte_headroom(sum(len(data) for data in files.values()))
     return files, modes
 
 
@@ -934,6 +966,116 @@ def _package_bytes(root: Path, commit: str) -> tuple[dict[str, bytes], dict[str,
 # else that is not empty belongs to somebody, and writing a package replaces the
 # whole directory, so an occupied destination is refused rather than cleared.
 PACKAGE_MARKER = PACKAGE_ROOT / "runtime" / "MANIFEST.json"
+
+MEASUREMENT_HELP = (
+    "measure --json prints one portable-payload-measurement/v1 object with "
+    "these fields: schema, source_commit, tree_clean, cap, reserve, line, "
+    "file_tripwire, package {bytes, files, margin}, runtime {bytes, files, "
+    "margin}, manifest_bytes, outer_bytes, omission_classes, "
+    "largest_default_included [{path, bytes}] and kept_by_link [{path, "
+    "bytes}] (kept_by_link stays empty until the example-class step)."
+)
+
+
+def measure_tree(root: Path, top: int) -> dict:
+    """Measure the runtime and complete package without writing or refusing.
+
+    Reads the exact code path `package` and `check` read -- `_package_bytes`,
+    which itself calls `expected_files` -- with headroom enforcement
+    disabled, so a tree over the line is measured rather than refused here
+    (study risk `over-line-blind`). The runtime and package figures below are
+    therefore always a walk of the same in-memory payload `package --out`
+    would write, and the runtime figures equal the manifest's own
+    `total_bytes` and `file_count` (study risk `measure-drift`).
+    """
+    commit = source_commit(root)
+    tree_clean = _tree_status_clean(root)
+    files, _modes = _package_bytes(root, commit, enforce_headroom=False)
+    line = MAX_RUNTIME_BYTES - MIN_BYTE_HEADROOM
+
+    runtime_prefix = TARGET.as_posix() + "/"
+    manifest_key = (TARGET / "MANIFEST.json").as_posix()
+    runtime_keys = [key for key in files if key.startswith(runtime_prefix)]
+    runtime_total_bytes = sum(len(files[key]) for key in runtime_keys)
+    manifest_bytes = len(files[manifest_key])
+    runtime_bytes = runtime_total_bytes - manifest_bytes
+    runtime_files = len(runtime_keys) - 1
+
+    package_bytes = sum(len(data) for data in files.values())
+    package_files = len(files)
+    outer_bytes = package_bytes - runtime_total_bytes
+
+    named = {
+        path.as_posix()
+        for group in (
+            ROOT_FILES, OBLIGATION_FIXTURE_FILES, EVALUATION_FIXTURE_FILES,
+            SEMANTIC_FIXTURE_FILES, PORTABLE_TEST_FILES,
+        )
+        for path in group
+    }
+    default_included: dict[str, int] = {}
+    for key in runtime_keys:
+        if key == manifest_key:
+            continue
+        relative = key[len(runtime_prefix):]
+        if relative in named or relative == PORTABLE_BOUNDARY:
+            continue
+        default_included[relative] = len(files[key])
+    largest_default_included = [
+        {"path": path, "bytes": size}
+        for path, size in sorted(
+            default_included.items(), key=lambda kv: (-kv[1], kv[0])
+        )[:top]
+    ]
+
+    return {
+        "schema": MEASUREMENT_SCHEMA,
+        "source_commit": commit,
+        "tree_clean": tree_clean,
+        "cap": MAX_RUNTIME_BYTES,
+        "reserve": MIN_BYTE_HEADROOM,
+        "line": line,
+        "file_tripwire": FILE_TRIPWIRE,
+        "package": {
+            "bytes": package_bytes,
+            "files": package_files,
+            "margin": line - package_bytes,
+        },
+        "runtime": {
+            "bytes": runtime_bytes,
+            "files": runtime_files,
+            "margin": line - runtime_bytes,
+        },
+        "manifest_bytes": manifest_bytes,
+        "outer_bytes": outer_bytes,
+        "omission_classes": len(OMISSIONS),
+        "largest_default_included": largest_default_included,
+        "kept_by_link": [],
+    }
+
+
+def _format_measurement_text(measurement: dict) -> str:
+    """Render bytes, line, margin, files-against-tripwire and top paths."""
+    lines = [
+        f"commit {measurement['source_commit']} "
+        f"(tree {'clean' if measurement['tree_clean'] else 'dirty'})",
+        f"bytes: package {measurement['package']['bytes']}, "
+        f"runtime {measurement['runtime']['bytes']}",
+        f"line: {measurement['line']} "
+        f"(cap {measurement['cap']}, reserve {measurement['reserve']})",
+        f"margin: package {measurement['package']['margin']}, "
+        f"runtime {measurement['runtime']['margin']}",
+        f"files: package {measurement['package']['files']}, "
+        f"runtime {measurement['runtime']['files']}, "
+        f"tripwire {measurement['file_tripwire']}",
+    ]
+    paths = measurement["largest_default_included"]
+    if paths:
+        lines.append("largest default-included paths:")
+        lines.extend(f"  {row['bytes']:>10} {row['path']}" for row in paths)
+    else:
+        lines.append("largest default-included paths: none")
+    return "\n".join(lines)
 
 
 def _checked_output(raw: str) -> Path:
@@ -991,12 +1133,35 @@ def repository_root(raw: str | None) -> Path:
     return root
 
 
+def _non_negative_int(raw: str) -> int:
+    """argparse type: a base-10 integer that is not negative."""
+    try:
+        value = int(raw)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"not an integer: {raw!r}") from error
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"must not be negative: {value}")
+    return value
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("check", "sync", "package"))
+    parser = argparse.ArgumentParser(description=__doc__, epilog=MEASUREMENT_HELP)
+    parser.add_argument("action", choices=("check", "sync", "package", "measure"))
     parser.add_argument("--out", help="directory to write a complete package into")
     parser.add_argument("--source-commit", help="exact source commit to record in the package")
     parser.add_argument("--root", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--json", action="store_true",
+        help="measure: print the portable-payload-measurement/v1 object",
+    )
+    parser.add_argument(
+        "--top", type=_non_negative_int, default=10,
+        help="measure: largest default-included paths to list (default: 10)",
+    )
+    parser.add_argument(
+        "--require-margin", type=_non_negative_int, default=None, metavar="BYTES",
+        help="measure: exit 1 unless the complete package's margin is at least BYTES",
+    )
     args = parser.parse_args(argv)
     try:
         root = repository_root(args.root)
@@ -1008,6 +1173,20 @@ def main(argv: list[str] | None = None) -> int:
                 parser.exit(2, "portable Promise Machine: package needs --out\n")
             written = package(root, args.out, args.source_commit)
             print(f"packaged {written}")
+        elif args.action == "measure":
+            measurement = measure_tree(root, args.top)
+            if (
+                args.require_margin is not None
+                and measurement["package"]["margin"] < args.require_margin
+            ):
+                raise PackageError(
+                    f"required margin of {args.require_margin} bytes is not met: "
+                    f"package margin is {measurement['package']['margin']} bytes"
+                )
+            if args.json:
+                print(json.dumps(measurement, indent=2))
+            else:
+                print(_format_measurement_text(measurement))
         else:
             check(root)
             print(f"checked {TARGET.as_posix()}")
