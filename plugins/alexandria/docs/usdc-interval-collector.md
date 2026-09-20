@@ -297,8 +297,9 @@ bytes are declared constructed rather than collected from a chain. The second
 compares the HooksFactory's preserved `MarketDeployed` logs with the 80
 markets the registry declares. A declared market deployed inside the interval
 with no such log is named as a gap. So is a log naming a market the registry
-does not declare. A plan that omits the factory says the markets were not
-compared.
+does not declare, and a log that deploys a declared market at another block
+than the registry records. A plan that omits the factory says the markets were
+not compared.
 
 ## Resuming, and rewinding
 

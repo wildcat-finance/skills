@@ -858,11 +858,25 @@ class Staging:
                 )
 
     def close(self) -> None:
+        """Release every journal handle, then report the first one that failed.
+
+        A flush that fails on one journal must not leave the others open: a
+        split plan owns one handle per component.
+        """
+        failure = None
         for handle in self._handles.values():
-            handle.flush()
-            handle.close()
+            try:
+                handle.flush()
+            except OSError as error:
+                failure = failure or error
+            try:
+                handle.close()
+            except OSError as error:
+                failure = failure or error
         self._handles = {}
         self._sizes = {}
+        if failure is not None:
+            raise failure
 
     def __enter__(self) -> "Staging":
         return self

@@ -1159,6 +1159,280 @@ class CoverageParityTests(WildcatCase):
                     self.assertIn(type(value), recorded_types[field])
 
 
+class GeneratorCrossRecordTests(unittest.TestCase):
+    """The generator's checks between its two records, which no pinned byte can reach.
+
+    Both records are pinned, so a disagreement between them cannot be staged
+    on disk without failing the pin first. Each case edits one parsed record
+    after the real pin check has passed.
+    """
+
+    def generated(self, edit):
+        real = wildcat_registry.read_source
+
+        def edited(repo_root, path, sha256, size):
+            record = real(repo_root, path, sha256, size)
+            edit(path, record)
+            return record
+
+        with mock.patch.object(wildcat_registry, "read_source", side_effect=edited):
+            return wildcat_registry.generate_v2_registry(REPO_ROOT)
+
+    @staticmethod
+    def row(record):
+        return next(r for r in record["targets"] if r.get("id") == wildcat_registry.ROW_ID)
+
+    def test_records_that_disagree_with_each_other_refuse(self):
+        targets, estate = wildcat_registry.TARGETS_PATH, wildcat_registry.ESTATE_PATH
+
+        def other_estate_pin(path, record):
+            if path == targets:
+                record["evidence_digests"][estate] = "0" * 64
+
+        def second_deployment_block(path, record):
+            if path == targets:
+                factory = next(
+                    c for c in self.row(record)["deployment"]["contracts"] if c["role"] == "factory"
+                )
+                factory["deployment_block"] = 1
+
+        def unregistered_market(path, record):
+            if path == estate:
+                record["arch_controller"]["getRegisteredMarkets"].pop()
+
+        def other_registered_digest(path, record):
+            if path == estate:
+                record["arch_controller"]["registered_markets_sha256"] = "0" * 64
+
+        self.assertEqual(
+            canonical_bytes(self.generated(lambda path, record: None)), _registry_bytes()
+        )
+        for edit, message in (
+            (other_estate_pin, "pins another digest"),
+            (second_deployment_block, "records disagree about its deployment block"),
+            (unregistered_market, "registered markets are not exactly"),
+            (other_registered_digest, "disagree about the registered-market digest"),
+        ):
+            with self.subTest(edit=edit.__name__):
+                with self.assertRaisesRegex(AlexandriaError, message):
+                    self.generated(edit)
+
+    def test_a_recorded_form_that_is_not_a_name_refuses_as_an_alexandria_error(self):
+        """A list or an object there raised TypeError from the membership test."""
+        for specimen in ([], {}, ["compact-sorted-json"], None, 1):
+            with self.subTest(specimen=specimen):
+                document = registry()
+                document["list_digests"][0]["canonical_form"] = specimen
+                with self.assertRaises(Exception) as raised:
+                    wildcat_registry.validate_registry(document)
+                self.assertIsInstance(raised.exception, AlexandriaError)
+                self.assertRegex(str(raised.exception), "canonical form")
+
+
+class OpeningIdentityTests(WildcatCase):
+    """A subject's first-block header has to be that block's, on both providers."""
+
+    LABEL = f"opening read 1 subject-first-block-header block {DEPLOY_BLOCK}"
+
+    def other_number(self, envelope):
+        return canonical_bytes({"id": envelope["id"], "jsonrpc": "2.0", "result": {
+            "hash": self.state["blocks"][str(DEPLOY_BLOCK)],
+            "number": hex(DEPLOY_BLOCK + 1),
+            "transactions": [],
+        }})
+
+    def test_a_header_under_another_block_number_refuses_at_collection(self):
+        staging = self.scratch("other-number")
+        collector = Collector(
+            self.plan, staging, WildcatTransport(self.state, faults={self.LABEL: self.other_number}),
+            registry=self.registry,
+        )
+        with self.assertRaisesRegex(AlexandriaError, "carries another block number"):
+            collector.collect()
+        receipts = [
+            json.loads(line) for line in (staging / "receipts" / "errors.jsonl").read_bytes().splitlines()
+        ]
+        self.assertEqual(receipts[-1]["code"], "malformed-header")
+        self.assertEqual(len(existing.opening_entries(staging)), 1)
+
+    def test_a_second_provider_with_the_right_hash_under_another_number_is_disputed(self):
+        staging = self.staged(
+            "second-other-number",
+            second=WildcatTransport(
+                self.state, faults={f"{self.LABEL} second provider": self.other_number}
+            ),
+        )
+        record = json.loads((staging / "reconciliation" / "reconciliation.json").read_text())
+        self.assertEqual(record["reconciliation"]["status"], "disputed")
+        self.assertEqual(
+            [(item["kind"], item["identity"]) for item in record["reconciliation"]["disputed"]],
+            [("first-block-hash", f"block {DEPLOY_BLOCK}")],
+        )
+
+    def test_a_plan_on_another_chain_refuses_before_any_request(self):
+        plan = deepcopy(self.plan)
+        plan["chain"] = "eip155:10"
+        transport = WildcatTransport(self.state)
+        with self.assertRaisesRegex(AlexandriaError, "not the chain the wildcat-v2 registry describes"):
+            Collector(plan, self.scratch("other-chain"), transport, registry=self.registry)
+        self.assertEqual(transport.calls, [])
+
+
+class DeployLogBlockTests(WildcatCase):
+    """A deploy log that contradicts the registry's block is reported, not absorbed."""
+
+    def logs(self, state):
+        return [record for shard in state["logs"].values() for record in shard]
+
+    def deploy_log(self, state):
+        return next(
+            record for record in state["logs"]["2"]
+            if record["topics"][0] == wildcat_v2.MARKET_DEPLOYED_TOPIC
+        )
+
+    def test_a_declared_market_deployed_at_another_block_is_reported_in_the_release(self):
+        state = deepcopy(self.state)
+        moved = DEPLOY_BLOCK + 1
+        self.deploy_log(state).update(
+            blockNumber=hex(moved), blockHash=WildcatTransport(state)._hash(moved),
+            transactionHash="0x" + "78" * 32,
+        )
+        state["logs"]["2"].sort(key=lambda r: (int(r["blockNumber"], 16), int(r["logIndex"], 16)))
+        report = wildcat_v2.market_deploy_report(state["plan"], self.registry, self.logs(state))
+        self.assertEqual(report.get("misplaced"), [(NEW_MARKET, moved, DEPLOY_BLOCK)])
+        self.assertEqual((report["missing"], report["undeclared"]), ([], []))
+        output, _release_id = self.released("moved-deploy", state)
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        for name in EVIDENCE_COMPONENTS:
+            gaps = self.captures(output)[name]["coverage"]["gaps"]
+            self.assertEqual(
+                sum(
+                    1 for gap in gaps
+                    if NEW_MARKET in gap and f"block {moved}" in gap and f"block {DEPLOY_BLOCK}" in gap
+                ),
+                1,
+            )
+
+    def test_a_market_the_registry_places_before_the_interval_is_reported_too(self):
+        state = deepcopy(self.state)
+        entries = wildcat_registry.subject_entries(self.registry)
+        start = int(self.plan["interval"]["start"])
+        earlier = next(
+            address for address, entry in entries.items()
+            if entry["role"] == "market" and entry["deployment_block"] < start
+        )
+        extra = deepcopy(self.deploy_log(state))
+        extra["topics"][2] = "0x" + "0" * 24 + earlier[2:]
+        extra["logIndex"] = hex(120)
+        state["logs"]["2"].append(extra)
+        report = wildcat_v2.market_deploy_report(state["plan"], self.registry, self.logs(state))
+        self.assertEqual(
+            report.get("misplaced"),
+            [(earlier, DEPLOY_BLOCK, entries[earlier]["deployment_block"])],
+        )
+        self.assertNotIn(earlier, report["expected"])
+        self.assertTrue(any(
+            earlier in gap and "epoch start follows the registry" in gap
+            for gap in wildcat_v2.evidence_gaps(state["plan"], self.registry, self.logs(state))
+        ))
+        # The fixture as released disagrees nowhere.
+        clean = wildcat_v2.market_deploy_report(self.plan, self.registry, self.logs(self.state))
+        self.assertEqual(clean["misplaced"], [])
+
+    def test_only_the_factorys_own_log_names_a_deployed_market(self):
+        stranger = "0x" + "12" * 20
+        state = deepcopy(self.state)
+        imitation = deepcopy(self.deploy_log(state))
+        imitation["address"] = NEW_HOOKS
+        imitation["topics"][2] = "0x" + "0" * 24 + stranger[2:]
+        imitation["logIndex"] = hex(121)
+        state["logs"]["2"].append(imitation)
+        report = wildcat_v2.market_deploy_report(state["plan"], self.registry, self.logs(state))
+        self.assertEqual(report["observed"], [NEW_MARKET])
+        self.assertEqual((report["missing"], report["undeclared"]), ([], []))
+
+
+class JournalCloseTests(WildcatCase):
+    """A close that fails releases every handle and does not replace the refusal."""
+
+    class FailingFlush:
+        def __init__(self, handle):
+            self.handle = handle
+
+        def flush(self):
+            raise OSError("constructed flush failure")
+
+        def close(self):
+            self.handle.close()
+
+    def test_one_failed_flush_still_closes_every_other_handle(self):
+        staging = interval.Staging(self.scratch("close"), self.plan)
+        names = ["boundary-blocks", "logs", "traces"]
+        handles = [staging._handle(name) for name in names]
+        staging._handles[names[0]] = self.FailingFlush(handles[0])
+        with self.assertRaisesRegex(OSError, "constructed flush failure"):
+            staging.close()
+        self.assertTrue(all(handle.closed for handle in handles))
+        self.assertEqual(staging._handles, {})
+
+    def test_a_close_failure_does_not_replace_the_opening_refusal(self):
+        label = f"opening read 5 implementation-code block {self.plan['interval']['start']}"
+        empty = lambda envelope: canonical_bytes(  # noqa: E731
+            {"id": envelope["id"], "jsonrpc": "2.0", "result": "0x"}
+        )
+        collector = Collector(
+            self.plan, self.scratch("close-refusal"),
+            WildcatTransport(self.state, faults={label: empty}), registry=self.registry,
+        )
+        close = collector.staging.close
+        opened = []
+
+        def failing():
+            # `resume` closes too, before anything is refused; only the close
+            # made while the refusal is under way fails.
+            if sys.exc_info()[0] is None:
+                return close()
+            # Whatever the refusal left open, and one journal whose flush fails.
+            broken = collector.staging._handle("logs")
+            opened.extend(collector.staging._handles.values())
+            collector.staging._handles["logs"] = self.FailingFlush(broken)
+            close()
+
+        with mock.patch.object(collector.staging, "close", side_effect=failing):
+            with self.assertRaises(Exception) as raised:
+                collector.collect()
+        self.assertIsInstance(raised.exception, AlexandriaError)
+        self.assertRegex(str(raised.exception), "empty runtime code")
+        self.assertTrue(opened)
+        self.assertTrue(all(handle.closed for handle in opened))
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_a_close_failure_after_a_clean_collection_is_not_swallowed(self):
+        collector = Collector(
+            self.plan, self.scratch("close-clean"), WildcatTransport(self.state),
+            registry=self.registry,
+        )
+        close = collector.staging.close
+        opening = collector._open_interval
+        finished = []
+
+        def opened():
+            finished.append(opening())
+            return finished[-1]
+
+        def failing():
+            # `resume` closes as well; only the close after the last read fails.
+            close()
+            if finished:
+                raise OSError("constructed close failure")
+
+        with mock.patch.object(collector, "_open_interval", side_effect=opened):
+            with mock.patch.object(collector.staging, "close", side_effect=failing):
+                with self.assertRaisesRegex(OSError, "constructed close failure"):
+                    collector.collect()
+        self.assertEqual(finished[0]["total"], 139)
+
+
 class FixtureTests(unittest.TestCase):
     def test_the_fixture_declares_the_registrys_subjects_and_says_it_is_constructed(self):
         state = fixture()

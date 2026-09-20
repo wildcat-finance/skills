@@ -931,9 +931,18 @@ class Collector:
         owns one per component, so the refusal path closes them here.
         """
         try:
-            return self._collect()
-        finally:
-            self.staging.close()
+            summary = self._collect()
+        except BaseException:
+            # The refusal under way is what the operator has to read. A close
+            # that fails as well still releases every handle, and its own
+            # error does not replace the refusal.
+            try:
+                self.staging.close()
+            except OSError:
+                pass
+            raise
+        self.staging.close()
+        return summary
 
     def _collect(self) -> dict:
         self._started = time.monotonic()

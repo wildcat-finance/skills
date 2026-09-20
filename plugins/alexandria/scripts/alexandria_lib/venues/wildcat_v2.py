@@ -295,8 +295,12 @@ def market_deploy_report(plan, registry, logs) -> dict:
     `expected` is every declared market whose deployment block is inside the
     interval, `observed` every market a preserved HooksFactory
     `MarketDeployed` log names. `missing` and `undeclared` are the two ways
-    they can disagree, and `compared` is false when the factory is not a
-    declared subject, because its logs were then never requested.
+    the lists can disagree. `misplaced` is the third disagreement: a declared
+    market that a preserved log deploys at another block than the registry
+    records, whichever side of the interval the registry's block is on. Its
+    epoch start came from the registry's block, so the release says so.
+    `compared` is false when the factory is not a declared subject, because
+    its logs were then never requested.
     """
     _declared(plan, registry)
     start = int(plan["interval"]["start"])
@@ -309,6 +313,7 @@ def market_deploy_report(plan, registry, logs) -> dict:
     )
     compared = factory in plan["subjects"]
     observed = {}
+    blocks = {}
     if compared:
         # Each record is a JSON-RPC event log a provider returned; its
         # `address` field is the emitting contract, not telemetry.
@@ -326,12 +331,22 @@ def market_deploy_report(plan, registry, logs) -> dict:
                 raise AlexandriaError(
                     "a preserved MarketDeployed log does not name its market in topic three"
                 )
-            observed.setdefault("0x" + topics[2][26:], _quantity(record.get("blockNumber")))
+            market = "0x" + topics[2][26:]
+            block = _quantity(record.get("blockNumber"))
+            if block is None:
+                raise AlexandriaError("a preserved MarketDeployed log carries no block number")
+            observed.setdefault(market, block)
+            blocks.setdefault(market, set()).add(block)
     return {
         "compared": compared,
         "declared": len(markets),
         "expected": expected,
         "factory": factory,
+        "misplaced": sorted(
+            (address, block, markets[address]["deployment_block"])
+            for address, seen in blocks.items() if address in markets
+            for block in seen if block != markets[address]["deployment_block"]
+        ),
         "missing": sorted(set(expected) - set(observed)) if compared else [],
         "observed": sorted(observed),
         "undeclared": sorted(
@@ -394,6 +409,11 @@ def evidence_gaps(plan, registry, logs) -> list[str]:
             f"the registry declares market {address} deployed at block "
             f"{entries[address]['deployment_block']} inside the interval, but no preserved "
             "MarketDeployed log names it"
+        )
+    for address, block, declared in report["misplaced"]:
+        result.append(
+            f"a preserved MarketDeployed log at block {block} names market {address}, which the "
+            f"registry declares deployed at block {declared}; its epoch start follows the registry"
         )
     for address, block in report["undeclared"]:
         result.append(

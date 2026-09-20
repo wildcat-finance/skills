@@ -93,7 +93,9 @@ BLOCK_SOURCES = ("contract-record", "creation-epochs", "code-match")
 
 def list_digest(addresses, form: str) -> str:
     """The SHA-256 of one address list under one named canonical form."""
-    if form not in CANONICAL_FORMS:
+    # A supplied registry names its form; a list or an object there is not a
+    # name, and a membership test on one raises instead of refusing.
+    if not isinstance(form, str) or form not in CANONICAL_FORMS:
         raise AlexandriaError(f"address-list canonical form {str(form)[:64]!r} is not recognised")
     return hashlib.sha256(CANONICAL_FORMS[form](addresses)).hexdigest()
 
