@@ -1,0 +1,31 @@
+## Step 1, round 1 -- 2026-09-20T10:24:19Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: backend-selection=reviewed; network-denial=reviewed; filter-abi=reviewed; policy-identity=reviewed; launcher-pin=reviewed; stdin-device-contract=reviewed; descendant-cleanup=reviewed; fixture-execution-separation=reviewed; report-forgery=reviewed; host-profile-evidence=reviewed; resource-ceilings=reviewed; release-consistency=reviewed; scope-claims=reviewed; historical-evidence=reviewed
+
+Not checked: Hosted macOS/Linux jobs and artifact admission remain Step 2 work; no macOS execution occurred here. Canonical product-linux and hostile-evidence reports remain due after audit/prose and before Step 2. The packet waives the Solidity suite because no Solidity is in scope. This network-denial review makes no archive, filesystem, service, no-child or untested-ABI claim.
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | low | plugins/hexaemeron/tests/test_checkpoint_authority_release_conformance.py:212 | Case identifiers left 48 bytes in the observed 16,384-byte report. Three 256-character ASCII host labels produced 16,951 bytes and report-limit; four still produced 16,447 after the first repair. Shorter identifiers and a four-label publication guard now produce 16,185 bytes, retaining all 76 cases and the fixed cap. | fixed in be554a1231897599ad0010677152d088fdde464a and 9e8927baa5796a74239c74a35011fb052474eaae |
+
+Leads not pursued: No additional actionable lead. Reviewed the full diff from 66f52785813a8453e7c7d54f2371aa8f6e465640 through 9e8927baa5796a74239c74a35011fb052474eaae against bubblewrap-seccomp and the bound study/runbook/design. Python 3.14.6: the final direct Hexaemeron suite passed 3,780 tests with 43 existing skips; the direct root gate passed 2,083 tests with two skips; all 13 selected checks passed without a retry or source drift. Phylax, Ephoros, Hypomnema and the design bridge passed. Native Linux evidence has 76 tests, 435 subtests, zero skips/failures/errors, five pinned cosign cases and three fresh workload repetitions; its owner envelope is 15,320 bytes. A pure projection with all four 256-character ASCII labels and those measured numeric fields fits at 16,229 bytes; it claims no new execution. Evidence is retained in .hexaemeron/reports/step-1-warden-final-hexaemeron.json, step-1-warden-final-checks.json, step-1-warden-final-native-release.json, step-1-warden-actual-four-label-capacity.json and step-1-warden-four-label-greenlight.log. The preserved parent reproductions and four-label guard fail before repair and pass after it; this behavioral evidence is separate from formal Elenchus. step-1-warden-final-elenchus.json records inconclusive, runner exit 3 and all 21 worker launches refused with EPERM; no guarded verdict follows. Both superseded selected runs ended with KeyboardInterrupt, exit 254 and incomplete reports; their snapshots were removed. All five historical guards, the original compatibility replay, protected execution/runner sources, historical audit bytes and frozen model/tokenizer evidence remain unchanged. Corpus, release, consumer-lock, portable and census owners were regenerated. Hexaemeron 1.6.66 retains Fiat 6.71.1; the audit release preflight passed against package 1.6.65. --audit-filter sapheneia:sapheneia was applied with protected content retained.
+
+## Step 1, round 2 -- 2026-09-20T10:40:39Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: backend-selection=reviewed; network-denial=reviewed; filter-abi=reviewed; policy-identity=reviewed; launcher-pin=reviewed; stdin-device-contract=reviewed; descendant-cleanup=reviewed; fixture-execution-separation=reviewed; report-forgery=reviewed; host-profile-evidence=reviewed; resource-ceilings=reviewed; release-consistency=reviewed; scope-claims=reviewed; historical-evidence=reviewed
+
+Not checked: Full Hexaemeron, native Linux and the 13 source checks were not repeated; their executable tree is unchanged from tested commit 9e8927baa5796a74239c74a35011fb052474eaae. Hosted macOS/Linux jobs and artifact admission remain Step 2 work. Canonical product-linux and hostile-evidence reports remain due after prose and before Step 2. The packet's Solidity waiver and network-only scope remain; no archive, filesystem, service, no-child or untested-ABI claim follows.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No new actionable finding after reviewing all 14 risks from 66f52785813a8453e7c7d54f2371aa8f6e465640 through 9e6c1a359685f85831e985561c75e495c2c68ca2, with focus on S1-R1-01. Fresh Phylax, Ephoros, Hypomnema and the root suite passed: 2,083 tests, two skips. The focused capacity guard and corpus ownership check passed. All 76 cases remain; renamed cases retain their previous bodies except for the strengthened capacity guard. All five historical guards and 14 protected files match their preserved bytes. The capacity evidence covers the specific four 256-character ASCII fixtures at 16,185 bytes and the measured-field projection at 16,229 bytes, within the unchanged 16,384-byte cap. It does not establish that every schema-valid label combination fits. A pure projection with four 256-character U+00E9 labels validates structurally but produces 21,349 bytes and report-limit before either report is created; this is the expected independent byte limit, with no new supported-profile failure established. Evidence is retained in .hexaemeron/reports/step-1-warden-r2-capacity-boundary.json, .hexaemeron/reports/step-1-warden-r2-root-review.log and .hexaemeron/sources/step-1-warden-r2-preservation.json. Round 1 remains byte-identical, including its inconclusive Elenchus result from 21 EPERM worker-launch refusals. This round has no product fix or new Elenchus verdict. No frozen model/tokenizer observation was rerun. --audit-filter sapheneia:sapheneia was applied with protected content retained.
