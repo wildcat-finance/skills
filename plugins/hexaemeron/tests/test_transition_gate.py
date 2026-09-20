@@ -235,10 +235,22 @@ class GateCase(unittest.TestCase):
         self.assertEqual(grant["command"], command)
         self.assertLessEqual(len(gate.canonical(grant).encode()), 65_536)
 
+    def granted(self, key, directive, command=None, evidence=None):
+        try:
+            grant = call(key, directive, command, evidence)
+        except gate.Refusal as refusal:
+            self.fail(f"refused with {refusal.report['code']}")
+        self.assert_grant(grant, key, directive, {} if command is None else command)
+
     def assert_refusal(self, code, key, directive, command=None, evidence=None, **preimage):
-        with self.assertRaises(gate.Refusal) as caught:
+        try:
             call(key, directive, command, evidence, **preimage)
-        report = caught.exception.report
+        except gate.Refusal as refusal:
+            report = refusal.report
+        except Exception as error:  # the gate's contract is one grant or one Refusal
+            self.fail(f"escaped as {type(error).__name__}, not a Refusal")
+        else:
+            self.fail("granted")
         self.assertEqual(set(report), REFUSAL_FIELDS)
         self.assertEqual(report["schema"], "fiat-transition-refusal/v1")
         self.assertEqual(report["code"], code)
@@ -343,7 +355,12 @@ class TableTests(GateCase):
             {rule.check for rule in gate.RULES.values()} - {None}, set(gate.CHECKS)
         )
         for owners in gate.RECOVERY_PATHS.values():
-            self.assertLessEqual(owners, set(gate.RULES))
+            self.assertIsInstance(owners, dict)
+            self.assertLessEqual(set(owners), set(gate.RULES))
+            for key, admitted in owners.items():
+                self.assertLessEqual(admitted, gate.DIRECTIVES, key)
+                self.assertLessEqual(gate.RULES[key].directives, admitted, key)
+                self.assertNotIn("halted", admitted, key)
         self.assertEqual(
             len({rule.transition for rule in gate.RULES.values()}), len(gate.RULES)
         )
@@ -557,6 +574,197 @@ class UnknownValueTests(GateCase):
         self.assertEqual(specimens, set(gate.REFUSALS))
 
 
+ALL = {"absent", "halted", "blocked", "study", "runbook", "inoculate", "implement", "run-exit",
+       "resolve-security-suite", "audit-round", "close-audit", "audit-verdict", "prose", "push",
+       "merge-step", "resolve-versions", "integrate", "done"}
+STEPS = {"blocked", "inoculate", "implement", "run-exit", "resolve-security-suite", "audit-round",
+         "close-audit", "audit-verdict", "prose", "push"}
+# Written out here, not read from the gate, so a rule widened in the table fails.
+ADMITTED = {
+    ("cmd_init", None): {"absent"},
+    ("cmd_observe", None): ALL - {"absent"},
+    ("cmd_record", None): ALL - {"absent"},
+    ("cmd_config", "set"): ALL - {"absent"},
+    ("cmd_amend_study", None): STEPS - {"blocked"},
+    ("cmd_amend_runbook", None): STEPS,
+    ("cmd_done", "study"): {"study"},
+    ("cmd_done", "runbook"): {"runbook"},
+    ("cmd_done", "inoculate"): {"inoculate"},
+    ("cmd_done", "implement"): {"implement"},
+    ("cmd_done", "audit"): {"close-audit", "audit-round", "audit-verdict"},
+    ("cmd_done", "prose"): {"prose"},
+    ("cmd_done", "push"): {"push"},
+    ("cmd_done", "merge-step"): {"merge-step"},
+    ("cmd_done", "sync-run"): {"integrate", "resolve-versions"},
+    ("cmd_done", "resolve-versions"): {"resolve-versions"},
+    ("cmd_done", "integrate"): {"integrate"},
+    ("cmd_audit_round", None): {"audit-round"},
+    ("cmd_halt", None): ALL - {"absent"},
+    ("cmd_resume", None): {"halted"},
+    ("cmd_reset", None): {"done", "halted"},
+    ("cmd_checkpoint_export", None): ALL - {"absent", "halted"},
+    ("cmd_checkpoint_archive", None): ALL - {"absent", "halted"},
+    ("cmd_carryover_export", None): {"audit-verdict"},
+    ("cmd_carryover_bind", None): {"audit-verdict"},
+    ("cmd_replacement_begin", None): {"study"},
+    ("cmd_replacement_resume", None): {"study"},
+    ("cmd_retain_guard", None): {"inoculate"},
+    ("cmd_run_exit", None): {"run-exit"},
+}
+
+
+class AdmittedDirectiveTests(GateCase):
+    """Every rule against every directive, so no rule can be widened unseen."""
+
+    @staticmethod
+    def directives(do):
+        if do == "absent":
+            return [{"do": "absent"}]
+        if do == "halted":
+            return [{"do": "halted", "covers": covers} for covers in sorted(ALL - {"absent", "halted"})]
+        if do == "audit-round":
+            return [{"do": do, "step": 2, "round": number} for number in (1, 8)]
+        return [{"do": do}, {"do": do, "step": 2}]
+
+    def test_the_vocabulary_and_the_rules_are_the_ones_written_here(self):
+        self.assertEqual(ALL, set(gate.DIRECTIVES))
+        self.assertEqual(set(ADMITTED), set(gate.RULES))
+
+    def test_each_rule_grants_at_its_directives_and_at_no_other(self):
+        decided = 0
+        for key, (granted, _) in CASES.items():
+            _directive, command, evidence = granted
+            evidence = {name: value for name, value in evidence.items() if name != "recovery"}
+            for do in sorted(ALL):
+                for directive in self.directives(do):
+                    decided += 1
+                    with self.subTest(key=key, directive=directive):
+                        try:
+                            call(key, directive, command, evidence)
+                            code = None
+                        except gate.Refusal as refusal:
+                            code = refusal.report["code"]
+                        except Exception as error:
+                            self.fail(f"escaped as {type(error).__name__}, not a Refusal")
+                        if do in ADMITTED[key]:
+                            self.assertNotEqual(code, "directive-not-authorised")
+                        else:
+                            self.assertEqual(code, "directive-not-authorised")
+        self.assertEqual(decided, 29 * (1 + 16 + 2 + 15 * 2))
+
+    def test_no_mutation_but_config_halt_record_observe_resume_and_reset_is_granted_at_a_halt(self):
+        open_at_halt = {key for key, admitted in ADMITTED.items() if "halted" in admitted}
+        self.assertEqual(open_at_halt, {("cmd_observe", None), ("cmd_record", None), ("cmd_config", "set"),
+                                        ("cmd_halt", None), ("cmd_resume", None), ("cmd_reset", None)})
+
+
+class RecoveryWindowTests(GateCase):
+    """A pending record outlives its state write; its owner must still be granted."""
+
+    WINDOWS = (
+        ("version-resolution", ("cmd_done", "resolve-versions"), {"do": "integrate"}, {}),
+        ("no-known-inoculation", ("cmd_done", "inoculate"), at("implement"), {}),
+        ("no-known-inoculation", ("cmd_done", "inoculate"), at("run-exit"), {}),
+        ("amendment", ("cmd_amend_study", None), at("blocked"), {"artifact": "study.md"}),
+    )
+
+    def test_the_owner_is_granted_at_the_directive_the_written_state_returns(self):
+        for recovery, key, directive, command in self.WINDOWS:
+            with self.subTest(recovery=recovery, directive=directive["do"]):
+                self.granted(key, directive, command, {"recovery": recovery})
+
+    def test_the_same_command_refuses_there_when_no_record_is_live(self):
+        for _recovery, key, directive, command in self.WINDOWS:
+            with self.subTest(key=key, directive=directive["do"]):
+                self.assert_refusal("directive-not-authorised", key, directive, command)
+
+    def test_a_live_record_widens_no_other_directive(self):
+        for recovery, key, _directive, command in self.WINDOWS:
+            self.assertIsInstance(gate.RECOVERY_PATHS[recovery], dict)
+            admitted = gate.RECOVERY_PATHS[recovery][key]
+            for do in sorted(gate.RUNNING - admitted - {"audit-round"}):
+                with self.subTest(recovery=recovery, do=do):
+                    self.assert_refusal("directive-not-authorised", key, {"do": do}, command, {"recovery": recovery})
+            self.assert_refusal("directive-not-authorised", key, {"do": "halted", "covers": "implement"},
+                                command, {"recovery": recovery})
+
+    def test_a_fresh_study_amendment_refuses_at_blocked_and_the_repair_is_granted(self):
+        self.assert_refusal("directive-not-authorised", ("cmd_amend_study", None), at("blocked"), {"artifact": "s.md"})
+        command = {"artifact": "r.md"}
+        self.granted(("cmd_amend_runbook", None), at("blocked"), command)
+
+    def test_sync_run_is_granted_where_resolve_versions_names_it_as_recovery(self):
+        key = ("cmd_done", "sync-run")
+        for do in ("integrate", "resolve-versions"):
+            with self.subTest(do=do):
+                self.granted(key, {"do": do}, SYNC)
+        self.assert_refusal("directive-not-authorised", ("cmd_done", "integrate"), {"do": "resolve-versions"},
+                            {"merge_commit": "a" * 40})
+
+
+class ExactTypeTests(GateCase):
+    """Every hostile value refuses with a stable code; none escapes as another exception."""
+
+    HALT = ("cmd_halt", None)
+    REASON = {"reason": "stop"}
+
+    class Text(str):
+        pass
+
+    class Mapping(dict):
+        def get(self, name, default=None):
+            return "absent" if name == "do" else dict.get(self, name, default)
+
+    def test_an_unhashable_covers_refuses(self):
+        for covers in (["audit-verdict"], {"do": "audit-verdict"}, 7, True, self.Text("implement")):
+            with self.subTest(covers=covers):
+                self.assert_refusal("directive-unknown", self.HALT, {"do": "halted", "covers": covers}, self.REASON)
+
+    def test_an_unhashable_resume_exit_refuses(self):
+        for exit_named in (["audit-verdict"], [], self.Text("audit-verdict")):
+            with self.subTest(exit_named=exit_named):
+                code = "command-value-malformed" if isinstance(exit_named, str) else "resume-exit-unknown"
+                self.assert_refusal(code, ("cmd_resume", None), EXHAUSTED_HALT, {"to": exit_named})
+
+    def test_an_integer_too_wide_to_serialise_refuses(self):
+        wide = 10**5000
+        self.assert_refusal("command-value-malformed", ("cmd_done", "prose"), at("prose"), {"files": wide})
+        self.assert_refusal("command-value-malformed", ("cmd_done", "prose"), at("prose"), {"files": -(2**63)})
+        self.assert_refusal("preimage-malformed", self.HALT, at("implement"), self.REASON, ledger_count=wide)
+        self.assert_refusal("directive-shape-unknown", self.HALT, {"do": "implement", "step": wide}, self.REASON)
+        self.assert_refusal("directive-shape-unknown", self.HALT, {"do": "audit-round", "round": wide}, self.REASON)
+        self.assert_refusal("consequence-unknown", self.HALT, at("implement"), self.REASON, {"consequence": wide})
+        self.granted(("cmd_done", "prose"), at("prose"), {"files": 2**63 - 1})
+
+    def test_a_subclass_cannot_stand_in_for_a_plain_value(self):
+        text = self.Text
+        self.assert_refusal("directive-shape-unknown", self.HALT, self.Mapping({"do": "implement"}), self.REASON)
+        self.assert_refusal("directive-shape-unknown", self.HALT, {"do": text("implement")}, self.REASON)
+        self.assert_refusal("command-value-malformed", self.HALT, at("implement"), self.Mapping(self.REASON))
+        self.assert_refusal("command-value-malformed", self.HALT, at("implement"), {"reason": text("stop")})
+        self.assert_refusal("command-value-malformed", self.HALT, at("implement"), {text("reason"): "stop"})
+        self.assert_refusal("command-value-malformed", ("cmd_done", "prose"), at("prose"), {"skills": [text("a")]})
+        self.assert_refusal("evidence-field-unknown", self.HALT, at("implement"), self.REASON, self.Mapping({}))
+        self.assert_refusal("promise-unknown", self.HALT, at("implement"), self.REASON,
+                            {"promise": text("fiat-receipted-delivery")})
+        self.assert_refusal("recovery-path-unknown", ("cmd_amend_runbook", None), at("implement"),
+                            {"artifact": "r.md"}, {"recovery": text("amendment")})
+        self.assert_refusal("preimage-malformed", self.HALT, at("implement"), self.REASON, state_sha256=text(STATE))
+        for key in ((text("cmd_halt"), None), ("cmd_done", text("study"))):
+            try:
+                call(key, {"do": "study"}, {"reason": "stop"})
+            except gate.Refusal as refusal:
+                self.assertEqual(refusal.report["code"], "command-unknown")
+            else:
+                self.fail("a subclassed rule key was granted")
+
+    def test_the_grant_shares_no_list_with_its_caller(self):
+        command = copy.deepcopy(SYNC)
+        grant = call(("cmd_done", "sync-run"), {"do": "integrate"}, command)
+        command["acknowledge_sync_paths"].append("docs/smuggled.md")
+        self.assertEqual(grant["command"], SYNC)
+
+
 class CloseAuditTests(GateCase):
     KEY = ("cmd_done", "audit")
 
@@ -645,7 +853,45 @@ class PurityTests(GateCase):
         self.assertEqual([ast.unparse(node) for node in patterns], ["re.compile('[0-9a-f]{64}')"])
         methods = {node.func.attr for node in ast.walk(self.tree)
                    if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)}
-        self.assertEqual(methods, {"compile", "dumps", "fullmatch", "get", "startswith", "encode", "values", "__init__"})
+        self.assertEqual(methods, {"compile", "dumps", "fullmatch", "get", "startswith", "encode", "values", "items", "__init__"})
+
+    def test_module_calls_only_a_closed_set_of_names(self):
+        # A forbidden attribute is reachable through `getattr`, and a forbidden
+        # module through `__builtins__` or `sys.modules`, so the names the module
+        # may call or read dynamically are pinned as well as the ones it may not.
+        called = {node.func.id for node in ast.walk(self.tree)
+                  if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
+        defined = {node.name for node in self.tree.body if isinstance(node, (ast.FunctionDef, ast.ClassDef))}
+        self.assertEqual(called - defined, {"frozenset", "set", "dict", "type", "all", "any", "len", "list", "super", "refuse"})
+        for node in ast.walk(self.tree):
+            self.assertNotIsInstance(node, (ast.Lambda, ast.Await, ast.Yield, ast.YieldFrom, ast.Starred))
+            if isinstance(node, ast.Name):
+                self.assertNotIn(node.id, {"getattr", "setattr", "delattr", "__builtins__", "locals", "sys", "os"},
+                                 node.lineno)
+            if isinstance(node, ast.Attribute):
+                self.assertFalse(node.attr.startswith("__") and node.attr != "__init__", node.lineno)
+
+    def test_no_function_writes_module_state(self):
+        # One call cannot poison the next: inside a function the only stores are
+        # local names and the refusal's own report.
+        for function in ast.walk(self.tree):
+            if not isinstance(function, ast.FunctionDef):
+                continue
+            for node in ast.walk(function):
+                if isinstance(node, (ast.Delete, ast.AugAssign)):
+                    self.fail(f"line {node.lineno} mutates in place")
+                targets = node.targets if isinstance(node, ast.Assign) else (
+                    [node.target] if isinstance(node, (ast.AnnAssign, ast.NamedExpr)) else [])
+                for target in targets:
+                    if isinstance(target, ast.Name):
+                        continue
+                    self.assertEqual(ast.unparse(target), "self.report", node.lineno)
+        before = copy.deepcopy((gate.RULES, gate.PROMISES, gate.RECOVERY_PATHS, gate.REFUSALS, sorted(gate.CHECKS)))
+        for key, (granted, refused) in CASES.items():
+            call(key, *granted)
+            with self.assertRaises(gate.Refusal):
+                call(key, *refused[:3])
+        self.assertEqual(before, (gate.RULES, gate.PROMISES, gate.RECOVERY_PATHS, gate.REFUSALS, sorted(gate.CHECKS)))
 
     def test_importing_the_module_runs_nothing_but_definitions(self):
         for node in self.tree.body:

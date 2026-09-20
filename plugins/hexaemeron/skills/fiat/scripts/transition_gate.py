@@ -111,6 +111,8 @@ COMMON_EVIDENCE = frozenset({"promise", "consequence", "recovery"})
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _GENESIS = "genesis"
+_INT_MAX = 2**63 - 1
+"""No integer the controller carries is wider, and a wider one cannot be serialised."""
 
 
 class Rule(NamedTuple):
@@ -176,7 +178,7 @@ RULES = {
     ("cmd_amend_study", None): Rule(
         "fiat-study-amendment",
         "amend-study",
-        STEP_WORK,
+        STEP_WORK - {"blocked"},
         frozenset({"artifact"}),
         frozenset({"artifact"}),
     ),
@@ -227,7 +229,7 @@ RULES = {
     ("cmd_done", "sync-run"): _done(
         "fiat-receipted-delivery",
         "sync-run",
-        {"integrate"},
+        {"integrate", "resolve-versions"},
         {
             "commit",
             "base_commit",
@@ -348,11 +350,25 @@ the controller declares the Promise that authorises it.
 """
 
 RECOVERY_PATHS = {
-    "amendment": frozenset({("cmd_amend_study", None), ("cmd_amend_runbook", None)}),
-    "version-resolution": frozenset({("cmd_done", "resolve-versions")}),
-    "no-known-inoculation": frozenset({("cmd_done", "inoculate")}),
+    "amendment": {
+        ("cmd_amend_study", None): STEP_WORK,
+        ("cmd_amend_runbook", None): STEP_WORK,
+    },
+    "version-resolution": {
+        ("cmd_done", "resolve-versions"): frozenset({"resolve-versions", "integrate"}),
+    },
+    "no-known-inoculation": {
+        ("cmd_done", "inoculate"): frozenset({"inoculate", "implement", "run-exit"}),
+    },
 }
-"""Each live pending record, and the only commands granted while it is live."""
+"""Each live pending record, the only commands granted while it is live, and
+the directives each is granted at.
+
+A pending record outlives the state write it guards, so its owner must still be
+granted at the directive the written state returns: `blocked` after a study
+amendment that marks a step, `integrate` after a version resolution, and
+`implement` or `run-exit` after a no-known inoculation.
+"""
 
 REFUSALS = {
     "preimage-malformed": (
@@ -445,26 +461,26 @@ def canonical(value) -> str:
 
 
 def _is_int(value) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
+    return type(value) is int and -_INT_MAX <= value <= _INT_MAX
 
 
 def _is_digest(value) -> bool:
-    return isinstance(value, str) and _SHA256.fullmatch(value) is not None
+    return type(value) is str and _SHA256.fullmatch(value) is not None
 
 
 def _preimage_holds(state_sha256, ledger_tail, ledger_count, directive) -> bool:
     if not _is_int(ledger_count) or ledger_count < 0:
         return False
-    if isinstance(directive, dict) and directive.get("do") == ABSENT:
+    if directive["do"] == ABSENT:
         return state_sha256 is None and ledger_tail == _GENESIS and ledger_count == 0
     return _is_digest(state_sha256) and _is_digest(ledger_tail) and ledger_count >= 1
 
 
 def _directive_code(directive) -> str | None:
     if (
-        not isinstance(directive, dict)
+        type(directive) is not dict
         or not set(directive) <= DIRECTIVE_FIELDS
-        or not isinstance(directive.get("do"), str)
+        or type(directive.get("do")) is not str
     ):
         return "directive-shape-unknown"
     do = directive["do"]
@@ -476,7 +492,9 @@ def _directive_code(directive) -> str | None:
         return "directive-shape-unknown"
     if ("covers" in directive) != (do == HALTED):
         return "directive-shape-unknown"
-    if do == HALTED and directive["covers"] not in ACTIVE - {HALTED}:
+    if do == HALTED and (
+        type(directive["covers"]) is not str or directive["covers"] not in RUNNING
+    ):
         return "directive-unknown"
     if do == "audit-round":
         if not _is_int(directive["round"]):
@@ -487,13 +505,13 @@ def _directive_code(directive) -> str | None:
 
 
 def _value_holds(value) -> bool:
-    if value is None or isinstance(value, (str, bool)) or _is_int(value):
+    if value is None or type(value) in (str, bool) or _is_int(value):
         return True
-    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+    return type(value) is list and all(type(item) is str for item in value)
 
 
 def _command_code(rule: Rule, command) -> str | None:
-    if not isinstance(command, dict) or not all(isinstance(key, str) for key in command):
+    if type(command) is not dict or not all(type(key) is str for key in command):
         return "command-value-malformed"
     if not set(command) <= rule.fields:
         return "command-field-unknown"
@@ -505,11 +523,11 @@ def _command_code(rule: Rule, command) -> str | None:
 
 
 def _evidence_code(rule: Rule, key: tuple, evidence) -> str | None:
-    if not isinstance(evidence, dict) or not set(evidence) <= COMMON_EVIDENCE | rule.evidence:
+    if type(evidence) is not dict or not set(evidence) <= COMMON_EVIDENCE | rule.evidence:
         return "evidence-field-unknown"
     promise = evidence.get("promise")
     if promise is not None:
-        if not isinstance(promise, str) or promise not in PROMISES:
+        if type(promise) is not str or promise not in PROMISES:
             return "promise-unknown"
         if promise != rule.promise:
             return "promise-mismatch"
@@ -521,7 +539,7 @@ def _evidence_code(rule: Rule, key: tuple, evidence) -> str | None:
             return "consequence-mismatch"
     recovery = evidence.get("recovery")
     if recovery is not None:
-        if not isinstance(recovery, str) or recovery not in RECOVERY_PATHS:
+        if type(recovery) is not str or recovery not in RECOVERY_PATHS:
             return "recovery-path-unknown"
         if key not in RECOVERY_PATHS[recovery]:
             return "recovery-pending"
@@ -530,7 +548,7 @@ def _evidence_code(rule: Rule, key: tuple, evidence) -> str | None:
 
 def _check_config_set(directive: dict, command: dict, evidence: dict) -> str | None:
     path = command["path"]
-    if not isinstance(path, str):
+    if type(path) is not str:
         return "command-value-malformed"
     if path in CONFIG_SET_EXACT_PATHS or path.startswith(CONFIG_SET_PREFIXES):
         return None
@@ -539,7 +557,9 @@ def _check_config_set(directive: dict, command: dict, evidence: dict) -> str | N
 
 def _check_resume(directive: dict, command: dict, evidence: dict) -> str | None:
     exit_named = command.get("to")
-    if exit_named is not None and exit_named not in RESUME_EXITS:
+    if exit_named is not None and (
+        type(exit_named) is not str or exit_named not in RESUME_EXITS
+    ):
         return "resume-exit-unknown"
     covered = directive["covers"]
     if covered in RESUME_EXITS and exit_named is None:
@@ -553,14 +573,14 @@ def _check_close_audit(directive: dict, command: dict, evidence: dict) -> str | 
     if directive["do"] == "close-audit":
         return None
     reason = command.get("reason")
-    if command.get("no_further_leads") is True and isinstance(reason, str) and reason:
+    if command.get("no_further_leads") is True and type(reason) is str and reason:
         return None
     return "audit-close-needs-no-further-leads"
 
 
 def _check_checkpoint_boundary(directive: dict, command: dict, evidence: dict) -> str | None:
     tail_event = evidence.get("tail_event")
-    if not isinstance(tail_event, str) or tail_event not in CHECKPOINT_TAIL_EVENTS:
+    if type(tail_event) is not str or tail_event not in CHECKPOINT_TAIL_EVENTS:
         return "checkpoint-boundary-unaccepted"
     if tail_event == "audit-round" and directive["do"] != "audit-verdict":
         return "checkpoint-boundary-unaccepted"
@@ -588,10 +608,9 @@ def evaluate(
 ) -> dict:
     """Return one exact grant, or raise one stable `Refusal`. Writes nothing."""
     key = (handler, subcommand)
-    try:
+    rule = None
+    if type(handler) is str and (subcommand is None or type(subcommand) is str):
         rule = RULES.get(key)
-    except TypeError:
-        rule = None
     if rule is None:
         raise Refusal(DEFAULT_PROMISE, "unmapped", "command-unknown")
 
@@ -607,8 +626,12 @@ def evaluate(
         code = _command_code(rule, command)
     if code is None:
         code = _evidence_code(rule, key, evidence)
-    if code is None and directive["do"] not in rule.directives:
-        code = "directive-not-authorised"
+    if code is None:
+        admitted = rule.directives
+        if evidence.get("recovery") is not None:
+            admitted = RECOVERY_PATHS[evidence["recovery"]][key]
+        if directive["do"] not in admitted:
+            code = "directive-not-authorised"
     if code is None and rule.check is not None:
         code = CHECKS[rule.check](directive, command, evidence)
     if code is not None:
@@ -624,7 +647,10 @@ def evaluate(
         "ledger_count": ledger_count,
         "handler": handler,
         "subcommand": subcommand,
-        "command": dict(command),
+        "command": {
+            name: list(value) if type(value) is list else value
+            for name, value in command.items()
+        },
     }
     if len(canonical(grant).encode("utf-8")) > MAX_GRANT_BYTES:
         raise refuse("grant-oversized")

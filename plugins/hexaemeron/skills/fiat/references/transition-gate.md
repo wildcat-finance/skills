@@ -38,6 +38,10 @@ transition_gate.evaluate(
 | `command` | the fields the operator supplied, by argparse destination name; each value a string, an integer, a boolean, null or a list of strings |
 | `evidence` | `promise`, `consequence` and `recovery`, each optional, plus any field the rule names |
 
+Every value is an exact built-in type. A subclass of `dict`, `str` or `list`
+refuses, and so does an integer outside the signed 64-bit range. No input
+leaves `evaluate` as any exception but `Refusal`.
+
 The canonical directive is a projection of `_next_directive`, not its whole
 output. It carries `do`, an optional positive `step`, `round` when and only
 when `do` is `audit-round`, and `covers` when and only when `do` is `halted`.
@@ -56,6 +60,18 @@ names a live pending record: `amendment`, `version-resolution` or
 granted: `amend study` or `amend runbook`, `done resolve-versions`, and `done
 inoculate`.
 
+A pending record outlives the state write it guards, so its owner is granted
+at the directive the written state returns as well as at its own row's:
+
+| Pending record | Owner | Directives while the record is live |
+| --- | --- | --- |
+| `amendment` | `amend study`, `amend runbook` | step work, `blocked` included |
+| `version-resolution` | `done resolve-versions` | `resolve-versions`, `integrate` |
+| `no-known-inoculation` | `done inoculate` | `inoculate`, `implement`, `run-exit` |
+
+The gate cannot see the pending file. The caller must set `recovery` from the
+record on disk, never from the operator's arguments.
+
 ## Schemas
 
 `fiat-transition-grant/v1` has exactly these fields:
@@ -70,7 +86,7 @@ inoculate`.
 | `state_sha256` | the state digest the grant holds for |
 | `ledger_tail`, `ledger_count` | the ledger tail and count the grant holds for |
 | `handler`, `subcommand` | the rule key |
-| `command` | the normalised command, unchanged |
+| `command` | the normalised command, with each list copied so the caller holds no reference into the grant |
 
 Its canonical JSON is at most 65,536 bytes. A larger one refuses.
 
@@ -101,7 +117,7 @@ Each row grants only at the directives listed. `active` is every `do` except
 | `cmd_observe` | | `fiat-run-observation-binding` | `bind-observation` | active |
 | `cmd_record` | | `fiat-receipted-delivery` | `record-receipt` | active |
 | `cmd_config` | `set` | `fiat-receipted-delivery` | `config-set` | active |
-| `cmd_amend_study` | | `fiat-study-amendment` | `amend-study` | step work |
+| `cmd_amend_study` | | `fiat-study-amendment` | `amend-study` | step work except `blocked` |
 | `cmd_amend_runbook` | | `fiat-runbook-amendment` | `amend-runbook` | step work |
 | `cmd_done` | `study` | `fiat-receipted-delivery` | `receipt-study` | `study` |
 | `cmd_done` | `runbook` | `fiat-receipted-delivery` | `receipt-runbook` | `runbook` |
@@ -111,7 +127,7 @@ Each row grants only at the directives listed. `active` is every `do` except
 | `cmd_done` | `prose` | `fiat-receipted-delivery` | `receipt-prose` | `prose` |
 | `cmd_done` | `push` | `fiat-receipted-delivery` | `receipt-push` | `push` |
 | `cmd_done` | `merge-step` | `fiat-receipted-delivery` | `receipt-merge-step` | `merge-step` |
-| `cmd_done` | `sync-run` | `fiat-receipted-delivery` | `receipt-sync-run` | `integrate` |
+| `cmd_done` | `sync-run` | `fiat-receipted-delivery` | `receipt-sync-run` | `integrate`, `resolve-versions` |
 | `cmd_done` | `resolve-versions` | `fiat-version-resolution` | `receipt-resolve-versions` | `resolve-versions` |
 | `cmd_done` | `integrate` | `fiat-final-integration` | `receipt-integrate` | `integrate` |
 | `cmd_audit_round` | | `fiat-receipted-delivery` | `append-round` | `audit-round` |
@@ -126,6 +142,10 @@ Each row grants only at the directives listed. `active` is every `do` except
 | `cmd_replacement_resume` | | `fiat-replacement-admission` | `advance-replacement` | `study` |
 | `cmd_retain_guard` | | `fiat-known-failure-inoculation` | `retain-guard` | `inoculate` |
 | `cmd_run_exit` | | `fiat-receipted-delivery` | `observe-exit` | `run-exit` |
+
+A fresh study amendment refuses at `blocked`, where only the runbook repair
+is granted. `done sync-run` is granted at `resolve-versions` because that
+directive names the base sync as its recovery when the base has advanced.
 
 `config get` writes nothing and has no row. `start-audit-loop` has no row: no
 declared Promise authorises it, so an exhausted loop cannot be continued
@@ -157,7 +177,7 @@ Four rows carry a check of their own:
 | `preimage-malformed` | the state digest, ledger tail or ledger count has the wrong form for the directive |
 | `command-field-unknown` | the command carries a field the rule does not name |
 | `command-field-missing` | a field the rule requires is absent or null |
-| `command-value-malformed` | the command is not a mapping, or a value is not a string, integer, boolean, null or list of strings |
+| `command-value-malformed` | the command is not a plain mapping with string keys, or a value is not a string, 64-bit integer, boolean, null or list of strings |
 | `evidence-field-unknown` | the evidence is not a mapping, or carries a field the rule does not name |
 | `promise-unknown` | the claimed Promise id is not one the table declares |
 | `promise-mismatch` | the claimed Promise id is not the rule's |
