@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 56998002,
+    "bytes_blob": 57005743,
     "bytes_generated": 98
   },
   "entries": [
@@ -518,7 +518,7 @@
       "path": "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.synopsis.md"
     },
     {
-      "bytes": 17942,
+      "bytes": 25683,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
