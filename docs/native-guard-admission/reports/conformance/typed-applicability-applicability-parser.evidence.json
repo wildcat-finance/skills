@@ -1,0 +1,50 @@
+{
+  "boundary": "Authored synthetic parser inputs; no controller admission, execution or host isolation claim.",
+  "budget": null,
+  "command": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion applicability-parser --report .hexaemeron/reports/design/typed-applicability-applicability-parser.json",
+  "criterion": "applicability-parser",
+  "declared_command_launches": 0,
+  "design_report_sha256": "671448811c21ffbdaa7e1bf12c6bf6990ca1d06e0f462361f3c69e029f439c2e",
+  "errors": 0,
+  "expected_failures": 0,
+  "failures": 0,
+  "operation_ran": true,
+  "schema": "native-guard-admission-parser-proof/v1",
+  "skips": 0,
+  "sources": [
+    {
+      "path": "docs/native-guard-admission/proof.py",
+      "sha256": "c737fbf4c7b6323355b6a3569f2459d8d9da20752b0bfe7684a164c2cc045fa4"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/audit_applicability.py",
+      "sha256": "ee6a76074f9e021277a835e6e1b3f4878ad6820ca19cfb1e9b41b4ed51febc8f"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
+      "sha256": "d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py",
+      "sha256": "e65d1f1cc49490e20b30696ccf5a4f198e8f6816a601409932f5deca13a72daa"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
+      "sha256": "8b3afbcb88be0ebe0ddf4d23e05fc90c85980b1fa676e7e5dd5bd5f86e000195"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py",
+      "sha256": "3d15265475f42e520f15a24a5293600448ebc8891f803948051bc5f15d3895a7"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "sha256": "c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_audit_applicability.py",
+      "sha256": "83e616f162f54c05d0915e1a49457ed6404332a55e64cd3c140284fd86c994cc"
+    }
+  ],
+  "tests": 46,
+  "unexpected_successes": 0
+}

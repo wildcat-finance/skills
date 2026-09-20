@@ -8,12 +8,12 @@
     {
       "origin": "scaffold-source",
       "path": "docs/native-guard-admission/README.md",
-      "sha256": "4dcaf8baf6e9df2daa87b823f9997aab486f3b09a88d675b39f0d8ffc0193954"
+      "sha256": "ac76b8401d95e83a080158b74b98ec79aad3874c2f17cb319c045e4a40cabd4f"
     },
     {
       "origin": "scaffold-source",
       "path": "docs/native-guard-admission/contract.md",
-      "sha256": "3114a68fa9620bce0762459afa77ae05bcb40b7943ea07e81f18231e66123057"
+      "sha256": "548fad56a8b4e7e31c34b3932fd3fd5ca4e343b0d6b22ff6cc3e9b0ae7e838c8"
     },
     {
       "origin": "accepted-design-evidence",
@@ -43,7 +43,27 @@
     {
       "origin": "scaffold-source",
       "path": "docs/native-guard-admission/proof.py",
-      "sha256": "38605c22a42793f48443c45757ae20c9cfeec5f45169a849ba60d4e75512d0ac"
+      "sha256": "c737fbf4c7b6323355b6a3569f2459d8d9da20752b0bfe7684a164c2cc045fa4"
+    },
+    {
+      "origin": "executed-parser-conformance",
+      "path": "docs/native-guard-admission/reports/conformance/typed-applicability-applicability-parser.evidence.json",
+      "sha256": "807815183370c6d4846e6e02d19dc6e91da56a50e4139b564fe16c2518e3d9ee"
+    },
+    {
+      "origin": "executed-parser-conformance",
+      "path": "docs/native-guard-admission/reports/conformance/typed-applicability-applicability-parser.json",
+      "sha256": "671448811c21ffbdaa7e1bf12c6bf6990ca1d06e0f462361f3c69e029f439c2e"
+    },
+    {
+      "origin": "executed-parser-conformance",
+      "path": "docs/native-guard-admission/reports/conformance/typed-applicability-bounded-reader.evidence.json",
+      "sha256": "f619c421fe19d56ca63b9e6a4c915aab7667408c8d1f74fdef877753b72fc6d7"
+    },
+    {
+      "origin": "executed-parser-conformance",
+      "path": "docs/native-guard-admission/reports/conformance/typed-applicability-bounded-reader.json",
+      "sha256": "1966fc9390c0aaa6d22c2941b175ff193b73ecb1e3c16ba960fb3b3939ee9d13"
     },
     {
       "origin": "executed-synthetic-selection",

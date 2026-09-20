@@ -158,6 +158,131 @@ class _ReadRefusal(OSError):
     pass
 
 
+@dataclass(frozen=True, slots=True)
+class InventoryReadLimits:
+    """Optional lower ceilings for consumers of the checked source bytes."""
+
+    document_bytes: int
+    source_views: int
+    aggregate_bytes: int
+
+    def __post_init__(self):
+        for value, ceiling in ((self.document_bytes, MAX_BYTES),
+                               (self.source_views, MAX_SOURCE_VIEWS),
+                               (self.aggregate_bytes, MAX_SOURCE_VIEWS * 2 * MAX_BYTES)):
+            if type(value) is not int or not 0 < value <= ceiling:
+                raise ValueError("inventory read limit is outside its existing ceiling")
+
+
+@dataclass(frozen=True, slots=True)
+class InventorySourceLoadResult:
+    """Checked inventory and immutable bytes consumed by that same check.
+
+    Sources are (id, view path, view bytes, view digest, source path, source
+    bytes, source digest). They are empty unless the inventory is clean.
+    The existing InventoryLoadResult retains its established capture API.
+    """
+
+    result: InventoryLoadResult
+    study_bytes: bytes | None
+    runbook_bytes: bytes | None
+    sources: tuple[tuple[str, str, bytes, str, str, bytes, str], ...]
+    identities: tuple[tuple[Path, tuple[int, ...]], ...] = ()
+
+
+class _CapturedReads:
+    """Apply stricter per-operation reads without changing ordinary callers."""
+
+    def __init__(self, root: Path, limits: InventoryReadLimits):
+        self.root = root.absolute()
+        self.limits = limits
+        self.documents = {}
+        self.sources = {}
+        self.identities = {}
+        self.aliases = {}
+        self.total = 0
+        self.checked_sources = ()
+
+    def read(self, path: Path, limit: int) -> bytes:
+        """Hold and recheck every named directory and a single-link leaf."""
+        path = path.absolute()
+        if any(part in {".", ".."} for part in path.parts):
+            raise _ReadRefusal("input path is not canonical")
+        descriptors = []
+        links = []
+        try:
+            current = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            descriptors.append(current)
+            for part in path.parts[1:-1]:
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                                dir_fd=current)
+                links.append((current, part, child))
+                descriptors.append(child)
+                current = child
+            leaf = path.name
+            fd = os.open(leaf, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=current)
+            descriptors.append(fd)
+            before = os.fstat(fd)
+            identity = lambda item: (item.st_dev, item.st_ino, item.st_mode,
+                                     item.st_nlink, item.st_size,
+                                     item.st_mtime_ns, item.st_ctime_ns)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+                    or before.st_size > limit):
+                raise _ReadRefusal("input is not a bounded single-link regular file")
+            if identity(before) != identity(os.stat(leaf, dir_fd=current, follow_symlinks=False)):
+                raise _ReadRefusal("input identity changed")
+            data = bytearray()
+            while len(data) <= limit:
+                chunk = os.read(fd, min(65536, limit + 1 - len(data)))
+                if not chunk:
+                    break
+                data.extend(chunk)
+            after = os.fstat(fd)
+            if (len(data) > limit or len(data) != after.st_size
+                    or identity(before) != identity(after)
+                    or identity(after) != identity(os.stat(leaf, dir_fd=current, follow_symlinks=False))):
+                raise _ReadRefusal("input changed during read")
+            for parent, part, child in links:
+                named = os.stat(part, dir_fd=parent, follow_symlinks=False)
+                opened = os.fstat(child)
+                if (not stat.S_ISDIR(named.st_mode)
+                        or (named.st_dev, named.st_ino) != (opened.st_dev, opened.st_ino)):
+                    raise _ReadRefusal("input directory changed during read")
+            prior = self.identities.setdefault(path, identity(after))
+            if prior != identity(after):
+                raise _ReadRefusal("input identity changed between reads")
+            return bytes(data)
+        except (OSError, ValueError, TypeError, NotImplementedError) as error:
+            raise _ReadRefusal("bounded input read refused") from error
+        finally:
+            for fd in reversed(descriptors):
+                os.close(fd)
+
+    def document(self, path: Path) -> bytes:
+        data = self.read(path, self.limits.document_bytes)
+        prior = self.documents.setdefault(path, data)
+        if prior != data:
+            raise _ReadRefusal("document changed between reads")
+        return prior
+
+    def source(self, root: Path, relative: str) -> bytes:
+        if _portable_path(relative) is None:
+            raise _ReadRefusal("source path is not portable")
+        alias = _portable_alias(relative)
+        if self.aliases.setdefault(alias, relative) != relative:
+            raise _ReadRefusal("source paths alias")
+        prior = self.sources.get(relative)
+        remaining = self.limits.aggregate_bytes - self.total
+        limit = MAX_BYTES if prior is not None else min(MAX_BYTES, remaining)
+        data = self.read(self.root / relative, limit)
+        if prior is None:
+            self.sources[relative] = data
+            self.total += len(data)
+        elif prior != data:
+            raise _ReadRefusal("source changed between reads")
+        return self.sources[relative]
+
+
 def _one(path: Path, code: str, message: str, line: int = 1) -> list[Finding]:
     return [Finding(path, line, code, message)]
 
@@ -1024,16 +1149,17 @@ def _revalidate_inputs(
     runbook_bytes: bytes,
     repository: Path,
     sources: list[tuple[str, str, bytes, str, str, bytes, str]],
+    reads: _CapturedReads | None = None,
 ) -> list[Finding]:
     """Reread every consumed input at the final boundary."""
     try:
-        current_study = _stable_file(study)
+        current_study = (reads.document(study) if reads else _stable_file(study))
     except OSError:
         return _one(study, "K000", "study cannot be reread at the final boundary")
     if current_study != study_bytes:
         return _one(study, "K000", "study bytes changed before the final boundary")
     try:
-        current_runbook = _stable_file(runbook)
+        current_runbook = (reads.document(runbook) if reads else _stable_file(runbook))
     except OSError:
         return _one(runbook, "K000", "runbook cannot be reread at the final boundary")
     if current_runbook != runbook_bytes:
@@ -1050,7 +1176,7 @@ def _revalidate_inputs(
     ) in sources:
         view_target = repository / view_path
         try:
-            current_view = _confined_file(repository, view_path)
+            current_view = (reads.source(repository, view_path) if reads else _confined_file(repository, view_path))
         except OSError:
             return _one(
                 view_target,
@@ -1067,7 +1193,7 @@ def _revalidate_inputs(
 
         source_target = repository / source_path
         try:
-            current_source = _confined_file(repository, source_path)
+            current_source = (reads.source(repository, source_path) if reads else _confined_file(repository, source_path))
         except OSError:
             return _one(
                 source_target,
@@ -1089,6 +1215,7 @@ def _load_checked_inventory(
     runbook_path: Path | str,
     repository_root: Path | str,
     expected_ids: Iterable[str] | None = None,
+    *, reads: _CapturedReads | None = None,
 ) -> dict[str, object] | list[Finding] | None:
     """Build a capture, return findings, or return None for explicit absence."""
     study = Path(study_path)
@@ -1097,12 +1224,12 @@ def _load_checked_inventory(
     if not _secure_read_primitives():
         return _refuse(study, "K000", "secure no-follow file reads are unavailable")
     try:
-        study_bytes = _stable_file(study)
+        study_bytes = (reads.document(study) if reads else _stable_file(study))
         study_text = study_bytes.decode("utf-8", errors="strict")
     except (OSError, UnicodeError):
         return _refuse(study, "K000", "study is not a stable bounded UTF-8 file")
     try:
-        runbook_bytes = _stable_file(runbook)
+        runbook_bytes = (reads.document(runbook) if reads else _stable_file(runbook))
         runbook_text = runbook_bytes.decode("utf-8", errors="strict")
     except (OSError, UnicodeError):
         return _refuse(
@@ -1130,6 +1257,7 @@ def _load_checked_inventory(
             runbook_bytes,
             repository,
             [],
+            reads,
         )
         if stability_findings:
             return stability_findings
@@ -1153,7 +1281,7 @@ def _load_checked_inventory(
         )
 
     source_views = inventory["source_views"]
-    if not isinstance(source_views, list) or not source_views or len(source_views) > MAX_SOURCE_VIEWS:
+    if not isinstance(source_views, list) or not source_views or len(source_views) > (reads.limits.source_views if reads else MAX_SOURCE_VIEWS):
         return _refuse(
             study,
             "K004",
@@ -1193,7 +1321,7 @@ def _load_checked_inventory(
         source_view_paths.add(_portable_alias(path))
         view_target = repository / path
         try:
-            view_bytes = _confined_file(repository, path)
+            view_bytes = (reads.source(repository, path) if reads else _confined_file(repository, path))
         except OSError:
             return _refuse(
                 view_target,
@@ -1228,6 +1356,13 @@ def _load_checked_inventory(
                 f"{source_id} view header has a non-portable source path",
                 line,
             )
+        if reads is not None:
+            previous_paths = {_portable_alias(item[position])
+                              for item in checked_sources for position in (1, 4)}
+            if (_portable_alias(path) in previous_paths
+                    or _portable_alias(source_path) in previous_paths
+                    or _portable_alias(source_path) == _portable_alias(path)):
+                return _refuse(study, "K005", "source/view paths alias", line)
         if header.group("sha256") != view["source_sha256"]:
             return _refuse(
                 view_target,
@@ -1237,7 +1372,7 @@ def _load_checked_inventory(
             )
         source_target = repository / source_path
         try:
-            source_bytes = _confined_file(repository, source_path)
+            source_bytes = (reads.source(repository, source_path) if reads else _confined_file(repository, source_path))
         except OSError:
             return _refuse(
                 source_target,
@@ -1246,7 +1381,7 @@ def _load_checked_inventory(
                 line,
             )
         try:
-            view_again = _confined_file(repository, path)
+            view_again = (reads.source(repository, path) if reads else _confined_file(repository, path))
         except OSError:
             return _refuse(
                 view_target,
@@ -1508,6 +1643,7 @@ def _load_checked_inventory(
         runbook_bytes,
         repository,
         checked_sources,
+        reads,
     )
     if stability_findings:
         return stability_findings
@@ -1529,6 +1665,8 @@ def _load_checked_inventory(
         "no_known_findings": inventory["no_known_findings"],
         "assignments": assignments,
     }
+    if reads is not None:
+        reads.checked_sources = tuple(checked_sources)
     return capture
 
 
@@ -1551,6 +1689,32 @@ def load_checked_inventory(
         return InventoryLoadResult("refused", None, tuple(loaded))
     return InventoryLoadResult("clean", loaded, ())
 
+
+
+def load_checked_inventory_sources(
+    study_path: Path | str,
+    runbook_path: Path | str,
+    repository_root: Path | str,
+    *, limits: InventoryReadLimits,
+) -> InventorySourceLoadResult:
+    """Check the existing inventory under lower read ceilings and retain bytes.
+
+    The ordinary loader and capture schema are unchanged. This opt-in reader
+    additionally refuses linked ancestors, hard links, portable source aliases,
+    per-operation identity changes and aggregate overflow. It executes nothing
+    and writes nothing. Refusals expose the existing K000--K012 findings.
+    """
+    study, runbook = Path(study_path), Path(runbook_path)
+    reads = _CapturedReads(Path(repository_root), limits)
+    loaded = _load_checked_inventory(study, runbook, repository_root, reads=reads)
+    if isinstance(loaded, dict):
+        result = InventoryLoadResult("clean", loaded, ())
+        return InventorySourceLoadResult(result, reads.documents[study],
+                                         reads.documents[runbook], reads.checked_sources,
+                                         tuple(reads.identities.items()))
+    result = (InventoryLoadResult("absent", None, ()) if loaded is None else
+              InventoryLoadResult("refused", None, tuple(loaded)))
+    return InventorySourceLoadResult(result, None, None, ())
 
 def check(
     study_path: Path | str,

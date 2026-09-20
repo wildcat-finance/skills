@@ -1,8 +1,8 @@
 # Audit applicability declaration
 
 This describes the accepted `protasis-audit-applicability/v1` design.
-Step 1 publishes its vocabulary and synthetic examples. Parser, capture,
-replay and execution conformance remain pending.
+Step 2 checks source witnesses and their existing target routes. Fiat capture,
+replay and execution conformance remain due in Steps 3 and 4.
 
 ## Closed fields
 
@@ -54,9 +54,18 @@ Spans are at most 64 KiB, source/view files at most 2 MiB each, and their
 aggregate at most 16 MiB. Duplicate keys, non-finite numbers, aliases,
 links, replaced or unstable files and overflow refuse.
 
-The parser will return absent, refused or clean without running commands or
-writing controller state. A clean result binds declaration/document digests,
-source views, entries and derived routes. Fiat will freeze the complete
+`load_checked_applicability(study_path, runbook_path, repository_root)` returns
+an immutable `ApplicabilityLoadResult`: `status`, canonical `capture_bytes`
+or null, and a tuple of fixed-code findings. The `capture` property returns a
+fresh JSON projection; changing that projection leaves the result unchanged.
+The parser runs no declared command and writes no controller state. A clean
+result binds declaration/document digests, the checked inventory and criterion
+join digests, source views, unchanged entries and derived routes. Each route
+has `entry_id`, `owner`, `binding` and `binding_sha256`. The owner is
+`known-failure`, `success-criteria` or null; the binding is the existing
+checked finding or joined criterion, or null for an inert row. Canonical
+applicability JSON uses sorted ASCII keys, compact separators and one final LF.
+Fiat will freeze the complete
 semantics at admission, retain historical receipt bytes and use existing
 criteria execution for integration requirements. Changes to classifications
 require a fresh reviewed run. A zero exit never proves criterion adequacy.
@@ -73,12 +82,30 @@ known-failure inventory or establish parser conformance.
 
 ## Refusal interface
 
+Parser findings carry only `code`, a fixed `field` and a numeric `row` or
+null. A000 names document or secure-read failure; A001 a fence; A002 strict
+JSON/schema; A003 the checked inventory; A004 source/view equality; A005 row
+shape; A006 a source/span/status witness; A007 regression routing; A008 the
+criterion join; A009 final input stability. Restore the named input and rerun.
+These codes contain no source text.
+
 `proof.py` accepts only the three reviewed candidate ids and six conformance
-criterion ids. Its bounded JSON answer identifies `candidate`, `criterion`,
-`code`, `available_step` and `report_written: false`. Exit 2 and
+criterion ids. The selected candidate now runs `applicability-parser` and
+`bounded-reader`. Other operations return bounded JSON identifying `candidate`,
+`criterion`, `code`, `available_step` and `report_written: false`. Exit 2 and
 `operation-unavailable` mean the requested proof has no implementation yet.
 Malformed arguments use `invalid-arguments`; occupied leaves use
 `report-exists`; invalid paths use `report-path-invalid`; filesystem
 inspection errors use `report-path-unavailable`. Recover by correcting the
 operand or waiting for the named implementation step. No refusal is a
 successful design report.
+
+A successful resolver writes an exclusive `protasis-design-report/v1` and
+an evidence companion named `<report-stem>.evidence.json`, evidence first.
+The companion binds the design-report digest, inspected source digests,
+executed test counts and any budget observations. Existing leaves are never
+replaced. A failure after the first write may leave a companion to inspect;
+retry with a fresh report path. Source drift uses `proof-source-drift`; a
+changed report directory uses `report-path-changed`. A failed exercised proof
+records `value: false` and exits 1. Neither result executes a declared Exit
+or supplies a Fiat receipt.

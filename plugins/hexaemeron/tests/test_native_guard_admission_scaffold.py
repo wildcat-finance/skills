@@ -203,6 +203,7 @@ class NativeGuardAdmissionScaffoldTests(unittest.TestCase):
             "accepted-study", "accepted-runbook", "accepted-design-evidence",
             "authored-synthetic-selection-source", "executed-synthetic-selection",
             "authored-synthetic-fixture", "reviewed-decision", "scaffold-source",
+            "executed-parser-conformance",
         }
         for row in manifest["artifacts"]:
             self.assertEqual(set(row), {"path", "sha256", "origin"})
@@ -252,11 +253,15 @@ class NativeGuardAdmissionScaffoldTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "heading does not match"):
             decision_source_bytes(self.root)
 
-    def test_all_eighteen_pending_operations_refuse_without_creating_files(self):
+    def test_unimplemented_operations_refuse_without_creating_files(self):
         design = load(DOCS / "design-evidence.json")
+        count = 0
         for row in design["results"]:
             if row["state"] != "pending":
                 continue
+            if row["candidate"] == "typed-applicability" and row["criterion"] in {"applicability-parser", "bounded-reader"}:
+                continue
+            count += 1
             with self.subTest(candidate=row["candidate"], criterion=row["criterion"]):
                 result = self.invoke(candidate=row["candidate"], criterion=row["criterion"])
                 self.assertEqual(result["code"], "operation-unavailable")
@@ -265,6 +270,36 @@ class NativeGuardAdmissionScaffoldTests(unittest.TestCase):
                 self.assertEqual(result["candidate"], row["candidate"])
                 self.assertEqual(result["criterion"], row["criterion"])
         self.assertEqual(list(self.root.iterdir()), [])
+        self.assertEqual(count, 16)
+
+    def test_parser_proof_executes_tests_and_preserves_exact_evidence(self):
+        report = ".hexaemeron/reports/parser.json"
+        result = subprocess.run(
+            [sys.executable, str(PROOF), "--candidate", "typed-applicability",
+             "--criterion", "applicability-parser", "--report", report],
+            cwd=self.root, capture_output=True, text=True, timeout=20,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        record = load(self.root / report)
+        evidence = load(self.root / ".hexaemeron/reports/parser.evidence.json")
+        self.assertIs(record["value"], True)
+        self.assertIs(evidence["operation_ran"], True)
+        self.assertGreater(evidence["tests"], 0)
+        self.assertEqual([evidence[k] for k in ("failures", "errors", "skips", "declared_command_launches")], [0, 0, 0, 0])
+        self.assertEqual(evidence["design_report_sha256"], hashlib.sha256((self.root / report).read_bytes()).hexdigest())
+        for row in evidence["sources"]:
+            self.assertEqual(row["sha256"], hashlib.sha256((ROOT / row["path"]).read_bytes()).hexdigest())
+        before = (self.root / report).read_bytes()
+        self.assertEqual(self.invoke(report, criterion="applicability-parser")["code"], "report-exists")
+        self.assertEqual((self.root / report).read_bytes(), before)
+
+    def test_existing_evidence_companion_refuses_before_report_creation(self):
+        evidence = self.root / ".hexaemeron/reports/parser.evidence.json"
+        evidence.parent.mkdir(parents=True)
+        evidence.write_bytes(b"retained")
+        self.assertEqual(self.invoke(".hexaemeron/reports/parser.json", criterion="applicability-parser")["code"], "report-exists")
+        self.assertEqual(evidence.read_bytes(), b"retained")
+        self.assertFalse((self.root / ".hexaemeron/reports/parser.json").exists())
 
     def test_existing_report_is_never_replaced(self):
         path = self.root / ".hexaemeron/reports/proof.json"
