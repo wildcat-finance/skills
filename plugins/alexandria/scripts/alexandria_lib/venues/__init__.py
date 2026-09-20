@@ -18,8 +18,8 @@ spelled.
 
 from __future__ import annotations
 
-from . import compound_v3, wildcat_v2
+from . import compound_v3, wildcat_v1, wildcat_v2
 
-_MODULES = (compound_v3, wildcat_v2)
+_MODULES = (compound_v3, wildcat_v1, wildcat_v2)
 
 VENUES = {module.VENUE: module for module in _MODULES}
