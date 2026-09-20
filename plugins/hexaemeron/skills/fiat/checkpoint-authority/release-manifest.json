@@ -53,12 +53,12 @@
           "sha256": "5c01345ad494538d2ab6841d26be0d06dd16b0757bc6780603b65a2eb0872f30"
         },
         {
-          "bytes": 11395,
+          "bytes": 10377,
           "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/interoperability-manifest.json",
-          "sha256": "b017f36262c014c2acbd0cae59044fbadb4d8253a63262b7cb3ae13cedf1cb07"
+          "sha256": "f0001ecb44cca9c9fb48a9516232fdfbadcb7e6f4a441e29860076acb5ae1d50"
         }
       ],
-      "sha256": "7d7cc509bdea59ab62151f837e494865e073f43d777afbb49a29830e844a6e0a"
+      "sha256": "e42e0d2281980b83aa29fd5d7d0d72b3c52bc6e0bc2839cea19eec608babc14f"
     },
     "native": {
       "files": [
@@ -342,8 +342,8 @@
   },
   "note": "The source commit and this file's digest are pinned by the consumer lock, never by this file.",
   "pins": {
-    "artifact_sha256": "d0317bf464ca71505b6fe1fed9e27b2e39de3915398fe26ef86e0473ef7cc945",
-    "fixture_corpus_sha256": "539871be97131622310717ad03b8d76b4f6c529ecc0f12871e3e7a4d18891dd0",
+    "artifact_sha256": "30512bccf6ad217c64f268461d2acfc4face3daddd5dc348791d1738560c9905",
+    "fixture_corpus_sha256": "4492a93662c787892028bc67bd8d100c1cc45562f69f9fc4f77d037756612a55",
     "schema_set_sha256": "b94bae8b24bd56c233cb10bc6b295d07985c8ad6245f26cff9b8abbc7612fe7d",
     "verifier_sha256": "25c40d3827b018b7ec6d79b95cdfa922680563c5b232a50d244fa59759df0401"
   },
