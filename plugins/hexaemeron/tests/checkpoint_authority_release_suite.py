@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/fiat/scripts"))
 import test_checkpoint_authority_release as release_cases
 import test_checkpoint_authority_release_conformance as conformance_cases
+import test_checkpoint_network as network_cases
 import checkpoint_authority_release_workload as workload
 
 
@@ -46,6 +47,7 @@ def main():
     loader = unittest.defaultTestLoader
     suite = loader.loadTestsFromModule(release_cases)
     suite.addTests(loader.loadTestsFromModule(conformance_cases))
+    suite.addTests(loader.loadTestsFromModule(network_cases))
     output = io.StringIO()
     result = unittest.TextTestRunner(stream=output, verbosity=2, resultclass=Result).run(suite)
     complete = len(result.started) == len(result.completed) == len(set(result.started)) == result.testsRun > 0

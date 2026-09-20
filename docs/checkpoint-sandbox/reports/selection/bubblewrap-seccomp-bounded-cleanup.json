@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bubblewrap-seccomp",
+  "criterion": "bounded-cleanup",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion bounded-cleanup --report .hexaemeron/reports/selection/bubblewrap-seccomp-bounded-cleanup.json",
+  "exit": 0
+}

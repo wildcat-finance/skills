@@ -398,13 +398,25 @@ all five released signature cases under `--offline --insecure-ignore-tlog`. It
 rebuilds the release manifest twice to identical bytes. Those six counts are
 deterministic for a given tree.
 
-Cosign also runs under macOS `sandbox-exec` with a fixed `(deny network*)`
-policy. Four IPv4 and IPv6 bind/connect probes must fail with `EPERM` under the
-same policy before signature agreement can pass. The evidence binds the
-launcher, policy and probe digests. Other hosts and missing mechanisms refuse
-`network-denial-unavailable`; an offline flag alone establishes no denial.
-This policy preserves the caller's filesystem and process permissions and
-does not establish native archive containment.
+Cosign runs under the existing macOS `sandbox-exec` policy or the Linux
+x86_64 Bubblewrap/seccomp backend. Four IPv4/IPv6 bind/connect probes must
+receive `EPERM` directly and after a descendant executes before signature
+agreement can pass. The closed evidence binds the host ABI, launcher, complete
+policy, filter and both probe digests; policy identity includes exact argv.
+Report validation receives the execution owner's explicit expected descriptor,
+so synthetic report fixtures need no host launcher. Positive conformance still
+prepares and runs the real backend.
+
+The Linux package is `bubblewrap`, available through apt. It needs unprivileged
+namespace creation and kernel seccomp. The native ABI filter denies socket and
+io_uring entry points and refuses x32; other Linux ABIs remain unsupported.
+Its fixed `/dev` bind lets cosign reopen stdin after the filter descriptor is
+consumed. Missing mechanisms or capabilities refuse; an ineffective probe,
+changed policy or changed executable cannot produce passing evidence. An
+offline flag alone establishes no denial. The backend retains the caller's
+filesystem access and establishes no native archive, filesystem, service or
+aggregate descendant resource containment. The release guide records tested
+profiles and the separate hosted conformance gates.
 
 The demonstration reports four measures per run: replay wall time in
 milliseconds, the JSON decode count, the traced

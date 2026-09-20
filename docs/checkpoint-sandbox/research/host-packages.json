@@ -1,0 +1,46 @@
+[
+  {
+    "argv": [
+      "dpkg-query",
+      "-W",
+      "-f=${Package} ${Version} ${Architecture}\n",
+      "bubblewrap",
+      "libc6",
+      "libcap2",
+      "libselinux1"
+    ],
+    "exit": 0,
+    "stdout": "bubblewrap 0.9.0-1ubuntu0.3 amd64\nlibc6 2.39-0ubuntu8.9 amd64\nlibcap2 1:2.66-5ubuntu2.4 amd64\nlibselinux1 3.5-2ubuntu2.1 amd64\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "apt-cache",
+      "policy",
+      "bubblewrap",
+      "firejail",
+      "util-linux"
+    ],
+    "exit": 0,
+    "stdout": "bubblewrap:\n  Installed: 0.9.0-1ubuntu0.3\n  Candidate: 0.9.0-1ubuntu0.3\n  Version table:\n *** 0.9.0-1ubuntu0.3 500\n        500 http://us.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages\n        500 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages\n        100 /var/lib/dpkg/status\n     0.9.0-1build1 500\n        500 http://us.archive.ubuntu.com/ubuntu noble/main amd64 Packages\nfirejail:\n  Installed: (none)\n  Candidate: 0.9.72-2ubuntu3\n  Version table:\n     0.9.72-2ubuntu3 500\n        500 http://us.archive.ubuntu.com/ubuntu noble/universe amd64 Packages\nutil-linux:\n  Installed: 2.39.3-9ubuntu6.6\n  Candidate: 2.39.3-9ubuntu6.6\n  Version table:\n *** 2.39.3-9ubuntu6.6 500\n        500 http://us.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages\n        500 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages\n        100 /var/lib/dpkg/status\n     2.39.3-9ubuntu6 500\n        500 http://us.archive.ubuntu.com/ubuntu noble/main amd64 Packages\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "/usr/bin/bwrap",
+      "--version"
+    ],
+    "exit": 0,
+    "stdout": "bubblewrap 0.9.0\n",
+    "stderr": ""
+  },
+  {
+    "argv": [
+      "uname",
+      "-srmo"
+    ],
+    "exit": 0,
+    "stdout": "Linux 6.8.0-139-generic x86_64 GNU/Linux\n",
+    "stderr": ""
+  }
+]

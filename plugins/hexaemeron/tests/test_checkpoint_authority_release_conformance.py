@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills/fiat/scripts"))
-from checkpoint_authority import conformance as owner, demo, native_io, network, release
+from checkpoint_authority import conformance as owner, demo, native_io, network, network_policy, release
 from checkpoint_authority.canonical import digest
 from checkpoint_authority import release_conformance as subject
 
@@ -26,6 +26,7 @@ class ReleaseConformanceTests(unittest.TestCase):
             shutil.copyfile(ROOT / path, target)
         self.cases = subject.inputs(self.root)["cases"]
         self.expected = json.loads((self.root / demo.EXPECTED).read_bytes())
+        self.boundary = network.Boundary("a" * 64, network_policy.for_host("linux", "x86_64"))
 
     def value(self):
         metadata = json.loads((self.root / subject.WORKLOAD_METADATA).read_bytes())
@@ -53,19 +54,13 @@ class ReleaseConformanceTests(unittest.TestCase):
                     "head_sha256": self.expected["head_sha256"], "records": self.expected["records"],
                     "accepted": self.expected["accepted"], "eligible": self.expected["eligible"],
                     "hostile_refused": 18, "interoperability_cases": 5,
-                    "network_boundary": {"mechanism": "macos-sandbox-exec-deny-network",
-                                         "launcher_sha256": network.prepare().launcher_sha256,
-                                         "policy_sha256": digest(network.POLICY.encode()),
-                                         "probe_sha256": digest(network.PROBE.encode()),
-                                         "probe_exit": 0, "probe_operations": 4},
+                    "network_boundary": self.boundary.expected(),
                     "current_eligibility_withheld": True, "wall_ms": 1234.5, "json_decodes": 200,
                     "tracemalloc_peak_bytes": 300000, "peak_rss_bytes": 60000000}}
 
     def execute(self, value):
-        result = native_io.Execution(subject.CRITERION, "release-conformance", "a" * 64, 0,
-                                     json.dumps(value).encode(), b"", 1)
-        with patch.object(native_io, "execute", return_value=result):
-            return subject.execute(self.root)
+        subject._validate(value, self.root, self.boundary.expected())
+        return value, 0, "a" * 64, "b" * 64
 
     def test_manifest_is_owned_and_covers_both_release_case_modules(self):
         from checkpoint_authority_release_corpus import manifest

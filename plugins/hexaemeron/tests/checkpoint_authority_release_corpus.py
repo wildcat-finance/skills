@@ -30,6 +30,7 @@ CASE_MODULES = (
      "plugins/hexaemeron/tests/test_checkpoint_authority_release.py"),
     ("test_checkpoint_authority_release_conformance",
      "plugins/hexaemeron/tests/test_checkpoint_authority_release_conformance.py"),
+    ("test_checkpoint_network", "plugins/hexaemeron/tests/test_checkpoint_network.py"),
 )
 HOSTILE_CASES = (
     {"id": "mutable-authority-branch", "kind": "replace", "section": "authority",
