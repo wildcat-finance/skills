@@ -128,7 +128,7 @@ Each row grants only at the directives listed. `active` is every `do` except
 | `cmd_done` | `push` | `fiat-receipted-delivery` | `receipt-push` | `push` |
 | `cmd_done` | `merge-step` | `fiat-receipted-delivery` | `receipt-merge-step` | `merge-step` |
 | `cmd_done` | `sync-run` | `fiat-receipted-delivery` | `receipt-sync-run` | `integrate`, `resolve-versions` |
-| `cmd_done` | `resolve-versions` | `fiat-version-resolution` | `receipt-resolve-versions` | `resolve-versions` |
+| `cmd_done` | `resolve-versions` | `fiat-version-resolution` | `receipt-resolve-versions` | `resolve-versions`, `integrate` |
 | `cmd_done` | `integrate` | `fiat-final-integration` | `receipt-integrate` | `integrate` |
 | `cmd_audit_round` | | `fiat-receipted-delivery` | `append-round` | `audit-round` |
 | `cmd_halt` | | `fiat-receipted-delivery` | `set-halt` | active |
@@ -146,6 +146,8 @@ Each row grants only at the directives listed. `active` is every `do` except
 A fresh study amendment refuses at `blocked`, where only the runbook repair
 is granted. `done sync-run` is granted at `resolve-versions` because that
 directive names the base sync as its recovery when the base has advanced.
+`done resolve-versions` is granted at `integrate` as well, because a base sync
+leaves the recorded resolution stale and the handler renews it there.
 
 `config get` writes nothing and has no row. `start-audit-loop` has no row: no
 declared Promise authorises it, so an exhausted loop cannot be continued
@@ -162,7 +164,8 @@ Four rows carry a check of their own:
   the halt covers anything else, a `resume` naming no exit is granted and one
   naming `audit-verdict` refuses.
 - `done audit` at `audit-round` or `audit-verdict` needs `no_further_leads`
-  true and a `reason` that is not empty.
+  true and a `reason` that is not empty. At `audit-round` with `round` 1 it
+  refuses whatever it carries, because no round is recorded yet.
 - `checkpoint export` and `checkpoint archive` need `evidence.tail_event`:
   `done:push`, or `audit-round` with the directive at `audit-verdict`.
 
@@ -190,6 +193,7 @@ Four rows carry a check of their own:
 | `resume-needs-named-exit` | the halt covers an exhausted audit loop and `to` is absent |
 | `resume-exit-unknown` | `to` names anything but `audit-verdict` |
 | `resume-exit-mismatch` | `to` names `audit-verdict` and the halt covers something else |
+| `audit-close-needs-a-round` | `done audit` arrives at `audit-round` with `round` 1, before any round is recorded |
 | `audit-close-needs-no-further-leads` | `done audit` with findings open lacks `no_further_leads` or its reason |
 | `checkpoint-boundary-unaccepted` | the ledger tail event and directive name neither accepted boundary |
 | `grant-oversized` | the grant's canonical JSON exceeds 65,536 bytes |

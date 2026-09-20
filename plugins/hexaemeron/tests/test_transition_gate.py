@@ -161,7 +161,7 @@ CASES = {
     ),
     ("cmd_done", "resolve-versions"): (
         ({"do": "resolve-versions"}, {}, {"recovery": "version-resolution"}),
-        ({"do": "integrate"}, {}, {}, "directive-not-authorised"),
+        ({"do": "merge-step", "step": 1}, {}, {}, "directive-not-authorised"),
     ),
     ("cmd_done", "integrate"): (
         ({"do": "integrate"}, {"pr_url": "https://example.invalid/pull/9", "merge_commit": "a" * 40}, {"promise": "fiat-final-integration", "consequence": 3}),
@@ -569,7 +569,7 @@ class UnknownValueTests(GateCase):
             "command-unknown", "command-field-unknown", "command-value-malformed", "evidence-field-unknown",
             "promise-unknown", "promise-mismatch", "consequence-unknown", "recovery-path-unknown",
             "directive-shape-unknown", "directive-unknown", "preimage-malformed", "resume-exit-unknown",
-            "resume-exit-mismatch", "grant-oversized",
+            "resume-exit-mismatch", "grant-oversized", "audit-close-needs-a-round",
         }
         self.assertEqual(specimens, set(gate.REFUSALS))
 
@@ -596,7 +596,7 @@ ADMITTED = {
     ("cmd_done", "push"): {"push"},
     ("cmd_done", "merge-step"): {"merge-step"},
     ("cmd_done", "sync-run"): {"integrate", "resolve-versions"},
-    ("cmd_done", "resolve-versions"): {"resolve-versions"},
+    ("cmd_done", "resolve-versions"): {"resolve-versions", "integrate"},
     ("cmd_done", "integrate"): {"integrate"},
     ("cmd_audit_round", None): {"audit-round"},
     ("cmd_halt", None): ALL - {"absent"},
@@ -661,8 +661,13 @@ class AdmittedDirectiveTests(GateCase):
 class RecoveryWindowTests(GateCase):
     """A pending record outlives its state write; its owner must still be granted."""
 
+    # Written out here, not read from the gate, so a widened recovery row fails.
+    LIVE = {
+        "amendment": {("cmd_amend_study", None): STEPS, ("cmd_amend_runbook", None): STEPS},
+        "version-resolution": {("cmd_done", "resolve-versions"): {"resolve-versions", "integrate"}},
+        "no-known-inoculation": {("cmd_done", "inoculate"): {"inoculate", "implement", "run-exit"}},
+    }
     WINDOWS = (
-        ("version-resolution", ("cmd_done", "resolve-versions"), {"do": "integrate"}, {}),
         ("no-known-inoculation", ("cmd_done", "inoculate"), at("implement"), {}),
         ("no-known-inoculation", ("cmd_done", "inoculate"), at("run-exit"), {}),
         ("amendment", ("cmd_amend_study", None), at("blocked"), {"artifact": "study.md"}),
@@ -672,6 +677,29 @@ class RecoveryWindowTests(GateCase):
         for recovery, key, directive, command in self.WINDOWS:
             with self.subTest(recovery=recovery, directive=directive["do"]):
                 self.granted(key, directive, command, {"recovery": recovery})
+
+    def test_a_live_record_admits_its_owner_at_the_directives_written_here_and_no_other(self):
+        self.assertEqual({name: set(owners) for name, owners in gate.RECOVERY_PATHS.items()},
+                         {name: set(owners) for name, owners in self.LIVE.items()})
+        decided = 0
+        for recovery, owners in self.LIVE.items():
+            for key, admitted in owners.items():
+                _directive, command, evidence = CASES[key][0]
+                evidence = {**evidence, "recovery": recovery}
+                for do in sorted(ALL):
+                    for directive in AdmittedDirectiveTests.directives(do):
+                        decided += 1
+                        with self.subTest(recovery=recovery, key=key, directive=directive):
+                            try:
+                                call(key, directive, command, evidence)
+                                code = None
+                            except gate.Refusal as refusal:
+                                code = refusal.report["code"]
+                            self.assertEqual(code, None if do in admitted else "directive-not-authorised")
+        self.assertEqual(decided, 4 * (1 + 16 + 2 + 15 * 2))
+
+    def test_version_resolution_is_renewed_at_integrate_with_no_record_live(self):
+        self.granted(("cmd_done", "resolve-versions"), {"do": "integrate"}, {})
 
     def test_the_same_command_refuses_there_when_no_record_is_live(self):
         for _recovery, key, directive, command in self.WINDOWS:
@@ -758,6 +786,49 @@ class ExactTypeTests(GateCase):
             else:
                 self.fail("a subclassed rule key was granted")
 
+    def test_no_hostile_combination_escapes_as_anything_but_a_refusal(self):
+        import random
+
+        rng = random.Random(871)
+        text = self.Text
+        pool = [None, True, False, 0, 1, -1, 8, 9, 2**63, 10**5000, 1.5, float("nan"), b"x", "", "x", "b0" * 32,
+                "B0" * 32, "genesis", "audit-verdict", "halted", "absent", "implement", "amendment",
+                "version-resolution", "no-known-inoculation", "done:push", "audit-round", "git", "audit.max_rounds",
+                [], ["a"], [1], [["a"]], {}, {"a": 1}, (), ("a",), set(), text("implement"), self.Mapping(), object(),
+                "\ud800", "fiat-receipted-delivery", 2, 3]
+        keys = list(gate.RULES) + [("cmd_x", None), (None, None), (1, 2), ([], None)]
+        fields = sorted({name for rule in gate.RULES.values() for name in rule.fields} | {"zz"})
+        grants = 0
+        for _ in range(10_000):
+            handler, subcommand = rng.choice(keys)
+            directive = {"do": rng.choice(sorted(ALL))} if rng.random() < 0.85 else rng.choice(pool)
+            if type(directive) is dict:
+                for name in ("step", "round", "covers", "zz"):
+                    if rng.random() < 0.3:
+                        directive[name] = rng.choice(pool)
+                if directive.get("do") == "halted" and rng.random() < 0.7:
+                    directive["covers"] = rng.choice(sorted(ALL))
+                if directive.get("do") == "audit-round" and rng.random() < 0.7:
+                    directive["round"] = rng.randint(-1, 10)
+            command = ({rng.choice(fields): rng.choice(pool) for _ in range(rng.randint(0, 3))}
+                       if rng.random() < 0.9 else rng.choice(pool))
+            evidence = ({rng.choice(["promise", "consequence", "recovery", "tail_event", "zz"]): rng.choice(pool)
+                         for _ in range(rng.randint(0, 2))} if rng.random() < 0.9 else rng.choice(pool))
+            preimage = (STATE, TAIL, COUNT) if rng.random() < 0.8 else tuple(rng.choice(pool) for _ in range(3))
+            try:
+                grant = gate.evaluate(state_sha256=preimage[0], ledger_tail=preimage[1], ledger_count=preimage[2],
+                                      directive=directive, handler=handler, subcommand=subcommand,
+                                      command=command, evidence=evidence)
+            except gate.Refusal as refusal:
+                self.assertIn(refusal.report["code"], gate.REFUSALS)
+            except Exception as error:
+                self.fail(f"escaped as {type(error).__name__}: {directive!r} {command!r} {evidence!r}")
+            else:
+                grants += 1
+                self.assertEqual(set(grant), GRANT_FIELDS)
+                self.assertIn(grant["directive"]["do"], ADMITTED[(handler, subcommand)] | {"blocked", "implement", "run-exit"})
+        self.assertGreater(grants, 0)
+
     def test_the_grant_shares_no_list_with_its_caller(self):
         command = copy.deepcopy(SYNC)
         grant = call(("cmd_done", "sync-run"), {"do": "integrate"}, command)
@@ -770,6 +841,15 @@ class CloseAuditTests(GateCase):
 
     def test_a_clean_last_round_closes_without_a_waiver(self):
         self.assert_grant(call(self.KEY, at("close-audit"), {"fixes_ref": "a" * 40}), self.KEY, at("close-audit"), {"fixes_ref": "a" * 40})
+
+    def test_the_audit_cannot_close_before_a_round_is_recorded(self):
+        first = at("audit-round", round=1)
+        for command in ({}, {"no_further_leads": True, "reason": "accepted by the maintainer"}):
+            with self.subTest(command=command):
+                report = self.assert_refusal("audit-close-needs-a-round", self.KEY, first, command)
+                self.assertIn("audit-round", report["recovery"])
+        granted = {"no_further_leads": True, "reason": "accepted by the maintainer"}
+        self.granted(self.KEY, at("audit-round", round=2), granted)
 
     def test_open_findings_need_the_waiver_and_its_reason(self):
         for directive in (at("audit-round", round=3), at("audit-verdict")):

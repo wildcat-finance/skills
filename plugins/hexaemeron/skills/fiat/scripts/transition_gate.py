@@ -243,7 +243,7 @@ RULES = {
     ("cmd_done", "resolve-versions"): _done(
         "fiat-version-resolution",
         "resolve-versions",
-        {"resolve-versions"},
+        {"resolve-versions", "integrate"},
         {"accept_evolution_base", "recovery_authority", "reason"},
     ),
     ("cmd_done", "integrate"): _done(
@@ -366,8 +366,9 @@ the directives each is granted at.
 
 A pending record outlives the state write it guards, so its owner must still be
 granted at the directive the written state returns: `blocked` after a study
-amendment that marks a step, `integrate` after a version resolution, and
-`implement` or `run-exit` after a no-known inoculation.
+amendment that marks a step, and `implement` or `run-exit` after a no-known
+inoculation. A version resolution is granted at `integrate` with or without a
+live record, because a resolution made stale by a base sync is renewed there.
 """
 
 REFUSALS = {
@@ -426,6 +427,10 @@ REFUSALS = {
     "resume-exit-mismatch": (
         "the halt does not cover `audit-verdict`; run `hexctl resume` with no "
         "exit"
+    ),
+    "audit-close-needs-a-round": (
+        "no round is recorded for this step; record round 1 with `hexctl "
+        "audit-round` before closing the audit"
     ),
     "audit-close-needs-no-further-leads": (
         "findings are open; record another round, or close with "
@@ -572,6 +577,8 @@ def _check_resume(directive: dict, command: dict, evidence: dict) -> str | None:
 def _check_close_audit(directive: dict, command: dict, evidence: dict) -> str | None:
     if directive["do"] == "close-audit":
         return None
+    if directive["do"] == "audit-round" and directive["round"] == 1:
+        return "audit-close-needs-a-round"
     reason = command.get("reason")
     if command.get("no_further_leads") is True and type(reason) is str and reason:
         return None
