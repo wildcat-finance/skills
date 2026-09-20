@@ -1,8 +1,8 @@
 {
   "authority": {
-    "artifact_sha256": "3cd47e52344f3427829a961b0e47f28d5bc16b4c59fecde06293ed79d59975e9",
-    "fixture_corpus_sha256": "1420ba83e1efbf7295b7e4df4ae144b9833f61e69d69c1c24e499a834d729ca6",
-    "release_manifest_sha256": "399cdcae85045f284798697533cf8f6afc8d12b700c0e0572cd390b52f35b005",
+    "artifact_sha256": "30512bccf6ad217c64f268461d2acfc4face3daddd5dc348791d1738560c9905",
+    "fixture_corpus_sha256": "4492a93662c787892028bc67bd8d100c1cc45562f69f9fc4f77d037756612a55",
+    "release_manifest_sha256": "e1b9bf630208a2f16af7c77c01ed18ff7c7cff0dadd47ebf3d62db3d8b09f120",
     "schema_set_sha256": "b94bae8b24bd56c233cb10bc6b295d07985c8ad6245f26cff9b8abbc7612fe7d",
     "source_commit": "0000000000000000000000000000000000000000",
     "verifier_sha256": "25c40d3827b018b7ec6d79b95cdfa922680563c5b232a50d244fa59759df0401"

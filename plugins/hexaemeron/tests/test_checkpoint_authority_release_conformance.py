@@ -63,7 +63,7 @@ class ReleaseConformanceTests(unittest.TestCase):
         subject._validate(value, self.root, self.boundary.expected())
         return value, 0, "a" * 64, "b" * 64
 
-    def test_case_inventory(self):
+    def test_inventory(self):
         from checkpoint_authority_release_corpus import manifest
         self.assertEqual(json.loads((ROOT / subject.MANIFEST).read_bytes()), manifest())
         for module in subject.MODULES:
@@ -71,15 +71,15 @@ class ReleaseConformanceTests(unittest.TestCase):
                 self.assertGreaterEqual(sum(case.startswith(module + ".") for case in self.cases), 4)
         self.assertGreaterEqual(len(self.cases), 20)
 
-    def test_valid_bindings(self):
+    def test_valid(self):
         self.assertEqual(self.execute(self.value())[0], self.value())
 
-    def test_missing_workload(self):
+    def test_no_workload(self):
         value = self.value(); value.pop("workload")
         with self.assertRaisesRegex(owner.Refusal, "release-execution-report"):
             self.execute(value)
 
-    def test_workload_fields(self):
+    def test_fields(self):
         mutations = (lambda v: v.update(workload_sha256="f" * 64),
                      lambda v: v.update(study_corpus_sha256="f" * 64),
                      lambda v: v.update(projection_sha256="f" * 64),
@@ -106,7 +106,7 @@ class ReleaseConformanceTests(unittest.TestCase):
             with self.subTest(index=index), self.assertRaisesRegex(owner.Refusal, "release-execution-report"):
                 self.execute(value)
 
-    def test_workload_metadata(self):
+    def test_metadata(self):
         path = self.root / subject.WORKLOAD_METADATA
         original = json.loads(path.read_bytes())
         for mutated in ([], {**original, "records": True}, {**original, "extra": 1},
@@ -117,7 +117,7 @@ class ReleaseConformanceTests(unittest.TestCase):
                 self.execute(value)
             path.write_text(json.dumps(original))
 
-    def test_study_bytes(self):
+    def test_study(self):
         import hashlib
         from checkpoint_authority_release_workload import study_rows
         rows = study_rows()
@@ -126,7 +126,7 @@ class ReleaseConformanceTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(b"\n".join(raw for _, raw in rows) + b"\n").hexdigest(),
                          subject.STUDY_SHA)
 
-    def test_demo_bindings(self):
+    def test_demo(self):
         for mutate in (lambda v: v["demonstration"].update(manifest_sha256="f" * 64),
                        lambda v: v["demonstration"].update(history_sha256="f" * 64),
                        lambda v: v["demonstration"].update(head_sha256="f" * 64),
@@ -153,7 +153,7 @@ class ReleaseConformanceTests(unittest.TestCase):
         with self.assertRaises(owner.Refusal):
             self.execute(value)
 
-    def test_incomplete_cases(self):
+    def test_incomplete(self):
         for mutate in (lambda v: v.update(complete=False), lambda v: v.update(demonstration=None),
                        lambda v: v.update(workload=None),
                        lambda v: v.update(tests_run=0), lambda v: v.update(skips=1),
@@ -166,7 +166,7 @@ class ReleaseConformanceTests(unittest.TestCase):
             self.assertFalse(report["value"]); self.assertFalse(event["complete"])
             self.assertEqual(event["status"], "failed")
 
-    def test_input_drift(self):
+    def test_drift(self):
         listed = json.loads((self.root / subject.MANIFEST).read_bytes())["files"][0]["path"]
         target = self.root / listed; original = target.read_bytes()
         target.write_bytes(original + b"\n")
@@ -182,7 +182,7 @@ class ReleaseConformanceTests(unittest.TestCase):
                 self.assertRaisesRegex(owner.Refusal, "source-changed"):
             subject.run(self.root, {"value": False, "exit": 3})
 
-    def test_foreign_manifest(self):
+    def test_manifest(self):
         path = self.root / subject.MANIFEST; original = json.loads(path.read_bytes())
         for change in (lambda m: m.update(criterion="authority-replay"),
                        lambda m: m.update(cases=m["cases"] + ["test_hexctl.HexctlTests.test_other"]),
@@ -196,7 +196,7 @@ class ReleaseConformanceTests(unittest.TestCase):
                 subject.inputs(self.root)
         path.write_bytes(json.dumps(original).encode())
 
-    def test_release_binding(self):
+    def test_release(self):
         inputs = subject.inputs(self.root)
         self.assertEqual(inputs["release_manifest"]["path"], release.MANIFEST)
         self.assertEqual(inputs["release_manifest"]["sha256"],
@@ -214,7 +214,7 @@ class ReleaseConformanceTests(unittest.TestCase):
             with self.subTest(long_labels=long_labels):
                 value = self.value()
                 if long_labels:
-                    for field in ("platform", "processor", "contention"):
+                    for field in ("platform", "machine", "processor", "contention"):
                         value["workload"]["environment"][field] = "host-" + "x" * 251
                 self.execute(value)
                 report = {"value": False, "exit": 3}
@@ -225,7 +225,7 @@ class ReleaseConformanceTests(unittest.TestCase):
                 self.assertLessEqual(len(owner._json_bytes(report)), owner.MAX_REPORT_BYTES)
                 owner._write(self.root, "capacity-" + str(long_labels) + ".json", report, event)
 
-    def test_criterion_identity(self):
+    def test_criterion(self):
         self.assertIn("released-interoperability", owner.CRITERIA)
         self.assertEqual(subject.CRITERION, "released-interoperability")
         self.assertEqual(demo.BUNDLE + "interoperability-manifest.json", subject.MANIFEST)

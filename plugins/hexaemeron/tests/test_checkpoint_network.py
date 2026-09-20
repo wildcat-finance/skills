@@ -18,15 +18,15 @@ from checkpoint_authority.canonical import Refusal
 import test_checkpoint_authority_release_conformance as report_fixtures
 
 
-class FixtureTests(unittest.TestCase):
-    def test_fixture_without_host(self):
+class Fixture(unittest.TestCase):
+    def test_fixture_pure(self):
         specimen = report_fixtures.ReleaseConformanceTests("test_a_peak_above_the_declared_ceiling_refuses")
         specimen.setUp()
         self.addCleanup(specimen.doCleanups)
         with patch.object(network, "prepare", side_effect=AssertionError("fixture prepared host sandbox")):
             self.assertIsInstance(specimen.value()["demonstration"]["network_boundary"], dict)
 
-    def test_validation_without_host(self):
+    def test_validation_pure(self):
         specimen = report_fixtures.ReleaseConformanceTests("test_a_peak_above_the_declared_ceiling_refuses")
         specimen.setUp()
         self.addCleanup(specimen.doCleanups)
@@ -46,15 +46,15 @@ class FixtureTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(Refusal):
                 network.validate_observation(value, expected)
 
-    def test_execution_requires_host(self):
+    def test_require_host(self):
         with patch.object(network, "prepare", side_effect=Refusal("network-denial-unavailable", "demonstration")), \
                 patch.object(native_io, "execute") as child, self.assertRaises(Refusal):
             release_conformance.execute(Path.cwd())
         child.assert_not_called()
 
 
-class PolicyTests(unittest.TestCase):
-    def test_unknown_host_refuses(self):
+class Policy(unittest.TestCase):
+    def test_unsupported(self):
         for system, machine in (("linux", "aarch64"), ("linux", "i686"),
                                 ("linux", ""), ("win32", "x86_64"), ("darwin", "unknown")):
             with self.subTest(system=system, machine=machine), self.assertRaises(Refusal) as caught:
@@ -79,7 +79,7 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(policy.filter_bytes).hexdigest(),
                          "8b97e4880f19e22990d9994580127bd38249e9f51594f1e3f63218edcd286412")
 
-    def test_filter_abi_calls(self):
+    def test_filter_abi(self):
         # Interpret the emitted Linux classic-BPF subset against independent
         # seccomp_data inputs; this checks jump behavior without executing x32.
         instructions = list(struct.iter_unpack("<HBBI", network_policy.linux_filter()))
@@ -110,7 +110,7 @@ class PolicyTests(unittest.TestCase):
         for number in (0, 1, 2, 3, 39, 60, 231):
             self.assertEqual(action(0xc000003e, number), 0x7fff0000)
 
-    def test_missing_launcher_refuses(self):
+    def test_no_launcher(self):
         with patch.object(native_io, "hash_file", side_effect=OSError("unavailable")), \
                 patch.object(network.signatures, "_run") as child, self.assertRaises(Refusal) as caught:
             network.prepare()
@@ -118,7 +118,7 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(caught.exception.code, "network-denial-unavailable")
 
 
-class NativeTests(unittest.TestCase):
+class Native(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="checkpoint-network-test-")
         self.addCleanup(temporary.cleanup)
@@ -148,14 +148,14 @@ class NativeTests(unittest.TestCase):
                 boundary.probe(self.root)
         self.assertEqual(caught.exception.code, "network-denial-probe")
 
-    def test_changed_policy_refuses(self):
+    def test_policy_mutation(self):
         changed = replace(self.boundary, policy=replace(self.boundary.policy, argv=()))
         with patch.object(network.signatures, "_run") as child, self.assertRaises(Refusal) as caught:
             changed.run(self.python, ["-c", "pass"], self.root, timeout=1)
         child.assert_not_called()
         self.assertEqual(caught.exception.code, "network-denial-changed")
 
-    def test_changed_executable_refuses(self):
+    def test_pin_mutations(self):
         changed = replace(self.boundary, launcher_sha256="0" * 64)
         with self.assertRaises(Refusal) as caught:
             changed.run(self.python, ["-c", "pass"], self.root, timeout=1)
@@ -163,7 +163,7 @@ class NativeTests(unittest.TestCase):
         with self.assertRaises(Refusal):
             self.boundary.run(replace(self.python, sha256="0" * 64), ["-c", "pass"], self.root, timeout=1)
 
-    def test_missing_descendant_refuses(self):
+    def test_exec_required(self):
         complete = (0, network.PROBE_OUTPUT, b"")
         for incomplete in ((0, b"", b""), (1, network.PROBE_OUTPUT, b""),
                            (0, network.PROBE_OUTPUT, b"unexpected diagnostic")):
