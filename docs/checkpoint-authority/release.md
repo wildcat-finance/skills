@@ -116,8 +116,13 @@ bubblewrap`. The measured package is `0.9.0-1ubuntu0.3`; each execution hashes
 the actual installed binary and proves the policy works. The caller needs
 unprivileged namespace creation and kernel seccomp support. The verifier does
 not run with sudo, and the program does not change host security settings.
-An absent package, denied namespace capability or unsupported ABI refuses;
-there is no unsandboxed retry. Linux arm64 is not a supported backend.
+Ubuntu hosts with AppArmor user-namespace restrictions also need the packaged
+`apparmor-profiles` policy for Bubblewrap. The
+[hosted setup](../checkpoint-sandbox/hosted-evidence.md) names its reviewed
+profile, digest and preparation checks; loading that profile is an administrator
+setup action, separate from verifier execution. An absent package, denied
+namespace capability or unsupported ABI refuses; there is no unsandboxed
+retry. Linux arm64 is not a supported backend.
 
 The Linux filter checks its syscall ABI, refuses x32 and other architectures,
 and denies socket operations and io_uring submission. Bubblewrap consumes
@@ -127,9 +132,11 @@ namespaces, a new session and dropped capabilities accompany the filter;
 existing timeout, output and process cleanup limits still apply.
 
 The macOS policy remains `(version 1)(allow default)(deny network*)` on its
-existing arm64 and x86_64 backends. The measured Linux profile is Ubuntu 24.04
-x86_64. Fresh hosted Ubuntu 24.04 x86_64 and macOS 15 arm64 conformance remain
-integration gates for this delivery; no new macOS x86_64 execution is claimed.
+existing arm64 and x86_64 backends. The hosted workflow requires Ubuntu 24.04
+x86_64 and macOS 15 arm64 execution; no new macOS x86_64 execution is claimed.
+The [hosted evidence guide](../checkpoint-sandbox/hosted-evidence.md) explains
+artifact admission, limits and recovery. Acceptance requires fresh authenticated
+GitHub readback and complete source-bound evidence for both profiles.
 Report-shape fixtures construct an explicit descriptor without preparing a
 host. Positive conformance still prepares and executes the actual backend.
 

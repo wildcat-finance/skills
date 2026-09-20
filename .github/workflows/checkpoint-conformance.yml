@@ -1,0 +1,112 @@
+name: checkpoint-conformance
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/hexaemeron/skills/fiat/**"
+      - "plugins/hexaemeron/tests/**"
+      - "docs/checkpoint-authority/**"
+      - "docs/checkpoint-sandbox/**"
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/checkpoint-conformance.yml"
+  pull_request:
+    paths:
+      - "plugins/hexaemeron/skills/fiat/**"
+      - "plugins/hexaemeron/tests/**"
+      - "docs/checkpoint-authority/**"
+      - "docs/checkpoint-sandbox/**"
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/checkpoint-conformance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checkpoint:
+    name: checkpoint (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            cosign_asset: linux-amd64
+            cosign_sha256: 4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71
+          - runner: macos-15
+            cosign_asset: darwin-arm64
+            cosign_sha256: 5cf948c2f4dfe59687bdd0b8523709067383e03982cc543475c8a7dc70e92a76
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - name: Install the locked test dependencies
+        run: python3 -m pip install --requirement plugins/hexaemeron/tests/requirements.lock
+      - name: Prepare the Linux sandbox policy
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes bubblewrap apparmor-profiles
+          test "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = 1
+          if /usr/bin/bwrap --unshare-net --unshare-pid --bind / / --dev-bind /dev /dev --die-with-parent --new-session --cap-drop ALL -- /usr/bin/true; then
+            printf '%s\n' 'Initial namespace setup succeeded.'
+          else
+            printf '%s\n' 'Initial namespace setup failed; retaining kernel diagnostics before profile setup.'
+            sudo journalctl --dmesg --since='-2 minutes' --no-pager --grep='apparmor="DENIED".*comm="bwrap"' || test "$?" = 1
+          fi
+          profile=/usr/share/apparmor/extra-profiles/bwrap-userns-restrict
+          printf '%s  %s\n' '11d39094f044f0cda0febb3ad517b830301da6b2ce929664af09ee9e4dd264f9' "$profile" | sha256sum --check
+          test ! -e /etc/apparmor.d/local/bwrap-userns-restrict
+          test ! -L /etc/apparmor.d/local/bwrap-userns-restrict
+          test ! -e /etc/apparmor.d/local/unpriv_bwrap
+          test ! -L /etc/apparmor.d/local/unpriv_bwrap
+          sudo install -m 0644 "$profile" /etc/apparmor.d/bwrap-userns-restrict
+          sudo apparmor_parser --replace /etc/apparmor.d/bwrap-userns-restrict
+          sudo cat /sys/kernel/security/apparmor/profiles | grep -Fx 'bwrap (enforce)'
+          sudo cat /sys/kernel/security/apparmor/profiles | grep -Fx 'unpriv_bwrap (enforce)'
+          test "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = 1
+      - name: Install the macOS signature verifier
+        if: runner.os == 'macOS'
+        run: |
+          if ! command -v gpg >/dev/null; then
+            brew install gnupg
+          fi
+      - name: Install the pinned cosign verifier
+        shell: bash
+        env:
+          COSIGN_ASSET: ${{ matrix.cosign_asset }}
+          COSIGN_SHA256: ${{ matrix.cosign_sha256 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/checkpoint-tools"
+          curl --fail --location --proto '=https' --tlsv1.2 --connect-timeout 30 --max-time 240 \
+            "https://github.com/sigstore/cosign/releases/download/v3.1.3/cosign-$COSIGN_ASSET" \
+            --output "$RUNNER_TEMP/checkpoint-tools/cosign"
+          printf '%s  %s\n' "$COSIGN_SHA256" "$RUNNER_TEMP/checkpoint-tools/cosign" | shasum -a 256 --check
+          chmod 0755 "$RUNNER_TEMP/checkpoint-tools/cosign"
+          printf '%s\n' "$RUNNER_TEMP/checkpoint-tools" >> "$GITHUB_PATH"
+      - name: Run checkpoint conformance
+        env:
+          CHECKPOINT_PROFILE: ${{ matrix.runner }}
+          CHECKPOINT_EVENT_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          CHECKPOINT_EVENT_MERGE: ${{ github.event.pull_request.merge_commit_sha || '' }}
+        run: python3 plugins/hexaemeron/tests/checkpoint_hosted_collect.py --profile "$CHECKPOINT_PROFILE" --out "$RUNNER_TEMP/checkpoint-evidence"
+      - name: Retain checkpoint evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkpoint-${{ matrix.runner }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/checkpoint-evidence/
+          if-no-files-found: error
+          retention-days: 30

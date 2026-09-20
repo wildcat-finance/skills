@@ -140,6 +140,9 @@ class ReleaseConformanceTests(unittest.TestCase):
                        lambda v: v["demonstration"]["network_boundary"].update(policy_sha256="f" * 64),
                        lambda v: v["demonstration"]["network_boundary"].update(launcher_sha256="f" * 64),
                        lambda v: v["demonstration"].pop("network_boundary"),
+                       lambda v: v["demonstration"]["network_boundary"].pop("descendant_probe_exit"),
+                       lambda v: v["demonstration"]["network_boundary"].update(abi="aarch64"),
+                       lambda v: v["demonstration"]["network_boundary"].update(filter_sha256="f" * 64),
                        lambda v: v["demonstration"].update(eligible=0),
                        lambda v: v["demonstration"].pop("peak_rss_bytes"),
                        lambda v: v.update(python="3.13.0")):
@@ -154,7 +157,8 @@ class ReleaseConformanceTests(unittest.TestCase):
             self.execute(value)
 
     def test_incomplete(self):
-        for mutate in (lambda v: v.update(complete=False), lambda v: v.update(demonstration=None),
+        for mutate in (lambda v: v.update(complete=False), lambda v: v.update(passed=False),
+                       lambda v: v.update(tests_run=v["tests_run"] + 1), lambda v: v.update(demonstration=None),
                        lambda v: v.update(workload=None),
                        lambda v: v.update(tests_run=0), lambda v: v.update(skips=1),
                        lambda v: v.update(expected_failures=1),

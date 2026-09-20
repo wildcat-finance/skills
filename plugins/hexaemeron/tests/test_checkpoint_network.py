@@ -142,18 +142,27 @@ class Native(unittest.TestCase):
             weak = patch.object(network_policy, "linux_filter", return_value=struct.pack("<HBBI", 0x06, 0, 0, 0x7fff0000))
         else:
             weak = patch.object(network_policy, "MACOS_POLICY", "(version 1)(allow default)")
-        with weak:
-            boundary = network.prepare()
-            with self.assertRaises(Refusal) as caught:
-                boundary.probe(self.root)
-        self.assertEqual(caught.exception.code, "network-denial-probe")
+        specimens = [weak]
+        if sys.platform == "linux":
+            # Permit socket and bind while retaining the rest of the denied set.
+            # This independent specimen must fail even though connect stays denied.
+            specimens.append(patch.object(network_policy, "DENIED_X86_64",
+                                           tuple(n for n in network_policy.DENIED_X86_64 if n not in (41, 49))))
+        for specimen in specimens:
+            with self.subTest(specimen=specimen), specimen:
+                boundary = network.prepare()
+                with self.assertRaises(Refusal) as caught:
+                    boundary.probe(self.root)
+                self.assertEqual(caught.exception.code, "network-denial-probe")
 
     def test_policy_mutation(self):
-        changed = replace(self.boundary, policy=replace(self.boundary.policy, argv=()))
-        with patch.object(network.signatures, "_run") as child, self.assertRaises(Refusal) as caught:
-            changed.run(self.python, ["-c", "pass"], self.root, timeout=1)
-        child.assert_not_called()
-        self.assertEqual(caught.exception.code, "network-denial-changed")
+        for mutation in ({"argv": ()}, {"abi": "foreign"}, {"filter_bytes": b"allow"},
+                         {"mechanism": "other"}, {"launcher": "/different"}):
+            changed = replace(self.boundary, policy=replace(self.boundary.policy, **mutation))
+            with self.subTest(mutation=mutation), patch.object(network.signatures, "_run") as child, self.assertRaises(Refusal) as caught:
+                changed.run(self.python, ["-c", "pass"], self.root, timeout=1)
+            child.assert_not_called()
+            self.assertEqual(caught.exception.code, "network-denial-changed")
 
     def test_pin_mutations(self):
         changed = replace(self.boundary, launcher_sha256="0" * 64)
@@ -210,9 +219,18 @@ os.close(read)
 """ + leader
 
     def test_leader_exit_cleanup(self):
-        result = self.run_python(self.descendant("os._exit(0)\n"))
-        self.assertEqual(result[0], 0)
-        self.assert_lock_released()
+        # Direct execution retains the pipe-holder on Linux too; its PID
+        # namespace would otherwise hide the Darwin leader-exit failure.
+        source = self.descendant("print('complete', flush=True)\nos._exit(0)\n")
+        for sandboxed in (False, True):
+            with self.subTest(sandboxed=sandboxed):
+                if sandboxed:
+                    result = self.run_python(source, timeout=2)
+                else:
+                    result = network.signatures._run(self.python, ["-I", "-c", source],
+                                                     self.root, timeout=2)
+                self.assertEqual(result, (0, b"complete\n", b""))
+                self.assert_lock_released()
 
     def test_timeout_cleanup(self):
         start = time.monotonic()

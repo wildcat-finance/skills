@@ -89,9 +89,11 @@ def main(argv=None, *, root=ROOT):
             raise owner.Refusal("unsupported-candidate")
         if args.criterion not in CRITERIA:
             raise owner.Refusal("unknown-criterion")
-        if args.criterion.startswith("hosted-"):
-            raise owner.Refusal("criterion-not-implemented")
-        if args.evidence is not None:
+        hosted = args.criterion.startswith("hosted-")
+        profile = "ubuntu-24.04" if args.criterion == "hosted-linux" else "macos-15"
+        if hosted and args.evidence != ".hexaemeron/sources/ci/" + profile:
+            raise owner.Refusal("unsafe-evidence-path")
+        if not hosted and args.evidence is not None:
             raise owner.Refusal("unexpected-evidence")
         name = CANDIDATE + "-" + args.criterion + ".json"
         if args.report != "/".join((*DIRECTORY, name)):
@@ -99,11 +101,17 @@ def main(argv=None, *, root=ROOT):
         available(root, name)
         command = ("python3 plugins/hexaemeron/tests/checkpoint_network_design_report.py"
                    " --candidate " + CANDIDATE + " --criterion " + args.criterion
+                   + (" --evidence " + args.evidence if hosted else "")
                    + " --report " + args.report)
         report = {"schema": "protasis-design-report/v1", "candidate": CANDIDATE,
                   "criterion": args.criterion, "value": False, "unit": "boolean",
                   "command": command, "exit": 1}
-        if args.criterion == "product-linux":
+        if hosted:
+            import checkpoint_hosted_evidence
+            evidence = checkpoint_hosted_evidence.admit(root, profile, args.evidence)
+            report.update(value=True, exit=0)
+            evidence["design_report_sha256"] = hashlib.sha256(owner._json_bytes(report)).hexdigest()
+        elif args.criterion == "product-linux":
             if sys.platform != "linux" or platform.machine() != "x86_64":
                 raise owner.Refusal("unsupported-host-profile")
             evidence = release_conformance.run(root, report)
@@ -113,7 +121,7 @@ def main(argv=None, *, root=ROOT):
         print(json.dumps({"criterion": args.criterion, "passed": report["value"],
                           "report": args.report, "exit": report["exit"]}, sort_keys=True))
         return report["exit"]
-    except (owner.Refusal, NetworkRefusal, OSError) as error:
+    except (owner.Refusal, NetworkRefusal, OSError, ValueError, KeyError, TypeError) as error:
         code = error.code if isinstance(error, NetworkRefusal) else (
             str(error) if isinstance(error, owner.Refusal) else "unsafe-or-unavailable-file")
         print(json.dumps({"event": "checkpoint_network_design_refused", "code": code,

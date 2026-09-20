@@ -6,6 +6,7 @@ demonstration cases, and reports the one demonstration outcome those cases
 produced. Only test ids, fixed counters and digests reach the conformance
 interface; a raw failure message stays inside the runner.
 """
+import argparse
 import hashlib
 import io
 import json
@@ -44,12 +45,21 @@ class Result(unittest.TextTestResult):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
+    parser.add_argument("--raw-log")
+    args = parser.parse_args()
     loader = unittest.defaultTestLoader
     suite = loader.loadTestsFromModule(release_cases)
     suite.addTests(loader.loadTestsFromModule(conformance_cases))
     suite.addTests(loader.loadTestsFromModule(network_cases))
     output = io.StringIO()
     result = unittest.TextTestRunner(stream=output, verbosity=2, resultclass=Result).run(suite)
+    if args.raw_log is not None:
+        from checkpoint_authority import native_io
+        raw_log = output.getvalue().encode()
+        if len(raw_log) > 65536:
+            raise SystemExit("release test log exceeds 65536 bytes")
+        native_io.create(Path(args.raw_log).absolute(), raw_log)
     complete = len(result.started) == len(result.completed) == len(set(result.started)) == result.testsRun > 0
     demonstrated = release_cases.DEMONSTRATED
     measured = workload.benchmark() if result.wasSuccessful() else None

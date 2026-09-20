@@ -9,7 +9,7 @@ import checkpoint_network_design_report as design_report
 
 
 class NetworkReportTests(unittest.TestCase):
-    def test_unimplemented_hosted_operations_never_create_a_report(self):
+    def test_missing_hosted_evidence_never_creates_a_report(self):
         with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(io.StringIO()):
             root = Path(directory)
             code = design_report.main(["--candidate", "bubblewrap-seccomp", "--criterion", "hosted-macos",
