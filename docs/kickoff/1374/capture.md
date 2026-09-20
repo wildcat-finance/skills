@@ -286,9 +286,10 @@ file they name.
 
 The registry closed both rows after 2026-09-18.
 [#1590](https://github.com/wildcat-finance/skills/issues/1590) read the V2
-instances, hooks and role providers.
+instances, hooks and role providers, and recovered the fee recipient,
+collateral and role-provider sources the V2 row lacked.
 [#1748](https://github.com/wildcat-finance/skills/issues/1748) recovered the
-source matches both rows lacked.
+init-code and MarketLens source matches the V1 row lacked.
 [#1589](https://github.com/wildcat-finance/skills/issues/1589) read every V1
 controller and market instance.
 [Pull request 1736](https://github.com/wildcat-finance/skills/pull/1736) rewrote
