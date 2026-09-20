@@ -658,6 +658,119 @@ class AdmittedDirectiveTests(GateCase):
                                         ("cmd_halt", None), ("cmd_resume", None), ("cmd_reset", None)})
 
 
+# Written out here, not read from the gate, so a widened field set fails.
+# key -> (every field the rule admits, the fields it requires)
+FIELDS = {
+    ("cmd_init", None): ({"topic", "base", "task_issue", "run_branch", "frontier", "controller_currency_waiver"}, set()),
+    ("cmd_observe", None): ({"artifact", "capture_status", "redaction_status", "reason_code"},
+                            {"capture_status", "redaction_status"}),
+    ("cmd_record", None): ({"key", "value"}, {"key", "value"}),
+    ("cmd_config", "set"): ({"path", "value"}, {"path", "value"}),
+    ("cmd_amend_study", None): ({"artifact"}, {"artifact"}),
+    ("cmd_amend_runbook", None): ({"artifact"}, {"artifact"}),
+    ("cmd_done", "study"): ({"artifact", "skills"}, set()),
+    ("cmd_done", "runbook"): ({"artifact", "steps_file"}, set()),
+    ("cmd_done", "inoculate"): (set(), set()),
+    ("cmd_done", "implement"): ({"branch", "commit", "tests"}, set()),
+    ("cmd_done", "audit"): ({"fixes_ref", "log", "no_further_leads", "reason"}, set()),
+    ("cmd_done", "prose"): ({"files", "skills"}, set()),
+    ("cmd_done", "push"): ({"pr_url", "pr_base", "head_commit", "merge_commit", "closed_issue_url"}, set()),
+    ("cmd_done", "merge-step"): ({"step", "merge_commit"}, set()),
+    ("cmd_done", "sync-run"): ({"commit", "base_commit", "revalidation", "decision_assignments", "supersede_sync",
+                                "acknowledge_sync_paths", "reason"}, set()),
+    ("cmd_done", "resolve-versions"): ({"accept_evolution_base", "recovery_authority", "reason"}, set()),
+    ("cmd_done", "integrate"): ({"pr_url", "merge_commit", "closed_issue_url"}, set()),
+    ("cmd_audit_round", None): ({"findings", "log", "audit_filter", "fixes_commit", "elenchus_verdict",
+                                 "phylax_exit", "ephoros_exit", "hypomnema_exit"}, {"findings"}),
+    ("cmd_halt", None): ({"reason"}, {"reason"}),
+    ("cmd_resume", None): ({"note", "to"}, set()),
+    ("cmd_reset", None): (set(), set()),
+    ("cmd_checkpoint_export", None): ({"out"}, {"out"}),
+    ("cmd_checkpoint_archive", None): ({"format"}, set()),
+    ("cmd_carryover_export", None): ({"request"}, {"request"}),
+    ("cmd_carryover_bind", None): ({"request"}, {"request"}),
+    ("cmd_replacement_begin", None): ({"request"}, {"request"}),
+    ("cmd_replacement_resume", None): (set(), set()),
+    ("cmd_retain_guard", None): ({"finding_id", "guard_commit"}, {"finding_id", "guard_commit"}),
+    ("cmd_run_exit", None): ({"criterion"}, {"criterion"}),
+}
+TAIL_EVENT_RULES = {("cmd_checkpoint_export", None), ("cmd_checkpoint_archive", None)}
+HOSTILE_FIELDS = {"max_rounds", "round", "loop", "force", "dir", "zz"}
+
+
+class CommandFieldTests(GateCase):
+    """Every rule against every field, so no field set can be widened unseen."""
+
+    @staticmethod
+    def code(key, directive, command, evidence):
+        try:
+            call(key, directive, command, evidence)
+        except gate.Refusal as refusal:
+            return refusal.report["code"]
+        return None
+
+    def test_the_rules_are_the_ones_written_here(self):
+        self.assertEqual(set(FIELDS), set(gate.RULES))
+        self.assertEqual(len(FIELDS), 29)
+
+    def test_each_rule_admits_the_fields_written_here_and_no_other(self):
+        names = sorted(set().union(*(fields for fields, _ in FIELDS.values())) | HOSTILE_FIELDS)
+        decided = 0
+        for key, (granted, _) in CASES.items():
+            directive, command, evidence = granted
+            for name in names:
+                decided += 1
+                with self.subTest(key=key, field=name):
+                    code = self.code(key, directive, {name: "x", **command}, evidence)
+                    if name in FIELDS[key][0]:
+                        self.assertNotEqual(code, "command-field-unknown")
+                    else:
+                        self.assertEqual(code, "command-field-unknown")
+        self.assertEqual(decided, 29 * len(names))
+        self.assertGreater(len(names), 50)
+
+    def test_each_rule_requires_the_fields_written_here_and_no_other(self):
+        decided = 0
+        for key, (granted, _) in CASES.items():
+            directive, command, evidence = granted
+            fields, required = FIELDS[key]
+            self.assertLessEqual(required, set(command), key)
+            for name in sorted(fields):
+                without = {field: value for field, value in command.items() if field != name}
+                for candidate in (without, {**without, name: None}):
+                    decided += 1
+                    with self.subTest(key=key, field=name, null=name in candidate):
+                        code = self.code(key, directive, candidate, evidence)
+                        if name in required:
+                            self.assertEqual(code, "command-field-missing")
+                        else:
+                            self.assertNotEqual(code, "command-field-missing")
+        self.assertEqual(decided, 2 * sum(len(fields) for fields, _ in FIELDS.values()))
+
+    def test_only_the_checkpoint_rules_admit_a_tail_event(self):
+        for key, (granted, _) in CASES.items():
+            directive, command, evidence = granted
+            with self.subTest(key=key):
+                code = self.code(key, directive, command, {**evidence, "tail_event": "done:push"})
+                if key in TAIL_EVENT_RULES:
+                    self.assertIsNone(code)
+                else:
+                    self.assertEqual(code, "evidence-field-unknown")
+
+    def test_no_ledger_event_but_the_two_boundaries_is_an_accepted_tail(self):
+        events = ("init", "record", "config-set", "halt", "resume", "retire", "observe", "amend:study",
+                  "amend:runbook", "done:study", "done:runbook", "done:implement", "done:audit", "done:prose",
+                  "done:merge-step", "done:sync-run", "done:integrate", "run-exit", "done:Push", "audit-round ")
+        for key in sorted(TAIL_EVENT_RULES):
+            command = CASES[key][0][1]
+            for event in events:
+                with self.subTest(key=key, event=event):
+                    self.assert_refusal("checkpoint-boundary-unaccepted", key, at("audit-verdict"), command,
+                                        {"tail_event": event})
+            self.granted(key, at("audit-verdict"), command, {"tail_event": "audit-round"})
+            self.granted(key, at("push"), command, {"tail_event": "done:push"})
+
+
 class RecoveryWindowTests(GateCase):
     """A pending record outlives its state write; its owner must still be granted."""
 
