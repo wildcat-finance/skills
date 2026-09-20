@@ -1,0 +1,126 @@
+{
+  "issue": "https://github.com/wildcat-finance/skills/issues/1748",
+  "parent_issue": "https://github.com/wildcat-finance/skills/issues/1482",
+  "target": "wildcat-v1-ethereum-mainnet",
+  "produced_on": "2026-09-19",
+  "producer": "Shoggoth as Surveyor under Protasis",
+  "method_note": "Extends the 2026-09-12 pass recorded in source-match.json ethereum_mainnet_v1_sources / ethereum_mainnet_v1_reproduction. Chain reads used cast 1.7.1 against https://ethereum-rpc.publicnode.com; git history reads used a full clone of https://github.com/wildcat-finance/wildcat-protocol including every named branch and all 37 pull requests (state=all, numbers 1-75) fetched as refs/pull/<n>/head.",
+  "market_init_code": {
+    "address": "0xd0c690707b5642475f68a0487cea08e30a5719bd",
+    "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+    "input": "the WildcatMarketControllerFactory Sourcify stdJsonInput already pinned in targets.json build_inputs (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706); WildcatMarket.sol and WildcatMarketController.sol are both compiled into that same unit because the factory embeds their creationCode",
+    "canonical_input_reverify": {
+      "recomputed_sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706",
+      "matches_pinned_build_input": true
+    },
+    "modification": "settings.outputSelection widened from the recorded (absent/target-only) selection to {\"*\": {\"*\": [\"evm.bytecode\", \"evm.deployedBytecode\", \"abi\"], \"\": []}}; no other field changed",
+    "solc_build": "solc-macosx-amd64-v0.8.22+commit.4fc1097e (Darwin.appleclang build of the same compiler version already pinned as solc-linux-amd64-v0.8.22+commit.4fc1097e; solc output is platform-independent for a given version, settings and input)",
+    "solc_local_sha256": "2a190970f93f3f8f3631df6eabd245994ffc5558e8efbd94d597a6f447f59b33",
+    "solc_version_string": "0.8.22+commit.4fc1097e.Darwin.appleclang",
+    "result": {
+      "creation_bytecode_bytes": 23650,
+      "creation_bytecode_keccak256": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93",
+      "expected_stored_init_code_keccak256": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93",
+      "equal": true,
+      "length_matches_recorded_init_code_length": true
+    },
+    "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7"
+  },
+  "controller_init_code": {
+    "address": "0x93caaddc316f699f9249e93a689566cefc446c3c",
+    "contract": "src/WildcatMarketController.sol:WildcatMarketController",
+    "input": "same factory stdJsonInput and widened outputSelection as market_init_code above",
+    "solc_build": "solc-macosx-amd64-v0.8.22+commit.4fc1097e",
+    "result": {
+      "creation_bytecode_bytes": 16250,
+      "creation_bytecode_keccak256": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371",
+      "expected_stored_init_code_keccak256": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371",
+      "equal": true,
+      "length_matches_recorded_init_code_length": true
+    },
+    "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7"
+  },
+  "market_lens": {
+    "address": "0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+    "sourcify_in_tree_sources": 46,
+    "sourcify_outside_tree_sources": [
+      "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol",
+      "lib/solady/src/auth/Ownable.sol",
+      "lib/solady/src/utils/LibBit.sol",
+      "lib/solady/src/utils/SafeTransferLib.sol"
+    ],
+    "git_history_searched": {
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "branches": [
+        "main", "add-archcontroller-blacklist", "batching-and-codesize", "errata-bugfixes",
+        "laurenceday-readme-update", "release-licensing", "spherex-changes", "spherex-wrapper", "staging"
+      ],
+      "pull_requests_fetched": "all 37 (state=all), refs/pull/<n>/head for every open, closed and merged PR number 1-75",
+      "method": "git rev-parse <ref>:<path> for the git blob SHA-1 at each candidate commit, cross-checked against a full recursive git trees API read at commit 488b30d0; a direct GitHub git/blobs lookup by SHA confirmed which blobs are absent from every reachable object"
+    },
+    "full_tree_comparison_by_commit": {
+      "488b30d08c73a93be3e4bf99128c774997411d3a (default branch head, 2024-02-15)": {"equal": 40, "of": 46},
+      "da74452aa7d1a0f024d99efd22cc6d950a8116b7 (and the other four factory-equivalent commits)": {"equal": 9, "of": 46}
+    },
+    "best_single_commit_match": {
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "equal": 40,
+      "of": 46,
+      "differing_paths": [
+        "src/ReentrancyGuard.sol",
+        "src/libraries/FeeMath.sol",
+        "src/libraries/MathUtils.sol",
+        "src/libraries/SafeCastLib.sol",
+        "src/libraries/MarketErrors.sol",
+        "src/libraries/MarketEvents.sol"
+      ]
+    },
+    "why_no_commit_reaches_46_of_46": {
+      "group_a_pre_rewrite_only": {
+        "paths": ["src/ReentrancyGuard.sol", "src/libraries/FeeMath.sol", "src/libraries/MathUtils.sol", "src/libraries/SafeCastLib.sol"],
+        "finding": "each matches Sourcify's blob at da74452a and the other four factory-equivalent commits (and every earlier commit back to 85bd3a3), then changes exactly once, at the 2023-11-30T21:21:45Z licence-header rewrite 6164ddd4c75ef6da2181e5623b99795b9829e31c, and never changes again through head. Sourcify's copy is the pre-rewrite state, so these four require a commit strictly before 6164ddd4c75."
+      },
+      "group_b_never_in_git": {
+        "paths": ["src/libraries/MarketErrors.sol", "src/libraries/MarketEvents.sol"],
+        "finding": "constant in every reachable commit (main, all named branches, all 37 PRs) at blob 4c42cb0c2cce25d40350697c8cc0af920f1a355e and f4e164f0013dcf62206ffb75337d9dc0cf8dff77 respectively, from their introduction through head. Sourcify's copies differ from both by exactly one added line, `// SPDX-License-Identifier: Apache-2.0`, before the pragma line; no other byte differs. A direct GitHub git/blobs lookup for Sourcify's exact blob SHA-1 on each file (bda28b6dd9f855317aeb840ddd27a36a54cbf4da, 6495118e40e87babba08b16687d306cb52c1d7e5) returned Not Found, meaning that exact content was never pushed to this repository under any reachable ref.",
+        "diff_sample": "--- git\n+++ sourcify\n@@ -1,3 +1,4 @@\n+// SPDX-License-Identifier: Apache-2.0\n pragma solidity ^0.8.20;\n"
+      },
+      "group_c_post_development_only": {
+        "count": 40,
+        "finding": "the other 40 in-tree sources, including src/lens/MarketLens.sol itself, do not reach their Sourcify blob until well after da74452a (only 9 of 46 match at da74452a); errata-bugfixes-branch commits between the licence rewrite and head (e.g. 'Fix lens pollution griefing vector', 2024-01-10) are needed to reach the head-matching state"
+      },
+      "conclusion": "group A requires a commit strictly before 2023-11-30T21:21:45Z; group C requires a commit at or after 2024-01-10 (and effectively at head); no single commit satisfies both, and group B's exact content is not reachable at any commit at all. The MarketLens V1 source is therefore a source state assembled across time, not a single checkout, and 488b30d0 (40/46) is recorded as the closest identifiable single-commit reference."
+    }
+  },
+  "equivalent_commits_deployer_checkout": {
+    "candidates": [
+      {"commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7", "date": "2023-11-30T16:38:32Z"},
+      {"commit": "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9", "date": "2023-11-30T16:39:04Z"},
+      {"commit": "e9552f0e8a093e214dd69947dc689023df09ff20", "date": "2023-11-30T21:07:46Z"},
+      {"commit": "e962bf37866483a3573016a3087331c5de9f0929", "date": "2023-11-30T21:10:07Z"},
+      {"commit": "016d0658d6d442b8f42e3bb68f01fae43c150307", "date": "2023-11-30T21:10:23Z"}
+    ],
+    "next_commit_on_main": {"commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c", "date": "2023-11-30T21:21:45Z", "change": "licence-header rewrite; changes every in-tree file Sourcify's factory/arch-controller sources equal at the five candidates"},
+    "factory_deployment": {
+      "address": "0xfd31007613c9f671df6a8d4234901324986bfd13",
+      "block": 18687391,
+      "block_timestamp": 1701383255,
+      "block_timestamp_iso": "2023-11-30T22:27:35Z",
+      "transaction": "0xbf0b59d6c3c9790f57b1876cd3ab4a1738f22751b1f80bdd72edff05972e8733",
+      "reverification_2026_09_19": "the #1748 pass recorded this block's timestamp as 1701680039 (2023-12-04T08:53:59Z), which was wrong; re-read against https://ethereum-rpc.publicnode.com via cast, https://rpc.mevblocker.io directly and https://eth.blockscout.com/api/v2/blocks/18687391 all agree on 1701383255 (2023-11-30T22:27:35Z), block hash 0x5e40a490e4e826873ba4aeb63ec85d2b6c7fc7e055a170629246e556f3ab5c53; the transaction's own receipt confirms blockNumber 18687391 and the same blockHash. No other commit lands on main between d46ecb80 (2023-11-30T21:22:29Z) and the corrected deployment timestamp, so the finding and resolution below are unaffected by the correction"
+    },
+    "main_commits_between_rewrite_and_deployment": [
+      {"commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c", "date": "2023-11-30T21:21:45Z"},
+      {"commit": "d46ecb80842c523b224d2d2e793db9750b611d0a", "date": "2023-11-30T21:22:29Z", "note": "merge of PR #71 (release-licensing); this is main's tip through the deployment"}
+    ],
+    "finding": "the factory deployed 2023-11-30T22:27:35Z, about 1 hour and 5 minutes after the licence rewrite (6164ddd4, 21:21:45Z) and about 1 hour and 5 minutes after main's post-rewrite merge d46ecb80 (21:22:29Z). Main's tip at deployment time was d46ecb80 (post-rewrite), but the deployed bytecode reproduces the pre-rewrite source (da74452a state), so the deployer used a checkout that was not main's tip at deploy time. Because the five candidates are blob-identical for every file that affects the compiled output, no on-chain or git evidence can distinguish which of the five was the deployer's actual working tree; source.equivalent_commits in targets.json records all five with da74452a retained as the primary reference.",
+    "resolution": "cannot select one of the five; recorded as unresolvable with the above evidence, per the issue's 'or record why one cannot be selected' acceptance path"
+  },
+  "protected_set_check": {
+    "item": "Chainalysis SanctionsList",
+    "check": "cast call 0x437e0551892c2c9b06d3ffd248fe60572e08cd1a \"chainalysisSanctionsList()(address)\" against https://ethereum-rpc.publicnode.com",
+    "result": "0x40C57923924B5c5c5455c48D93317139ADDaC8fb",
+    "cross_check": "cast call 0x437e0551892c2c9b06d3ffd248fe60572e08cd1a \"archController()(address)\" returned 0xfEB516d9D946dD487A9346F6fee11f40C6945eE4, the V1 WildcatArchController address already on this row",
+    "finding": "the V1 sentinel's immutable chainalysisSanctionsList equals the same oracle address already recorded as a protected_set_exclusions member of wildcat-v2-ethereum-mainnet (0x40c57923924b5c5c5455c48d93317139addac8fb); no new protected-set member is introduced, the existing entry is confirmed shared with V1"
+  }
+}

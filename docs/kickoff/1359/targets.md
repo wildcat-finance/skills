@@ -72,17 +72,19 @@ this initial registry scope. Their dated rows remain marked `excluded`.
 
 ## Admission and recovery
 
-Scope is settled. Deployment identity remains a separate field. Eight of
+Scope is settled. Deployment identity remains a separate field. Seven of
 the nine selected rows carry a specific `blocker` and source-recovery child;
 `wildcat-v2-ethereum-mainnet` is `resolved` since 2026-09-18 on the evidence
-its child #1590 supplied. None is promoted from a source-only record to
-deployed identity. The eight excluded rows have no consumers. Each admitted row names its
+its child #1590 supplied, and `wildcat-v1-ethereum-mainnet` is `resolved`
+since 2026-09-19 on the evidence #1748 supplied, though #1589 stays open for
+the three controllers' and seven markets' historical instance epochs. None is
+promoted from a source-only record to deployed identity. The eight excluded rows have no consumers. Each admitted row names its
 intended corpus directory, source inputs, observed deployment evidence where
 available and the exact missing-input owner.
 
 | Recovery | Rows | Missing evidence |
 | --- | --- | --- |
-| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Init-code reproduction, lens source and historical instance epochs |
+| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Historical instance epochs for the three controllers and seven markets (init-code reproduction and lens source completed 2026-09-19 via [#1748](https://github.com/wildcat-finance/skills/issues/1748)) |
 | [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Completed 2026-09-18: instance/hook/role-provider map, fee-recipient, collateral and role-provider sources, lens epochs and emitter-pin binding |
 | [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Deployment/source table, compiler inputs and documentation revisions |
 | [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Separate source/deployment and build bundles, shared V2/Syrup coverage |
@@ -301,7 +303,7 @@ listed in `targets.json` and the estate evidence, not here):
 | lens | MarketLens (deployments.json) | `0xc672760757da93b5f3275dc97203d145806dae33` | `0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a` | `a70f297fbd1b1ab597e0e9a3458a2d13a34b4657` | verification input; runtime equals `deployedBytecode` modulo 11 immutable slots; not on Sourcify; deployed at block 21788205 in the core set |
 | lens | MarketLens (docs page; `MarketLensV2` in the SDK) | `0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7` | `0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5` | `e1f77540fef65736374de6c847743d8ca2233fb4` | Sourcify full match (runs 200); all 60 in-tree sources equal the `plasma` branch; deployed at block 23121577 |
 | wrapper factory | Wildcat4626WrapperFactory | `0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a` | `0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e` | `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` (tag v2.1.0) | Sourcify full match (runs 200, `viaIR` off); all 9 in-tree sources equal the tag; deployed at block 24750455 |
-| fee recipient | WildcatFeeRecipient | `0x35a5d1bd68f3139971027b92c1ee9384a0708554` | `0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9` | `ac73bda3642c9a7c8de64e39856b31af53f06068` (`fee-recipient-contract`, private) | the repository's recorded `output.json` `deployedBytecode` equals the runtime byte for byte, 1649 bytes, no immutables; its `standard-input.json` sources equal the Sourcify full-match sources byte for byte; deployed at block 21854968 |
+| fee recipient | WildcatFeeRecipient | `0x35a5d1bd68f3139971027b92c1ee9384a0708554` | `0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9` | `ac73bda3642c9a7c8de64e39856b31af53f06068` (`fee-recipient-contract`, private) | recompiling the verification input with solc 0.8.25 reproduces the recorded `output.json` creation and deployed bytecode byte for byte, and that deployed bytecode equals the runtime byte for byte, 1649 bytes, no immutables; the input sources equal the Sourcify full-match sources byte for byte; deployed at block 21854968 |
 | role provider | OpenAccessRoleProvider | `0x5620553d8881335f74ad19259daacd1d9b373101` | `0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1` | `5d7f8c889a8d29935838a3906172feb8d9861807` (`chainalysis-ofac-role-provider`, private) | Sourcify full match (0.8.25, runs 200, `viaIR`); the repository blob compiled alone reproduces the runtime modulo the 2 oracle immutable slots; deployed at block 21825574; pull provider on 37 instances |
 | collateral factory | WildcatMarketCollateralFactory (`WildcatCollateralFactoryV1`) | `0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c` | `0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897` | `46dba596fa111f868200358f551796e8f73b5fd7` (`collateral-contract`, branch `multi-exchange`) | `forge build` under the repository's `ir` profile (solc 0.8.28, `viaIR`, 50000 runs, `cancun`, `bytecodeHash` none) reproduces the 7615-byte runtime modulo 4 immutable slots; not on Sourcify; deployed at block 23167812 |
 | collateral init code | SimpleMarketCollateralMultiParty | `0xbbb998043a20a26828617769f37dc3980be25ebc` | `0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78`; creation `0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52` | `46dba596fa111f868200358f551796e8f73b5fd7` | stored code is `0x00` plus the creation bytecode built from the same branch; its hash equals `collateralInitCodeHash()` |
@@ -516,6 +518,11 @@ inputs are the only published source binding. Excluded: Plasma testnet
 
 ### `wildcat-v1-ethereum-mainnet`
 
+Status `resolved` since 2026-09-19. The 2026-09-12 observation and source
+record below is preserved; the source recovery that completed #1748 follows
+it under **Source recovery, 2026-09-19**, and the instance-level read that
+completed #1589 follows that under **Instance reads, 2026-09-19**.
+
 Wildcat V1 controller-factory estate on Ethereum mainnet, deprecated on the
 docs page. Core contracts were read at the estate block above; the factory's
 views and init-code storages at finalized block 25960074, hash
@@ -547,9 +554,9 @@ immutables for the factory and sentinel.
 | registry | WildcatArchController | `0xfeb516d9d946dd487a9346f6fee11f40c6945ee4` | `0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56` | `da74452aa7d1a0f024d99efd22cc6d950a8116b7` | as above; deployed at block 18686645 |
 | sanctions sentinel | WildcatSanctionsSentinel | `0x437e0551892c2c9b06d3ffd248fe60572e08cd1a` | `0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004` | `6164ddd4c75ef6da2181e5623b99795b9829e31c` | as above; deployed at block 18686645 |
 | factory | WildcatMarketControllerFactory | `0xfd31007613c9f671df6a8d4234901324986bfd13` | `0x820f5453768df9f33465663ad5ade3416a82b821d3f39383ec2d358fd13ad945` | `da74452aa7d1a0f024d99efd22cc6d950a8116b7` | Sourcify full match; blob equality; reproduction modulo immutables; deployed at block 18687391 |
-| market init code | WildcatMarket (V1) | `0xd0c690707b5642475f68a0487cea08e30a5719bd` | `0x79fa042e1a64cf7f2b02b7074c16f324ee3ac1fab1da99be6066aee6bf0138b6`; creation `0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93` | not reproduced | creation hash equals the factory's `marketInitCodeHash()` |
-| controller init code | WildcatMarketController (V1) | `0x93caaddc316f699f9249e93a689566cefc446c3c` | `0x8e1eb2f3e38e1effddfd26b92802c0cb9aba828051fc0996696017a3cc414066`; creation `0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371` | not reproduced | creation hash equals the factory's `controllerInitCodeHash()` |
-| lens | MarketLens (V1) | `0xf1d516954f96c1363f8b0ae48d79c8dde6237847` | `0x60a6478c59b7c6b95d7549d05b5801203ba70e79aa63e0e5fe1a91eccd4a431f` | not pinned | Sourcify full match; 40 of 46 in-tree sources equal the head and six library files differ |
+| market init code | WildcatMarket (V1) | `0xd0c690707b5642475f68a0487cea08e30a5719bd` | `0x79fa042e1a64cf7f2b02b7074c16f324ee3ac1fab1da99be6066aee6bf0138b6`; creation `0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93` | `da74452aa7d1a0f024d99efd22cc6d950a8116b7` | reproduced 2026-09-19; see below |
+| controller init code | WildcatMarketController (V1) | `0x93caaddc316f699f9249e93a689566cefc446c3c` | `0x8e1eb2f3e38e1effddfd26b92802c0cb9aba828051fc0996696017a3cc414066`; creation `0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371` | `da74452aa7d1a0f024d99efd22cc6d950a8116b7` | reproduced 2026-09-19; see below |
+| lens | MarketLens (V1) | `0xf1d516954f96c1363f8b0ae48d79c8dde6237847` | `0x60a6478c59b7c6b95d7549d05b5801203ba70e79aa63e0e5fe1a91eccd4a431f` | `488b30d08c73a93be3e4bf99128c774997411d3a` (best single-commit match, not full) | Sourcify full match; 40 of 46 in-tree sources equal this commit; see below |
 
 Estate: 3 controllers (`0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8`,
 `0xc2321ed31a274595e087b5010d200b748eb600e4`,
@@ -561,9 +568,122 @@ block 18686645, hash
 arch controller deployment in transaction
 `0x185630a823edeb2261ae6fa92b62c1b3200facf2a54ad9356cccbf4630a75d2d`.
 
-Unresolved: the market and controller init codes are hashed but not
-recompiled from the pinned source; the V1 lens has no pinned commit; the
-five equivalent commits are one source state, not one checkout.
+The three controllers and seven markets above have each been read
+individually; see **Instance reads, 2026-09-19** below.
+
+#### Source recovery, 2026-09-19
+
+Closes the three items #1748 was filed against. Full evidence, including the
+git commands and the exact blob comparisons, is in
+[`evidence/source-match-1748.json`](evidence/source-match-1748.json).
+
+**Market and controller init code.** The factory embeds
+`type(WildcatMarket).creationCode` and `type(WildcatMarketController).creationCode`,
+so both contracts already compile as part of the factory's pinned Sourcify
+`stdJsonInput` (sha256 `dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706`,
+re-verified byte for byte against the pinned canonical form). Widening
+`outputSelection` to emit every contract and recompiling with
+`solc-macosx-amd64-v0.8.22+commit.4fc1097e` (same compiler version as the
+Linux build already pinned; solc output does not depend on platform)
+reproduces `WildcatMarket`'s creation bytecode at 23650 bytes, keccak256
+`0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93`, and
+`WildcatMarketController`'s at 16250 bytes, keccak256
+`0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371` — both
+equal to the stored init code hashes byte for byte. Source commit
+`da74452aa7d1a0f024d99efd22cc6d950a8116b7`.
+
+**MarketLens commit.** No single commit reproduces all 46 in-tree Sourcify
+sources. Checked against every commit on `main`, all 8 named branches and
+all 37 pull requests (state=all, merged and unmerged): 4 files
+(`ReentrancyGuard.sol`, `FeeMath.sol`, `MathUtils.sol`, `SafeCastLib.sol`)
+match only the state before the 2023-11-30T21:21:45Z licence-header rewrite
+`6164ddd4c75ef6da2181e5623b99795b9829e31c`; 40 others, including
+`MarketLens.sol` itself, only reach their matching state well after that
+rewrite (errata-bugfixes-branch fixes through the 2024-02-15 head
+`488b30d08c73a93be3e4bf99128c774997411d3a`, where they reach 40/46); and 2
+files (`MarketErrors.sol`, `MarketEvents.sol`) differ from every reachable
+commit by exactly one line, `// SPDX-License-Identifier: Apache-2.0`, that
+was never applied to those two files anywhere in the repository — confirmed
+by a direct GitHub blob lookup on Sourcify's exact blob SHA-1s, which
+returned Not Found. A pre-rewrite state and a post-rewrite-development state
+cannot both hold in one commit, so this is a source state assembled across
+time, not a single checkout. `488b30d0` (40 of 46) is recorded as the
+closest single-commit reference.
+
+**The five equivalent commits.** The factory deployed at block 18687391,
+2023-11-30T22:27:35Z (corrected 2026-09-19: the #1748 pass recorded
+2023-12-04T08:53:59Z for this block, which cast against publicnode,
+rpc.mevblocker.io and Blockscout's block API all agree was wrong; the
+corrected timestamp does not change the finding below, since no other main
+commit falls in the gap either way) — about an hour after the licence
+rewrite. `main`'s only commits between the rewrite and the deployment are
+`6164ddd4c75` itself and its merge `d46ecb80842c523b224d2d2e793db9750b611d0a`
+(2023-11-30T21:22:29Z), both carrying post-rewrite blobs the deployed
+bytecode does not match. The deployer therefore used a checkout that was not
+`main`'s tip at deploy time, and since the five candidates are blob-identical
+for every file that affects the compiled output, no on-chain or git evidence
+distinguishes which one was the actual working tree. Recorded as
+unresolvable; `da74452aa7d1a0f024d99efd22cc6d950a8116b7` stays the primary
+reference with the other four as `equivalent_commits`.
+
+**Protected set.** `cast call` against the V1 sentinel's `chainalysisSanctionsList()`
+returns `0x40C57923924B5c5c5455c48D93317139ADDaC8fb`, the same oracle already
+recorded as a `protected_set_exclusions` member under
+`wildcat-v2-ethereum-mainnet`; no new protected-set member is introduced.
+
+#### Instance reads, 2026-09-19
+
+Closes #1589: the three controllers and seven markets, the last named
+exclusion on this row. Full evidence, addresses, block/hash data and
+commands are in
+[`evidence/source-match-1589.json`](evidence/source-match-1589.json) and
+[`evidence/ethereum-mainnet-1589.json`](evidence/ethereum-mainnet-1589.json).
+
+**No historical implementation epoch exists.** `marketInitCodeHash` and
+`controllerInitCodeHash` are declared `immutable` on
+`WildcatMarketControllerFactory`, set once in its constructor from
+`type(WildcatMarket).creationCode` and
+`type(WildcatMarketController).creationCode` and never updatable. V1
+therefore has exactly one market template and one controller template for
+its entire life; every instance is a `CREATE2` deployment of that same
+pinned template (source commit
+`da74452aa7d1a0f024d99efd22cc6d950a8116b7`), differing only in per-instance
+constructor/immutable arguments, not in code.
+
+**Every instance reproduces the template.** Each of the 3 controllers
+(14750-byte runtime code) and 7 markets (20275-byte runtime code) was read
+via its creation transaction (`eth_getTransactionReceipt` for block, block
+hash and timestamp) and its current `eth_getCode`, cross-checked across
+`ethereum-rpc.publicnode.com`, `rpc.mevblocker.io` and
+`eth.blockscout.com/api/v2`. Diffing each instance's runtime bytecode
+against the compiled `WildcatMarketController`/`WildcatMarket`
+`deployedBytecode`, skipping only the byte ranges solc's
+`immutableReferences` names, gives 0 differing bytes outside immutables for
+all 10 instances.
+
+| Role | Address | Deployed block | Code keccak256 |
+| --- | --- | --- | --- |
+| controller | `0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8` | 18743513 | `0x7f465eac98c8a85183834920309a3bbe4811ad3dff5473e0dce10b4600cb0718` |
+| controller | `0xc2321ed31a274595e087b5010d200b748eb600e4` | 18823123 | `0xff5208ad56c775f6e842db531f51dd677589bcb77bdc1cda187cf0d34af70f1d` |
+| controller | `0x34e7aa31d0151b60490619a8f560ce5ee8196cc6` | 19425114 | `0xc9173ba223d0751d4bf9450bc2f895a61af164c40bf1b8b21c450f5d3b9d1729` |
+| market | `0x25083923f2174c5ff00d26cd6bc497221713c5b9` | 18815590 | `0xbb9c1373ef3707f54e38588a0d3272f06456cdb895e90e90ddf28ed63f96f460` |
+| market | `0x50ebdf73a0df61b782cea489e8102b3bfde0bda6` | 18815605 | `0x05497b17d3240ee152d4c7572ee30bcd578f3ecd067df780e9f4a40f191ebbcf` |
+| market | `0x5850afc80561932b0abb63dd13cdc129395323a3` | 18743513 | `0x1daa6f1f565328c589f05ffe3b1c8bf29804e5cbbe51221a9ea5dbf3124d20a1` |
+| market | `0x605309f21c1864bb0522781a2f97b91fe3a48601` | 19289990 | `0x28d011c52ecb299054fa653b0e380048f594e8d412992f18a9d2f0f77dfb2091` |
+| market | `0x691e1aa048f995890caa47a5ac0b61a9a846bdc8` | 19425114 | `0x8a67488e2b82c9c787cc0b35d28f0482161d3562e03dfb8ae17dc3546321f55d` |
+| market | `0x90d0ff1a7b1abef69eaf3952641058673439e2e3` | 19463335 | `0xde1884f9614ef943082cdfcada06447983a107d5461d9c4f654c89c098a44434` |
+| market | `0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a` | 18823123 | `0x88f4d56af2eeb44a71ccd0e21e86097c6bfa32167cde8b03dcaa1f6e1be9797a` |
+
+**Correction to the #1748 evidence.** Re-verifying the factory's Sourcify
+input while building this pass found that `source-match-1748.json` recorded
+block 18687391's timestamp as `1701680039` (2023-12-04T08:53:59Z). `cast`
+against `ethereum-rpc.publicnode.com`, a direct `rpc.mevblocker.io` read, the
+Blockscout block API and the deployment transaction's own receipt all agree
+on `1701383255` (2023-11-30T22:27:35Z) instead. Corrected in
+`source-match-1748.json`, this row's `source.equivalence_note` and the
+paragraph above; the "five equivalent commits, unresolvable" conclusion is
+unchanged, since no other `main` commit falls between `d46ecb80` and the
+deployment under either timestamp.
 
 ### `wildcat-v2.5-release-line`
 
@@ -646,7 +766,7 @@ individually; the V1 market and controller init codes were not recompiled;
 the `collateral-contract` and fee-recipient sources were not located.
 
 The 2026-09-18 pass for #1590 closed every Wildcat V2 item on that list
-except Etherscan. Chain reads were JSON-RPC `eth_call` and `eth_getCode`
+except Etherscan; the fee-recipient reproduction ran on 2026-09-19. Chain reads were JSON-RPC `eth_call` and `eth_getCode`
 pinned to one finalized block, batched over three public endpoints, with
 `keccak256` over the returned code; the factory's log history was read in
 10,000-block `eth_getLogs` chunks and every log was re-read from its
