@@ -1,0 +1,67 @@
+{
+  ".hexaemeron/step-1-README.md": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 440,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 33,
+      "mean_sentence_length": 13.3,
+      "length_variance": 53.4,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 5,
+      "max_allowed_run": 4,
+      "repeated_openers": {
+        "- implementation": 3
+      }
+    }
+  },
+  ".hexaemeron/step-1-proof.py": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 49,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 4,
+      "mean_sentence_length": 12.2,
+      "length_variance": 3.2,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 3,
+      "max_allowed_run": 4,
+      "repeated_openers": {}
+    }
+  },
+  ".hexaemeron/step-1-tests.py": {
+    "score": 100.0,
+    "defects": 0,
+    "weighted": 0,
+    "per_1000_words": 0.0,
+    "word_count": 11,
+    "by_pass": {},
+    "by_family": {},
+    "hits": [],
+    "signals": [],
+    "cadence": {
+      "sentence_count": 1,
+      "mean_sentence_length": 11,
+      "length_variance": 0.0,
+      "variance_floor": 25.0,
+      "variance_below_floor": false,
+      "longest_similar_run": 1,
+      "max_allowed_run": 4,
+      "repeated_openers": {}
+    }
+  }
+}

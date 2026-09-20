@@ -1,0 +1,26 @@
+{
+  "after": {
+    "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+    "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+  },
+  "argv": [
+    "python3",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-1273-controller-c572009b/plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+    "--study",
+    "docs/protasis-success-criteria/study.md",
+    "--design-evidence",
+    "docs/protasis-success-criteria/design-evidence.json",
+    "--repo-root",
+    "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde"
+  ],
+  "before": {
+    "head": "cc71d04984d8a6ca2c197055aff96e6cf5c7a61b",
+    "index_entries_sha256": "478473717c59b2e1f05437103daba9e0f16cb4c3e448fb46dc07e96629b9c424"
+  },
+  "cwd": "/Users/c0rtexzer0/Documents/ChatGPT/skills-issue-1273/tmp/fiat/fiat-1273-settle-declared-study-criteria-with-recorde",
+  "elapsed_seconds": 0.05728187505155802,
+  "exit": 0,
+  "log": ".hexaemeron/evidence/warden-step-1-round-2/package-repair/design-bridge.log",
+  "log_sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+  "started_at": "2026-09-16T13:41:48.280890+00:00"
+}

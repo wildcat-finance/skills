@@ -76,11 +76,15 @@ head named by its push receipt, or when the native local object graph cannot
 answer that relation. A strict descendant remains eligible and earns fresh
 whole-range evidence when its own merge is receipted. A run branch carrying a
 merge this run did not receipt also refuses; `hexctl status` reports that second
-condition rather than refusing. Neither condition permits an out-of-order
-landing: a skipped step's pull request cannot be retargeted onto a branch its
-head already sits in, and cannot merge into a base it is an ancestor of. If that
-happens, halt with the reason and finish by hand rather than receipting a merge
-the loop did not make.
+condition rather than refusing. The merge the directive itself asked for is not
+that condition: between `gh pr merge` and `done merge-step` the run branch tip
+is a merge whose first parent is the last receipted tip and whose second parent
+is the head the step recorded at push, and `next` then names the pending
+receipt with its exact commit rather than a halt (issue 1614). Neither refusing
+condition permits an out-of-order landing: a skipped step's pull request cannot
+be retargeted onto a branch its head already sits in, and cannot merge into a
+base it is an ancestor of. If that happens, halt with the reason and finish by
+hand rather than receipting a merge the loop did not make.
 
 ## The stacked pull request
 
@@ -276,6 +280,15 @@ stays outside the archive. No state or ledger entry is appended by export.
 [checkpoint-archive.md](checkpoint-archive.md) owns the layout, signatures,
 limits, refusal classes and restore transaction.
 
+When the complete-history bundle exceeds 1 GiB, select
+`checkpoint archive --format directory`. The same boundary directory then
+holds `checkpoint.directory` and its adjacent `.sha256` sidecar. This carrier
+admits a complete bundle up to 256 GiB and binds its members through the exact
+root manifest digest, which is also its `outer_sha256`. See
+[checkpoint-directory.md](checkpoint-directory.md) for capture, storage,
+runtime and restore requirements. Pass the directory path and that digest to
+the same receiver commands below.
+
 Do not upload the checkpoint, publish it to a service, post its digests to an
 issue, commit it, or push it. Transport remains the local filesystem.
 
@@ -359,6 +372,23 @@ timeout, output cap, missing object, or any other status refuses as unknown.
 Both refusals name the branch and exact commits without guessing which external
 operation moved the history. ADR-021 still governs a genuine rewritten stack,
 and importing GitHub's public key remains the wrong repair.
+
+That ancestry check admits a later step's branch merged into a lower one, so a
+second boundary reads what the branch gained. For each unmerged step whose
+observed tip has left its recorded head, the controller enumerates
+`rev-list <recorded>..<tip>` once natively and intersects the result with the
+commits every other step's push receipt owns: that step's `verified_commits`,
+or only its `head_commit` when the receipt predates that list. A step whose
+push receipt records `early_merge` is excluded, because an adoption the run
+already receipted put its commits inside the branch below it. A failed start,
+a timeout, an output cap, a non-zero status or an answer above 500 commits
+refuses as unknown, names the exact `<recorded>..<tip>` pair and claims no
+cause. `done merge-step` intersects that same ownership set with the exact
+repaired range it is about to receipt, before any state or ledger byte moves.
+`status` reports the same observation and refuses nothing, one `CARRY:` line
+per carried or unknown step. A commit cherry-picked into a lower branch
+arrives under a new SHA that no receipt owns, and this boundary does not see
+it.
 
 **When GitHub has not claimed the chain**, the original order stands. For each
 step:
@@ -675,8 +705,9 @@ A merge commit preserves the first; a squash or rebase merge does not, and then
 the merge itself has to carry the name. The `integrate` directive says so before
 the merge, and the receipt refuses afterwards if nothing carries an identity,
 naming the step, the commit and the identity by account or digest prefix. Fiat
-does not read the repository's merge settings and does not require a method: it
-refuses the claim, not the merge.
+does not read the repository's merge settings. Literal-only runs may use any
+method that preserves the required attribution; relation-bearing runs require
+the ordered merge parents specified above.
 
 Wait for required checks, merge without bypassing them, and require GitHub to
 report `verified: true` and `reason: valid` for the merge commit. Then delete

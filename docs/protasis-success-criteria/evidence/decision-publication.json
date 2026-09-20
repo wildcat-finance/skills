@@ -1,0 +1,25 @@
+{
+  "content_parity": "All remaining bytes, the date, study-only acceptance and pending production conformance are unchanged.",
+  "prose_sequence": [
+    "Sapheneia protected inventory",
+    "Imprimatur before Vulgate",
+    "Vulgate exact one-line surface repair",
+    "protected content comparison",
+    "final Imprimatur"
+  ],
+  "published": {
+    "path": "docs/decisions/drafts/settle-study-criteria-from-recorded-execution.md",
+    "sha256": "a6ec5f13bbdba6e96fea4025b5aa80f707d9285b809ccae12e7420a96b1f9c7b"
+  },
+  "reason": "Hypomnema H005 requires the status word immediately before the comma and ISO date.",
+  "replacement": {
+    "after": "Accepted, 2026-09-16, for the #1273 study.",
+    "before": "Accepted for the #1273 study, 2026-09-16.",
+    "occurrences": 1
+  },
+  "schema": "success-criteria-decision-publication/v1",
+  "source": {
+    "path": "docs/protasis-success-criteria/evidence/prepared-decision-draft.md",
+    "sha256": "1fda565419143251605d488b6a022df63bdd802bd3053b7f0238e2c2ed28ccc8"
+  }
+}

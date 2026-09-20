@@ -1,0 +1,36 @@
+test_any_shipped_file_change_requires_a_bump (tests.test_plugin_release.PluginReleaseTests.test_any_shipped_file_change_requires_a_bump) ... ok
+test_bumping_another_plugin_does_not_cover_the_change (tests.test_plugin_release.PluginReleaseTests.test_bumping_another_plugin_does_not_cover_the_change) ... ok
+test_changed_skill_cannot_keep_its_version (tests.test_plugin_release.PluginReleaseTests.test_changed_skill_cannot_keep_its_version) ... ok
+test_codex_marketplace_may_omit_its_optional_version (tests.test_plugin_release.PluginReleaseTests.test_codex_marketplace_may_omit_its_optional_version) ... ok
+test_concurrent_release_cannot_reuse_the_same_version (tests.test_plugin_release.PluginReleaseTests.test_concurrent_release_cannot_reuse_the_same_version) ... ok
+test_deletion_rename_and_mode_changes_require_a_bump (tests.test_plugin_release.PluginReleaseTests.test_deletion_rename_and_mode_changes_require_a_bump) ... ok
+test_duplicate_marketplace_entry_refuses (tests.test_plugin_release.PluginReleaseTests.test_duplicate_marketplace_entry_refuses) ... ok
+test_each_host_surface_must_agree (tests.test_plugin_release.PluginReleaseTests.test_each_host_surface_must_agree) ... ok
+test_invalid_and_duplicate_key_json_refuse (tests.test_plugin_release.PluginReleaseTests.test_invalid_and_duplicate_key_json_refuse) ... ok
+test_invalid_versions_refuse (tests.test_plugin_release.PluginReleaseTests.test_invalid_versions_refuse) ... ok
+test_lower_version_does_not_release_new_content (tests.test_plugin_release.PluginReleaseTests.test_lower_version_does_not_release_new_content) ... ok
+test_missing_base_and_option_shaped_ref_refuse (tests.test_plugin_release.PluginReleaseTests.test_missing_base_and_option_shaped_ref_refuse) ... ok
+test_missing_manifest_or_marketplace_entry_refuses (tests.test_plugin_release.PluginReleaseTests.test_missing_manifest_or_marketplace_entry_refuses) ... ok
+test_new_and_fully_removed_plugins (tests.test_plugin_release.PluginReleaseTests.test_new_and_fully_removed_plugins) ... ok
+test_null_optional_version_refuses (tests.test_plugin_release.PluginReleaseTests.test_null_optional_version_refuses) ... ok
+test_numeric_patch_minor_and_major_increases_pass (tests.test_plugin_release.PluginReleaseTests.test_numeric_patch_minor_and_major_increases_pass) ... ok
+test_root_only_change_needs_no_package_bump (tests.test_plugin_release.PluginReleaseTests.test_root_only_change_needs_no_package_bump) ... ok
+test_staged_tree_is_checked_without_reading_unstaged_files (tests.test_plugin_release.PluginReleaseTests.test_staged_tree_is_checked_without_reading_unstaged_files) ... ok
+test_symlink_cannot_supply_a_manifest (tests.test_plugin_release.PluginReleaseTests.test_symlink_cannot_supply_a_manifest) ... ok
+test_unlisted_plugin_and_stale_removed_listing_refuse (tests.test_plugin_release.PluginReleaseTests.test_unlisted_plugin_and_stale_removed_listing_refuse) ... ok
+test_required_invariants_gate_checks_plugin_release (tests.test_plugin_release.ReleaseWorkflowTests.test_required_invariants_gate_checks_plugin_release) ... ok
+test_a_codex_manifest_exists_wherever_codex_metadata_ships (tests.test_version_propagation.PluginVersionPropagationTests.test_a_codex_manifest_exists_wherever_codex_metadata_ships)
+A plugin shipping a .codex-plugin directory must put a manifest in it. ... ok
+test_ariadne_version_reaches_both_marketplaces (tests.test_version_propagation.PluginVersionPropagationTests.test_ariadne_version_reaches_both_marketplaces) ... ok
+test_every_plugin_states_a_version_in_each_manifest_that_has_one (tests.test_version_propagation.PluginVersionPropagationTests.test_every_plugin_states_a_version_in_each_manifest_that_has_one) ... ok
+test_hexaemeron_version_reaches_both_marketplaces (tests.test_version_propagation.PluginVersionPropagationTests.test_hexaemeron_version_reaches_both_marketplaces) ... ok
+test_promise_machine_delivery_versions_are_exact_and_current (tests.test_version_propagation.PluginVersionPropagationTests.test_promise_machine_delivery_versions_are_exact_and_current) ... ok
+test_sapheneia_version_reaches_both_marketplaces (tests.test_version_propagation.PluginVersionPropagationTests.test_sapheneia_version_reaches_both_marketplaces) ... ok
+test_the_three_manifests_agree (tests.test_version_propagation.PluginVersionPropagationTests.test_the_three_manifests_agree) ... ok
+test_every_governed_skill_declares_a_parseable_current_version (tests.test_version_propagation.SkillVersionPropagationTests.test_every_governed_skill_declares_a_parseable_current_version) ... ok
+test_skill_package_marketplace_coverage_and_portable_versions_are_exact (plugins.hexaemeron.tests.test_phylax_model_proxy.ConformanceTests.test_skill_package_marketplace_coverage_and_portable_versions_are_exact) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 16.069s
+
+OK

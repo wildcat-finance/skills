@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/tabularium/coverage-manifest-v3.json",
+  "title": "Tabularium coverage manifest v3",
+  "description": "The coverage manifest of one schema 3 release. The admitted vocabulary is the closed adapter tuple table: each oneOf branch pins the source and version fields to one adapter module's constants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release",
+    "source",
+    "capture_manifest",
+    "canonical",
+    "coverage",
+    "versions",
+    "known_gaps"
+  ],
+  "properties": {
+    "schema_version": {"const": 3},
+    "release": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "bytes",
+        "evidence_class",
+        "protocol_generation",
+        "source_api",
+        "chain",
+        "scope"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "evidence_class": {
+          "enum": [
+            "native-log",
+            "hosted-rpc-reported-log-scope",
+            "hosted-indexer-reported-query-scope"
+          ]
+        },
+        "protocol_generation": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+        "source_api": {"enum": ["ethereum-json-rpc", "euler-v3"]},
+        "chain": {"const": "ethereum-mainnet"},
+        "scope": {"type": "object"}
+      }
+    },
+    "capture_manifest": {"$ref": "#/$defs/artifact"},
+    "canonical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes", "rows"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "rows": {"type": "integer", "minimum": 0}
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included_events", "unsupported_events"],
+      "properties": {
+        "included_events": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "unsupported_events": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_schema", "adapter", "mapping_rules"],
+      "properties": {
+        "event_schema": {"const": 3},
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version"],
+          "properties": {
+            "name": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
+            "version": {"enum": ["1.0.0", "2.0.0"]}
+          }
+        },
+        "mapping_rules": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "aave-v4.borrow.v2",
+              "aave-v4.repay.v2",
+              "euler-v1.borrow.v1",
+              "euler-v1.liquidation.v1",
+              "euler-v1.repay.v1",
+              "euler-v2.borrow.v1",
+              "euler-v2.debt-socialized.v1",
+              "euler-v2.interest-accrued.v1",
+              "euler-v2.liquidation.v1",
+              "euler-v2.pull-debt.v1",
+              "euler-v2.repay.v1"
+            ]
+          }
+        }
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {"const": "native-log"},
+            "protocol_generation": {"const": "aave-v4"},
+            "source_api": {"const": "ethereum-json-rpc"}
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {"const": "aave-v4"},
+                "version": {"const": "2.0.0"}
+              }
+            },
+            "mapping_rules": {
+              "items": {"enum": ["aave-v4.borrow.v2", "aave-v4.repay.v2"]}
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {"const": "hosted-rpc-reported-log-scope"},
+            "protocol_generation": {"const": "euler-v1"},
+            "source_api": {"const": "ethereum-json-rpc"}
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {"const": "euler-v1"},
+                "version": {"const": "1.0.0"}
+              }
+            },
+            "mapping_rules": {
+              "items": {
+                "enum": [
+                  "euler-v1.borrow.v1",
+                  "euler-v1.liquidation.v1",
+                  "euler-v1.repay.v1"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {"const": "hosted-indexer-reported-query-scope"},
+            "protocol_generation": {"const": "euler-v2"},
+            "source_api": {"const": "euler-v3"}
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {"const": "euler-v2"},
+                "version": {"const": "1.0.0"}
+              }
+            },
+            "mapping_rules": {
+              "items": {
+                "enum": [
+                  "euler-v2.borrow.v1",
+                  "euler-v2.debt-socialized.v1",
+                  "euler-v2.interest-accrued.v1",
+                  "euler-v2.liquidation.v1",
+                  "euler-v2.pull-debt.v1",
+                  "euler-v2.repay.v1"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

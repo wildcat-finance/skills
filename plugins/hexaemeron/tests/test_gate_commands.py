@@ -15,6 +15,16 @@ COMMAND = 'python3 ' + BREVITAS + ' one.md'
 
 
 class GateCommandTests(unittest.TestCase):
+    def test_success_criteria_admission_joins_current_runbook_without_execution(self):
+        result = gates.validate_with_criteria(
+            ROOT,
+            (ROOT / 'docs/protasis-success-criteria/study.md').read_bytes(),
+            (ROOT / 'docs/protasis-success-criteria/runbook.md').read_bytes(),
+        )
+        self.assertEqual(result['schema'], 'protasis-success-criteria-admission/v1')
+        self.assertEqual(len(result['join']['criteria']), 8)
+        self.assertFalse(result['operation_ran'])
+
     def test_report_receipt_relocation_preserves_original_derivation(self):
         runner = 'plugins/hexaemeron/tests/run_tests.py'
         data = ('**Tests.** Elenchus command: `python3 ' + runner +

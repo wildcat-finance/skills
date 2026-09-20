@@ -6,8 +6,7 @@ what the offline verifier establishes, and what it refuses to establish.
 
 The protocol version is `checkpoint-authority/v1` and the signature profile is
 `dsse-p256-sha256-der/v1`. The selected verification model is `ordered-replay`,
-recorded in
-[`docs/decisions/drafts/verify-checkpoint-authority-by-ordered-replay.md`](../decisions/drafts/verify-checkpoint-authority-by-ordered-replay.md).
+recorded in `adr/verify-checkpoint-authority-by-ordered-replay`.
 
 ## What the release contains
 

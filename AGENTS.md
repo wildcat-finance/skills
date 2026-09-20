@@ -37,8 +37,8 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The seventeen plugins form one marketplace, not seventeen competing descriptions
-of the same job. Alexandria preserves lending inputs; Tabularium interprets
+The <!-- front-door:count key="plugins" -->18 plugins form one marketplace, not
+competing descriptions of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
 needs, while Ariadne binds a released artefact digest to its evidence. Berean
@@ -84,7 +84,7 @@ skill.
 
 ## Issue queues
 
-Work arrives from four places and each is told apart by its issue title prefix,
+Work arrives from five places and each is told apart by its issue title prefix,
 so a reader knows which queue a thing came from without opening it.
 
 - `{skill}-next`, labelled `held-job`. A ledger's held frontier job. The system
@@ -101,12 +101,20 @@ so a reader knows which queue a thing came from without opening it.
   number, so a second claim on one number makes the citation ambiguous.
   `issue-check` reads the titles already filed and refuses a duplicate. Nothing
   allocates `N`, so pick the lowest free number and let the check settle it.
+- `kickoff/{skill}-N`, labelled `kickoff` and `held-job` together. A
+  maintainer's kickoff filing for one held frontier job, where `N` is the
+  entry's position in the list it was filed from. It keeps `held-job` because
+  closing one carries the same frontier meaning as a `{skill}-next`; `kickoff`
+  is what tells the two apart on the list, and `init` binds a run against it
+  the same way. Nothing checks `N` for uniqueness here.
 
 `{skill}` is the skill's own governed name rather than its plugin's, so Lemma's
-is `lemma`. The reasoning and the alternatives are in
+is `lemma`. The reasoning and the alternatives for the first four are in
 [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md), which
 left who assigns `N` to #370. That issue closed without answering it, and the
-uniqueness half is now checked rather than assigned.
+uniqueness half is now checked rather than assigned. The fifth queue's
+reasoning is in `docs/decisions/drafts/register-the-kickoff-queue.md`, a
+decision record numberless until the merge that lands it.
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.
 
@@ -195,8 +203,9 @@ message.
    `carryover` block are protected content, so a wording pass may not drop or
    reword them.
 
-The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
-`framework-N`. Keep every queue-specific body rule from the section above.
+The five frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`,
+`kickoff/{skill}-N`, and `framework-N`. Keep every queue-specific body rule from
+the section above.
 The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
 selectors, numbers, dates, links, quotations, severities, verdicts, status, the
@@ -249,6 +258,9 @@ administrators remain outside the component promise. The App login
   running its skill or changing that plugin.
 - Brevitas is under `plugins/brevitas/`. Read `plugins/brevitas/AGENTS.md`
   before running its skill or changing that plugin.
+- Dokimasia is under `plugins/dokimasia/`. Read
+  `plugins/dokimasia/AGENTS.md` before running its skill or changing that
+  plugin.
 - Hermes is under `plugins/hermes/`. Read `plugins/hermes/AGENTS.md` before
   running its skill or changing that plugin.
 - Hexaemeron is under `plugins/hexaemeron/`. Read
@@ -320,6 +332,26 @@ A plan or run refuses when a changed path has no declared owner, a command in
 the map is stale, or the map is malformed; fix `tests/check-map-v1.json` in
 the same change. Hosted CI is unchanged by this entrypoint. The suites below
 are the inventory the map declares, and each remains directly runnable.
+
+### Most of these suites are a local gate only
+
+The map declares what a check is. It does not say anything about what hosted CI
+runs, and for most scopes the answer is nothing. Do not read a scope out of
+`tests/check-map-v1.json` and conclude a pull request will run it.
+
+Hosted CI covers `root` through the `invariants` job in `.github/workflows/repo.yml`,
+`dead-code`, and the `janus`, `lazarus`, `pandects` and `synkrisis` plugin suites
+through their own path-filtered workflows, plus the Hexaemeron harness tests
+through `hexaemeron-forge.yml`. Everything else, about 7,000 test methods across
+thirteen plugin suites and most of Hexaemeron, runs only where a contributor runs
+it. `invariants` is the one context the branch protection on `main` requires.
+
+So run `python3 scripts/run_checks.py` before you push. A green pull request is
+not evidence that a plugin suite passed, and a suite can go red on `main` without
+any check reporting it.
+
+The aggregate gate that used to shard every scope was removed; see the decision
+record beside this one for why, and open an issue rather than restoring it.
 
 Every `python3` command below means the exact interpreter recorded in
 [`.python-version`](.python-version). The supported minor is declared in

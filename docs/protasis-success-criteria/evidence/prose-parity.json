@@ -1,0 +1,42 @@
+{
+  "completeness_specification": "Brevitas structural budgets do not apply to the study or decision specification.",
+  "files": [
+    {
+      "code_spans_links_numbers_headings_fences_equal": true,
+      "file": "study.md",
+      "final_sha256": "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92",
+      "meaning_review": "The surface pass preserves claims, caveats, unknowns, statuses, identifiers, commitments and evidence boundaries.",
+      "source_sha256": "ad4776886a15c3bc382035585fd06517bfea17ac3ca2dfc765be9ab735dda433"
+    },
+    {
+      "code_spans_links_numbers_headings_fences_equal": true,
+      "file": "decision-draft.md",
+      "final_sha256": "1fda565419143251605d488b6a022df63bdd802bd3053b7f0238e2c2ed28ccc8",
+      "meaning_review": "The surface pass preserves claims, caveats, unknowns, statuses, identifiers, commitments and evidence boundaries.",
+      "source_sha256": "1fda565419143251605d488b6a022df63bdd802bd3053b7f0238e2c2ed28ccc8"
+    },
+    {
+      "code_spans_links_numbers_headings_fences_equal": true,
+      "file": "study-step-topology.md",
+      "final_sha256": "79a750defca70624345311ddf62df55f7f69ac8100c45d9442c9453c9eefa4a9",
+      "meaning_review": "The surface pass preserves claims, caveats, unknowns, statuses, identifiers, commitments and evidence boundaries.",
+      "source_sha256": "79a750defca70624345311ddf62df55f7f69ac8100c45d9442c9453c9eefa4a9"
+    }
+  ],
+  "final_diagnostic_record": "evidence/imprimatur-final.json",
+  "reviewed_changes": [
+    "Initial eight range dashes were expanded to the word to without changing endpoints.",
+    "Surface wording was shortened without changing the evidence boundary.",
+    "Parent review added stable decision selector and pre-merge integration admission; these are in the final shaped source before its diagnostic/Vulgate pass.",
+    "Published report copies are explicitly distinguished from active controller reports."
+  ],
+  "schema": "study-prose-review/v1",
+  "sequence": [
+    "protected structure and evidence inventory frozen",
+    "Sapheneia durable record shape",
+    "Imprimatur cleared",
+    "Vulgate surface review",
+    "protected-content comparison",
+    "Imprimatur cleared on exact final bytes"
+  ]
+}

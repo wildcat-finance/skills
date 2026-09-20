@@ -1,0 +1,21 @@
+{
+  "score": 100.0,
+  "defects": 0,
+  "weighted": 0,
+  "per_1000_words": 0.0,
+  "word_count": 664,
+  "by_pass": {},
+  "by_family": {},
+  "hits": [],
+  "signals": [],
+  "cadence": {
+    "sentence_count": 49,
+    "mean_sentence_length": 13.6,
+    "length_variance": 53.7,
+    "variance_floor": 25.0,
+    "variance_below_floor": false,
+    "longest_similar_run": 8,
+    "max_allowed_run": 4,
+    "repeated_openers": {}
+  }
+}

@@ -567,6 +567,7 @@ class PublicSetAgainstItsCardsTests(unittest.TestCase):
     """Each card names a record the public set actually reproduces."""
 
     def test_every_card_binds_a_record_the_public_set_reproduces(self):
+        from tests.fixture_python import pinned_python_path
         from tests.test_demonstrations import absent_dependencies
 
         records = demonstrations.load_records(ROOT)
@@ -579,7 +580,7 @@ class PublicSetAgainstItsCardsTests(unittest.TestCase):
         work = Path(tempfile.mkdtemp(prefix="joined-public-set-")).resolve()
         self.addCleanup(shutil.rmtree, work, ignore_errors=True)
         output = io.StringIO()
-        with redirect_stdout(output):
+        with pinned_python_path(), redirect_stdout(output):
             code, payload = demonstrations.run_demonstrations(
                 ROOT, selected, report=str(work / "public-set.json"),
                 output_root=work, repeat=1,

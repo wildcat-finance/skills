@@ -510,7 +510,14 @@ elif (
 elif args and args[0] == "rev-list":
     pair = next(value for value in args if ".." in value)
     base, head = pair.split("..", 1)
-    if mode == "malformed-range":
+    # A range named in FAKE_GIT_REV_LIST (JSON, keyed by the exact
+    # "<base>..<head>" operand) answers with exactly the listed lines; every
+    # other pair keeps the mode-keyed answers below.
+    ranges = json.loads(os.environ.get("FAKE_GIT_REV_LIST", "{{}}"))
+    if pair in ranges:
+        for line in ranges[pair]:
+            print(line)
+    elif mode == "malformed-range":
         print("not-a-sha")
     elif mode == "intermediate":
         print(hashlib.sha1(b"middle").hexdigest())
@@ -758,10 +765,14 @@ elif mode == "attribution-second-coauthor":
         "Co-authored-by: Kethcode <kethcode@example.invalid>\\n"
         "Wildcat-Origin: shoggoth"
     )
+# The same parent table the fake git's `show --format=%P` reads, so a fixture
+# that lands a merge describes it once for both transports.
+fake_parents = json.loads(os.environ.get("FAKE_GIT_PARENTS", "{}"))
 payload = {
     "sha": None if mode == "missing-sha" else sha,
     "author": account,
     "committer": committer_account,
+    "parents": [{"sha": parent} for parent in fake_parents.get(sha, [])],
     "commit": {
         "author": identity,
         "committer": committer_identity,

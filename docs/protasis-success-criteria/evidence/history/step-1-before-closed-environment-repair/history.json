@@ -1,0 +1,276 @@
+{
+  "candidate": "84859f22bf3f1d446f6c8c93310757f40b9b42f0",
+  "files": [
+    {
+      "bytes": 14458,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/controller-capture-design-home.evidence.json",
+      "sha256": "8ada3e0c1093827c4a8fee7743b37bb87953456a97d850140f4eea0aed7371ec",
+      "source": ".hexaemeron/reports/controller-capture-design-home.evidence.json"
+    },
+    {
+      "bytes": 346,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/controller-capture-design-home.json",
+      "sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+      "source": ".hexaemeron/reports/controller-capture-design-home.json"
+    },
+    {
+      "bytes": 3231,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/evaluation-run.json",
+      "sha256": "1273422fd38fdc7e35793271ab88f0438f40c2b55d290189c79858d5defa2c53",
+      "source": "docs/promise-machine/obligation-gates/evaluation-run.json"
+    },
+    {
+      "bytes": 29070,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/integration-projection.json",
+      "sha256": "481da4c180ee3c9ce7cd3ba1598cd9a44c37a33f2d322048f544fd7e402e866e",
+      "source": "docs/promise-machine/obligation-gates/integration-projection.json"
+    },
+    {
+      "bytes": 14254,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/integration-projection.md.txt",
+      "sha256": "54464bb14c904a16b798bc4df4c726a42d274f02917e1f83b5e483b3801eb870",
+      "source": "docs/promise-machine/obligation-gates/integration-projection.md"
+    },
+    {
+      "bytes": 1143,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/copy-manifest.json",
+      "sha256": "8c7b35d959a77689ebbdec353ec6fda89776b309a5eb120e5cbd349c3a37f5cf",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/copy-manifest.json"
+    },
+    {
+      "bytes": 1948,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/observations-actual.json",
+      "sha256": "121bb5507eb7237db8cae9f8775fcd43cfec2c56799809b084b13261a0059854",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/observations-actual.json"
+    },
+    {
+      "bytes": 1696,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/observations.json",
+      "sha256": "027d0e8c6652c7951d5ff4ff09f559c15d799830e187fa79727923f0aca4846a",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/observations.json"
+    },
+    {
+      "bytes": 6448,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python-actual.json",
+      "sha256": "d7841825c216f80ec90b4e47845605d8d78422a8408625d1f7634e642f2f06af",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/pinned-child-python-actual.json"
+    },
+    {
+      "bytes": 966,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python-actual.log",
+      "sha256": "d9e960474c715e044989c1e9aca3df9e294aa953741086379e61d4a1d6424b1f",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/pinned-child-python-actual.log"
+    },
+    {
+      "bytes": 358,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/pinned-child-python.log",
+      "sha256": "3030c59019f4533fb52ac01be8f974b075a405062eed7f1088d192f1f2045c51",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/pinned-child-python.log"
+    },
+    {
+      "bytes": 5248,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted-actual.json",
+      "sha256": "2afa350d47d0159f4688f5c3fedc94a0e61de122a41e2498ac8f2b14c94350b9",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/restricted-actual.json"
+    },
+    {
+      "bytes": 1109,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted-actual.log",
+      "sha256": "7204a2dcb5db818045a541a9f771855307ec340c52eebdf5dc4a4cbdb8517fbe",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/restricted-actual.log"
+    },
+    {
+      "bytes": 340,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/lazarus-probe/restricted.log",
+      "sha256": "be9f92e20d728ab702260cd0003d72dce72c43060de87edec66b7829200044dc",
+      "source": ".hexaemeron/evidence/step-1-closed-env-lazarus-probe/restricted.log"
+    },
+    {
+      "bytes": 12573,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/proof.py.txt",
+      "sha256": "6f2287c53e34cc7df4d1aa4185e4b82f0bf78b1c8766fa6bddc9496e094c2b45",
+      "source": "docs/protasis-success-criteria/proof.py"
+    },
+    {
+      "bytes": 31572,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/provenance.json",
+      "sha256": "3f39088f7cdbb567f062f44bc4cec3a32c629a289dbbc823203f05b45e18c631",
+      "source": "docs/protasis-success-criteria/evidence/provenance.json"
+    },
+    {
+      "bytes": 32289,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/runbook.md.txt",
+      "sha256": "0b4534a3903f2d3e093e7b059c429b9e3afd64f5ea0d599e487c40e1fa1fa787",
+      "source": "docs/protasis-success-criteria/runbook.md"
+    },
+    {
+      "bytes": 437,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-bridge-4.json",
+      "sha256": "ae37f1f2f7c5d3ae9fc6329efb69666f091b77987a5df8d2f721d836ba93960c",
+      "source": ".hexaemeron/evidence/step-1-bridge-4.json"
+    },
+    {
+      "bytes": 6,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-bridge-4.log",
+      "sha256": "2e22da2ab13713309ac75219e525b8e06ed02f3f1963b8feef203fa25827f93d",
+      "source": ".hexaemeron/evidence/step-1-bridge-4.log"
+    },
+    {
+      "bytes": 466,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-checked-runner-result.json",
+      "sha256": "1bb90fb5163aef77170ce6e47fc13a38b035308fafa88f6372ccf0ddcd13b09c",
+      "source": ".hexaemeron/evidence/step-1-checked-runner-result.json"
+    },
+    {
+      "bytes": 2202,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-checked-runner.log",
+      "sha256": "5d0e3f8dce2b51d3d64f20b24da65a7803dba6f369d80015dfb187a76606bbce",
+      "source": ".hexaemeron/evidence/step-1-checked-runner.log"
+    },
+    {
+      "bytes": 247164,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-checked.json",
+      "sha256": "026ace5f66f1b43eff9a414d40795a27f58779dd3ee863f91f9d336ed1f309ba",
+      "source": ".hexaemeron/reports/step-1-checked.json"
+    },
+    {
+      "bytes": 6431,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-declared.log",
+      "sha256": "39de847ba23ef99cb61eff79357780308e86df72140eee19a0c6300f99e1a014",
+      "source": ".hexaemeron/evidence/step-1-child-interpreter-declared.log"
+    },
+    {
+      "bytes": 676,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-pinned.log",
+      "sha256": "9bd85e8158f146e6f2f93221e81e40d857240df1c6f8c8b7d2ee31926eee3694",
+      "source": ".hexaemeron/evidence/step-1-child-interpreter-pinned.log"
+    },
+    {
+      "bytes": 1792,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-probe.json",
+      "sha256": "d09636fcfcd1f5f3447bdd624b9aac7df3d5eae71e7e5848139d82eacbd9cc2f",
+      "source": ".hexaemeron/evidence/step-1-child-interpreter-probe.json"
+    },
+    {
+      "bytes": 1641,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-child-interpreter-probe.py.txt",
+      "sha256": "cf9c80b1c1eb2342f1b14afadaf9b0578e93cf1b88623889ce75c7f65307c148",
+      "source": ".hexaemeron/evidence/step-1-child-interpreter-probe.py"
+    },
+    {
+      "bytes": 30235,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-failure-extract.json",
+      "sha256": "aabf63fb7adef8b62354cdbad16e4af30f0c5aa26d4ff4b00661951652e75869",
+      "source": ".hexaemeron/evidence/step-1-closed-env-hex-failure-extract.json"
+    },
+    {
+      "bytes": 716,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.json",
+      "sha256": "035b1f5e5a65c443a44c6289d2e1ed7c097a5b41c5e9f4bc8ce80c65332a3d17",
+      "source": ".hexaemeron/evidence/step-1-closed-env-hex-reproduction.json"
+    },
+    {
+      "bytes": 438592,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.log",
+      "sha256": "827652ce025e9aebaf24bfcd42532483e40dcfb93df093a38fc7efc34b04c256",
+      "source": ".hexaemeron/evidence/step-1-closed-env-hex-reproduction.log"
+    },
+    {
+      "bytes": 16637,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-narrow-probes-2.json",
+      "sha256": "4e075628828fda2de90e5d2380e24ed08913a698ed19bace6c95154b4153bf13",
+      "source": ".hexaemeron/evidence/step-1-closed-env-narrow-probes-2.json"
+    },
+    {
+      "bytes": 16372,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-failure-extract.json",
+      "sha256": "a38c3192963fb3e294e723e0aba3072862def0a2dcf677a0e20682f73037ca3a",
+      "source": ".hexaemeron/evidence/step-1-closed-env-root-failure-extract.json"
+    },
+    {
+      "bytes": 868,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-reproduction.json",
+      "sha256": "756258aa79f8f6c6bbb1d835563161965285ef9e636ed287310fd16842d2aa55",
+      "source": ".hexaemeron/evidence/step-1-closed-env-root-reproduction.json"
+    },
+    {
+      "bytes": 26563,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-root-reproduction.log",
+      "sha256": "cc13780efcf40015edfed2b9490350c7dc861b5f71bd7a1556540ed704d8fb07",
+      "source": ".hexaemeron/evidence/step-1-closed-env-root-reproduction.log"
+    },
+    {
+      "bytes": 1041,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-done-implement-result.json",
+      "sha256": "5d6a98cfb3af96576e822483c59358b41da57898802a6c289d3dd3432b0e273e",
+      "source": ".hexaemeron/evidence/step-1-done-implement-result.json"
+    },
+    {
+      "bytes": 83,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-done-implement.log",
+      "sha256": "60ed3a4b8ca79761ddb9454720b367f2fa9caffc6e17ea095829a1f48911e8e8",
+      "source": ".hexaemeron/evidence/step-1-done-implement.log"
+    },
+    {
+      "bytes": 3028,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-evaluation-projection-applied.json",
+      "sha256": "50fe3dabee2e499d6572da80a5051f0e608c2db61b105907fe5463a331276b67",
+      "source": ".hexaemeron/evidence/step-1-evaluation-projection-applied.json"
+    },
+    {
+      "bytes": 162,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-exit.json",
+      "sha256": "38424499d08101782b9e4ecfa51bda1b0c1a49618aa4b94c9cc01d1df48eb426",
+      "source": ".hexaemeron/reports/step-1-exit.json"
+    },
+    {
+      "bytes": 336,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-greenlight-3-result.json",
+      "sha256": "c6003cc415247082bb05ca984587beb2e37718e3e73161b9f69bf8d854b62f17",
+      "source": ".hexaemeron/evidence/step-1-greenlight-3-result.json"
+    },
+    {
+      "bytes": 6780,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-greenlight-3.log",
+      "sha256": "970df2629c670370d82685b642654b3cd279794b5ef4cb0937e1ed6abd77e6f1",
+      "source": ".hexaemeron/evidence/step-1-greenlight-3.log"
+    },
+    {
+      "bytes": 461,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3-result.json",
+      "sha256": "828d11050c1746993ad0bb05895a9fe02523fdf19074cd55a410833e417d5a50",
+      "source": ".hexaemeron/evidence/step-1-hex-exit-3-result.json"
+    },
+    {
+      "bytes": 379168,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3.log",
+      "sha256": "18508cf5fee8cdfb949545282ded09c1a996fedc4c891ab6e7c8a7054977a94d",
+      "source": ".hexaemeron/evidence/step-1-hex-exit-3.log"
+    },
+    {
+      "bytes": 423,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-commit.json",
+      "sha256": "dde9e18c1557b66bfeb40bf159a27bb6f184097521923dd15d211177e6b4f2d1",
+      "source": ".hexaemeron/evidence/step-1-implementation-commit.json"
+    },
+    {
+      "bytes": 11993,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-commit.log",
+      "sha256": "5865acfab207d456d016cff8dc612d68222de70316d3ace4b460f8a4fcfe4305",
+      "source": ".hexaemeron/evidence/step-1-implementation-commit.log"
+    },
+    {
+      "bytes": 581,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-implementation-signature.log",
+      "sha256": "c32c1ccf0e009067c76720f14daac4d53ad29f21dab07c6a5cfb2697e7f26b80",
+      "source": ".hexaemeron/evidence/step-1-implementation-signature.log"
+    },
+    {
+      "bytes": 4581,
+      "path": ".hexaemeron/evidence/history/step-1-before-closed-environment-repair/step-1-source-boundary-3.json",
+      "sha256": "351f7e187c11a7e3af8967c8404741da86a2d6ab0b35a85dc6e20b2e5cfd1f95",
+      "source": ".hexaemeron/evidence/step-1-source-boundary-3.json"
+    }
+  ],
+  "schema": "success-criteria-evidence-history/v1"
+}

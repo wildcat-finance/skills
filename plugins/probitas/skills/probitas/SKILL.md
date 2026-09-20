@@ -10,7 +10,7 @@ description: >
   about a single market's own numbers, and never to work out which individual
   controls an address.
 metadata:
-  version: "1.4.0"
+  version: "1.5.0"
 ---
 
 <p align="center">
@@ -125,7 +125,7 @@ Alexandria releases behind it. A venue some route answered for is not reported
 as a gap because another route had nothing to say about it; a route that failed
 still leaves one.
 
-The archive route keeps Goldfinch and Clearpool as venue IDs and records
+The archive route keeps Aave v4 and Clearpool as venue IDs and records
 Alexandria's release, component, capture, row and evidence identities. It
 combines per-chain coverage conservatively and leaves every unharvested
 registry venue visible as a gap. A zero-row venue is empty only when complete

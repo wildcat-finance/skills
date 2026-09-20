@@ -1,0 +1,200 @@
+{
+  "operation_ran": false,
+  "interface_checks": [
+    {
+      "command": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-1-exit.json",
+      "sha256": "963716cf32cca696c5833a5bbd622c34533df129ab4553a72ac95be9a54ea0a9",
+      "report": null,
+      "invocations": [
+        {
+          "argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-1-exit.json"
+          ],
+          "execution_argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-1-exit.json"
+          ],
+          "cli": {
+            "path": "plugins/hexaemeron/tests/run_tests.py",
+            "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b",
+            "declarations_sha256": "5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66"
+          },
+          "result": "interface-valid"
+        }
+      ]
+    },
+    {
+      "command": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-2-exit.json",
+      "sha256": "932dcce2c3ca872b7b9ed48d28025fdf705ca27c7a3c854d4c0415d7c5097e88",
+      "report": null,
+      "invocations": [
+        {
+          "argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-2-exit.json"
+          ],
+          "execution_argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-2-exit.json"
+          ],
+          "cli": {
+            "path": "plugins/hexaemeron/tests/run_tests.py",
+            "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b",
+            "declarations_sha256": "5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66"
+          },
+          "result": "interface-valid"
+        }
+      ]
+    },
+    {
+      "command": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-3-exit.json",
+      "sha256": "939d0f74a2f9a5159c06daf699b1f59c90568df27e7859b3fddb1dfd3b4173c4",
+      "report": null,
+      "invocations": [
+        {
+          "argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-3-exit.json"
+          ],
+          "execution_argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-3-exit.json"
+          ],
+          "cli": {
+            "path": "plugins/hexaemeron/tests/run_tests.py",
+            "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b",
+            "declarations_sha256": "5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66"
+          },
+          "result": "interface-valid"
+        }
+      ]
+    },
+    {
+      "command": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-4-exit.json",
+      "sha256": "c2b82a4a77ed2fbdf9cc849cdce4e413bdc3f85086f3a9b0ab038d36c31aaf71",
+      "report": null,
+      "invocations": [
+        {
+          "argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-4-exit.json"
+          ],
+          "execution_argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-4-exit.json"
+          ],
+          "cli": {
+            "path": "plugins/hexaemeron/tests/run_tests.py",
+            "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b",
+            "declarations_sha256": "5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66"
+          },
+          "result": "interface-valid"
+        }
+      ]
+    },
+    {
+      "command": "python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-5-exit.json",
+      "sha256": "9b53b950b7b2306b731bc338ebadc2e01a2f6fb1ae000e334b66c94734983500",
+      "report": null,
+      "invocations": [
+        {
+          "argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-5-exit.json"
+          ],
+          "execution_argv": [
+            "python3",
+            "plugins/hexaemeron/tests/run_tests.py",
+            "--jobs",
+            "12",
+            "--elenchus-report",
+            ".hexaemeron/reports/step-5-exit.json"
+          ],
+          "cli": {
+            "path": "plugins/hexaemeron/tests/run_tests.py",
+            "sha256": "ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b",
+            "declarations_sha256": "5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66"
+          },
+          "result": "interface-valid"
+        }
+      ]
+    },
+    {
+      "command": "python3 scripts/run_checks.py --scope hexaemeron --jobs 26 --report .hexaemeron/reports/step-1-checked.json",
+      "sha256": "4f9c153e07c334dab55708a2f6149deda3440b731ee61a18716021fa881dc3b5",
+      "report": null,
+      "invocations": [
+        {
+          "argv": [
+            "python3",
+            "scripts/run_checks.py",
+            "--scope",
+            "hexaemeron",
+            "--jobs",
+            "26",
+            "--report",
+            ".hexaemeron/reports/step-1-checked.json"
+          ],
+          "execution_argv": [
+            "python3",
+            "scripts/run_checks.py",
+            "--scope",
+            "hexaemeron",
+            "--jobs",
+            "26",
+            "--report",
+            ".hexaemeron/reports/step-1-checked.json"
+          ],
+          "cli": {
+            "path": "scripts/run_checks.py",
+            "sha256": "c6a789bf4dff9f53eb3adba4a3ed62f7e3cba7e1a79d32f69f00a5a16f27c1e0",
+            "declarations_sha256": "414ad0855770454eeb38abb3ef745c7af6f96d339ddd90bc01cc98b50288d3a9"
+          },
+          "result": "interface-valid"
+        }
+      ]
+    }
+  ],
+  "prototype_comment_preserves_interface": true,
+  "prototype_comment_replay_refusal": "gate-receipt-drift",
+  "prototype_module_change_refusal": "unregistered-cli-module-bindings",
+  "adapter_sha256": "eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279",
+  "command": "read-only gate interface and isolated source-drift specimens"
+}

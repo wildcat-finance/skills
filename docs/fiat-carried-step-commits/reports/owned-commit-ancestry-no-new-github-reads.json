@@ -1,0 +1,1 @@
+{"candidate": "owned-commit-ancestry", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate owned-commit-ancestry --criterion no-new-github-reads --out .hexaemeron/design/reports/owned-commit-ancestry-no-new-github-reads.json", "criterion": "no-new-github-reads", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

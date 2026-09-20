@@ -1,0 +1,9 @@
+{
+  "candidate": "controller-capture",
+  "command": "python3 selection_probe.py --candidate controller-capture --criterion descriptor-mismatch-refused --report reports/controller-capture-descriptor-mismatch-refused.json",
+  "criterion": "descriptor-mismatch-refused",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

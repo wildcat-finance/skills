@@ -1,0 +1,219 @@
+{
+  "schema": "wildcat.kickoff-command-results.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1485",
+  "run_on": "2026-09-17",
+  "checks": [
+    {
+      "id": "topic0-matches-declared-signature",
+      "question": "does every changed emitter's hard-coded topic0 equal keccak256 of the signature declared for it?",
+      "command": "cast keccak '<event signature>'",
+      "tool": "cast Version: 1.7.1",
+      "compared_against": "the literal in the log1/log2/log3/log4 call at the named site",
+      "cases": 22,
+      "mismatches": 0,
+      "result": "all match",
+      "boundary": "establishes that the assembly emitters agree with their declarations at each commit. It does not establish that either surface is correct or complete.",
+      "rows": [
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "MaxTotalSupplyUpdated(uint256)",
+          "source_literal": "0xf2672935fc79f5237559e2e2999dbe743bf65430894ac2b37666890e7c69e1af",
+          "site": "src/libraries/MarketEvents.sol:31",
+          "cast_keccak": "0xf2672935fc79f5237559e2e2999dbe743bf65430894ac2b37666890e7c69e1af",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "ProtocolFeeBipsUpdated(uint256)",
+          "source_literal": "0x4b34705283cdb9398d0e50b216b8fb424c6d4def5db9bfadc661ee3adc6076ee",
+          "site": "src/libraries/MarketEvents.sol:38",
+          "cast_keccak": "0x4b34705283cdb9398d0e50b216b8fb424c6d4def5db9bfadc661ee3adc6076ee",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "AnnualInterestBipsUpdated(uint256)",
+          "source_literal": "0xff7b6c8be373823323d3c5d99f5d027dd409dce5db54eae511bbdd5546b75037",
+          "site": "src/libraries/MarketEvents.sol:45",
+          "cast_keccak": "0xff7b6c8be373823323d3c5d99f5d027dd409dce5db54eae511bbdd5546b75037",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "ReserveRatioBipsUpdated(uint256)",
+          "source_literal": "0x72877a153052500f5edbb2f9da96a0f45d671d4b4555fdf8628a709dc4eab43a",
+          "site": "src/libraries/MarketEvents.sol:52",
+          "cast_keccak": "0x72877a153052500f5edbb2f9da96a0f45d671d4b4555fdf8628a709dc4eab43a",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "SanctionedAccountAssetsSentToEscrow(address,address,uint256)",
+          "source_literal": "0x571e706c2f09ae0632313e5f3ae89fffdedfc370a2ea59a07fb0d8091147645b",
+          "site": "src/libraries/MarketEvents.sol:59",
+          "cast_keccak": "0x571e706c2f09ae0632313e5f3ae89fffdedfc370a2ea59a07fb0d8091147645b",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "Deposit(address,uint256,uint256)",
+          "source_literal": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+          "site": "src/libraries/MarketEvents.sol:83",
+          "cast_keccak": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "Borrow(uint256)",
+          "source_literal": "0xb848ae6b1253b6cb77e81464128ce8bd94d3d524fea54e801e0da869784dca33",
+          "site": "src/libraries/MarketEvents.sol:91",
+          "cast_keccak": "0xb848ae6b1253b6cb77e81464128ce8bd94d3d524fea54e801e0da869784dca33",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "DebtRepaid(address,uint256)",
+          "source_literal": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+          "site": "src/libraries/MarketEvents.sol:98",
+          "cast_keccak": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "MarketClosed(uint256)",
+          "source_literal": "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155",
+          "site": "src/libraries/MarketEvents.sol:105",
+          "cast_keccak": "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155",
+          "result": "match"
+        },
+        {
+          "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+          "signature": "FeesCollected(uint256)",
+          "source_literal": "0x860c0aa5520013080c2f65981705fcdea474d9f7c3daf954656ed5e65d692d1f",
+          "site": "src/libraries/MarketEvents.sol:112",
+          "cast_keccak": "0x860c0aa5520013080c2f65981705fcdea474d9f7c3daf954656ed5e65d692d1f",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "MaxTotalSupplyUpdated(address,uint256,uint256)",
+          "source_literal": "0xd017ca3aaecec8f5f194aa734b4f62d6a43d6a273268b625de051c3b692a2c6e",
+          "site": "src/libraries/MarketEvents.sol:31",
+          "cast_keccak": "0xd017ca3aaecec8f5f194aa734b4f62d6a43d6a273268b625de051c3b692a2c6e",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "ProtocolFeeBipsUpdated(address,uint256,uint256)",
+          "source_literal": "0x54f104211bc2c1b4b49e83767e54234a36150ee5cbf00a5516a19e7a5026c509",
+          "site": "src/libraries/MarketEvents.sol:48",
+          "cast_keccak": "0x54f104211bc2c1b4b49e83767e54234a36150ee5cbf00a5516a19e7a5026c509",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "AnnualInterestAndReserveRatioBipsUpdated(address,uint256,uint256,uint256,uint256)",
+          "source_literal": "0xe829464a47e4f00b1c8c879651d6d9f8238513fdd4721d8f8a0a93531a939e80",
+          "site": "src/libraries/MarketEvents.sol:65",
+          "cast_keccak": "0xe829464a47e4f00b1c8c879651d6d9f8238513fdd4721d8f8a0a93531a939e80",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "Deposit(address,uint256,uint256)",
+          "source_literal": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+          "site": "src/libraries/MarketEvents.sol:103",
+          "cast_keccak": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "Borrow(address,uint256)",
+          "source_literal": "0xcbc04eca7e9da35cb1393a6135a199ca52e450d5e9251cbd99f7847d33a36750",
+          "site": "src/libraries/MarketEvents.sol:111",
+          "cast_keccak": "0xcbc04eca7e9da35cb1393a6135a199ca52e450d5e9251cbd99f7847d33a36750",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "DebtRepaid(address,uint256)",
+          "source_literal": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+          "site": "src/libraries/MarketEvents.sol:118",
+          "cast_keccak": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "DrawnAmountUpdated(uint256,uint256)",
+          "source_literal": "0x2ce2176519c2ba0775d24b5f484690a4c3cf808f45a5a9094bf065d9ad59c0f9",
+          "site": "src/libraries/MarketEvents.sol:125",
+          "cast_keccak": "0x2ce2176519c2ba0775d24b5f484690a4c3cf808f45a5a9094bf065d9ad59c0f9",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "MarketClosed(address,uint256)",
+          "source_literal": "0xcd125386a57ad5c51057dd568605a0a6854d06095d7d414e8ac65bcbf288e4eb",
+          "site": "src/libraries/MarketEvents.sol:133",
+          "cast_keccak": "0xcd125386a57ad5c51057dd568605a0a6854d06095d7d414e8ac65bcbf288e4eb",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "FeesCollected(address,address,uint256)",
+          "source_literal": "0x9bcb6d1f38f6800906185471a11ede9a8e16200853225aa62558db6076490f2d",
+          "site": "src/libraries/MarketEvents.sol:140",
+          "cast_keccak": "0x9bcb6d1f38f6800906185471a11ede9a8e16200853225aa62558db6076490f2d",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "BorrowerTransferRequested(address,address,address,address,address,address)",
+          "source_literal": "0x52a27a931945087c237eb781de9ec1bd1328a944b2ce031b914ed4ac5ce2ae47",
+          "site": "src/libraries/MarketEvents.sol:191",
+          "cast_keccak": "0x52a27a931945087c237eb781de9ec1bd1328a944b2ce031b914ed4ac5ce2ae47",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "BorrowerTransferCancelled(address,address,address,address)",
+          "source_literal": "0x845fafbf05c3dba243e654ea4d739f09ec145e9d8c0d24cc8859eedcbd121889",
+          "site": "src/libraries/MarketEvents.sol:225",
+          "cast_keccak": "0x845fafbf05c3dba243e654ea4d739f09ec145e9d8c0d24cc8859eedcbd121889",
+          "result": "match"
+        },
+        {
+          "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+          "signature": "BorrowerTransferred(address,address,address,address)",
+          "source_literal": "0x933b680a96769adaa385bb12d51347d449bd0e14defe462185eb094f62bc6628",
+          "site": "src/libraries/MarketEvents.sol:247",
+          "cast_keccak": "0x933b680a96769adaa385bb12d51347d449bd0e14defe462185eb094f62bc6628",
+          "result": "match"
+        }
+      ],
+      "scope": "the assembly emitters in src/libraries/MarketEvents.sol. WrapperRegistered uses an ordinary Solidity emit and carries no literal, so it is outside these cases.",
+      "site_convention": "each site names the function emit_X( header; the literal sits in the logN call inside that function."
+    },
+    {
+      "id": "fiat-routing",
+      "question": "does this issue need a Fiat run?",
+      "command": "python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py --dir . init --task-issue https://github.com/wildcat-finance/skills/issues/1485 --topic '<topic>' --base main",
+      "result": "exit 0; directive do=pull-request, fiat_required=0; no run state, worktree or branch created",
+      "boundary": "reads the issue's filed Fiat-Required line. It does not judge whether that filing was right."
+    },
+    {
+      "id": "candidate-selection",
+      "question": "which refs carry the revision, and how do they relate?",
+      "command": "for every branch head: gh api repos/wildcat-finance/v2-protocol/contents/src/interfaces/IMarketEventsAndErrors.sol?ref=<sha> | grep 'event Borrow(address indexed borrower'; then gh api repos/wildcat-finance/v2-protocol/compare/<base>...<head>",
+      "result": "seven of the twenty branch heads carry the revision. release/v2.5 at bea503c2 was selected. deploy/sepolia-v2.5.4 at 1263de7e has the latest tip, 2026-09-07, and is a 2-commit descendant that adds no Solidity, so the selected commit is the newest carrier contributing Solidity of its own. Of the remaining five carriers, one is an ancestor of it and four have diverged, each both ahead of and behind it by the counts recorded in sources.json.",
+      "boundary": "a branch carrying the revision is not evidence that it ships. The decision record supplies that."
+    },
+    {
+      "id": "testnet-source-pin",
+      "question": "does a deployment pin the selected commit?",
+      "command": "gh api repos/wildcat-finance/v2-protocol/contents/deployments/sepolia/source-v2-5-4.txt?ref=1263de7ef41ba7f3b4ca2aa6d614640ad31113ef",
+      "result": "contract_source_commit=bea503c2736d47de7fd34130c64f10783dc35b39, solc 0.8.25, cancun, optimizer_runs 44, via_ir true",
+      "boundary": "Sepolia, chain 11155111. Not an Ethereum mainnet deployment."
+    }
+  ]
+}

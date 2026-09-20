@@ -41,7 +41,8 @@ SOURCE_PATHS = (
 )
 TOOLCHAIN_PATHS = (
     ".python-version",
-    ".github/workflows/plugins.yml",
+    # The aggregate hosted workflow was removed; local execution follows this map.
+    "tests/check-map-v1.json",
 )
 CORPUS_ROOT = "plugins/hexaemeron/skills/fiat/checkpoint-authority/"
 PUBLIC_SPECIMENS = (

@@ -1,0 +1,148 @@
+{
+  "all_inputs_unchanged": true,
+  "evidence_sha256": "c61156687a6bbab38b5d6910a9c3ade2a83608e825f4d249a2b1cbb04c48aa7d",
+  "inputs": [
+    {
+      "bytes": 7,
+      "path": ".python-version",
+      "sha256": "3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab"
+    },
+    {
+      "bytes": 4864,
+      "path": "docs/decisions/drafts/settle-study-criteria-from-recorded-execution.md",
+      "sha256": "a6ec5f13bbdba6e96fea4025b5aa80f707d9285b809ccae12e7420a96b1f9c7b"
+    },
+    {
+      "bytes": 15601,
+      "path": "docs/protasis-success-criteria/design-evidence.json",
+      "sha256": "89938e2d649d73c98298ea70823282ed83d397b2e21c9b79cdd01e35184944f7"
+    },
+    {
+      "bytes": 49080,
+      "path": "docs/protasis-success-criteria/evidence/opening-study.md",
+      "sha256": "4a572737afa69d9a24c5923a828b68398c3e1bb9d85045b1488d7b8a87e13e92"
+    },
+    {
+      "bytes": 12573,
+      "path": "docs/protasis-success-criteria/proof.py",
+      "sha256": "88cf3fb814ecc33d8cfd3802d1f5ebbd1634524b294e41d3241ead2aba27d7bd"
+    },
+    {
+      "bytes": 361,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-descriptor-mismatch-refused.json",
+      "sha256": "0b60e88d2192511babaad6bdaf3cc202ad1486548da5689d62551405d5d0d4db"
+    },
+    {
+      "bytes": 337,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-failed-result-unmet.json",
+      "sha256": "ded94128c6461dbbde71ab3b16ff23e6f30591d74a5e6ef4ad611931c526bf57"
+    },
+    {
+      "bytes": 334,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-legacy-no-backfill.json",
+      "sha256": "72497bcac37ba922756d09408eed41ff09262a041cfc98332be6f4cff6d6b4a0"
+    },
+    {
+      "bytes": 334,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-sample-record-bytes.json",
+      "sha256": "05542191cdd22656a0a9b29c1fab363bdb2a896224d0b12730a46ddc96dec2b7"
+    },
+    {
+      "bytes": 341,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-settlement-invocations.json",
+      "sha256": "f07f1d2a76fb0d8201e3af666d1227edbfef12222c2e0de4ed155425afa2065c"
+    },
+    {
+      "bytes": 355,
+      "path": "docs/protasis-success-criteria/reports/controller-capture-unexecuted-result-refused.json",
+      "sha256": "0ab26875797e2669d4a0d96d6b8a0b4b2705d6530a45c6e57bf3253b5bf90ea4"
+    },
+    {
+      "bytes": 352,
+      "path": "docs/protasis-success-criteria/reports/producer-report-descriptor-mismatch-refused.json",
+      "sha256": "23f869f48cdc59c8ca2e19bc1eaa3277b35359c9584b49ce87dbb63f511bc886"
+    },
+    {
+      "bytes": 328,
+      "path": "docs/protasis-success-criteria/reports/producer-report-failed-result-unmet.json",
+      "sha256": "0190409a84d55db2f34957172e8db3bd5747437104d97365a2596a9eb271145e"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/producer-report-legacy-no-backfill.json",
+      "sha256": "621f3b5093915f0e268d24a8f9886d6aa928aafc6df40b6331ca0ca1f51483a7"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/producer-report-sample-record-bytes.json",
+      "sha256": "71711d2d040fce1863a822f52feecf23632a44fc31e881d1ecf647b37616ffb0"
+    },
+    {
+      "bytes": 332,
+      "path": "docs/protasis-success-criteria/reports/producer-report-settlement-invocations.json",
+      "sha256": "21356d498b85616799589f658501601191e6ee569d3556fb6b27d9509eb46f96"
+    },
+    {
+      "bytes": 347,
+      "path": "docs/protasis-success-criteria/reports/producer-report-unexecuted-result-refused.json",
+      "sha256": "bd41e2da361d91beb6ec06acf0e41af07bba297e6309f6afb494956685cb5836"
+    },
+    {
+      "bytes": 352,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-descriptor-mismatch-refused.json",
+      "sha256": "2372b1b31f170272f86b4ae6e9d8ee7fb19832566cdc164a924e400381d17d26"
+    },
+    {
+      "bytes": 328,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-failed-result-unmet.json",
+      "sha256": "d7c03cc8b6f744f82c9e27fcbf6719a45c475bc8b25ad76fec630a3797b132b5"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-legacy-no-backfill.json",
+      "sha256": "9ab2beac4f73198bcb05b04e96a4b0c9e5a252a7b22d475083485e439170f516"
+    },
+    {
+      "bytes": 325,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-sample-record-bytes.json",
+      "sha256": "c6241fe48d4b889a508cabaddfcbdefba38099ec070b97925a3515a672aaa62b"
+    },
+    {
+      "bytes": 332,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-settlement-invocations.json",
+      "sha256": "d364b9cc991de252a63390f7fa34ec130ee024c4dbe5001272d2f8da1aa40f0d"
+    },
+    {
+      "bytes": 346,
+      "path": "docs/protasis-success-criteria/reports/terminal-replay-unexecuted-result-refused.json",
+      "sha256": "1f0f2ce7a32a441d7c4591a97e353a9ed13183d2cd5923921c6d99af7efdd525"
+    },
+    {
+      "bytes": 50901,
+      "path": "docs/protasis-success-criteria/runbook.md",
+      "sha256": "bb36b579fe02a406519afd640e52d35d1c3583c5827cca790609933527ba6651"
+    },
+    {
+      "bytes": 6301,
+      "path": "docs/protasis-success-criteria/selection_probe.py",
+      "sha256": "3f4b3c3de29084aa0accb047919cbfc7f7c4cb12c2d7118d3490cb48dac2bc8b"
+    },
+    {
+      "bytes": 53514,
+      "path": "docs/protasis-success-criteria/study.md",
+      "sha256": "2ff25685ea7e4f0c00b27f529ce901886156d46a5582ab7987c126105c64f3d4"
+    },
+    {
+      "bytes": 59709,
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "sha256": "15994563244fbce2f358394e1464b9e4ba2f50c16a959f5c44c30ab75a3147eb"
+    },
+    {
+      "bytes": 30436,
+      "path": "plugins/hexaemeron/skills/protasis/scripts/design_evidence.py",
+      "sha256": "4f38e555d1d704aff250c9b1ffe00a956db44f9d139d8f127ae8e445deafd096"
+    }
+  ],
+  "report_sha256": "fe8f5e3497ff7ba97b09b0ec4613cf0d5cf4176789b51c774b0ab3dd9d2a430e",
+  "schema": "success-criteria-design-source-check/v1"
+}

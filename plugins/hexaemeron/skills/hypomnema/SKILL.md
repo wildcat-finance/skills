@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.10.0"
+  version: "5.11.0"
 ---
 
 <p align="center">
@@ -93,8 +93,9 @@ What this makes easy, what it makes hard, and what it commits us to.
 Name that file `<slug>.md`, where the slug is lowercase ASCII kebab-case and
 at most 96 bytes. Cite it as `adr/<slug>` in Markdown and supported source
 comments before and after assignment. One slug names exactly one draft or
-final record; numbered records inherited unchanged from the base may share a
-slug, and a draft never takes one they hold. A Markdown file directly under
+final record; numbered records inherited from the base may share a slug only
+while their original paths, modes and bytes remain intact. A draft never takes
+one they hold. A Markdown file directly under
 `docs/decisions/` that is neither is tolerated only while it is inherited
 unchanged from the base; the product may not add or change one. Existing `ADR-NNN-<slug>.md` records and `ADR-NNN` references
 remain valid and are not rewritten to adopt the stable form.
@@ -124,6 +125,14 @@ only the exact first `# Decision: <title>` heading, and preserves mode and all
 remaining bytes. Its canonical `fiat-decision-assignments/v1` report binds the
 exact base, base ref, product, result tree, blobs, ordered mapping, object
 format, and fixed ceilings.
+
+An inherited numbered record may remain exact or gain an appended amendment.
+Its path and mode must stay exact, and every base byte must remain the product
+blob's prefix. Both changed blobs pass through the existing bounded native
+reader. The assignment leaves the amended product bytes intact in the result
+tree. This checks preservation, not the amendment's meaning or approval.
+Deletion, relocation, truncation, rewriting or a mode change still refuses
+with `inherited-record-drift`.
 
 Every Git command disables replacement objects, inherited `GIT_*` repointing,
 prompts, lazy fetches, and user or system configuration. A shallow repository,
@@ -376,10 +385,10 @@ conflict somebody has to resolve, or the runbook an alert is waiting on.
 
 ### hypomnema-decision-assignment
 
-- Promise: A successful replay establishes that one canonical `fiat-decision-assignments/v1` report is the deterministic `max(exact base)+1` transform for every validated draft in the exact product commit while the named integration-base ref still names that base.
+- Promise: A successful replay establishes that one canonical `fiat-decision-assignments/v1` report is the deterministic `max(exact base)+1` transform for every validated draft in the exact product commit while the named integration-base ref still names that base. Inherited numbered records retain their paths, modes and original bytes; appended amendments survive unchanged in the result tree.
 - Evidence: Full base and product commit ids, active base ref, result tree, ordered stable-slug mapping, source and result blob ids, file modes, object format, fixed ceilings, canonical report bytes and zero-exit replay.
 - Evidence classes: checked
-- Boundary: Replay proves the immutable Git-object transform and report bytes only. It does not prove that the resulting commit is signed, that its trailers agree, that a hosted status ran on the same head, or that repository rules serialize admission; Fiat and the base-owned workflow own those later gates.
+- Boundary: Replay proves the immutable Git-object transform and report bytes only. It does not approve an amendment's meaning or prove that the resulting commit is signed, that its trailers agree, that a hosted status ran on the same head, or that repository rules serialize admission; Fiat and the base-owned workflow own those later gates.
 - Authorises: Using the exact report to prepare or verify the decision-record path and heading changes in one integration composition.
 - Consequence: 2
 - Refuses: A shallow or incomplete repository, replacement or repointed Git state, wrong or moved base, unrelated or wrong-typed product, inherited-record drift, malformed or duplicate identity, numeric hole filling, more than 32 drafts, an oversized blob or path, a non-exact heading change, dirty or wrong worktree, report or blob drift, or any partial mutation.

@@ -1,0 +1,460 @@
+{
+  "schema": "wildcat.kickoff-event-decision.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1485",
+  "parent": "https://github.com/wildcat-finance/skills/issues/1372",
+  "repository": "wildcat-finance/v2-protocol",
+  "deployed_base_commit": "f5a26146987926f4811b72a795d662813dedfe85",
+  "proposed_candidate_commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "decision": {
+    "ship": "pursue",
+    "meaning": "the revision is intended to ship on the v2.5 release line",
+    "decision_maker": {
+      "name": "Dr Laurence E. Day",
+      "role": "maintainer",
+      "date": "2026-09-17"
+    },
+    "inferred_from_branch_presence": false,
+    "candidate_merge_acceptance": "permitted; this is a production delivery path, not a labelled disposable comparison"
+  },
+  "actor_semantics": {
+    "status": "ratified as intended",
+    "transitions": [
+      {
+        "transition": "deposit",
+        "event": "Deposit",
+        "field": "account",
+        "actor_class": "caller",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarket.sol:70",
+        "entry_point": "src/market/WildcatMarket.sol:85, src/market/WildcatMarket.sol:94",
+        "gate": "hooks.onDeposit at src/market/WildcatMarket.sol:61; neither entry point is otherwise gated",
+        "note": "the depositing lender. Unchanged from the deployed base."
+      },
+      {
+        "transition": "draw",
+        "event": "Borrow",
+        "field": "borrower",
+        "actor_class": "debtor",
+        "address_source": "msg.sender, read into currentBorrower at src/market/WildcatMarket.sol:121",
+        "emitted_at": "src/market/WildcatMarket.sol:139",
+        "entry_point": "src/market/WildcatMarket.sol:118",
+        "gate": "onlyBorrower, src/market/WildcatMarketBase.sol:348",
+        "note": "the operational borrower, equal to borrower() by the gate. Not the registered principal."
+      },
+      {
+        "transition": "repay",
+        "event": "DebtRepaid",
+        "field": "from",
+        "actor_class": "payer",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarket.sol:152, src/market/WildcatMarket.sol:167, src/market/WildcatMarketWithdrawals.sol:354",
+        "entry_point": "src/market/WildcatMarket.sol:163, src/market/WildcatMarketWithdrawals.sol:346; src/market/WildcatMarket.sol:183 also reaches the :152 emit through _repay at src/market/WildcatMarket.sol:195",
+        "gate": "none; repay is permissionless",
+        "note": "whoever supplied the assets. It is not the debtor unless the debtor happened to pay."
+      },
+      {
+        "transition": "close",
+        "event": "MarketClosed",
+        "field": "borrower",
+        "actor_class": "debtor",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarket.sol:274",
+        "entry_point": "src/market/WildcatMarket.sol:183",
+        "gate": "onlyBorrower, src/market/WildcatMarketBase.sol:348",
+        "note": "the operational borrower that closed the market."
+      },
+      {
+        "transition": "fee collection",
+        "event": "FeesCollected",
+        "field": "collector",
+        "actor_class": "caller",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarket.sol:111",
+        "entry_point": "src/market/WildcatMarket.sol:101",
+        "gate": "none; collectFees is permissionless",
+        "note": "any address may trigger collection, so collector carries no role. The separate feeRecipient field is the immutable configured recipient that received the assets."
+      },
+      {
+        "transition": "deposit cap",
+        "event": "MaxTotalSupplyUpdated",
+        "field": "caller",
+        "actor_class": "caller",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarketConfig.sol:125",
+        "entry_point": "src/market/WildcatMarketConfig.sol:115",
+        "gate": "onlyBorrower, src/market/WildcatMarketBase.sol:348",
+        "note": "the field names the caller. Its one entry point is onlyBorrower, so the address is always the operational borrower."
+      },
+      {
+        "transition": "APR and reserve ratio",
+        "event": "AnnualInterestAndReserveRatioBipsUpdated",
+        "field": "caller",
+        "actor_class": "caller",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarketConfig.sol:161, src/market/WildcatMarket.sol:267",
+        "entry_point": "src/market/WildcatMarketConfig.sol:176, src/market/WildcatMarket.sol:183, src/market/WildcatMarketConfig.sol:202",
+        "gate": "onlyBorrower on setAnnualInterestAndReserveRatioBips and closeMarket; no caller restriction on executePendingAnnualInterestBipsReduction, which still reverts at src/market/WildcatMarketConfig.sol:205 unless the hook enables it",
+        "note": "three paths reach the shared emit in _applyAnnualInterestAndReserveRatioBips at src/market/WildcatMarketConfig.sol:130. The third, executePendingAnnualInterestBipsReduction, is documented as permissionless at src/market/WildcatMarketConfig.sol:199 and calls it at :218, so the caller can be any address. The hook rather than the caller supplies the new rate. The closure path at src/market/WildcatMarket.sol:267 emits this immediately before MarketClosed."
+      },
+      {
+        "transition": "protocol fee",
+        "event": "ProtocolFeeBipsUpdated",
+        "field": "caller",
+        "actor_class": "caller",
+        "address_source": "msg.sender",
+        "emitted_at": "src/market/WildcatMarketConfig.sol:242",
+        "entry_point": "src/market/WildcatMarketConfig.sol:230",
+        "gate": "msg.sender != factory reverts, src/market/WildcatMarketConfig.sol:231",
+        "note": "always the deploying factory, never the borrower."
+      },
+      {
+        "transition": "wrapper registration",
+        "event": "WrapperRegistered",
+        "field": "wrapper",
+        "actor_class": "not an actor field",
+        "address_source": "the wrapper address supplied by the factory",
+        "emitted_at": "src/market/WildcatMarketConfig.sol:67",
+        "entry_point": "src/market/WildcatMarketConfig.sol:63",
+        "gate": "msg.sender != wrapperFactory reverts, src/market/WildcatMarketConfig.sol:64",
+        "note": "an ordinary Solidity emit rather than an assembly emitter, so it carries no topic literal."
+      },
+      {
+        "transition": "borrower transfer requested",
+        "event": "BorrowerTransferRequested",
+        "field": "borrower, previousPendingBorrower, pendingBorrower (indexed); borrowerPrincipal, previousPendingBorrowerPrincipal, pendingBorrowerPrincipal (data)",
+        "actor_class": "debtor and registry-derived owner",
+        "address_source": "msg.sender under onlyBorrower for the borrower field; borrowerPrincipal() read at src/market/WildcatMarketBase.sol:489",
+        "emitted_at": "src/market/WildcatMarketBase.sol:485",
+        "entry_point": "src/market/WildcatMarketBase.sol:474",
+        "gate": "onlyBorrower, src/market/WildcatMarketBase.sol:348",
+        "note": "a pending borrower holds no market authority. The three principal fields are ordinary data, so this event cannot be filtered by principal."
+      },
+      {
+        "transition": "borrower transfer cancelled",
+        "event": "BorrowerTransferCancelled",
+        "field": "borrower, cancelledPendingBorrower (indexed); borrowerPrincipal, cancelledPendingBorrowerPrincipal (data)",
+        "actor_class": "debtor and registry-derived owner",
+        "address_source": "msg.sender under onlyBorrower for the borrower field; borrowerPrincipal() read at src/market/WildcatMarketBase.sol:505",
+        "emitted_at": "src/market/WildcatMarketBase.sol:502",
+        "entry_point": "src/market/WildcatMarketBase.sol:496",
+        "gate": "onlyBorrower, src/market/WildcatMarketBase.sol:348",
+        "note": "both principal fields are ordinary data."
+      },
+      {
+        "transition": "borrower transfer completed",
+        "event": "BorrowerTransferred",
+        "field": "previousBorrower, newBorrower, newBorrowerPrincipal (indexed); previousBorrowerPrincipal (data)",
+        "actor_class": "debtor and registry-derived owner",
+        "address_source": "pendingBorrower() for newBorrower; the principal validated by _validateBorrowerTransferTarget at src/market/WildcatMarketBase.sol:518 for newBorrowerPrincipal; borrower() and borrowerPrincipal() for the previous pair",
+        "emitted_at": "src/market/WildcatMarketBase.sol:530",
+        "entry_point": "src/market/WildcatMarketBase.sol:513",
+        "gate": "msg.sender != pendingBorrower() reverts, src/market/WildcatMarketBase.sol:515; this path is not onlyBorrower",
+        "note": "the only event in the family that indexes a registry-derived principal, so the transfer lifecycle cannot be filtered by principal end to end."
+      }
+    ],
+    "classes_distinguished": [
+      "payer",
+      "debtor",
+      "caller",
+      "registry-derived owner"
+    ],
+    "count": 12,
+    "ratified_transitions": [
+      "draw",
+      "repay",
+      "close",
+      "fee collection",
+      "configuration",
+      "borrower transfer"
+    ],
+    "row_note": "configuration covers three events and borrower transfer covers three, and Deposit and WrapperRegistered are listed for contrast rather than ratified, so the table has twelve rows against six ratified transitions.",
+    "emitted_at_convention": "each emitted_at names the emit call or the function emit_X( header, not the logN line that holds the topic literal."
+  },
+  "signature_delta": {
+    "count": 17,
+    "events": [
+      {
+        "event": "MaxTotalSupplyUpdated",
+        "disposition": "actor added",
+        "base": {
+          "signature": "MaxTotalSupplyUpdated(uint256)",
+          "topic0": "0xf2672935fc79f5237559e2e2999dbe743bf65430894ac2b37666890e7c69e1af",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:85",
+          "emitted_at": "src/libraries/MarketEvents.sol:31"
+        },
+        "candidate": {
+          "signature": "MaxTotalSupplyUpdated(address,uint256,uint256)",
+          "topic0": "0xd017ca3aaecec8f5f194aa734b4f62d6a43d6a273268b625de051c3b692a2c6e",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:171",
+          "emitted_at": "src/libraries/MarketEvents.sol:31"
+        }
+      },
+      {
+        "event": "ProtocolFeeBipsUpdated",
+        "disposition": "actor added",
+        "base": {
+          "signature": "ProtocolFeeBipsUpdated(uint256)",
+          "topic0": "0x4b34705283cdb9398d0e50b216b8fb424c6d4def5db9bfadc661ee3adc6076ee",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:87",
+          "emitted_at": "src/libraries/MarketEvents.sol:38"
+        },
+        "candidate": {
+          "signature": "ProtocolFeeBipsUpdated(address,uint256,uint256)",
+          "topic0": "0x54f104211bc2c1b4b49e83767e54234a36150ee5cbf00a5516a19e7a5026c509",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:181",
+          "emitted_at": "src/libraries/MarketEvents.sol:48"
+        }
+      },
+      {
+        "event": "AnnualInterestBipsUpdated",
+        "disposition": "merged into AnnualInterestAndReserveRatioBipsUpdated",
+        "base": {
+          "signature": "AnnualInterestBipsUpdated(uint256)",
+          "topic0": "0xff7b6c8be373823323d3c5d99f5d027dd409dce5db54eae511bbdd5546b75037",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:89",
+          "emitted_at": "src/libraries/MarketEvents.sol:45"
+        },
+        "candidate": null
+      },
+      {
+        "event": "ReserveRatioBipsUpdated",
+        "disposition": "merged into AnnualInterestAndReserveRatioBipsUpdated",
+        "base": {
+          "signature": "ReserveRatioBipsUpdated(uint256)",
+          "topic0": "0x72877a153052500f5edbb2f9da96a0f45d671d4b4555fdf8628a709dc4eab43a",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:91",
+          "emitted_at": "src/libraries/MarketEvents.sol:52"
+        },
+        "candidate": null
+      },
+      {
+        "event": "AnnualInterestAndReserveRatioBipsUpdated",
+        "disposition": "added, replacing two events",
+        "base": null,
+        "candidate": {
+          "signature": "AnnualInterestAndReserveRatioBipsUpdated(address,uint256,uint256,uint256,uint256)",
+          "topic0": "0xe829464a47e4f00b1c8c879651d6d9f8238513fdd4721d8f8a0a93531a939e80",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:193",
+          "emitted_at": "src/libraries/MarketEvents.sol:65"
+        }
+      },
+      {
+        "event": "Borrow",
+        "disposition": "actor added",
+        "base": {
+          "signature": "Borrow(uint256)",
+          "topic0": "0xb848ae6b1253b6cb77e81464128ce8bd94d3d524fea54e801e0da869784dca33",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:108",
+          "emitted_at": "src/libraries/MarketEvents.sol:91"
+        },
+        "candidate": {
+          "signature": "Borrow(address,uint256)",
+          "topic0": "0xcbc04eca7e9da35cb1393a6135a199ca52e450d5e9251cbd99f7847d33a36750",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:222",
+          "emitted_at": "src/libraries/MarketEvents.sol:111"
+        }
+      },
+      {
+        "event": "MarketClosed",
+        "disposition": "actor added",
+        "base": {
+          "signature": "MarketClosed(uint256)",
+          "topic0": "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:112",
+          "emitted_at": "src/libraries/MarketEvents.sol:105"
+        },
+        "candidate": {
+          "signature": "MarketClosed(address,uint256)",
+          "topic0": "0xcd125386a57ad5c51057dd568605a0a6854d06095d7d414e8ac65bcbf288e4eb",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:232",
+          "emitted_at": "src/libraries/MarketEvents.sol:133"
+        }
+      },
+      {
+        "event": "FeesCollected",
+        "disposition": "two actors added",
+        "base": {
+          "signature": "FeesCollected(uint256)",
+          "topic0": "0x860c0aa5520013080c2f65981705fcdea474d9f7c3daf954656ed5e65d692d1f",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:114",
+          "emitted_at": "src/libraries/MarketEvents.sol:112"
+        },
+        "candidate": {
+          "signature": "FeesCollected(address,address,uint256)",
+          "topic0": "0x9bcb6d1f38f6800906185471a11ede9a8e16200853225aa62558db6076490f2d",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:238",
+          "emitted_at": "src/libraries/MarketEvents.sol:140"
+        }
+      },
+      {
+        "event": "SanctionedAccountAssetsSentToEscrow",
+        "disposition": "removed",
+        "base": {
+          "signature": "SanctionedAccountAssetsSentToEscrow(address,address,uint256)",
+          "topic0": "0x571e706c2f09ae0632313e5f3ae89fffdedfc370a2ea59a07fb0d8091147645b",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:93",
+          "emitted_at": "src/libraries/MarketEvents.sol:59"
+        },
+        "candidate": null
+      },
+      {
+        "event": "AccountSanctioned",
+        "disposition": "removed",
+        "base": {
+          "signature": "AccountSanctioned(address)",
+          "topic0": null,
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:127",
+          "emitted_at": null,
+          "note": "declared at the deployed base with no emitter in src/libraries/MarketEvents.sol. Read over the event files only; this record does not establish that nothing emits it."
+        },
+        "candidate": null
+      },
+      {
+        "event": "WrapperRegistered",
+        "disposition": "added",
+        "base": null,
+        "candidate": {
+          "signature": "WrapperRegistered(address)",
+          "topic0": null,
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:267",
+          "emitted_at": "src/market/WildcatMarketConfig.sol:67",
+          "note": "emitted by the market on canonical wrapper registration with an ordinary Solidity emit, so it has no assembly topic literal."
+        }
+      },
+      {
+        "event": "BorrowerTransferRequested",
+        "disposition": "added",
+        "base": null,
+        "candidate": {
+          "signature": "BorrowerTransferRequested(address,address,address,address,address,address)",
+          "topic0": "0x52a27a931945087c237eb781de9ec1bd1328a944b2ce031b914ed4ac5ce2ae47",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:276",
+          "emitted_at": "src/libraries/MarketEvents.sol:191"
+        }
+      },
+      {
+        "event": "BorrowerTransferCancelled",
+        "disposition": "added",
+        "base": null,
+        "candidate": {
+          "signature": "BorrowerTransferCancelled(address,address,address,address)",
+          "topic0": "0x845fafbf05c3dba243e654ea4d739f09ec145e9d8c0d24cc8859eedcbd121889",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:290",
+          "emitted_at": "src/libraries/MarketEvents.sol:225"
+        }
+      },
+      {
+        "event": "BorrowerTransferred",
+        "disposition": "added",
+        "base": null,
+        "candidate": {
+          "signature": "BorrowerTransferred(address,address,address,address)",
+          "topic0": "0x933b680a96769adaa385bb12d51347d449bd0e14defe462185eb094f62bc6628",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:302",
+          "emitted_at": "src/libraries/MarketEvents.sol:247"
+        }
+      },
+      {
+        "event": "DrawnAmountUpdated",
+        "disposition": "added, declared in IWildcatMarketRevolving.sol",
+        "base": null,
+        "candidate": {
+          "signature": "DrawnAmountUpdated(uint256,uint256)",
+          "topic0": "0x2ce2176519c2ba0775d24b5f484690a4c3cf808f45a5a9094bf065d9ad59c0f9",
+          "declared_at": "src/interfaces/IWildcatMarketRevolving.sol",
+          "emitted_at": "src/libraries/MarketEvents.sol:125; called at src/market/WildcatMarketRevolving.sol:122"
+        }
+      },
+      {
+        "event": "Deposit",
+        "disposition": "unchanged",
+        "base": {
+          "signature": "Deposit(address,uint256,uint256)",
+          "topic0": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:106",
+          "emitted_at": "src/libraries/MarketEvents.sol:83"
+        },
+        "candidate": {
+          "signature": "Deposit(address,uint256,uint256)",
+          "topic0": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:217",
+          "emitted_at": "src/libraries/MarketEvents.sol:103"
+        }
+      },
+      {
+        "event": "DebtRepaid",
+        "disposition": "unchanged",
+        "base": {
+          "signature": "DebtRepaid(address,uint256)",
+          "topic0": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:110",
+          "emitted_at": "src/libraries/MarketEvents.sol:98"
+        },
+        "candidate": {
+          "signature": "DebtRepaid(address,uint256)",
+          "topic0": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+          "declared_at": "src/interfaces/IMarketEventsAndErrors.sol:227",
+          "emitted_at": "src/libraries/MarketEvents.sol:118"
+        }
+      }
+    ],
+    "composition": {
+      "actor_added": 5,
+      "replaced": 2,
+      "added": 6,
+      "removed": 2,
+      "unchanged": 2
+    }
+  },
+  "consumers": [
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1372",
+      "role": "parent; audits the diff at the candidate head",
+      "receives": "the candidate commit, the signature delta and the ratified actor semantics",
+      "preserved": "audit scope and emitter paths",
+      "registry_tie": "parent relation; #1372 has no row in targets.json naming #1485"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1363",
+      "role": "entry-point maps at two commits, diffed",
+      "receives": "both commits as the two-commit pair",
+      "preserved": "audit scope and emitter paths",
+      "registry_tie": "row in docs/kickoff/1359/targets.json naming #1485"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1381",
+      "role": "prices the added indexed topic",
+      "receives": "the five events that have a topic0 at each commit and gained a topic: MaxTotalSupplyUpdated, ProtocolFeeBipsUpdated, Borrow and MarketClosed from log1 to log2, and FeesCollected from log1 to log3",
+      "preserved": null,
+      "registry_tie": "row in docs/kickoff/1359/targets.json naming #1485"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1406",
+      "role": "proposed versus deployed comparison mode",
+      "receives": "the candidate commit as the proposed mode's source",
+      "preserved": null,
+      "registry_tie": "row in docs/kickoff/1359/targets.json naming #1485"
+    }
+  ],
+  "emitter_paths": [
+    "src/interfaces/IMarketEventsAndErrors.sol",
+    "src/interfaces/IWildcatMarketRevolving.sol",
+    "src/libraries/MarketEvents.sol",
+    "src/market/WildcatMarket.sol",
+    "src/market/WildcatMarketBase.sol",
+    "src/market/WildcatMarketConfig.sol",
+    "src/market/WildcatMarketRevolving.sol",
+    "src/market/WildcatMarketWithdrawals.sol"
+  ],
+  "boundary": [
+    "The candidate is deployed on Sepolia only. Nothing here establishes an Ethereum mainnet deployment.",
+    "This record pins sources and records a decision. It does not audit the diff, which is #1372's work.",
+    "The ratified semantics state what each emit site passes at the candidate commit. They do not establish that the candidate is free of defects.",
+    "src/spherex/SphereXProtectedEvents.sol differs on one line between the two commits, pragma solidity ^0.8.20 at the base against pragma solidity 0.8.25 at the candidate; its five emitters are otherwise identical. The SphereX removal on the same release line is outside this record."
+  ],
+  "carriers": {
+    "count": 7,
+    "method": "every branch head of wildcat-finance/v2-protocol was read for 'event Borrow(address indexed borrower, uint256 assetAmount);' in src/interfaces/IMarketEventsAndErrors.sol",
+    "selected": "release/v2.5"
+  }
+}

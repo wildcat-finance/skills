@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 52248953,
+    "bytes_blob": 56980060,
     "bytes_generated": 98
   },
   "entries": [
@@ -61,6 +61,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1264-rebind-runbook-amendments-across-a-study-am.synopsis.md"
+    },
+    {
+      "bytes": 21589,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1273-settle-declared-study-criteria-with-recorde.synopsis.md"
     },
     {
       "bytes": 131133,
@@ -147,6 +154,20 @@
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
     },
     {
+      "bytes": 113876,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 56938",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.md"
+    },
+    {
+      "bytes": 114609,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.synopsis.md"
+    },
+    {
       "bytes": 60462,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -161,7 +182,21 @@
       "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
     },
     {
-      "bytes": 30577,
+      "bytes": 41719,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1480-refuse-a-later-step-s-commits-carried-into.synopsis.md"
+    },
+    {
+      "bytes": 21929,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
+    },
+    {
+      "bytes": 40490,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -784,6 +819,20 @@
       "path": "docs/fiat-508-residual/amended-runbook.md"
     },
     {
+      "bytes": 119058,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 119058 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-implementation-regression.observation.json"
+    },
+    {
+      "bytes": 32212,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 32212 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-native-archive-roundtrip.observation.json"
+    },
+    {
       "bytes": 459957,
       "category": "blob",
       "evidence": "no newline in a 2048-byte window at offset 229978 of 459957 bytes",
@@ -791,11 +840,74 @@
       "path": "docs/kickoff/1359/evidence/consumer-inputs.json"
     },
     {
+      "bytes": 35913,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1368/evidence/review.json"
+    },
+    {
       "bytes": 24683,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 24683 bytes",
       "grade": "candidate",
       "path": "docs/main-root-suite-recovery/parity-attempt-1.json"
+    },
+    {
+      "bytes": 199147,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 99573 of 199147 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/audit-excerpts.json"
+    },
+    {
+      "bytes": 247162,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123581 of 247162 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-audit-package-increment/step-1-checked.json"
+    },
+    {
+      "bytes": 247164,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123582 of 247164 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-checked.json"
+    },
+    {
+      "bytes": 438592,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 219296 of 438592 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-closed-env-hex-reproduction.log"
+    },
+    {
+      "bytes": 379168,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 189584 of 379168 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-closed-environment-repair/step-1-hex-exit-3.log"
+    },
+    {
+      "bytes": 247161,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 123580 of 247161 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-checked.json"
+    },
+    {
+      "bytes": 379816,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 189908 of 379816 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-controller-adoption/step-1-hex-exit-4.log"
+    },
+    {
+      "bytes": 381805,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 190902 of 381805 bytes",
+      "grade": "candidate",
+      "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log"
     },
     {
       "bytes": 59394,
@@ -931,9 +1043,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 78122,
+      "bytes": 85028,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 39061",
+      "evidence": "mean line length above 400 in a window at offset 42514",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
@@ -1175,6 +1287,20 @@
       "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v0/source.json"
+    },
+    {
+      "bytes": 1232064,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/aave-v4-v1/events.jsonl"
+    },
+    {
+      "bytes": 461304,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 461304 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
     },
     {
       "bytes": 24559,

@@ -114,7 +114,8 @@
       "cwd": ".",
       "kind": "suite",
       "script": "plugins/hexaemeron/tests/run_tests.py",
-      "jobs_flag": "--jobs"
+      "jobs_flag": "--jobs",
+      "timeout_seconds": 4200
     },
     "imprimatur-suite": {
       "title": "Imprimatur suite",
@@ -395,6 +396,7 @@
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
     {"path": "docs/checkpoint-authority", "scope": "hexaemeron"},
+    {"path": "docs/protasis-success-criteria", "scope": "root"},
     {"path": "docs/agent-instruction-reconciliation", "scope": "promise-machine"},
     {"path": "docs/decisions/ADR-092-stage-reviewed-corpus-reconciliation.md", "scope": "promise-machine"},
     {"path": "docs/dead-code", "scope": "dead-code"},

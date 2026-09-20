@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
+from datetime import date
 import hashlib
+import importlib.util
 import os
 from pathlib import Path
 import re
@@ -16,10 +19,27 @@ import shlex
 import stat
 
 SCHEMA = "protasis-gate-commands/v1"
+# Released adapters reviewed for replay compatibility. Every current command
+# result must still match; the separate runner transition is narrower.
+REPLAY_COMPATIBLE_ADAPTERS = frozenset({
+    '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
+    'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
+    '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
+})
+# This reviewed pair changes report timestamping, never parser declarations.
+# Keep it separate from adapter-only compatibility: every invocation must match.
+RUNNER_TIMESTAMP_PAIR = (
+    'eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279',
+    'plugins/hexaemeron/tests/run_tests.py',
+    'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
+    'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
+)
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
 MAX_COMMANDS = 64
 MAX_EXPANDED = 256
+MAX_INTERFACES = 32
+INTERFACES_SCHEMA = 'protasis-command-interfaces/v1'
 PREFIX = "plugins/hexaemeron/skills/"
 REGISTRY = {
     "plugins/brevitas/skills/brevitas/scripts/brevitas.py": "build_parser",
@@ -28,7 +48,7 @@ REGISTRY = {
     **{PREFIX + name + "/scripts/" + name + ".py": "main"
        for name in ("protasis", "imprimatur", "phylax", "ephoros", "hypomnema")},
 }
-MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': '79981b3478b8e067a4e151c3ff6ca164ae2a5ef4ae585ebb8cf4a4a54b4001a5', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': '5ae65fc4ba221bd3ab6c12bd6b5388f4eca6da8082843ea57bfb3895239de706', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': '9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
+MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': '0d3742b85957171503269e60397d8829459f08eac21cf6b4d50f55c44fc602d5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': '9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})([^\n]*)$")
 LOOP = re.compile(r'\Afor file in (?P<items>[^;\n]+)(?:;|\n)\s*do(?:[ \t]+|\n)(?P<body>[^;\n]+)(?:;|\n)\s*done\s*\Z')
 ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`;\s*report file:\s*`([^`\n]+)`')
@@ -109,9 +129,11 @@ def literal(node, tree=None):
     raise Refusal('nonliteral-cli-declaration')
 
 
-def scalar_converter(name, tree):
+def scalar_converter(name, tree, *, declared=False):
     if name in ('int', 'float'):
         return {'int': int, 'float': float}[name]
+    if declared and name in ('str', 'Path'):
+        return {'str': str, 'Path': Path}[name]
     expected = CONVERTERS.get(name)
     functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == name]
     if expected is None or len(functions) != 1:
@@ -157,16 +179,22 @@ def parser_bindings(tree, builder, path):
         raise Refusal('unregistered-cli-module-bindings')
 
 
-def interface(root: Path, path: str):
-    if path not in REGISTRY:
+def interface(root: Path, path: str, registrations: dict | None = None):
+    declaration = (registrations or {}).get(path)
+    if path not in REGISTRY and declaration is None:
         raise Refusal('unregistered-cli')
     data = read_source(root, path)
+    builder = REGISTRY[path] if path in REGISTRY else declaration[0]
+    declared = path not in REGISTRY
+    if declared and digest(data) != declaration[1]:
+        raise Refusal('registered-source-drift')
     try:
         tree = ast.parse(data, filename=path)
     except (SyntaxError, ValueError, RecursionError) as exc:
         raise Refusal('invalid-cli-source') from exc
-    parser_bindings(tree, REGISTRY[path], path)
-    functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == REGISTRY[path]]
+    if not declared:
+        parser_bindings(tree, builder, path)
+    functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == builder]
     if len(functions) != 1 or functions[0].decorator_list:
         raise Refusal('unsupported-cli-builder')
     parser = InertParser(add_help=False, allow_abbrev=False)
@@ -203,7 +231,7 @@ def interface(root: Path, path: str):
                 if kw.arg == 'type':
                     if not isinstance(kw.value, ast.Name):
                         raise Refusal('unsupported-cli-converter')
-                    kwargs['type'] = scalar_converter(kw.value.id, tree)
+                    kwargs['type'] = scalar_converter(kw.value.id, tree, declared=declared)
                 elif kw.arg == 'help' and isinstance(kw.value, ast.Attribute) and ast.unparse(kw.value) == 'argparse.SUPPRESS':
                     kwargs['help'] = argparse.SUPPRESS
                 else:
@@ -296,13 +324,14 @@ def report_operand(root: Path, declared: str) -> str:
     return str(current.absolute())
 
 
-def validate_command(root: Path, source: str, report: dict | None = None) -> dict:
+def validate_command(root: Path, source: str, report: dict | None = None,
+                     registrations: dict | None = None) -> dict:
     expanded = expand(source)
     results = []
     for values in expanded:
         if len(values) < 2 or values[0] != 'python3':
             raise Refusal('unregistered-executable')
-        parser, binding = interface(root, values[1])
+        parser, binding = interface(root, values[1], registrations)
         resolved = list(values)
         if report is not None:
             if values.count('{report}') != 1 or report.get('format') != 'unittest-json-v1':
@@ -373,7 +402,31 @@ def effective_ranges(text: str) -> list[tuple[int, int]]:
     return convert(latest.values()), convert(all_ranges)
 
 
-def commands(data: bytes) -> list[dict]:
+def declared_interfaces(payload: str) -> dict:
+    rows = payload.splitlines()
+    if not rows or rows[0] != 'schema | ' + INTERFACES_SCHEMA:
+        raise Refusal('invalid-command-interfaces')
+    # An empty replacement set retires all previous local registrations.
+    if rows[-1:] == ['']:
+        rows.pop()
+    if len(rows) - 1 > MAX_INTERFACES:
+        raise Refusal('command-interface-bound')
+    result = {}
+    for row in rows[1:]:
+        match = re.fullmatch(r'([A-Za-z0-9_./-]+\.py) \| ([A-Za-z_][A-Za-z0-9_]*) \| ([0-9a-f]{64})', row)
+        if match is None:
+            raise Refusal('invalid-command-interfaces')
+        path, builder, sha = match.groups()
+        if (path.startswith('/') or len(path) > 4096
+                or any(part in ('', '.', '..') or part.casefold() == '.git' for part in path.split('/'))):
+            raise Refusal('unsafe-registered-path')
+        if path.casefold() in {name.casefold() for name in (*REGISTRY, *result)}:
+            raise Refusal('duplicate-command-interface')
+        result[path] = (builder, sha)
+    return result
+
+
+def capture_runbook(data: bytes) -> tuple[list[dict], dict]:
     if len(data) > MAX_DOCUMENT:
         raise Refusal('document-bound')
     try:
@@ -385,6 +438,10 @@ def commands(data: bytes) -> list[dict]:
     active = None
     body = []
     offset = 0
+    registrations = {}
+    registration_regions = set()
+    region = 0
+    step_seen = False
     for line in text.splitlines(keepends=True):
         stripped = line.rstrip('\n')
         match = FENCE.fullmatch(stripped)
@@ -408,6 +465,8 @@ def commands(data: bytes) -> list[dict]:
                 elif active[1] == 'version-relations':
                     if not payload.strip() or any(not re.fullmatch(r'[a-z][a-z0-9-]* \| plugins/[a-z0-9/-]+/EVOLUTION\.md \| next-generation-after-integration-base', row) for row in payload.splitlines()):
                         raise Refusal('invalid-data-fence')
+                elif active[1] == 'command-interfaces':
+                    registrations = declared_interfaces(payload)
                 else:
                     raise Refusal('unclassified-fence')
                 active = None
@@ -416,10 +475,25 @@ def commands(data: bytes) -> list[dict]:
                 body.append(line)
         elif match:
             label = match[2].strip()
-            if label not in ('sh', 'bash', 'shell', 'design-lock', 'version-relations'):
+            if label not in ('sh', 'bash', 'shell', 'design-lock', 'version-relations', 'command-interfaces'):
                 raise Refusal('unclassified-fence')
+            if label == 'command-interfaces':
+                if region in registration_regions or region == 0 and step_seen:
+                    raise Refusal('misplaced-command-interfaces')
+                registration_regions.add(region)
             active = (match[1], label, offset + len(line.encode()))
         else:
+            if re.match(r'^## Step [0-9]+:', line):
+                step_seen = True
+            if line.startswith('### Amendment'):
+                match = re.fullmatch(r'### Amendment -- ([0-9]{4}-[0-9]{2}-[0-9]{2})\s*', stripped)
+                if match is None:
+                    raise Refusal('invalid-registration-amendment')
+                try:
+                    date.fromisoformat(match[1])
+                except ValueError as exc:
+                    raise Refusal('invalid-registration-amendment') from exc
+                region += 1
             contract = ELENCHUS.search(line)
             if contract:
                 records.append({'offset': offset + len(line[:contract.start(1)].encode()), 'command': contract[1], 'report': {'format': contract[2], 'file': contract[3]}})
@@ -436,12 +510,18 @@ def commands(data: bytes) -> list[dict]:
     for record in records:
         # Commands outside step fields (standalone command specimens) remain active.
         record['effective'] = not any(a <= record['offset'] < b for a, b in all_ranges) or any(a <= record['offset'] < b for a, b in active_ranges)
-    return records
+    return records, registrations
+
+
+def commands(data: bytes) -> list[dict]:
+    return capture_runbook(data)[0]
 
 
 def validate(root: Path, data: bytes) -> dict:
     root = root.resolve(strict=True)
-    records = commands(data)
+    records, registrations = capture_runbook(data)
+    for path in registrations:
+        interface(root, path, registrations)
     results = []
     total = 0
     for record in records:
@@ -451,11 +531,71 @@ def validate(root: Path, data: bytes) -> dict:
         total += len(expand(record['command']))
         if total > MAX_EXPANDED:
             raise Refusal('expanded-command-bound')
-        result = validate_command(root, record['command'], record['report'])
+        result = validate_command(root, record['command'], record['report'], registrations)
         results.append({'offset': record['offset'], **result})
     return {'schema': SCHEMA, 'artifact_sha256': digest(data), 'source_root': str(root),
             'adapter_sha256': digest(Path(__file__).read_bytes()),
             'commands': results, 'operation_ran': False}
+
+
+def _success_criteria_module():
+    """Load the sibling declaration parser without importing a target module."""
+    path = Path(__file__).with_name('success_criteria.py')
+    spec = importlib.util.spec_from_file_location('protasis_success_criteria_gate', path)
+    if spec is None or spec.loader is None:
+        raise Refusal('success-criteria-parser-unavailable')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes) -> dict:
+    """Admit a declaration only after the registered runbook interface is bound.
+
+    This composes the existing inert command receipt with the pure declaration
+    join.  It deliberately returns ``operation_ran=False`` and never imports or
+    executes a producer module.
+    """
+    parser = _success_criteria_module()
+    record = parser.parse(declaration)
+    if record is None:
+        raise Refusal('success-criteria-missing')
+    gate = validate(root, runbook)
+    joined = parser.join(record, runbook, command_records=gate['commands'])
+    if joined is None:
+        raise Refusal('success-criteria-missing')
+    # Carry the reviewed command-adapter identity into the immutable join so
+    # later execution/replay can reject an adapter substitution explicitly.
+    joined['adapter_sha256'] = gate['adapter_sha256']
+    return {
+        'schema': 'protasis-success-criteria-admission/v1',
+        'gate_commands': gate,
+        'declaration': record,
+        'declaration_sha256': parser.declaration_digest(record),
+        'join': joined,
+        'operation_ran': False,
+    }
+
+
+def runner_timestamp_compatible(current: dict, receipt: dict) -> bool:
+    """Compare the whole receipt after the one reviewed source substitution."""
+    adapter, runner, old_source, new_source = RUNNER_TIMESTAMP_PAIR
+    if receipt.get('adapter_sha256') != adapter:
+        return False
+    expected = copy.deepcopy(current)
+    expected['adapter_sha256'] = adapter
+    count = 0
+    for command in expected['commands']:
+        invocations = command.get('invocations')
+        if not invocations:
+            return False
+        for invocation in invocations:
+            cli = invocation['cli']
+            if cli['path'] != runner or cli['sha256'] != new_source:
+                return False
+            cli['sha256'] = old_source
+            count += 1
+    return count > 0 and expected == receipt
 
 
 def replay(root: Path, data: bytes, receipt: dict) -> None:
@@ -474,5 +614,8 @@ def replay(root: Path, data: bytes, receipt: dict) -> None:
             for invocation in command['invocations']:
                 position = invocation['argv'].index('{report}')
                 invocation['execution_argv'][position] = str(Path(captured_root) / command['report']['file'])
-    if current != receipt:
+    captured_adapter = receipt.get('adapter_sha256')
+    if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
+        current['adapter_sha256'] = captured_adapter
+    if current != receipt and not runner_timestamp_compatible(current, receipt):
         raise Refusal('gate-receipt-drift')

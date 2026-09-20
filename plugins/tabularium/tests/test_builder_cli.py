@@ -10,6 +10,7 @@ import unittest
 from unittest import mock
 
 from . import support
+from tabularium_lib import CURRENT_EVENT_SCHEMA
 from tabularium_lib import builder as builder_module
 
 
@@ -46,7 +47,7 @@ def build_args(source, capture, output, manifest, release="fixture-v1"):
 
 
 class BuilderCliTests(unittest.TestCase):
-    def test_euler_adapter_selection_builds_schema_v2(self):
+    def test_euler_adapter_selection_builds_the_current_event_schema(self):
         release = support.PLUGIN_ROOT / "examples" / "euler-v1-v0"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -63,7 +64,9 @@ class BuilderCliTests(unittest.TestCase):
                 "--release", "euler-v1-borrow-block-14531589-v0",
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(json.loads(manifest.read_text())["schema_version"], 2)
+            self.assertEqual(
+                json.loads(manifest.read_text())["schema_version"], CURRENT_EVENT_SCHEMA
+            )
 
     def test_wrong_euler_adapter_fails_before_outputs(self):
         release = support.PLUGIN_ROOT / "examples" / "euler-v1-v0"
@@ -194,8 +197,8 @@ class BuilderCliTests(unittest.TestCase):
 
             original_map = aave_v4.map_source
 
-            def swap_after_check(snapshot, capture_manifest):
-                mapped = original_map(snapshot, capture_manifest)
+            def swap_after_check(snapshot, capture_manifest, schema_version):
+                mapped = original_map(snapshot, capture_manifest, schema_version)
                 output.symlink_to(source)
                 return mapped
 

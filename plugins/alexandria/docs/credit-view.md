@@ -1,7 +1,7 @@
 # Tabularium credit view
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 Alexandria derives a narrow credit view from a verified raw release. The raw
@@ -31,16 +31,12 @@ record under two capture names, derivation refuses the duplicate.
 
 ## Registered mappings
 
-`aave-v4.credit.v1` reads the complete hosted-indexer capture already shipped
-by Tabularium. It maps `borrows` and `repays` to 511 events and maps 31
-`creditLines` to provider-reported `aave-v4.credit-line-balance`
-observations at the source snapshot. `callableLoans` and `tranchedPools` remain
-counted but unsupported by the narrow view.
-
-The balance property is venue-qualified and fixed to the named snapshot. It
-does not assert a current balance, default or full repayment. The credit-line
-source does not name an asset, so the observation uses the source's base units
-without adding an inferred token.
+`aave-v4.credit.v1` reads the archive-log capture shipped by Tabularium. It
+maps 500 native Borrow and Repay logs to events. Captured reserve and token
+reads supply asset context; their selectors remain in row provenance. The
+mapping emits no position observations and declares no unsupported records in
+this fixture. Its finality is provider-reported, and the captured interval
+does not establish a current balance, default or full repayment.
 
 `clearpool.credit.v1` reads the subject-scoped archive-log fixture already
 shipped by Probitas. It maps five `Borrowed` and six `Repaid` logs. The pool

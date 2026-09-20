@@ -1,9 +1,10 @@
-"""Map preserved Euler V2 activity from the Euler V3 API to event schema v2."""
+"""Map preserved Euler V2 activity from the Euler V3 API to an event schema."""
 
 from collections import Counter
 from copy import deepcopy
 from datetime import datetime, timezone
 
+from .. import check_event_schema
 from ..core import TabulariumError
 from .euler_common import (
     MappingResult,
@@ -79,7 +80,7 @@ def _amounts(row, event_kind, where):
 
 
 def _event(raw, requested_owner, first_timestamp, last_timestamp,
-           indexed_from, indexed_to, index):
+           indexed_from, indexed_to, index, schema_version):
     where = "Euler V3 response.data[%d]" % index
     row = object_(raw, where)
     if integer(row, "chainId", where) != CHAIN_ID:
@@ -126,7 +127,7 @@ def _event(raw, requested_owner, first_timestamp, last_timestamp,
     if isinstance(row.get("counterparty"), str):
         parties.append({"role": "counterparty", "address": address(row, "counterparty", where)})
     return {
-        "schema_version": 2,
+        "schema_version": schema_version,
         "id": "tabularium:%s:%s:%s:%d:%s" % (CHAIN, ADAPTER, transaction_hash, log_index, rule),
         "event_family": family,
         "action": action,
@@ -186,7 +187,8 @@ def _coverage(source):
     return first, last
 
 
-def map_source(source, capture):
+def map_source(source, capture, schema_version):
+    check_event_schema(schema_version, "event schema version")
     source = object_(source, "Euler V3 response")
     indexed_from, indexed_to = _coverage(source)
     scope = object_(required(capture, "scope", "capture manifest"), "capture manifest.scope")
@@ -203,6 +205,7 @@ def map_source(source, capture):
             indexed_from,
             indexed_to,
             index,
+            schema_version,
         )
         for index, row in enumerate(rows)
     ]

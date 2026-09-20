@@ -8,8 +8,8 @@ implementation and integration. It changes no cap, reserve or numbered record.
 ## Context
 
 The portable Promise Machine runtime packages every tracked file under
-`plugins/` except the classes [ADR-040](../ADR-040-package-one-dependency-closed-portable-router.md)
-and [ADR-090](../ADR-090-omit-portable-decorative-portraits.md) omit. The
+`plugins/` except the classes `adr/package-one-dependency-closed-portable-router`
+and `adr/omit-portable-decorative-portraits` omit. The
 skills CLI's archive ceiling is 26,214,400 bytes and ADR-090 reserves
 5,242,880 bytes below it, so a generated runtime may hold at most 20,971,520
 bytes. At the Step 3 tip of this run the runtime held 20,892,920 bytes, 78,600
@@ -63,7 +63,8 @@ reporters run only from a full checkout, where their manifests bind the
 corpora by digest; a runtime user who needs a conformance result checks out
 the source. The runtime manifest records the two omission patterns and their
 reasons beside the other omitted classes; per-file omitted rows remain the
-ADR-090 portrait class only. With this decision the complete generated package
+ADR-090 portrait class only. At the Step 4 audit tree
+`216c4897de0d34d5522f651646ccc05a53dee636` the complete generated package
 measures 20,855,576 bytes across 1,510 files, 5,358,824 bytes below the ceiling,
 and its runtime manifest records 1,503 files and 20,392,692 `total_bytes`, the
 measure the package test holds to the reserve.

@@ -235,11 +235,18 @@ class FamilyEvidenceCheckerTest(unittest.TestCase):
         self.assert_refused(root, "unreadable JSON at families.jsonl:1", code=2)
 
     def test_refuses_path_outside_the_fixture(self):
-        root = self.build_fixture()
-        (root / "schemas").rename(root.parent / "escaped-schemas")
-        self.addCleanup(self.remove_tree, root.parent / "escaped-schemas")
-        (root / "schemas").symlink_to(root.parent / "escaped-schemas")
-        self.assert_refused(root, "symlink refused", code=2)
+        with tempfile.TemporaryDirectory(prefix="family-evidence-outside-") as directory:
+            parent = Path(directory)
+            occupied = parent / "escaped-schemas"
+            occupied.mkdir()
+            sentinel = occupied / "other-run"
+            sentinel.write_text("preserve\n", encoding="utf-8")
+            root = self.build_fixture(root=parent / "fixture")
+            escaped = parent / "owned-escape"
+            (root / "schemas").rename(escaped)
+            (root / "schemas").symlink_to(escaped)
+            self.assert_refused(root, "symlink refused", code=2)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "preserve\n")
 
     def test_refuses_row_failing_its_schema(self):
         broken = dict(FAMILY_ROW)

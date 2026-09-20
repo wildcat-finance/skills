@@ -1,0 +1,31 @@
+## Step 1, round 1 -- 2026-09-16T10:05:15Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: github-key-success-bypass=reviewed; native-relation-bypass=reviewed; unknown-key-diagnostic=reviewed; local-signer-search=reviewed; refusal-message-drift=reviewed; bounded-read-cost=reviewed; report-on-precondition=reviewed; source-state-drift=reviewed; version-boundary=reviewed
+
+Not checked: Full `test_hexctl` module completion (stalled at the user-observed `test_covered_refuses_missing_duplicate_unknown_and_invalid_values` case and was terminated with SIGTERM after about 1:46, with no unittest summary); root suite completion (bounded 300-second run exited 124 with one failure marker and no unittest summary); Hexaemeron suite completion (terminated with SIGTERM after about 180 seconds, with no summary or report); Solidity-auditor and Fizz were not applicable because no Step 1 Solidity changed; controller receipt/closure and publication were intentionally not run. Completed security-path checks were the 10-test `GitHubSignerDiagnosis`, both known-failure 1/1 reports, the prover, the exact source/design checks, the Phylax, Ephoros and Hypomnema lints, and the X-Ray enumeration and bounded Git security analysis.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | low | `tests/`; root suite | The required `python3 -m unittest discover -s tests` run reached one failure marker and timed out at the explicit 300-second bound (exit 124) without a unittest summary. Captured diagnostics included `probe_harnesses` fixture write errors and HTTP 403/429/404 rate-limit warnings. This is an environmental or outside-Step-1 suite observation; no defect in the changed signature-admission paths was established. | potential; environmental/outside-step; no code fix |
+
+Leads not pursued: the stalled full `test_hexctl` module and capped root and Hexaemeron suites were not reopened after their explicit bounds; the X-Ray enumeration and bounded Git security analysis completed cleanly, and the three prose/mechanical lints each exited 0 with `clean`; Solidity-auditor and Fizz were not applicable to the zero-Solidity diff; no code fix was justified, so no stacked fixes branch, signed commit or Elenchus run exists.
+
+## Step 1, round 2 -- 2026-09-16T10:24:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: github-key-success-bypass=reviewed; native-relation-bypass=reviewed; unknown-key-diagnostic=reviewed; local-signer-search=reviewed; refusal-message-drift=reviewed; bounded-read-cost=reviewed; report-on-precondition=reviewed; source-state-drift=reviewed; version-boundary=reviewed
+
+Not checked: Full `test_hexctl` module completion (bounded at 120 seconds with exit 124; it again stalled in `audit_record_schema_cases`, initially at `test_covered_refuses_missing_duplicate_unknown_and_invalid_values`, later reaching `test_first_strict_round_accepts_a_git_absent_log`, with no unittest summary); root suite completion (bounded at 180 seconds with exit 124, no unittest summary); Hexaemeron suite completion (bounded at 180 seconds with exit 124, no summary or report); Solidity-auditor and Fizz remained not applicable because no Step 1 Solidity changed; controller receipt/closure and publication remained intentionally not run. Completed coverage was the 10-test `GitHubSignerDiagnosis`, both targeted root owner modules, the signature prover, the exact source/design checks, the Phylax, Ephoros and Hypomnema lints, and the X-Ray enumeration and bounded Git security analysis.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R2-01 | low | `tests/`; root suite | The prior root-suite observation is reproducible as an environmental bounded timeout: `python3 -m unittest discover -s tests` again emitted HTTP 403/429/404 rate-limit warnings and the expected `probe_harnesses` negative-path diagnostics, then reached the explicit 180-second bound and exited 124 without a unittest summary. The focused `tests.test_contributors` module passed 116/116 and `tests.test_harness_manifest` passed 100/100; no Step-1 signature-admission defect was established and no fix is justified. | reproduced; same environmental/outside-step finding as S1-R1-01; no code fix |
+
+Leads not pursued: the full `test_hexctl` and Hexaemeron suites remain bounded coverage limitations; their stalls were not converted into code findings because the focused guard and source checks pass. The root observation is the same unique environmental finding recorded as S1-R1-01, not a new Step-1 defect; no stacked audit branch, signed fixes commit or Elenchus report exists.

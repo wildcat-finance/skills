@@ -1,0 +1,7 @@
+test_cleanup_check_does_not_attribute_foreign_inspection_activity (test_hexctl_checkpoint_archive.CheckpointArchiveInspectTests.test_cleanup_check_does_not_attribute_foreign_inspection_activity) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 11.404s
+
+OK
+{"errors": 0, "failures": 0, "original_cleanup_method": false, "skips": 0, "testsRun": 1}

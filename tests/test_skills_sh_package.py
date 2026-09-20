@@ -175,6 +175,8 @@ MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/lazarus/examples/aave-v4-spoke-v1/"
+    "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",
     "assets/characters/*.{png,webp}",
     "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
@@ -187,6 +189,8 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
+    "plugins/tabularium/examples/*-v1/"
+    "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}",
 }
 PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
@@ -241,6 +245,28 @@ def load_generator():
 
 
 class SkillsShPackageTests(unittest.TestCase):
+    def test_lazarus_keeps_the_complete_release_and_one_payload_copy(self):
+        generator = load_generator()
+        source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
+        release = Path("plugins/lazarus/examples/aave-v4-spoke-v1-release")
+        for original in (ROOT / release).rglob("*"):
+            if original.is_file():
+                self.assertEqual(
+                    original.read_bytes(),
+                    (RUNTIME / original.relative_to(ROOT)).read_bytes(),
+                )
+        for name in generator.DUPLICATE_LAZARUS_PAYLOADS:
+            self.assertFalse((RUNTIME / source / name).exists())
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / release / "fixture" / name).read_bytes(),
+            )
+        for name in ("manifest.json", "demo.py"):
+            self.assertEqual(
+                (ROOT / source / name).read_bytes(),
+                (RUNTIME / source / name).read_bytes(),
+            )
+
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
         self.assertEqual(manifest["schema"], SCHEMA)
@@ -513,6 +539,25 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertTrue((example / "rebuild.py").is_file())
         for omitted in ("input", "release", "source"):
             self.assertFalse((example / omitted).exists())
+        # A superseding Tabularium release is built from the v0 release's own
+        # source bytes, so the runtime would otherwise carry the same evidence
+        # twice.  Its documents stay: the skill links them.
+        for release in ("aave-v4-v1", "euler-v1-v1", "euler-v2-v1"):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            self.assertTrue((directory / "README.md").is_file(), release)
+            self.assertTrue((directory / "DATA-DICTIONARY.md").is_file(), release)
+            for omitted in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertFalse((directory / omitted).exists(), release)
+        for release in ("aave-v4-v0", "euler-v1-v0", "euler-v2-v0"):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            for kept in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertTrue((directory / kept).is_file(), release)
 
     def test_selected_directory_works_as_an_isolated_copy(self):
         with tempfile.TemporaryDirectory() as raw:

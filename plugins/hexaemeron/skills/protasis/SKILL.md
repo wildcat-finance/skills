@@ -14,7 +14,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "5.12.0"
+  version: "6.15.1"
 ---
 
 <p align="center">
@@ -51,7 +51,10 @@ runbook prose, one source-bound known-failure inventory, and one closed
 candidate-by-criterion design record at the transition where each item of
 evidence becomes due. The optional command check validates literal arguments
 and finite per-file loops against registered source interfaces without
-executing the declared commands.
+executing the declared commands. Fiat's Step 5 demonstration separately
+records the successor controller's executed result and bounded refusal cases;
+that report does not enlarge Protasis's declaration or claim criterion
+sufficiency.
 
 ## Refuse these six
 
@@ -522,6 +525,14 @@ adapters refuse with P008. The separate
 [command reference](references/gate-commands.md) names the grammar, source
 bindings, report format, limits and replay rules.
 
+A target outside the Skills distribution may register up to 32 reviewed local
+Python interfaces in the runbook's closed `command-interfaces` block. Each row
+pins the complete source SHA-256 and parser-builder name. The built-in registry
+cannot be overridden. A dated append-only amendment may replace the complete
+local registration set; an unregistered or changed source still refuses.
+Registration binds the reviewed source and permits inert argument checking.
+It grants no authority to execute the command.
+
 The result is `protasis-gate-commands/v1` with `operation_ran:false`. It binds
 raw commands, the captured source root, original and substituted argv, full CLI
 and adapter digests, and interface results. It establishes no execution, test success or audit verdict.
@@ -544,8 +555,8 @@ the study carrying four fields:
 **What changed.** The capture step reads the header from the fixture, not RPC.
 **Why.** The archive endpoint was withdrawn mid-run.
 **Steps touched.** Step 3's entry and step 4's files.
-**Still holding.** Steps 5 and 6 re-confirmed: each unbuilt step's entry and
-exit hold as written. Step 3 does not; see below.
+**Still holding.** Step 3: entry broken; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds.
 ```
 
 Every unbuilt step gets a verdict in the last field: its entry and exit hold,
@@ -662,6 +673,8 @@ count is not a report.
 - [ ] No discipline core is restated where a citation belongs.
 - [ ] Assumptions are on the page and were confirmed or corrected.
 - [ ] Every success criterion names a command, a test or a demo path.
+- [ ] The final demonstration identifies its controller, source command and
+      bounded positive and negative observations without claiming sufficiency.
 - [ ] The design record covers correctness, time, space, compatibility and
       recovery with one exact result per candidate and criterion.
 - [ ] Every resolved result binds a zero-exit report; every pending result names
@@ -735,11 +748,11 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 ### protasis-gate-command-validation
 
 - Promise: A successful command check establishes that each effective declared invocation fits the registered CLI interface, with exact source and report bindings, without executing the declared commands or importing their target modules.
-- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
+- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, reviewed adapter or exact runner source-pair compatibility when applicable, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
 - Evidence classes: checked, recorded
 - Boundary: Interface validity establishes supported argument and source shape. It does not establish command execution, executable behavior, test success, report truth, audit judgement or atomic protection against later source changes. Historical absolute argv records nonexecuted derivation and grants no authority to execute at an old root; checkpoint relocation belongs to Fiat. This Consequence 1 operation has no native runtime binding. Its actual interface result retains operation_ran:false because the declared commands were not executed.
 - Authorises: Supplying the exact interface result to Fiat as command-validation evidence for its separately governed runbook or amendment receipt.
 - Consequence: 1
-- Refuses: Unregistered commands, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, source drift, bound violations or replay mismatch.
-- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a receipted run, use Fiat's permitted append-only amendment rather than editing earlier evidence.
+- Refuses: Unregistered commands, malformed or misplaced local registrations, registry overrides, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, CLI source drift outside the reviewed timestamp pair, unknown adapter digests, bound violations or replay mismatch.
+- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a receipted run, use Fiat's permitted append-only amendment when the source or bindings changed. A released adapter listed in the [command reference](references/gate-commands.md) may replay unchanged evidence without amendment. That reference also permits one exact runner timestamp transition when every invocation uses the reviewed source pair and every other receipt field matches; earlier receipts remain intact.
 - Exceptions: none

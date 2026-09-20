@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.62.1"
+  version: "6.70.1"
 ---
 
 <p align="center">
@@ -615,18 +615,23 @@ findings and 4,096 union paths; a path is at most 1,024 UTF-8 bytes; one blob is
 at most 2,097,152 bytes and their sum at most 16,777,216 bytes; a command is at
 most 4,096 UTF-8 bytes and 16 arguments.
 
-The guard boundary permits one exception to an otherwise clean tree: the
-configured audit log and its derived synopsis are exactly the two non-ignored
-untracked rows. They are never guard paths and are never staged, changed,
-copied, removed or followed. Every guarded operation independently opens each
-bounded single-link regular leaf through stable no-follow directory
-descriptors, proves named-leaf and descriptor identity stable for that
-operation, and matches the complete receipt-bound log prefix and current
-synopsis bytes and digests. It never compares device, inode or times across
-operations or processes, and persists no audit identity, timestamp observation
-or marker. The exception lasts from successor Step entry through successful
-`done inoculate`; in the current pre-contract live run it ends after bootstrap
-guard validation immediately before the recorded implement transition.
+An inherited audit log and its derived synopsis may be a clean committed pair
+or exactly the two non-ignored untracked rows. A committed pair must match its
+native HEAD's raw blobs and modes and the exact stage-zero index rows. Fiat
+checks those bindings again after reading the files and refuses a changed HEAD,
+blob or index. Staged, mixed and ignored untracked pairs refuse. Neither form
+is a guard path; the operation never stages, changes, copies, removes or follows
+either file.
+
+Every guarded operation independently opens each bounded single-link regular
+leaf through stable no-follow directory descriptors, proves named-leaf and
+descriptor identity stable for that operation, and matches the complete
+receipt-bound log prefix and current synopsis bytes and digests. It never
+compares device, inode or times across operations or processes, and persists
+no audit identity, timestamp observation or marker. Both forms remain available
+from successor Step entry through successful `done inoculate`; in the current
+pre-contract live run the exception ends after bootstrap guard validation
+immediately before the recorded implement transition.
 
 Fiat passes Elenchus only the exact parent, complete raw blob rows, closed argv,
 format and logical report file. Elenchus owns detached-parent overlay,
@@ -798,7 +803,7 @@ missing either configured id.
 
 Any issue the run files follows the target repository's ordinary issue
 publication contract; carryover and phase-of-origin create no exception. In
-`wildcat-finance/skills`, that means one of the four canonical queue titles
+`wildcat-finance/skills`, that means one of the five canonical queue titles
 with its exact queue label and required body opening, followed by exactly one
 `Fiat-Required` line and one fenced `carryover` block. Run the root publication
 order over the complete candidate, then `hexctl issue-check` with its exact
@@ -839,6 +844,18 @@ the direct hand-off values. This is mandatory controller work: do not ask the
 user whether to save it, where to put it or whether it may be skipped. Keep the
 outer SHA-256, manifest SHA-256 and `snapshot_id` outside the archive.
 
+For complete history beyond the ZIP bundle limit, use
+`checkpoint archive --format directory`. The
+[directory carrier](references/checkpoint-directory.md) keeps the same checks
+with a 256 GiB bundle limit. Its `outer_sha256` names the exact root manifest
+bytes, which bind every member; hand that digest over outside the directory.
+
+A task issue may belong to another repository. Its exact URL stays in
+`receipts.task_issue` and supplies the normal filing and closure checks.
+The run anchor hashes that URL as an external task; the target's own
+origin remains the delivery repository. Same-repository issues keep their
+existing number-only anchor.
+
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before each merge, an unchanged waiting head passes without a relation process.
 An unequal waiting tip passes topology only when a bounded native
@@ -848,6 +865,11 @@ cause. The current step still earns complete live-range local signature,
 GitHub verification, author, and committer evidence under
 `effective_push`. Ancestry supplies none of it and never rewrites the original
 push receipt.
+A waiting branch that gained a commit another step's push receipt owns refuses
+before any write. One bounded native gained-range read per moved tip settles
+that without a GitHub read, an adopted step owns nothing there, an
+unanswerable range refuses as unknown, and `done merge-step` intersects the
+same ownership set with the repaired range it receipts.
 Before the run is recorded as integrated, every primary author its push
 receipts recorded has to remain attributable from the recorded merge, and the
 receipt records which mechanism carried it. The separately recorded committer
@@ -1169,6 +1191,18 @@ separately validates the relative report declaration under the restored root.
 The operand authorizes no command execution at the old root; existing checkpoint
 identity and ledger checks remain the relocation authority.
 
+## Joined controller demonstration
+
+Step 5 has a separate evidence operation for the successor contract. It runs
+the checked-in controller in a disposable Git-backed fixture, binds the exact
+controller bytes and source commit, and records one bounded positive result
+alongside the refusal cases it actually observes. A shared Exit may settle
+several descriptors from one attempt, while a passing command still says
+nothing about criterion sufficiency. Terminal replay remains read-only and
+records its zero inspection launches. The report names fixture-only GitHub and
+remote boundaries; it is evidence for this demonstration, not an integration
+receipt.
+
 ## Promise Machine contract
 
 ### fiat-design-evidence
@@ -1181,6 +1215,18 @@ identity and ledger checks remain the relocation authority.
 - Consequence: 2
 - Refuses: A missing or changed record, incomplete matrix, missing required concern, unsafe report, non-zero report exit, state/report disagreement, selection evidence still pending, failed selection gate, selected dominated candidate, unsupported tie-break, missing or mismatched runbook lock, evidence absent or failed at its named transition, receipt/event mismatch, or replay drift.
 - Recovery: Before design lock, run the named resolver and rewrite the draft record. After design lock, restore the exact receipted record and reports or produce the pending report at its named path; halt and start a new run if the candidate, criterion set or selection must change.
+- Exceptions: none
+
+### fiat-joined-controller-demonstration
+
+- Promise: A successful Step 5 demonstration establishes that the checked-in successor controller, identified by exact source bytes and a disposable Git commit, records one observed registered Exit with its command, source, step and descriptor bindings while retaining bounded positive, negative, legacy and vacuous-result outcomes and a read-only terminal replay.
+- Evidence: The source-bound controller, executor, receipt and command-adapter digests; controller init/readback; Git fixture and commit identity; missing-execution and withheld-integration directives; settled shared-descriptor attempt; wrong criterion, step, command and source refusals; non-zero, timeout, overflow and interrupted child outcomes; stale-amendment and legacy receipts; marker state; terminal receipt with `operation_ran:false`; zero inspection-launch count; actual invocation counts and exclusions.
+- Evidence classes: checked, recorded, measured
+- Boundary: The demonstration establishes controller behavior on the named fixture and the exact bounded observations it records. It does not establish criterion sufficiency, semantic correctness, host isolation, production performance, remote GitHub state or delivery completion. A vacuous pass is retained as a passing observation with semantic sufficiency left unclaimed.
+- Authorises: Carrying the source-bound joined-demonstration report into the Step 5 conformance gate and the final integration evidence without treating it as a test verdict or a replacement for the controller's own receipts.
+- Consequence: 2
+- Refuses: An unavailable or changed controller source, missing fixture identity, unsigned or dirty positive source where a signed run is required, absent command identity, forged or mismatched result, relabelled timeout or inconclusive outcome, non-zero negative case accepted as success, replay that launches an inspection command, or a report whose counts and exclusions do not match its observations.
+- Recovery: Preserve the failed fixture and bounded readback, repair the named source, command or receipt binding, and rerun the demonstration with a fresh report path; do not rewrite an earlier report or promote a vacuous command into a semantic claim.
 - Exceptions: none
 
 ### fiat-study-amendment
@@ -1257,7 +1303,7 @@ identity and ledger checks remain the relocation authority.
 
 ### fiat-checkpoint-archive
 
-- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
+- Promise: Successful `checkpoint archive`, `checkpoint inspect --archive` and `checkpoint restore --archive` establish that one stored ZIP or native directory carrier recreates its checked Git refs and relocates its controller capsule into an empty destination, with the same semantic next directive and `snapshot_id`.
 - Evidence: The out-of-band outer SHA-256, closed content manifest, capsule manifest digest, complete-history bundle, pinned signature checks with recorded trailer counts, identity join, hostile archive tests, clean-machine transcript and six recorded budget measurements.
 - Evidence classes: checked, recorded, measured
 - Boundary: Checks bind this archive and its carried public keys. They do not prove signer ownership, delivery-claim truth, future performance, acceptance by another party or authority to execute the next directive. Acceptance of this archive stays outside it; prior acceptance entries remain reserved.

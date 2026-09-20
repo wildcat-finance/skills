@@ -1,7 +1,7 @@
 # `credit-history-v0`
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 This demonstration runs the complete Alexandria prototype without reaching
@@ -26,20 +26,19 @@ summary binding their digests. Build refuses an existing output directory.
 Verify opens the index and releases read-only and uses a temporary directory
 outside the output for Probitas's render-and-verify handoff.
 
-The derived release contains 522 events and 31 position observations:
-Aave v4 contributes 511 events and all 31 observations; Clearpool contributes
-11 events. The example query address has 11 Clearpool events and no Aave v4
-rows. Clearpool coverage is covered. Aave v4 coverage remains partial because
-25 native callable-loan and tranched-pool records are deliberately unsupported
-by the narrow mapping.
+The derived release contains 511 events and no position observations:
+Aave v4 contributes 500 events and Clearpool contributes 11. The two declared
+query addresses return 38 Aave v4 and 11 Clearpool events. Aave v4 coverage is
+covered. Clearpool coverage is partial because its fixture covers only one of
+the two addresses.
 
-Probitas emits 11 Clearpool transaction records and 15 venue coverage rows:
-one checked, one error, two unconfigured and nine unimplemented. All five
-dossier gates pass. The other 12 coverage rows remain visible as gaps; this is
-not evidence that those venues were clean.
+Probitas emits 49 transaction records and 15 venue coverage rows: one checked,
+one error, five unconfigured and eight unimplemented. All five dossier gates
+pass. The 14 gap rows remain visible; they do not establish clean histories.
 
 The fixed inputs demonstrate reproducibility, not a production corpus. The
-Aave v4 bytes came from a hosted indexer and carry provider-reported finality.
+Aave v4 bytes contain archive logs and captured reserve and token reads, with
+provider-reported finality.
 The Clearpool bytes are a subject-scoped archive-log fixture whose finality is
 unknown. Matching their digests does not prove publisher authenticity, source
 completeness or canonical-chain finality.

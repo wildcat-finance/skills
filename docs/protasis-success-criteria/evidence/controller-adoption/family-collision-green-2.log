@@ -1,0 +1,7 @@
+test_refuses_path_outside_the_fixture (test_imprimatur_family_evidence.FamilyEvidenceCheckerTest.test_refuses_path_outside_the_fixture) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.041s
+
+OK
+{"tests": 1, "failures": 0, "errors": 0, "occupied_sibling_unchanged": true}

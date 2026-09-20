@@ -14,7 +14,9 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -116,7 +118,7 @@ class AssignmentRepository:
     def plan(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ALLOCATOR),
                 "plan",
                 "--repo",
@@ -141,7 +143,7 @@ class AssignmentRepository:
     def materialize_result_tree(self) -> None:
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 str(ALLOCATOR),
                 "apply",
                 "--repo",
@@ -297,6 +299,54 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
 
     def test_repository_without_clean_filters_still_verifies(self):
         self.assertEqual(self.receipt()["candidate"], self.repo.candidate)
+
+    def test_amended_record_composition_requires_a_real_native_signature(self):
+        keygen = shutil.which("ssh-keygen", path=os.defpath)
+        if keygen is None:
+            self.skipTest("system ssh-keygen is required")
+        relative = "docs/decisions/ADR-060-existing.md"
+        record = self.repo.path / relative
+        amended = record.read_text(encoding="utf-8") + "\n## Amendment\n\nKeep history.\n"
+        write(self.repo.path, relative, amended)
+        self.repo.product = commit_all(self.repo.path, "append amendment")
+        self.repo.plan()
+        self.repo.report = self.repo.read_report()
+        self.repo.materialize_result_tree()
+        signer = self.repo.path / ".git/fixture-signing-key"
+        subprocess.run(
+            [keygen, "-q", "-t", "ed25519", "-N", "", "-f", str(signer)],
+            check=True, capture_output=True,
+        )
+        allowed = self.repo.path / ".git/fixture-allowed-signers"
+        allowed.write_text(
+            "fixture@example.invalid " + signer.with_suffix(".pub").read_text(),
+            encoding="utf-8",
+        )
+        git(self.repo.path, "config", "gpg.format", "ssh")
+        git(self.repo.path, "config", "user.signingkey", str(signer))
+        git(self.repo.path, "config", "gpg.ssh.allowedSignersFile", str(allowed))
+        candidate = git(
+            self.repo.path, "commit-tree", "-S", self.repo.report["result_tree"],
+            "-p", self.repo.product, "-m", self.repo.message(),
+        )
+        git(self.repo.path, "update-ref", "refs/heads/candidate", candidate)
+        receipt = self.module.decision_assignment_receipt(
+            str(self.repo.path), self.repo.report_path, candidate,
+            candidate_ref="refs/heads/candidate",
+        )
+        self.assertEqual(receipt["candidate"], candidate)
+        self.assertEqual(receipt["result_tree"], self.repo.report["result_tree"])
+        self.assertEqual(
+            git(self.repo.path, "show", f"{candidate}:{relative}"), amended.strip()
+        )
+        unsigned = self.repo.make_candidate()
+        git(self.repo.path, "update-ref", "refs/heads/candidate", unsigned)
+        refusal = self.refusal(
+            self.module.decision_assignment_receipt,
+            str(self.repo.path), self.repo.report_path, unsigned,
+            candidate_ref="refs/heads/candidate",
+        )
+        self.assertIn("no valid native local signature", refusal)
 
     def test_local_clean_filter_refuses_before_worktree_observation(self):
         self.assert_clean_filter_refuses_without_execution("--local")

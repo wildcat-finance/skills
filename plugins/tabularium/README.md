@@ -94,28 +94,34 @@ mapped and what was not, and states the evidence gaps.
 Verification does not stop at those digests. It checks the capture against the
 source, confines every path to the release directory, requires one ordered
 source selector per event and rebuilds the canonical bytes from the preserved
-input. The worked release is unsigned and its block boundary is what the hosted
-indexer reported, so a clean run establishes internal consistency rather than
-publisher authenticity or an independent chain proof.
+input. The worked Aave v4 release is unsigned and its logs and block hashes are
+what the RPC provider reported, so a clean run establishes internal consistency
+rather than publisher authenticity or an independent chain proof.
 
 ## WHAT IT SHIPS
 
 - the standard-library [`tabularium.py`](./scripts/tabularium.py)
   builder and offline verifier;
-- versioned event schemas [v1](./schemas/canonical-event-v2.json)
-  and [v2](./schemas/canonical-event-v2.json), plus coverage
-  schemas [v1](./schemas/coverage-manifest-v2.json) and
-  [v2](./schemas/coverage-manifest-v2.json);
+- the [canonical event v3 schema](./schemas/canonical-event-v3.json)
+  and [coverage manifest v3 schema](./schemas/coverage-manifest-v3.json),
+  which `build` writes and `verify` reads;
+- the superseded [canonical event v2 schema](./schemas/canonical-event-v2.json)
+  and [coverage manifest v2 schema](./schemas/coverage-manifest-v2.json),
+  which `verify` still reads so every published release stays checkable;
 - the complete [`aave-v4-v0`](./examples/aave-v4-v0/README.md)
   release, its data dictionary and a fresh-directory rebuild demonstration;
 - source-bound [`euler-v1-v0`](./examples/euler-v1-v0/README.md)
   and [`euler-v2-v0`](./examples/euler-v2-v0/README.md)
   releases with their own dictionaries and rebuild demonstrations;
+- the schema v3 [`aave-v4-v1`](./examples/aave-v4-v1/README.md),
+  [`euler-v1-v1`](./examples/euler-v1-v1/README.md) and
+  [`euler-v2-v1`](./examples/euler-v2-v1/README.md) releases, each built from
+  its v0 source bytes and superseding the v0 release rather than replacing it;
 - a non-canonical [Compound v3 Phase 0 witness](./examples/compound-v3-phase0-v0/README.md)
   rebuilt from Alexandria's verified release;
 - an [adapter guide](./docs/adding-an-adapter.md) and an
   immutable [release policy](./docs/release-policy.md); and
-- 134 tests and an audit log
+- 228 tests and an audit log
   ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every
   review round and fix.
 
@@ -171,7 +177,7 @@ that do not match a fresh source rebuild.
 ## THE CHECKED-IN RELEASES
 
 [`examples/aave-v4-v0`](examples/aave-v4-v0/README.md) contains the
-unchanged source and capture manifest, the 511-row ledger, its coverage
+unchanged source and capture manifest, the 500-row ledger, its coverage
 manifest, a data dictionary and a rebuild demonstration.
 
 [`examples/euler-v1-v0`](examples/euler-v1-v0/README.md) preserves one real
@@ -180,6 +186,14 @@ borrow log from the canonical Euler v1 proxy in block 14,531,589.
 fixed owner/second response from the Euler V3 API. Its manifest calls the
 protocol generation `euler-v2` and the source API `euler-v3`; these are not the
 same version axis.
+
+[`examples/aave-v4-v1`](examples/aave-v4-v1/README.md),
+[`examples/euler-v1-v1`](examples/euler-v1-v1/README.md) and
+[`examples/euler-v2-v1`](examples/euler-v2-v1/README.md) restate those three
+releases under canonical event schema v3. Each was built from the v0
+`source.json` byte for byte; its `capture.json` differs from the v0 capture in
+one field, `release`; and the only difference in a canonical row is
+`schema_version`. The v0 bytes were not migrated.
 
 [`examples/compound-v3-phase0-v0`](examples/compound-v3-phase0-v0/README.md)
 rebuilds 11 non-canonical facts from Alexandria's checked-in release: two
@@ -192,6 +206,9 @@ From the repository root:
 python3 plugins/tabularium/examples/aave-v4-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v1-v0/rebuild.py
 python3 plugins/tabularium/examples/euler-v2-v0/rebuild.py
+python3 plugins/tabularium/examples/aave-v4-v1/rebuild.py
+python3 plugins/tabularium/examples/euler-v1-v1/rebuild.py
+python3 plugins/tabularium/examples/euler-v2-v1/rebuild.py
 python3 plugins/tabularium/examples/compound-v3-phase0-v0/rebuild.py
 ```
 
@@ -255,6 +272,10 @@ request.
 - [`examples/euler-v1-v0/DATA-DICTIONARY.md`](examples/euler-v1-v0/DATA-DICTIONARY.md)
   and [`examples/euler-v2-v0/DATA-DICTIONARY.md`](examples/euler-v2-v0/DATA-DICTIONARY.md)
   -- Euler schema v2 provenance, amount legs and source limits.
+- [`examples/aave-v4-v1/DATA-DICTIONARY.md`](examples/aave-v4-v1/DATA-DICTIONARY.md),
+  [`examples/euler-v1-v1/DATA-DICTIONARY.md`](examples/euler-v1-v1/DATA-DICTIONARY.md)
+  and [`examples/euler-v2-v1/DATA-DICTIONARY.md`](examples/euler-v2-v1/DATA-DICTIONARY.md)
+  -- the same fields under schema v3.
 - [`examples/compound-v3-phase0-v0/DATA-DICTIONARY.md`](examples/compound-v3-phase0-v0/DATA-DICTIONARY.md)
   -- the non-canonical execution facts and their refusal boundaries.
 - [`docs/adding-an-adapter.md`](docs/adding-an-adapter.md) -- how a second venue

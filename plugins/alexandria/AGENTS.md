@@ -1,7 +1,7 @@
 # Alexandria runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -104,6 +104,12 @@ local tool.
   the preserved live Ethereum mainnet interval from its committed staging tree.
   Both remove a partial output after failure and open no socket; `verify`
   changes no file in either.
+- `examples/usdc-interval-epochs-v0/demo.py build --output <directory>` builds
+  a synthetic v2 release over an upgrade block and a second v2 release from the
+  live staging tree, refusing if that tree's digest moves. It removes a partial
+  output after failure and opens no socket. Its `verify` changes no tracked file
+  and nothing in the build directory; its refusal probes write only beneath a
+  temporary directory it removes.
 - `scripts/compound_v3_phase0.py capture` is the third and last explicit network
   path, beside `collect` and `reconcile` above. It reads the HTTPS endpoint
   from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed

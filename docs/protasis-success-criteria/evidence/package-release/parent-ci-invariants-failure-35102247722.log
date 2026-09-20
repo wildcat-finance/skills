@@ -1,0 +1,31 @@
+invariants	Changed plugins carry newer package versions	﻿2026-09-16T13:29:49.8537700Z ##[group]Run set -euo pipefail
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8538639Z ^[[36;1mset -euo pipefail^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8538904Z ^[[36;1mif [ -z "$BASE_SHA" ]; then^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8539238Z ^[[36;1m  test "$GITHUB_EVENT_NAME" = workflow_dispatch^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8539599Z ^[[36;1m  if [ "$GITHUB_REF" = refs/heads/main ]; then^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8539946Z ^[[36;1m    BASE_SHA="$(git rev-parse HEAD^)"^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8540237Z ^[[36;1m  else^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8540506Z ^[[36;1m    git fetch --no-tags --depth=1 origin main^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8540838Z ^[[36;1m    BASE_SHA="$(git rev-parse FETCH_HEAD)"^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8541118Z ^[[36;1m  fi^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8541312Z ^[[36;1mfi^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8541536Z ^[[36;1mif [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8541878Z ^[[36;1m  echo "plugin-release: invalid base commit" >&2^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8542208Z ^[[36;1m  exit 2^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8542404Z ^[[36;1mfi^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8542662Z ^[[36;1mgit fetch --no-tags --depth=1 origin "$BASE_SHA"^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8543188Z ^[[36;1mpython3 scripts/plugin_release.py --base "$BASE_SHA" --head "$GITHUB_SHA"^[[0m
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8587115Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8587505Z env:
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8587804Z   pythonLocation: /opt/hostedtoolcache/Python/3.14.6/x64
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8588556Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.14.6/x64/lib/pkgconfig
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8588995Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.14.6/x64
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8589388Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.14.6/x64
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8589764Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.14.6/x64
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8590137Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.14.6/x64/lib
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8590502Z   BASE_SHA: d230b3ac07158bd5786a5c58539e6999ed3dda54
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:49.8590811Z ##[endgroup]
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:50.2821103Z From https://github.com/wildcat-finance/skills
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:50.2821932Z  * branch            d230b3ac07158bd5786a5c58539e6999ed3dda54 -> FETCH_HEAD
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:50.9192015Z plugin-release: hexaemeron: changed package requires a version above 1.6.44; got 1.6.44
+invariants	Changed plugins carry newer package versions	2026-09-16T13:29:50.9340285Z ##[error]Process completed with exit code 1.

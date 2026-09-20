@@ -8,9 +8,10 @@ description: >
   Clearpool derivation, disposable indexing, address queries and a checked-in
   offline demonstration, unsigned in-toto release statements, a bounded
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
-  collector with a preserved live Ethereum mainnet capture are available.
+  collector with transaction-position implementation epochs and a preserved
+  live Ethereum mainnet capture are available.
 metadata:
-  version: "2.5.0"
+  version: "3.5.0"
 ---
 
 <p align="center">
@@ -31,7 +32,7 @@ another frontier pass after that ledger becomes mature.
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** A resumable Ethereum USDC interval collector has now run against two live providers over an Ethereum mainnet interval, binding both boundary hashes under a finalized scope and preserving each epoch's implementation code so its code hash is rechecked offline; the epoch table still attributes a log by block rather than by transaction position.
+**Current frontier.** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
 Alexandria is the archive and catalogue behind durable lending-protocol
@@ -248,23 +249,34 @@ provider or the transport said.
 
 `reconcile` runs the finished interval past a second provider and records
 agreement or dispute over boundary hashes, ordered transaction hashes and every
-log's identity tuple. It settles nothing: a disputed shard becomes `partial` or
-`failed`, both providers' bytes are kept, and a provider that cannot answer
-leaves the interval `unreconciled`.
+log's identity tuple. That tuple does not include the log's transaction index.
+It settles nothing: a disputed shard becomes `partial` or `failed`, both
+providers' bytes are kept, and a provider that cannot answer leaves the
+interval `unreconciled`.
 
 `build` emits an ordinary capture plan and calls `ingest`; `check` verifies the
 release offline, re-derives every shard's record counts from the journals, and
 re-hashes each implementation's runtime code out of the `implementation-code`
-component. Implementation epochs come from `discover_epochs` over the preserved
-`Upgraded` logs, EIP-1967 slot reads and runtime code reads in the
+component. Implementation epochs come from `discover_epochs` over every
+preserved proxy log, the EIP-1967 slot reads and the runtime code reads in the
 `epoch-evidence` journal, and are bound by code hash because the pinned
 `CometExt.version()` returns the constant string `0`. `build` takes no `--epochs`
 table: there is nothing left for an operator to supply.
 
+A new release carries `alexandria-interval-receipt/v2`. Its epochs tile
+exclusive positions of block, transaction index and log index,
+`log_attributions` names each log's owner, and `check` re-derives both. An
+ordinary log inside the upgrade transaction, an upgrade in the interval's first
+block and two upgrades in one block refuse. A v1 release keeps its block-only
+meaning, and an owner is an inference from the announcement's position, not
+proof of the emitting implementation.
+
 Read [the collector document](../../docs/usdc-interval-collector.md) for the
 finality, epoch and reconciliation boundaries, run
 [`examples/usdc-interval-v0`](../../examples/usdc-interval-v0/README.md) to see
-the whole path offline over synthetic fixtures, and
+the whole path offline over synthetic fixtures,
+[`examples/usdc-interval-epochs-v0`](../../examples/usdc-interval-epochs-v0/README.md)
+to see positional owners over a synthetic upgrade block, and
 [`examples/usdc-interval-live-v0`](../../examples/usdc-interval-live-v0/README.md)
 to rebuild the preserved live Ethereum mainnet interval. This release
 establishes no publisher identity, no provider completeness, no consensus

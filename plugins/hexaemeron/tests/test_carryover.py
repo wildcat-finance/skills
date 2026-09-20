@@ -14,6 +14,7 @@ import unittest
 from unittest import mock
 
 from hexctl_harness import HexctlCase, LINTS_CLEAN, hexctl_module
+from fixture_tools import native_signing_tools
 
 SOURCE = Path(__file__).resolve().parents[1]/'skills/fiat/scripts/carryover.py'
 spec = importlib.util.spec_from_file_location('carryover_under_test',SOURCE)
@@ -417,6 +418,7 @@ class ExhaustedReceiptTests(HexctlCase):
         self.assertEqual(receipt['replacement_admission'],'unavailable')
 
     def test_composed_signed_tree_capsule_export_and_receipt_replay(self):
+        tool_paths = self.enterContext(native_signing_tools())
         self.to_audit(task_issue=ISSUE)
         self.run_ctl('record','security_suite','"waived: fixture"')
         for _ in range(7):self.run_ctl('audit-round','--findings','1',*LINTS_CLEAN)
@@ -425,11 +427,11 @@ class ExhaustedReceiptTests(HexctlCase):
         self.append_valid_audit_record(args,self.state())
         keyhome=Path(self.dir).resolve()/'fixture-gnupg';keyhome.mkdir(mode=0o700)
         environment={**os.environ,'GNUPGHOME':str(keyhome)}
-        subprocess.run(['gpg','--batch','--pinentry-mode','loopback','--passphrase','',
+        subprocess.run([tool_paths['gpg'],'--batch','--pinentry-mode','loopback','--passphrase','',
                         '--quick-generate-key','Carryover Fixture <fixture@example.invalid>',
                         'ed25519','sign','0'],env=environment,check=True,
                        stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=30)
-        self.addCleanup(subprocess.run,['gpgconf','--homedir',str(keyhome),'--kill','gpg-agent'],
+        self.addCleanup(subprocess.run,[tool_paths['gpgconf'],'--homedir',str(keyhome),'--kill','gpg-agent'],
                         stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False,timeout=10)
         message='Fixture fixed tree\n\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>\nWildcat-Origin: shoggoth\n'
         subprocess.run(['git','-c','user.signingkey=fixture@example.invalid',
@@ -451,7 +453,7 @@ class ExhaustedReceiptTests(HexctlCase):
                  'out':str(Path(self.dir).resolve()/'508-CARRYOVER.md')}
         self.git('update-ref','refs/heads/carried-pass-one',fixed)
         request_path=Path(self.dir).resolve()/'export-request.json';request_path.write_text(json.dumps(request))
-        command=['python3',str(SOURCE.with_name('hexctl.py')),'--dir',self.target]
+        command=[sys.executable,str(SOURCE.with_name('hexctl.py')),'--dir',self.target]
         result=subprocess.run([*command,'carryover-export','--request',str(request_path)],
                               env=environment,capture_output=True,text=True,timeout=60)
         self.assertEqual(result.returncode,0,result.stderr)
@@ -506,7 +508,7 @@ class ExhaustedReceiptTests(HexctlCase):
                   'previous':{'path':request['out'],'sha256':receipt['packet_sha256']},
                   'out':str(Path(second.dir).resolve()/'508-CARRYOVER-2.md')}
         request_path2=Path(second.dir).resolve()/'request.json';request_path2.write_text(json.dumps(request2))
-        command2=['python3',str(SOURCE.with_name('hexctl.py')),'--dir',second.target]
+        command2=[sys.executable,str(SOURCE.with_name('hexctl.py')),'--dir',second.target]
         exported2=subprocess.run([*command2,'carryover-export','--request',str(request_path2)],
                                  env=environment,capture_output=True,text=True,timeout=60)
         self.assertEqual(exported2.returncode,0,exported2.stderr)
@@ -687,6 +689,7 @@ class PromotionCustodyTests(unittest.TestCase):
 @unittest.skipUnless(sys.platform == 'darwin', 'native macOS policy required')
 class ReplacementAdmissionTests(HexctlCase):
     def test_signed_archive_to_native_admission_keeps_fresh_audit_and_pending_recovery(self):
+        tool_paths = self.enterContext(native_signing_tools())
         from types import SimpleNamespace
         self.observations={}
         (Path(self.dir)/'obsolete.txt').write_text('old base file')
@@ -715,11 +718,11 @@ class ReplacementAdmissionTests(HexctlCase):
         self.addCleanup(keytemporary.cleanup)
         keyhome=Path(keytemporary.name);keyhome.chmod(0o700)
         env={**os.environ,'GNUPGHOME':str(keyhome)}
-        key_result=subprocess.run(['gpg','--batch','--pinentry-mode','loopback','--passphrase','',
+        key_result=subprocess.run([tool_paths['gpg'],'--batch','--pinentry-mode','loopback','--passphrase','',
                         '--quick-generate-key','Replacement Fixture <fixture@example.invalid>',
                         'ed25519','sign','0'],env=env,check=False,capture_output=True,timeout=30)
         self.assertEqual(key_result.returncode,0,key_result.stderr.decode())
-        self.addCleanup(subprocess.run,['gpgconf','--homedir',str(keyhome),'--kill','gpg-agent'],
+        self.addCleanup(subprocess.run,[tool_paths['gpgconf'],'--homedir',str(keyhome),'--kill','gpg-agent'],
                         capture_output=True,check=False,timeout=10)
         message='Fixed candidate\n\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>\nWildcat-Origin: shoggoth\n'
         subprocess.run(['git','-c','user.signingkey=fixture@example.invalid','-c','gpg.format=openpgp',
