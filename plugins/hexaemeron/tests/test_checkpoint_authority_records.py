@@ -563,7 +563,7 @@ class AuthenticatedHostileTests(unittest.TestCase):
 
 
 class BoundaryTests(unittest.TestCase):
-    def test_exit_and_timeout_reap_verifier_descendants(self):
+    def test_timeout_reaps_descendants_after_verifier_parent_exits(self):
         executable = str(Path(sys.executable).resolve())
         pin = signatures.ToolPin('openssl', executable, digest(Path(executable).read_bytes()))
         for exited in (True, False):
