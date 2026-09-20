@@ -6,15 +6,12 @@ Accepted, 2026-09-19.
 
 ## Context
 
-The #1731 delivery at `1fd0abdad1acfdac6f560ba80d5667f6df00e7a0` measured a
-complete package of 20,971,411 bytes after its step 6 audit had shortened
-prose in packaged files to fit. Restoring that prose produces 20,973,160 bytes.
+The #1676 product at `e0afdb2640f1606f6493a7de344e89587e0962d4`
+and main at `75e3a0c76faa0dfeb31f84aeff133b37ec3ad0d9` each fit the
+portable package budget. Their composition twice produced 21,337,656 bytes.
 The 26,214,400-byte cap reserves 5,242,880 bytes, so the complete package
-ceiling is 20,971,520 bytes and the restored tree exceeds it by 1,640 bytes.
-The count includes the runtime manifest and outer package files. `origin/main`
-adopted this decision on 2026-09-19 for the #1676 integration composition, in
-merge `229f5856e03b9cd60c2265281696944281b35308`; this branch carries it ahead
-of its own sync.
+ceiling is 20,971,520 bytes and this composition exceeded it by 366,136 bytes.
+The count includes the runtime manifest and outer package files.
 
 Six Lazarus Aave v4 v1 payloads occur with identical bytes and modes in both
 `plugins/lazarus/examples/aave-v4-spoke-v1/` and
@@ -40,7 +37,7 @@ Omitting protocol schemas or verifier inputs would remove required runtime
 content. Reformatting preserved JSON would change digest-bound evidence.
 Deleting either source copy would change the checked full-source demonstration.
 Keeping both packaged payload copies retains no additional evidence and fails
-this branch's package budget.
+the composed package budget.
 
 ## Consequences
 
@@ -56,5 +53,5 @@ fixture operations to the complete retained copy.
 The 25 MiB cap, 5 MiB reserve and 1,600-file tripwire remain unchanged. Package
 checks verify exact retained release bytes and the complete package budget.
 Focused guards reject a changed, missing, untracked or symlinked copy and a mode
-mismatch. This is a distribution repair for a package at its ceiling;
+mismatch. This is a distribution repair for the failed integration composition;
 it does not change Lazarus verification, evidence classes or its frontier.
