@@ -2008,6 +2008,315 @@ class FirstCodeTests(WildcatCase):
             wildcat_v2.evidence_gaps(self.plan, self.registry, [], [])
 
 
+class HeldProbeTests(WildcatCase):
+    """What a stopped run leaves, and that resuming reproduces the uninterrupted journals."""
+
+    CASE = "no-code-at-the-interval-start"
+    PROBES = 8
+
+    def transport(self, **kwargs):
+        return WildcatTransport(self.state, case=self.CASE, **kwargs)
+
+    @staticmethod
+    def files(root):
+        return {
+            str(path.relative_to(root)): path.read_bytes()
+            for path in sorted(Path(root).rglob("*"))
+            if path.is_file() and "receipts" not in path.parts
+        }
+
+    def collected(self, name, transport):
+        root = self.scratch(name)
+        return root, Collector(self.plan, root, transport, registry=self.registry)
+
+    def uninterrupted(self):
+        root, collector = self.collected("uninterrupted", self.transport())
+        collector.collect()
+        return self.files(root)
+
+    @staticmethod
+    def stop(_envelope):
+        raise AlexandriaError("constructed stop")
+
+    def test_a_run_stopped_at_three_points_resumes_to_the_same_bytes(self):
+        expected = self.uninterrupted()
+        start = self.plan["interval"]["start"]
+        points = {
+            # After the probes, before the first shard: nothing is on disk.
+            "before the first shard": ("shard 0 boundary-blocks", {}, self.PROBES),
+            # After the held probes are journaled: they are committed and replayed.
+            "after the probes are journaled": (
+                f"opening read {self.PROBES} first-block-header block {start}", None, 0,
+            ),
+        }
+        for label, (fault, left, asked_again) in points.items():
+            with self.subTest(stopped=label):
+                root, collector = self.collected(
+                    re.sub(r"\W", "-", label), self.transport(faults={fault: self.stop})
+                )
+                with self.assertRaisesRegex(AlexandriaError, "constructed stop"):
+                    collector.collect()
+                if left is not None:
+                    self.assertEqual(self.files(root), left)
+                else:
+                    self.assertEqual(len(existing.opening_entries(root)), self.PROBES)
+                resumed = self.transport()
+                Collector(self.plan, root, resumed, registry=self.registry).collect()
+                self.assertEqual(
+                    sum("first-code-probe" in name for _method, name in resumed.calls), asked_again
+                )
+                self.assertEqual(self.files(root), expected)
+
+    def test_a_run_stopped_as_the_first_held_probe_is_journaled_asks_them_again(self):
+        expected = self.uninterrupted()
+        root, collector = self.collected("first-record", self.transport())
+        record = collector.staging.record
+
+        def refusing(shard, name, request, response):
+            if name == OPENING_CLASS:
+                raise AlexandriaError("constructed stop at the first opening record")
+            return record(shard, name, request, response)
+
+        with mock.patch.object(collector.staging, "record", side_effect=refusing):
+            with self.assertRaisesRegex(AlexandriaError, "constructed stop"):
+                collector.collect()
+        # Every shard is committed and no opening read is.
+        self.assertEqual(existing.checkpoint(root)["next_shard"], len(self.plan["shards"]))
+        self.assertEqual(existing.checkpoint(root)["offsets"][OPENING_CLASS], 0)
+        resumed = self.transport()
+        Collector(self.plan, root, resumed, registry=self.registry).collect()
+        self.assertEqual(
+            sum("first-code-probe" in name for _method, name in resumed.calls), self.PROBES
+        )
+        self.assertEqual(self.files(root), expected)
+
+    def test_a_reorg_rewind_drops_the_journaled_probes_and_asks_them_again(self):
+        root, collector = self.collected("reorg", self.transport())
+        collector.collect()
+        moved = self.plan["shards"][2]["start"] + 3
+        again = self.transport(reorg_from=moved)
+        summary = Collector(self.plan, root, again, registry=self.registry).collect()
+        self.assertEqual(summary["resumed_from"], 2)
+        self.assertEqual(
+            sum("first-code-probe" in name for _method, name in again.calls), self.PROBES
+        )
+        self.assertEqual(
+            summary["opening_reads"], {"issued": 147, "resumed_from": 0, "total": 147}
+        )
+        Reconciler(
+            self.plan, root, self.transport(reorg_from=moved), SECOND_PROVIDER, registry=self.registry,
+        ).reconcile()
+        output = self.root / "reorg-release"
+        Builder(self.plan, root, self.registry, created_at=CREATED_AT).build(output)
+        self.assertEqual(check_interval(output)["epochs"], 137)
+
+    def test_held_bytes_for_another_request_are_not_journaled(self):
+        root, collector = self.collected("other-held", self.transport())
+        preliminary = collector._preliminary_reads
+
+        def swapped():
+            preliminary()
+            payload, data, result = collector._held[0]
+            collector._held[0] = (payload + b" ", data, result)
+
+        with mock.patch.object(collector, "_preliminary_reads", side_effect=swapped):
+            collector.collect()
+        # The first probe was asked twice: once held, and once more because
+        # the held request was not the one its position names.
+        first = f"opening read 0 first-code-probe block {self.plan['interval']['start']}"
+        self.assertEqual(sum(name == first for _method, name in collector.transport.calls), 2)
+        self.assertEqual(self.files(root), self.uninterrupted())
+
+    def test_a_probe_answer_that_is_not_code_refuses_before_any_shard(self):
+        label = f"opening read 0 first-code-probe block {self.plan['interval']['start']}"
+        for index, specimen in enumerate((None, 7, {}, [], "0xzz", "0x1", "60806040")):
+            with self.subTest(answer=specimen):
+                answer = lambda envelope, value=specimen: canonical_bytes(  # noqa: E731
+                    {"id": envelope["id"], "jsonrpc": "2.0", "result": value}
+                )
+                transport = self.transport(faults={label: answer})
+                root, collector = self.collected(f"answer-{index}", transport)
+                with self.assertRaises(Exception) as raised:
+                    collector.collect()
+                self.assertIsInstance(raised.exception, AlexandriaError)
+                self.assertFalse({"eth_getLogs", "trace_filter"} & {m for m, _name in transport.calls})
+
+
+class BisectionEdgeTests(WildcatCase):
+    """Termination and bounds where the interval or the boundary is at an edge."""
+
+    def drive(self, start, end, answer):
+        plan = deepcopy(self.plan)
+        plan["interval"] = {"start": str(start), "end": str(end)}
+        plan["shards"] = interval.plan_shards(start, end, plan["shard_width"])
+        interval.validate_plan(plan)
+        phase = wildcat_v2.opening_phase(plan, self.registry, [])
+        asked = []
+        for read in phase.preliminary_reads():
+            asked.append(read["block"])
+            phase.accept(read, answer(read["block"]))
+        return asked, phase
+
+    def test_intervals_of_one_and_two_blocks(self):
+        base = int(self.plan["interval"]["start"])
+        code = self.state["code"][COLLATERAL_STORAGE]
+        asked, phase = self.drive(base, base, lambda block: code)
+        self.assertEqual((asked, phase.first_code_rows()[0]["opening"]), ([base], "interval-start"))
+        with self.assertRaisesRegex(AlexandriaError, "no runtime code at the interval end"):
+            self.drive(base, base, lambda block: "0x")
+        asked, phase = self.drive(base, base + 1, lambda block: code if block > base else "0x")
+        self.assertEqual(asked, [base, base + 1])
+        self.assertEqual(
+            (phase.first_code_rows()[0]["empty_block"], phase.first_code_rows()[0]["code_block"]),
+            (str(base), str(base + 1)),
+        )
+        with self.assertRaisesRegex(AlexandriaError, "no runtime code at the interval end"):
+            self.drive(base, base + 1, lambda block: "0x")
+
+    def test_every_first_code_block_in_the_interval_is_found_within_the_bound(self):
+        start, end = (int(self.plan["interval"][key]) for key in ("start", "end"))
+        code = self.state["code"][COLLATERAL_STORAGE]
+        worst = 0
+        for first in range(start + 1, end + 1):
+            asked, phase = self.drive(start, end, lambda block, first=first: code if block >= first else "0x")
+            row = phase.first_code_rows()[0]
+            self.assertEqual((row["empty_block"], row["code_block"]), (str(first - 1), str(first)))
+            self.assertEqual(len(asked), len(set(asked)))
+            worst = max(worst, len(asked))
+        self.assertEqual(worst, wildcat_v2.max_probes(start, end))
+
+    def test_answers_that_are_not_monotonic_still_end_on_a_pair_that_was_read(self):
+        """A bisection cannot see code that comes and goes between its reads.
+
+        Every block it has read below its lower bound was empty and every one
+        above its upper bound had code, so no answer contradicts another. It
+        neither loops nor invents a boundary: it ends within the bound on two
+        adjacent blocks it read. What it misses is the collector document's
+        stated limit.
+        """
+        start, end = (int(self.plan["interval"][key]) for key in ("start", "end"))
+        code = self.state["code"][COLLATERAL_STORAGE]
+        patterns = {
+            "code, then none, then code": lambda b: code if start + 10 <= b <= start + 20 or b >= start + 61 else "0x",
+            "code at the first midpoint only": lambda b: code if b == start + 39 or b >= start + 70 else "0x",
+        }
+        for label, answer in patterns.items():
+            with self.subTest(pattern=label):
+                asked, phase = self.drive(start, end, answer)
+                row = phase.first_code_rows()[0]
+                low, high = int(row["empty_block"]), int(row["code_block"])
+                self.assertLessEqual(len(asked), wildcat_v2.max_probes(start, end))
+                self.assertEqual(high, low + 1)
+                self.assertIn(low, asked)
+                self.assertIn(high, asked)
+                self.assertEqual((answer(low), answer(high)), ("0x", code))
+
+
+class FirstCodeReconciliationTests(WildcatCase):
+    """One probe the second transport answers differently, or cannot answer."""
+
+    CASE = "no-code-at-the-interval-start"
+    OBSERVED = FirstCodeTests.OBSERVED
+    staged_case = FirstCodeTests.staged_case
+    released_case = FirstCodeTests.released_case
+
+    def reconciled(self, name, faults):
+        staging = self.scratch(f"{name}-staging")
+        Collector(
+            self.plan, staging, WildcatTransport(self.state, case=self.CASE), registry=self.registry
+        ).collect()
+        second = WildcatTransport(self.state, case=self.CASE, faults=faults)
+        document = Reconciler(
+            self.plan, staging, second, SECOND_PROVIDER, registry=self.registry
+        ).reconcile()
+        self.assertEqual(sum(name in faults for _method, name in second.calls), 1)
+        return staging, document
+
+    def answer(self, value):
+        return lambda envelope: canonical_bytes(
+            {"id": envelope["id"], "jsonrpc": "2.0", "result": value}
+        )
+
+    def test_exactly_one_probe_answered_differently_is_exactly_one_dispute(self):
+        code = self.state["code"][COLLATERAL_STORAGE]
+        specimens = {
+            "empty at the code block": (6, self.OBSERVED, "0x"),
+            "code at the empty block": (7, self.OBSERVED - 1, code),
+            "other code at the interval end": (1, int(self.plan["interval"]["end"]), "0x60806040" + "cd" * 16),
+        }
+        for label, (position, block, value) in specimens.items():
+            with self.subTest(second=label):
+                fault = f"opening read {position} first-code-probe block {block} second provider"
+                _staging, document = self.reconciled(re.sub(r"\W", "-", label), {fault: self.answer(value)})
+                record = document["reconciliation"]
+                self.assertEqual(record["status"], "disputed")
+                self.assertEqual(record["compared"] - record["matched"], 1)
+                self.assertEqual(record["disputed"], [{
+                    "identity": f"code of {COLLATERAL_STORAGE} at block {block}",
+                    "kind": "code-digest", "shard": len(self.plan["shards"]),
+                }])
+
+    def test_a_second_transport_that_cannot_serve_a_probe_leaves_the_interval_unreconciled(self):
+        def cannot(_envelope):
+            raise AlexandriaError("constructed: state pruned")
+
+        end = self.plan["interval"]["end"]
+        fault = f"opening read 1 first-code-probe block {end} second provider"
+        errors = {
+            "a transport failure": cannot,
+            "an error object": lambda envelope: canonical_bytes({
+                "id": envelope["id"], "jsonrpc": "2.0",
+                "error": {"code": -32000, "message": "missing trie node"},
+            }),
+        }
+        for label, answer in errors.items():
+            with self.subTest(second=label):
+                staging, document = self.reconciled(re.sub(r"\W", "-", label), {fault: answer})
+                self.assertEqual(document["reconciliation"]["status"], "unreconciled")
+                self.assertEqual(document["reconciliation"]["disputed"], [])
+                output = self.root / f"{re.sub(r'[^a-z]', '-', label)}-release"
+                Builder(self.plan, staging, self.registry, created_at=CREATED_AT).build(output)
+                self.assertEqual(check_interval(output)["reconciliation"], "unreconciled")
+                for name in EVIDENCE_COMPONENTS:
+                    coverage = self.captures(output)[name]["coverage"]
+                    self.assertEqual(coverage["status"], "partial")
+                    self.assertIn("the interval was not reconciled against a second provider", coverage["gaps"])
+
+    def test_check_refuses_a_first_code_row_for_a_subject_with_a_recorded_block(self):
+        _staging, _document, output = self.released_case("recorded-row", self.CASE)
+        path = existing.component_path(output, "epoch-table")
+        released = path.read_bytes()
+        row = {
+            "code_block": str(DEPLOY_BLOCK), "empty_block": str(DEPLOY_BLOCK - 1),
+            "opening": "observed-block", "subject": NEW_MARKET,
+        }
+        # The row brackets that subject's first block, so only the preserved reads refuse it.
+        receipt = json.loads(released)
+        interval.validate_first_code([row], epoch_table(receipt), int(self.plan["interval"]["start"]))
+        edits = {
+            "beside the unrecorded subject's row": (
+                lambda rows: rows.__setitem__(slice(None), sorted(rows + [row], key=lambda r: r["subject"])),
+                "do not match the opening reads",
+            ),
+            "in place of it": (lambda rows: rows.__setitem__(slice(None), [row]), "do not match the opening reads"),
+            "two rows for one subject": (lambda rows: rows.append(dict(rows[0])), "repeat a subject"),
+            "rows out of order": (
+                lambda rows: rows.__setitem__(
+                    slice(None), sorted(rows + [row], key=lambda r: r["subject"], reverse=True)
+                ),
+                "ascending subject order",
+            ),
+        }
+        for label, (edit, message) in edits.items():
+            with self.subTest(edit=label):
+                path.write_bytes(released)
+                self.rewrite(output, "epoch-table", lambda r: edit(r["first_code"]))
+                with self.assertRaisesRegex(AlexandriaError, message):
+                    self.check_without_verify(output)
+        path.write_bytes(released)
+        self.check_without_verify(output)
+
+
 class FixtureTests(unittest.TestCase):
     def test_the_fixture_declares_the_registrys_subjects_and_says_it_is_constructed(self):
         state = fixture()

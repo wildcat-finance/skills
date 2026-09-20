@@ -1653,6 +1653,15 @@ class FirstCodeRowTests(unittest.TestCase):
                 self.assertIsInstance(raised.exception, AlexandriaError)
                 self.assertRegex(str(raised.exception), message)
 
+    def test_the_row_count_is_bounded_by_the_subject_limit(self):
+        rows = [dict(self.rows[0], subject=f"0x{index + 1:040x}") for index in range(MAX_SUBJECTS + 1)]
+        with self.assertRaisesRegex(AlexandriaError, "not a bounded list"):
+            interval.validate_first_code(rows, self.table, 1000)
+        # One row fewer passes the bound and is refused for what it says instead.
+        with self.assertRaises(AlexandriaError) as raised:
+            interval.validate_first_code(rows[:MAX_SUBJECTS], self.table, 1000)
+        self.assertNotIn("not a bounded list", str(raised.exception))
+
     def test_rows_out_of_order_repeated_or_not_a_list_refuse(self):
         for label, rows, message in (
             ("reversed", list(reversed(self.rows)), "ascending subject order"),
