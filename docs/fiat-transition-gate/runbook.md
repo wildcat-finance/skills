@@ -642,3 +642,83 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/fiat-trans
 **Why.** The Hypomnema walk over the drafts directory alone reports two H009 findings on an inherited draft that cites two numbered records, because the numbered records sit one directory up and are never indexed. Walking the whole decisions directory indexes them and reads clean. The inherited draft stays untouched.
 **Steps touched.** Step 8's exit.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.
+
+### Amendment -- 2026-09-20
+
+**What changed.** Complete replacement Exit: The command below exits 0, the checks runner reports outcome green, and the deliverables that follow hold:
+
+```sh
+python3 scripts/run_checks.py --base fiat/871-promise-bound-transition-gate-for-every-fiat --scope root --scope hexaemeron --format json
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins/hexaemeron/skills/fiat/scripts/transition_gate.py
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/references/transition-gate.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py plugins/hexaemeron/skills/fiat/references docs/decisions
+```
+
+- `transition_gate.evaluate` takes the state digest, the ledger tail digest
+  and count, the canonical directive, the handler and subcommand, the
+  normalised command and its evidence. It returns a closed
+  `fiat-transition-grant/v1` object naming Promise id, consequence,
+  transition, directive, state digest and ledger tail, or raises a closed
+  `fiat-transition-refusal/v1` naming Promise id, consequence, blocked
+  transition, stable code and recovery.
+- The module imports only the standard library, opens no file, starts no
+  process and reads no prose. A source test proves this from its AST.
+- The rule table is closed: an unknown command, field, Promise id, directive
+  shape, recovery path or consequence level refuses. Every name in `MUTATING`
+  has a rule that names an existing declared Promise, except
+  `start-audit-loop`, whose rule is added in Step 4.
+- The rules encode the ADR-047 configuration allowlist and the typed
+  `resume` of study assumption 4: at an exhausted-loop halt a `resume` that
+  names no exit refuses, and a `resume` naming the `audit-verdict` exit is
+  granted.
+- `references/transition-gate.md` states the two schemas and every stable
+  refusal code, and carries the same-account limit.
+- `hexctl.py` is unchanged in this step.
+
+**Why.** The Hypomnema walk over Fiat's own directory alone reports three H009 findings on two inherited checkpoint references, because the decision records they cite sit under the decisions directory and are never indexed. The same three appear on the step's entry commit. Adding the decisions directory to the walk indexes them and reads clean. The inherited references stay untouched.
+**Steps touched.** Step 2's exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.
+
+### Amendment -- 2026-09-20
+
+**What changed.** Complete replacement Exit: The command below exits 0, the checks runner reports outcome green, and the deliverables that follow hold:
+
+```sh
+python3 scripts/run_checks.py --base fiat/871-promise-bound-transition-gate-for-every-fiat --scope root --scope hexaemeron --format json
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins/hexaemeron/skills/fiat/scripts/hexctl.py
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/SKILL.md plugins/hexaemeron/skills/fiat/references/transition-gate.md plugins/hexaemeron/skills/fiat/references/audit-loop.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py plugins/hexaemeron/skills/fiat docs/decisions
+```
+
+- The gate grants `start-audit-loop` only when the run, step, ledger,
+  controller version and worktree match the preimage; a verified
+  exhausted-loop checkpoint and its digest are supplied; the predecessor loop
+  ended at round 8 or its lower configured limit; the complete open-finding
+  identities and unresolved leads are bound; one further bounded loop carries
+  recorded user authority; and no label or unreceipted tree movement is
+  pending. The authority is recorded as an operator declaration, never as
+  authenticated identity.
+- The transition appends loop N + 1 to `audit.continuations`, sets its next
+  round to 1, binds it to the predecessor digest and checkpoint, clears the
+  exhausted-loop halt, and appends one `audit-loop-start` ledger entry. `next`
+  returns `audit-round` with loop 2 and round 1.
+- The canonical bytes of `steps[*].audit.rounds` are identical before loop 2
+  opens and after it closes. Each loop holds at most eight rounds. A ninth
+  round refuses in either loop, and no state, log heading, directive or file
+  name represents one. A missing or altered open-finding identity refuses.
+- New checkpoint archives carry the loop ordinal in the boundary `loop` field
+  and directory name. An archive written earlier with a round count in that
+  field still inspects and restores.
+- Carryover custody and replacement admission fixtures still reach only
+  their own directives.
+- Fiat's `SKILL.md` declares `fiat-audit-loop-continuation` after the
+  governed range, adds the directive-table row and one hard rule, and points
+  at `references/transition-gate.md`. The Promise has its coverage entry and
+  promise cases, and the agent-instruction fixture chain is rebuilt by its
+  builder.
+- The conformance report for `product-appends-loop-two` exists at its
+  recorded path with value true.
+
+**Why.** The Hypomnema walk over Fiat's own directory alone reports three H009 findings on two inherited checkpoint references, because the decision records they cite sit under the decisions directory and are never indexed. The same three appear on the step's entry commit. Adding the decisions directory to the walk indexes them and reads clean. The inherited references stay untouched.
+**Steps touched.** Step 4's exit.
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.

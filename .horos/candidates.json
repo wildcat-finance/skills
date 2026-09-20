@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 56980060,
+    "bytes_blob": 57027601,
     "bytes_generated": 98
   },
   "entries": [
@@ -516,6 +516,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-861-outer-checkpoint-archive-export-and-restore.synopsis.md"
+    },
+    {
+      "bytes": 47541,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-871-promise-bound-transition-gate-for-every-fiat.synopsis.md"
     },
     {
       "bytes": 46184,
