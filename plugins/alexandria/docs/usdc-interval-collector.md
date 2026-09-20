@@ -344,7 +344,9 @@ Every code read lands in the one `epoch-evidence` journal, which holds at most
 67,108,864 bytes. From the registry's code lengths, `collect`, `reconcile` and
 `build` refuse a subject set whose code cannot fit while the plan is
 validated, before any request. The Wildcat V2 estate's 137 subjects need about
-5.5 MB of it.
+5.6 MB of it read once each. The estimate also charges a subject with no
+recorded creation block its whole code at every probe it could need, which
+makes about 6.0 MB over an interval of 4.1 million blocks.
 
 ## Resuming, and rewinding
 

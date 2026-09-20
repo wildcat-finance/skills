@@ -2317,6 +2317,89 @@ class FirstCodeReconciliationTests(WildcatCase):
         self.check_without_verify(output)
 
 
+class ExitClauseTests(WildcatCase):
+    """Clauses of the step's Exit and Tests that no other case pins over the whole estate."""
+
+    def test_the_estates_80_preserved_deploy_events_agree_with_the_registry(self):
+        """Every declared market, not only the one inside the fixture interval."""
+        estate = json.loads((REPO_ROOT / wildcat_registry.ESTATE_PATH).read_text(encoding="utf-8"))
+        factory = next(e["address"] for e in self.registry["entries"] if e["role"] == "factory")
+        events = [e for e in estate["factory_events"]["events"] if e["event"] == "MarketDeployed"]
+        self.assertEqual(len(events), 80)
+        logs = []
+        for event in events:
+            number = event["block_number"]
+            logs.append({
+                "address": factory, "topics": event["topics"],
+                "blockNumber": number if isinstance(number, str) else hex(number),
+            })
+        blocks = [int(log["blockNumber"], 16) for log in logs]
+        plan = deepcopy(self.plan)
+        plan["interval"] = {"start": str(min(blocks)), "end": str(max(blocks))}
+        report = wildcat_v2.market_deploy_report(plan, self.registry, logs)
+        self.assertTrue(report["compared"])
+        self.assertEqual((report["declared"], len(report["expected"]), len(report["observed"])), (80, 80, 80))
+        self.assertEqual((report["missing"], report["misplaced"], report["undeclared"]), ([], [], []))
+        # One event moved by a block is the disagreement the release would report.
+        logs[0] = dict(logs[0], blockNumber=hex(blocks[0] + 1))
+        moved = wildcat_v2.market_deploy_report(plan, self.registry, logs)
+        self.assertEqual(len(moved["misplaced"]), 1)
+
+    def test_every_split_evidence_scope_says_which_opening_applied(self):
+        state = deepcopy(self.state)
+        state["plan"]["shards_per_component"] = 1
+        case = "no-code-at-the-interval-start"
+        staging = self.scratch("split-staging")
+        Collector(state["plan"], staging, WildcatTransport(state, case=case), registry=self.registry).collect()
+        Reconciler(
+            state["plan"], staging, WildcatTransport(state, case=case), SECOND_PROVIDER,
+            registry=self.registry,
+        ).reconcile()
+        output = self.root / "split"
+        Builder(state["plan"], staging, self.registry, created_at=CREATED_AT).build(output)
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        scopes = [c for c in self.captures(output).values() if c["evidence_class"] == "recorded-rpc"]
+        # Three classes over four components, and the one opening journal.
+        self.assertEqual(len(scopes), 13)
+        for capture in scopes:
+            with self.subTest(scope=capture["id"]):
+                gaps = capture["coverage"]["gaps"]
+                named = [gap for gap in gaps if COLLATERAL_STORAGE in gap]
+                self.assertEqual(len(named), 1)
+                self.assertIn("not a recorded deployment block", named[0])
+                self.assertEqual(sum("constructed rather than collected" in gap for gap in gaps), 1)
+
+    def test_the_registry_capture_speaks_of_an_epoch_only_for_a_declared_subject(self):
+        declared = [gap for gap in wildcat_v2.gaps(self.registry, self.plan) if COLLATERAL_STORAGE in gap]
+        self.assertEqual(len(declared), 1)
+        self.assertIn("its epoch opens at the interval start when", declared[0])
+        self.assertEqual(wildcat_v2.gaps(self.registry), wildcat_v2.gaps(self.registry, None))
+        plan = deepcopy(self.plan)
+        plan["subjects"].remove(COLLATERAL_STORAGE)
+        undeclared = [gap for gap in wildcat_v2.gaps(self.registry, plan) if COLLATERAL_STORAGE in gap]
+        self.assertEqual(len(undeclared), 1)
+        self.assertIn("deployment block is not established", undeclared[0])
+        self.assertNotIn("epoch", undeclared[0])
+        self.assertTrue(any("1 of the 137" in gap for gap in wildcat_v2.gaps(self.registry, plan)))
+        # With the subject undeclared there is no first-code row and no evidence-scope sentence.
+        self.assertEqual(
+            [gap for gap in wildcat_v2.evidence_gaps(plan, self.registry, [], []) if COLLATERAL_STORAGE in gap],
+            [],
+        )
+        schema = json.loads((PLUGIN / "schemas" / "interval-receipt-v3.schema.json").read_text())
+        self.assertIn("declared subject", schema["properties"]["first_code"]["description"])
+
+    def test_the_plan_time_estimate_is_the_figure_the_collector_document_gives(self):
+        entries = wildcat_registry.subject_entries(self.registry)
+        cost = lambda subject: 2 * entries[subject]["code_length"] + wildcat_v2.OPENING_ENTRY_OVERHEAD  # noqa: E731
+        once = sum(cost(subject) for subject in entries)
+        long = once + (wildcat_v2.max_probes(21866550, 25960042) - 1) * cost(COLLATERAL_STORAGE)
+        self.assertEqual((round(once / 1e6, 1), round(long / 1e6, 1)), (5.6, 6.0))
+        document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
+        self.assertIn("about\n5.6 MB of it read once each", document)
+        self.assertIn("about 6.0 MB over an interval of 4.1 million blocks", document)
+
+
 class FixtureTests(unittest.TestCase):
     def test_the_fixture_declares_the_registrys_subjects_and_says_it_is_constructed(self):
         state = fixture()

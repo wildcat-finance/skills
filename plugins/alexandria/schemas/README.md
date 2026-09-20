@@ -155,7 +155,7 @@ Its `epochs` is one list of subject rows, `{"epochs": [...], "subject": "<addres
 Each row's `epochs` is that subject's own epoch list under the v2 epoch and position rules, unedited, and the 256-epoch limit bounds each subject's list, never their sum.
 A subject's first epoch opens at a block sentinel, as the single-proxy table's does at the interval start.
 A subject with no extent inside the interval carries no row.
-`first_code` holds one row per subject with no recorded creation block, in ascending subject order.
+`first_code` holds one row per declared subject with no recorded creation block, in ascending subject order.
 A row's `opening` is `interval-start`, with a null `empty_block`, or `observed-block`: empty code read at `empty_block`, runtime code at `code_block`, the next block.
 `code_block` is the `start_block` of that subject's first epoch, and `check` re-derives every row from the preserved `epoch-evidence` reads.
 Every `log_attributions` row adds the required `subject` that emitted the log, and `epoch_index` counts within that subject's own list.

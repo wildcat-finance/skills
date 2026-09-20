@@ -29,7 +29,7 @@
     },
     "first_code": {
       "type": "array",
-      "description": "One row per subject whose registry records no creation block, in strictly ascending subject order; empty when every subject has one. It says where that subject's epoch was opened, so an observed block is never read as a recorded one. check re-derives every row from the preserved epoch-evidence reads.",
+      "description": "One row per declared subject whose registry records no creation block, in strictly ascending subject order; empty when every declared subject has one. It says where that subject's epoch was opened, so an observed block is never read as a recorded one. check re-derives every row from the preserved epoch-evidence reads.",
       "maxItems": 4096,
       "items": {
         "$ref": "#/$defs/first_code"

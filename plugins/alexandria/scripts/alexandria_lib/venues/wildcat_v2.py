@@ -538,9 +538,13 @@ def gaps(registry, plan=None) -> list[str]:
         f"the registry pins no source bytes; every one of its {len(entries)} subjects names a "
         f"source commit, {private} of them in a repository private to the organisation",
     ]
+    declared = None if plan is None or "subjects" not in plan else set(plan["subjects"])
     for entry in entries:
         if entry["deployment_block"] is None:
-            result.append(_missing_block_gap(entry["address"]))
+            # A subject the plan does not declare has no epoch to speak of.
+            result.append(_missing_block_gap(
+                entry["address"], opens=declared is None or entry["address"] in declared
+            ))
     if plan is not None and "subjects" in plan:
         undeclared = len(entries) - len(set(plan["subjects"]) & set(subject_entries(registry)))
         if undeclared:
@@ -551,17 +555,21 @@ def gaps(registry, plan=None) -> list[str]:
     return result
 
 
-def _missing_block_gap(address: str, row=None) -> str:
+def _missing_block_gap(address: str, row=None, *, opens=True) -> str:
     """One unrecorded subject's gap; with `row`, which opening applied.
 
-    The registry capture owes the first clause alone: it holds no opening
-    read. An evidence scope says which opening applied, so an observed block
-    is never read as a recorded one.
+    The registry capture holds no opening read, so it owes the first clause
+    and, for a subject the plan declares, the rule its epoch opens by; for one
+    the plan does not declare it owes the first clause alone. An evidence
+    scope says which opening applied, so an observed block is never read as a
+    recorded one.
     """
     missing = (
         f"the merged records carry no creation block for subject {address}, so its deployment "
         "block is not established"
     )
+    if not opens:
+        return missing
     if row is None:
         return (
             f"{missing}; its epoch opens at the interval start when it has runtime code there "
