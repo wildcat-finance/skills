@@ -39,8 +39,9 @@ transition_gate.evaluate(
 | `evidence` | `promise`, `consequence` and `recovery`, each optional, plus any field the rule names |
 
 Every value is an exact built-in type. A subclass of `dict`, `str` or `list`
-refuses, and so does an integer outside the signed 64-bit range. No input
-leaves `evaluate` as any exception but `Refusal`.
+refuses, and so does an integer below -(2^63 - 1) or above 2^63 - 1, so -2^63
+refuses although a signed 64-bit field holds it. No input leaves `evaluate` as
+any exception but `Refusal`.
 
 The canonical directive is a projection of `_next_directive`, not its whole
 output. It carries `do`, an optional positive `step`, `round` when and only

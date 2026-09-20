@@ -384,6 +384,39 @@ class TableTests(GateCase):
         self.assertIn("It is not privilege\nisolation", text)
 
 
+class RecoveryLineTests(GateCase):
+    """A recovery line is what the operator acts on, so it cannot be empty or stale."""
+
+    def test_every_code_has_its_own_instruction(self):
+        lines = list(gate.REFUSALS.values())
+        self.assertEqual(len(lines), 24)
+        self.assertEqual(len(set(lines)), len(lines))
+        for code, line in gate.REFUSALS.items():
+            with self.subTest(code=code):
+                self.assertIs(type(line), str)
+                self.assertGreaterEqual(len(line.split()), 5)
+
+    def test_a_line_names_the_value_of_each_constant_it_depends_on(self):
+        lines = gate.REFUSALS
+        self.assertIn(f"rounds 1 through {gate.LOOP_ROUND_MAX};", lines["round-out-of-range"])
+        self.assertIn(f"at most {gate.MAX_GRANT_BYTES:,} bytes", lines["grant-oversized"])
+        levels = sorted(gate.CONSEQUENCE_LEVELS)
+        self.assertIn(f"from {levels[0]} through {levels[-1]},", lines["consequence-unknown"])
+        for path in sorted(gate.CONFIG_SET_EXACT_PATHS) + [prefix + "*" for prefix in gate.CONFIG_SET_PREFIXES]:
+            self.assertIn(path, re.split(r"[ ,;]+", lines["config-path-immutable"]), path)
+        for exit_named in sorted(gate.RESUME_EXITS):
+            self.assertIn(f"`hexctl resume --to {exit_named}`", lines["resume-needs-named-exit"])
+            self.assertIn(f"`{exit_named}`", lines["resume-exit-unknown"])
+            self.assertIn(f"`{exit_named}`", lines["resume-exit-mismatch"])
+        for line in (lines["command-unknown"], lines["directive-shape-unknown"], lines["directive-unknown"],
+                     lines["directive-not-authorised"]):
+            self.assertIn("`hexctl next`", line)
+        for line in (lines["preimage-malformed"], lines["recovery-path-unknown"]):
+            self.assertIn("`hexctl verify`", line)
+        self.assertIn("do, step, round and covers", lines["directive-shape-unknown"])
+        self.assertEqual(gate.DIRECTIVE_FIELDS, {"do", "step", "round", "covers"})
+
+
 class ConfigAllowlistTests(GateCase):
     KEY = ("cmd_config", "set")
 
@@ -557,6 +590,17 @@ class UnknownValueTests(GateCase):
             with self.subTest(preimage=preimage):
                 self.assert_refusal("preimage-malformed", self.HALT, at("implement"), self.REASON, **preimage)
 
+    def test_a_run_holding_only_its_init_entry_is_granted(self):
+        grant = call(self.HALT, at("study"), self.REASON, ledger_count=1)
+        self.assertEqual(grant["ledger_count"], 1)
+
+    def test_a_directive_carrying_all_four_fields_is_read_field_by_field(self):
+        full = {"step": 2, "round": 1, "covers": "implement"}
+        self.assert_refusal("directive-unknown", self.HALT, {"do": "round-9", **full}, self.REASON)
+        for do in ("implement", "audit-round", "halted"):
+            with self.subTest(do=do):
+                self.assert_refusal("directive-shape-unknown", self.HALT, {"do": do, **full}, self.REASON)
+
     def test_an_absent_run_carries_no_digest(self):
         key = ("cmd_init", None)
         for preimage in ({"state_sha256": STATE}, {"ledger_tail": TAIL}, {"ledger_count": 1}):
@@ -696,6 +740,7 @@ FIELDS = {
 }
 TAIL_EVENT_RULES = {("cmd_checkpoint_export", None), ("cmd_checkpoint_archive", None)}
 HOSTILE_FIELDS = {"max_rounds", "round", "loop", "force", "dir", "zz"}
+HOSTILE_EVIDENCE = {"authority", "user", "loop", "round", "max_rounds", "reason", "zz"}
 
 
 class CommandFieldTests(GateCase):
@@ -756,6 +801,20 @@ class CommandFieldTests(GateCase):
                     self.assertIsNone(code)
                 else:
                     self.assertEqual(code, "evidence-field-unknown")
+
+    def test_each_rule_admits_the_evidence_written_here_and_no_other(self):
+        decided = 0
+        for key, (granted, _) in CASES.items():
+            directive, command, evidence = granted
+            for name in sorted(HOSTILE_EVIDENCE | {"tail_event"}):
+                decided += 1
+                with self.subTest(key=key, evidence=name):
+                    code = self.code(key, directive, command, {**evidence, name: "x"})
+                    if name == "tail_event" and key in TAIL_EVENT_RULES:
+                        self.assertEqual(code, "checkpoint-boundary-unaccepted")
+                    else:
+                        self.assertEqual(code, "evidence-field-unknown")
+        self.assertEqual(decided, 29 * 8)
 
     def test_no_ledger_event_but_the_two_boundaries_is_an_accepted_tail(self):
         events = ("init", "record", "config-set", "halt", "resume", "retire", "observe", "amend:study",
@@ -876,6 +935,7 @@ class ExactTypeTests(GateCase):
         self.assert_refusal("directive-shape-unknown", self.HALT, {"do": "audit-round", "round": wide}, self.REASON)
         self.assert_refusal("consequence-unknown", self.HALT, at("implement"), self.REASON, {"consequence": wide})
         self.granted(("cmd_done", "prose"), at("prose"), {"files": 2**63 - 1})
+        self.granted(("cmd_done", "prose"), at("prose"), {"files": -(2**63 - 1)})
 
     def test_a_subclass_cannot_stand_in_for_a_plain_value(self):
         text = self.Text
@@ -970,6 +1030,10 @@ class CloseAuditTests(GateCase):
                             {"no_further_leads": False, "reason": "accepted"}, {"no_further_leads": "true", "reason": "accepted"}):
                 with self.subTest(directive=directive["do"], command=command):
                     self.assert_refusal("audit-close-needs-no-further-leads", self.KEY, directive, command)
+            for reason in (True, 7, ["accepted"]):
+                with self.subTest(directive=directive["do"], reason=reason):
+                    self.assert_refusal("audit-close-needs-no-further-leads", self.KEY, directive,
+                                        {"no_further_leads": True, "reason": reason})
             granted = {"no_further_leads": True, "reason": "accepted by the maintainer"}
             self.assert_grant(call(self.KEY, directive, granted), self.KEY, directive, granted)
 
@@ -979,7 +1043,12 @@ class CheckpointBoundaryTests(GateCase):
         for key, command in ((("cmd_checkpoint_export", None), {"out": "capsule"}), (("cmd_checkpoint_archive", None), {})):
             self.assert_grant(call(key, at("inoculate"), command, PUSHED), key, at("inoculate"), command)
             self.assert_grant(call(key, at("audit-verdict"), command, {"tail_event": "audit-round"}), key, at("audit-verdict"), command)
-            for evidence in ({}, {"tail_event": None}, {"tail_event": "resume"}, {"tail_event": 7}):
+            class Text(str):
+                pass
+
+            for evidence in ({}, {"tail_event": None}, {"tail_event": "resume"}, {"tail_event": 7},
+                             {"tail_event": ["done:push"]}, {"tail_event": {"done:push": 1}},
+                             {"tail_event": Text("done:push")}, {"tail_event": True}):
                 with self.subTest(key=key, evidence=evidence):
                     self.assert_refusal("checkpoint-boundary-unaccepted", key, at("audit-verdict"), command, evidence)
             self.assert_refusal("directive-not-authorised", key, EXHAUSTED_HALT, command, PUSHED)
@@ -1002,6 +1071,17 @@ class GrantBudgetTests(GateCase):
         fits = {"reason": "r" * (65_536 - fixed)}
         self.assertEqual(len(gate.canonical(call(key, at("implement"), fits)).encode()), 65_536)
         self.assert_refusal("grant-oversized", key, at("implement"), {"reason": fits["reason"] + "r"})
+
+    def test_the_measured_form_is_the_controllers_canonical_json(self):
+        self.assertEqual(gate.canonical({"b": [1, "\u00e9", True], "a": None}), '{"a":null,"b":[1,"\\u00e9",true]}')
+        key = ("cmd_done", "push")
+        forward = {"pr_url": "https://example.invalid/pull/1", "head_commit": "a" * 40}
+        backward = dict(reversed(list(forward.items())))
+        one = call(key, {"do": "push", "step": 2}, forward)
+        other = call(key, {"step": 2, "do": "push"}, backward)
+        self.assertNotEqual(list(one["command"]), list(other["command"]))
+        self.assertEqual(gate.canonical(one), gate.canonical(other))
+        self.assertNotIn(" ", gate.canonical(one))
 
     def test_non_ascii_values_are_measured_in_bytes(self):
         key = ("cmd_halt", None)
