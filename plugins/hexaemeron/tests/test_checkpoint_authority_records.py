@@ -563,17 +563,23 @@ class AuthenticatedHostileTests(unittest.TestCase):
 
 
 class BoundaryTests(unittest.TestCase):
-    def test_timeout_reaps_descendants_after_verifier_parent_exits(self):
+    def test_exit_and_timeout_reap_verifier_descendants(self):
         executable = str(Path(sys.executable).resolve())
         pin = signatures.ToolPin('openssl', executable, digest(Path(executable).read_bytes()))
-        with tempfile.TemporaryDirectory() as temporary:
-            directory = Path(temporary)
-            try:
-                with self.assertRaisesRegex(Refusal, 'tool-timeout'):
-                    signatures._run(pin, ['-c', DESCENDANT_PROBE], directory, timeout=2)
-                assert_descendant_stopped(self, directory)
-            finally:
-                cleanup_descendant(directory)
+        for exited in (True, False):
+            with self.subTest(exited=exited), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                program = DESCENDANT_PROBE if exited else DESCENDANT_PROBE.replace('os._exit(0)', 'time.sleep(60)')
+                try:
+                    if exited:
+                        result = signatures._run(pin, ['-c', program], directory, timeout=2)
+                        self.assertEqual(result, (0, b'{}\n', b''))
+                    else:
+                        with self.assertRaisesRegex(Refusal, 'tool-timeout'):
+                            signatures._run(pin, ['-c', program], directory, timeout=2)
+                    assert_descendant_stopped(self, directory)
+                finally:
+                    cleanup_descendant(directory)
 
     def test_published_hostile_vectors(self):
         corpus=json.loads((FIXTURES/'hostile-records.json').read_bytes())

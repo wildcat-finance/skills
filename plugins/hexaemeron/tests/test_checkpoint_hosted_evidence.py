@@ -1,5 +1,6 @@
 """Hostile hosted specimens stay inert; only authenticated readback can admit."""
 import copy
+import contextlib
 import hashlib
 import io
 import json
@@ -46,6 +47,7 @@ class HostedEvidenceTests(unittest.TestCase):
                 "runner": {"os": runner_os, "arch": runner_arch, "name": "GitHub Actions 1"},
                 "runtime": {"platform": system, "machine": machine,
                             "os_version": "24.04" if system == "linux" else "15.7", "python": value["python"]},
+                "sandbox_setup": dict(hosted.LINUX_SETUP) if system == "linux" else None,
                 "started_at": "2026-09-20T12:00:00Z", "completed_at": "2026-09-20T12:01:00Z",
                 "source": hosted.inventory(self.root), "tools": tools, "policy": hosted.policy_descriptor(policy),
                 "network": expected, "release_exit": 0, "files": self.rows(files)}
@@ -87,6 +89,8 @@ class HostedEvidenceTests(unittest.TestCase):
                "labels": [profile], "runner_name": "GitHub Actions 1", "runner_group_name": "GitHub Actions",
                "runner_group_id": 0, "started_at": "2026-09-20T11:59:00Z", "completed_at": "2026-09-20T12:02:00Z",
                "steps": [{"name": "Run checkpoint conformance", "status": "completed", "conclusion": "success"}]}
+        if profile == "ubuntu-24.04":
+            job["steps"].append({"name": "Prepare the Linux sandbox policy", "status": "completed", "conclusion": "success"})
         archive = self.archive(files)
         artifact = {"id": 300, "name": hosted.artifact_name(profile, 100, 2), "expired": False,
                     "digest": "sha256:" + hashlib.sha256(archive).hexdigest(), "size_in_bytes": len(archive),
@@ -120,6 +124,24 @@ class HostedEvidenceTests(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises((hosted.owner.Refusal, hosted.NativeRefusal)):
                 hosted.validate_files(self.root, "ubuntu-24.04", self.execution(copy.deepcopy(original), change))
 
+    def test_linux_setup_refuses_profile_override_and_kernel_drift(self):
+        with patch.object(hosted.bounded, "hash_file", return_value=(hosted.APPARMOR_SHA256, 1936)) as hashed, \
+                patch.object(hosted.os.path, "lexists", return_value=False) as override, \
+                patch.object(hosted.bounded, "directory", return_value=contextlib.nullcontext((42, lambda: None))), \
+                patch.object(hosted.os, "open", return_value=43), \
+                patch.object(hosted.os, "read", return_value=b"1\n") as read, \
+                patch.object(hosted.os, "close"):
+            self.assertEqual(hosted.sandbox_setup("linux"), hosted.LINUX_SETUP)
+            for digest, present, raw in (("0" * 64, False, b"1\n"),
+                                         (hosted.APPARMOR_SHA256, True, b"1\n"),
+                                         (hosted.APPARMOR_SHA256, False, b"0\n"),
+                                         (hosted.APPARMOR_SHA256, False, b"1\nx")):
+                hashed.return_value = (digest, 1936); override.return_value = present; read.return_value = raw
+                with self.subTest(digest=digest, present=present, raw=raw), self.assertRaises(hosted.owner.Refusal):
+                    hosted.sandbox_setup("linux")
+            hashed.side_effect = AssertionError("foreign host prepared Linux policy")
+            self.assertIsNone(hosted.sandbox_setup("darwin"))
+
     def test_policy_argv_abi_tool_source_and_field_mutations_refuse(self):
         changes = (lambda h: h["policy"].update(argv=[]), lambda h: h["policy"].update(abi="arm64"),
                    lambda h: h["policy"].update(filter_sha256="0" * 64),
@@ -134,7 +156,12 @@ class HostedEvidenceTests(unittest.TestCase):
                    lambda h: h["runtime"].update(machine="arm64"),
                    lambda h: h["runtime"].update(os_version="22.04"),
                    lambda h: h["runner"].update(arch="ARM64"), lambda h: h.update(profile="macos-15"),
-                   lambda h: h.update(event_head_sha="3" * 40))
+                   lambda h: h.update(event_head_sha="3" * 40), lambda h: h.pop("sandbox_setup"),
+                   lambda h: h.update(sandbox_setup=None),
+                   lambda h: h["sandbox_setup"].update(apparmor_profile_sha256="0" * 64),
+                   lambda h: h["sandbox_setup"].update(userns_restriction=0),
+                   lambda h: h["sandbox_setup"].update(userns_restriction=True),
+                   lambda h: h["sandbox_setup"].update(local_overrides="present"))
         original = self.sample()
         for change in changes:
             with self.subTest(change=change), self.assertRaises((hosted.owner.Refusal, hosted.NativeRefusal)):
@@ -185,6 +212,8 @@ class HostedEvidenceTests(unittest.TestCase):
             lambda r,j,a: j["jobs"][0].update(labels=["macos-15"]),
             lambda r,j,a: j["jobs"][0].update(runner_name="another runner"),
             lambda r,j,a: j["jobs"][0]["steps"][0].update(conclusion="skipped"),
+            lambda r,j,a: j["jobs"][0]["steps"].pop(),
+            lambda r,j,a: j["jobs"][0]["steps"][1].update(conclusion="failure"),
             lambda r,j,a: j.update(jobs=[]), lambda r,j,a: j.update(total_count=101),
             lambda r,j,a: a.update(expired=True), lambda r,j,a: a.update(id=301),
             lambda r,j,a: a.update(name=hosted.artifact_name("ubuntu-24.04", 100, 1)),

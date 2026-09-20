@@ -360,6 +360,8 @@ success from live installation and isolation, which remain unestablished.
 
 Checkpoint release conformance uses apt's `bubblewrap` with the native x86_64
 seccomp policy on Linux and the existing `sandbox-exec` policy on macOS.
+Ubuntu CI loads the reviewed apt-provided AppArmor profile while keeping
+global user-namespace restrictions enabled.
 The focused workflow requires Ubuntu 24.04 x86_64 and macOS 15 arm64, with
 real network-denial probes and complete release execution on each.
 [Hosted evidence and recovery](../../docs/checkpoint-sandbox/hosted-evidence.md)

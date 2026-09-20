@@ -474,7 +474,9 @@ without the caller's own copy observations a complete publication stays
 ## Hosted release evidence
 
 The focused `checkpoint-conformance.yml` workflow runs the actual release suite
-on Ubuntu 24.04 x86_64 and macOS 15 arm64. It retains raw direct and executed
+on Ubuntu 24.04 x86_64 and macOS 15 arm64. Ubuntu uses the digest-checked
+AppArmor profile supplied by `apparmor-profiles`, with global user-namespace
+restrictions enabled and verifier execution unprivileged. It retains raw direct and executed
 descendant probe streams, release streams and the test log, plus exact checkout,
 source, fixture, runner and tool identities. Both jobs require complete
 execution without skips, all five cosign comparisons and the unchanged
