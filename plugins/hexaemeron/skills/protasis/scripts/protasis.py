@@ -963,6 +963,9 @@ def main(argv: list[str] | None = None) -> int:
                     import audit_applicability
                     applicability = audit_applicability.load_checked_applicability(
                         Path(args.applicability), source, Path(args.gate_root))
+                    if (applicability.status == "clean"
+                            and applicability.capture["runbook_sha256"] != audit_applicability.digest(captured)):
+                        findings.append(Finding(Path(name), 1, "A009", "validated-runbook-drift"))
                     for item in applicability.findings:
                         findings.append(Finding(Path(args.applicability), 1,
                                                 item.code, item.field))

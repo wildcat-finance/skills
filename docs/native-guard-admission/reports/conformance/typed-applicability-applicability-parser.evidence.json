@@ -30,7 +30,7 @@
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
-      "sha256": "8b3afbcb88be0ebe0ddf4d23e05fc90c85980b1fa676e7e5dd5bd5f86e000195"
+      "sha256": "661f0c8602a5f609a75433f7e492de61f823f5449e7ea4a34c57e4545d1e2ff3"
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py",
@@ -42,9 +42,9 @@
     },
     {
       "path": "plugins/hexaemeron/tests/test_audit_applicability.py",
-      "sha256": "83e616f162f54c05d0915e1a49457ed6404332a55e64cd3c140284fd86c994cc"
+      "sha256": "7b1ef94faabddf46485eb2a9785372d5bf6d9aa793596689c1e6f31be66899db"
     }
   ],
-  "tests": 46,
+  "tests": 47,
   "unexpected_successes": 0
 }

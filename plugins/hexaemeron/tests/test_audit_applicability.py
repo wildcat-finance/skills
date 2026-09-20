@@ -1,8 +1,10 @@
 """Exercise byte custody and inert routing over authored synthetic sources."""
+import contextlib
 import copy
 from dataclasses import FrozenInstanceError
 import hashlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -407,6 +409,39 @@ class ApplicabilityParserTests(unittest.TestCase):
         result = subprocess.run(argv, capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 1)
         self.assertEqual(json.loads(result.stdout)[0]["code"], "A006")
+
+    def test_cli_refuses_runbook_changed_after_command_validation(self):
+        protasis, gate = app._module("protasis"), app._module("gate_commands")
+        cli = "plugins/hexaemeron/tests/run_tests.py"
+        runner = self.root / cli
+        runner.parent.mkdir(parents=True)
+        shutil.copyfile(ROOT / cli, runner)
+        command = "python3 " + cli + " --jobs 8"
+        self.fixture.criteria["criteria"][0]["command"] = command
+        self.fixture.runbook.write_text(self.fixture.runbook.read_text().replace(COMMAND, command))
+        self.fixture.write()
+        validate, changed = gate.validate, []
+
+        def replace_after_validation(root, captured):
+            result = validate(root, captured)
+            later = command + " --unregistered-option"
+            self.fixture.runbook.write_text(self.fixture.runbook.read_text().replace(command, later))
+            self.fixture.criteria["criteria"][0]["command"] = later
+            self.fixture.write()
+            changed.append(True)
+            return result
+
+        output = io.StringIO()
+        with mock.patch.dict(sys.modules, {"gate_commands": gate, "audit_applicability": app}), \
+                mock.patch.object(gate, "validate", side_effect=replace_after_validation), \
+                contextlib.redirect_stdout(output):
+            status = protasis.main([str(self.fixture.runbook), "--gate-root", str(self.root),
+                                    "--applicability", str(self.fixture.study), "--format", "json"])
+        self.assertTrue(changed)
+        with self.assertRaises(gate.Refusal):
+            validate(self.root, self.fixture.runbook.read_bytes())
+        self.assertEqual(status, 1)
+        self.assertEqual(json.loads(output.getvalue())[0]["code"], "A009")
 
     def test_source_and_view_digest_drift(self):
         for path in (self.fixture.source, self.fixture.view):
