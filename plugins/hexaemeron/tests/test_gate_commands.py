@@ -1,7 +1,11 @@
 """Inert interface and exact receipt regression specimens."""
 import copy
 import importlib.util
+import json
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -363,6 +367,83 @@ class GateReceiptTests(HexctlCase):
         self.assertIn('immutable init', result.stderr)
         status = self.run_ctl('status', '--field', 'gate_command_status')
         self.assertIn('stale-or-invalid', status.stdout)
+
+    def committed_run(self):
+        """A current run whose registered module is committed at the starting commit."""
+        self.write(BREVITAS, (ROOT / BREVITAS).read_text())
+        self.git('add', BREVITAS)
+        self.git('commit', '-m', 'Fixture registered CLI source')
+        self.run_ctl('init', '--topic', 'Pinned controller fixture')
+        self.write_design_evidence()
+        study = self.write('study.md', '# Study\n\n```risk-register\ncontroller-skew | gate | name the recorded controller\n```\n')
+        self.run_ctl('done', 'study', '--artifact', study, '--skills', 'hexaemeron:protasis')
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        return self.state()
+
+    def skewed_controller(self, pin, version):
+        """A copy of this controller whose brevitas pin was taken at another commit."""
+        skills = Path(self.dir, 'skewed-controller', 'plugins', 'hexaemeron', 'skills')
+        for skill in ('fiat', 'protasis'):
+            shutil.copytree(ROOT / 'plugins/hexaemeron/skills' / skill / 'scripts', skills / skill / 'scripts')
+        ledger = ROOT / 'plugins/hexaemeron/skills/fiat/EVOLUTION.md'
+        lines = [line for line in ledger.read_text().splitlines(keepends=True) if line.startswith('- Current version:')]
+        self.assertEqual(len(lines), 1)
+        (skills / 'fiat/EVOLUTION.md').write_text(ledger.read_text().replace(lines[0], '- Current version: `' + version + '`\n'))
+        adapter = skills / 'protasis/scripts/gate_commands.py'
+        text = adapter.read_text()
+        self.assertIn(gates.MODULE_BINDINGS[BREVITAS], text)
+        adapter.write_text(text.replace(gates.MODULE_BINDINGS[BREVITAS], pin))
+        return skills / 'fiat/scripts/hexctl.py'
+
+    def run_controller(self, controller, *args, expect):
+        env = dict(self.env)
+        env['FAKE_GIT_REFS'] = json.dumps(self.fake_refs)
+        env['FAKE_GIT_PARENTS'] = json.dumps(self.fake_parents)
+        env['FAKE_GH_PRS'] = json.dumps(self.fake_prs)
+        proc = subprocess.run([sys.executable, str(controller), *args], cwd=self.target, capture_output=True, text=True, env=env)
+        self.assertEqual(proc.returncode, expect, proc.stdout + proc.stderr)
+        return proc
+
+    def test_controller_pin_skew_names_the_recorded_controller(self):
+        state = self.committed_run()
+        recorded = state['receipts']['controller_currency']['ledger_version']
+        self.run_ctl('verify')
+        controller = self.skewed_controller('0' * 64, 'fiat-v9.99.9')
+        paths = [Path(self.target, '.hexaemeron', name) for name in ('state.json', 'ledger.jsonl')]
+        before = [path.read_bytes() for path in paths]
+        result = self.run_controller(controller, 'verify', expect=1)
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        for expected in ('unregistered-cli-module-bindings', BREVITAS, 'is unchanged since the run\'s starting commit ' + state['base'],
+                         'pinned at different commits', 'fiat-v9.99.9 at ', recorded + ' at init', 'rather than amending the runbook'):
+            self.assertIn(expected, result.stderr)
+        self.assertNotIn('submit a freshly validated runbook amendment', result.stderr)
+        self.assertNotIn('delegated briefs', result.stderr)
+        status = json.loads(self.run_controller(controller, 'status', '--field', 'gate_command_status', expect=0).stdout)
+        self.assertEqual(status['status'], 'stale-or-invalid')
+        self.assertEqual(status['cause'], 'controller-pin-skew')
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'unchanged'}])
+        self.assertIn('inspect verify output; registered module ' + BREVITAS, status['recovery'])
+        brief = Path(self.target, '.hexaemeron', 'briefs', 'step-1-implement.json')
+        brief.parent.mkdir()
+        brief.write_text(json.dumps({'plugin_root': str(ROOT / 'plugins/hexaemeron'), 'topic': 'fixture'}))
+        result = self.run_controller(controller, 'verify', expect=1)
+        self.assertIn('(plugin_root ' + str(ROOT / 'plugins/hexaemeron') + ' in its delegated briefs)', result.stderr)
+        self.run_ctl('verify')
+
+    def test_module_edited_in_run_keeps_the_amendment_recovery(self):
+        state = self.committed_run()
+        path = Path(self.target, BREVITAS)
+        path.write_text(path.read_text() + '\nbuild_parser_alias = build_parser\n')
+        result = self.run_ctl('verify', expect=1)
+        self.assertIn('unregistered-cli-module-bindings', result.stderr)
+        self.assertIn(BREVITAS + ' changed inside the run since its starting commit ' + state['base'], result.stderr)
+        self.assertIn('submit a freshly validated runbook amendment', result.stderr)
+        self.assertNotIn('pinned at different commits', result.stderr)
+        status = json.loads(self.run_ctl('status', '--field', 'gate_command_status').stdout)
+        self.assertEqual(status['cause'], 'module-edited-in-run')
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed'}])
 
     def test_full_cli_source_drift_blocks_mutation_then_fresh_amendment(self):
         import json
