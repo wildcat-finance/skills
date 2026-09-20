@@ -1,0 +1,9 @@
+{
+  "candidate": "plugin-budgets",
+  "command": "python3 .hexaemeron/design/resolve.py selection --root . --reports .hexaemeron/reports",
+  "criterion": "files-leaving-cli-install",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
