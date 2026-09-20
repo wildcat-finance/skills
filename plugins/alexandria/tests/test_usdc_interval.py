@@ -2281,6 +2281,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
             # A subject-set plan's receipt is the subject-row format.
             receipt["format"] = SUBJECT_RECEIPT_FORMAT
             receipt["epochs"] = [{"epochs": receipt["epochs"], "subject": proxy}]
+            receipt["first_code"] = []
             for row in receipt["log_attributions"]:
                 row["subject"] = proxy
 

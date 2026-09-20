@@ -860,9 +860,8 @@ class Staging:
     def close(self) -> None:
         """Release every journal handle, then name every journal that failed.
 
-        A flush that fails on one journal must not leave the others open: a
-        split plan owns one handle per component. Every failing journal is
-        named, so a second failure is not lost behind the first.
+        One failed flush must not leave the others open, and a second failure
+        is not lost behind the first.
         """
         failures = []
         for name, handle in self._handles.items():
@@ -1165,11 +1164,9 @@ def validate_epoch_subjects(epochs, subjects):
 def subject_epoch_rows(epochs) -> list:
     """A subject-keyed epoch table as the receipt writes it: one row per subject.
 
-    The receipt holds `[{"epochs": [...], "subject": address}, ...]` in
-    ascending subject order, a single list, so a release's coverage counts
-    the table through one selector however many subjects it declares. A table
-    keyed by subject in the document itself would need one coverage collection
-    per key, and a capture's collections are bounded far below `MAX_SUBJECTS`.
+    `[{"epochs": [...], "subject": address}, ...]` in ascending subject order:
+    one list, so coverage counts the table through one selector. A keyed
+    object would need a collection per subject, bounded below `MAX_SUBJECTS`.
     """
     if not isinstance(epochs, dict) or not epochs:
         raise AlexandriaError("epoch table names no subject")
@@ -1179,12 +1176,10 @@ def subject_epoch_rows(epochs) -> list:
 def subject_epoch_table(rows) -> dict:
     """The `{subject: [epoch, ...]}` table a receipt's subject rows declare.
 
-    Refuses anything but the one form `subject_epoch_rows` writes: a
-    non-empty list of closed rows under `MAX_SUBJECTS`, each naming a
-    lowercase address and a list, in strictly ascending subject order, so a
-    repeated subject and an unsorted table are both refused here. What each
-    list holds, and whether its subject was declared, is for `validate_epochs`
-    and `validate_epoch_subjects`, which read the table this returns.
+    Refuses anything but the form `subject_epoch_rows` writes: a non-empty
+    list of closed rows under `MAX_SUBJECTS`, in strictly ascending subject
+    order, so a repeated subject and an unsorted table refuse here.
+    `validate_epochs` and `validate_epoch_subjects` read the table returned.
     """
     if not isinstance(rows, list):
         raise AlexandriaError("a subject set requires a list of subject epoch rows")
@@ -1209,6 +1204,58 @@ def subject_epoch_table(rows) -> dict:
         previous = subject
         table[subject] = row["epochs"]
     return table
+
+
+FIRST_CODE_OPENINGS = ("interval-start", "observed-block")
+
+
+def validate_first_code(rows, epochs, start) -> None:
+    """Check a subject receipt's rows for epochs opened where code was first read.
+
+    One closed row per unrecorded subject, in strictly ascending subject
+    order. `interval-start`: code read at the interval's first block, no empty
+    read. `observed-block`: empty code at `empty_block`, code at `code_block`,
+    the next block. `code_block` is the subject's first epoch's start, so a
+    pair that does not bracket it refuses. The caller re-derives the rows.
+    """
+    if not isinstance(rows, list) or len(rows) > MAX_SUBJECTS:
+        raise AlexandriaError("first-code rows are not a bounded list")
+    previous = None
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"code_block", "empty_block", "opening", "subject"}:
+            raise AlexandriaError("first-code row has an unknown shape")
+        subject = row["subject"]
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("first-code row subject is not a lowercase address")
+        if previous is not None and subject <= previous:
+            raise AlexandriaError(
+                "first-code rows repeat a subject or are not in ascending subject order"
+            )
+        previous = subject
+        table = epochs.get(subject) if isinstance(epochs, dict) else None
+        if not table:
+            raise AlexandriaError(f"first-code row names subject {subject}, which has no epoch")
+        if row["opening"] not in FIRST_CODE_OPENINGS:
+            raise AlexandriaError("first-code row names an unknown opening")
+        code_block = _decimal(row["code_block"], "first-code block")
+        if row["code_block"] != table[0]["start_block"]:
+            raise AlexandriaError(
+                f"the first-code reads of subject {subject} do not bracket its epoch's first block"
+            )
+        if row["opening"] == "interval-start":
+            if row["empty_block"] is not None or code_block != start:
+                raise AlexandriaError(
+                    f"subject {subject} is said to open at the interval start, but its "
+                    "first-code row names another block or an empty read"
+                )
+        elif (
+            not isinstance(row["empty_block"], str)
+            or _decimal(row["empty_block"], "first-code empty block") + 1 != code_block
+            or code_block <= start
+        ):
+            raise AlexandriaError(
+                f"the first-code reads of subject {subject} do not bracket its epoch's first block"
+            )
 
 
 def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC):
@@ -1933,6 +1980,8 @@ __all__ = [
     "RECEIPT_FORMAT",
     "SUBJECT_RECEIPT_FORMAT",
     "subject_epoch_rows",
+    "validate_first_code",
+    "FIRST_CODE_OPENINGS",
     "subject_epoch_table",
     "SPLIT_FIELD",
     "Staging",

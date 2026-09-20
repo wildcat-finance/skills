@@ -279,7 +279,7 @@
       }
     ]
   },
-  "note": "Constructed Wildcat V2 interval evidence for the collector's tests. The 137 subjects and their deployment blocks are the generated registry's; every block hash, transaction hash, log payload and runtime code here is derived from a fixed string and was not observed on any chain. Shard 0 has two subjects emitting in one block and transaction; shard 2 holds the HooksFactory's MarketDeployed log for the one market deployed inside the interval, at block 25895380, beside logs that market and its hooks instance emit in their own first block. The deployment name is one the venue does not admit as preserved, so every release built from this carries the constructed-staging gap.",
+  "note": "Constructed Wildcat V2 interval evidence for the collector's tests. The 137 subjects and their deployment blocks are the generated registry's; every block hash, transaction hash, log payload and runtime code here is derived from a fixed string and was not observed on any chain. Shard 0 has two subjects emitting in one block and transaction; shard 2 holds the HooksFactory's MarketDeployed log for the one market deployed inside the interval, at block 25895380, beside logs that market and its hooks instance emit in their own first block. The deployment name is one the venue does not admit as preserved, so every release built from this carries the constructed-staging gap. first_code_cases names, per case, the first block at which the transport answers a subject's code read with code; before it the answer is empty. The one subject with no recorded creation block has code from block 25895371 in one case and from block 25895420, past the interval end, in the other. With no case chosen every subject has code at every block.",
   "plan": {
     "chain": "eip155:1",
     "deployment": "wildcat-v2-constructed-fixture",
@@ -511,5 +511,13 @@
         "transactionHash": "0x4ddc8a81d1a04d77455e569da5bf2d7a351e1af4e39f860b2c2cb5ef0baf23fc"
       }
     ]
+  },
+  "first_code_cases": {
+    "no-code-at-the-interval-end": {
+      "0xbbb998043a20a26828617769f37dc3980be25ebc": 25895420
+    },
+    "no-code-at-the-interval-start": {
+      "0xbbb998043a20a26828617769f37dc3980be25ebc": 25895371
+    }
   }
 }

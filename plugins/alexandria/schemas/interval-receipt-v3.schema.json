@@ -11,7 +11,8 @@
     "shards",
     "reconciliation",
     "implementation_code",
-    "log_attributions"
+    "log_attributions",
+    "first_code"
   ],
   "properties": {
     "format": {
@@ -19,11 +20,19 @@
     },
     "epochs": {
       "type": "array",
-      "description": "One row per declared subject with an extent inside the interval, in strictly ascending subject order, so no subject repeats. Each row's epochs tile from that subject's own first block, opened by a block sentinel, through the interval's end. A subject deployed after the interval end carries no row. The table is one list so that a release's coverage counts it through the single selector /epochs, whatever the subject count.",
+      "description": "One row per declared subject with an extent inside the interval, in strictly ascending subject order; one list, so coverage counts it through /epochs.",
       "minItems": 1,
       "maxItems": 4096,
       "items": {
         "$ref": "#/$defs/subject_epochs"
+      }
+    },
+    "first_code": {
+      "type": "array",
+      "description": "Where each subject with no recorded creation block was opened, in ascending subject order; check re-derives every row.",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/first_code"
       }
     },
     "shards": {
@@ -243,6 +252,41 @@
           "items": {
             "$ref": "#/$defs/epoch"
           }
+        }
+      }
+    },
+    "first_code": {
+      "type": "object",
+      "description": "interval-start: code at the interval's first block, empty_block null. observed-block: empty code at empty_block, code at code_block, the next block.",
+      "additionalProperties": false,
+      "required": [
+        "code_block",
+        "empty_block",
+        "opening",
+        "subject"
+      ],
+      "properties": {
+        "code_block": {
+          "$ref": "#/$defs/block"
+        },
+        "empty_block": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/block"
+            }
+          ]
+        },
+        "opening": {
+          "enum": [
+            "interval-start",
+            "observed-block"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/address"
         }
       }
     },

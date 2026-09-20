@@ -30,6 +30,6 @@ def gaps(registry, plan=None) -> list[str]:
     ]
 
 
-def evidence_gaps(plan, registry, logs) -> list[str]:
+def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
     """This venue adds nothing to an evidence scope's gaps; its releases are unchanged."""
     return []

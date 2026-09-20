@@ -1611,6 +1611,61 @@ class SubjectEpochRowTests(unittest.TestCase):
             interval.subject_epoch_table(rows)
 
 
+class FirstCodeRowTests(unittest.TestCase):
+    """The receipt's record of epochs opened where code was first read."""
+
+    def setUp(self):
+        self.early, self.late = address_at(0), address_at(1)
+        self.table = {
+            self.early: [one_epoch(self.early, 1000, 1099, HASH, OTHER_HASH)],
+            self.late: [one_epoch(self.late, 1050, 1099, HASH, OTHER_HASH)],
+        }
+        self.rows = [
+            {"code_block": "1000", "empty_block": None, "opening": "interval-start", "subject": self.early},
+            {"code_block": "1050", "empty_block": "1049", "opening": "observed-block", "subject": self.late},
+        ]
+
+    def test_both_openings_validate_and_no_rows_is_valid(self):
+        interval.validate_first_code(self.rows, self.table, 1000)
+        interval.validate_first_code([], self.table, 1000)
+
+    def test_a_pair_that_does_not_bracket_the_epochs_first_block_refuses(self):
+        specimens = {
+            "code block after the epoch's first": (1, {"code_block": "1051", "empty_block": "1050"}, "do not bracket"),
+            "empty block not adjacent": (1, {"empty_block": "1048"}, "do not bracket"),
+            "empty block after the code block": (1, {"empty_block": "1050"}, "do not bracket"),
+            "no empty block under observed-block": (1, {"empty_block": None}, "do not bracket"),
+            "an integer empty block": (1, {"empty_block": 1049}, "do not bracket"),
+            "an empty read under interval-start": (0, {"empty_block": "999"}, "names another block or an empty read"),
+            "interval-start off the start": (1, {"opening": "interval-start", "empty_block": None}, "names another block"),
+            "observed at the interval start": (0, {"opening": "observed-block", "empty_block": "999"}, "do not bracket"),
+            "an unknown opening": (0, {"opening": "recorded"}, "unknown opening"),
+            "a subject with no epoch": (0, {"subject": address_at(7)}, "has no epoch"),
+            "an uppercase subject": (0, {"subject": self.early.upper()}, "not a lowercase address"),
+            "another field": (0, {"note": "x"}, "unknown shape"),
+        }
+        for label, (index, change, message) in specimens.items():
+            with self.subTest(specimen=label):
+                rows = [dict(row) for row in self.rows]
+                rows[index].update(change)
+                with self.assertRaises(Exception) as raised:
+                    interval.validate_first_code(rows, self.table, 1000)
+                self.assertIsInstance(raised.exception, AlexandriaError)
+                self.assertRegex(str(raised.exception), message)
+
+    def test_rows_out_of_order_repeated_or_not_a_list_refuse(self):
+        for label, rows, message in (
+            ("reversed", list(reversed(self.rows)), "ascending subject order"),
+            ("repeated", [self.rows[0], self.rows[0]], "repeat a subject"),
+            ("an object", {"rows": self.rows}, "not a bounded list"),
+            ("null", None, "not a bounded list"),
+            ("a row that is a string", ["row"], "unknown shape"),
+        ):
+            with self.subTest(specimen=label):
+                with self.assertRaisesRegex(AlexandriaError, message):
+                    interval.validate_first_code(rows, self.table, 1000)
+
+
 class UpgradeTopicTests(unittest.TestCase):
     """`upgrade_topic=None` is the immutable-code model: no log is read as an upgrade."""
 
@@ -1734,7 +1789,8 @@ class SchemaTests(unittest.TestCase):
         single = self.schema("interval-receipt-v2")
         self.assertFalse(schema["additionalProperties"])
         self.assertEqual(schema["properties"]["format"]["const"], interval.SUBJECT_RECEIPT_FORMAT)
-        self.assertEqual(set(schema["required"]), set(single["required"]))
+        self.assertEqual(set(schema["required"]) - set(single["required"]), {"first_code"})
+        self.assertEqual(set(single["required"]) - set(schema["required"]), set())
         # One list of subject rows, so the table's coverage is one collection
         # at `/epochs` however many subjects a plan declares.
         epochs = schema["properties"]["epochs"]
@@ -1749,7 +1805,12 @@ class SchemaTests(unittest.TestCase):
         # The epoch limit bounds each subject's own list, never their sum.
         self.assertEqual(row["properties"]["epochs"]["maxItems"], MAX_EPOCHS)
         self.assertEqual(row["properties"]["epochs"]["items"], {"$ref": "#/$defs/epoch"})
-        self.assertEqual(set(schema["$defs"]) - set(single["$defs"]), {"subject_epochs"})
+        self.assertEqual(set(schema["$defs"]) - set(single["$defs"]), {"first_code", "subject_epochs"})
+        first = schema["$defs"]["first_code"]
+        self.assertFalse(first["additionalProperties"])
+        self.assertEqual(set(first["required"]), {"code_block", "empty_block", "opening", "subject"})
+        self.assertEqual(first["properties"]["opening"]["enum"], list(interval.FIRST_CODE_OPENINGS))
+        self.assertEqual(schema["properties"]["first_code"]["maxItems"], interval.MAX_SUBJECTS)
         rows = schema["properties"]["log_attributions"]["items"]
         self.assertEqual(
             set(rows["required"]) - set(single["properties"]["log_attributions"]["items"]["required"]),

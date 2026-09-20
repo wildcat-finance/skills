@@ -225,3 +225,40 @@ The plan's subject limit is the bound on a release's subjects. The row order
 is part of the format: `check` refuses a repeated subject and rows out of
 order, so one table has one encoding. Once Steps 9 and 10 release captures in
 this format its shape is fixed, and a later change is a v4.
+
+## A subject with no recorded creation block opens where its code is first read
+
+### Context
+
+One Wildcat V2 subject, the collateral init-code storage, has no creation
+block in the merged records, and other venues' registries will carry such
+subjects too. The first rule opened its epoch at the interval's start. The
+run's runbook records a read of the hosted transport on 2026-09-20: no code
+for that subject at block 21,866,550, the start chosen for the V2 interval,
+and 9,581 bytes of code from block 23,167,810. The first rule therefore
+refused that interval, and did so in the opening phase, after every shard.
+
+### Decision
+
+Such a subject opens at the interval's start when it has runtime code there.
+Otherwise the collector bisects between the interval's start and end for an
+adjacent pair of blocks, empty code at one and runtime code at the next, and
+opens the epoch at the second. It makes those reads before any shard, and
+refuses there when the interval's end has no code either. The receipt's
+`first_code` rows name the pair and the opening, and every evidence scope's
+gap says which applied.
+
+Dropping the subject lost: Step 9 requires all 137. Shortening the interval to
+the subject's first code lost 1,301,260 blocks of every other subject. Writing
+the observed block into the registry lost: the registry is generated from
+merged records and pinned, and an observed block is not a recorded one.
+
+### Consequences
+
+An observed block is a claim about two reads, not about creation: code
+destroyed before the interval, or between two blocks the bisection did not
+read, is not seen. A checkpoint cannot commit an opening read while a shard is
+uncollected, so the probes are held in memory and journaled after the last
+shard; a run stopped among the shards asks them again. A subject with a
+recorded block is never probed, and empty code at that block refuses as a
+wrong registry.

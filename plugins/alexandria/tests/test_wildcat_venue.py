@@ -91,7 +91,20 @@ def v2_row():
 
 
 class WildcatTransport(existing.FixtureTransport):
-    """The constructed chain. A storage read is a failure, not an answer."""
+    """The constructed chain. A storage read is a failure, not an answer.
+
+    `case` names one of the fixture's `first_code_cases`: the block from
+    which a subject's code read answers with code, and empty before it.
+    """
+
+    def __init__(self, state, *, case=None, **kwargs):
+        super().__init__(state, **kwargs)
+        self.code_from = dict(state["first_code_cases"][case]) if case else {}
+
+    def code(self, address, number):
+        if number < self.code_from.get(address, 0):
+            return "0x"
+        return super().code(address, number)
 
     def request(self, payload, label):
         method = json.loads(payload)["method"]
@@ -521,7 +534,9 @@ class EpochModelTests(WildcatCase):
                 self.assertTrue(any(subject in gap and "outside the interval" in gap for gap in gaps))
 
     def test_the_epoch_model_infers_no_implementation_it_was_not_given(self):
-        blocks = wildcat_v2.first_blocks(self.plan, self.registry)
+        start = int(self.plan["interval"]["start"])
+        self.assertNotIn(COLLATERAL_STORAGE, wildcat_v2.first_blocks(self.plan, self.registry))
+        blocks = wildcat_v2.first_blocks(self.plan, self.registry, {COLLATERAL_STORAGE: start})
         hashes = {block: "0x" + f"{block:064x}" for block in set(blocks.values())}
         hashes[int(self.plan["interval"]["end"])] = "0x" + "ee" * 32
         codes = {subject: self.state["code"][subject] for subject in blocks}
@@ -902,8 +917,14 @@ class CollectorConnectionTests(WildcatCase):
             return value
 
         with mock.patch.object(collector.staging, "_handle", side_effect=watched):
-            with self.assertRaisesRegex(AlexandriaError, "empty runtime code"):
+            # A subject with a recorded block and no code there is a wrong
+            # registry, refused by name; it is never bisected.
+            with self.assertRaisesRegex(AlexandriaError, "the registry is wrong about it"):
                 collector.collect()
+        # One probe of the unrecorded subject, then the three recorded code reads.
+        code_reads = [label for method, label in collector.transport.calls if method == "eth_getCode"]
+        self.assertEqual(len(code_reads), 4)
+        self.assertEqual(sum("first-code-probe" in label for label in code_reads), 1)
         # One handle per physical journal: three classes over four components, and the opening journal.
         self.assertEqual(len(opened), 13)
         self.assertTrue(all(value.closed for value in opened))
@@ -911,7 +932,7 @@ class CollectorConnectionTests(WildcatCase):
         receipts = [
             json.loads(line) for line in (staging / "receipts" / "errors.jsonl").read_bytes().splitlines()
         ]
-        self.assertEqual(receipts[-1]["code"], "code-not-hex")
+        self.assertEqual(receipts[-1]["code"], "no-code-at-recorded-block")
         # The refused run resumes: the five committed reads are replayed, not re-issued.
         resumed = Collector(state["plan"], staging, WildcatTransport(state), registry=self.registry)
         self.assertEqual(
@@ -958,6 +979,9 @@ class CollectorConnectionTests(WildcatCase):
             "a row with an undeclared field": lambda r: r["epochs"][0].__setitem__("count", 1),
             "a subject with no epochs": lambda r: r["epochs"][0].__setitem__("epochs", []),
             "the single-proxy format": lambda r: r.__setitem__("format", "alexandria-interval-receipt/v2"),
+            "no first-code rows": lambda r: r.pop("first_code"),
+            "a first-code row with another opening": lambda r: r["first_code"][0].__setitem__("opening", "recorded"),
+            "a first-code row with another field": lambda r: r["first_code"][0].__setitem__("note", "x"),
         }.items():
             with self.subTest(specimen=label):
                 specimen = deepcopy(receipt)
@@ -1036,7 +1060,7 @@ class CollectorConnectionTests(WildcatCase):
                 lambda r: r.__setitem__("log_attributions", {"rows": []}), "not a list",
             ),
             "the single-proxy receipt format": (
-                lambda r: r.__setitem__("format", "alexandria-interval-receipt/v2"),
+                lambda r: (r.__setitem__("format", "alexandria-interval-receipt/v2"), r.pop("first_code")),
                 "does not match the plan's subject form",
             ),
             "a missing subject's epochs": (
@@ -1275,7 +1299,7 @@ class GeneratorCrossRecordTests(unittest.TestCase):
 class OpeningIdentityTests(WildcatCase):
     """A subject's first-block header has to be that block's, on both providers."""
 
-    LABEL = f"opening read 1 subject-first-block-header block {DEPLOY_BLOCK}"
+    LABEL = f"opening read 2 subject-first-block-header block {DEPLOY_BLOCK}"
 
     def other_number(self, envelope):
         return canonical_bytes({"id": envelope["id"], "jsonrpc": "2.0", "result": {
@@ -1296,7 +1320,8 @@ class OpeningIdentityTests(WildcatCase):
             json.loads(line) for line in (staging / "receipts" / "errors.jsonl").read_bytes().splitlines()
         ]
         self.assertEqual(receipts[-1]["code"], "malformed-header")
-        self.assertEqual(len(existing.opening_entries(staging)), 1)
+        # The probe of the unrecorded subject and the first header are committed.
+        self.assertEqual(len(existing.opening_entries(staging)), 2)
 
     def test_a_second_provider_with_the_right_hash_under_another_number_is_disputed(self):
         staging = self.staged(
@@ -1460,7 +1485,7 @@ class JournalCloseTests(WildcatCase):
             with self.assertRaises(Exception) as raised:
                 collector.collect()
         self.assertIsInstance(raised.exception, AlexandriaError)
-        self.assertRegex(str(raised.exception), "empty runtime code")
+        self.assertRegex(str(raised.exception), "the registry is wrong about it")
         self.assertTrue(opened)
         self.assertTrue(all(handle.closed for handle in opened))
         self.assertEqual(collector.staging._handles, {})
@@ -1629,12 +1654,45 @@ class ManySubjectTests(WildcatCase):
         report = wildcat_v2.market_deploy_report(self.plan, self.registry, logs)
         self.assertEqual((len(report["undeclared"]), len(report["misplaced"])), (count, count))
 
+    def test_check_re_derives_the_counted_sentence_a_release_carries(self):
+        """Through a release: the bounded sentences `check` owes are the ones `build` wrote."""
+        state = deepcopy(self.state)
+        template = next(
+            record for record in state["logs"]["2"]
+            if record["topics"][0] == wildcat_v2.MARKET_DEPLOYED_TOPIC
+        )
+        count = wildcat_v2.LISTED_GAPS + 4
+        for index in range(count):
+            record = deepcopy(template)
+            record["topics"][2] = "0x" + "0" * 24 + f"{0xabc000 + index:040x}"
+            record["logIndex"] = hex(130 + index)
+            state["logs"]["2"].append(record)
+        output, _release_id = self.released("counted", state)
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        gaps = self.captures(output)["logs"]["coverage"]["gaps"]
+        self.assertEqual(
+            sum(1 for gap in gaps if "is not one of the 80 markets" in gap), wildcat_v2.LISTED_GAPS
+        )
+        counted = [gap for gap in gaps if "name a market the registry does not declare" in gap]
+        self.assertEqual(len(counted), 1)
+        self.assertIn(f"4 further preserved MarketDeployed logs, {count} in all", counted[0])
+        # Dropping the counted sentence is refused like any other owed gap.
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        next(c for c in manifest["captures"] if c["id"] == "logs")["coverage"]["gaps"].remove(counted[0])
+        path.write_bytes(canonical_bytes(manifest))
+        with self.assertRaisesRegex(AlexandriaError, "logs coverage does not name a gap its venue owes"):
+            self.check_without_verify(output)
+
     def test_a_subject_set_whose_code_cannot_fit_refuses_before_any_request(self):
         entries = wildcat_registry.subject_entries(self.registry)
-        needed = sum(
-            2 * entries[subject]["code_length"] + wildcat_v2.OPENING_ENTRY_OVERHEAD
-            for subject in wildcat_v2.first_blocks(self.plan, self.registry)
+        start, end = (int(self.plan["interval"][key]) for key in ("start", "end"))
+        cost = lambda subject: 2 * entries[subject]["code_length"] + wildcat_v2.OPENING_ENTRY_OVERHEAD  # noqa: E731
+        # A recorded subject is read once; an unrecorded one may answer every probe with its code.
+        needed = sum(cost(s) for s in wildcat_v2.first_blocks(self.plan, self.registry)) + (
+            wildcat_v2.max_probes(start, end) * cost(COLLATERAL_STORAGE)
         )
+        self.assertEqual(wildcat_v2.unrecorded_subjects(self.plan, self.registry), [COLLATERAL_STORAGE])
         self.assertLess(needed, wildcat_v2.MAX_JOURNAL_BYTES)
         # The overhead constant is measured, not assumed: no journaled code
         # read here adds more than it beyond the code's own digits.
@@ -1657,6 +1715,299 @@ class ManySubjectTests(WildcatCase):
             Collector(self.plan, self.scratch("just-fits"), transport, registry=self.registry)
 
 
+class FirstCodeTests(WildcatCase):
+    """A subject with no recorded creation block opens where this collection reads its code."""
+
+    OBSERVED = 25895371
+    SHARD_METHODS = {"eth_getLogs", "trace_filter"}
+
+    def staged_case(self, name, case, second_case="same"):
+        staging = self.scratch(f"{name}-staging")
+        self.transport = WildcatTransport(self.state, case=case)
+        Collector(self.plan, staging, self.transport, registry=self.registry).collect()
+        second = WildcatTransport(self.state, case=case if second_case == "same" else second_case)
+        document = Reconciler(
+            self.plan, staging, second, SECOND_PROVIDER, registry=self.registry
+        ).reconcile()
+        return staging, document
+
+    def released_case(self, name, case):
+        staging, document = self.staged_case(name, case)
+        output = self.root / name
+        Builder(self.plan, staging, self.registry, created_at=CREATED_AT).build(output)
+        return staging, document, output
+
+    def probes(self, calls):
+        return [
+            int(label.rsplit(" ", 1)[1]) for method, label in calls
+            if method == "eth_getCode" and "first-code-probe" in label
+        ]
+
+    def storage_gaps(self, output, name):
+        return [
+            gap for gap in self.captures(output)[name]["coverage"]["gaps"]
+            if COLLATERAL_STORAGE in gap
+        ]
+
+    def test_code_at_the_interval_start_opens_the_epoch_there_with_one_read(self):
+        start = int(self.plan["interval"]["start"])
+        _staging, _document, output = self.released_case("at-start", None)
+        self.assertEqual(self.probes(self.transport.calls), [start])
+        # The probe is the first opening read, asked before any shard request.
+        methods = [method for method, _label in self.transport.calls]
+        self.assertLess(methods.index("eth_getCode"), methods.index("eth_getLogs"))
+        receipt = existing.component_document(output, "epoch-table")
+        self.assertEqual(receipt["first_code"], [{
+            "code_block": str(start), "empty_block": None,
+            "opening": "interval-start", "subject": COLLATERAL_STORAGE,
+        }])
+        self.assertEqual(epoch_row(receipt, COLLATERAL_STORAGE)["epochs"][0]["start_block"], str(start))
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        for name in EVIDENCE_COMPONENTS:
+            (gap,) = self.storage_gaps(output, name)
+            self.assertIn("deployment block is not established", gap)
+            self.assertIn(f"has runtime code at the interval start, block {start}", gap)
+            self.assertNotIn("observed", gap)
+        (registry_gap,) = self.storage_gaps(output, "registry")
+        self.assertIn("deployment block is not established", registry_gap)
+        self.assertNotIn(f"block {start}", registry_gap)
+
+    def test_no_code_at_the_interval_start_opens_at_the_observed_block(self):
+        start, end = (int(self.plan["interval"][key]) for key in ("start", "end"))
+        staging, document, output = self.released_case("observed", "no-code-at-the-interval-start")
+        calls = self.transport.calls
+        probed = self.probes(calls)
+        # Read empty at the start and with code at the end before any bisection,
+        # then halve: every probe is fixed by the answers before it.
+        expected, low, high = [start, end], start, end
+        while high - low > 1:
+            middle = (low + high) // 2
+            expected.append(middle)
+            low, high = (low, middle) if middle >= self.OBSERVED else (middle, high)
+        self.assertEqual(probed, expected)
+        self.assertEqual((low, high), (self.OBSERVED - 1, self.OBSERVED))
+        self.assertLessEqual(len(probed), wildcat_v2.max_probes(start, end))
+        self.assertEqual(wildcat_v2.max_probes(start, end), 2 + 7)
+        # Every probe came before the first shard request.
+        methods = [method for method, _label in calls]
+        first_shard = min(methods.index(name) for name in self.SHARD_METHODS)
+        first_probe = methods.index("eth_getCode")
+        self.assertEqual(
+            methods[first_probe:first_probe + len(probed)], ["eth_getCode"] * len(probed)
+        )
+        self.assertLess(first_probe + len(probed), first_shard)
+        # Only the finality binding came before them.
+        self.assertTrue(all("finality" in label for _method, label in calls[:first_probe]))
+        # No other subject was probed or read twice.
+        code_reads = [label for method, label in calls if method == "eth_getCode"]
+        self.assertEqual(len(code_reads), len(probed) + 136)
+        # The journal holds the probes as its first opening reads, both sides
+        # of the boundary among them.
+        entries = existing.opening_entries(staging)
+        answers = {}
+        for entry in entries[:len(probed)]:
+            request = json.loads(entry["request"])
+            self.assertEqual((request["method"], request["params"][0]), ("eth_getCode", COLLATERAL_STORAGE))
+            answers[int(request["params"][1], 16)] = json.loads(entry["response"])["result"]
+        self.assertEqual(list(answers), probed)
+        self.assertEqual(answers[self.OBSERVED - 1], "0x")
+        self.assertEqual(answers[self.OBSERVED], self.state["code"][COLLATERAL_STORAGE])
+        # The second transport re-read every one of them and agreed.
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+        # 156 with code at the start; here the probes and one more subject header
+        # replace that single read.
+        self.assertEqual(document["reconciliation"]["compared"], 156 + len(probed))
+        self.assertEqual(len(entries), 139 + len(probed))
+        receipt = existing.component_document(output, "epoch-table")
+        self.assertEqual(receipt["first_code"], [{
+            "code_block": str(self.OBSERVED), "empty_block": str(self.OBSERVED - 1),
+            "opening": "observed-block", "subject": COLLATERAL_STORAGE,
+        }])
+        epoch = epoch_row(receipt, COLLATERAL_STORAGE)["epochs"][0]
+        self.assertEqual(epoch["start_block"], str(self.OBSERVED))
+        self.assertEqual(epoch["start_hash"], WildcatTransport(self.state)._hash(self.OBSERVED))
+        self.assertEqual(
+            epoch["implementation_code_sha256"],
+            hashlib.sha256(bytes.fromhex(self.state["code"][COLLATERAL_STORAGE][2:])).hexdigest(),
+        )
+        schema = json.loads((PLUGIN / "schemas" / "interval-receipt-v3.schema.json").read_text())
+        self.assertEqual(schema_errors(schema, receipt), [])
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        for name in EVIDENCE_COMPONENTS:
+            (gap,) = self.storage_gaps(output, name)
+            self.assertIn("deployment block is not established", gap)
+            self.assertIn(f"no code for it at block {self.OBSERVED - 1}", gap)
+            self.assertIn(f"runtime code at block {self.OBSERVED}", gap)
+            self.assertIn("not a recorded deployment block", gap)
+
+    def test_no_code_at_the_interval_end_refuses_before_any_shard(self):
+        staging = self.scratch("never")
+        transport = WildcatTransport(self.state, case="no-code-at-the-interval-end")
+        collector = Collector(self.plan, staging, transport, registry=self.registry)
+        with self.assertRaisesRegex(
+            AlexandriaError,
+            f"subject {COLLATERAL_STORAGE} has no recorded creation block and no runtime code at "
+            "the interval end",
+        ):
+            collector.collect()
+        # The finality binding, the probe at the start and the probe at the end: nothing else.
+        after_finality = [(m, label) for m, label in transport.calls if "finality" not in label]
+        self.assertEqual([method for method, _label in after_finality], ["eth_getCode", "eth_getCode"])
+        self.assertFalse(self.SHARD_METHODS & {method for method, _label in transport.calls})
+        self.assertEqual(existing.opening_entries(staging), [])
+        self.assertEqual(existing.journals(staging).get("logs", b""), b"")
+        receipts = [
+            json.loads(line) for line in (staging / "receipts" / "errors.jsonl").read_bytes().splitlines()
+        ]
+        self.assertEqual([receipt["code"] for receipt in receipts], ["no-code-at-interval-end"])
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_a_second_transport_that_places_the_boundary_elsewhere_is_disputed(self):
+        state = deepcopy(self.state)
+        state["first_code_cases"]["second"] = {COLLATERAL_STORAGE: self.OBSERVED - 4}
+        self.state = state
+        staging, document = self.staged_case("second", "no-code-at-the-interval-start", "second")
+        self.assertEqual(document["reconciliation"]["status"], "disputed")
+        disputed = [(item["kind"], item["identity"]) for item in document["reconciliation"]["disputed"]]
+        self.assertIn(("code-digest", f"code of {COLLATERAL_STORAGE} at block {self.OBSERVED - 1}"), disputed)
+        self.assertTrue(all(kind == "code-digest" and COLLATERAL_STORAGE in identity for kind, identity in disputed))
+        kept = (staging / "reconciliation" / "disputed.jsonl").read_bytes().splitlines()
+        self.assertEqual(len(kept), len(disputed))
+
+    def test_check_refuses_first_code_rows_the_preserved_reads_do_not_give(self):
+        _staging, _document, output = self.released_case("edited", "no-code-at-the-interval-start")
+        path = existing.component_path(output, "epoch-table")
+        released = path.read_bytes()
+        self.check_without_verify(output)
+        start = self.plan["interval"]["start"]
+        edits = {
+            "a code block that is not the epoch's first": (
+                lambda row: row.update(code_block=str(self.OBSERVED + 1), empty_block=str(self.OBSERVED)),
+                "do not bracket its epoch's first block",
+            ),
+            "an empty read two blocks back": (
+                lambda row: row.update(empty_block=str(self.OBSERVED - 2)),
+                "do not bracket its epoch's first block",
+            ),
+            "an observed block passed off as the interval start": (
+                lambda row: row.update(opening="interval-start", empty_block=None),
+                "names another block or an empty read",
+            ),
+            "an unknown opening": (lambda row: row.update(opening="recorded"), "unknown opening"),
+            "an empty block that is a number": (
+                lambda row: row.update(empty_block=self.OBSERVED - 1), "do not bracket",
+            ),
+        }
+        for label, (edit, message) in edits.items():
+            with self.subTest(edit=label):
+                path.write_bytes(released)
+                self.rewrite(output, "epoch-table", lambda receipt: edit(receipt["first_code"][0]))
+                with self.assertRaisesRegex(AlexandriaError, message):
+                    self.check_without_verify(output)
+        path.write_bytes(released)
+        self.rewrite(output, "epoch-table", lambda receipt: receipt["first_code"].clear())
+        with self.assertRaisesRegex(AlexandriaError, "do not match the opening reads"):
+            self.check_without_verify(output)
+        # An epoch moved to the interval start, with its row: the preserved probes disagree.
+        path.write_bytes(released)
+
+        def moved(receipt):
+            epoch = epoch_row(receipt, COLLATERAL_STORAGE)["epochs"][0]
+            epoch.update(start_block=start, start_position=dict(epoch["start_position"], block_number=start))
+            receipt["first_code"][0].update(code_block=start, empty_block=None, opening="interval-start")
+
+        self.rewrite(output, "epoch-table", moved)
+        with self.assertRaises(AlexandriaError):
+            self.check_without_verify(output)
+        path.write_bytes(released)
+        self.check_without_verify(output)
+
+    def test_a_dropped_or_swapped_gap_sentence_does_not_check(self):
+        _staging, _document, output = self.released_case("gap", "no-code-at-the-interval-start")
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        gaps = next(c for c in manifest["captures"] if c["id"] == "logs")["coverage"]["gaps"]
+        index = next(i for i, gap in enumerate(gaps) if COLLATERAL_STORAGE in gap)
+        gaps[index] = wildcat_v2._missing_block_gap(COLLATERAL_STORAGE, {
+            "code_block": self.plan["interval"]["start"], "empty_block": None,
+            "opening": "interval-start", "subject": COLLATERAL_STORAGE,
+        })
+        path.write_bytes(canonical_bytes(manifest))
+        with self.assertRaisesRegex(AlexandriaError, "logs coverage does not name a gap its venue owes"):
+            self.check_without_verify(output)
+
+    def test_a_run_stopped_among_the_shards_asks_the_probes_again_and_journals_them_once(self):
+        def stop(_envelope):
+            raise AlexandriaError("constructed interruption")
+
+        staging = self.scratch("stopped")
+        first = WildcatTransport(self.state, case="no-code-at-the-interval-start", faults={"shard 2 logs": stop})
+        with self.assertRaisesRegex(AlexandriaError, "constructed interruption"):
+            Collector(self.plan, staging, first, registry=self.registry).collect()
+        # Two shards are committed and no opening read is: a checkpoint cannot
+        # commit one while a shard is uncollected.
+        self.assertEqual(existing.checkpoint(staging)["next_shard"], 2)
+        self.assertEqual(existing.checkpoint(staging)["offsets"][OPENING_CLASS], 0)
+        second = WildcatTransport(self.state, case="no-code-at-the-interval-start")
+        summary = Collector(self.plan, staging, second, registry=self.registry).collect()
+        probed = self.probes(second.calls)
+        self.assertEqual(probed, self.probes(first.calls))
+        # Two first headers besides the interval's own, 136 recorded code reads, and the probes.
+        self.assertEqual(summary["opening_reads"]["total"], 139 + len(probed))
+        # The probes asked before the shards are this run's reads too.
+        self.assertEqual(summary["opening_reads"]["issued"], 139 + len(probed))
+        self.assertEqual(len(existing.opening_entries(staging)), 139 + len(probed))
+        Reconciler(
+            self.plan, staging, WildcatTransport(self.state, case="no-code-at-the-interval-start"),
+            SECOND_PROVIDER, registry=self.registry,
+        ).reconcile()
+        output = self.root / "stopped-release"
+        Builder(self.plan, staging, self.registry, created_at=CREATED_AT).build(output)
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        # A finished tree collected again asks nothing: every opening read is replayed.
+        third = WildcatTransport(self.state, case="no-code-at-the-interval-start")
+        again = Collector(self.plan, staging, third, registry=self.registry).collect()
+        self.assertEqual(again["opening_reads"]["issued"], 0)
+        self.assertNotIn("eth_getCode", [method for method, _label in third.calls])
+
+    def test_the_probe_bound_holds_at_the_edges(self):
+        self.assertEqual(wildcat_v2.max_probes(100, 100), 1)
+        self.assertEqual(wildcat_v2.max_probes(100, 101), 2)
+        self.assertEqual(wildcat_v2.max_probes(100, 102), 3)
+        self.assertEqual(wildcat_v2.max_probes(0, 2 ** 20), 22)
+        self.assertEqual(wildcat_v2.max_probes(0, 2 ** 20 + 1), 23)
+        start, end = (int(self.plan["interval"][key]) for key in ("start", "end"))
+        for first in (start + 1, start + 2, end - 1, end):
+            with self.subTest(first_code_block=first):
+                state = deepcopy(self.state)
+                state["first_code_cases"]["edge"] = {COLLATERAL_STORAGE: first}
+                transport = WildcatTransport(state, case="edge")
+                phase = wildcat_v2.opening_phase(self.plan, self.registry, [])
+                asked = 0
+                for read in phase.preliminary_reads():
+                    asked += 1
+                    phase.accept(read, transport.code(read["address"], read["block"]))
+                self.assertLessEqual(asked, wildcat_v2.max_probes(start, end))
+                self.assertEqual(phase.first_code_rows(), [{
+                    "code_block": str(first), "empty_block": str(first - 1),
+                    "opening": "observed-block", "subject": COLLATERAL_STORAGE,
+                }])
+                # Both sides of the reported boundary are reads the phase accepted.
+                self.assertEqual(phase.probes[(COLLATERAL_STORAGE, first - 1)], "")
+                self.assertTrue(phase.probes[(COLLATERAL_STORAGE, first)])
+
+    def test_a_probe_drawn_before_its_predecessor_is_answered_refuses(self):
+        phase = wildcat_v2.opening_phase(self.plan, self.registry, [])
+        reads = phase.preliminary_reads()
+        next(reads)
+        with self.assertRaisesRegex(AlexandriaError, "was not answered before the next"):
+            next(reads)
+        with self.assertRaisesRegex(AlexandriaError, "first block was not observed"):
+            wildcat_v2.opening_phase(self.plan, self.registry, []).first_code_rows()
+        with self.assertRaisesRegex(AlexandriaError, "no opening read says where its epoch opened"):
+            wildcat_v2.evidence_gaps(self.plan, self.registry, [], [])
+
+
 class FixtureTests(unittest.TestCase):
     def test_the_fixture_declares_the_registrys_subjects_and_says_it_is_constructed(self):
         state = fixture()
@@ -1664,8 +2015,16 @@ class FixtureTests(unittest.TestCase):
             state["plan"]["subjects"], [entry["address"] for entry in registry()["entries"]]
         )
         self.assertEqual(
-            set(state), set(existing.fixture()) - {"slots"},
-            "the constructed fixture follows the Compound fixture's shape, without slot words",
+            set(state), (set(existing.fixture()) - {"slots"}) | {"first_code_cases"},
+            "the constructed fixture follows the Compound fixture's shape, without slot words, "
+            "and adds the first-code cases",
+        )
+        self.assertEqual(
+            state["first_code_cases"],
+            {
+                "no-code-at-the-interval-end": {COLLATERAL_STORAGE: int(state["plan"]["interval"]["end"]) + 1},
+                "no-code-at-the-interval-start": {COLLATERAL_STORAGE: 25895371},
+            },
         )
         self.assertEqual(set(state["code"]), set(state["plan"]["subjects"]))
         self.assertIn("was not observed on any chain", state["note"])

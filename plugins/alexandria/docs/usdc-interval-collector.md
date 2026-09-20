@@ -263,13 +263,40 @@ subject before its own first block refuses, because no epoch owns it.
 
 One `wildcat-v2` subject has no creation block in the merged records: the
 collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
-Its epoch starts at the interval's start. The registry capture and every
-evidence scope name the missing deployment block as a gap rather than guess
-it.
+The rule below holds for any subject without one. `collect` reads its code at
+the interval's start. With runtime code there, its epoch opens at the start
+with that one read. With none, `collect` reads the interval's end. Empty code
+there too means the subject has no extent inside the interval, and the
+collection refuses by name with error receipt code `no-code-at-interval-end`.
+Otherwise it bisects between a block it read as empty and a block it read
+with code until the two are adjacent. The epoch opens at the second of that
+pair. One subject costs at most two reads plus the base-2 logarithm of the
+interval's length, rounded up.
 
-The opening reads are the interval's first header, one header per distinct
-later first block, and each in-interval subject's `eth_getCode` at its own
-first block. This model issues no `eth_getStorageAt` and compares no log topic
+The probes happen before the first shard request, so that refusal costs no
+shard. A checkpoint cannot commit an opening read while a shard is
+uncollected, so their bytes are held and written as the first `epoch-evidence`
+records after the last shard. A run stopped among the shards asks them again.
+
+This establishes an observed boundary inside the interval: empty code at one
+block and runtime code at the next, both read and preserved. It does not
+establish the contract's first creation. Code destroyed before the interval's
+start, or between two blocks the bisection did not read, is not seen. The receipt's `first_code`
+rows say which opening applied, `interval-start` or `observed-block`, and name
+the pair. The registry capture names the missing deployment block as a gap.
+Every evidence scope does too, and says which opening applied, so an observed
+block is never presented as a recorded one. `reconcile` asks the second
+provider for every probe; a different answer is a `code-digest` dispute.
+`check` replays the probes, re-derives the rows, and refuses rows the reads do
+not give or a pair that does not bracket the epoch's first block.
+
+A subject with a recorded creation block is never probed. Empty code at its
+recorded first block means the registry is wrong, and the collection refuses
+by name with error receipt code `no-code-at-recorded-block`.
+
+The opening reads are those probes, then the interval's first header, one
+header per distinct later first block, and each recorded in-interval
+subject's `eth_getCode` at its own first block. This model issues no `eth_getStorageAt` and compares no log topic
 with the ERC-1967 announcement. A subject's log carrying that topic is an
 ordinary `proxy-log`. `reconcile` asks the second provider for every one of
 these reads, header and code alike. A disagreement is recorded as
@@ -306,18 +333,16 @@ does not declare, and a log that deploys a declared market at another block
 than the registry records. A plan that omits the factory says the markets were
 not compared.
 
-A capture holds at most 256 gap sentences, so the gaps that grow with a
-subject set are bounded. Subjects deployed after the interval's end, declared
-markets with no deploy log, deploy logs at another block and deploy logs
-naming an undeclared market are each listed by name up to 16. One further
-sentence per kind then counts the rest and the total. `check` re-derives the
-same bounded sentences.
+A capture holds at most 256 gap sentences, so four kinds of gap are bounded:
+subjects deployed after the interval's end, declared markets with no deploy
+log, deploy logs at another block, and deploy logs naming an undeclared
+market. Each names up to 16, and one further sentence counts the rest and the
+total. `check` re-derives the same sentences.
 
-Every code read lands in the one `epoch-evidence` journal, which holds at most
-67,108,864 bytes. The registry records each subject's code length, so
-`collect`, `reconcile` and `build` refuse a subject set whose code cannot fit
-while the plan is validated, before any request. The Wildcat V2 estate's 137
-subjects need about 5.5 MB of it.
+Every code read lands in the one `epoch-evidence` journal, which holds
+67,108,864 bytes. From the registry's code lengths, `collect`, `reconcile` and
+`build` refuse a subject set whose code cannot fit while the plan is
+validated, before any request. The 137 subjects need about 5.5 MB.
 
 ## Resuming, and rewinding
 
