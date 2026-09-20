@@ -310,3 +310,50 @@ address's code digest and deployment block from their own merged records
 duplicates that work rather than sharing a cached read, which is the price of
 keeping each venue's registry generator self-contained and independently
 pinned by its own digest constant.
+
+## The V1 checkout ambiguity is a recorded caveat, never a coverage gap
+
+### Context
+
+Fourteen of the sixteen Wildcat V1 subjects match the wildcat-protocol
+repository at commit `da74452aa7d1a0f024d99efd22cc6d950a8116b7`, but the
+row's own `source.equivalent_commits` names four further commits
+(`ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9`,
+`e9552f0e8a093e214dd69947dc689023df09ff20`,
+`e962bf37866483a3573016a3087331c5de9f0929`,
+`016d0658d6d442b8f42e3bb68f01fae43c150307`) whose in-tree Sourcify sources are
+byte-identical to that commit's. The controller factory deployed about an
+hour after the license-header commit `6164ddd4` and its main-merge
+`d46ecb80`, both of which carry post-rewrite blobs the deployed bytecode does
+not match, so the deployer used a checkout that was not main's tip at deploy
+time, and none of the five candidates can be distinguished from on-chain
+evidence. This is not an absent identity: a source commit is established,
+just not uniquely among five byte-identical checkouts.
+
+### Decision
+
+The registry records the row's recorded commit on every affected entry, and
+carries the four equivalent commits and the row's own `equivalence_note`
+alongside it as a caveat on an established identity. `validate_v1_registry`
+refuses a document that names one of the four equivalent commits as an
+entry's own `source_commit` in place of the recorded one
+(`wildcat_registry._validate_v1_shape`), so a release cannot silently narrow
+the ambiguity to a single guessed checkout. This is deliberately not modelled
+as a source-identity coverage gap: unlike a subject whose row establishes no
+commit at all (the mechanism `wildcat_v1._missing_source_commit_gap` still
+carries for that case, though no real V1 subject falls into it), every one of
+the fourteen subjects here has an established, sourced identity; what is
+undetermined is only which of five byte-identical checkouts the deployer
+used, and collapsing that into a "no identity" gap would misstate what the
+record actually shows.
+
+### Consequences
+
+Every later release under either venue inherits this convention: an
+unresolvable checkout among byte-identical commits is a caveat next to an
+established identity, not a gap that a `coverage` reader would read as "we do
+not know the source." A future source-match record that resolves the
+ambiguity (for example, by dating the deployment transaction against each
+candidate's tree more precisely) replaces the equivalence note rather than
+this decision, and a genuinely sourceless subject still routes through the
+gap mechanism this decision leaves untouched.
