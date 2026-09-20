@@ -1,0 +1,9 @@
+{
+  "candidate": "per-handler-gate",
+  "command": "python3 .hexaemeron/design/resolve_gate.py --candidate per-handler-gate --criterion gate-call-sites --out .hexaemeron/design/reports/per-handler-gate-gate-call-sites.json",
+  "criterion": "gate-call-sites",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 19
+}

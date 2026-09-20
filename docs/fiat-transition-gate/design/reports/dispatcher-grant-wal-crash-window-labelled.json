@@ -1,0 +1,9 @@
+{
+  "candidate": "dispatcher-grant-wal",
+  "command": "python3 .hexaemeron/design/resolve_gate.py --candidate dispatcher-grant-wal --criterion crash-window-labelled --out .hexaemeron/design/reports/dispatcher-grant-wal-crash-window-labelled.json",
+  "criterion": "crash-window-labelled",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

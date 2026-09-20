@@ -1,0 +1,9 @@
+{
+  "candidate": "per-handler-gate",
+  "command": "python3 .hexaemeron/design/resolve_gate.py --candidate per-handler-gate --criterion appends-loop-two-same-ledger --out .hexaemeron/design/reports/per-handler-gate-appends-loop-two-same-ledger.json",
+  "criterion": "appends-loop-two-same-ledger",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

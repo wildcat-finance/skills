@@ -1,0 +1,535 @@
+{
+  "candidates": [
+    {
+      "id": "dispatcher-grant-wal",
+      "summary": "One dispatcher evaluates a pure closed gate under the run lock; every writer needs its grant; one labelled write-ahead commit; exhausted loops continue append-only."
+    },
+    {
+      "id": "per-handler-gate",
+      "summary": "Each mutating handler calls the pure gate itself and the controller's present ledger-then-state writer stays as it is; exhausted loops continue append-only."
+    },
+    {
+      "id": "external-writer-broker",
+      "summary": "The gate grants in process but a separate broker process under another OS identity owns the state writer and the pins; exhausted loops continue append-only."
+    },
+    {
+      "id": "gate-with-replacement-exit",
+      "summary": "The dispatcher gate and write-ahead commit without a same-ledger loop; an exhausted loop leaves only by the existing verdict close, halt or replacement admission."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "refuses-622-widening",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "appends-loop-two-same-ledger",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-loop-one-bytes-identical",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "runs-under-one-account-stdlib",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "crash-window-labelled",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "added-processes-per-mutation",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "max-grant-bytes",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 65536,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "correctness",
+      "id": "gate-call-sites",
+      "kind": "metric",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "product-refuses-622-specimens",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "product-appends-loop-two",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:7",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "product-every-mutator-mapped",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "refuses-622-widening",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-refuses-622-widening.json",
+        "sha256": "e35b93d706e3eccb730f31593d1884b353974952eea5ea12555472b6b100fc93"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "appends-loop-two-same-ledger",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-appends-loop-two-same-ledger.json",
+        "sha256": "ea00f012cf8f562e53d85d650db5186b83f7298df57514c3d9b0c0b671e47f27"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "legacy-loop-one-bytes-identical",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-legacy-loop-one-bytes-identical.json",
+        "sha256": "c88b16b54fe978db8e7600b35cd3ac4b36747251d5b2faf4e15d60f53ee580dd"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "runs-under-one-account-stdlib",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-runs-under-one-account-stdlib.json",
+        "sha256": "a7e66f20b2afcdbfe134c4d2e2b99075ec2101a8c42aee9f37cddce07c80cb66"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "crash-window-labelled",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-crash-window-labelled.json",
+        "sha256": "484bb8b27433a318f82d5067025a1508da57bc5ef11decb57d29c1546a387093"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "added-processes-per-mutation",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-added-processes-per-mutation.json",
+        "sha256": "95a3344fbd1044edbb0089ef13365b177d29e9c2e9aa3e86963aa921fc0094f8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "max-grant-bytes",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-max-grant-bytes.json",
+        "sha256": "ce495f9daa40de91c4926f4a27127b97d6c4f2ec0c47c19a7dccc4b4b37cbf08"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "gate-call-sites",
+      "report": {
+        "path": "design/reports/dispatcher-grant-wal-gate-call-sites.json",
+        "sha256": "34915b5dd29899a4b413c2cf7f53785b0003a209286fffbe65b0695d5a36382e"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "product-refuses-622-specimens",
+      "report": "design/reports/dispatcher-grant-wal-product-refuses-622-specimens.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate dispatcher-grant-wal --criterion product-refuses-622-specimens --out .hexaemeron/design/reports/dispatcher-grant-wal-product-refuses-622-specimens.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "product-appends-loop-two",
+      "report": "design/reports/dispatcher-grant-wal-product-appends-loop-two.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate dispatcher-grant-wal --criterion product-appends-loop-two --out .hexaemeron/design/reports/dispatcher-grant-wal-product-appends-loop-two.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "dispatcher-grant-wal",
+      "criterion": "product-every-mutator-mapped",
+      "report": "design/reports/dispatcher-grant-wal-product-every-mutator-mapped.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate dispatcher-grant-wal --criterion product-every-mutator-mapped --out .hexaemeron/design/reports/dispatcher-grant-wal-product-every-mutator-mapped.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "refuses-622-widening",
+      "report": {
+        "path": "design/reports/per-handler-gate-refuses-622-widening.json",
+        "sha256": "b6bbe30fa9c6c001698ca3a56d5d20ea35607b52a5c1a1ecd9ede332796e0996"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "appends-loop-two-same-ledger",
+      "report": {
+        "path": "design/reports/per-handler-gate-appends-loop-two-same-ledger.json",
+        "sha256": "68d95ca850ee2216867dfc10d622ddd39c5c213215dbcce674c10ab175a1cb0c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "legacy-loop-one-bytes-identical",
+      "report": {
+        "path": "design/reports/per-handler-gate-legacy-loop-one-bytes-identical.json",
+        "sha256": "fcfaaafb9d14b7272ee086e82dc0a1321631bf1c521fcb262cf9fb699218e5d9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "runs-under-one-account-stdlib",
+      "report": {
+        "path": "design/reports/per-handler-gate-runs-under-one-account-stdlib.json",
+        "sha256": "b86a0e48978259ae8b4923c83cb9a8cd65c8389641d2f8a3c6bd4db79f585e2f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "crash-window-labelled",
+      "report": {
+        "path": "design/reports/per-handler-gate-crash-window-labelled.json",
+        "sha256": "d663607030ff50530e5a5dd27f419cd3c13c181b937ab5dd6faaa9c58c350c7b"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "added-processes-per-mutation",
+      "report": {
+        "path": "design/reports/per-handler-gate-added-processes-per-mutation.json",
+        "sha256": "6d26d9b10c220d31070e30d6f39a75f1ceb0bef9d704958ead2a5fba6090bb33"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "max-grant-bytes",
+      "report": {
+        "path": "design/reports/per-handler-gate-max-grant-bytes.json",
+        "sha256": "1f92dc23387c4105b350a66e453b4fe661da2f0a0b393ca9b1a32fd634e9c34d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-handler-gate",
+      "criterion": "gate-call-sites",
+      "report": {
+        "path": "design/reports/per-handler-gate-gate-call-sites.json",
+        "sha256": "e6414097564d79d669002603de869c182bd890b7fa5e06609632d6f5282478a7"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "per-handler-gate",
+      "criterion": "product-refuses-622-specimens",
+      "report": "design/reports/per-handler-gate-product-refuses-622-specimens.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate per-handler-gate --criterion product-refuses-622-specimens --out .hexaemeron/design/reports/per-handler-gate-product-refuses-622-specimens.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "per-handler-gate",
+      "criterion": "product-appends-loop-two",
+      "report": "design/reports/per-handler-gate-product-appends-loop-two.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate per-handler-gate --criterion product-appends-loop-two --out .hexaemeron/design/reports/per-handler-gate-product-appends-loop-two.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "per-handler-gate",
+      "criterion": "product-every-mutator-mapped",
+      "report": "design/reports/per-handler-gate-product-every-mutator-mapped.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate per-handler-gate --criterion product-every-mutator-mapped --out .hexaemeron/design/reports/per-handler-gate-product-every-mutator-mapped.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "refuses-622-widening",
+      "report": {
+        "path": "design/reports/external-writer-broker-refuses-622-widening.json",
+        "sha256": "ab9b103134703efadf613aa8f67a01950b4d09156a4d4ad3e55eb2028cd18647"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "appends-loop-two-same-ledger",
+      "report": {
+        "path": "design/reports/external-writer-broker-appends-loop-two-same-ledger.json",
+        "sha256": "f68dcfbd98edb6f029f72be73f8cc9daa5542387e131f4b61277d50c8708cb50"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "legacy-loop-one-bytes-identical",
+      "report": {
+        "path": "design/reports/external-writer-broker-legacy-loop-one-bytes-identical.json",
+        "sha256": "56b0428a81928a6df03af65a2624ed1cef8a74861b6bff92e8c98c8d23e62a67"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "runs-under-one-account-stdlib",
+      "report": {
+        "path": "design/reports/external-writer-broker-runs-under-one-account-stdlib.json",
+        "sha256": "33e7bd829c1acfa7505cc42443c8744c2aaf4a6bee3fe254aab964d7504e44f1"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "crash-window-labelled",
+      "report": {
+        "path": "design/reports/external-writer-broker-crash-window-labelled.json",
+        "sha256": "3e0910b94598f40df8f65d3a89b9e869b359845b4c9c3dccdadcfa80396d764b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "added-processes-per-mutation",
+      "report": {
+        "path": "design/reports/external-writer-broker-added-processes-per-mutation.json",
+        "sha256": "49ae5bdea855d15b3993bdeeb8349dc29fefbe298d9e73fc2aee47051df1f2e2"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "max-grant-bytes",
+      "report": {
+        "path": "design/reports/external-writer-broker-max-grant-bytes.json",
+        "sha256": "6ef617f0b001447a61ae5b12fc9e6096cd4fd8ffa66a31e2bae649473c432055"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "external-writer-broker",
+      "criterion": "gate-call-sites",
+      "report": {
+        "path": "design/reports/external-writer-broker-gate-call-sites.json",
+        "sha256": "3bf9ba77facc22390cedbe66baeda669c164f23988e2012502cdc410119313eb"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "external-writer-broker",
+      "criterion": "product-refuses-622-specimens",
+      "report": "design/reports/external-writer-broker-product-refuses-622-specimens.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate external-writer-broker --criterion product-refuses-622-specimens --out .hexaemeron/design/reports/external-writer-broker-product-refuses-622-specimens.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "external-writer-broker",
+      "criterion": "product-appends-loop-two",
+      "report": "design/reports/external-writer-broker-product-appends-loop-two.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate external-writer-broker --criterion product-appends-loop-two --out .hexaemeron/design/reports/external-writer-broker-product-appends-loop-two.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "external-writer-broker",
+      "criterion": "product-every-mutator-mapped",
+      "report": "design/reports/external-writer-broker-product-every-mutator-mapped.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate external-writer-broker --criterion product-every-mutator-mapped --out .hexaemeron/design/reports/external-writer-broker-product-every-mutator-mapped.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "refuses-622-widening",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-refuses-622-widening.json",
+        "sha256": "122e6db4ff516ad5b4ffdbf65d5a75f4e034a5e4ce7fc95d7ad1ab6ba35339d7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "appends-loop-two-same-ledger",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-appends-loop-two-same-ledger.json",
+        "sha256": "00c4145d572a67d4f861b6504f9a9032282318c78efa17ed94e9d62ddca1dbaa"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "legacy-loop-one-bytes-identical",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-legacy-loop-one-bytes-identical.json",
+        "sha256": "9585de4c6c17be4fefe3272d1eb9188c689913f207189ad3982054779e5c2ff7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "runs-under-one-account-stdlib",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-runs-under-one-account-stdlib.json",
+        "sha256": "fde065242b04f77a047881f65c6e46f80da5d7288ff263dcef5aa7660679b3b1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "crash-window-labelled",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-crash-window-labelled.json",
+        "sha256": "65e5daf216cb7bab57ae92dc7852d2f59eecca925f84a47c3fedaa0310afac2b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "added-processes-per-mutation",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-added-processes-per-mutation.json",
+        "sha256": "843f66e5193d4c106b3bba9b34773d231081708793d0730f4a6d2d2b4519d0c4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "max-grant-bytes",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-max-grant-bytes.json",
+        "sha256": "266a5f4e15a0b3179f0c9c69c9e29f544a505814fb144fc2020b0cfffe51ebff"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "gate-call-sites",
+      "report": {
+        "path": "design/reports/gate-with-replacement-exit-gate-call-sites.json",
+        "sha256": "ac81a3a4732e3e88d54bf70987277f844b58aea9171668fee330d328c9daa9eb"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "product-refuses-622-specimens",
+      "report": "design/reports/gate-with-replacement-exit-product-refuses-622-specimens.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate gate-with-replacement-exit --criterion product-refuses-622-specimens --out .hexaemeron/design/reports/gate-with-replacement-exit-product-refuses-622-specimens.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "product-appends-loop-two",
+      "report": "design/reports/gate-with-replacement-exit-product-appends-loop-two.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate gate-with-replacement-exit --criterion product-appends-loop-two --out .hexaemeron/design/reports/gate-with-replacement-exit-product-appends-loop-two.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "gate-with-replacement-exit",
+      "criterion": "product-every-mutator-mapped",
+      "report": "design/reports/gate-with-replacement-exit-product-every-mutator-mapped.json",
+      "resolver": "python3 .hexaemeron/design/conform_gate.py --candidate gate-with-replacement-exit --criterion product-every-mutator-mapped --out .hexaemeron/design/reports/gate-with-replacement-exit-product-every-mutator-mapped.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "dispatcher-grant-wal",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
