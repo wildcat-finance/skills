@@ -13,14 +13,14 @@
     "documentation": {
       "files": [
         {
-          "bytes": 27794,
+          "bytes": 28604,
           "path": "plugins/hexaemeron/skills/fiat/references/checkpoint-authority.md",
-          "sha256": "8bf74e46cbc16769f96109d104e1beaaecfb1e0aae22fa320806dbcac420bd44"
+          "sha256": "29cebc2761a6637c04c4c2fff7adb24bd003994030978e40d577b1aff615fed4"
         },
         {
-          "bytes": 10084,
+          "bytes": 12078,
           "path": "docs/checkpoint-authority/release.md",
-          "sha256": "f327a46e0c03bf3e42f4dd39755eba37b8a64c3489d7bf642c0d171afe1b21b0"
+          "sha256": "424f32ddff6045d5808d8c44d27065e1f9fabda6c6ef299656a40cfd3a1cbd16"
         },
         {
           "bytes": 987,
@@ -33,7 +33,7 @@
           "sha256": "7c5edd3692d2a6ddc575e90a8fa791d9b610c5f90a1b1e3e7b7aa4972208b99d"
         }
       ],
-      "sha256": "a290838504de7c54304b48f7bdbe95125734e4ab85a4f0b7598aa95289d69e60"
+      "sha256": "7c0ee2edc2d3be4b52a0e5c12d5efeb3b836d1ee015991d8b8d8a1f609c0bbe8"
     },
     "fixtures": {
       "files": [
@@ -53,12 +53,12 @@
           "sha256": "5c01345ad494538d2ab6841d26be0d06dd16b0757bc6780603b65a2eb0872f30"
         },
         {
-          "bytes": 10097,
+          "bytes": 10377,
           "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/interoperability-manifest.json",
-          "sha256": "e8967bd7cf32440d319f2ec9037ff77948569209b9cee01a116ed8bbbb45d10f"
+          "sha256": "f0001ecb44cca9c9fb48a9516232fdfbadcb7e6f4a441e29860076acb5ae1d50"
         }
       ],
-      "sha256": "9f9f9c6fd720f5406e70daff159e066913aeb6f026e13705c832895cc93708ba"
+      "sha256": "e42e0d2281980b83aa29fd5d7d0d72b3c52bc6e0bc2839cea19eec608babc14f"
     },
     "native": {
       "files": [
@@ -233,9 +233,14 @@
           "sha256": "fdc257486ce081a5d8a23bc1195e2c7384637e58aa9a46e1c2292895bd816395"
         },
         {
-          "bytes": 3054,
+          "bytes": 4404,
           "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/network.py",
-          "sha256": "aa1f204f6465d604033a973afd9e85c152183b0dab67ee1d0a7d2b3d158cc226"
+          "sha256": "670e96c018be18bf39d3ad6571f8afeca5731a79e90fd3d606b15e3762e5db14"
+        },
+        {
+          "bytes": 3041,
+          "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/network_policy.py",
+          "sha256": "84564681ab24981c9813c15a6367abdb566b8b190d294851f36d7887a19b9386"
         },
         {
           "bytes": 6130,
@@ -248,14 +253,14 @@
           "sha256": "5eb02120b2abbe2dde93b3d1232b5dd17257dc9100c58634e76c09028b8fd823"
         },
         {
-          "bytes": 16380,
+          "bytes": 16398,
           "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/release.py",
-          "sha256": "97087b7ed184f88d752f94d36f44e4fc80190e566cefb113fb0d9c4f8aff01e7"
+          "sha256": "bfb48b91ef40d807ae9ba8d60fa37bc07c5ccbbc26737628ae7c45594bd9a237"
         },
         {
-          "bytes": 16626,
+          "bytes": 16479,
           "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/release_conformance.py",
-          "sha256": "c52bcec260d8469ebeee1cbc24b71610d006e73c3462cafa0527fb79b8eeb530"
+          "sha256": "b7539a9f3109973d9929e4c31e086739f761b28fa9809fad632fb5b5158e4e17"
         },
         {
           "bytes": 28014,
@@ -298,7 +303,7 @@
           "sha256": "dbfcde705c498ddd075e4de13fbde6d0a01e804a5a9fe4c6b0494cfee60f9ebe"
         }
       ],
-      "sha256": "358f4160d5c401fde67639dcd7f3bd7e462cf583bfce2fac0b55dc0202adc49a"
+      "sha256": "25c40d3827b018b7ec6d79b95cdfa922680563c5b232a50d244fa59759df0401"
     }
   },
   "external_pins": [
@@ -337,10 +342,10 @@
   },
   "note": "The source commit and this file's digest are pinned by the consumer lock, never by this file.",
   "pins": {
-    "artifact_sha256": "9b003a5159730dfba02dab44890aaa230622d7b495e7aa1592317da39ae08de5",
-    "fixture_corpus_sha256": "acd3d6f082214bdc35a31905ef1021d172489d1cbca210ce40d4d0db39969eaf",
+    "artifact_sha256": "30512bccf6ad217c64f268461d2acfc4face3daddd5dc348791d1738560c9905",
+    "fixture_corpus_sha256": "4492a93662c787892028bc67bd8d100c1cc45562f69f9fc4f77d037756612a55",
     "schema_set_sha256": "b94bae8b24bd56c233cb10bc6b295d07985c8ad6245f26cff9b8abbc7612fe7d",
-    "verifier_sha256": "358f4160d5c401fde67639dcd7f3bd7e462cf583bfce2fac0b55dc0202adc49a"
+    "verifier_sha256": "25c40d3827b018b7ec6d79b95cdfa922680563c5b232a50d244fa59759df0401"
   },
   "protocol": "checkpoint-authority/v1",
   "record_types": [
@@ -398,7 +403,7 @@
   "transitive_files": [
     {
       "path": "docs/checkpoint-authority/release.md",
-      "sha256": "f327a46e0c03bf3e42f4dd39755eba37b8a64c3489d7bf642c0d171afe1b21b0"
+      "sha256": "424f32ddff6045d5808d8c44d27065e1f9fabda6c6ef299656a40cfd3a1cbd16"
     },
     {
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json",

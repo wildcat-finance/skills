@@ -1,11 +1,11 @@
 {
   "authority": {
-    "artifact_sha256": "9b003a5159730dfba02dab44890aaa230622d7b495e7aa1592317da39ae08de5",
-    "fixture_corpus_sha256": "acd3d6f082214bdc35a31905ef1021d172489d1cbca210ce40d4d0db39969eaf",
-    "release_manifest_sha256": "b3bc5d5359765c6fa8e1b392419875f097950ac147770c03580b8dbda3b93d62",
+    "artifact_sha256": "30512bccf6ad217c64f268461d2acfc4face3daddd5dc348791d1738560c9905",
+    "fixture_corpus_sha256": "4492a93662c787892028bc67bd8d100c1cc45562f69f9fc4f77d037756612a55",
+    "release_manifest_sha256": "e1b9bf630208a2f16af7c77c01ed18ff7c7cff0dadd47ebf3d62db3d8b09f120",
     "schema_set_sha256": "b94bae8b24bd56c233cb10bc6b295d07985c8ad6245f26cff9b8abbc7612fe7d",
     "source_commit": "0000000000000000000000000000000000000000",
-    "verifier_sha256": "358f4160d5c401fde67639dcd7f3bd7e462cf583bfce2fac0b55dc0202adc49a"
+    "verifier_sha256": "25c40d3827b018b7ec6d79b95cdfa922680563c5b232a50d244fa59759df0401"
   },
   "native": {
     "executable_sha256": "326817a508a2d0be382e8e44071ec1d5957411a9cb6091764d7a33e9e032ff30",

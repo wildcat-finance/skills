@@ -103,14 +103,44 @@ cosign cases are a valid envelope, an altered payload, an untrusted key, a
 wrong payload type and a double-hashed payload. Transparency log checking is
 disabled, so no keyless identity or transparency claim follows.
 
-The demonstration uses macOS `sandbox-exec` with a fixed `(deny network*)`
-policy. Before cosign runs, four probes under that policy must receive `EPERM`
-for IPv4 and IPv6 bind and connect attempts. The report binds the launcher,
-policy and probe by SHA-256. Hosts without this implemented mechanism refuse
-with `network-denial-unavailable`; the ordinary history verifier does not
-depend on the demonstration's host mechanism. This policy denies network
-operations and keeps the caller's filesystem and process permissions. It does
-not establish native archive containment.
+The demonstration selects macOS `sandbox-exec` or Linux x86_64 Bubblewrap
+with a seccomp filter. Before cosign runs, IPv4 and IPv6 bind/connect probes
+must each receive `EPERM`, directly and again after a descendant executes.
+Namespace isolation alone permits loopback and fails this gate. The closed
+report binds the host ABI, launcher, complete policy, filter and both probe
+programs by SHA-256. Its policy identity includes the fixed launcher arguments.
+Missing, changed, incomplete or mismatched evidence refuses.
+
+On Ubuntu 24.04, install the packaged launcher with `sudo apt-get install
+bubblewrap`. The measured package is `0.9.0-1ubuntu0.3`; each execution hashes
+the actual installed binary and proves the policy works. The caller needs
+unprivileged namespace creation and kernel seccomp support. The verifier does
+not run with sudo, and the program does not change host security settings.
+An absent package, denied namespace capability or unsupported ABI refuses;
+there is no unsandboxed retry. Linux arm64 is not a supported backend.
+
+The Linux filter checks its syscall ABI, refuses x32 and other architectures,
+and denies socket operations and io_uring submission. Bubblewrap consumes
+stdin to install it; the fixed cosign command reads files. The explicit `/dev`
+bind lets the Go runtime reopen `/dev/null` afterwards. Network and PID
+namespaces, a new session and dropped capabilities accompany the filter;
+existing timeout, output and process cleanup limits still apply.
+
+The macOS policy remains `(version 1)(allow default)(deny network*)` on its
+existing arm64 and x86_64 backends. The measured Linux profile is Ubuntu 24.04
+x86_64. Fresh hosted Ubuntu 24.04 x86_64 and macOS 15 arm64 conformance remain
+integration gates for this delivery; no new macOS x86_64 execution is claimed.
+Report-shape fixtures construct an explicit descriptor without preparing a
+host. Positive conformance still prepares and executes the actual backend.
+
+Hosts without an available mechanism refuse with `network-denial-unavailable`;
+an ineffective mechanism refuses with `network-denial-probe`. Changed launcher
+or policy identity refuses with `network-denial-changed`. Check the package and
+namespace/seccomp permissions, then rerun the complete criterion. An offline
+flag supplies no denial evidence. The ordinary history verifier does not depend
+on this demonstration mechanism. The root and device binds retain the caller's
+filesystem permissions; they do not establish archive or filesystem containment,
+service acceptance, or aggregate descendant resource limits.
 
 Regenerate the corpus, the manifest and the lock example together, in that
 order, and check them without writing:
