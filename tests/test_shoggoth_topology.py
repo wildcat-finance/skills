@@ -376,6 +376,49 @@ class RefusalTests(unittest.TestCase):
         )
         self.assertIn("sundial", derived.phase_ids)
 
+    def test_bytecode_caches_are_invisible_to_discovery(self):
+        """A lint run's `__pycache__` must move nothing this reader derives.
+
+        The observed failure: running a bundled Python lint from the tree
+        writes `__pycache__` under `plugins/<id>/skills`, and those
+        directories counted toward the entry cap on a diff that touched
+        nothing under `plugins/`.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            before = self._read(root)
+            cache = (
+                root / "plugins" / "quarry" / "skills" / "granite" / "__pycache__"
+            )
+            cache.mkdir()
+            (cache / "module.cpython-312.pyc").write_bytes(b"\x00")
+            nested = root / "plugins" / "quarry" / "skills" / "__pycache__"
+            nested.mkdir()
+            (nested / "other.cpython-312.pyc").write_bytes(b"\x00")
+            after = self._read(root)
+        self.assertEqual(after.counts(), before.counts())
+        self.assertEqual(after.governed, before.governed)
+
+    def test_a_bytecode_cache_cannot_trip_the_entry_cap(self):
+        """However many files it holds, `__pycache__` never reaches the walk.
+
+        The cap counted 13 real `__pycache__` directories and their contents
+        cumulatively across one plugin's whole skill tree; this puts far more
+        than the cap inside a single one and asserts the walk still succeeds,
+        because the name is dropped before the walk ever lists what is
+        inside it.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            cache = root / "plugins" / "quarry" / "skills" / "__pycache__"
+            cache.mkdir()
+            for index in range(shoggoth_topology.MAX_SKILLS_PER_PLUGIN + 50):
+                (cache / f"module-{index:04d}.pyc").touch()
+            derived = self._read(root)
+        self.assertEqual(derived.counts()["governed"], 6)
+
     def test_skill_tree_depth_is_bounded(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
