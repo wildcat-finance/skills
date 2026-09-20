@@ -87,8 +87,14 @@ class MeasureAgreesWithPackageTests(unittest.TestCase):
         self.assertEqual(set(m["runtime"]), {"bytes", "files", "margin"})
         for row in m["largest_default_included"]:
             self.assertEqual(set(row), {"path", "bytes"})
-        # kept_by_link is populated in the example-class step, not this one.
-        self.assertEqual(m["kept_by_link"], [])
+        self.assertTrue(m["kept_by_link"])
+        for row in m["kept_by_link"]:
+            self.assertEqual(set(row), {"path", "bytes"})
+        self.assertEqual(
+            [row["path"] for row in m["kept_by_link"]],
+            sorted(row["path"] for row in m["kept_by_link"]),
+        )
+        self.assertEqual(m["kept_by_link"], self.manifest["kept_by_link"])
 
     def test_file_tripwire_matches_the_module_constant(self):
         self.assertEqual(self.measurement["file_tripwire"], self.module.FILE_TRIPWIRE)
@@ -168,11 +174,13 @@ class OverLineMeasurementTests(unittest.TestCase):
 
     def test_measure_exits_clean_with_a_negative_margin_over_the_line(self):
         with mock.patch.object(
-            self.module, "expected_files", return_value=(self.oversized_payload, b"{}\n"),
+            self.module, "expected_files",
+            return_value=(self.oversized_payload, b'{"kept_by_link": []}\n'),
         ):
             measurement = self.module.measure_tree(ROOT, 5)
         self.assertLess(measurement["package"]["margin"], 0)
         self.assertLess(measurement["runtime"]["margin"], 0)
+        self.assertEqual(measurement["kept_by_link"], [])
 
     def test_package_still_refuses_naming_bytes_line_margin_and_measure(self):
         with mock.patch.object(
@@ -196,6 +204,71 @@ class HeadroomBoundaryTests(unittest.TestCase):
         module.require_byte_headroom(line)
         with self.assertRaises(module.PackageError):
             module.require_byte_headroom(line + 1)
+
+
+class LinkKeptSafetyTests(unittest.TestCase):
+    """The link-kept exception is validated the same way every other selected
+    file is: a missing or symlinked target refuses generation instead of
+    being silently skipped, and a target that would escape the tree is never
+    even recognised as an example-class link in the first place (study
+    section 9; docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md).
+    """
+
+    def setUp(self):
+        self.module = load_generator()
+        self.scratch = ROOT / "plugins/lazarus/examples/_zzz_link_kept_probe.md"
+        self.addCleanup(lambda: self.scratch.unlink(missing_ok=True))
+
+    def _tracked_with(self, *extra):
+        real = self.module._tracked_plugin_files(ROOT)
+        return real + [self.scratch.relative_to(ROOT), *extra]
+
+    def test_missing_link_kept_target_refuses_generation(self):
+        self.scratch.write_text(
+            "[probe](./_zzz-link-kept-probe-missing.json)\n", encoding="utf-8",
+        )
+        tracked = self._tracked_with()
+        with mock.patch.object(self.module, "_tracked_plugin_files", return_value=tracked):
+            with self.assertRaises(self.module.PackageError) as caught:
+                self.module._source_candidates(ROOT)
+        message = str(caught.exception)
+        self.assertIn("absent or not a regular file", message)
+        self.assertIn("_zzz-link-kept-probe-missing.json", message)
+
+    def test_symlinked_link_kept_target_refuses_generation(self):
+        target = ROOT / "plugins/lazarus/examples/_zzz_link_kept_probe_target.json"
+        link = ROOT / "plugins/lazarus/examples/_zzz_link_kept_probe_link.json"
+        target.write_text("{}", encoding="utf-8")
+        link.symlink_to(target)
+        self.addCleanup(lambda: link.unlink(missing_ok=True))
+        self.addCleanup(lambda: target.unlink(missing_ok=True))
+        self.scratch.write_text(
+            "[probe](./_zzz_link_kept_probe_link.json)\n", encoding="utf-8",
+        )
+        # Neither the symlink nor its target is added to `tracked`: the only
+        # route by which either could reach `_source_candidates`'s selection
+        # is the link itself, so a refusal here is proof the scan found it.
+        tracked = self._tracked_with()
+        with mock.patch.object(self.module, "_tracked_plugin_files", return_value=tracked):
+            with self.assertRaises(self.module.PackageError) as caught:
+                self.module._source_candidates(ROOT)
+        message = str(caught.exception)
+        self.assertIn("absent or not a regular file", message)
+        self.assertIn("_zzz_link_kept_probe_link.json", message)
+
+    def test_link_targets_that_escape_the_tree_are_never_treated_as_example_links(self):
+        module = load_generator()
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            document = Path("plugins/x/examples/deep/nested/DOC.md")
+            (root / document).parent.mkdir(parents=True)
+            (root / document).write_text(
+                "[escape](../../../../../../../../etc/passwd)\n"
+                "[also-escapes](../../../../../../outside.json)\n",
+                encoding="utf-8",
+            )
+            found = module._link_kept_examples(root, {document}, [document])
+        self.assertEqual(found, set())
 
 
 if __name__ == "__main__":

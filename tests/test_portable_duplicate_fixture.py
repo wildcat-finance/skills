@@ -52,14 +52,35 @@ class PortableDuplicateFixtureTests(unittest.TestCase):
                 self.assertTrue(self.module._omitted(SOURCE / name))
                 self.assertFalse(self.module._omitted(RETAINED / name))
 
-    def test_manifest_program_and_other_examples_stay_present(self):
+    def test_only_markdown_link_kept_or_released_files_survive_the_class(self):
+        """Step 3's example-payload-class reaches everything but three things.
+
+        manifest.json and demo.py sit beside the six duplicate payloads in
+        this same, otherwise-omitted directory, and the class predicate
+        structurally reaches all of them alike -- `_omitted` alone has no
+        access to a packaged document's content, so it cannot know demo.py
+        is link-kept. demo.py stays in the built package only because
+        `plugins/lazarus/skills/lazarus/EVOLUTION.md` links it; that survival
+        is checked at the built-runtime level by
+        tests/test_skills_sh_package.py's
+        test_lazarus_keeps_the_complete_release_and_one_payload_copy, not
+        here. A Markdown file in the same directory is the one thing this
+        predicate leaves alone regardless of a link.
+        """
         for relative in (
-            SOURCE / "manifest.json", SOURCE / "demo.py", SOURCE / "new.json",
+            SOURCE / "manifest.json", SOURCE / "demo.py",
             SOURCE / "nested/rpc.jsonl",
             Path("plugins/lazarus/examples/aave-v4-spoke-v0/rpc.jsonl"),
         ):
             with self.subTest(path=relative):
+                self.assertTrue(self.module._omitted(relative))
+        for relative in (SOURCE / "README.md", SOURCE / "nested/GUIDE.md"):
+            with self.subTest(path=relative):
                 self.assertFalse(self.module._omitted(relative))
+        # The retained release keeps everything, Markdown or not.
+        for name in PAYLOADS:
+            with self.subTest(retained=name):
+                self.assertFalse(self.module._omitted(RETAINED / name))
 
     def test_identical_regular_copies_are_admitted(self):
         self.check_pair()
