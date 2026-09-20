@@ -1,0 +1,73 @@
+{
+  "entries": [
+    {
+      "criterion_id": null,
+      "disposition": "local-regression",
+      "finding_id": "fixture-local-total",
+      "id": "observed-local-failure",
+      "rationale": "Existing synthetic target returns an incorrect total.",
+      "source_ref": "synthetic-audit:observed-local-failure",
+      "source_span": {
+        "end_byte": 170,
+        "sha256": "205d0c61a101a0032baa0d77bd74640bb72595268389a6dc6051af1c8cfb3a9c",
+        "start_byte": 74
+      },
+      "source_status": "open",
+      "tracking": []
+    },
+    {
+      "criterion_id": "fixture-native-execution",
+      "disposition": "integration-requirement",
+      "finding_id": null,
+      "id": "new-native-boundary",
+      "rationale": "The synthetic target has not implemented its native boundary.",
+      "source_ref": "synthetic-audit:new-native-boundary",
+      "source_span": {
+        "end_byte": 278,
+        "sha256": "5a1640a6354f121507296cc5777b086bbd898c0a41e4ecd823f35b64db5bade4",
+        "start_byte": 170
+      },
+      "source_status": "not checked",
+      "tracking": []
+    },
+    {
+      "criterion_id": null,
+      "disposition": "historical",
+      "finding_id": null,
+      "id": "inherited-repair",
+      "rationale": "The authored source records a repair; this fixture does not verify it.",
+      "source_ref": "synthetic-audit:inherited-repair",
+      "source_span": {
+        "end_byte": 409,
+        "sha256": "f24f8bce19138b66bdae3d527dbe1b826948ce04dcbeed79d0b75e4fde79da11",
+        "start_byte": 278
+      },
+      "source_status": "fixed in the recorded source",
+      "tracking": []
+    },
+    {
+      "criterion_id": null,
+      "disposition": "out-of-scope",
+      "finding_id": null,
+      "id": "unchanged-upstream-limit",
+      "rationale": "The upstream limitation stays open outside this synthetic target.",
+      "source_ref": "synthetic-audit:unchanged-upstream-limit",
+      "source_span": {
+        "end_byte": 527,
+        "sha256": "32714c8c0ca2138e077fffd32d4a25b3753f04106f2d5f48c786b4aebedbf728",
+        "start_byte": 409
+      },
+      "source_status": "open upstream",
+      "tracking": []
+    }
+  ],
+  "schema": "protasis-audit-applicability/v1",
+  "source_views": [
+    {
+      "id": "synthetic-audit",
+      "path": "docs/native-guard-admission/fixtures/source-view.md",
+      "source_sha256": "3ef1954c638743708a05e4febae5ac5e64c31786b912339b48096bc621da35f1",
+      "view_sha256": "5017668dec7febcd7aaab5ba6bbd26826cb81ee7cfffe244842702480998c806"
+    }
+  ]
+}

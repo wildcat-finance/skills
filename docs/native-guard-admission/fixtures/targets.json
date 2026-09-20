@@ -1,0 +1,10 @@
+{
+  "criteria": [
+    "fixture-native-execution"
+  ],
+  "evidence_status": "not-executed",
+  "regressions": [
+    "fixture-local-total"
+  ],
+  "schema": "native-guard-admission-synthetic-targets/v1"
+}

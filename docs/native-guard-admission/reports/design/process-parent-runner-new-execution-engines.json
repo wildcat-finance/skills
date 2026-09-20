@@ -1,0 +1,9 @@
+{
+  "candidate": "process-parent-runner",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate process-parent-runner --criterion new-execution-engines --report .hexaemeron/reports/design/process-parent-runner-new-execution-engines.json",
+  "criterion": "new-execution-engines",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

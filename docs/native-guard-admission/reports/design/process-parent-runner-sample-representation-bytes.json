@@ -1,0 +1,9 @@
+{
+  "candidate": "process-parent-runner",
+  "command": "python3 .hexaemeron/research/design_probe.py --candidate process-parent-runner --criterion sample-representation-bytes --report .hexaemeron/reports/design/process-parent-runner-sample-representation-bytes.json",
+  "criterion": "sample-representation-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 623
+}
