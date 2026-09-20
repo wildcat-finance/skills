@@ -201,8 +201,8 @@ specimens, each exiting 1:
 | [`specimens/wildcat-v2-registry.json`](specimens/wildcat-v2-registry.json), declaring the V2 HooksFactory | `usdc-interval: Compound registry format is unknown` | `compound_registry.py:165` |
 | the shipped registry with `entries[0].proxy` set to the HooksFactory | `usdc-interval: Compound registry bytes do not match the pinned registry` | `compound_registry.py:216` |
 
-The second reaches the byte-pin rather than the format check, so the pin is
-load-bearing on its own. Its exact mutation recipe is in
+The second reaches the byte-pin rather than the format check, so the pin
+refuses on its own. Its exact mutation recipe is in
 [`evidence/commands.json`](evidence/commands.json).
 
 **The epoch model.**
@@ -260,3 +260,84 @@ finality or canonical-chain membership, and it derives no credit event,
 position or repayment conclusion. It authorises no live capture, no endpoint and
 no provider spending; selecting the interval and authorising a run remain the
 capture maintainer's decisions.
+
+## Refresh of 2026-09-20
+
+Everything above this heading is the observation of 2026-09-18, at
+`f0fa0c6632bd5fbef7f35e731646c32741ef282a`. It is left as written, with one
+exception: a metaphor in the byte-pin section became the plain verb "refuses"
+so that the prose lint passes. That edit changed no claim. This note
+records what [`capture.json`](capture.json) reads now and which of its fields
+moved. Step 5 of the delivery run for
+[#1731](https://github.com/wildcat-finance/skills/issues/1731) made the change.
+
+`source_revision` moved from `f0fa0c6632bd5fbef7f35e731646c32741ef282a` to
+`97773e760171a55995bbebad8f7dfa69d5f64be7`. That commit refreshed the registry
+under [`../1359`](../1359) from `origin/main` at
+`aededf66434ed4b4e3994bbaab5f1005fe10b453`. A file cannot name the commit that
+contains it, so the record names the commit directly before its own. At that
+commit both kickoff rows of `inputs` reproduce the byte count and SHA-256 of the
+file they name.
+
+| Target | Status on 2026-09-18 | Status now |
+| --- | --- | --- |
+| `wildcat-v1-ethereum-mainnet` | blocked | resolved |
+| `wildcat-v2-ethereum-mainnet` | blocked | resolved |
+
+The registry closed both rows after 2026-09-18.
+[#1590](https://github.com/wildcat-finance/skills/issues/1590) read the V2
+instances, hooks and role providers.
+[#1748](https://github.com/wildcat-finance/skills/issues/1748) recovered the
+source matches both rows lacked.
+[#1589](https://github.com/wildcat-finance/skills/issues/1589) read every V1
+controller and market instance.
+[Pull request 1736](https://github.com/wildcat-finance/skills/pull/1736) rewrote
+`../1359/evidence/source-match-1590.json` to carry the fee recipient's
+recompilation record. The refreshed `targets.json` binds that file by digest. It
+is not an `inputs` row here.
+
+Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 164,821 | 340,997 | `9e0d3c88c76ec727ea8aabe67fb8ac0648b039ef1fa9836a6a7f2f2ae4d4ca98` | `417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea` |
+| `docs/kickoff/1359/targets.md` | 53,142 | 74,040 | `4bd599b1967819ac65db95cecce3b05d0c6ef60f4b145eb051a60668d22dc443` | `f3d310e11f2adbefb341a2831092875f753df383c0b71970c290f2c004ba3baf` |
+
+Seven fields moved in each `required_capture` row. Each is derived from the
+matching registry row and none is typed:
+
+| Field | V1 before | V1 now | V2 before | V2 now |
+| --- | --- | --- | --- | --- |
+| `registry_status` | blocked | resolved | blocked | resolved |
+| `registry_blocker` | one sentence pair | null | one sentence pair | null |
+| `contracts` | 6 entries | 16 entries | 12 entries | 137 entries |
+| `contract_count` | 6 | 16 | 12 | 137 |
+| `code_hash_recorded_count` | 6 | 16 | 12 | 137 |
+| `sourcify_match_count` | 4 | 4 | 6 | 7 |
+| `unresolved` | 3 items | null | 3 items | null |
+
+The V1 `sourcify_match_count` is the one cell whose value did not change. It is
+still derived. `selection.reference_target` did not move, because it already
+named both estates.
+
+Fields this refresh did not move, which a reader should not take as current:
+
+- `inputs[2]` to `inputs[8]`, the collector-source rows, stay as observed on
+  2026-09-18. At `97773e760171a55995bbebad8f7dfa69d5f64be7` five of them still
+  reproduce. `plugins/alexandria/scripts/usdc_interval.py` is 111,898 bytes
+  there against the 103,886 recorded, and
+  `plugins/alexandria/scripts/alexandria_lib/interval.py` is 87,399 against
+  69,955, because the #1731 delivery changed both. The `blockers` line
+  references were read against the recorded bytes.
+- `matched_by_other_means` still lists the 2 V1 and 6 V2 entries of 2026-09-18.
+  The refreshed `contracts` arrays carry 12 V1 and 130 V2 entries without a
+  Sourcify match, each with its method.
+- The V2 `observed_block` and `blocks_to_observed_head` still name block
+  25,960,042. The registry's V2 row now observes block 26,006,289 and keeps
+  25,960,042 as `prior_observed_block`.
+- `selection.admitted_targets_blocked` still lists both Wildcat rows.
+
+[`tests/test_kickoff_capture_record.py`](../../../tests/test_kickoff_capture_record.py)
+now recomputes both kickoff `inputs` rows and the seven fields on both rows,
+and checks this note's revision and status table against the JSON. The registry
+can no longer move without this record failing a test.

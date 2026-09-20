@@ -4,7 +4,7 @@
   "issue": "https://github.com/wildcat-finance/skills/issues/1490",
   "parent_issue": "https://github.com/wildcat-finance/skills/issues/1374",
   "produced_on": "2026-09-18",
-  "source_revision": "f0fa0c6632bd5fbef7f35e731646c32741ef282a",
+  "source_revision": "97773e760171a55995bbebad8f7dfa69d5f64be7",
   "producer": "Shoggoth as Surveyor under Protasis, in the delivery session",
   "publisher": "Dr Laurence E. Day, capture maintainer: committer and signer of the commit carrying this record",
   "decision_maker": {
@@ -57,8 +57,8 @@
   "required_capture": [
     {
       "target": "wildcat-v1-ethereum-mainnet",
-      "registry_status": "blocked",
-      "registry_blocker": "V1 controller and market init-code source matches have not been reproduced. The preserved Ethereum observation at block 25960042 identifies candidate contracts but does not establish all historical implementation epochs.",
+      "registry_status": "resolved",
+      "registry_blocker": null,
       "chain": "Ethereum mainnet",
       "chain_id": 1,
       "caip2": "eip155:1",
@@ -109,7 +109,7 @@
           "code_keccak256": "0x79fa042e1a64cf7f2b02b7074c16f324ee3ac1fab1da99be6066aee6bf0138b6",
           "code_length": 23651,
           "sourcify": null,
-          "code_match_method": "stored init code keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; not reproduced from source in this pass"
+          "code_match_method": "stored init code (0x00 + 23650 bytes) keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; solc 0.8.22+commit.4fc1097e recompiling the factory's Sourcify stdJsonInput (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706, outputSelection widened to emit every contract) reproduces WildcatMarket's evm.bytecode.object byte for byte, 23650 bytes, keccak256 0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93"
         },
         {
           "role": "controller-init-code-storage",
@@ -118,7 +118,7 @@
           "code_keccak256": "0x8e1eb2f3e38e1effddfd26b92802c0cb9aba828051fc0996696017a3cc414066",
           "code_length": 16251,
           "sourcify": null,
-          "code_match_method": "stored init code keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; not reproduced from source in this pass"
+          "code_match_method": "stored init code (0x00 + 16250 bytes) keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; solc 0.8.22+commit.4fc1097e recompiling the factory's Sourcify stdJsonInput (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706, outputSelection widened to emit every contract) reproduces WildcatMarketController's evm.bytecode.object byte for byte, 16250 bytes, keccak256 0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371"
         },
         {
           "role": "lens",
@@ -127,11 +127,101 @@
           "code_keccak256": "0x60a6478c59b7c6b95d7549d05b5801203ba70e79aa63e0e5fe1a91eccd4a431f",
           "code_length": 17417,
           "sourcify": "match",
-          "code_match_method": "sourcify full match; 40 of 46 in-tree Sourcify sources equal the wildcat-protocol head 488b30d0 and six library files differ, so no commit is pinned"
+          "code_match_method": "sourcify full match; best single-commit match is head 488b30d0 at 40 of 46 in-tree sources; the remaining 6 cannot be reconciled at any commit (checked across main, all 8 named branches and all 37 pull requests, merged and unmerged): 4 (ReentrancyGuard.sol, FeeMath.sol, MathUtils.sol, SafeCastLib.sol) match only the pre-license-rewrite state at da74452a and the other four equivalent commits, and 2 (MarketErrors.sol, MarketEvents.sol) differ from every known commit by exactly one added line, `// SPDX-License-Identifier: Apache-2.0`, that no commit ever applied to those two files; see docs/kickoff/1359/evidence/source-match-1748.json market_lens"
+        },
+        {
+          "role": "controller",
+          "name": "WildcatMarketController instance",
+          "address": "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+          "code_keccak256": "0x7f465eac98c8a85183834920309a3bbe4811ad3dff5473e0dce10b4600cb0718",
+          "code_length": 14750,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable controllerInitCodeHash; on-chain runtime reproduces the compiled WildcatMarketController deployedBytecode with 0 differing bytes outside its immutableReferences (11 immutable slots)"
+        },
+        {
+          "role": "controller",
+          "name": "WildcatMarketController instance",
+          "address": "0xc2321ed31a274595e087b5010d200b748eb600e4",
+          "code_keccak256": "0xff5208ad56c775f6e842db531f51dd677589bcb77bdc1cda187cf0d34af70f1d",
+          "code_length": 14750,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable controllerInitCodeHash; on-chain runtime reproduces the compiled WildcatMarketController deployedBytecode with 0 differing bytes outside its immutableReferences (11 immutable slots)"
+        },
+        {
+          "role": "controller",
+          "name": "WildcatMarketController instance",
+          "address": "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6",
+          "code_keccak256": "0xc9173ba223d0751d4bf9450bc2f895a61af164c40bf1b8b21c450f5d3b9d1729",
+          "code_length": 14750,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable controllerInitCodeHash; on-chain runtime reproduces the compiled WildcatMarketController deployedBytecode with 0 differing bytes outside its immutableReferences (11 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+          "code_keccak256": "0xbb9c1373ef3707f54e38588a0d3272f06456cdb895e90e90ddf28ed63f96f460",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+          "code_keccak256": "0x05497b17d3240ee152d4c7572ee30bcd578f3ecd067df780e9f4a40f191ebbcf",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0x5850afc80561932b0abb63dd13cdc129395323a3",
+          "code_keccak256": "0x1daa6f1f565328c589f05ffe3b1c8bf29804e5cbbe51221a9ea5dbf3124d20a1",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+          "code_keccak256": "0x28d011c52ecb299054fa653b0e380048f594e8d412992f18a9d2f0f77dfb2091",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+          "code_keccak256": "0x8a67488e2b82c9c787cc0b35d28f0482161d3562e03dfb8ae17dc3546321f55d",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+          "code_keccak256": "0xde1884f9614ef943082cdfcada06447983a107d5461d9c4f654c89c098a44434",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket instance",
+          "address": "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a",
+          "code_keccak256": "0x88f4d56af2eeb44a71ccd0e21e86097c6bfa32167cde8b03dcaa1f6e1be9797a",
+          "code_length": 20275,
+          "sourcify": null,
+          "code_match_method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)"
         }
       ],
-      "contract_count": 6,
-      "code_hash_recorded_count": 6,
+      "contract_count": 16,
+      "code_hash_recorded_count": 16,
       "sourcify_match_count": 4,
       "matched_by_other_means": [
         {
@@ -147,16 +237,12 @@
       ],
       "upgradeable_proxies": 0,
       "upgradeable_proxy_note": "no contract in this row is an EIP-1967 proxy; the estate is direct deployments, stored init code and create2 clones, so the collector's implementation-epoch model has no upgrade log to read and no implementation slot to sample",
-      "unresolved": [
-        "V1 market and controller init code hashes are recorded but not reproduced from the pinned source",
-        "the V1 MarketLens source commit is not pinned",
-        "one of the 37-source and 8-source blob sets pins five equivalent commits, not one; the deployer's exact checkout is unknown"
-      ]
+      "unresolved": null
     },
     {
       "target": "wildcat-v2-ethereum-mainnet",
-      "registry_status": "blocked",
-      "registry_blocker": "The existing row matches core factory and stored init code but lacks the complete instance, hook and role-provider inventory. WildcatFeeRecipient and CollateralFactory source identity remains unestablished.",
+      "registry_status": "resolved",
+      "registry_blocker": null,
       "chain": "Ethereum mainnet",
       "chain_id": 1,
       "caip2": "eip155:1",
@@ -270,21 +356,1146 @@
           "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
           "code_length": 1649,
           "sourcify": "match",
-          "code_match_method": "Sourcify full match (0.8.25, runs 200); src/WildcatFeeRecipient.sol is in no v2-protocol tree read, so the source repository is not located"
+          "code_match_method": "recompiling the fee-recipient-contract verification input with solc 0.8.25 (runs 200, viaIR, cancun, bytecodeHash none) reproduces the recorded output.json creation and deployed bytecode byte for byte; that deployed bytecode equals the on-chain runtime byte for byte, 1649 bytes with no immutables; the input sources equal the Sourcify full-match sources byte for byte"
         },
         {
           "role": "collateral-factory",
-          "name": "CollateralFactory (subgraph)",
+          "name": "WildcatMarketCollateralFactory (WildcatCollateralFactoryV1)",
           "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
           "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
           "code_length": 7615,
           "sourcify": null,
-          "code_match_method": "code hash recorded only; not on Sourcify; the collateral-contract repository was not inspected"
+          "code_match_method": "forge build of collateral-contract branch multi-exchange under its ir profile (solc 0.8.28, viaIR, 50000 runs, cancun, bytecodeHash none) reproduces the 7615-byte runtime modulo 4 immutable slots; the immutables read back as the factory's own CREATE2 prefix, the collateral init-code storage, the collateral init code hash and the arch controller; not on Sourcify"
+        },
+        {
+          "role": "collateral-init-code-storage",
+          "name": "SimpleMarketCollateralMultiParty init code",
+          "address": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+          "code_keccak256": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+          "code_length": 9581,
+          "sourcify": null,
+          "code_match_method": "stored code is 0x00 followed by the creation bytecode of SimpleMarketCollateralMultiParty built from collateral-contract branch multi-exchange under its ir profile; the keccak256 of the rest equals WildcatMarketCollateralFactory.collateralInitCodeHash(); the audit_2026_feb and kethic/underflow-fix branches carry a different blob whose creation code does not hash to it"
+        },
+        {
+          "role": "collateral-lens",
+          "name": "CollateralLens",
+          "address": "0x422489ba6bddd5954c379c41b6c97ab0e4494f90",
+          "code_keccak256": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8",
+          "code_length": 8287,
+          "sourcify": null,
+          "code_match_method": "forge build of collateral-contract branch multi-exchange under its ir profile reproduces the 8287-byte runtime modulo 1 immutable slot, which reads back as the collateral factory; not on Sourcify"
+        },
+        {
+          "role": "role-provider",
+          "name": "OpenAccessRoleProvider",
+          "address": "0x5620553d8881335f74ad19259daacd1d9b373101",
+          "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+          "code_length": 564,
+          "sourcify": "match",
+          "code_match_method": "Sourcify full match (solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none); the chainalysis-ofac-role-provider blob compiled alone with those settings reproduces the runtime modulo the 2 oracle immutable slots; the blob differs from the Sourcify source only in indentation, the SPDX line and a view-versus-pure mutability keyword"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: CMS USDT",
+          "address": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+          "code_keccak256": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: CMS USDC",
+          "address": "0x00a84b8f40ee4285aed9104a39bdf0e2615bba49",
+          "code_keccak256": "0xd6c63a73df3850e27a5d7c6d295e4a10a60c227a8a53bb1a087c373d0e2adef4",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 365-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Private Credit portfolio Open",
+          "address": "0x05bfbce741c85dfc6c5457da63732943dd4fe8f0",
+          "code_keccak256": "0xa748984ac0546054902b887373a9aa678f270cdcf4c74535b19f9a56673b944b",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: Democratize Market-Making with onchain LP",
+          "address": "0x07c9fcf40d032ed65b3e44cec16766327c4aab93",
+          "code_keccak256": "0x2fb8673ed1c82113488f6af35e3adfba3e091d0eeac9153bd01cfe24e4609c69",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: MNNC Trading USD Coin",
+          "address": "0x0d7a820f97714f879454790d8b3887b1c50b4dad",
+          "code_keccak256": "0xdf7388e8dd4634a4c6d09a7682f311dcd412eb72e919a6dc18267a43ed8b60bf",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: SC Market",
+          "address": "0x0eaa734e23be6a5c216f18edce127e3f624a6303",
+          "code_keccak256": "0x0cb009cebc419cfe9fe91cb8404ddfa5f91e30b9d74ec3cc920a9f24c1ea8c7e",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: CREDI Fixed Market",
+          "address": "0x1234df5b1d967f432547c8a22bd0573e3ffce5cd",
+          "code_keccak256": "0xe88db700551888ef7332fba817206251ccb6fa6235c24ee6e89569f6429109cd",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: Bodhi USDC",
+          "address": "0x13df803310dcef45c85d2904eedad54b116d7c36",
+          "code_keccak256": "0xea6d970a0856cc83e609aad97c3211400089a2bd6cd1e2d2834cace0c9e44b9f",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Kain Warwick Private LP fund",
+          "address": "0x1c1822e065ac62d0006f931ceff04a198484f445",
+          "code_keccak256": "0x79f8592371e498303adefb8ce60c649a6d35711be6ec69521c2e199c8d3828f3",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: KappaLab Ethena USDe",
+          "address": "0x2c3612ca197fd462d81a38e3590d193d6e8c7a21",
+          "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Hyperithm Private",
+          "address": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+          "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: Wildcat Foundation Policy",
+          "address": "0x38fcd48cfa4be537ceeafb4b2badab7eba4d5efd",
+          "code_keccak256": "0x65418dab9ebd13a04a217fdb823c9239e083256fd9d25bc3defd29094434ce56",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 365-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Stablecoin loan",
+          "address": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+          "code_keccak256": "0x2ff81f1befbb848d6e25d82e29b5801c667220c4926154c26852452569ddb66d",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: KeyUSDC-Policy",
+          "address": "0x59106481fefec5d523f9d8b5214ebe42182e6585",
+          "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Rifbid Loan",
+          "address": "0x67fb662a7ea704b811899ebe8eb4173b2ec555fb",
+          "code_keccak256": "0x23360672e474bea6a46db9e1b30d65d1ca20e3443e26cd1661ca27f9fb5c2a39",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: MiningStore - Parent",
+          "address": "0x71cf8be0840bab347b45f946345e97fabfef4682",
+          "code_keccak256": "0xe85fd29af377bdcb97efe2803c965d3bfbe7335e4bfca811fc88530770f17bec",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Hyperithm Default Policy",
+          "address": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+          "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Maseer Finance - CANA Market USDT",
+          "address": "0x840146e12437e97374d1a12577c7f0b7cd1e0e87",
+          "code_keccak256": "0xbac5120f7189c8d55d1d1ad5de1045a499a59c52c22e99df86926aeca4b32d55",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Dialectic Chronograph",
+          "address": "0x8cb27994564ddeb7cba130f1c213bd6e809223ad",
+          "code_keccak256": "0xf781ee05bfab29e0d27a173375e5c4f8652b445dbf1fb5d1975ecb51f5149bd4",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Selini",
+          "address": "0x8e3dec859aa3ab5716c5f9d9436ea452b2598be5",
+          "code_keccak256": "0xedaeb9665c454bd24bddd7317dc3c514898c2226c1098b5e6ff48f9eb73616c9",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: 9% USDT open term",
+          "address": "0x92b272ba90722e32095edb7aecd4af3717d5d90b",
+          "code_keccak256": "0x4cb3849b7f29bf38c3ef869a83f0d9c22bbb83c3029102174f99ceb6090abd10",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: Mithras Fixed Loan",
+          "address": "0x9f93483da03aa66254341a730e7867f0c12fd894",
+          "code_keccak256": "0xa6efc92699594cc391ca72551df5d3e1791752a740293e83d6b05353bc669896",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: KappaLab USDC ",
+          "address": "0xa4195278a9891bc2787625aace203c1d676ff714",
+          "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Closed",
+          "address": "0xa5eeb866981d1c46d0d5153872559d88e37c25ad",
+          "code_keccak256": "0xd3a7c1dec5bfcdc73dbb441663eedbd51af1b6e087c1dfcd9b3063b55925c1c5",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: 6MO-Levered AA SUKUK-OPEN",
+          "address": "0xadee85002320ef1093f090067873544376f09ff5",
+          "code_keccak256": "0x029ee3fb3fa7349d6d0758dda84443c36d1a2e496ae133e54336ec42ca543095",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Open Term",
+          "address": "0xb428c5239be400e74f32c46cfa6c7e8b481aca0d",
+          "code_keccak256": "0xbb1f0d13278be09c06876c59736a2b112f3b41e6cad74a82b0895a950ec6a797",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: 6MO-Levered AAA SUKUK",
+          "address": "0xb7ce16d0a1250e261c3dfa6299a96a17dd1741dc",
+          "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Elk Crypto USDT",
+          "address": "0xb92ad23d6b84c9ca8b687128e45ebbcd49b4c091",
+          "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: LAB Loan",
+          "address": "0xb9f4e923cc42fca0d35a5d176c90d0caaae99849",
+          "code_keccak256": "0x88940075fc3cc9e7f91f4e6a53a03114a764696827b84b625f3bdc4feeb4f40a",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: 6MO-Levered AAA SUKUK",
+          "address": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+          "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: KeyEURC-Policy",
+          "address": "0xc02efc345fadd4b1261889524557ed541d87546a",
+          "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: KeyEURC",
+          "address": "0xc2e71d157cab47a3c76ebbedb29352ae9c157072",
+          "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Seve Ethereum Loan 1",
+          "address": "0xc6eb4b199c1a56aa099fd1ede3e4c1fe702c11fb",
+          "code_keccak256": "0x24ab271d2a81d680e98c326f222c4a708888cc22eb1ca4a85567c8cc5670767b",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Amber USD Coin",
+          "address": "0xdd87c59d295b0b4c1acf1ac29358d435e4d85459",
+          "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: 0dlabs-ArcX",
+          "address": "0xe0c3f69317b86654bf42e9c99534f5ad0a97a2e6",
+          "code_keccak256": "0x8930aecad55e4dc8fc6cd908a25984f54a949af80bee5e22d9aa2b200207678d",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: Kinto Phoenix Policy",
+          "address": "0xe46e615a3632aa5dc28dec2a0fedb898332077ef",
+          "code_keccak256": "0x1e50d68f0c0a642539c488e3700f6d3fc4188a3c3af7ad2d220247745a42604b",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Open Term Permissionless",
+          "address": "0xec6f30250269069b62d7b969a6af731214d20af9",
+          "code_keccak256": "0x987b8e1b1eecaeb1c655a892949410ab843754304e42054300efca85cc4a428e",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: Tradevu Capital",
+          "address": "0xee2fd06d9380f407b33506bbcd559843e6ac84b7",
+          "code_keccak256": "0xf2d2c33c77b286f909164b3392297fd1518640fcce6944a047af4b83d1991a18",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 730-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Elk Crypto",
+          "address": "0xf459164eb4a386d0cbea4deb0709cb9821d97ca3",
+          "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Amber Trading Tether USD",
+          "address": "0xf54967b93d777932e707972052bf07e1e51c1121",
+          "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "OpenTermHooks instance: Auros Default",
+          "address": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+          "code_keccak256": "0x25e91b1eb3dfbc0cbf806f15fc211b500894839726a0627c107c6ce3da2c2ab7",
+          "code_length": 17849,
+          "sourcify": null,
+          "code_match_method": "runtime equals the OpenTermHooks template's compiled deployedBytecode modulo 14 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "hooks-instance",
+          "name": "FixedTermHooks instance: V2 Launch Test Policy",
+          "address": "0xfe5156595795a282b7a5aab6ae94a9c273111a32",
+          "code_keccak256": "0xf853094ce9f3deb8ea07641f65625945b3c4750416dd9c6bbff5b8713f94d185",
+          "code_length": 19751,
+          "sourcify": null,
+          "code_match_method": "runtime equals the FixedTermHooks 365-day template's compiled deployedBytecode modulo 15 immutable slots; HooksInstanceDeployed event at the deployment block names this template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Halal Cash Levered Tether USD (HALALUSDTUSDT)",
+          "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+          "code_keccak256": "0x7ba7deeac75dd71940724cb588abbb4433079d77e33469616a55710e1976c57b",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Dialectic Chronograph USD Coin (ChronoUSDC)",
+          "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+          "code_keccak256": "0x17ec8c7900c66e45194ea88c78681521fce9e236fa00c92507bae2d73509bee6",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Halalcash Levered USD Coin (HALALUSDCUSDC)",
+          "address": "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+          "code_keccak256": "0xeb26a1baef5a4c987131348b171f0e612971306e7d993eb5d3cafc6fe4182305",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Wildcat Foundation USD Coin (wldUSDC)",
+          "address": "0x0b6c6d557109f9e793297d54ee3fbde2e315b070",
+          "code_keccak256": "0xbb183afe804f1d2321038696b23723031049c9a3ef63d272e6a47b6e7f9cc57e",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: KappaLab USD Coin (kappalabUSDC)",
+          "address": "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+          "code_keccak256": "0x71effa5d1d0574c5a250dac8847765294bfa4a8e3a2050ab240d718c8fd8d3ff",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Keyrock Euro Coin (KeyEURC)",
+          "address": "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+          "code_keccak256": "0xb7609f74aa5bf8a0ee08f314e7a8d1bb77baa86053339a707e3236fa0ded500f",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Kain Warwick USD Coin (KAIUSDC)",
+          "address": "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+          "code_keccak256": "0xc696565eee88eb5996352c40622758fb2fb9dc072e6394f57c6e2f84f2befe33",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Bodhi USD Coin (bodhiUSDC)",
+          "address": "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3",
+          "code_keccak256": "0x305f4c1e4368f803afeccbf18c099c4220264dd00df57a615d3bd566b7bc79cb",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Auros Ethena USDe (aurosUSDe)",
+          "address": "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+          "code_keccak256": "0x37b4579a45e0ed19c7c7efad080dbb722adaacb0cdedf7c7fb83ab6f18cc5791",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: LAB USD Coin (LABUSDC)",
+          "address": "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef",
+          "code_keccak256": "0x8c0a46d9dbc9f9da82ef3fd36f153e8a3bb3e8b23f1cf75ec81d0148b7abbd2f",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Private USD Coin (hyperPrivateUSDC)",
+          "address": "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+          "code_keccak256": "0x3cf292844cfd7c37d3c569c2e28106eeef9ce68c39c83c75fe116861c6e49184",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Seve USD Coin (sevUSDUSDC)",
+          "address": "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d",
+          "code_keccak256": "0xe29f6ecacb4755d69c82cf886770d009cd548d8039b3b27602484c9adba54fb1",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: 0d Arcx USD Coin (0dArcxUSDC)",
+          "address": "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25",
+          "code_keccak256": "0x50ce362d270c0a6b35b3977f0be1dea189efe2fc11d65ac645c53068f19b10f3",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat Coinbase Wrapped BTC (hyperWildcatcbBTC)",
+          "address": "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+          "code_keccak256": "0xd8c360c6dc3e91b0b28f0ae6ec2b854c7fae16cdcf29ceb4fd1a41ce3675bbcc",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Kinto Phoenix Facility USD Coin (kPhoenixUSDC)",
+          "address": "0x262dd546703760adda0c06279508e04bd1f60dee",
+          "code_keccak256": "0xd661f187de6d360c01de8707a6f0c668070ffbc7dd4be799bef2d90ebbc26b04",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat Private 1 Tether USD (hyperWildcatPrivate1USDT)",
+          "address": "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+          "code_keccak256": "0xb57bf14a96ea975707c82f75f03707092a3ef9fdceb7818201e760f31cc87a42",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Private 2 USD Coin (hyperPrivate2USDC)",
+          "address": "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+          "code_keccak256": "0x6d5fccb57d11b46c993bcac8d8021bca4cfc3c9f396567903bff827a0b7db2ab",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Tradevu Capital USD Coin (tvcUSDC)",
+          "address": "0x2d958e4b289b188a110367208689bb6b560586a3",
+          "code_keccak256": "0xa96990a804ea55b344597a6fdb1eafe1ce61e6519c1f1eae99b96443d020cd5a",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Selini Tether USD (SLNUSDT)",
+          "address": "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+          "code_keccak256": "0x17382dce919e2d2e9c29a49096631242a1bd79efec1f8fa8e03424d044f42576",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Wintermute Trading Wrapped BTC (wmtWBTC)",
+          "address": "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+          "code_keccak256": "0x244687e07e3efcc9588c23a80b5a1b20c90a78400868cd9cf867203f36497b20",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: HalalCash Staked USDe (HALALsUSDe)",
+          "address": "0x3747a7d6c887348fe249fdff29145b25cf0311f9",
+          "code_keccak256": "0x01c7c38e8f0d976cb4c5e9f291c453384e76d8c11bb5862339e5a9a62fad1dfc",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Auros STBL_USST - USST Token (aurosUSST)",
+          "address": "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+          "code_keccak256": "0x54e7241b59a021d1636d884d8348119e854dc6372cc782964befc541150a2e5c",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Rifbid USD Coin (RifUSDC)",
+          "address": "0x44239265e4c63573070048fecd83a6b1e324412c",
+          "code_keccak256": "0x091651b0461e76eebdb88c8b49b3d3329283ac14e4cd74bc89b75f82b70ce249",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: HyperithmWildcatFast Wrapped Ether (HyperithmWildcatFastWETH)",
+          "address": "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+          "code_keccak256": "0xf0d248827326e271248b42e9c9b23761f2308c57b62ac5cb28b2b3ae30dafc55",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Auros USD Coin (aurosUSDC)",
+          "address": "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+          "code_keccak256": "0x676d7d4fc3b8018d2bb28a8bfc56623fa48dc9a99a29c507b6c801f5a2f0548e",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Maseer Finance Cana Market Tether USD (wildcanaUSDT)",
+          "address": "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+          "code_keccak256": "0x6aef3c3b4bc027e8cca4bb55990afec92daa9985d9fcd953ae15e7f2f5c3a2ba",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: DVC USD Coin (DVCUSDC)",
+          "address": "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed",
+          "code_keccak256": "0xd377ebcd7cd28f38603a5b1d730f2625a4a9e7d4b5a5d42c76b16e6a7fd2dd47",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Split Capital Plasma TVL USD Coin (scpUSDC)",
+          "address": "0x55a365f3997b2f015001c53cf6a73335e593ad8a",
+          "code_keccak256": "0xc818a1f99aa21c120eb182c1ab4aedcfbf33cbf85b95cb54c47b557fe7759a64",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Auros Wrapped Ether (aurosWETH)",
+          "address": "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+          "code_keccak256": "0x06b20e94c5d6f0197b08050872464a36847da4234eaf0a6cd34816608b80f258",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: TRV USD Coin (TRVUSDC)",
+          "address": "0x5a516928be2005e9852e342f71bfcc52ca5bdace",
+          "code_keccak256": "0x74812ad0ac52bf7ed97591aa110ce838743b53d9b40240479eb87867821199ac",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Wintermute Trading Tether USD (wmtUSDT)",
+          "address": "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+          "code_keccak256": "0x75c5bd51b224a9de5498e68da4559afd2cb044babc26880eb88220a1e8d50fd1",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Amber Tether USD (amberUSDT)",
+          "address": "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513",
+          "code_keccak256": "0x0f51c2526087fe6cc4de603c2cfceefec12e250b42e69350d53500c5f042a886",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Elk Crypto Tether USD (elkUSDT)",
+          "address": "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+          "code_keccak256": "0x7c75de40a4fe045b52ec0b461c2eb1f78484a21ff53f93c7b801700ec249be5d",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Little Engine Trading High Yield USD Coin (lilengHYUSDC)",
+          "address": "0x603b29847659618813f039c73379746585b78875",
+          "code_keccak256": "0x5026746b82f622ae07599be6e062a3ae03efb21db088d8bc000b59c122cab9f3",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Key USD Coin (KeyUSDC)",
+          "address": "0x6053e88b1ac0dce4ccac47122cbecd6598365c70",
+          "code_keccak256": "0x4e3fb293dac49b06196a08e67e09ea06e7bcafe876df9a08ea750bc67347900c",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat USD Coin (hyperWildcatUSDC)",
+          "address": "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+          "code_keccak256": "0x681ee925b0c83a5ef469a7806f7dc9ca5853bce3a883a490b42d8611601ffe19",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Private 3 Tether USD (hyperWildcatPrivate3USDT)",
+          "address": "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c",
+          "code_keccak256": "0x05586c61a18a5610e707d1867fdaa4a1d4a4c0c065dc6f119a84749997c74758",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat Wrapped Ether (hyperWildcatWETH)",
+          "address": "0x69e56f526637b430561e8293f3307765a046d750",
+          "code_keccak256": "0xa73d42b5927dba50ce68c12e4b5556db5df0e6ef612958333468c6ca1a469ad6",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Selini USD Coin (SLNUSDC)",
+          "address": "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+          "code_keccak256": "0x91e9887a435668711270861fd86a7b92503eba22d5c3e7dfd33f4f4f9bb90f64",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: CMSsep Tether USD (cmsSepUSDT)",
+          "address": "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4",
+          "code_keccak256": "0x7b82c227bd1fd20d05828efe3808bcef470c6669866320356bea98d0e201a0b1",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Democratize Market Making with onchain LP USD Coin (GaspUSDC)",
+          "address": "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7",
+          "code_keccak256": "0xfffb9ccfa0ae816d63cdb00b1d05ceb35bf768efe5ebb694d9d8c0dca3b266a8",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Private 3 USD Coin (hyperPrivate3USDC)",
+          "address": "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+          "code_keccak256": "0xf5d6e0b9c7d0fb620ac72fc0f3488e0555d68efe0fad553da527898a441e4a45",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: CANA Redemption Buffer Tether USD (canaBufferUSDT)",
+          "address": "0x7244b84918dbfb50e62320fc0e6031a449deea28",
+          "code_keccak256": "0x8460f431247d9cffd55012db7b18e309ea16647c1294f9fccf49ab01f05f0ebe",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Private 2 Tether USD (hyperWildcatPrivate2USDT)",
+          "address": "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+          "code_keccak256": "0x8bacf23202aced1bfbc208f75a8cce9453a7c6c82a281d38f6dcead5b7a63fe4",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Halalcash Levered USD Coin (HALALUSDC)",
+          "address": "0x7e496c5678b1722289d9c4a13c9aa53631ca7607",
+          "code_keccak256": "0x3e550b7a9061a187b7eb74993ee5a8ac980a36a82f387f3a8fce57889bc49275",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Open Term Halalcash Tether USD (OPENHALALUSDT)",
+          "address": "0x8c06d86596d671798a67e80dc44a281c8d822fd3",
+          "code_keccak256": "0xb28b68b19875dbfa5ed005ff40b3aafde2f466fc7e3477beb1e0c053a844cce5",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm WildcatFast Wrapped BTC (hyperWildcatFastWBTC)",
+          "address": "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+          "code_keccak256": "0x7a290654e9640205304d7e94763d2d29ed3e2deae422099c553da7aa6cf46272",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: CMS Tether USD (cmsUSDT)",
+          "address": "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+          "code_keccak256": "0xc58fdf4b90e42915f51ba5e9af72a54ccfd720bc8ed2395ba558242fb357ec03",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat Wrapped SOL (hyperWildcatSOL)",
+          "address": "0x923237220cc79c6301c59851af3574d0a487c966",
+          "code_keccak256": "0xfc4569b1b4011bd45381c29d374cd1530042a08d77eefb2ffc1bcd19091fd1ea",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Halalcash Levered USD Coin USD Coin (HALALUSDCUSDC)",
+          "address": "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+          "code_keccak256": "0xf4de045ae82e999752e966f03f48d8e3e996ad16ae2f14d6293754df875859a7",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Auros Tether USD (aurosUSDT)",
+          "address": "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+          "code_keccak256": "0x905ed68436297e79fa83a19bdedd4dc3fac206289b71d7b8618b7bb63d9bfe42",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: USDC USD Coin (USDCUSDC)",
+          "address": "0x9aa7f58561812f01f1221e9718011aca78c28c17",
+          "code_keccak256": "0xe855049956bd7e4829fff75a484285ac1991bb4b5fdcd1d01fdbbc7e90ce0334",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: USDC USD Coin (USDCUSDC)",
+          "address": "0x9e047d2e8970300f0461314e1b72abf7ef7792e9",
+          "code_keccak256": "0x40f8cab51009922867fac1492c6964aacaad95b8fa900c1c75ea26336974d01f",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm WildcatFast USD Coin (hyperWildcatFastUSDC)",
+          "address": "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+          "code_keccak256": "0x15770f5993c9d779a80e8c6fad2e45f96c3e2731373878dae8ae7ab314fe8bab",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat USDe (hyperWildcatUSDe)",
+          "address": "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd",
+          "code_keccak256": "0x803790c45e120855255a720c4eccadebf18d6252992651d85c2167bf81d46e20",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: KappaLab USD Coin (KappaLabUSDC)",
+          "address": "0xa8139699360b255c5c02d0616e75f20b92adf1c3",
+          "code_keccak256": "0xf39b3b989db88dbd34f8e09571fbcc57046357117f781a8b7b01158ea1f9155c",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Neptune Tether USD (NeptuneUSDT)",
+          "address": "0xaa4677627d05775dafc410d7e3aff5702aae27f8",
+          "code_keccak256": "0x787f632356abfc97357de2419da1b39d248c3cf905833b212c27cd7bea360da0",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: MNNC Trading USD Coin (mnncUSDC)",
+          "address": "0xb3b823ec39f3edeb4354f76997031b3826b615c2",
+          "code_keccak256": "0xa275e11915c41d2e5841b3bc2454007bfd3394adbc9ae13b62ab63b98f8dc9f9",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Little Engine Trading Tether USD (lilengUSDT)",
+          "address": "0xb3beb373d241378f5f1fd68ed865349257602476",
+          "code_keccak256": "0x86416099433ae213a265765cf2b8b0fdc53baa6a0471e08124ee1be6a5605813",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Wintermute Trading Wrapped Ether (wmtWETH)",
+          "address": "0xbad1b632e90ce02af868f07c572adb067eb98353",
+          "code_keccak256": "0x70f66d66dab6518fba0b2851969392a1611844fbbdf574785f1fc807c2d00873",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Halalcash Levered Tether USD (HALALUSDT)",
+          "address": "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+          "code_keccak256": "0xc17c6c6fdda8e1283f865e8b5330f63653a74ff7090bbcfe637e335e6f81cfff",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat Wrapped BTC (hyperWildcatWBTC)",
+          "address": "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+          "code_keccak256": "0xe041259ea3327bc4ae36140ec7b48937affed18cfb1215e1288d65b579de2993",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm WildcatFast Coinbase Wrapped BTC (hyperWildcatFastcbBTC)",
+          "address": "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+          "code_keccak256": "0xe14987152bba4684ebbb095d6265aa349344fda4230d123fd17f6fc7a196bd3a",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Wintermute Trading USD Coin (wmtUSDC)",
+          "address": "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+          "code_keccak256": "0x2625a3730824958bfbd2f3aef50e1aa2f8cb94ed0791daf7c41aa477309bc820",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Elk Crypto USD Coin (elkUSDC)",
+          "address": "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a",
+          "code_keccak256": "0x5316c748cde515f6d457db3e9b8742628c69bdfd9ea68ccfbeb9265eff6c2478",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Wintermute Trading Coinbase Wrapped BTC (wmtcbBTC)",
+          "address": "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+          "code_keccak256": "0xc5fcaa9ce6b867e2678c9aaf110c2912b7a4b1aa7656ff8b2e243819f625aa87",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: CMSsep USD Coin (cmsSepUSDC)",
+          "address": "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d",
+          "code_keccak256": "0x79ad8059d4d8cec4bf7a95cac63e84fe0ed086e7c84d10994fe6d3496df6219f",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Little Engine Trading USD Coin (lilengUSDC)",
+          "address": "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+          "code_keccak256": "0xa5f8f4f88a82b26826b756552ff89e1b5fc11a1c61636f613d460a9491e84efd",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: keyrock USD Coin (KeyUSDC)",
+          "address": "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+          "code_keccak256": "0xa3a863d47c68ddf54c431a94d6051737296f9c33d89ed4166cc8f91639f31ab0",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: KappaLab Ethena USDe (kappalabUSDe)",
+          "address": "0xe79ca848ae0182fce1db61a968b89627c9a0c948",
+          "code_keccak256": "0x56e2e5db51b715593960fb55d9ade5054378e3e5d81a03de78fa9f0f4c0f239a",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: CMS USD Coin (cmsUSDC)",
+          "address": "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+          "code_keccak256": "0x2b79d3272b5425fb0535e5637a7d230ed8c1c331183bd2e378c5b7afb6c780ac",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Auros Coinbase Wrapped BTC (auroscbBTC)",
+          "address": "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+          "code_keccak256": "0xbedb50a16c7098ee7cf8bf1e38c6c24b8e3b7b3d0b70f251d183b15836ac98f1",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Kain Warwick 2 USD Coin (KAI2USDC)",
+          "address": "0xeafa12cc0905baabed8618584f0796f5d19da3c4",
+          "code_keccak256": "0x2d4897e946020409e3b4ce7c06689a33b0153a1bad44f25fc54a26520b77a126",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: GardePrime USD Coin (GPrimeUSDC)",
+          "address": "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b",
+          "code_keccak256": "0xf575a007f58c89fa5df56bf3cdd1c0316cec013c3f8979c42a281c943708f99c",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: MiningStore USD Coin (MiningStoreUSDC)",
+          "address": "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc",
+          "code_keccak256": "0xc9a4fd9a115502f4650499d99cd9784fc92a84791e4d32f953a5ee4eef2c9d1a",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Hyperithm Wildcat Tether USD (hyperWildcatUSDT)",
+          "address": "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+          "code_keccak256": "0xd267604a4279b01d5226fef93ccb846501f57be86167d91b6b20446796b0163a",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: keyrock EUR coin Euro Coin (KeyEURCEURC)",
+          "address": "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd",
+          "code_keccak256": "0x4ee78af4d0506ffdf96c2edc9747dcbc17cad8661927e7a112e2f59f75a4fe11",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: USDT Tether USD (USDTUSDT)",
+          "address": "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505",
+          "code_keccak256": "0x8cd1346343df93a26a9e5833e5d292ae1aa202e2c165ca5314e2eac814e8fb2a",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Amber USD Coin (amberUSDC)",
+          "address": "0xf76a7887521a91b47c62060ba57549dec1dc88c7",
+          "code_keccak256": "0x9a147257d1a230491263a477389d11f489ff55140083e72babcee8a71da0920f",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
+        },
+        {
+          "role": "market",
+          "name": "WildcatMarket: Trinity Test USD Coin (trinityUSDC)",
+          "address": "0xfe7cf5680d2e59500f3938c2539fda4754876f94",
+          "code_keccak256": "0xcb844e708468f13686c586a2a9188974e0859df356c88a0ec32f8569eb545e50",
+          "code_length": 21999,
+          "sourcify": null,
+          "code_match_method": "runtime equals the WildcatMarket init code's compiled deployedBytecode at tag v2.0.0 modulo 63 immutable slots; MarketDeployed event at the deployment block names this hooks instance and template"
         }
       ],
-      "contract_count": 12,
-      "code_hash_recorded_count": 12,
-      "sourcify_match_count": 6,
+      "contract_count": 137,
+      "code_hash_recorded_count": 137,
+      "sourcify_match_count": 7,
       "matched_by_other_means": [
         {
           "role": "market-init-code-storage",
@@ -319,11 +1530,7 @@
       ],
       "upgradeable_proxies": 0,
       "upgradeable_proxy_note": "no contract in this row is an EIP-1967 proxy; the estate is direct deployments, stored init code and create2 clones, so the collector's implementation-epoch model has no upgrade log to read and no implementation slot to sample",
-      "unresolved": [
-        "The third FixedTermHooks template is included by the approval of all registered templates. #1590 still owns its registration epoch and instance coverage; Hermes derives the protected set from that evidence.",
-        "Both MarketLens deployments remain recorded; #1590 maps their epochs and consumer use rather than selecting one by document precedence.",
-        "WildcatFeeRecipient and CollateralFactory sources are not located in this pass"
-      ]
+      "unresolved": null
     }
   ],
   "pattern_release": {
@@ -579,13 +1786,13 @@
   "inputs": [
     {
       "path": "docs/kickoff/1359/targets.json",
-      "bytes": 164821,
-      "sha256": "9e0d3c88c76ec727ea8aabe67fb8ac0648b039ef1fa9836a6a7f2f2ae4d4ca98"
+      "bytes": 340997,
+      "sha256": "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
     },
     {
       "path": "docs/kickoff/1359/targets.md",
-      "bytes": 53142,
-      "sha256": "4bd599b1967819ac65db95cecce3b05d0c6ef60f4b145eb051a60668d22dc443"
+      "bytes": 74040,
+      "sha256": "f3d310e11f2adbefb341a2831092875f753df383c0b71970c290f2c004ba3baf"
     },
     {
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",
