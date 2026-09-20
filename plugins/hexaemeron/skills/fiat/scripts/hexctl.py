@@ -38,6 +38,7 @@ human-facing goes to plain text or stderr.
 """
 
 import argparse
+import ast
 import contextlib
 import ctypes
 import datetime
@@ -14657,6 +14658,136 @@ def cmd_run_exit(args) -> None:
     print(json.dumps(result, sort_keys=True))
 
 
+UNREGISTERED_BINDINGS_REFUSAL = "unregistered-cli-module-bindings"
+GATE_AMENDMENT_RECOVERY = "submit a freshly validated runbook amendment"
+BRIEF_BYTES_MAX = 1024 * 1024
+
+
+def registered_module_skew(base_dir: str, state: dict, adapter=None) -> list[dict]:
+    """Registered CLI modules in the target tree that this controller's pin rejects.
+
+    `MODULE_BINDINGS` pins one AST digest per registered module, and a digest is
+    a property of a commit. Each entry therefore says whether the module's bytes
+    still equal the run's recorded starting commit: `unchanged` means nobody
+    edited it inside the run, so the pin was taken at another commit; `changed`
+    means the run's own tree moved it; `unknown` means the comparison could not
+    be made. The check reads and parses only; it runs no module.
+    """
+    if adapter is None:
+        adapter = gate_commands_module()
+    root = Path(base_dir).resolve()
+    starting = state.get("base")
+    if not isinstance(starting, str) or COMMIT_RE.fullmatch(starting) is None:
+        starting = None
+    skew = []
+    for path, builder in sorted(adapter.REGISTRY.items()):
+        if path not in adapter.MODULE_BINDINGS:
+            continue
+        try:
+            data = adapter.read_source(root, path)
+            adapter.parser_bindings(ast.parse(data, filename=path), builder, path)
+        except adapter.Refusal as exc:
+            if str(exc) != UNREGISTERED_BINDINGS_REFUSAL:
+                continue
+        except (OSError, ValueError, SyntaxError, RecursionError):
+            continue
+        else:
+            continue
+        since_base = "unknown"
+        if starting is not None:
+            returncode, recorded = bounded_run(base_dir, "git", ["cat-file", "-p", f"{starting}:{path}"])
+            if returncode == 0:
+                since_base = "unchanged" if hashlib.sha256(recorded).digest() == hashlib.sha256(data).digest() else "changed"
+        skew.append({"module": path, "since_base": since_base})
+    return skew
+
+
+def recorded_controller(base_dir: str, state: dict) -> dict:
+    """The controller this run recorded: init's currency and any delegated brief's plugin root."""
+    currency = as_dict(as_dict(state.get("receipts")).get("controller_currency"))
+    version = currency.get("ledger_version")
+    roots = []
+    for name in sorted(glob.glob(os.path.join(base_dir, STATE_DIR_NAME, "briefs", "*.json"))):
+        try:
+            if os.path.getsize(name) > BRIEF_BYTES_MAX:
+                continue
+            with open(name, encoding="utf-8") as handle:
+                brief = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        plugin = brief.get("plugin_root") if isinstance(brief, dict) else None
+        if isinstance(plugin, str) and plugin and plugin not in roots:
+            roots.append(plugin)
+    return {
+        "version": version if isinstance(version, str) and version else None,
+        "plugin_roots": roots,
+    }
+
+
+def gate_source_recovery(base_dir: str, state: dict, skew: list[dict]) -> dict:
+    """Cause and recovery for a stale gate source, read from the module skew alone.
+
+    A module unchanged since the starting commit cannot be repaired by a runbook
+    amendment: the amendment path touches neither the adapter nor the module.
+    That case names the controller the run recorded instead.
+    """
+    unchanged = [item["module"] for item in skew if item["since_base"] == "unchanged"]
+    changed = [item["module"] for item in skew if item["since_base"] == "changed"]
+    starting = state.get("base")
+    if not unchanged:
+        if changed:
+            return {
+                "cause": "module-edited-in-run",
+                "recovery": f"registered module {', '.join(changed)} changed inside the run "
+                            f"since its starting commit {starting}; {GATE_AMENDMENT_RECOVERY}",
+            }
+        if skew:
+            return {
+                "cause": "module-pin-unverified",
+                "recovery": f"registered module {', '.join(item['module'] for item in skew)} fails "
+                            f"this controller's MODULE_BINDINGS pin and could not be compared with "
+                            f"the starting commit; {GATE_AMENDMENT_RECOVERY}",
+            }
+        return {"cause": None, "recovery": GATE_AMENDMENT_RECOVERY}
+    recorded = recorded_controller(base_dir, state)
+    here = plugin_root()
+    current = ledger_version(os.path.join(here, "skills", "fiat", "EVOLUTION.md")) or "unknown version"
+    named = recorded["version"] or "the controller recorded at init"
+    if recorded["version"]:
+        named += " at init"
+    others = [root for root in recorded["plugin_roots"] if root != here]
+    if others:
+        named += f" (plugin_root {others[-1]} in its delegated briefs)"
+    return {
+        "cause": "controller-pin-skew",
+        "recovery": f"registered module {', '.join(unchanged)} is unchanged since the run's "
+                    f"starting commit {starting} yet fails this controller's MODULE_BINDINGS pin, "
+                    f"so this controller ({current} at {here}) and the run's tree were pinned at "
+                    f"different commits; drive the run with the controller it recorded, {named}, "
+                    f"reinstalling or rebuilding that version from {starting} if no copy remains, "
+                    f"rather than amending the runbook",
+    }
+
+
+def gate_source_refusal(base_dir: str, state: dict, adapter, reason: str) -> str:
+    recovery = GATE_AMENDMENT_RECOVERY
+    if reason == UNREGISTERED_BINDINGS_REFUSAL:
+        recovery = gate_source_recovery(base_dir, state, registered_module_skew(base_dir, state, adapter))["recovery"]
+    return f"gate source stale or invalid: {reason}; {recovery}"
+
+
+def gate_stale_status(base_dir: str, state: dict) -> dict:
+    """The `status` view of a stale gate source, computed without mutation."""
+    skew = registered_module_skew(base_dir, state)
+    diagnosis = gate_source_recovery(base_dir, state, skew)
+    view = {"status": "stale-or-invalid", "recovery": "inspect verify output; " + diagnosis["recovery"]}
+    if diagnosis["cause"] is not None:
+        view["cause"] = diagnosis["cause"]
+    if skew:
+        view["modules"] = skew
+    return view
+
+
 def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
                          runbook_event: dict | None, amendment_events: list,
                          *, allow_source_drift: bool = False, historical_source: bytes | None = None) -> None:
@@ -14705,7 +14836,7 @@ def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
         try:
             adapter.replay(Path(base_dir).resolve(), data, stored[-1])
         except (adapter.Refusal, OSError, ValueError) as exc:
-            die(f"gate source stale or invalid: {exc}; submit a freshly validated runbook amendment", 1)
+            die(gate_source_refusal(base_dir, state, adapter, str(exc)), 1)
 
 
 def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: bool = True,
@@ -29541,7 +29672,7 @@ def cmd_status(args) -> None:
             gate_recovery_preflight(args.dir, state, allow_source_drift=False)
             gate_status = {"status": "current" if as_dict(state.get("receipts")).get("runbook") else "awaiting-runbook", "validation": "interface-only"}
         except SystemExit:
-            gate_status = {"status": "stale-or-invalid", "recovery": "inspect verify output; submit a freshly validated runbook amendment"}
+            gate_status = gate_stale_status(args.dir, state)
     if success_criteria_contract(state):
         admission = success_criteria_admission(state)
         if admission is None:
