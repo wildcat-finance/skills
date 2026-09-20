@@ -456,12 +456,25 @@ def _source_candidates(root: Path) -> list[Path]:
     selected.update(path for path in tracked if not _omitted(path))
     selected.update(_link_kept_examples(root, selected, tracked))
     ordered = sorted(selected, key=lambda path: path.as_posix())
+    # A tracked git path can never have a symlinked directory as an ancestor:
+    # git records a symlink as one blob, never as a tree with children, so
+    # `_tracked_plugin_files` never yields a path underneath one. The
+    # link-kept scan above has no such guarantee -- it reads a Markdown link
+    # and walks the live filesystem, so `plugins/<plugin>/examples` itself
+    # being a committed symlink to a directory outside the checkout would let
+    # an ordinary-looking link name a file the leaf-only `is_symlink` check
+    # below never inspects. Resolve every selected path once and require it
+    # to stay inside the checkout, so an intermediate symlinked directory
+    # refuses generation the same way a symlinked leaf already does.
+    resolved_root = root.resolve()
     for relative in ordered:
         if relative.is_absolute() or ".." in relative.parts:
             raise PackageError(f"unsafe source path: {relative}")
         source = root / relative
         if source.is_symlink() or not source.is_file():
             raise PackageError(f"portable source is absent or not a regular file: {relative}")
+        if not source.resolve().is_relative_to(resolved_root):
+            raise PackageError(f"portable source resolves outside the checkout: {relative}")
     return ordered
 
 

@@ -256,6 +256,32 @@ class LinkKeptSafetyTests(unittest.TestCase):
         self.assertIn("absent or not a regular file", message)
         self.assertIn("_zzz_link_kept_probe_link.json", message)
 
+    def test_intermediate_symlinked_directory_target_refuses_generation(self):
+        """A tracked git path can never sit under a symlinked directory --
+        git records a symlink as one blob, never a tree with children -- but
+        the link scan reads the live filesystem, so `examples/` itself being
+        a symlink to an external directory would let an ordinary link name a
+        file the leaf-only `is_symlink` check never inspects. `_source_candidates`
+        must still refuse it as a target that resolves outside the checkout.
+        """
+        outside_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_dir.cleanup)
+        leak = Path(outside_dir.name) / "_zzz_leak.json"
+        leak.write_text("{}", encoding="utf-8")
+        symlinked_examples = ROOT / "plugins/lazarus/examples/_zzz_symlinked_dir"
+        symlinked_examples.symlink_to(Path(outside_dir.name), target_is_directory=True)
+        self.addCleanup(lambda: symlinked_examples.unlink(missing_ok=True))
+        self.scratch.write_text(
+            "[probe](./_zzz_symlinked_dir/_zzz_leak.json)\n", encoding="utf-8",
+        )
+        tracked = self._tracked_with()
+        with mock.patch.object(self.module, "_tracked_plugin_files", return_value=tracked):
+            with self.assertRaises(self.module.PackageError) as caught:
+                self.module._source_candidates(ROOT)
+        message = str(caught.exception)
+        self.assertIn("resolves outside the checkout", message)
+        self.assertIn("_zzz_leak.json", message)
+
     def test_link_targets_that_escape_the_tree_are_never_treated_as_example_links(self):
         module = load_generator()
         with tempfile.TemporaryDirectory() as raw:
