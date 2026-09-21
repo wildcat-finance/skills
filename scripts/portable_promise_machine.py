@@ -382,7 +382,7 @@ def check_duplicate_fixture_payload(root: Path, tracked: list[Path]) -> None:
             raise PackageError(f"duplicate fixture input differs from retained copy: {source / name}")
 
 
-def _link_kept_examples(root: Path, packaged: set[Path]) -> set[Path]:
+def _link_kept_examples(root: Path, packaged: set[Path], tracked: list[Path]) -> set[Path]:
     """Return every example payload a packaged Markdown document links.
 
     Reads each already-selected Markdown file, up to
@@ -397,13 +397,13 @@ def _link_kept_examples(root: Path, packaged: set[Path]) -> set[Path]:
     docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md).
 
     A link naming an existing plain directory is ordinary navigation, not one
-    payload reference: it never refuses generation and never keeps anything
-    on its own. Only a link that resolves to an actual file keeps that file
-    (study section 6, "Link-kept"; `.hexaemeron/design/resolve.py`'s
-    `class-leaks` criterion counts a target as linked only when it resolves
-    to a file, never a directory, and the two must agree).
+    payload reference, so it never refuses generation on its own; but if the
+    class would otherwise omit every file under that directory, this keeps
+    its single smallest tracked file so the link still resolves inside the
+    package, the same tie-break `.hexaemeron/design/resolve.py` uses.
     """
     linked: set[Path] = set()
+    directories: set[str] = set()
     for relative in sorted(path for path in packaged if path.suffix == ".md"):
         with (root / relative).open("rb") as handle:
             data = handle.read(MARKDOWN_LINK_SCAN_MAX_BYTES + 1)
@@ -423,18 +423,31 @@ def _link_kept_examples(root: Path, packaged: set[Path]) -> set[Path]:
                 continue
             candidate = root / target
             if candidate.is_dir() and not candidate.is_symlink():
+                directories.add(target)
                 continue
             if target.endswith(".md"):
                 continue
             linked.add(Path(target))
+    if directories:
+        kept_posix = {path.as_posix() for path in packaged} | {path.as_posix() for path in linked}
+        for target in sorted(directories):
+            prefix = target + "/"
+            if any(path.startswith(prefix) for path in kept_posix):
+                continue
+            inside = sorted(
+                (path for path in tracked if path.as_posix().startswith(prefix)),
+                key=lambda path: ((root / path).stat().st_size, path.as_posix()),
+            )
+            if inside:
+                linked.add(inside[0])
     return linked
 
 
 def _kept_by_link_rows(root: Path, candidates: list[Path]) -> list[dict]:
     """List every packaged example payload the class predicate would omit.
 
-    Every survivor here was kept by `_link_kept_examples`; nothing else adds
-    a path the example-payload-class predicate still matches into
+    Every survivor here was pulled back by `_link_kept_examples`; nothing
+    else adds a path the example-payload-class predicate still matches into
     `_source_candidates`'s selected set, so this walk of its output is a
     complete and exact report.
     """
@@ -457,7 +470,7 @@ def _source_candidates(root: Path) -> list[Path]:
     tracked = _tracked_plugin_files(root)
     check_duplicate_fixture_payload(root, tracked)
     selected.update(path for path in tracked if not _omitted(path))
-    selected.update(_link_kept_examples(root, selected))
+    selected.update(_link_kept_examples(root, selected, tracked))
     ordered = sorted(selected, key=lambda path: path.as_posix())
     # A tracked git path can never have a symlinked directory as an ancestor:
     # git records a symlink as one blob, never as a tree with children, so

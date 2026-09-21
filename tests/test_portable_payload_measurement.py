@@ -297,7 +297,7 @@ class LinkKeptSafetyTests(unittest.TestCase):
             oversized = b"a" * (module.MARKDOWN_LINK_SCAN_MAX_BYTES + 1)
             (root / document).write_bytes(oversized)
             with self.assertRaises(module.PackageError) as caught:
-                module._link_kept_examples(root, {document})
+                module._link_kept_examples(root, {document}, [document])
         message = str(caught.exception)
         self.assertIn(str(module.MARKDOWN_LINK_SCAN_MAX_BYTES), message)
         self.assertIn("DOC.md", message)
@@ -315,7 +315,7 @@ class LinkKeptSafetyTests(unittest.TestCase):
             self.assertEqual(
                 (root / document).stat().st_size, module.MARKDOWN_LINK_SCAN_MAX_BYTES,
             )
-            found = module._link_kept_examples(root, {document})
+            found = module._link_kept_examples(root, {document}, [document])
         self.assertEqual(found, {Path("plugins/x/examples/target.json")})
 
     def test_link_targets_that_escape_the_tree_are_never_treated_as_example_links(self):
@@ -329,7 +329,7 @@ class LinkKeptSafetyTests(unittest.TestCase):
                 "[also-escapes](../../../../../../outside.json)\n",
                 encoding="utf-8",
             )
-            found = module._link_kept_examples(root, {document})
+            found = module._link_kept_examples(root, {document}, [document])
         self.assertEqual(found, set())
 
 
