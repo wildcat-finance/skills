@@ -1,0 +1,99 @@
+{
+  "schema": "wildcat.kickoff-consumer-commands.v1",
+  "observed_at": "2026-09-21T19:48:25.061965+00:00",
+  "skills_revision": "7952eafa337f5ba1c4f45417ceb154673f629c1c",
+  "commands": [
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/miskatonic",
+        "--jq",
+        "{full_name,default_branch,private,created_at}"
+      ],
+      "exit": 0,
+      "stdout": "{\"created_at\":\"2026-09-21T19:45:48Z\",\"default_branch\":\"main\",\"full_name\":\"wildcat-finance/miskatonic\",\"private\":true}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/miskatonic/commits/main",
+        "--jq",
+        "{sha,tree:.commit.tree.sha,message:.commit.message}"
+      ],
+      "exit": 0,
+      "stdout": "{\"message\":\"Initial commit\",\"sha\":\"54f86d2bed44f6b9f71edda8a883805f4b409b39\",\"tree\":\"a17c35d2e8696798a348835c02b5a7df80e81452\"}\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/miskatonic/git/trees/54f86d2bed44f6b9f71edda8a883805f4b409b39"
+      ],
+      "exit": 0,
+      "stdout": "{\"sha\":\"54f86d2bed44f6b9f71edda8a883805f4b409b39\",\"url\":\"https://api.github.com/repos/wildcat-finance/miskatonic/git/trees/54f86d2bed44f6b9f71edda8a883805f4b409b39\",\"tree\":[{\"path\":\"README.md\",\"mode\":\"100644\",\"type\":\"blob\",\"sha\":\"bf94907aa21c993f1b9cbb302e5cf2dbaae0d6c1\",\"size\":12,\"url\":\"https://api.github.com/repos/wildcat-finance/miskatonic/git/blobs/bf94907aa21c993f1b9cbb302e5cf2dbaae0d6c1\"}],\"truncated\":false}",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/miskatonic/releases"
+      ],
+      "exit": 0,
+      "stdout": "[]",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/miskatonic/deployments"
+      ],
+      "exit": 0,
+      "stdout": "[]",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "gh",
+        "api",
+        "repos/wildcat-finance/miskatonic/actions/workflows"
+      ],
+      "exit": 0,
+      "stdout": "{\"total_count\":0,\"workflows\":[]}",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/alexandria/scripts/alexandria.py",
+        "query",
+        "--help"
+      ],
+      "exit": 0,
+      "stdout": "usage: alexandria.py query [-h] --index INDEX --address ADDRESS\n                           [--venue VENUE] [--chain CHAIN]\n                           [--from-time FROM_TIME] [--to-time TO_TIME]\n\nquery verified releases by account.\n\noptions:\n  -h, --help            show this help message and exit\n  --index INDEX\n  --address ADDRESS\n  --venue VENUE\n  --chain CHAIN\n  --from-time FROM_TIME\n  --to-time TO_TIME\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "plugins/alexandria/tests",
+        "-t",
+        "plugins/alexandria",
+        "-p",
+        "test_index.py"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "....................................................\n----------------------------------------------------------------------\nRan 52 tests in 12.923s\n\nOK\n"
+    }
+  ]
+}

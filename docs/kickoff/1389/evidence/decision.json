@@ -1,0 +1,24 @@
+{
+  "schema": "wildcat.kickoff-consumer-decision.v1",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1491",
+  "recorded_on": "2026-09-21",
+  "source": {
+    "kind": "user instruction in Codex task",
+    "task_id": "01a0c57f-7098-7d01-819d-6bec8973bd1e",
+    "initial_request": "address 1491 and get it into main",
+    "selection_question": "#1491 reserves consumer selection for its maintainer. Which repository should own the headless Miskatonic query runtime? Please give its repository URL or local path; if it does not exist yet, say so.",
+    "selection_answer": "[https://github.com/wildcat-finance/miskatonic](https://github.com/wildcat-finance/miskatonic) - brand new, just created"
+  },
+  "consumer": {
+    "repository": "https://github.com/wildcat-finance/miskatonic",
+    "revision": "54f86d2bed44f6b9f71edda8a883805f4b409b39",
+    "tree": "a17c35d2e8696798a348835c02b5a7df80e81452",
+    "access": "private"
+  },
+  "release_decision_owner": null,
+  "owner_confirmation": "pending",
+  "technical_contract_owner": "consumer implementation maintainer",
+  "threshold_values": "not decided; required before promotion",
+  "production_activation_authorised": false,
+  "publication_authority": "User requested delivery of #1491 into Skills main; consumer source remains unchanged."
+}
