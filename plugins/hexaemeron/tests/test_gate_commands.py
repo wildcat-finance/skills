@@ -19,6 +19,69 @@ COMMAND = 'python3 ' + BREVITAS + ' one.md'
 
 
 class GateCommandTests(unittest.TestCase):
+    def test_superseded_exit_and_tests_do_not_exhaust_command_budget(self):
+        report = ('Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py'
+                  ' --elenchus-report {report}`; format: `unittest-json-v1`; '
+                  'report file: `.hexaemeron/reports/result.json`.')
+        source = ('## Step 1: Check caf\u00e9\n\n**Exit.** `' + COMMAND + '`\n\n'
+                  '**Tests.** ' + report + '\n')
+        for _ in range(32):
+            source += ('\n### Amendment -- 2026-09-21\n\n'
+                       '**Steps touched.** Step 1.\n\n'
+                       '**What changed.** Complete replacement Exit: `' + COMMAND + '`\n'
+                       'Complete replacement Tests: ' + report + '\n')
+        data = source.encode()
+        try:
+            receipt = gates.validate(ROOT, data)
+        except gates.Refusal as exc:
+            self.fail('Two effective commands must remain amendable: ' + str(exc))
+        records = gates.commands(data)
+        self.assertEqual(len(records), 66)
+        self.assertEqual(sum(record['effective'] for record in records), 2)
+        self.assertEqual([record['result'] for record in receipt['commands'][:-2]],
+                         ['superseded-source'] * 64)
+        for record in receipt['commands'][-2:]:
+            self.assertEqual(record['invocations'][0]['result'], 'interface-valid')
+        for record in receipt['commands']:
+            command = record['command'].encode()
+            self.assertEqual(data[record['offset']:record['offset'] + len(command)], command)
+            self.assertEqual(record['sha256'], gates.digest(command))
+        before = copy.deepcopy(receipt)
+        gates.replay(ROOT, data, receipt)
+        self.assertEqual(receipt, before)
+        self.assertFalse(receipt['operation_ran'])
+
+    def test_command_bound_counts_untouched_steps_and_standalone_commands(self):
+        baseline = ('## Step 1: Replace\n\n**Exit.** `' + COMMAND + '`\n\n'
+                    '## Step 2: Retain\n\n**Exit.** '
+                    + ' '.join('`' + COMMAND + '`' for _ in range(30))
+                    + '\n\n**Files.** none\n\n')
+        amendment = ('\n### Amendment -- 2026-09-21\n\n'
+                     '**Steps touched.** Step 1.\n\n'
+                     '**What changed.** Complete replacement Exit: `' + COMMAND + '`\n')
+        for standalone_count in (33, 34):
+            data = (baseline + '```sh\n' + (COMMAND + '\n') * standalone_count
+                    + '```\n' + amendment).encode()
+            with self.subTest(effective_commands=31 + standalone_count):
+                if standalone_count == 34:
+                    with self.assertRaisesRegex(gates.Refusal, '^command-count-bound$'):
+                        gates.validate(ROOT, data)
+                else:
+                    try:
+                        receipt = gates.validate(ROOT, data)
+                    except gates.Refusal as exc:
+                        self.fail('Exactly 64 effective commands must pass: ' + str(exc))
+                    self.assertEqual(len(receipt['commands']), 65)
+                    self.assertEqual(sum('invocations' in record
+                                         for record in receipt['commands']), 64)
+                    self.assertEqual(receipt['commands'][0]['result'], 'superseded-source')
+
+    def test_empty_capture_and_oversized_document_still_refuse(self):
+        for data, reason in ((b'No commands.\n', 'command-count-bound'),
+                             (b'x' * (gates.MAX_DOCUMENT + 1), 'document-bound')):
+            with self.subTest(reason=reason), self.assertRaisesRegex(gates.Refusal, '^' + reason + '$'):
+                gates.commands(data)
+
     def test_success_criteria_admission_joins_current_runbook_without_execution(self):
         result = gates.validate_with_criteria(
             ROOT,
