@@ -2,7 +2,7 @@
 name: anamnesis
 description: Preserve audit findings and the changes that answered them as a source-bound corpus. Admit a source only against an explicit rights basis, keep the producer's bytes and identifiers unchanged, curate submissions, adjudicated findings, occurrences, remediation attempts and verifications as separate records, and release checked read-only projections for Elenchus and Synkrisis. Use when someone asks to preserve, curate, release or query a corpus of audit findings and their remedies. Do not use it to judge whether a finding is real, to prove a fix correct, or to compare runs.
 metadata:
-  version: "5.1.0"
+  version: "5.2.0"
 ---
 
 <p align="center">
@@ -125,8 +125,11 @@ its own submission record while sharing one canonical finding.
 
 `release` writes a closed manifest naming every component by digest, the policy
 that produced it, its counts with their denominators, its exclusions and its
-unknowns. The release id is derived from the inputs and the policy, so the same
-inputs under the same policy name the same release. `verify` recomputes every
+unknowns. The release id binds the policy, graph and each source's
+`id:sha256:bytes:disclosure:basis:rights_sha256`. The last field is the SHA-256
+of the complete checked rights object in its canonical JSON form. Holder and
+statement text stay outside the release. The same inputs and rights decision
+under the same policy name the same release. `verify` recomputes every
 component digest from the bytes on disk.
 
 ```bash
@@ -267,12 +270,12 @@ did not run, say so plainly and do not describe its result as successful.
 ### anamnesis-corpus-release
 
 - Promise: A successful `release` followed by `verify` establishes that one closed manifest names every component by exact digest, the policy that produced it, its counts with their denominators, its exclusions and its unknowns, and that those components rebuild byte-for-byte from the same inputs under the same policy.
-- Evidence: The release id derived from the policy and the source digests, the canonical byte form of every component, the recomputed component digests, the exact directory contents against the manifest, the staged build promoted only when complete, and the measured release byte total against the declared cap.
+- Evidence: The release id derived from the policy, graph and six retained source fields, the canonical byte form of every component, the recomputed component digests, the exact directory contents against the manifest, the staged build promoted only when complete, and the measured release byte total against the declared cap.
 - Evidence classes: checked, recomputed, recorded
 - Boundary: The release establishes its own bytes and what it excluded. It does not establish that the corpus is complete, that its counts describe anything outside the sources it names, or that an excluded record was rightly excluded.
 - Authorises: Publishing the release under its recorded rights bases, and measuring it for the conformance report the design record names.
 - Consequence: 2
-- Refuses: An existing destination, a component whose digest or byte count differs from the manifest, a release directory holding a file the manifest does not name or missing one it does, a manifest declaring another schema, manifest sources that differ from the declared scope, a non-regular entry in the release, and a total above the byte cap.
+- Refuses: An existing destination, a component whose digest or byte count differs from the manifest, a release directory holding a file the manifest does not name or missing one it does, a manifest declaring another schema or missing a retained rights field, manifest sources that differ from the declared scope, a non-regular entry in the release, and a total above the byte cap.
 - Recovery: Inspect the failing component named by the refusal, rebuild the release from the same inputs and compare the release id, or correct the inputs and build a new release rather than editing one in place.
 - Exceptions: none
 

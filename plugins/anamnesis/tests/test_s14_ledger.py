@@ -23,7 +23,7 @@ LEDGER = PLUGIN_ROOT / "skills/anamnesis/EVOLUTION.md"
 SKILL = PLUGIN_ROOT / "skills/anamnesis/SKILL.md"
 README = PLUGIN_ROOT / "README.md"
 
-VERSION = "anamnesis-v5.1.0"
+VERSION = "anamnesis-v5.2.0"
 REVISION = "resolved-mapper"
 PRIOR_VERSION = "anamnesis-v4.1.0"
 PRIOR_REVISION = "declared-scope"
@@ -78,7 +78,7 @@ class LedgerRecordsTheResolvedMapper(unittest.TestCase):
         header = header_field(self.text, "Current version").strip("`")
         self.assertEqual(header, VERSION)
         self.assertEqual(self.rows[-1][0].strip("`"), header)
-        self.assertEqual(self.rows[-1][1], "evolution")
+        self.assertEqual(self.rows[-1][1], "generation")
         self.assertEqual(self.rows[-1][2].strip("`"), REVISION)
 
     def test_the_frontier_digest_recomputes_over_its_exact_line(self) -> None:
