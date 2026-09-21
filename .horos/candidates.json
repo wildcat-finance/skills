@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9962,
-    "bytes_blob": 57013163,
+    "bytes_blob": 57019670,
     "bytes_generated": 98
   },
   "entries": [
@@ -203,7 +203,7 @@
       "path": "audit/rounds/fiat-1676-publish-checkpoint-authority-protocol-and-r.synopsis.md"
     },
     {
-      "bytes": 33103,
+      "bytes": 39610,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
