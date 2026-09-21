@@ -29,11 +29,11 @@ then Phylax and Ephoros to the specified controls and signals. This is an agent
 self-review, not independent or human approval. Its exact reviewed digests and
 unexecuted checks appear in [evidence/review.json](evidence/review.json).
 
-The human owner of threshold decisions and release approval is recorded in
-`evidence/decision.json`. Technical choices below are the producer's proposed
-contract until that decision is recorded. No threshold, provider access,
-restricted-data entitlement or activation approval is inferred from a GitHub
-login.
+The maintainer confirmed `laurenceday` as the human owner of evaluation
+threshold decisions and release approval. `evidence/decision.json` preserves
+the question and the reply. This confirms the owner only; threshold values,
+provider access, restricted-data entitlements and each activation still need
+their own recorded approval.
 
 ## Existing interface and implementation handoff
 

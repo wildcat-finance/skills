@@ -8,9 +8,9 @@
   },
   "scope": "Consumer input specification; no implemented runtime",
   "reviewed_files": {
-    "consumer.md": "f6cf158c5fd8d286155d6e737edafcf05ce4ff415c0496e8ec195685ca5967ed",
+    "consumer.md": "dcd4d385e73f00c1885f35f60a7c3fa60c7f7971ceceb5e78ce411a42fb8f40f",
     "evidence/commands.json": "845399fb1de50bddefcdd82e7fbe91040cd9597473e2ea4c2fb61813fd0a4daa",
-    "evidence/decision.json": "d0aa73afcd1de90e93d070d1a5a08f74c01ec29e248102af66473ecdafe18519",
+    "evidence/decision.json": "f1d811714c1cf093f309bf6eaae57bf00c8a9077183d0342a6c22b41b5a0216c",
     "evidence/sources.json": "9ef69f6cbfd8b0b5c1048eddf5a0ca3871faa3bd501cbd7e3554af8bd672d90b"
   },
   "checks": [
@@ -56,8 +56,8 @@
     },
     {
       "id": "human-decision-owner",
-      "result": "pending",
-      "evidence": "Explicit owner confirmation requested; never inferred from available credentials."
+      "result": "pass",
+      "evidence": "The user explicitly confirmed laurenceday as evaluation-threshold and release-approval owner. The question, answer and approval limits are preserved in evidence/decision.json."
     }
   ],
   "not_established": [

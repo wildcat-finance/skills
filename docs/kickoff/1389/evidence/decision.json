@@ -7,7 +7,10 @@
     "task_id": "01a0c57f-7098-7d01-819d-6bec8973bd1e",
     "initial_request": "address 1491 and get it into main",
     "selection_question": "#1491 reserves consumer selection for its maintainer. Which repository should own the headless Miskatonic query runtime? Please give its repository URL or local path; if it does not exist yet, say so.",
-    "selection_answer": "[https://github.com/wildcat-finance/miskatonic](https://github.com/wildcat-finance/miskatonic) - brand new, just created"
+    "selection_answer": "[https://github.com/wildcat-finance/miskatonic](https://github.com/wildcat-finance/miskatonic) - brand new, just created",
+    "owner_confirmation_question": "Confirm laurenceday as owner of evaluation thresholds and release approval so I can finalise the record and merge.",
+    "owner_confirmation_answer": "yes",
+    "owner_confirmation_recorded_at": "2026-09-21T21:10:31.236814+00:00"
   },
   "consumer": {
     "repository": "https://github.com/wildcat-finance/miskatonic",
@@ -15,10 +18,11 @@
     "tree": "a17c35d2e8696798a348835c02b5a7df80e81452",
     "access": "private"
   },
-  "release_decision_owner": null,
-  "owner_confirmation": "pending",
+  "release_decision_owner": "laurenceday",
+  "owner_confirmation": "confirmed by the user",
   "technical_contract_owner": "consumer implementation maintainer",
   "threshold_values": "not decided; required before promotion",
   "production_activation_authorised": false,
-  "publication_authority": "User requested delivery of #1491 into Skills main; consumer source remains unchanged."
+  "publication_authority": "User requested delivery of #1491 into Skills main; consumer source remains unchanged.",
+  "owner_confirmation_scope": "Owner designation only; threshold values and actual release activations require separate recorded approval."
 }
