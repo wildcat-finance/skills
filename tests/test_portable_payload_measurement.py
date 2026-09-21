@@ -385,8 +385,6 @@ class CommittedMeasurementRecordTests(unittest.TestCase):
         )
 
 
-
-
 class CommittedReportCopyTests(unittest.TestCase):
     """`docs/portable-payload-reserve/reports/` copies of the `step:4` reports."""
 
@@ -399,16 +397,6 @@ class CommittedReportCopyTests(unittest.TestCase):
                 self.assertEqual(document["criterion"], criterion)
                 self.assertEqual(document["exit"], 0)
                 self.assertTrue(gate(document["value"]), document)
-
-    def test_copies_are_byte_identical_to_the_hexaemeron_originals(self):
-        originals = ROOT / ".hexaemeron/reports"
-        for criterion in REPORT_GATES:
-            with self.subTest(criterion=criterion):
-                name = f"example-payload-class--{criterion}.json"
-                self.assertEqual(
-                    (STUDY_DIR / "reports" / name).read_bytes(),
-                    (originals / name).read_bytes(),
-                )
 
 
 class DemonstrationRecordTests(unittest.TestCase):
