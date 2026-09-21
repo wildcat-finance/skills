@@ -13,6 +13,17 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 second-producer-findings | corpus | absent | Audit findings a party outside this repository produced, together with a rights basis that permits redistributing them.
 ```
 
+## Source-rights decision
+
+The [source-rights study](../../docs/source-rights/study.md) selects
+`retained-rights`: retain `basis` and the SHA-256 of the complete checked rights
+object, then bind `id:sha256:bytes:disclosure:basis:rights_sha256` into release
+identity. Holder and statement text remain outside the release. `manifest-only`
+leaves rights changes outside identity; `full-rights` publishes that text.
+The selected contract refuses old four-field manifests and requires rebuilding
+from the original policies and sources. This standing decision precedes its
+implementation; the current counters, frontier and history remain unchanged.
+
 ## History
 
 | Version | Axis | Frontier revision | Frontier SHA-256 | Evidence | Change |
