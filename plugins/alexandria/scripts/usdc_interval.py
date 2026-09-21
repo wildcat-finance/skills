@@ -120,6 +120,11 @@ ERROR_RECEIPTS = "errors.jsonl"
 RECONCILIATION_DIRECTORY = "reconciliation"
 RECONCILIATION_RECORD = "reconciliation.json"
 DISPUTED_RESPONSES = "disputed.jsonl"
+# Reconciliation's own progress marker, separate from `Staging`'s: a shard's
+# comparison work against the second provider, not the collected bytes
+# themselves. See `Reconciler._save_reconcile_checkpoint`.
+RECONCILE_CHECKPOINT_NAME = "checkpoint.json"
+RECONCILE_CHECKPOINT_FORMAT = "alexandria-interval-reconcile-checkpoint/v1"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
 BOUNDARY_CLASS = "boundary-blocks"
@@ -1584,12 +1589,129 @@ class Reconciler:
         finally:
             os.close(descriptor)
 
+    # -- this run's own progress, separate from the collected bytes ---------
+
+    def _checkpoint_path(self) -> Path:
+        return self.directory / RECONCILE_CHECKPOINT_NAME
+
+    def _load_reconcile_checkpoint(self):
+        """This exact plan and second provider's last saved reconcile progress, or `None`.
+
+        A checkpoint recorded for another plan or another `provider_class`
+        proves nothing about this run -- comparisons already counted under a
+        different second opinion cannot be carried into this one -- so it is
+        treated as absent rather than trusted.
+        """
+        path = self._checkpoint_path()
+        if not path.is_file():
+            return None
+        document = load_bytes(
+            read_confined_file(
+                self.directory, RECONCILE_CHECKPOINT_NAME, "reconcile checkpoint",
+                max_bytes=MAX_CONTROL_BYTES,
+            ),
+            "reconcile checkpoint",
+        )
+        if (
+            not isinstance(document, dict)
+            or document.get("format") != RECONCILE_CHECKPOINT_FORMAT
+            or document.get("plan_sha256") != plan_digest(self.plan)
+            or document.get("provider_class") != self.provider_class
+        ):
+            return None
+        required = {"compared", "matched", "disputed", "statuses", "next_shard"}
+        if set(document) != required | {"format", "plan_sha256", "provider_class"}:
+            raise AlexandriaError("the reconcile checkpoint has an unknown shape")
+        if (
+            not isinstance(document["next_shard"], int) or isinstance(document["next_shard"], bool)
+            or not 0 <= document["next_shard"] <= len(self.plan["shards"])
+            or not isinstance(document["compared"], int) or isinstance(document["compared"], bool)
+            or not isinstance(document["matched"], int) or isinstance(document["matched"], bool)
+            or not isinstance(document["disputed"], list)
+            or not isinstance(document["statuses"], dict)
+        ):
+            raise AlexandriaError("the reconcile checkpoint has an unknown shape")
+        return document
+
+    def _save_reconcile_checkpoint(self, compared, matched, disputed, statuses, next_shard) -> None:
+        """Checkpoint reconciliation's own progress, one shard's comparisons at a time.
+
+        Not a batch: each shard already costs several real requests to the
+        second provider, which dominates a local `fsync` by one to two
+        orders of magnitude, so checkpointing every shard keeps that cost
+        negligible while guaranteeing a failure never loses more than the
+        one shard it happened on.
+        """
+        document = {
+            "compared": compared,
+            "disputed": disputed,
+            "format": RECONCILE_CHECKPOINT_FORMAT,
+            "matched": matched,
+            "next_shard": next_shard,
+            "plan_sha256": plan_digest(self.plan),
+            "provider_class": self.provider_class,
+            "statuses": {str(index): status for index, status in statuses.items()},
+        }
+        _atomic_json(self._checkpoint_path(), document)
+
+    def _record_error(self, shard_index, name: str, exc: Exception) -> None:
+        """Append one receipt naming what failed, where, and why -- never silently discarded.
+
+        `shard_index` is a real shard index, or `len(self.plan["shards"])`
+        for the opening-reads segment, matching the virtual index shard
+        records use. `str(exc)` is bounded and, for every exception this
+        actually catches (`TransportError` and the other `AlexandriaError`s
+        raised on this path), already carries only a request label, never an
+        endpoint or a credential -- see `_close_transport_error` -- but it is
+        still truncated here rather than trusted to stay that way forever.
+        """
+        receipt = {
+            "class": name,
+            "exception": type(exc).__name__,
+            "message": str(exc)[:200],
+            "provider_class": self.provider_class,
+            "shard": shard_index,
+        }
+        path = self.directory / ERROR_RECEIPTS
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(path, flags, 0o600)
+        except OSError as inner:
+            raise AlexandriaError(f"cannot open the reconcile error receipt file: {inner}") from inner
+        try:
+            with os.fdopen(descriptor, "ab", closefd=False) as handle:
+                handle.write(canonical_bytes(receipt))
+                handle.flush()
+                os.fsync(handle.fileno())
+        finally:
+            os.close(descriptor)
+
+    def _heartbeat(self, label: str, status: str, shard_compared: int, shard_matched: int,
+                    shard_disputed: int, started: float) -> None:
+        """One flushed progress line to stderr, the same shape `collect` already prints.
+
+        A console line only -- nothing here is staged, journaled or part of
+        `reconciliation.json`.
+        """
+        elapsed = time.monotonic() - started
+        print(
+            f"[reconcile] {label} | {status} | compared {shard_compared} matched {shard_matched} "
+            f"disputed {shard_disputed} | elapsed {elapsed:.1f}s",
+            file=sys.stderr, flush=True,
+        )
+
     def reconcile(self) -> dict:
         """Read the staging tree without changing it, then compare.
 
-        Reconciliation never resumes the collection, because `resume` truncates
-        every journal back to its checkpoint. Reading an interval must not be
-        able to destroy part of it, least of all on the path that then refuses.
+        Reconciliation never resumes the COLLECTION, because `resume`
+        truncates every journal back to its checkpoint, and reading an
+        interval must not be able to destroy part of it, least of all on the
+        path that then refuses -- that invariant is unchanged. Reconciliation
+        now resumes ITS OWN progress instead: `_load_reconcile_checkpoint`
+        restores whatever shard-by-shard comparison work an earlier, failed
+        attempt against this exact second provider already finished, so a
+        transport failure at shard 3,000 does not force shards 0-2,999 to be
+        asked again.
         """
         shards = self.plan["shards"]
         state = self.staging.committed()
@@ -1611,17 +1733,31 @@ class Reconciler:
         subjects = _plan_subjects(self.plan)
         upgrade_topic = phase.upgrade_topic
 
-        compared = 0
-        matched = 0
-        disputed = []
-        statuses = {}
+        checkpoint = self._load_reconcile_checkpoint()
+        if checkpoint is None:
+            compared, matched, disputed, statuses, start = 0, 0, [], {}, 0
+        else:
+            compared = checkpoint["compared"]
+            matched = checkpoint["matched"]
+            disputed = list(checkpoint["disputed"])
+            statuses = {int(index): value for index, value in checkpoint["statuses"].items()}
+            start = checkpoint["next_shard"]
+
         counts = {}
-        for shard in shards:
+        # Shards a checkpoint already covers still need their counts for the
+        # final table below; this reads only the already-staged primary
+        # bytes, so it is redone rather than checkpointed alongside them.
+        for index in range(start):
+            counts[index] = self._counts(index, staged)
+
+        started = time.monotonic()
+        for shard in shards[start:]:
             index = shard["index"]
             boundary = staged[(index, "boundary-blocks")]
             logs = staged.get((index, "logs"))
             counts[index] = self._counts(index, staged)
             status = "complete"
+            compared_before, matched_before, disputed_before = compared, matched, len(disputed)
             try:
                 second_boundary, boundary_bytes = self._second(
                     index, "boundary-blocks", "eth_getBlockByNumber", [hex(shard["end"]), False]
@@ -1654,7 +1790,9 @@ class Reconciler:
                     second_traces, traces_bytes = self._second_traces(
                         index, subject_transaction_hashes(logs) if isinstance(logs, list) else []
                     )
-            except AlexandriaError:
+            except AlexandriaError as exc:
+                self._record_error(index, "second-provider", exc)
+                self._save_reconcile_checkpoint(compared, matched, disputed, statuses, index)
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
                 )
@@ -1723,21 +1861,34 @@ class Reconciler:
                                 {"identity": identity, "kind": "trace-identity", "shard": index}
                             )
             statuses[index] = status
+            self._save_reconcile_checkpoint(compared, matched, disputed, statuses, index + 1)
+            self._heartbeat(
+                f"shard {index + 1}/{len(shards)} done", status,
+                compared - compared_before, matched - matched_before, len(disputed) - disputed_before,
+                started,
+            )
 
         # The opening reads: the first block's hash, each slot word and each
         # code digest, asked of the second provider with the primary's exact
         # request bytes. A disagreement keeps both byte sets and settles
         # nothing; the epoch boundary headers are bound by the upgrade logs
-        # the primary preserved and are not asked again.
+        # the primary preserved and are not asked again. Not checkpointed
+        # shard by shard like the loop above -- there are a few hundred of
+        # these at most, not thousands, so a failure here just redoes this
+        # much smaller segment; the shard loop's own checkpoint still stands.
         virtual = len(shards)
+        opening_started = time.monotonic()
+        opening_position = 0
         for position, read, value, payload in opening:
             if read["kind"] == "epoch-boundary-header":
                 continue
+            opening_position += 1
             try:
                 second, data = self._second_raw(
                     payload, opening_identifier(virtual, position), opening_label(position, read),
                 )
-            except AlexandriaError:
+            except AlexandriaError as exc:
+                self._record_error(virtual, OPENING_CLASS, exc)
                 return self._unreconciled(shards, counts, staged, compared, matched, disputed)
             compared += 1
             agreed, kind, identity = phase.compare(read, value, second)
@@ -1747,6 +1898,10 @@ class Reconciler:
                 if len(disputed) < MAX_DISPUTES:
                     disputed.append({"identity": identity, "kind": kind, "shard": virtual})
                 self._keep(virtual, OPENING_CLASS, data)
+            self._heartbeat(
+                f"opening read {opening_position}", "agreed" if agreed else "disputed",
+                1, 1 if agreed else 0, 0 if agreed else 1, opening_started,
+            )
 
         record = {
             "compared": compared,

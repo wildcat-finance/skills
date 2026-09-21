@@ -14,12 +14,15 @@ which stays gated on a declared subject set.
 """
 
 from copy import deepcopy
+import io
 import json
 from pathlib import Path
+import shutil
 import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 PLUGIN = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
@@ -519,6 +522,151 @@ class RealMainnetEquivalenceTests(unittest.TestCase):
                 self.assertEqual(matches, was_kept, frame)
                 checked += 1
         self.assertEqual(checked, 20)  # 17 + 3 raw frames across both transactions
+
+
+class _FailOnceAtShard(wildcat.WildcatTransport):
+    """The Wildcat fixture transport, refusing the first request to a chosen shard once.
+
+    Matches by label prefix (e.g. "shard 2 "), not a raw call count, so
+    shards before it always finish in full -- the same style the real
+    interrupted-and-resumed proof used against the live hosted endpoint.
+    """
+
+    def __init__(self, state, *, fail_shard, **kwargs):
+        super().__init__(state, **kwargs)
+        self.fail_shard = fail_shard
+        self.triggered = False
+
+    def request(self, payload, label):
+        if not self.triggered and label.startswith(f"shard {self.fail_shard} "):
+            self.triggered = True
+            raise usdc_interval.TransportError(f"{label} injected failure for a test")
+        return super().request(payload, label)
+
+
+class ReconcileCheckpointTests(unittest.TestCase):
+    """reconcile()'s own progress checkpoint, error receipts and heartbeat.
+
+    A transport failure partway through used to cost every comparison made
+    so far, with the real cause never recorded anywhere. This proves the
+    fix offline, deterministically, on top of the real interrupted-and-
+    resumed proof already run against the live hosted endpoint.
+    """
+
+    def setUp(self):
+        self.state = wildcat.fixture(wildcat.wildcat_v2.VENUE)
+        self.plan = self.state["plan"]
+        self.registry = wildcat.registry()
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.collected = self.root / "collected"
+        self.collected.mkdir()
+        Collector(
+            self.plan, self.collected, wildcat.WildcatTransport(self.state), registry=self.registry,
+        ).collect()
+
+    def _copy(self, name):
+        dest = self.root / name
+        shutil.copytree(self.collected, dest)
+        return dest
+
+    def test_a_transport_failure_checkpoints_progress_and_records_the_real_cause(self):
+        staging = self._copy("checkpoint")
+        second = _FailOnceAtShard(self.state, fail_shard=2)
+        document = Reconciler(
+            self.plan, staging, second, "second provider", registry=self.registry,
+        ).reconcile()
+        self.assertEqual(document["reconciliation"]["status"], "unreconciled")
+
+        checkpoint = json.loads((staging / "reconciliation" / "checkpoint.json").read_text())
+        self.assertEqual(checkpoint["next_shard"], 2)
+        self.assertEqual(checkpoint["plan_sha256"], usdc_interval.plan_digest(self.plan))
+        self.assertEqual(checkpoint["provider_class"], "second provider")
+
+        errors = [
+            json.loads(line)
+            for line in (staging / "reconciliation" / "errors.jsonl").read_text().splitlines()
+            if line
+        ]
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]["exception"], "TransportError")
+        self.assertEqual(errors[0]["shard"], 2)
+        self.assertIn("shard 2", errors[0]["message"])
+        # Bounded, and never carries a scheme or a host -- see _close_transport_error.
+        self.assertLessEqual(len(errors[0]["message"]), 200)
+        self.assertNotIn("://", errors[0]["message"])
+
+    def test_resuming_after_a_checkpointed_failure_matches_an_uninterrupted_run(self):
+        baseline_staging = self._copy("baseline")
+        baseline = Reconciler(
+            self.plan, baseline_staging, wildcat.WildcatTransport(self.state), "second provider",
+            registry=self.registry,
+        ).reconcile()
+
+        resumed_staging = self._copy("resumed")
+        Reconciler(
+            self.plan, resumed_staging, _FailOnceAtShard(self.state, fail_shard=2),
+            "second provider", registry=self.registry,
+        ).reconcile()
+
+        calls = []
+
+        class Counting(wildcat.WildcatTransport):
+            def request(self, payload, label):
+                calls.append(label)
+                return super().request(payload, label)
+
+        resumed = Reconciler(
+            self.plan, resumed_staging, Counting(self.state), "second provider",
+            registry=self.registry,
+        ).reconcile()
+
+        self.assertFalse(
+            any(label.startswith("shard 0 ") or label.startswith("shard 1 ") for label in calls),
+            "resume re-asked an already-checkpointed shard",
+        )
+        self.assertTrue(any(label.startswith("shard 2 ") for label in calls))
+        self.assertEqual(resumed["reconciliation"], baseline["reconciliation"])
+        self.assertEqual(resumed["shards"], baseline["shards"])
+
+    def test_a_checkpoint_for_a_different_second_provider_is_not_trusted(self):
+        staging = self._copy("provider-mismatch")
+        Reconciler(
+            self.plan, staging, _FailOnceAtShard(self.state, fail_shard=2),
+            "provider A", registry=self.registry,
+        ).reconcile()
+        # Under a different provider_class, the checkpoint above proves
+        # nothing about THIS comparison: it must start over at shard 0, not
+        # skip ahead on the strength of a different second opinion's work.
+        calls = []
+
+        class Counting(wildcat.WildcatTransport):
+            def request(self, payload, label):
+                calls.append(label)
+                return super().request(payload, label)
+
+        document = Reconciler(
+            self.plan, staging, Counting(self.state), "provider B", registry=self.registry,
+        ).reconcile()
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+
+    def test_heartbeat_prints_one_flushed_line_per_shard_and_opening_read(self):
+        staging = self._copy("heartbeat")
+        stderr = io.StringIO()
+        with mock.patch.object(sys, "stderr", stderr):
+            Reconciler(
+                self.plan, staging, wildcat.WildcatTransport(self.state), "second provider",
+                registry=self.registry,
+            ).reconcile()
+        lines = stderr.getvalue().splitlines()
+        shard_lines = [line for line in lines if line.startswith("[reconcile] shard ")]
+        opening_lines = [line for line in lines if line.startswith("[reconcile] opening read ")]
+        self.assertEqual(len(shard_lines), len(self.plan["shards"]))
+        self.assertGreater(len(opening_lines), 0)
+        self.assertIn("elapsed", shard_lines[0])
+        self.assertIn(f"shard 1/{len(self.plan['shards'])} done", shard_lines[0])
 
 
 if __name__ == "__main__":
