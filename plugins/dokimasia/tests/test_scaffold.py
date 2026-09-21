@@ -417,34 +417,42 @@ class SelfTestTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stdout)
         self.assertIn("refused", result.stderr)
 
-    def test_a_version_disagreement_would_be_caught(self):
-        # The check must have teeth: the comparison the self-test performs is
-        # reproduced here over a mutated set, and must fail.
-        declared = {"SKILL.md": SKILL_VERSION, "EVOLUTION.md": SKILL_VERSION, "command": "0.2.0"}
-        self.assertNotEqual(len(set(declared.values())), 1)
-
-    def test_the_self_test_refuses_each_kind_of_disagreement_by_name(self):
-        """Run the real check over a copied plugin with one declaration moved."""
+    def selftest_over_a_copy(self, relative, old, new):
+        """Run the real self-test over a copied plugin with one declaration moved."""
         import shutil
 
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            copied = root / "plugins" / "dokimasia"
+            shutil.copytree(PLUGIN, copied, ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copy(ROOT / "PROMISE_MACHINE.md", root / "PROMISE_MACHINE.md")
+            target = copied / relative
+            text = target.read_text(encoding="utf-8")
+            self.assertEqual(text.count(old), 1)
+            target.write_text(text.replace(old, new), encoding="utf-8")
+            return subprocess.run(
+                [sys.executable, str(copied / "scripts" / "dokimasia.py"), "selftest"],
+                capture_output=True, text=True, check=False,
+            )
+
+    def test_a_version_disagreement_would_be_caught(self):
+        # The check must have teeth: move the command surface's own number in a
+        # copy of the plugin and require the real self-test to refuse by name.
+        result = self.selftest_over_a_copy(
+            "scripts/dokimasia.py", f'VERSION = "{SKILL_VERSION}"', 'VERSION = "9.9.9"'
+        )
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("the declared skill version differs", result.stderr)
+        self.assertIn("command=9.9.9", result.stderr)
+
+    def test_the_self_test_refuses_each_kind_of_disagreement_by_name(self):
         cases = {
             "package": (".codex-plugin/plugin.json", f'"version": "{PACKAGE_VERSION}"', '"version": "9.9.9"'),
             "skill": ("skills/dokimasia/SKILL.md", f'  version: "{SKILL_VERSION}"', '  version: "9.9.9"'),
         }
         for kind, (relative, old, new) in cases.items():
-            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
-                root = Path(tmp) / "repo"
-                copied = root / "plugins" / "dokimasia"
-                shutil.copytree(PLUGIN, copied, ignore=shutil.ignore_patterns("__pycache__"))
-                shutil.copy(ROOT / "PROMISE_MACHINE.md", root / "PROMISE_MACHINE.md")
-                target = copied / relative
-                text = target.read_text(encoding="utf-8")
-                self.assertEqual(text.count(old), 1)
-                target.write_text(text.replace(old, new), encoding="utf-8")
-                result = subprocess.run(
-                    [sys.executable, str(copied / "scripts" / "dokimasia.py"), "selftest"],
-                    capture_output=True, text=True, check=False,
-                )
+            with self.subTest(kind=kind):
+                result = self.selftest_over_a_copy(relative, old, new)
                 self.assertEqual(result.returncode, 2, result.stdout)
                 self.assertIn(f"the declared {kind} version differs", result.stderr)
 
