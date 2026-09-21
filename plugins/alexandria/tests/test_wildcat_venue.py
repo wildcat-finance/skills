@@ -970,6 +970,44 @@ class SharedSubjectTests(unittest.TestCase):
         with self.assertRaisesRegex(AlexandriaError, "exact two-address intersection|reviewed shared"):
             wildcat_registry.validate_shared_subjects(widened, v2_document)
 
+    def test_constructed_shared_logs_are_attributed_to_each_capturing_venue(self):
+        for venue, document in (("wildcat-v1", v1_registry()), ("wildcat-v2", registry())):
+            with self.subTest(venue=venue), tempfile.TemporaryDirectory() as temporary:
+                state = fixture(venue)
+                start = int(state["plan"]["interval"]["start"])
+                transport = WildcatTransport(state)
+                for index, address in enumerate(sorted(wildcat_registry.SHARED_SUBJECTS)):
+                    state["logs"]["0"].append({
+                        "address": address, "blockHash": transport._hash(start),
+                        "blockNumber": hex(start), "data": "0x", "logIndex": hex(index),
+                        "removed": False, "topics": ["0x" + "ab" * 32],
+                        "transactionHash": transport.transactions(start)[0],
+                        "transactionIndex": "0x0",
+                    })
+                state["logs"]["0"].sort(key=lambda row: (
+                    int(row["blockNumber"], 16), int(row["transactionIndex"], 16),
+                    int(row["logIndex"], 16),
+                ))
+                root = Path(temporary)
+                staging = root / "staging"
+                staging.mkdir()
+                Collector(state["plan"], staging, transport, registry=document).collect()
+                Reconciler(
+                    state["plan"], staging, WildcatTransport(state), SECOND_PROVIDER,
+                    registry=document,
+                ).reconcile()
+                output = root / "release"
+                Builder(state["plan"], staging, document, created_at=CREATED_AT).build(output)
+                self.assertEqual(check_interval(output)["reconciliation"], "agreed")
+                captures = json.loads((output / "manifest.json").read_text())["captures"]
+                self.assertEqual({capture["venue"] for capture in captures}, {venue})
+                receipt = existing.component_document(output, "epoch-table")
+                for address in wildcat_registry.SHARED_SUBJECTS:
+                    self.assertTrue(any(
+                        row["subject"] == address for row in receipt["log_attributions"]
+                    ))
+
+
     def test_neither_venue_attributes_the_other_venues_subject(self):
         v1_plan = fixture(wildcat_v1.VENUE)["plan"]
         v2_plan = fixture(wildcat_v2.VENUE)["plan"]
@@ -983,6 +1021,24 @@ class SharedSubjectTests(unittest.TestCase):
             interval.proxy_log_positions(
                 [{"address": only_v1}], v2_plan["subjects"], v2_plan["interval"], upgrade_topic=None
             )
+
+
+class V1PreservedAdmissionTests(WildcatCase):
+    VENUE = wildcat_v1.VENUE
+
+    def test_only_the_reviewed_deployment_omits_the_constructed_gap(self):
+        self.assertEqual(wildcat_v1.PRESERVED_DEPLOYMENTS, frozenset({"wildcat-v1-archcontroller"}))
+        for admitted in (False, True):
+            state = deepcopy(self.state)
+            if admitted:
+                state["plan"]["deployment"] = "wildcat-v1-archcontroller"
+            output, _ = self.released(str(admitted), state)
+            self.assertEqual(check_interval(output)["reconciliation"], "agreed")
+            for capture in self.captures(output).values():
+                gaps = capture["coverage"]["gaps"]
+                constructed = any("constructed rather than collected" in gap for gap in gaps)
+                self.assertEqual(constructed, not admitted and capture["id"] in EVIDENCE_COMPONENTS)
+
 
 
 class ConstructedStagingTests(WildcatCase):
