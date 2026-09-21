@@ -77,7 +77,7 @@ MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # guessing. Bounded because the checkpoint is working state, not a chain.
 MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
-MAX_TIMEOUT_SECONDS = 600
+MAX_TIMEOUT_SECONDS = 3600
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
@@ -1631,7 +1631,7 @@ SHARD_STATUSES = ("complete", "partial", "failed")
 # The shard kinds, then the three opening-read kinds a second provider is
 # asked about: the first block's hash, each slot word and each code digest.
 DISPUTE_KINDS = (
-    "boundary-hash", "log-identity", "transaction-order",
+    "boundary-hash", "log-identity", "transaction-order", "trace-identity",
     "first-block-hash", "slot-word", "code-digest",
 )
 MAX_DISPUTES = 1_024

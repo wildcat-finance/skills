@@ -34,11 +34,13 @@ the ceiling.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import os
 from pathlib import Path
 import sys
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -105,6 +107,13 @@ LOOPBACK_ALLOW_ENV = "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP"
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1"})
 MAX_COLLECT_SECONDS = 3_600
 MAX_COLLECT_BYTES = 512 * 1024 * 1024
+# A bounded worker pool fetches this many shards' data concurrently; commits
+# still land strictly in ascending shard order (see `Collector._collect_shards`).
+# Conservative by default -- tune with `collect --concurrency`, never past the
+# ceiling, which exists so a plan cannot turn concurrency into an unbounded
+# thread count.
+DEFAULT_COLLECT_CONCURRENCY = 4
+MAX_COLLECT_CONCURRENCY = 8
 MAX_RESPONSE_NODES = 2_000_000
 RECEIPTS_DIRECTORY = "receipts"
 ERROR_RECEIPTS = "errors.jsonl"
@@ -799,13 +808,42 @@ def declared_classes(plan) -> tuple:
             "the plan must declare the boundary-blocks evidence class; every shard "
             "is bound by its boundary block"
         )
+    # The targeted-trace derivation reads a shard's own `logs` result instead of
+    # calling `trace_filter`; a subject-set plan that declares `traces` without
+    # `logs` gives it nothing to derive transaction hashes from.
+    if "subjects" in plan and "traces" in classes and "logs" not in classes:
+        raise AlexandriaError(
+            "a subject-set plan declaring traces must also declare logs; the targeted "
+            "trace derivation reads a shard's own logs result"
+        )
     return classes
+
+
+class _FetchedShard:
+    """One shard's whole set of request/response entries, not yet staged.
+
+    `entries` is `[(name, payload, data, result), ...]` in the plan's
+    declared-class order -- the order a strictly sequential collection would
+    have written them in. Building this holds nothing the caller must not
+    also hold: it carries no file handle and no lock.
+    """
+
+    __slots__ = ("index", "shard", "entries", "boundary")
+
+    def __init__(self, index, shard, entries, boundary) -> None:
+        self.index = index
+        self.shard = shard
+        self.entries = entries
+        self.boundary = boundary
 
 
 class Collector:
     """One bounded collection over one plan, against one transport."""
 
-    def __init__(self, plan, staging_root, transport, *, receipts_root=None, registry=None) -> None:
+    def __init__(
+        self, plan, staging_root, transport, *, receipts_root=None, registry=None,
+        concurrency=1,
+    ) -> None:
         validate_plan(plan)
         self.plan = plan
         self.registry = registry
@@ -833,14 +871,30 @@ class Collector:
             raise AlexandriaError("the receipts directory is not a directory")
         self._started = None
         self._bytes = 0
+        self._bytes_lock = threading.Lock()
+        if not isinstance(concurrency, int) or isinstance(concurrency, bool) or not 1 <= concurrency <= MAX_COLLECT_CONCURRENCY:
+            raise AlexandriaError(
+                f"collect concurrency must be a whole number from 1 to {MAX_COLLECT_CONCURRENCY}"
+            )
+        self.concurrency = concurrency
+        # The multi-subject path's targeted trace derivation matches against
+        # this lowercase set; a single-proxy plan never reaches it, so it is
+        # None there.
+        self._subjects = frozenset(address.lower() for address in plan["subjects"]) if "subjects" in plan else None
 
     # -- bounds -----------------------------------------------------------
 
     def _spend(self, count: int) -> None:
-        self._bytes += count
-        if self._bytes > MAX_COLLECT_BYTES:
+        with self._bytes_lock:
+            self._bytes += count
+            over_bytes = self._bytes > MAX_COLLECT_BYTES
+            over_time = (
+                self._started is not None
+                and time.monotonic() - self._started > MAX_COLLECT_SECONDS
+            )
+        if over_bytes:
             raise AlexandriaError("collection exceeded its total byte ceiling")
-        if self._started is not None and time.monotonic() - self._started > MAX_COLLECT_SECONDS:
+        if over_time:
             raise AlexandriaError("collection exceeded its elapsed-time ceiling")
 
     # -- one request ------------------------------------------------------
@@ -1085,11 +1139,44 @@ class Collector:
         self._preliminary_reads()
         shards = self.plan["shards"]
         counts = {name: 0 for name in self.classes}
-        for index in range(start, len(shards)):
+        total = len(shards)
+        if start < total:
+            if self.concurrency == 1:
+                self._collect_sequential(start, total, counts)
+            else:
+                self._collect_shards(start, total, counts)
+        opening = self._open_interval()
+        return {
+            "collected_shards": total - start,
+            "opening_reads": opening,
+            "record_counts": counts,
+            "resumed_from": start,
+            "shards": total,
+        }
+
+    def _collect_sequential(self, start: int, total: int, counts: dict) -> None:
+        """The original one-shard-at-a-time loop: request, then stage, per class.
+
+        Reached whenever `self.concurrency == 1` -- the default for any
+        caller that never asks for concurrency, which is every existing call
+        site and test. Each request's bytes are staged the moment they are
+        read, before the shard's next request is even made, exactly as
+        collection has always worked; a kill mid-shard leaves whatever
+        prefix of that shard's classes were already staged; `resume` decides
+        what survives that, unchanged by anything below.
+        """
+        shards = self.plan["shards"]
+        for index in range(start, total):
             shard = shards[index]
             boundary = None
+            logs_result = None
             for name, method, params in shard_requests(self.plan, shard):
-                payload, data, result = self._ask(index, name, method, params)
+                if name == "traces" and self._subjects is not None:
+                    payload, data, result = self._targeted_traces(index, logs_result)
+                else:
+                    payload, data, result = self._ask(index, name, method, params)
+                    if name == "logs":
+                        logs_result = result
                 if name == "boundary-blocks":
                     if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                         raise AlexandriaError(f"shard {index} boundary block carries no hash")
@@ -1100,14 +1187,118 @@ class Collector:
                     counts[name] += 1
                 self.staging.record(index, name, payload, data)
             self.staging.commit(index, shard["end"], boundary)
-        opening = self._open_interval()
-        return {
-            "collected_shards": len(shards) - start,
-            "opening_reads": opening,
-            "record_counts": counts,
-            "resumed_from": start,
-            "shards": len(shards),
-        }
+
+    def _fetch_shard(self, index: int) -> "_FetchedShard":
+        """Every request one shard makes, without writing anything to the staging tree.
+
+        Safe to call from a worker thread: nothing here touches `self.staging`,
+        only `self.transport` (a fresh call per request) and `_spend`'s locked
+        counters. The multi-subject path's `traces` class is derived here too
+        -- through `_targeted_traces`, from this same call's own `logs`
+        result -- rather than left for the writer to redo.
+        """
+        shard = self.plan["shards"][index]
+        entries = []
+        boundary = None
+        logs_result = None
+        for name, method, params in shard_requests(self.plan, shard):
+            if name == "traces" and self._subjects is not None:
+                payload, data, result = self._targeted_traces(index, logs_result)
+            else:
+                payload, data, result = self._ask(index, name, method, params)
+                if name == "logs":
+                    logs_result = result
+            if name == "boundary-blocks":
+                if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
+                    raise AlexandriaError(f"shard {index} boundary block carries no hash")
+                boundary = result["hash"]
+            entries.append((name, payload, data, result))
+        return _FetchedShard(index=index, shard=shard, entries=entries, boundary=boundary)
+
+    def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
+        """Stage and commit one already-fetched shard, in its fetched (plan) order."""
+        for name, payload, data, result in fetched.entries:
+            if isinstance(result, list):
+                counts[name] += len(result)
+            else:
+                counts[name] += 1
+            self.staging.record(fetched.index, name, payload, data)
+        self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
+
+    def _collect_shards(self, start: int, total: int, counts: dict) -> None:
+        """Fetch shards `start` to `total - 1` with a bounded worker pool, ordered commits.
+
+        Fetches may finish out of arrival order; `Staging.commit` never does.
+        `index` only ever advances by one and each advance blocks on that
+        exact shard's future, so a killed run's checkpoint always names a
+        contiguous committed prefix with no gap -- the same resumability a
+        strictly sequential loop gives, just fetched with real concurrency. A
+        shard whose fetch finishes early still waits, uncommitted and only
+        held in memory, until every lower-indexed shard is committed first.
+        """
+        concurrency = min(self.concurrency, total - start)
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=concurrency)
+        pending = {}
+        next_to_submit = start
+
+        def _submit_up_to(limit):
+            nonlocal next_to_submit
+            while next_to_submit < total and len(pending) < limit:
+                pending[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
+                next_to_submit += 1
+
+        try:
+            _submit_up_to(concurrency)
+            for index in range(start, total):
+                fetched = pending.pop(index).result()
+                self._write_shard(fetched, counts)
+                _submit_up_to(concurrency)
+        finally:
+            # `cancel_futures` drops anything still queued rather than paying
+            # for it after a refusal; a fetch already running finishes on its
+            # own and its result is simply never written.
+            pool.shutdown(wait=True, cancel_futures=True)
+
+    def _targeted_traces(self, shard_index: int, logs_result) -> tuple[bytes, bytes, list]:
+        """One shard's whole `traces` result, without ever calling `trace_filter`.
+
+        Only reached on the multi-subject path (`self._subjects` is not
+        `None`). Derives the distinct transaction hashes this shard's own
+        `logs` result touched (`subject_transaction_hashes`; no new
+        `eth_getLogs` call), asks `trace_transaction` once per hash, and
+        filters each transaction's frames down to the ones a blanket
+        `trace_filter` call's `toAddress` parameter would have kept
+        (`_matches_subjects`). The concatenation, in hash order, is the whole
+        shard's `traces` result; the caller records it exactly once, the same
+        as every other class -- see `Staging.record`'s one-record-per-shard
+        contract, which this method must never call more than the one time
+        its return value is written.
+        """
+        if logs_result is None:
+            raise AlexandriaError(
+                f"shard {shard_index}: the targeted trace derivation needs this shard's "
+                "logs result, which was not read before traces this shard"
+            )
+        hashes = subject_transaction_hashes(logs_result)
+        combined = []
+        for tx_hash in hashes:
+            _, _, trace_result = self._ask(
+                shard_index, "traces", "trace_transaction", [tx_hash],
+                label=f"shard {shard_index} traces {tx_hash}",
+            )
+            if not isinstance(trace_result, list):
+                raise AlexandriaError(
+                    f"shard {shard_index} trace_transaction {tx_hash} did not return a list"
+                )
+            combined.extend(frame for frame in trace_result if _matches_subjects(frame, self._subjects))
+        identifier = request_identifier(shard_index, "traces")
+        payload = request_bytes(identifier, "trace_transaction", hashes)
+        response = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
+        if len(response) > MAX_RAW_COMPONENT_BYTES:
+            raise AlexandriaError(
+                f"shard {shard_index} traces combined record exceeded the component byte ceiling"
+            )
+        return payload, response, combined
 
     # -- the opening phase --------------------------------------------------
 
@@ -1257,6 +1448,10 @@ class Reconciler:
         journal_components(plan, self.classes)
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
+        # The multi-subject path's targeted trace derivation matches against
+        # this lowercase set; a single-proxy plan never reaches it, so it is
+        # None there.
+        self._subjects = frozenset(address.lower() for address in plan["subjects"]) if "subjects" in plan else None
         directory = self.root / RECONCILIATION_DIRECTORY
         try:
             directory.mkdir(exist_ok=True)
@@ -1305,6 +1500,32 @@ class Reconciler:
                 f"{label} second-provider envelope does not match its request"
             )
         return envelope["result"], data
+
+    def _second_traces(self, shard_index: int, hashes) -> tuple:
+        """Ask the second provider `trace_transaction` for each hash, filtered and combined.
+
+        Mirrors `Collector._targeted_traces`, against `self.transport`
+        instead of the primary's: one `trace_transaction` call per hash, each
+        frame kept only if `_matches_subjects` would have kept it, all
+        concatenated in hash order. Never staged and never journaled, only
+        compared -- and kept via `_keep` when the comparison disagrees.
+        """
+        combined = []
+        for tx_hash in hashes:
+            identifier = request_identifier(shard_index, "traces")
+            payload = request_bytes(identifier, "trace_transaction", [tx_hash])
+            result, _data = self._second_raw(
+                payload, identifier, f"shard {shard_index} traces {tx_hash}",
+            )
+            if not isinstance(result, list):
+                raise AlexandriaError(
+                    f"shard {shard_index} second-provider trace_transaction {tx_hash} did not "
+                    "return a list"
+                )
+            combined.extend(frame for frame in result if _matches_subjects(frame, self._subjects))
+        identifier = request_identifier(shard_index, "traces")
+        combined_bytes = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
+        return combined, combined_bytes
 
     def _opening(self) -> tuple:
         """The opening phase and its committed reads, replayed; see `replay_opening`."""
@@ -1392,6 +1613,16 @@ class Reconciler:
                     proxy_log_positions(
                         second_logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic
                     )
+                second_traces, traces_bytes = None, b""
+                if "traces" in self.classes and self._subjects is not None:
+                    # The primary's own committed hash set, derived from its
+                    # own logs -- not a fresh derivation from the second
+                    # provider's. A differing hash set is already a
+                    # log-identity disagreement, settled above on its own
+                    # terms; nothing new is invented for it here.
+                    second_traces, traces_bytes = self._second_traces(
+                        index, subject_transaction_hashes(logs) if isinstance(logs, list) else []
+                    )
             except AlexandriaError:
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
@@ -1436,6 +1667,30 @@ class Reconciler:
                 for identity in disagreements:
                     if len(disputed) < MAX_DISPUTES:
                         disputed.append({"identity": identity, "kind": "log-identity", "shard": index})
+
+            if "traces" in self.classes and self._subjects is not None:
+                traces = staged.get((index, "traces"))
+                first_trace_identities = (
+                    [trace_identity(record) for record in traces] if isinstance(traces, list) else []
+                )
+                second_trace_identities = (
+                    [trace_identity(record) for record in second_traces]
+                    if isinstance(second_traces, list) else []
+                )
+                trace_agreed, trace_disagreements = _identity_comparison(
+                    first_trace_identities, second_trace_identities
+                )
+                compared += trace_agreed + len(trace_disagreements)
+                matched += trace_agreed
+                if trace_disagreements:
+                    if status != "failed":
+                        status = "partial"
+                    self._keep(index, "traces", traces_bytes)
+                    for identity in trace_disagreements:
+                        if len(disputed) < MAX_DISPUTES:
+                            disputed.append(
+                                {"identity": identity, "kind": "trace-identity", "shard": index}
+                            )
             statuses[index] = status
 
         # The opening reads: the first block's hash, each slot word and each
@@ -2144,6 +2399,14 @@ def check_interval(release_root: Path) -> dict:
         raise AlexandriaError(f"the release carries no capture for its {name} component")
     derived = {shard["index"]: {} for shard in plan["shards"]}
     boundary_headers = {}
+    # A subject-set plan's `traces` request is derived from its own shard's
+    # `logs` result (see `subject_transaction_hashes`), not from a static
+    # per-shard filter `shard_requests` can precompute; this is filled in as
+    # each shard's `logs` record is read below, which always precedes its
+    # `traces` record because `journal_components` orders components by
+    # declared class, and `declared_classes` refuses a plan that declares
+    # `traces` under subjects without also declaring `logs`.
+    logs_by_shard = {}
     # The read each shard and class makes, derived from the plan exactly as the
     # collector derived it. A shard journal record was filed under a shard
     # index that nothing held against the request the record preserves, so a
@@ -2234,7 +2497,17 @@ def check_interval(release_root: Path) -> dict:
                     f"{part['first']} to {part['last']} the plan derives for it"
                 )
             for record in journal["records"]:
-                if record["request"].encode() != planned_requests[(record["shard"], kind)]:
+                if kind == "traces" and "subjects" in plan:
+                    # Not a static per-shard filter: the request this plan
+                    # actually made is `trace_transaction` once per distinct
+                    # transaction hash its own `logs` result touched.
+                    expected_request = request_bytes(
+                        request_identifier(record["shard"], "traces"), "trace_transaction",
+                        subject_transaction_hashes(logs_by_shard.get(record["shard"], [])),
+                    )
+                else:
+                    expected_request = planned_requests[(record["shard"], kind)]
+                if record["request"].encode() != expected_request:
                     raise AlexandriaError(
                         f"the {name} record filed under shard {record['shard']} is not the "
                         "read the plan names there"
@@ -2262,6 +2535,8 @@ def check_interval(release_root: Path) -> dict:
                     raise AlexandriaError(
                         f"the {name} result for shard {record['shard']} is not a list of entries"
                     )
+                if kind == "logs":
+                    logs_by_shard[record["shard"]] = result
                 reads[(record["shard"], kind)] = reads.get((record["shard"], kind), 0) + 1
                 # Two records of one class for one shard are two reads, so
                 # their sizes add. Assigning here declared the last record's
@@ -2619,6 +2894,109 @@ def _number(value) -> int:
     return int(value)
 
 
+def _trace_filter_recipient(entry):
+    """The address `trace_filter`'s own `toAddress` parameter would have matched, if any.
+
+    A call's `to`, a creation's `result.address`, a self-destruct's
+    `refundAddress`, a reward's `author`, in that priority order, whichever
+    the trace's own kind carries. `None` when the trace carries none of them,
+    such as a `create` whose init reverted and so has no `result`; such a
+    trace can never satisfy `toAddress`, on any provider, because there is no
+    address on it that filter could have matched.
+    """
+    if not isinstance(entry, dict):
+        return None
+    action = entry.get("action") if isinstance(entry.get("action"), dict) else {}
+    created = entry.get("result") if isinstance(entry.get("result"), dict) else {}
+    return next(
+        (
+            candidate
+            for candidate in (
+                action.get("to"),
+                created.get("address"),
+                action.get("refundAddress"),
+                action.get("author"),
+            )
+            if isinstance(candidate, str)
+        ),
+        None,
+    )
+
+
+def _matches_subjects(entry, subjects) -> bool:
+    """Whether `trace_filter`'s own `toAddress` parameter would have kept this frame.
+
+    `subjects` is a lowercase-address set. Used to filter one transaction's
+    `trace_transaction` frames down to the ones a blanket `trace_filter` call
+    would have returned -- see `Collector._targeted_traces`.
+    """
+    value = _trace_filter_recipient(entry)
+    return isinstance(value, str) and value.lower() in subjects
+
+
+def subject_transaction_hashes(logs_result) -> list:
+    """The distinct transaction hashes one shard's own `logs` result touched.
+
+    Ordered by `(blockNumber, transactionIndex)` ascending -- the order
+    `trace_filter` itself would have returned their frames in -- so a
+    per-transaction `trace_transaction` walk in this order, concatenated,
+    reproduces `trace_filter`'s own order. Every `logs` entry the plan's own
+    address filter could return already names a subject, so no further
+    address check is made here; the field this reads is `transactionHash`.
+    """
+    if not isinstance(logs_result, list):
+        raise AlexandriaError("a shard's logs result is not a list of entries")
+    seen = {}
+    for entry in logs_result:
+        if not isinstance(entry, dict):
+            raise AlexandriaError("a log entry is not an object")
+        tx_hash = entry.get("transactionHash")
+        if not isinstance(tx_hash, str) or HASH_RE.fullmatch(tx_hash.lower()) is None:
+            raise AlexandriaError("a log entry carries no transaction hash")
+        key = tx_hash.lower()
+        if key in seen:
+            continue
+        block = _entry_block(entry.get("blockNumber"), "a log entry block number")
+        tx_index = _hex(entry.get("transactionIndex"), "a log entry transaction index")
+        seen[key] = (block, tx_index, tx_hash)
+    return [value[2] for value in sorted(seen.values(), key=lambda value: value[:2])]
+
+
+def trace_identity(record) -> str:
+    """The tuple two providers' targeted trace frames are compared by, as one string.
+
+    `(transactionHash, traceAddress, type, recipient)`, where `recipient` is
+    whatever `_trace_filter_recipient` reads off the frame. A transaction's
+    hash together with its trace address already names one frame uniquely, so
+    unlike `log_identity` this does not require a `blockHash`: a provider
+    whose trace frames carry only the fields `_ask` itself ever reads (as the
+    collector's own preserved frames do) still compares. `type` and
+    `recipient` fall back to an empty string rather than refusing when
+    absent, for the same reason. Nothing here is normalised beyond case,
+    because two providers disagreeing about the case of a hash is not a
+    disagreement about the chain.
+    """
+    if not isinstance(record, dict):
+        raise AlexandriaError("a trace record is not an object")
+    tx_hash = record.get("transactionHash")
+    if not isinstance(tx_hash, str) or not tx_hash:
+        raise AlexandriaError("a trace record has no transactionHash")
+    trace_address = record.get("traceAddress")
+    if not isinstance(trace_address, list) or any(
+        not isinstance(item, int) or isinstance(item, bool) for item in trace_address
+    ):
+        raise AlexandriaError("a trace record has no traceAddress")
+    kind = record.get("type")
+    recipient = _trace_filter_recipient(record)
+    fields = [
+        tx_hash.lower(),
+        ",".join(str(item) for item in trace_address),
+        kind.lower() if isinstance(kind, str) else "",
+        recipient.lower() if isinstance(recipient, str) else "",
+    ]
+    return "|".join(fields)
+
+
 def _entry_address(entry, name: str, label: str) -> str:
     """The address one journal entry names as the party its read filtered on.
 
@@ -2632,21 +3010,7 @@ def _entry_address(entry, name: str, label: str) -> str:
     if name == "logs":
         value = entry.get("address")
     else:
-        action = entry.get("action") if isinstance(entry.get("action"), dict) else {}
-        created = entry.get("result") if isinstance(entry.get("result"), dict) else {}
-        value = next(
-            (
-                candidate
-                for candidate in (
-                    action.get("to"),
-                    created.get("address"),
-                    action.get("refundAddress"),
-                    action.get("author"),
-                )
-                if isinstance(candidate, str)
-            ),
-            None,
-        )
+        value = _trace_filter_recipient(entry)
     if not isinstance(value, str) or ADDRESS_RE.fullmatch(value.lower()) is None:
         raise AlexandriaError(f"{label} names no address its read could have filtered on")
     return value.lower()
@@ -2687,6 +3051,14 @@ def parser() -> argparse.ArgumentParser:
     collect.add_argument(
         "--registry", type=Path,
         help="the deployment registry, for a venue that plans its opening reads from one",
+    )
+    collect.add_argument(
+        "--concurrency", type=int, default=DEFAULT_COLLECT_CONCURRENCY,
+        help=(
+            f"shards fetched at once, from 1 to {MAX_COLLECT_CONCURRENCY} "
+            f"(default {DEFAULT_COLLECT_CONCURRENCY}); commits still land strictly in "
+            "ascending shard order"
+        ),
     )
     reconcile = commands.add_parser(
         "reconcile", help="run the collected interval past a second provider"
@@ -2741,7 +3113,9 @@ def main(argv=None) -> int:
             sys.stdout.buffer.write(canonical_bytes(document))
             return 0
         args.staging.mkdir(parents=True, exist_ok=True)
-        summary = Collector(plan, args.staging, transport, registry=registry).collect()
+        summary = Collector(
+            plan, args.staging, transport, registry=registry, concurrency=args.concurrency,
+        ).collect()
         sys.stdout.buffer.write(canonical_bytes(summary))
         return 0
     except (AlexandriaError, OSError) as error:

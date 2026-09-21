@@ -135,6 +135,8 @@ class FixtureTransport:
         elif method == "trace_filter":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["traces"][str(shard["index"])]
+        elif method == "trace_transaction":
+            result = self.trace_transaction(envelope["params"][0])
         elif method == "eth_getStorageAt":
             proxy, slot, tag = envelope["params"]
             if proxy != self.state["plan"]["proxy"] or slot != IMPLEMENTATION_SLOT:
@@ -154,6 +156,25 @@ class FixtureTransport:
             for record in records:
                 record["blockHash"] = self._hash(int(record["blockNumber"], 16))
         return records
+
+    def trace_transaction(self, tx_hash):
+        """Every preserved trace frame naming this transaction, across every shard.
+
+        The fixture's `traces` state is already exactly what a blanket
+        `trace_filter` call would have returned -- every frame in it already
+        matches a subject -- so grouping it by `transactionHash` doubles as
+        what `trace_transaction` would answer for that one transaction,
+        before the collector's own `_matches_subjects` filters it again (a
+        no-op here, since nothing in the group fails to match). Tests that
+        need to prove the filter actually drops a non-matching frame build
+        their own small state rather than widen this shared fixture.
+        """
+        return [
+            frame
+            for shard_traces in self.state["traces"].values()
+            for frame in shard_traces
+            if frame.get("transactionHash") == tx_hash
+        ]
 
     def slot_word(self, number):
         return self.state["slots"][str(number)]
