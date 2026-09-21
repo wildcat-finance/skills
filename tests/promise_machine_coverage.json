@@ -5083,16 +5083,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "negative",
-        "sha256": "b1393bd5fa92e7e82e40894a144b13510476fa3d65747bb576cef87f559548be"
+        "sha256": "7ec5c3aff14a0263c6e7770d14fc0be2a35111956a31ae9d8fe2758d5671793f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "positive",
-        "sha256": "b1393bd5fa92e7e82e40894a144b13510476fa3d65747bb576cef87f559548be"
+        "sha256": "7ec5c3aff14a0263c6e7770d14fc0be2a35111956a31ae9d8fe2758d5671793f"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_runner_categories_distinguish_all_three_outcomes",
-      "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492",
+      "sha256": "0ea5bd2c57bbd16f044c7279509f822d13205c2eedea05a0b44aa6301a224110",
       "source": "plugins/hexaemeron/tests/test_elenchus_checker.py"
     },
     "elenchus-parent-guard-evidence": {
@@ -5112,16 +5112,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/elenchus-parent-guard-evidence.json",
         "selector": "negative",
-        "sha256": "fd4327edc02cc144fc33f262776d3894e0d921d718e1a12be1266cb43830e27d"
+        "sha256": "b89bd3931add349cb14bfa623902a1aa401561949d0dc756ca928ac9b13a7296"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/elenchus-parent-guard-evidence.json",
         "selector": "positive",
-        "sha256": "fd4327edc02cc144fc33f262776d3894e0d921d718e1a12be1266cb43830e27d"
+        "sha256": "b89bd3931add349cb14bfa623902a1aa401561949d0dc756ca928ac9b13a7296"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_raw_blobs_modes_and_exact_report_are_returned_before_cleanup",
-      "sha256": "31aef61e2372257166606666f9799b62eee7d506d2ce8d0ff1a06792fbcce492",
+      "sha256": "0ea5bd2c57bbd16f044c7279509f822d13205c2eedea05a0b44aa6301a224110",
       "source": "plugins/hexaemeron/tests/test_elenchus_checker.py"
     },
     "ephoros-observability-review": {

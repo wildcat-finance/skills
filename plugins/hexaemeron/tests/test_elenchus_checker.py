@@ -1,6 +1,7 @@
 """Elenchus classifies guards from real runner-owned reports."""
 
 import contextlib
+import errno
 import hashlib
 import importlib.util
 import io
@@ -126,6 +127,31 @@ def replace_runner_ancestor(real_run, ancestor, malicious_source):
             held.rename(ancestor)
 
     return run_with_replacement
+
+
+def refuse_guard_process_start(error):
+    """Fail only the guard command's process start; Git and fixture calls stay real."""
+    real_popen = subprocess.Popen
+
+    def popen(*args, **kwargs):
+        if kwargs.get("start_new_session") and "pass_fds" in kwargs:
+            raise error
+        return real_popen(*args, **kwargs)
+
+    return popen
+
+
+def assert_start_failure_names_its_cause(case, result, site, error):
+    """The fixed wording stays the prefix; the site and errno follow it."""
+    case.assertEqual("inconclusive", result["status"])
+    case.assertNotIn("raw_report", result)
+    prefix = "the test command could not be started ("
+    case.assertTrue(result["detail"].startswith(prefix), result["detail"])
+    case.assertIn(f"({site}; ", result["detail"])
+    case.assertIn(
+        f"errno {error.errno} {errno.errorcode[error.errno]}", result["detail"]
+    )
+    case.assertIn(error.strerror, result["detail"])
 
 
 class Fixture:
@@ -349,6 +375,25 @@ class UnittestReports(RunnerCase):
             result = self.outcome(self.guarded, [str(runner), "{report}"])
         self.assertEqual("inconclusive", result["status"])
         self.assertIn("executable changed", result["detail"])
+
+    def test_legacy_start_failures_name_the_site_and_errno(self):
+        missing = self.outcome(
+            self.guarded, ["/definitely/missing/elenchus-runner", "{report}"]
+        )
+        absent = FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT))
+        assert_start_failure_names_its_cause(
+            self, missing, "executable binding", absent
+        )
+
+        exhausted = BlockingIOError(errno.EAGAIN, os.strerror(errno.EAGAIN))
+        with mock.patch.object(
+            elenchus.subprocess, "Popen",
+            side_effect=refuse_guard_process_start(exhausted),
+        ):
+            started = self.outcome(self.guarded)
+        assert_start_failure_names_its_cause(
+            self, started, "process start", exhausted
+        )
 
     def test_legacy_runner_ancestor_substitution_cannot_execute_replacement(self):
         guarded = json.dumps({
@@ -1421,6 +1466,52 @@ class ParentGuardEvidence(unittest.TestCase):
         self.assertEqual(
             ["inconclusive", "inconclusive", "inconclusive"],
             [timeout["status"], missing["status"], interrupted["status"]],
+        )
+
+    def test_start_failures_name_the_site_and_errno(self):
+        missing = self.run_evidence(["/definitely/missing/elenchus-runner", "{report}"])
+        absent = FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT))
+        assert_start_failure_names_its_cause(
+            self, missing, "executable binding", absent
+        )
+
+        exhausted = BlockingIOError(errno.EAGAIN, os.strerror(errno.EAGAIN))
+        with mock.patch.object(
+            elenchus.subprocess, "Popen",
+            side_effect=refuse_guard_process_start(exhausted),
+        ):
+            started = self.run_evidence()
+        assert_start_failure_names_its_cause(
+            self, started, "process start", exhausted
+        )
+
+        unnumbered = OSError("the test command executable changed while it was bound")
+        real_binding = elenchus._trusted_executable
+
+        def refuse_runner_binding(raw):
+            if raw == sys.executable:
+                raise unnumbered
+            return real_binding(raw)
+
+        with mock.patch.object(
+            elenchus, "_trusted_executable", side_effect=refuse_runner_binding
+        ):
+            bound = self.run_evidence()
+        self.assertEqual(
+            "the test command could not be started (executable binding; "
+            "the test command executable changed while it was bound)",
+            bound["detail"],
+        )
+
+        overlong = elenchus._start_failure_detail(OSError("x" * 500), "process start")
+        self.assertEqual(
+            len("the test command could not be started (process start; ")
+            + elenchus.MAX_START_FAILURE_CAUSE_CHARS + 1,
+            len(overlong),
+        )
+        self.assertEqual(
+            "the test command could not be started (process start; errno 2 ENOENT)",
+            elenchus._start_failure_detail(OSError(errno.ENOENT, ""), "process start"),
         )
 
 
