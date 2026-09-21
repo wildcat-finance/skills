@@ -1254,7 +1254,7 @@ class CollectorConnectionTests(WildcatCase):
         state["plan"]["shards_per_component"] = 1
         collector = Collector(
             state["plan"], staging, WildcatTransport(state, faults={label: empty}),
-            registry=self.registry,
+            registry=self.registry, rpc_concurrency=1,
         )
         opened = []
         handle = collector.staging._handle

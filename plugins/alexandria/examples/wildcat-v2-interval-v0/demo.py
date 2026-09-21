@@ -3,7 +3,7 @@
 
 Unlike the smaller USDC demonstration beside this one, the staging tree this
 release was built from is too large to carry in this repository (it holds
-124 files totalling over 200MB): 3,463 shards' worth of `logs` and targeted
+125 files totalling over 200MB): 3,463 shards' worth of `logs` and targeted
 `trace_transaction` journals, an opening-read journal, a checkpoint and a
 reconciliation record, spanning both transports Step 9 collected against.
 That tree is preserved outside this repository and verified by digest --

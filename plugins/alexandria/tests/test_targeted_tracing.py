@@ -274,6 +274,171 @@ class TargetedTraceConcurrencyTests(unittest.TestCase):
                 ).trace_concurrency, 1)
 
 
+class OverallRpcConcurrencyTests(unittest.TestCase):
+    def setUp(self):
+        self.state = wildcat.fixture(wildcat.wildcat_v2.VENUE)
+        self.plan, self.registry = self.state["plan"], wildcat.registry()
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+
+    def transport(self):
+        state = self.state
+
+        class Observed(wildcat.WildcatTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.active = self.peak = self.opening_peak = 0
+                self.logs_started = threading.Event()
+
+            def request(self, payload, label):
+                with self.lock:
+                    self.active += 1
+                    self.peak = max(self.peak, self.active)
+                    if label.startswith("opening read"):
+                        self.opening_peak = max(self.opening_peak, self.active)
+                try:
+                    time.sleep(0.003)
+                    return super().request(payload, label)
+                finally:
+                    with self.lock:
+                        self.active -= 1
+
+        return Observed()
+
+    def test_collection_preserves_bytes_and_coordinator_writes_under_one_rpc_cap(self):
+        coordinator = threading.get_ident()
+        trees = []
+        for limit in (1, 4):
+            root = self.root / str(limit)
+            root.mkdir()
+            transport = self.transport()
+            collector = Collector(self.plan, root, transport, registry=self.registry,
+                                  concurrency=limit, trace_concurrency=8, rpc_concurrency=limit)
+            writers = []
+            commit, record = collector.staging.commit, collector.staging.record
+            def committed(*args):
+                writers.append(threading.get_ident())
+                return commit(*args)
+            def recorded(*args):
+                writers.append(threading.get_ident())
+                return record(*args)
+            collector.staging.commit, collector.staging.record = committed, recorded
+            collector.collect()
+            self.assertEqual(set(writers), {coordinator})
+            self.assertLessEqual(transport.peak, limit)
+            if limit > 1:
+                self.assertGreater(transport.peak, 1)
+                self.assertGreater(transport.opening_peak, 1)
+            trees.append({str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()})
+        self.assertEqual(trees[0], trees[1])
+
+    def test_reconciliation_preserves_results_checkpoint_order_and_global_limit(self):
+        collected = self.root / "collected"
+        collected.mkdir()
+        Collector(self.plan, collected, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        results = []
+        coordinator = threading.get_ident()
+        for limit in (1, 4):
+            root = self.root / str(limit)
+            shutil.copytree(collected, root)
+            transport = self.transport()
+            reconciler = Reconciler(self.plan, root, transport, "second", registry=self.registry,
+                                    concurrency=limit, trace_concurrency=8, rpc_concurrency=limit)
+            checkpoints = []
+            save = reconciler._save_reconcile_checkpoint
+            def saved(*args):
+                checkpoints.append((threading.get_ident(), args[4]))
+                return save(*args)
+            reconciler._save_reconcile_checkpoint = saved
+            document = reconciler.reconcile()
+            results.append((document, reconciler._checkpoint_path().read_bytes()))
+            self.assertEqual(checkpoints, [(coordinator, n) for n in range(1, len(self.plan["shards"]) + 1)])
+            self.assertLessEqual(transport.peak, limit)
+            if limit > 1:
+                self.assertGreater(transport.peak, 1)
+                self.assertGreater(transport.opening_peak, 1)
+        self.assertEqual(results[0], results[1])
+
+    def test_prefetched_failure_writes_only_on_coordinator_and_resumes_prefix(self):
+        root = self.root / "failure"
+        root.mkdir()
+        Collector(self.plan, root, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        reconciler = Reconciler(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
+                                "second", registry=self.registry, concurrency=4, rpc_concurrency=4)
+        writers = []
+        record = reconciler._record_error
+        def recorded(*args):
+            writers.append(threading.get_ident())
+            return record(*args)
+        reconciler._record_error = recorded
+        self.assertEqual(reconciler.reconcile()["reconciliation"]["status"], "unreconciled")
+        self.assertEqual(writers, [threading.get_ident()])
+        self.assertEqual(json.loads(reconciler._checkpoint_path().read_bytes())["next_shard"], 1)
+        resumed = Reconciler(self.plan, root, wildcat.WildcatTransport(self.state), "second",
+                             registry=self.registry, concurrency=4, rpc_concurrency=4).reconcile()
+        self.assertEqual(resumed["reconciliation"]["status"], "agreed")
+        self.assertEqual(resumed["reconciliation"]["compared"], resumed["reconciliation"]["matched"])
+
+    def test_rpc_bounds_refuse_before_requests(self):
+        for value in (0, 9, True, 2.5):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(AlexandriaError, "RPC concurrency"):
+                    Collector(self.plan, self.root, self.transport(), registry=self.registry, rpc_concurrency=value)
+                with self.assertRaisesRegex(AlexandriaError, "RPC concurrency"):
+                    Reconciler(self.plan, self.root, self.transport(), "second", registry=self.registry, rpc_concurrency=value)
+
+    def test_collection_worker_refusal_defers_error_file_to_coordinator(self):
+        root = self.root / "collector-failure"
+        root.mkdir()
+        collector = Collector(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
+                              registry=self.registry, concurrency=4, rpc_concurrency=4)
+        writers = []
+        original = usdc_interval.os.open
+        def observed(path, *args, **kwargs):
+            if Path(path).name == "errors.jsonl":
+                writers.append(threading.get_ident())
+            return original(path, *args, **kwargs)
+        with mock.patch.object(usdc_interval.os, "open", side_effect=observed):
+            with self.assertRaises(usdc_interval.TransportError):
+                collector.collect()
+        self.assertEqual(writers, [threading.get_ident()])
+        self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_timed_out_http_worker_keeps_its_global_slot_until_it_finishes(self):
+        release = threading.Event()
+        entered = threading.Event()
+        finished = threading.Event()
+        slots = threading.BoundedSemaphore(1)
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.status = 200
+        response.read.return_value = b"{}"
+        opener = mock.Mock()
+        def open_request(*args, **kwargs):
+            entered.set()
+            try:
+                release.wait(5)
+                return response
+            finally:
+                finished.set()
+        opener.open.side_effect = open_request
+        try:
+            with mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.02):
+                with self.assertRaises(usdc_interval.TransportError):
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", slots=slots)
+                self.assertTrue(entered.is_set())
+                self.assertFalse(slots.acquire(blocking=False))
+                with self.assertRaises(usdc_interval.TransportError):
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", slots=slots)
+                self.assertEqual(opener.open.call_count, 1)
+        finally:
+            release.set()
+            self.assertTrue(finished.wait(5))
+
+
 class TargetedTracesSynthesisTests(unittest.TestCase):
     """`Collector._targeted_traces`: one combined record, built from real per-tx calls.
 

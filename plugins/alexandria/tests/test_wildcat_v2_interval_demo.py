@@ -1,7 +1,7 @@
 """The preserved Wildcat V2 mainnet interval: rebuilt from an external archive.
 
 Unlike `usdc-interval-live-v0`, whose tiny staging tree ships inside this
-repository, this interval's staging tree -- 3,463 shards, 124 files, over
+repository, this interval's staging tree -- 3,463 shards, 125 files, over
 200MB -- is preserved outside this repository and reached only through the
 `ALEXANDRIA_WILDCAT_V2_STAGING` environment variable. A test that needs that
 tree and does not find it must report exactly that reason and never silently
@@ -110,7 +110,7 @@ class PreservedArtefactsTests(DemoTestCase):
         self.assertIn("sha256", archive)
         self.assertIn("bytes", archive)
         self.assertIsInstance(self.manifest["files"], list)
-        self.assertEqual(len(self.manifest["files"]), 124)
+        self.assertEqual(len(self.manifest["files"]), 125)
         for entry in self.manifest["files"]:
             self.assertIn("path", entry)
             self.assertIn("bytes", entry)
@@ -283,7 +283,10 @@ class StagedRebuildTests(DemoTestCase):
 
     def test_the_rebuild_reproduces_the_pinned_identifier(self):
         output = self.root / "built"
-        summary = self.module.build(output)
+        with mock.patch.object(
+            socket.socket, "connect", side_effect=AssertionError("network used")
+        ):
+            summary = self.module.build(output)
         self.assertEqual(summary["release_id"], self.expected["release_id"])
         self.assertEqual(summary["epochs"], self.expected["epochs"])
         self.assertEqual(summary["reconciliation"], self.expected["reconciliation"])
@@ -291,8 +294,11 @@ class StagedRebuildTests(DemoTestCase):
 
     def test_verify_compares_every_pinned_identity_and_the_cli_agrees(self):
         output = self.root / "built"
-        self.module.build(output)
-        derived = self.module.verify(output)
+        with mock.patch.object(
+            socket.socket, "connect", side_effect=AssertionError("network used")
+        ):
+            self.module.build(output)
+            derived = self.module.verify(output)
         for field in self.module.COMPARED:
             self.assertEqual(derived[field], self.expected[field], field)
 

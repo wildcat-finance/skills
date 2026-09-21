@@ -415,7 +415,7 @@ class VenueOpeningDispatchTests(CollectorTestCase):
         first_logs = [payload for payload in primary.payloads if b"eth_getLogs" in payload]
         second_logs = [payload for payload in second.payloads if b"eth_getLogs" in payload]
         self.assertEqual(len(first_logs), len(self.plan["shards"]))
-        self.assertEqual(first_logs, second_logs)
+        self.assertCountEqual(first_logs, second_logs)
 
 
 class RecordingTransport(FixtureTransport):
@@ -2025,7 +2025,7 @@ class OpeningReconciliationTests(CollectorTestCase):
         self.assertEqual(record["compared"], self.SHARD_COMPARISONS + self.OPENING_COMPARISONS)
         self.assertEqual(record["matched"], record["compared"])
         asked = [label for _method, label in transport.calls if label.startswith("opening")]
-        self.assertEqual(asked, [
+        self.assertCountEqual(asked, [
             f"{label} second provider" for index, label in enumerate(opening_labels()) if index not in (3, 4)
         ])
 

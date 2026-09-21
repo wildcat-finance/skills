@@ -145,7 +145,7 @@
   },
   "receipt_semantics": "v3-subject-positional",
   "reconciliation": "agreed",
-  "release_id": "sha256:d76cce047564818a5ff3ccf1b730ba16fca20a05037f96f870b3e076f9e4ad35",
+  "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
   "shard_statuses": {
     "complete": 3463
   }
