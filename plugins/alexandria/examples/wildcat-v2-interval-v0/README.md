@@ -34,9 +34,9 @@ rebuilt release, and compares them, and the recorded summary, with
 A second, separate check needs no staging tree at all: it reads
 `staging-manifest.json` and `rebuild-record.json` and confirms they are
 present, well-formed, and agree with each other and with `expected.json` --
-so a reviewer with no access to the preserved archive can still confirm what
-the collecting host's recorded rebuild from
-exactly the bytes the manifest's digests describe.
+so a reviewer with no access to the preserved archive can confirm that the
+collecting host's recorded rebuild result agrees with the committed pins.
+This check does not rebuild the release or read the archived staging bytes.
 
 ## What was collected
 

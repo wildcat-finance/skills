@@ -407,6 +407,32 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
         self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
         self.assertEqual(collector.staging._handles, {})
 
+    def test_deferred_error_receipt_failure_closes_journals_and_preserves_prefix(self):
+        root = self.root / "receipt-failure"
+        root.mkdir()
+        collector = Collector(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
+                              registry=self.registry, concurrency=4, rpc_concurrency=4)
+        self.addCleanup(collector.staging.close)
+        handles = []
+        record = collector.staging.record
+        def recorded(*args):
+            result = record(*args)
+            handles.extend(collector.staging._handles.values())
+            return result
+        collector.staging.record = recorded
+        original = usdc_interval.os.open
+        def refuse_receipt(path, *args, **kwargs):
+            if Path(path).name == "errors.jsonl":
+                raise PermissionError("injected receipt write refusal")
+            return original(path, *args, **kwargs)
+        with mock.patch.object(usdc_interval.os, "open", side_effect=refuse_receipt):
+            with self.assertRaisesRegex(AlexandriaError, "cannot open the error receipt file"):
+                collector.collect()
+        self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
+        self.assertTrue(handles)
+        self.assertTrue(all(handle.closed for handle in handles))
+        self.assertEqual(collector.staging._handles, {})
+
     def test_timed_out_http_worker_keeps_its_global_slot_until_it_finishes(self):
         release = threading.Event()
         entered = threading.Event()

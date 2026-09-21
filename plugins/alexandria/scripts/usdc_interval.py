@@ -1318,13 +1318,15 @@ class Collector:
         try:
             summary = self._collect()
         except BaseException as error:
-            self._flush_error(error)
-            # The refusal is what the operator reads; a close that fails too
-            # still releases every handle and does not replace it.
             try:
-                self.staging.close()
-            except AlexandriaError:
-                pass
+                self._flush_error(error)
+            finally:
+                # A receipt-write refusal must also release every journal;
+                # a close failure must not replace either refusal.
+                try:
+                    self.staging.close()
+                except AlexandriaError:
+                    pass
             raise
         self.staging.close()
         return summary
