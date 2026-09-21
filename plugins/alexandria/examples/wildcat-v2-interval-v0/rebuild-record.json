@@ -97,6 +97,25 @@
       "source_sha256": "80fe47ef4350dc8a680fa2dfbceb09b58fc18a79ca9b395860965af09457054b"
     }
   },
+  "interval_authorization": {
+    "authorized_by": "Dr Laurence E. Day, capture maintainer",
+    "end_selection": {
+      "observed_at": "2026-09-19T17:29:33.485Z",
+      "operator_interpretation": "the primary provider finalized tag re-read when fixing the plan",
+      "resolved_block": 26022093,
+      "rule": "V2 remains active; capture as far as reachable",
+      "source_line": 203
+    },
+    "shard_width": "delegated to the operator in the same end-selection message",
+    "source": "rollout-2026-09-19T18-22-12-01a0bab0-9e0b-7be3-8628-2af6e61e6503.jsonl",
+    "source_sha256": "3fe0a4ebcf2559130427abb708a6df555389a303e71cd69569ee122a3ce45e65",
+    "start_selection": {
+      "observed_at": "2026-09-19T17:28:48.599Z",
+      "resolved_block": 21866550,
+      "rule": "the block where the first V2 market was deployed",
+      "source_line": 189
+    }
+  },
   "market_deploy_comparison": {
     "compared": true,
     "declared": 80,

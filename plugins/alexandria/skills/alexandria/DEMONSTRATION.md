@@ -47,7 +47,7 @@ taken here.
       "id": "rebuild-record",
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json",
-      "sha256": "27ca6f4468eee03e8fdb66ee1114e2eedd2b556a180be1340cb50337b10f4cc3"
+      "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
     },
     {
       "id": "program",

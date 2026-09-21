@@ -40,6 +40,13 @@ exactly the bytes the manifest's digests describe.
 
 ## What was collected
 
+Dr Laurence E. Day, the capture maintainer, selected the first V2 market
+deployment as the start on 2026-09-19 at 17:28:48.599 UTC. At
+17:29:33.485 UTC he requested coverage as far as reachable and delegated
+shard width. The operator used the primary provider's freshly read finalized
+tag as that upper bound. The rebuild record binds the original authorization
+messages by source digest, line and timestamp.
+
 Ethereum mainnet blocks 21,866,550 to 26,022,093 (finality `finalized`,
 re-read at block hash
 `0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`), the
