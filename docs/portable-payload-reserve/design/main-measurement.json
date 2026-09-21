@@ -1,0 +1,107 @@
+{
+  "source_commit": "66f52785813a8453e7c7d54f2371aa8f6e465640",
+  "cap": 26214400,
+  "reserve": 5242880,
+  "line": 20971520,
+  "package_bytes": 20381433,
+  "package_files": 1550,
+  "package_margin": 590087,
+  "runtime_bytes": 19904247,
+  "runtime_files": 1543,
+  "runtime_margin": 1067273,
+  "manifest_bytes": 454859,
+  "outer_bytes": 22327,
+  "omission_classes": 14,
+  "default_included_bytes": 18254542,
+  "default_included_files": 1446,
+  "growth_since_base": {
+    "base": "0578c19bb812ba34fcfc752dcb81e5df4b1090ae",
+    "bytes": 2648886
+  },
+  "markdown_links_already_broken": 0,
+  "first_parent_commits_since_base": 57,
+  "largest_deliveries": [
+    {
+      "commit": "86de8d18095a904db92ad7b28f29a2685922328e",
+      "bytes": 794493
+    },
+    {
+      "commit": "d9b984701999622ae72ad89a5373f26a435ad064",
+      "bytes": 634349
+    },
+    {
+      "commit": "fd3486012e0e134a2a04ccdf8969619905ace22d",
+      "bytes": 232526
+    },
+    {
+      "commit": "d17990cb7f65aabbde83cc34030ad61dadaaface",
+      "bytes": 210028
+    },
+    {
+      "commit": "6982793334003dc0a441d6e90e753a143e3f2a6c",
+      "bytes": 200275
+    }
+  ],
+  "largest_default_included": [
+    {
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "bytes": 1265384
+    },
+    {
+      "path": "plugins/tabularium/examples/aave-v4-v0/events.jsonl",
+      "bytes": 1232064
+    },
+    {
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/rpc.jsonl",
+      "bytes": 576798
+    },
+    {
+      "path": "plugins/tabularium/examples/aave-v4-v0/source.json",
+      "bytes": 461304
+    },
+    {
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/receipt-witness.json",
+      "bytes": 343966
+    },
+    {
+      "path": "plugins/hexaemeron/docs/known-failure-inoculation/runbook.md",
+      "bytes": 272388
+    },
+    {
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/selection-rejections.jsonl",
+      "bytes": 231041
+    },
+    {
+      "path": "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+      "bytes": 177562
+    },
+    {
+      "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/epoch-evidence.jsonl",
+      "bytes": 168101
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+      "bytes": 113373
+    },
+    {
+      "path": "plugins/horos/docs/evidence/skills-markdown-outline.results.json",
+      "bytes": 111576
+    },
+    {
+      "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.coverage.json",
+      "bytes": 108432
+    },
+    {
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "bytes": 103886
+    },
+    {
+      "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.dispositions.json",
+      "bytes": 103646
+    },
+    {
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/labelled-prose-v1/samples.jsonl",
+      "bytes": 100603
+    }
+  ]
+}

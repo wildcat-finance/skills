@@ -1,0 +1,578 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "example-payload-class",
+      "summary": "Keep the cap, the reserve and one package. One class omits non-Markdown files under plugins/*/examples/ except files a packaged document links and the one complete Lazarus release; it replaces the five example-specific omission rows. The full source checkout stays the home of demonstration payloads."
+    },
+    {
+      "id": "second-distribution",
+      "summary": "Keep the cap and the reserve. Move example and documentation trees that no packaged document links into a second generated package published from a second repository, with its own manifest, verifier and a human-pushed rebuild workflow."
+    },
+    {
+      "id": "lower-reserve",
+      "summary": "Keep every packaged file. Lower the reserve ADR-090 set from 5,242,880 to 2,097,152 bytes so generation refuses at 24,117,248 bytes."
+    },
+    {
+      "id": "plugin-budgets",
+      "summary": "Keep every packaged file, the cap and the reserve. Divide the 20,971,520-byte line into per-plugin byte budgets so the plugin that grows is the one refused."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "reserve-held",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "at-least",
+      "threshold": 5242880,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "delivery-room",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "at-least",
+      "threshold": 794493,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "links-closed",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "hypomnema",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "measure-wall-time",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "at-most",
+      "threshold": 60000,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "margin-after",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "maximise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "growth-reach",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "files-leaving-cli-install",
+      "concern": "compatibility",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "promise-machine",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "human-pushed-workflows",
+      "concern": "recovery",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "measure-agrees",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "class-leaks",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "step:4"
+    },
+    {
+      "id": "installed-gates-pass",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "promise-machine",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "room-on-step-tree",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "at-least",
+      "threshold": 794493,
+      "blocks": "step:4"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "example-payload-class",
+      "criterion": "reserve-held",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--reserve-held.json",
+        "sha256": "118ac70994fccb3069924c70fc59577893c3a52735deb34afeeefe918eeb7ee9"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "delivery-room",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--delivery-room.json",
+        "sha256": "a5bcd3bf02bcaafdc860155d1a03f4129ec23bf7d6a266f5cba1a4cfce2a1c4e"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "links-closed",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--links-closed.json",
+        "sha256": "d43f1566b8c9f20a6cd261d71ae17e36855ac1c3341d77d5adc7643c6e0d835c"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "measure-wall-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--measure-wall-time.json",
+        "sha256": "93a433d91deb9648c1b3f0cb685f8f5614a396003317a680cbf6216999351a8c"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "margin-after",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--margin-after.json",
+        "sha256": "26db0e8d93b4e5353f76f17ed7fddda02a5ab039250d8c3752a9ca76f1296650"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "growth-reach",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--growth-reach.json",
+        "sha256": "f5748ad640980a580a7f7203ab10fc0f64ad6d92a1c042988b0cd50a83c3ec88"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "files-leaving-cli-install",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--files-leaving-cli-install.json",
+        "sha256": "498d38bb7d6e6810486f52e8c025c9104928a1a3fcb9f18d6495cde10af03564"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "human-pushed-workflows",
+      "state": "pass",
+      "report": {
+        "path": "reports/example-payload-class--human-pushed-workflows.json",
+        "sha256": "89acd9cc60a97b4137c57dadbbaeb4b3e595d0ec4f06e5251d40d3a785c5e4da"
+      }
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "measure-agrees",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate example-payload-class --criterion measure-agrees",
+      "report": "reports/example-payload-class--measure-agrees.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "class-leaks",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate example-payload-class --criterion class-leaks",
+      "report": "reports/example-payload-class--class-leaks.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "installed-gates-pass",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate example-payload-class --criterion installed-gates-pass",
+      "report": "reports/example-payload-class--installed-gates-pass.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "example-payload-class",
+      "criterion": "room-on-step-tree",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate example-payload-class --criterion room-on-step-tree",
+      "report": "reports/example-payload-class--room-on-step-tree.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "reserve-held",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--reserve-held.json",
+        "sha256": "6a002c450cbc021b1a6df2468bdb6be99c0f52b0df9e6ef2678bb2670e0f2329"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "delivery-room",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--delivery-room.json",
+        "sha256": "a76c69f3b361dd268b0c2f0a9bc21c5b27df315fcd6a8ea9b8edf6a6f7c45215"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "links-closed",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--links-closed.json",
+        "sha256": "963c41d73ea97ef53b79ff0e8e52806c885b9a610e31d11c8a4eae9cab37e800"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "measure-wall-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--measure-wall-time.json",
+        "sha256": "3fa4cb9a0ab7357c14bfbb0a8998ce1d67ecc1d254e4885dfd683cc8399738e8"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "margin-after",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--margin-after.json",
+        "sha256": "f8e2c95bdfe36be67beb8284db9d497db145386c3e584fa5a404b6a5f116bcfa"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "growth-reach",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--growth-reach.json",
+        "sha256": "f15653aee3490e6dd0189a603c2fb55843d0b5dbae7c78b9623c94dec67ef98a"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "files-leaving-cli-install",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--files-leaving-cli-install.json",
+        "sha256": "29662decc5844b7137000ba4a14f64722b2854f0666151d323f4beb8044365ed"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "human-pushed-workflows",
+      "state": "pass",
+      "report": {
+        "path": "reports/second-distribution--human-pushed-workflows.json",
+        "sha256": "30d931c5ec8438df0072da81d64a5e6314481f1f48aee6dd65e299428cda5baf"
+      }
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "measure-agrees",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate second-distribution --criterion measure-agrees",
+      "report": "reports/second-distribution--measure-agrees.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "class-leaks",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate second-distribution --criterion class-leaks",
+      "report": "reports/second-distribution--class-leaks.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "installed-gates-pass",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate second-distribution --criterion installed-gates-pass",
+      "report": "reports/second-distribution--installed-gates-pass.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "second-distribution",
+      "criterion": "room-on-step-tree",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate second-distribution --criterion room-on-step-tree",
+      "report": "reports/second-distribution--room-on-step-tree.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "reserve-held",
+      "state": "fail",
+      "report": {
+        "path": "reports/lower-reserve--reserve-held.json",
+        "sha256": "91a44a8ab3bd133fa71405606f5c39a1690a8b8db3123ecaf7a01c3a988800f2"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "delivery-room",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--delivery-room.json",
+        "sha256": "d0f2a1724d706ff33ee17cd2b91a8d4c79b499dd02811c893db903ca9a217714"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "links-closed",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--links-closed.json",
+        "sha256": "204691b193f7532b6dbd17210c696bc9ab854a18b93c5bb4a84bbc4fe2c9d37c"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "measure-wall-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--measure-wall-time.json",
+        "sha256": "8dfa87f9d2f11f6a6f73db4fd1e5f60323d647dbfc4ed0136546fe084328f241"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "margin-after",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--margin-after.json",
+        "sha256": "1d2906665358a062644a6336375e61f4611043c1eb0d253f7bceaeeb80424593"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "growth-reach",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--growth-reach.json",
+        "sha256": "a98242f1917e74a925973b621e06fa1a5e1f9f8b1a4ff4c7113d7d04ee4adf7c"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "files-leaving-cli-install",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--files-leaving-cli-install.json",
+        "sha256": "7e9c52c440655a21b2f3ee8f374e73a63d06c59641ac8e273e1c1f7f2e0b77c1"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "human-pushed-workflows",
+      "state": "pass",
+      "report": {
+        "path": "reports/lower-reserve--human-pushed-workflows.json",
+        "sha256": "989adda72bcf1678cf8c1482d0be2e6a545a9ff7645e53745b85a383def11a28"
+      }
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "measure-agrees",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate lower-reserve --criterion measure-agrees",
+      "report": "reports/lower-reserve--measure-agrees.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "class-leaks",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate lower-reserve --criterion class-leaks",
+      "report": "reports/lower-reserve--class-leaks.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "installed-gates-pass",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate lower-reserve --criterion installed-gates-pass",
+      "report": "reports/lower-reserve--installed-gates-pass.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "lower-reserve",
+      "criterion": "room-on-step-tree",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate lower-reserve --criterion room-on-step-tree",
+      "report": "reports/lower-reserve--room-on-step-tree.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "reserve-held",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--reserve-held.json",
+        "sha256": "ee8042e6720fcaf2988292d1d6ffe096148711c10e41f2bd5efd7b0890945013"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "delivery-room",
+      "state": "fail",
+      "report": {
+        "path": "reports/plugin-budgets--delivery-room.json",
+        "sha256": "cf7af35497dcbdfef97d2b7cca700a71d6bdce70991c186432c050b1adfcccdb"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "links-closed",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--links-closed.json",
+        "sha256": "73d836cf37136f628ea175f7656a22c7ae4965f02f27a4e0e8488af022d7cb69"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "measure-wall-time",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--measure-wall-time.json",
+        "sha256": "cf954e1106c26485ddf8435307352bd06ec32909fdc5278ade7ce8c395e32447"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "margin-after",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--margin-after.json",
+        "sha256": "68236b5aaa4ac9e15d16eccfcb00491ed529a995862d99d2195a2f10231b931b"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "growth-reach",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--growth-reach.json",
+        "sha256": "064b99e8aae885f994639f58c34d1c828901ae356799b54fcc950ad7f6218919"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "files-leaving-cli-install",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--files-leaving-cli-install.json",
+        "sha256": "dec07494ebce623fd6725b9ff4574a664eeb815bcd79aac2e6894bd833a412aa"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "human-pushed-workflows",
+      "state": "pass",
+      "report": {
+        "path": "reports/plugin-budgets--human-pushed-workflows.json",
+        "sha256": "fe2ac1b6d86febfe3b0a407c5e6ffc8dda7b26488bfc76d7c53565fe9281f708"
+      }
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "measure-agrees",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate plugin-budgets --criterion measure-agrees",
+      "report": "reports/plugin-budgets--measure-agrees.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "class-leaks",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate plugin-budgets --criterion class-leaks",
+      "report": "reports/plugin-budgets--class-leaks.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "installed-gates-pass",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate plugin-budgets --criterion installed-gates-pass",
+      "report": "reports/plugin-budgets--installed-gates-pass.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "plugin-budgets",
+      "criterion": "room-on-step-tree",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/design/resolve.py conformance --root . --reports .hexaemeron/reports --candidate plugin-budgets --criterion room-on-step-tree",
+      "report": "reports/plugin-budgets--room-on-step-tree.json",
+      "blocks": "step:4"
+    }
+  ],
+  "selection": {
+    "candidate": "example-payload-class",
+    "rule": "user-policy",
+    "policy_ref": "ADR-040 Decision, docs/decisions/ADR-040-package-one-dependency-closed-portable-router.md at 66f52785813a8453e7c7d54f2371aa8f6e465640: data the router never reads remains in the full checkout, and the installed adapter names the omitted data and refuses an operation that needs it. Applied three times between 2026-09-18 and 2026-09-20 by the checkpoint-authority, Lazarus and Tabularium omissions. Under that policy the full source checkout is already the second home of omitted payloads, so the survivor that needs no second repository and no human-pushed workflow is taken. Study section 4 records the reading; the user may overrule it before receipt."
+  }
+}
