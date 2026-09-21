@@ -88,11 +88,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "8d407b886b65138158a380e0eb3c08280244022d4c442e409a2adc3a44e1999f"
+        "sha256": "b05c710f40780f91d370b1f08d7a3ca543b207c3a6a324e8264f6a6eafcd6c75"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "db2ce1b1412cdf6189d605fa86f7419cac83e8192d0eb1b8b5bb320643915077"
+        "sha256": "4e774bd9ac4f9fe44b6c1102ddd984eb3c4b50f50b288a707d63dad1912f8c1e"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -104,12 +104,12 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "af314b115d8fc22b6987080141af35c5a4ac6777534b75c18f7ad03c10b85269"
+        "sha256": "75c7d007528458626469115e9c87a857962c1d692788b532de3cff61e3f70fa9"
       }
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "787018e6fbcccabe91f272996acd731a6902937ee7e6fe9531e6fe1ef5c725ed"
+      "sha256": "cc3febd615a15a228bfcbf35d286e01d0d2d792045843aa6ce820e6e833897e3"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -348,7 +348,7 @@
     "contract": "promise-machine-contributor-ranking/v2",
     "documentation": {
       "path": "docs/promise-machine/contributors-v2.md",
-      "sha256": "59115e89ad02c767538fcf06f0d7f449b4c8ea19adbda5cd99f75f9fce96e469"
+      "sha256": "b897e42383a4ec7f5ae8752f7a7a4660692c2707953949539f3c139982865a0f"
     },
     "fixtures": [
       {
