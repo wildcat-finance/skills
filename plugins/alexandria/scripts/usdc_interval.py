@@ -2172,7 +2172,21 @@ class Builder:
             captures = []
             for component, document in sorted(documents.items()):
                 relative = f"{component}.json"
-                (staging / relative).write_bytes(canonical_bytes(document))
+                # Every journal component is already bounded by
+                # MAX_JOURNAL_BYTES per physical file, and every raw
+                # response any of them holds already passed load_raw_json's
+                # own MAX_RESPONSE_NODES limit at collect time -- this is a
+                # second, output-side bound on already-validated data, not
+                # the place untrusted input gets its first check. A wide
+                # real capture's epoch-table can legitimately carry one
+                # log_attributions entry per preserved log (74,088 of them
+                # for the full V2 interval, 2026-09-21), so this uses the
+                # same larger ceiling MAX_RESPONSE_NODES already sets for
+                # real provider data, not the tighter default meant for a
+                # small control document like a plan or a registry.
+                (staging / relative).write_bytes(
+                    canonical_bytes(document, max_nodes=MAX_RESPONSE_NODES)
+                )
                 part = self.components.get(component)
                 components.append({
                     "access": "public",
@@ -2516,8 +2530,16 @@ def check_interval(release_root: Path) -> dict:
     component_bytes = {}
     for name in sorted(expected_components):
         component_bytes[name] = _component(release_root, manifest, name)
+        # max_nodes matches Builder.build's own write-side ceiling for these
+        # same components: real data already built and digest-verified by
+        # `verify` above, not fresh untrusted input, so the epoch-table's
+        # one log_attributions entry per preserved log (74,088 of them for
+        # the full V2 interval, 2026-09-21) reads back the same way it was
+        # written rather than refusing under the tighter default meant for
+        # a small control document.
         documents[name] = load_bytes(
-            component_bytes[name], f"component {name}", max_bytes=MAX_RAW_COMPONENT_BYTES,
+            component_bytes[name], f"component {name}",
+            max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
         )
 
     interval = plan["interval"]
