@@ -108,11 +108,11 @@ describes current chain state.
 
 ### ALEXANDRIA PRESERVES A WILDCAT V2 INTERVAL
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-v2-interval-v0" digest="05602164b0915ce73871c2a97dd0f127613f9af983b8505787bcff9577cfe1be" -->
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-v2-interval-v0" digest="01cc62803a289c86601dcc23386e63befb3306d6dcd59a9fc732a260c2e4173e" -->
 [Alexandria](./plugins/alexandria) checks the preserved Wildcat V2 mainnet
 interval, blocks 21,866,550 to 26,022,093 over 137 subjects: its committed
 staging manifest, rebuild record and expected values must agree on the release
-the collecting host rebuilt once from the preserved tree.
+the collecting host rebuilt from the preserved tree.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexandria --report tmp/demo/alexandria.json
@@ -120,10 +120,10 @@ python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexand
 
 Over the committed
 `plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json` and
-`plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json` it reports
-`record.checked.release_id "sha256:d76cce047564818a5ff3ccf1b730ba16fca20a05037f96f870b3e076f9e4ad35"`.
+`plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json` it reports
+`record.checked.release_id "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"`.
 It does not rebuild the release here: the staging tree is preserved outside
-this repository and the rebuild the record describes ran once, on the
+this repository and the rebuild the record describes ran on the
 collecting host, from the bytes the manifest digests name. It does not
 establish source authenticity or canonical-chain finality, and the three
 collateral contracts among the 137 subjects are deployed but not in production.

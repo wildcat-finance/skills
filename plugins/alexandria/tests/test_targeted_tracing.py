@@ -14,12 +14,14 @@ which stays gated on a declared subject set.
 """
 
 from copy import deepcopy
+import concurrent.futures
 import io
 import json
 from pathlib import Path
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest import mock
@@ -120,6 +122,349 @@ class _TraceTransactionTransport:
         )
 
 
+class TargetedTraceConcurrencyTests(unittest.TestCase):
+    """Concurrent reads retain the serial bytes and a bounded request window."""
+
+    def setUp(self):
+        self.state = wildcat.fixture(wildcat.wildcat_v2.VENUE)
+        self.plan = self.state["plan"]
+        self.registry = wildcat.registry()
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.hashes = ["0x" + f"{index:064x}" for index in range(1, 7)]
+        self.logs = [
+            {"transactionHash": value, "blockNumber": "0x1", "transactionIndex": hex(index)}
+            for index, value in enumerate(self.hashes)
+        ]
+        subject = self.plan["subjects"][0]
+        self.table = {
+            value: [{"transactionHash": value, "traceAddress": [], "type": "call",
+                     "action": {"to": subject, "value": hex(index)},
+                     "result": {"output": "0x1234"}}]
+            for index, value in enumerate(self.hashes)
+        }
+
+    def make_owner(self, kind, transport, concurrency):
+        if kind == "collect":
+            return Collector(self.plan, self.root, transport, registry=self.registry,
+                             trace_concurrency=concurrency)
+        return Reconciler(self.plan, self.root, transport, "fixture-second",
+                          registry=self.registry, trace_concurrency=concurrency)
+
+    def fetch(self, owner):
+        if isinstance(owner, Collector):
+            _payload, data, frames = owner._targeted_traces(0, self.logs)
+            return frames, data
+        return owner._second_traces(0, self.hashes)
+
+    def test_out_of_order_completion_preserves_serial_bytes_for_both_paths(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                serial_transport = _TraceTransactionTransport(self.table)
+                expected = self.fetch(self.make_owner(kind, serial_transport, 1))
+                first, second = self.hashes[:2]
+                table = self.table
+
+                class Controlled(_TraceTransactionTransport):
+                    def __init__(self):
+                        super().__init__(table)
+                        self.second_done = threading.Event()
+                        self.lock = threading.Lock()
+                        self.active = self.peak = 0
+                        self.finished = []
+
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        with self.lock:
+                            self.active += 1
+                            self.peak = max(self.peak, self.active)
+                        try:
+                            if tx_hash == first and not self.second_done.wait(5):
+                                raise AssertionError("second request never overlapped the first")
+                            answer = super().request(payload, label)
+                            self.finished.append(tx_hash)
+                            if tx_hash == second:
+                                self.second_done.set()
+                            return answer
+                        finally:
+                            with self.lock:
+                                self.active -= 1
+
+                transport = Controlled()
+                actual = self.fetch(self.make_owner(kind, transport, 2))
+                self.assertEqual(actual, expected)
+                self.assertEqual(transport.peak, 2)
+                self.assertEqual(transport.finished[0], second)
+                self.assertCountEqual([params[0] for _, params, _ in transport.calls], self.hashes)
+                self.assertEqual([params[0] for _, params, _ in serial_transport.calls], self.hashes)
+
+    def test_failure_stops_refilling_and_never_stages_a_partial_trace_result(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                first, second = self.hashes[:2]
+                table = self.table
+                failed = threading.Event()
+                requested = []
+
+                class Failing(_TraceTransactionTransport):
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        requested.append(tx_hash)
+                        if tx_hash == second:
+                            failed.set()
+                            raise usdc_interval.TransportError("fixture transport failed")
+                        if tx_hash == first and not failed.wait(5):
+                            raise AssertionError("failure request never overlapped")
+                        return super().request(payload, label)
+
+                owner = self.make_owner(kind, Failing(table), 2)
+                with mock.patch.object(owner.staging, "record") as record:
+                    with self.assertRaisesRegex(usdc_interval.TransportError, "fixture transport failed"):
+                        self.fetch(owner)
+                record.assert_not_called()
+                self.assertCountEqual(requested, [first, second])
+
+    def test_invalid_trace_concurrency_refuses(self):
+        for kind in ("collect", "reconcile"):
+            for invalid in (0, -1, 17, True, 1.5, "4"):
+                with self.subTest(kind=kind, concurrency=invalid):
+                    with self.assertRaisesRegex(AlexandriaError, "trace concurrency"):
+                        self.make_owner(kind, _TraceTransactionTransport(self.table), invalid)
+
+    def test_one_collectors_trace_cap_is_shared_across_shard_fetches(self):
+        table = self.table
+
+        class Paired(_TraceTransactionTransport):
+            def __init__(self):
+                super().__init__(table)
+                self.barrier = threading.Barrier(2)
+                self.lock = threading.Lock()
+                self.active = self.peak = 0
+
+            def request(self, payload, label):
+                with self.lock:
+                    self.active += 1
+                    self.peak = max(self.peak, self.active)
+                try:
+                    self.barrier.wait(timeout=5)
+                    return super().request(payload, label)
+                finally:
+                    with self.lock:
+                        self.active -= 1
+
+        transport = Paired()
+        owner = self.make_owner("collect", transport, 2)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(owner._targeted_traces, shard, self.logs) for shard in (0, 1)]
+            results = [future.result() for future in futures]
+        self.assertEqual(transport.peak, 2)
+        self.assertEqual(len(transport.calls), 2 * len(self.hashes))
+        self.assertEqual(results[0][2], results[1][2])
+
+    def test_cli_default_and_serial_fallback_are_available_to_both_commands(self):
+        for command in ("collect", "reconcile"):
+            arguments = [command, "--plan", "plan.json", "--staging", "staging"]
+            if command == "reconcile":
+                arguments += ["--provider-class", "fixture-second"]
+            with self.subTest(command=command):
+                self.assertEqual(usdc_interval.parser().parse_args(arguments).trace_concurrency, 4)
+                self.assertEqual(usdc_interval.parser().parse_args(
+                    arguments + ["--trace-concurrency", "1"]
+                ).trace_concurrency, 1)
+
+
+class OverallRpcConcurrencyTests(unittest.TestCase):
+    def setUp(self):
+        self.state = wildcat.fixture(wildcat.wildcat_v2.VENUE)
+        self.plan, self.registry = self.state["plan"], wildcat.registry()
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+
+    def transport(self):
+        state = self.state
+
+        class Observed(wildcat.WildcatTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.active = self.peak = self.opening_peak = 0
+                self.logs_started = threading.Event()
+
+            def request(self, payload, label):
+                with self.lock:
+                    self.active += 1
+                    self.peak = max(self.peak, self.active)
+                    if label.startswith("opening read"):
+                        self.opening_peak = max(self.opening_peak, self.active)
+                try:
+                    time.sleep(0.003)
+                    return super().request(payload, label)
+                finally:
+                    with self.lock:
+                        self.active -= 1
+
+        return Observed()
+
+    def test_collection_preserves_bytes_and_coordinator_writes_under_one_rpc_cap(self):
+        coordinator = threading.get_ident()
+        trees = []
+        for limit in (1, 4):
+            root = self.root / str(limit)
+            root.mkdir()
+            transport = self.transport()
+            collector = Collector(self.plan, root, transport, registry=self.registry,
+                                  concurrency=limit, trace_concurrency=8, rpc_concurrency=limit)
+            writers = []
+            commit, record = collector.staging.commit, collector.staging.record
+            def committed(*args):
+                writers.append(threading.get_ident())
+                return commit(*args)
+            def recorded(*args):
+                writers.append(threading.get_ident())
+                return record(*args)
+            collector.staging.commit, collector.staging.record = committed, recorded
+            collector.collect()
+            self.assertEqual(set(writers), {coordinator})
+            self.assertLessEqual(transport.peak, limit)
+            if limit > 1:
+                self.assertGreater(transport.peak, 1)
+                self.assertGreater(transport.opening_peak, 1)
+            trees.append({str(path.relative_to(root)): path.read_bytes() for path in root.rglob("*") if path.is_file()})
+        self.assertEqual(trees[0], trees[1])
+
+    def test_reconciliation_preserves_results_checkpoint_order_and_global_limit(self):
+        collected = self.root / "collected"
+        collected.mkdir()
+        Collector(self.plan, collected, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        results = []
+        coordinator = threading.get_ident()
+        for limit in (1, 4):
+            root = self.root / str(limit)
+            shutil.copytree(collected, root)
+            transport = self.transport()
+            reconciler = Reconciler(self.plan, root, transport, "second", registry=self.registry,
+                                    concurrency=limit, trace_concurrency=8, rpc_concurrency=limit)
+            checkpoints = []
+            save = reconciler._save_reconcile_checkpoint
+            def saved(*args):
+                checkpoints.append((threading.get_ident(), args[4]))
+                return save(*args)
+            reconciler._save_reconcile_checkpoint = saved
+            document = reconciler.reconcile()
+            results.append((document, reconciler._checkpoint_path().read_bytes()))
+            self.assertEqual(checkpoints, [(coordinator, n) for n in range(1, len(self.plan["shards"]) + 1)])
+            self.assertLessEqual(transport.peak, limit)
+            if limit > 1:
+                self.assertGreater(transport.peak, 1)
+                self.assertGreater(transport.opening_peak, 1)
+        self.assertEqual(results[0], results[1])
+
+    def test_prefetched_failure_writes_only_on_coordinator_and_resumes_prefix(self):
+        root = self.root / "failure"
+        root.mkdir()
+        Collector(self.plan, root, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        reconciler = Reconciler(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
+                                "second", registry=self.registry, concurrency=4, rpc_concurrency=4)
+        writers = []
+        record = reconciler._record_error
+        def recorded(*args):
+            writers.append(threading.get_ident())
+            return record(*args)
+        reconciler._record_error = recorded
+        self.assertEqual(reconciler.reconcile()["reconciliation"]["status"], "unreconciled")
+        self.assertEqual(writers, [threading.get_ident()])
+        self.assertEqual(json.loads(reconciler._checkpoint_path().read_bytes())["next_shard"], 1)
+        resumed = Reconciler(self.plan, root, wildcat.WildcatTransport(self.state), "second",
+                             registry=self.registry, concurrency=4, rpc_concurrency=4).reconcile()
+        self.assertEqual(resumed["reconciliation"]["status"], "agreed")
+        self.assertEqual(resumed["reconciliation"]["compared"], resumed["reconciliation"]["matched"])
+
+    def test_rpc_bounds_refuse_before_requests(self):
+        for value in (0, 9, True, 2.5):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(AlexandriaError, "RPC concurrency"):
+                    Collector(self.plan, self.root, self.transport(), registry=self.registry, rpc_concurrency=value)
+                with self.assertRaisesRegex(AlexandriaError, "RPC concurrency"):
+                    Reconciler(self.plan, self.root, self.transport(), "second", registry=self.registry, rpc_concurrency=value)
+
+    def test_collection_worker_refusal_defers_error_file_to_coordinator(self):
+        root = self.root / "collector-failure"
+        root.mkdir()
+        collector = Collector(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
+                              registry=self.registry, concurrency=4, rpc_concurrency=4)
+        writers = []
+        original = usdc_interval.os.open
+        def observed(path, *args, **kwargs):
+            if Path(path).name == "errors.jsonl":
+                writers.append(threading.get_ident())
+            return original(path, *args, **kwargs)
+        with mock.patch.object(usdc_interval.os, "open", side_effect=observed):
+            with self.assertRaises(usdc_interval.TransportError):
+                collector.collect()
+        self.assertEqual(writers, [threading.get_ident()])
+        self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_deferred_error_receipt_failure_closes_journals_and_preserves_prefix(self):
+        root = self.root / "receipt-failure"
+        root.mkdir()
+        collector = Collector(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
+                              registry=self.registry, concurrency=4, rpc_concurrency=4)
+        self.addCleanup(collector.staging.close)
+        handles = []
+        record = collector.staging.record
+        def recorded(*args):
+            result = record(*args)
+            handles.extend(collector.staging._handles.values())
+            return result
+        collector.staging.record = recorded
+        original = usdc_interval.os.open
+        def refuse_receipt(path, *args, **kwargs):
+            if Path(path).name == "errors.jsonl":
+                raise PermissionError("injected receipt write refusal")
+            return original(path, *args, **kwargs)
+        with mock.patch.object(usdc_interval.os, "open", side_effect=refuse_receipt):
+            with self.assertRaisesRegex(AlexandriaError, "cannot open the error receipt file"):
+                collector.collect()
+        self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
+        self.assertTrue(handles)
+        self.assertTrue(all(handle.closed for handle in handles))
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_timed_out_http_worker_keeps_its_global_slot_until_it_finishes(self):
+        release = threading.Event()
+        entered = threading.Event()
+        finished = threading.Event()
+        slots = threading.BoundedSemaphore(1)
+        response = mock.MagicMock()
+        response.__enter__.return_value = response
+        response.status = 200
+        response.read.return_value = b"{}"
+        opener = mock.Mock()
+        def open_request(*args, **kwargs):
+            entered.set()
+            try:
+                release.wait(5)
+                return response
+            finally:
+                finished.set()
+        opener.open.side_effect = open_request
+        try:
+            with mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.02):
+                with self.assertRaises(usdc_interval.TransportError):
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", slots=slots)
+                self.assertTrue(entered.is_set())
+                self.assertFalse(slots.acquire(blocking=False))
+                with self.assertRaises(usdc_interval.TransportError):
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", slots=slots)
+                self.assertEqual(opener.open.call_count, 1)
+        finally:
+            release.set()
+            self.assertTrue(finished.wait(5))
+
+
 class TargetedTracesSynthesisTests(unittest.TestCase):
     """`Collector._targeted_traces`: one combined record, built from real per-tx calls.
 
@@ -174,13 +519,14 @@ class TargetedTracesSynthesisTests(unittest.TestCase):
         collector = self.collector(transport)
         payload, response, combined = collector._targeted_traces(0, logs_result)
 
-        # Exactly one trace_transaction call per distinct hash, in derivation order.
-        self.assertEqual([params[0] for _method, params, _label in transport.calls], [tx_a, tx_b])
+        # Each hash is requested exactly once; results retain derivation order.
+        self.assertCountEqual([params[0] for _method, params, _label in transport.calls], [tx_a, tx_b])
         self.assertTrue(all(method == "trace_transaction" for method, _p, _l in transport.calls))
 
         # The non-matching frame (to `other_address`) was dropped.
         self.assertEqual(len(combined), 2)
         self.assertTrue(all(frame["action"]["to"] == matching_to for frame in combined))
+        self.assertEqual(combined, [table[tx_a][0], table[tx_b][0]])
 
         # The request honestly names what was actually done -- trace_transaction
         # over the hashes actually derived, never a trace_filter call that never happened.
@@ -224,7 +570,7 @@ class TargetedTracesSynthesisTests(unittest.TestCase):
 
 
 class ExactlyOnceTracesRecordTests(unittest.TestCase):
-    """The load-bearing constraint: `Staging.record(shard, "traces", ...)` fires once per shard.
+    """`Staging.record(shard, "traces", ...)` fires once per shard.
 
     `Reconciler._staged()` keys its dict by `(shard, class)` and silently
     keeps only the last entry for a repeated key, so a second `record("traces")`
@@ -433,6 +779,45 @@ class ReconciliationTracesComparisonTests(unittest.TestCase):
         ).reconcile()
         self.assertEqual(document["reconciliation"]["status"], "unreconciled")
 
+    def test_changed_trace_content_with_the_same_identity_is_disputed(self):
+        self.collect()
+
+        class ChangedValueTransport(wildcat.WildcatTransport):
+            def trace_transaction(self, tx_hash):
+                frames = deepcopy(super().trace_transaction(tx_hash))
+                if frames:
+                    frames[0]["action"]["value"] = "0xfeed"
+                return frames
+
+        document = Reconciler(
+            self.plan, self.root, ChangedValueTransport(self.state),
+            "changed value provider", registry=self.registry,
+        ).reconcile()
+        self.assertEqual(document["reconciliation"]["status"], "disputed")
+        self.assertIn("trace-identity", {
+            entry["kind"] for entry in document["reconciliation"]["disputed"]
+        })
+
+    def test_trace_comparison_includes_each_preserved_field(self):
+        frame = {
+            "transactionHash": "0x" + "aa" * 32, "traceAddress": [0],
+            "type": "call", "action": {"to": "0x" + "11" * 20, "value": "0x1"},
+            "result": {"output": "0x", "gasUsed": "0x1"},
+            "blockHash": "0x" + "bb" * 32, "blockNumber": 100,
+            "transactionPosition": 0, "subtraces": 0,
+        }
+        for field, value in (
+            ("action", dict(frame["action"], value="0x2")),
+            ("result", {"output": "0xab", "gasUsed": "0x1"}),
+            ("error", "Reverted"), ("blockHash", "0x" + "cc" * 32),
+            ("blockNumber", 101), ("transactionPosition", 1), ("subtraces", 1),
+        ):
+            with self.subTest(field=field):
+                self.assertNotEqual(
+                    usdc_interval.trace_identity(frame),
+                    usdc_interval.trace_identity(dict(frame, **{field: value})),
+                )
+
     def test_the_single_proxy_path_never_reaches_a_traces_comparison(self):
         """The Compound path is untouched: reconcile() never asks it for trace_transaction."""
         compound_state = existing.fixture()
@@ -447,6 +832,26 @@ class ReconciliationTracesComparisonTests(unittest.TestCase):
         self.assertNotIn(
             "trace_transaction", {method for method, _label in second.calls}
         )
+
+
+class TargetedTraceCoverageTests(wildcat.WildcatCase):
+    def test_release_names_transactions_the_log_filter_does_not_reach(self):
+        output, _release_id = self.released()
+        self.assertIn(
+            usdc_interval.TARGETED_TRACE_GAP, self.captures(output)["traces"]["coverage"]["gaps"]
+        )
+        self.assertEqual(usdc_interval.check_interval(output)["epochs"], 137)
+
+    def test_check_refuses_a_release_that_drops_the_targeted_gap(self):
+        output, _release_id = self.released()
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        next(row for row in manifest["captures"] if row["id"] == "traces")["coverage"]["gaps"].remove(
+            usdc_interval.TARGETED_TRACE_GAP
+        )
+        path.write_bytes(usdc_interval.canonical_bytes(manifest))
+        with self.assertRaisesRegex(AlexandriaError, "targeted trace gap"):
+            self.check_without_verify(output)
 
 
 class RealMainnetEquivalenceTests(unittest.TestCase):
@@ -583,6 +988,11 @@ class ReconcileCheckpointTests(unittest.TestCase):
         self.assertEqual(checkpoint["next_shard"], 2)
         self.assertEqual(checkpoint["plan_sha256"], usdc_interval.plan_digest(self.plan))
         self.assertEqual(checkpoint["provider_class"], "second provider")
+        self.assertEqual(checkpoint["format"], usdc_interval.RECONCILE_CHECKPOINT_FORMAT)
+        committed = json.loads((staging / "checkpoint.json").read_text())
+        self.assertEqual(
+            checkpoint["staging_last_accepted"], committed["last_accepted"]["block_hash"]
+        )
 
         errors = [
             json.loads(line)
@@ -651,6 +1061,75 @@ class ReconcileCheckpointTests(unittest.TestCase):
         ).reconcile()
         self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
         self.assertEqual(document["reconciliation"]["status"], "agreed")
+
+    def _stale_checkpoint(self, name, mutate):
+        """A checkpoint written at shard 2, then rewritten by `mutate` to look like another run's."""
+        staging = self._copy(name)
+        Reconciler(
+            self.plan, staging, _FailOnceAtShard(self.state, fail_shard=2),
+            "second provider", registry=self.registry,
+        ).reconcile()
+        path = staging / "reconciliation" / "checkpoint.json"
+        stale = json.loads(path.read_text())
+        self.assertEqual(stale["next_shard"], 2)
+        mutate(stale)
+        path.write_text(json.dumps(stale))
+        return staging, path
+
+    def _reconcile_counting(self, staging):
+        calls = []
+
+        class Counting(wildcat.WildcatTransport):
+            def request(self, payload, label):
+                calls.append(label)
+                return super().request(payload, label)
+
+        document = Reconciler(
+            self.plan, staging, Counting(self.state), "second provider", registry=self.registry,
+        ).reconcile()
+        return document, calls
+
+    def test_a_checkpoint_for_another_committed_boundary_is_not_trusted(self):
+        """A tree rewound and collected again since the checkpoint was written is another tree.
+
+        Its shards 0 and 1 were compared over bytes that may no longer be in
+        the tree, so the checkpoint starts nothing and shard 0 is asked again;
+        the checkpoint the run then writes names the tree's own boundary.
+        """
+        def other_boundary(stale):
+            stale["staging_last_accepted"] = "0x" + "ab" * 32
+
+        staging, path = self._stale_checkpoint("boundary-mismatch", other_boundary)
+        document, calls = self._reconcile_counting(staging)
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+        rewritten = json.loads(path.read_text())
+        committed = json.loads((staging / "checkpoint.json").read_text())
+        self.assertEqual(
+            rewritten["staging_last_accepted"], committed["last_accepted"]["block_hash"]
+        )
+
+    def test_a_checkpoint_in_the_earlier_format_is_not_trusted(self):
+        """A v1 checkpoint carries no boundary, so it is treated as absent, never as a shape error."""
+        def earlier_format(stale):
+            stale["format"] = "alexandria-interval-reconcile-checkpoint/v1"
+            del stale["staging_last_accepted"]
+
+        staging, _path = self._stale_checkpoint("format-v1", earlier_format)
+        document, calls = self._reconcile_counting(staging)
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+
+    def test_changed_journal_bytes_at_the_same_boundary_restart_comparison(self):
+        staging, _path = self._stale_checkpoint("changed-journal", lambda row: None)
+        path = staging / "journals" / "traces.jsonl"
+        before = path.read_bytes()
+        after = before.replace(b'0x90323177', b'0x90323178', 1)
+        self.assertNotEqual(before, after)
+        self.assertEqual(len(before), len(after))
+        path.write_bytes(after)
+        _document, calls = self._reconcile_counting(staging)
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
 
     def test_heartbeat_prints_one_flushed_line_per_shard_and_opening_read(self):
         staging = self._copy("heartbeat")
