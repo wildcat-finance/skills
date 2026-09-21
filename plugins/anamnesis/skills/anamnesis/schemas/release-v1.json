@@ -17,12 +17,15 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "sha256", "bytes", "disclosure"],
+        "required": ["id", "sha256", "bytes", "disclosure", "basis", "rights_sha256"],
+        "allOf": [{"if": {"properties": {"basis": {"const": "digest-only"}}}, "then": {"properties": {"disclosure": {"const": "restricted"}}}}],
         "properties": {
           "id": {"type": "string"},
           "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "bytes": {"type": "integer", "minimum": 0},
-          "disclosure": {"enum": ["public", "restricted", "embargoed"]}
+          "disclosure": {"enum": ["public", "restricted"]},
+          "basis": {"enum": ["licence", "permission", "contract", "digest-only"]},
+          "rights_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
         }
       }
     },
