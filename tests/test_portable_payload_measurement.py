@@ -411,5 +411,36 @@ class CommittedReportCopyTests(unittest.TestCase):
                 )
 
 
+class DemonstrationRecordTests(unittest.TestCase):
+    """`demonstration.json`: exactly the three study section 1 observations."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.record = json.loads((STUDY_DIR / "demonstration.json").read_text(encoding="utf-8"))
+
+    def test_exactly_three_observations_with_the_documented_exit_codes(self):
+        observations = self.record["observations"]
+        self.assertEqual([item["id"] for item in observations],
+                          ["positive", "first-negative", "second-negative"])
+        self.assertEqual(
+            [item["exit_codes"] for item in observations], [[0], [1], [0, 1]],
+        )
+        for item in observations:
+            self.assertTrue(item["steps"])
+            for step in item["steps"]:
+                self.assertIn("argv", step)
+                self.assertIn("exit_code", step)
+                self.assertIn("relied_on_output_lines", step)
+
+    def test_controller_and_source_command_are_named(self):
+        self.assertEqual(self.record["controller"], "Fiat")
+        self.assertEqual(self.record["source_command"], "scripts/portable_promise_machine.py")
+
+    def test_claims_nothing_beyond_the_three_observations(self):
+        blob = json.dumps(self.record).lower()
+        for forbidden in ("forecast", "suffic", "hourly", "publisher"):
+            self.assertNotIn(forbidden, blob)
+
+
 if __name__ == "__main__":
     unittest.main()

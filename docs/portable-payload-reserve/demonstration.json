@@ -1,0 +1,191 @@
+{
+  "schema": "portable-payload-demonstration/v1",
+  "controller": "Fiat",
+  "source_command": "scripts/portable_promise_machine.py",
+  "observations": [
+    {
+      "id": "positive",
+      "claim": "On the delivered tree, measure exits 0 in both forms and its --json figures agree with a walk of package --out and that package's MANIFEST.json; measure --require-margin exits 0; and in an isolated copy of the generated package, verify_runtime.py, the installed Horos check and the packaged evaluation check each exit 0.",
+      "exit_codes": [
+        0
+      ],
+      "steps": [
+        {
+          "label": "measure",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "measure"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "commit ab33a49d4511a21d12aaf244abb3f2221d3bf69d (tree clean)",
+            "bytes: package 17790990, runtime 17354259",
+            "line: 20971520 (cap 26214400, reserve 5242880)",
+            "margin: package 3180530, runtime 3617261",
+            "files: package 1404, runtime 1397, tripwire 1600"
+          ]
+        },
+        {
+          "label": "measure --json",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "measure",
+            "--json"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "{\"package\": {\"bytes\": 17790990, \"files\": 1404, \"margin\": 3180530}}",
+            "{\"runtime\": {\"bytes\": 17354259, \"files\": 1397, \"margin\": 3617261}}"
+          ],
+          "agrees_with_package_walk": {
+            "measured": {
+              "package_bytes": 17790990,
+              "package_files": 1404,
+              "runtime_bytes": 17354259,
+              "runtime_files": 1397
+            },
+            "walked": {
+              "package_bytes": 17790990,
+              "package_files": 1404,
+              "runtime_bytes_from_manifest": 17354259,
+              "runtime_files_from_manifest": 1397
+            },
+            "equal": true
+          }
+        },
+        {
+          "label": "package --out",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "package",
+            "--out",
+            "<scratch>/package"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "packaged <scratch>/package"
+          ]
+        },
+        {
+          "label": "measure --require-margin 794493",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "measure",
+            "--require-margin",
+            "794493"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "commit ab33a49d4511a21d12aaf244abb3f2221d3bf69d (tree clean)",
+            "bytes: package 17790990, runtime 17354259",
+            "line: 20971520 (cap 26214400, reserve 5242880)",
+            "margin: package 3180530, runtime 3617261",
+            "files: package 1404, runtime 1397, tripwire 1600"
+          ]
+        },
+        {
+          "label": "verify_runtime.py (isolated copy)",
+          "argv": [
+            "python3",
+            "<scratch>/package/.agents/skills/promise-machine/scripts/verify_runtime.py"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "verified 1397 files for promise-machine/v1"
+          ]
+        },
+        {
+          "label": "installed Horos check (isolated copy)",
+          "argv": [
+            "python3",
+            "<scratch>/package/.agents/skills/promise-machine/runtime/plugins/horos/skills/horos/scripts/horos.py",
+            "check",
+            "<scratch>/package/.agents/skills/promise-machine/runtime"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "boundary matches the tree"
+          ]
+        },
+        {
+          "label": "packaged evaluation check (isolated copy)",
+          "argv": [
+            "python3",
+            "<scratch>/package/.agents/skills/promise-machine/runtime/scripts/promise_machine.py",
+            "check",
+            "--only",
+            "evaluation"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "clean: 0 plugin(s), 0 copy/copies"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "first-negative",
+      "claim": "On a disposable checkout pushed over the line by one staged filler file under plugins/, measure --require-margin exits 1 and names the margin.",
+      "exit_codes": [
+        1
+      ],
+      "steps": [
+        {
+          "label": "measure --require-margin 794493 (over-the-line checkout)",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "measure",
+            "--require-margin",
+            "794493"
+          ],
+          "exit_code": 1,
+          "relied_on_output_lines": [
+            "portable Promise Machine: required margin of 794493 bytes is not met: package margin is -4350 bytes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "second-negative",
+      "claim": "On the same over-the-line checkout, measure still exits 0 with a negative margin while package --out exits 1, refusing and naming bytes, the line, the margin and the measure action.",
+      "exit_codes": [
+        0,
+        1
+      ],
+      "steps": [
+        {
+          "label": "measure --json (over-the-line checkout)",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "measure",
+            "--json"
+          ],
+          "exit_code": 0,
+          "relied_on_output_lines": [
+            "{\"package\": {\"bytes\": 20975870, \"files\": 1405, \"margin\": -4350}}"
+          ]
+        },
+        {
+          "label": "package --out (over-the-line checkout)",
+          "argv": [
+            "python3",
+            "scripts/portable_promise_machine.py",
+            "package",
+            "--out",
+            "<scratch>/checkout-package"
+          ],
+          "exit_code": 1,
+          "relied_on_output_lines": [
+            "portable Promise Machine: portable payload uses 20975870 bytes, past the 20971520-byte line by 4350 bytes (margin -4350); run `python3 scripts/portable_promise_machine.py measure` for the current margin"
+          ]
+        }
+      ]
+    }
+  ]
+}
