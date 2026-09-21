@@ -60,6 +60,7 @@ from alexandria_lib.interval import (
     EVIDENCE_CLASSES,
     JOURNAL_CLASSES,
     MAX_DISPUTES,
+    MAX_JOURNAL_BYTES,
     OPENING_CLASS,
     RECEIPT_FORMAT,
     SUBJECT_RECEIPT_FORMAT,
@@ -134,9 +135,15 @@ DISPUTED_RESPONSES = "disputed.jsonl"
 # comparison work against the second provider, not the collected bytes
 # themselves. See `Reconciler._save_reconcile_checkpoint`.
 RECONCILE_CHECKPOINT_NAME = "checkpoint.json"
-RECONCILE_CHECKPOINT_FORMAT = "alexandria-interval-reconcile-checkpoint/v1"
+# v2 binds the checkpoint to the staging tree's committed boundary hash as well
+# as to the plan and the second provider; a v1 checkpoint is not trusted.
+RECONCILE_CHECKPOINT_FORMAT = "alexandria-interval-reconcile-checkpoint/v2"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
+TARGETED_TRACE_GAP = (
+    "traces cover only transactions named by the subjects' preserved logs; "
+    "transactions with no matching log were not traced"
+)
 BOUNDARY_CLASS = "boundary-blocks"
 ENTRY_BLOCK_CLASSES = ("logs", "traces")
 CODE_COMPONENT = "implementation-code"
@@ -1656,13 +1663,29 @@ class Reconciler:
     def _checkpoint_path(self) -> Path:
         return self.directory / RECONCILE_CHECKPOINT_NAME
 
-    def _load_reconcile_checkpoint(self):
-        """This exact plan and second provider's last saved reconcile progress, or `None`.
+    def _committed_input_digest(self, state: dict) -> str:
+        """Bind resumed comparisons to exact checkpoint and journal bytes."""
+        digest = hashlib.sha256(canonical_bytes(state))
+        for name in sorted(self.staging.journal_names):
+            data = read_confined_file(
+                self.staging.journals, f"{name}.jsonl", "committed journal",
+                max_bytes=MAX_JOURNAL_BYTES,
+            )
+            digest.update(canonical_bytes({
+                "name": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+            }))
+        return digest.hexdigest()
 
-        A checkpoint recorded for another plan or another `provider_class`
-        proves nothing about this run -- comparisons already counted under a
-        different second opinion cannot be carried into this one -- so it is
-        treated as absent rather than trusted.
+    def _load_reconcile_checkpoint(self, boundary: str, input_digest: str):
+        """This plan, second provider and committed tree's saved reconcile progress, or `None`.
+
+        A checkpoint recorded for another plan, another `provider_class` or a
+        staging tree whose committed boundary hash differs -- one rewound and
+        collected again since the checkpoint was written -- proves nothing
+        about this run: comparisons already counted under a different second
+        opinion, or over bytes no longer in the tree, cannot be carried into
+        this one, so it is treated as absent rather than trusted. So is a
+        checkpoint in an earlier format.
         """
         path = self._checkpoint_path()
         if not path.is_file():
@@ -1679,10 +1702,14 @@ class Reconciler:
             or document.get("format") != RECONCILE_CHECKPOINT_FORMAT
             or document.get("plan_sha256") != plan_digest(self.plan)
             or document.get("provider_class") != self.provider_class
+            or document.get("staging_last_accepted") != boundary
+            or document.get("staging_sha256") != input_digest
         ):
             return None
         required = {"compared", "matched", "disputed", "statuses", "next_shard"}
-        if set(document) != required | {"format", "plan_sha256", "provider_class"}:
+        if set(document) != required | {
+            "format", "plan_sha256", "provider_class", "staging_last_accepted", "staging_sha256",
+        }:
             raise AlexandriaError("the reconcile checkpoint has an unknown shape")
         if (
             not isinstance(document["next_shard"], int) or isinstance(document["next_shard"], bool)
@@ -1695,7 +1722,9 @@ class Reconciler:
             raise AlexandriaError("the reconcile checkpoint has an unknown shape")
         return document
 
-    def _save_reconcile_checkpoint(self, compared, matched, disputed, statuses, next_shard) -> None:
+    def _save_reconcile_checkpoint(
+        self, compared, matched, disputed, statuses, next_shard, boundary: str, input_digest: str,
+    ) -> None:
         """Checkpoint reconciliation's own progress, one shard's comparisons at a time.
 
         Not a batch: each shard already costs several real requests to the
@@ -1712,6 +1741,8 @@ class Reconciler:
             "next_shard": next_shard,
             "plan_sha256": plan_digest(self.plan),
             "provider_class": self.provider_class,
+            "staging_last_accepted": boundary,
+            "staging_sha256": input_digest,
             "statuses": {str(index): status for index, status in statuses.items()},
         }
         _atomic_json(self._checkpoint_path(), document)
@@ -1782,6 +1813,14 @@ class Reconciler:
                 "the interval is not completely collected, so there is nothing to reconcile"
             )
         require_committed_journals(self.staging, state, "reconcile")
+        # The committed boundary this run reads. A reconcile checkpoint written
+        # over a tree that was rewound and collected again names another one,
+        # and its comparisons say nothing about the bytes now in the tree.
+        last_accepted = state["last_accepted"]
+        if not isinstance(last_accepted, dict) or not isinstance(last_accepted.get("block_hash"), str):
+            raise AlexandriaError("the collected interval's checkpoint names no accepted boundary")
+        staging_boundary = last_accepted["block_hash"]
+        staging_digest = self._committed_input_digest(state)
         staged = self._staged()
         for index in range(len(shards)):
             for name in self.classes:
@@ -1795,7 +1834,7 @@ class Reconciler:
         subjects = _plan_subjects(self.plan)
         upgrade_topic = phase.upgrade_topic
 
-        checkpoint = self._load_reconcile_checkpoint()
+        checkpoint = self._load_reconcile_checkpoint(staging_boundary, staging_digest)
         if checkpoint is None:
             compared, matched, disputed, statuses, start = 0, 0, [], {}, 0
         else:
@@ -1854,7 +1893,9 @@ class Reconciler:
                     )
             except AlexandriaError as exc:
                 self._record_error(index, "second-provider", exc)
-                self._save_reconcile_checkpoint(compared, matched, disputed, statuses, index)
+                self._save_reconcile_checkpoint(
+                    compared, matched, disputed, statuses, index, staging_boundary, staging_digest,
+                )
                 return self._unreconciled(
                     shards, counts, staged, compared, matched, disputed
                 )
@@ -1923,7 +1964,9 @@ class Reconciler:
                                 {"identity": identity, "kind": "trace-identity", "shard": index}
                             )
             statuses[index] = status
-            self._save_reconcile_checkpoint(compared, matched, disputed, statuses, index + 1)
+            self._save_reconcile_checkpoint(
+                compared, matched, disputed, statuses, index + 1, staging_boundary, staging_digest,
+            )
             self._heartbeat(
                 f"shard {index + 1}/{len(shards)} done", status,
                 compared - compared_before, matched - matched_before, len(disputed) - disputed_before,
@@ -2394,6 +2437,8 @@ def _gaps(
     if reconciliation["reconciliation"]["status"] == "unreconciled":
         gaps.append("the interval was not reconciled against a second provider")
     if component in JOURNAL_CLASSES:
+        if component == "traces" and "subjects" in plan:
+            gaps.append(TARGETED_TRACE_GAP)
         # Every class the plan omitted is a gap on every evidence scope, with
         # what its absence leaves unpreserved, so a release that never asked
         # for logs says so where a reader of the logs scope would look.
@@ -2852,6 +2897,8 @@ def check_interval(release_root: Path) -> dict:
                                 "subjects its read asked for"
                             )
         gaps = captures[name]["coverage"]["gaps"]
+        if kind == "traces" and "subjects" in plan and TARGETED_TRACE_GAP not in gaps:
+            raise AlexandriaError(f"the {name} coverage does not name the targeted trace gap")
         for index in sorted(disputed):
             if not any(f"shard {index}," in gap for gap in gaps):
                 raise AlexandriaError(
@@ -3233,18 +3280,11 @@ def subject_transaction_hashes(logs_result) -> list:
 
 
 def trace_identity(record) -> str:
-    """The tuple two providers' targeted trace frames are compared by, as one string.
+    """Identify a trace frame and bind every field of its preserved content.
 
-    `(transactionHash, traceAddress, type, recipient)`, where `recipient` is
-    whatever `_trace_filter_recipient` reads off the frame. A transaction's
-    hash together with its trace address already names one frame uniquely, so
-    unlike `log_identity` this does not require a `blockHash`: a provider
-    whose trace frames carry only the fields `_ask` itself ever reads (as the
-    collector's own preserved frames do) still compares. `type` and
-    `recipient` fall back to an empty string rather than refusing when
-    absent, for the same reason. Nothing here is normalised beyond case,
-    because two providers disagreeing about the case of a hash is not a
-    disagreement about the chain.
+    The final digest includes action, result, error and location fields.
+    JSON key order is ignored; every value and omitted field stays significant.
+    Two providers must return the same content to record agreement.
     """
     if not isinstance(record, dict):
         raise AlexandriaError("a trace record is not an object")
@@ -3263,6 +3303,7 @@ def trace_identity(record) -> str:
         ",".join(str(item) for item in trace_address),
         kind.lower() if isinstance(kind, str) else "",
         recipient.lower() if isinstance(recipient, str) else "",
+        hashlib.sha256(canonical_bytes(record)).hexdigest(),
     ]
     return "|".join(fields)
 

@@ -224,7 +224,7 @@ class TargetedTracesSynthesisTests(unittest.TestCase):
 
 
 class ExactlyOnceTracesRecordTests(unittest.TestCase):
-    """The load-bearing constraint: `Staging.record(shard, "traces", ...)` fires once per shard.
+    """`Staging.record(shard, "traces", ...)` fires once per shard.
 
     `Reconciler._staged()` keys its dict by `(shard, class)` and silently
     keeps only the last entry for a repeated key, so a second `record("traces")`
@@ -433,6 +433,45 @@ class ReconciliationTracesComparisonTests(unittest.TestCase):
         ).reconcile()
         self.assertEqual(document["reconciliation"]["status"], "unreconciled")
 
+    def test_changed_trace_content_with_the_same_identity_is_disputed(self):
+        self.collect()
+
+        class ChangedValueTransport(wildcat.WildcatTransport):
+            def trace_transaction(self, tx_hash):
+                frames = deepcopy(super().trace_transaction(tx_hash))
+                if frames:
+                    frames[0]["action"]["value"] = "0xfeed"
+                return frames
+
+        document = Reconciler(
+            self.plan, self.root, ChangedValueTransport(self.state),
+            "changed value provider", registry=self.registry,
+        ).reconcile()
+        self.assertEqual(document["reconciliation"]["status"], "disputed")
+        self.assertIn("trace-identity", {
+            entry["kind"] for entry in document["reconciliation"]["disputed"]
+        })
+
+    def test_trace_comparison_includes_each_preserved_field(self):
+        frame = {
+            "transactionHash": "0x" + "aa" * 32, "traceAddress": [0],
+            "type": "call", "action": {"to": "0x" + "11" * 20, "value": "0x1"},
+            "result": {"output": "0x", "gasUsed": "0x1"},
+            "blockHash": "0x" + "bb" * 32, "blockNumber": 100,
+            "transactionPosition": 0, "subtraces": 0,
+        }
+        for field, value in (
+            ("action", dict(frame["action"], value="0x2")),
+            ("result", {"output": "0xab", "gasUsed": "0x1"}),
+            ("error", "Reverted"), ("blockHash", "0x" + "cc" * 32),
+            ("blockNumber", 101), ("transactionPosition", 1), ("subtraces", 1),
+        ):
+            with self.subTest(field=field):
+                self.assertNotEqual(
+                    usdc_interval.trace_identity(frame),
+                    usdc_interval.trace_identity(dict(frame, **{field: value})),
+                )
+
     def test_the_single_proxy_path_never_reaches_a_traces_comparison(self):
         """The Compound path is untouched: reconcile() never asks it for trace_transaction."""
         compound_state = existing.fixture()
@@ -447,6 +486,26 @@ class ReconciliationTracesComparisonTests(unittest.TestCase):
         self.assertNotIn(
             "trace_transaction", {method for method, _label in second.calls}
         )
+
+
+class TargetedTraceCoverageTests(wildcat.WildcatCase):
+    def test_release_names_transactions_the_log_filter_does_not_reach(self):
+        output, _release_id = self.released()
+        self.assertIn(
+            usdc_interval.TARGETED_TRACE_GAP, self.captures(output)["traces"]["coverage"]["gaps"]
+        )
+        self.assertEqual(usdc_interval.check_interval(output)["epochs"], 137)
+
+    def test_check_refuses_a_release_that_drops_the_targeted_gap(self):
+        output, _release_id = self.released()
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        next(row for row in manifest["captures"] if row["id"] == "traces")["coverage"]["gaps"].remove(
+            usdc_interval.TARGETED_TRACE_GAP
+        )
+        path.write_bytes(usdc_interval.canonical_bytes(manifest))
+        with self.assertRaisesRegex(AlexandriaError, "targeted trace gap"):
+            self.check_without_verify(output)
 
 
 class RealMainnetEquivalenceTests(unittest.TestCase):
@@ -583,6 +642,11 @@ class ReconcileCheckpointTests(unittest.TestCase):
         self.assertEqual(checkpoint["next_shard"], 2)
         self.assertEqual(checkpoint["plan_sha256"], usdc_interval.plan_digest(self.plan))
         self.assertEqual(checkpoint["provider_class"], "second provider")
+        self.assertEqual(checkpoint["format"], usdc_interval.RECONCILE_CHECKPOINT_FORMAT)
+        committed = json.loads((staging / "checkpoint.json").read_text())
+        self.assertEqual(
+            checkpoint["staging_last_accepted"], committed["last_accepted"]["block_hash"]
+        )
 
         errors = [
             json.loads(line)
@@ -651,6 +715,75 @@ class ReconcileCheckpointTests(unittest.TestCase):
         ).reconcile()
         self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
         self.assertEqual(document["reconciliation"]["status"], "agreed")
+
+    def _stale_checkpoint(self, name, mutate):
+        """A checkpoint written at shard 2, then rewritten by `mutate` to look like another run's."""
+        staging = self._copy(name)
+        Reconciler(
+            self.plan, staging, _FailOnceAtShard(self.state, fail_shard=2),
+            "second provider", registry=self.registry,
+        ).reconcile()
+        path = staging / "reconciliation" / "checkpoint.json"
+        stale = json.loads(path.read_text())
+        self.assertEqual(stale["next_shard"], 2)
+        mutate(stale)
+        path.write_text(json.dumps(stale))
+        return staging, path
+
+    def _reconcile_counting(self, staging):
+        calls = []
+
+        class Counting(wildcat.WildcatTransport):
+            def request(self, payload, label):
+                calls.append(label)
+                return super().request(payload, label)
+
+        document = Reconciler(
+            self.plan, staging, Counting(self.state), "second provider", registry=self.registry,
+        ).reconcile()
+        return document, calls
+
+    def test_a_checkpoint_for_another_committed_boundary_is_not_trusted(self):
+        """A tree rewound and collected again since the checkpoint was written is another tree.
+
+        Its shards 0 and 1 were compared over bytes that may no longer be in
+        the tree, so the checkpoint starts nothing and shard 0 is asked again;
+        the checkpoint the run then writes names the tree's own boundary.
+        """
+        def other_boundary(stale):
+            stale["staging_last_accepted"] = "0x" + "ab" * 32
+
+        staging, path = self._stale_checkpoint("boundary-mismatch", other_boundary)
+        document, calls = self._reconcile_counting(staging)
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+        rewritten = json.loads(path.read_text())
+        committed = json.loads((staging / "checkpoint.json").read_text())
+        self.assertEqual(
+            rewritten["staging_last_accepted"], committed["last_accepted"]["block_hash"]
+        )
+
+    def test_a_checkpoint_in_the_earlier_format_is_not_trusted(self):
+        """A v1 checkpoint carries no boundary, so it is treated as absent, never as a shape error."""
+        def earlier_format(stale):
+            stale["format"] = "alexandria-interval-reconcile-checkpoint/v1"
+            del stale["staging_last_accepted"]
+
+        staging, _path = self._stale_checkpoint("format-v1", earlier_format)
+        document, calls = self._reconcile_counting(staging)
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
+        self.assertEqual(document["reconciliation"]["status"], "agreed")
+
+    def test_changed_journal_bytes_at_the_same_boundary_restart_comparison(self):
+        staging, _path = self._stale_checkpoint("changed-journal", lambda row: None)
+        path = staging / "journals" / "traces.jsonl"
+        before = path.read_bytes()
+        after = before.replace(b'0x90323177', b'0x90323178', 1)
+        self.assertNotEqual(before, after)
+        self.assertEqual(len(before), len(after))
+        path.write_bytes(after)
+        _document, calls = self._reconcile_counting(staging)
+        self.assertTrue(any(label.startswith("shard 0 ") for label in calls))
 
     def test_heartbeat_prints_one_flushed_line_per_shard_and_opening_read(self):
         staging = self._copy("heartbeat")

@@ -70,18 +70,21 @@ transaction hashes named by that shard's own `logs` result and makes one
 applied -- call actions by `to`, create actions by the created address,
 suicide actions by the refund address, reward actions by the block's miner --
 and stages the combined result as exactly one `traces` record per shard. 404
-of the 3,463 shards carry neither a log nor a trace, scattered through the
-interval rather than confined to one span: 1,200-block windows this
-deployment's subjects simply did nothing observable in.
+of the 3,463 shards carry neither a log nor a targeted trace. Transactions
+without a matching subject log were not traced, so an empty shard does not
+establish that its subjects had no calls or state changes.
 
 The two providers agreed on all 124,200 comparisons the reconciliation made,
 nothing disputed: every shard's boundary-block hash, every preserved log, and
-every preserved targeted-trace record, compared by subject identity as well as
-by content. The primary transport answered as a local archive node, trace-
+every preserved targeted-trace identity. That recorded comparison did not
+compare trace action, result, error or location content. A new reconciliation
+with the repaired comparator is needed to establish agreement on those fields.
+The primary transport answered as a local archive node, trace-
 enabled, reached over loopback; the second, reconciling transport answered as
 a hosted HTTPS RPC provider, archive- and trace-enabled, bearer-authenticated.
 Neither endpoint nor credential is recorded here or anywhere else in the
-repository, and no header this collector sends comes from the environment.
+repository. The optional bearer is read from the environment and sent only in
+the second transport's request-scoped Authorization header.
 
 The release identifier is
 `sha256:d76cce047564818a5ff3ccf1b730ba16fca20a05037f96f870b3e076f9e4ad35`,

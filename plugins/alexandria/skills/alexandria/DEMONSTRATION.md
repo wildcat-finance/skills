@@ -53,7 +53,7 @@ taken here.
       "id": "program",
       "class": "repository",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
-      "sha256": "16855925ce086e0e314eb29cc9da08344725c4c330712fe0a956cf79d3904468"
+      "sha256": "2558fcea578dd99670168bc6821f42f3a5a1315cf7a5149c3a2c517c5ea63d0c"
     }
   ],
   "commands": [

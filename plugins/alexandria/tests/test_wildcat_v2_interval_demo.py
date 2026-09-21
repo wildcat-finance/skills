@@ -19,6 +19,7 @@ missing, malformed, or disagrees with `expected.json` or with each other.
 """
 
 import copy
+import hashlib
 import json
 from pathlib import Path
 import importlib.util
@@ -48,6 +49,7 @@ REQUIRED = (
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
+from alexandria_lib.interval import MAX_SHARDS, MAX_SHARD_WIDTH, validate_plan  # noqa: E402
 
 
 def demo():
@@ -92,6 +94,15 @@ class PreservedArtefactsTests(DemoTestCase):
         result = self.module.verify_preserved()
         self.assertEqual(result["manifest"], self.manifest)
         self.assertEqual(result["record"], self.record)
+
+    def test_committed_plan_fits_both_transport_and_collector_bounds(self):
+        plan = json.loads((EXAMPLE / "plan.json").read_text())
+        validate_plan(plan)
+        self.assertLessEqual(plan["shard_width"], MAX_SHARD_WIDTH)
+        self.assertLessEqual(len(plan["shards"]), MAX_SHARDS)
+        self.assertTrue(all(shard["end"] - shard["start"] <= 29_999 for shard in plan["shards"]))
+        self.assertGreaterEqual(int(plan["finality"]["block_number"]), int(plan["interval"]["end"]))
+        self.assertEqual(len(plan["subjects"]), 137)
 
     def test_the_manifest_is_well_formed(self):
         self.assertEqual(self.manifest["format"], self.module.MANIFEST_FORMAT)
@@ -191,6 +202,66 @@ class PreservedArtefactsTests(DemoTestCase):
         readme = (EXAMPLE / "README.md").read_text(encoding="utf-8")
         self.assertIn(STAGING_ENV_VAR, readme)
         self.assertIn("preserved outside this repository", readme)
+
+
+class StagingManifestGuardTests(DemoTestCase):
+    """Check corrupt, missing and extra files before the builder consumes staging."""
+
+    def setUp(self):
+        super().setUp()
+        self.staging = self.root / "staging"
+        self.staging.mkdir()
+        files = []
+        for name, data in (("checkpoint.json", b"{}\n"), ("journal.jsonl", b"[]\n")):
+            (self.staging / name).write_bytes(data)
+            files.append({"path": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()})
+        self.small_manifest = {
+            "format": self.module.MANIFEST_FORMAT,
+            "archive": {"bytes": 1, "sha256": "a" * 64},
+            "files": files, "staging_files_total": 2, "staging_bytes_total": 6,
+        }
+        self.manifest_path = self.root / "manifest.json"
+        self.manifest_path.write_text(json.dumps(self.small_manifest))
+
+    def assert_refused_before_build(self, reason):
+        with mock.patch.object(self.module, "MANIFEST", self.manifest_path), mock.patch.dict(
+            os.environ, {STAGING_ENV_VAR: str(self.staging)}
+        ), mock.patch.object(self.module, "Builder") as builder:
+            with self.assertRaisesRegex(AlexandriaError, reason):
+                self.module.build(self.root / "built")
+            builder.assert_not_called()
+        self.assertFalse((self.root / "built").exists())
+
+    def test_one_changed_byte_refuses_before_build(self):
+        (self.staging / "journal.jsonl").write_bytes(b"{}\n")
+        self.assert_refused_before_build("journal.jsonl differs")
+
+    def test_an_unlisted_file_refuses_before_build(self):
+        (self.staging / "extra").write_bytes(b"extra")
+        self.assert_refused_before_build("does not list")
+
+    def test_a_missing_file_refuses_before_build(self):
+        (self.staging / "journal.jsonl").unlink()
+        self.assert_refused_before_build("lacks")
+
+    def test_a_symlink_refuses_before_build(self):
+        (self.staging / "journal.jsonl").unlink()
+        (self.staging / "journal.jsonl").symlink_to(self.staging / "checkpoint.json")
+        self.assert_refused_before_build("symlink")
+
+    def test_a_matching_tree_checks_every_file(self):
+        self.assertEqual(
+            self.module.verify_staging_tree(self.staging, self.small_manifest),
+            {"files": 2, "bytes": 6},
+        )
+
+    def test_malformed_manifest_fields_refuse(self):
+        for field, value in (("sha256", "bad"), ("bytes", True), ("path", "./journal.jsonl")):
+            with self.subTest(field=field):
+                broken = copy.deepcopy(self.small_manifest)
+                broken["files"][1][field] = value
+                self.manifest_path.write_text(json.dumps(broken))
+                self.assert_refused_before_build("manifest")
 
 
 class StagedRebuildTests(DemoTestCase):

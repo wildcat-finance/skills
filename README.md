@@ -108,7 +108,7 @@ describes current chain state.
 
 ### ALEXANDRIA PRESERVES A WILDCAT V2 INTERVAL
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-v2-interval-v0" digest="a41e2a3f0cf95397804509061c9c200272f0edd62d88ce0cd7166586a21bdc55" -->
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-v2-interval-v0" digest="e679681b5cbe6387b813af93acb08a62cd254ab12ed35265deba0a8f98825e32" -->
 [Alexandria](./plugins/alexandria) checks the preserved Wildcat V2 mainnet
 interval, blocks 21,866,550 to 26,022,093 over 137 subjects: its committed
 staging manifest, rebuild record and expected values must agree on the release
