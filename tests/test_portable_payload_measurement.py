@@ -342,6 +342,51 @@ REPORT_GATES = {
 }
 
 
+class CommittedMeasurementRecordTests(unittest.TestCase):
+    """The frozen `measurement.json` record beside the study (Step 4).
+
+    This is a record of one past `measure --json` run, not a live rerun: no
+    test here compares it with the current tree (study risk `record-currency`).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.record = json.loads((STUDY_DIR / "measurement.json").read_text(encoding="utf-8"))
+
+    def test_schema_commit_shape_and_clean_tree(self):
+        commit = self.record["source_commit"]
+        self.assertEqual(self.record["schema"], SCHEMA)
+        self.assertEqual(len(commit), 40)
+        self.assertTrue(all(c in "0123456789abcdef" for c in commit))
+        self.assertIs(self.record["tree_clean"], True)
+
+    def test_source_commit_is_an_ancestor_of_head(self):
+        result = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            [
+                "git", "-C", str(ROOT), "merge-base", "--is-ancestor",
+                self.record["source_commit"], "HEAD",
+            ],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_own_arithmetic_holds(self):
+        record = self.record
+        self.assertEqual(record["line"], record["cap"] - record["reserve"])
+        self.assertEqual(
+            record["package"]["margin"], record["line"] - record["package"]["bytes"]
+        )
+        self.assertEqual(
+            record["runtime"]["margin"], record["line"] - record["runtime"]["bytes"]
+        )
+        self.assertEqual(
+            record["package"]["bytes"] - record["runtime"]["bytes"],
+            record["manifest_bytes"] + record["outer_bytes"],
+        )
+
+
+
+
 class CommittedReportCopyTests(unittest.TestCase):
     """`docs/portable-payload-reserve/reports/` copies of the `step:4` reports."""
 
