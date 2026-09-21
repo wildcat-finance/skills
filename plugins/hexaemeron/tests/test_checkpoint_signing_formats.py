@@ -85,6 +85,14 @@ class ArchiveSigningCases:
         # public material can verify the restored history.
         keys = Path(self.key_root)
         hidden = keys.with_name(keys.name + "-hidden")
+        if self.signature_format == "openpgp":
+            # Moving a live agent's home can make it exit during the next signing.
+            stopped = subprocess.run(
+                [self.tool_paths["gpgconf"], "--homedir", self.key_home,
+                 "--kill", "gpg-agent"],
+                capture_output=True, text=True, timeout=10,
+            )
+            self.assertEqual(0, stopped.returncode, stopped.stderr)
         keys.rename(hidden)
         try:
             inspected = json.loads(self.native_checkpoint(
@@ -196,6 +204,13 @@ class ArchiveSigningCases:
 
 class CheckpointOpenPgpSigningTests(ArchiveSigningCases, SignedRunFixture):
     signature_format = "openpgp"
+
+    def commit_signed(self, message, *, amend=False):
+        try:
+            return super().commit_signed(message, amend=amend)
+        except subprocess.CalledProcessError as error:
+            diagnostic = (error.stderr or b"").decode("utf-8", errors="replace")
+            self.fail(f"fixture signing exited {error.returncode}: {diagnostic}")
 
 
 class CheckpointSshSigningTests(ArchiveSigningCases, SshSignedRunFixture):
