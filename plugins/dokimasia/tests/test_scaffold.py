@@ -2,8 +2,9 @@
 
 Nothing here compiles an inventory, imports a workbook or records a
 disposition, because nothing does that yet. These check the claims the scaffold
-itself makes: that both hosts can discover the plugin, that one version is
-stated everywhere it is stated at all, that the canonical contract declares one
+itself makes: that both hosts can discover the plugin, that the package
+version and the skill version are each stated the same way everywhere they are
+stated at all, that the canonical contract declares one
 keepable promise and names the three it does not keep, that every unbuilt verb
 refuses, and that the self-test emits a report a design transition can consume.
 """
@@ -23,7 +24,8 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "dokimasia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "dokimasia.py"
-VERSION = "3.1.0"
+SKILL_VERSION = "3.2.0"
+PACKAGE_VERSION = "3.1.1"
 UNBUILT: tuple[str, ...] = ()
 KEPT_PROMISES = (
     "dokimasia-scaffold-identity",
@@ -57,14 +59,14 @@ class ManifestTests(unittest.TestCase):
     def test_the_claude_manifest_declares_the_plugin_and_its_skills(self):
         claude = manifest(".claude-plugin")
         self.assertEqual(claude["name"], "dokimasia")
-        self.assertEqual(claude["version"], VERSION)
+        self.assertEqual(claude["version"], PACKAGE_VERSION)
         self.assertEqual(claude["skills"], "./skills/")
         self.assertEqual(claude["license"], "Apache-2.0")
 
     def test_the_codex_manifest_agrees_and_carries_an_interface(self):
         codex = manifest(".codex-plugin")
         self.assertEqual(codex["name"], "dokimasia")
-        self.assertEqual(codex["version"], VERSION)
+        self.assertEqual(codex["version"], PACKAGE_VERSION)
         interface = codex["interface"]
         self.assertEqual(interface["displayName"], "Dokimasia")
         self.assertIn("$dokimasia", interface["defaultPrompt"])
@@ -90,7 +92,7 @@ class ContractTests(unittest.TestCase):
     def test_the_canonical_skill_states_the_declared_version(self):
         metadata = re.search(r'version:\s*"([^"]+)"', SKILL.read_text(encoding="utf-8"))
         self.assertIsNotNone(metadata)
-        self.assertEqual(metadata.group(1), VERSION)
+        self.assertEqual(metadata.group(1), SKILL_VERSION)
 
     def test_the_canonical_skill_points_at_its_ledger(self):
         self.assertIn("[EVOLUTION.md](EVOLUTION.md)", SKILL.read_text(encoding="utf-8"))
@@ -129,7 +131,7 @@ class ContractTests(unittest.TestCase):
 
     def test_the_ledger_declares_the_version_every_other_surface_declares(self):
         text = LEDGER.read_text(encoding="utf-8")
-        self.assertIn(f"Current version: `dokimasia-v{VERSION}`", text)
+        self.assertIn(f"Current version: `dokimasia-v{SKILL_VERSION}`", text)
         self.assertIn("Frontier status: `open`", text)
         self.assertIsNotNone(
             re.search(r"^- Frontier revision: `[a-z0-9-]+`$", text, re.M),
@@ -140,33 +142,51 @@ class ContractTests(unittest.TestCase):
         text = LEDGER.read_text(encoding="utf-8")
         rows = re.findall(r"^\| `dokimasia-v([^`]+)` \| (\w+) \|", text, re.M)
         self.assertTrue(rows, "the ledger records no history row")
-        self.assertEqual(rows[-1][0], VERSION)
+        self.assertEqual(rows[-1][0], SKILL_VERSION)
         self.assertEqual(rows[0][1], "baseline")
 
-    def test_the_latest_row_is_this_version_on_the_evolution_axis(self):
-        """The frontier row is written once, at this version, as an evolution.
+    def test_the_frontier_row_is_an_evolution_and_later_rows_keep_it(self):
+        """The frontier row is written once, as an evolution; generations retain it.
 
-        The version test above reads the row's label; this reads its axis and
-        its revision, because a row at the right version on the wrong axis is
-        the counter arithmetic VERSIONING.md forbids, and a row whose revision
-        disagrees with the header names a frontier the ledger does not hold.
+        The version test above reads the latest row's label; this reads axes,
+        revisions and digests, because a row at the right version on the wrong
+        axis is the counter arithmetic VERSIONING.md forbids, a row whose
+        revision disagrees with the header names a frontier the ledger does not
+        hold, and a generation that moved the frontier digest has changed a
+        held target it may not change.
         """
         text = LEDGER.read_text(encoding="utf-8")
         rows = re.findall(
-            r"^\| `dokimasia-v([^`]+)` \| (\w+) \| `([a-z0-9-]+)` \|", text, re.M
+            r"^\| `dokimasia-v([^`]+)` \| (\w+) \| `([a-z0-9-]+)` \| `([0-9a-f]{64})` \|",
+            text, re.M,
         )
-        self.assertEqual(rows[-1][0], VERSION)
-        self.assertEqual(rows[-1][1], "evolution")
         revision = re.search(r"^- Frontier revision: `([a-z0-9-]+)`$", text, re.M)
-        self.assertEqual(rows[-1][2], revision.group(1))
-        self.assertEqual(text.count(f"| `dokimasia-v{VERSION}` |"), 1)
+        evolutions = [index for index, row in enumerate(rows) if row[1] == "evolution"]
+        frontier = evolutions[-1]
+        self.assertEqual(rows[frontier][2], revision.group(1))
         # Evolution increments the first counter and retains the other two.
-        previous = tuple(int(part) for part in rows[-2][0].split("."))
-        current = tuple(int(part) for part in VERSION.split("."))
+        previous = tuple(int(part) for part in rows[frontier - 1][0].split("."))
+        current = tuple(int(part) for part in rows[frontier][0].split("."))
         self.assertEqual(current, (previous[0] + 1, previous[1], previous[2]))
+        # Every later row is a generation: second counter up by one, the
+        # frontier revision and its digest retained byte for byte.
+        for index in range(frontier + 1, len(rows)):
+            with self.subTest(row=rows[index][0]):
+                self.assertEqual(rows[index][1], "generation")
+                before = tuple(int(part) for part in rows[index - 1][0].split("."))
+                after = tuple(int(part) for part in rows[index][0].split("."))
+                self.assertEqual(after, (before[0], before[1] + 1, before[2]))
+                self.assertEqual(rows[index][2:], rows[frontier][2:])
+        self.assertEqual(rows[-1][0], SKILL_VERSION)
+        self.assertEqual(text.count(f"| `dokimasia-v{SKILL_VERSION}` |"), 1)
 
-    def test_the_version_agrees_across_every_surface_that_states_it(self):
-        """One version, read from each surface rather than assumed from one."""
+    def test_each_version_agrees_across_every_surface_that_states_it(self):
+        """Two numbers, each read from every surface that states it.
+
+        The package version is the delivery number: both manifests and both
+        marketplace listings. The skill version is the governed label: the
+        ledger, the contract's frontmatter and the command surface.
+        """
         claude_listing = json.loads(
             (ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
         )
@@ -175,11 +195,7 @@ class ContractTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        stated = {
-            "ledger": re.search(
-                r"^- Current version: `dokimasia-v([^`]+)`$",
-                LEDGER.read_text(encoding="utf-8"), re.M,
-            ).group(1),
+        package = {
             "claude-manifest": manifest(".claude-plugin")["version"],
             "codex-manifest": manifest(".codex-plugin")["version"],
             "claude-marketplace": next(
@@ -190,12 +206,21 @@ class ContractTests(unittest.TestCase):
                 entry["version"] for entry in agents_listing["plugins"]
                 if entry["name"] == "dokimasia"
             ),
+        }
+        self.assertEqual(package, {surface: PACKAGE_VERSION for surface in package})
+        skill = {
+            "ledger": re.search(
+                r"^- Current version: `dokimasia-v([^`]+)`$",
+                LEDGER.read_text(encoding="utf-8"), re.M,
+            ).group(1),
             "skill-metadata": re.search(
                 r'version:\s*"([^"]+)"', SKILL.read_text(encoding="utf-8")
             ).group(1),
-            "command": VERSION,
+            "command": re.search(
+                r"dokimasia (\S+)", run("--version").stdout
+            ).group(1),
         }
-        self.assertEqual(stated, {surface: VERSION for surface in stated})
+        self.assertEqual(skill, {surface: SKILL_VERSION for surface in skill})
 
     def test_the_frontier_line_is_identical_on_every_marketplace_surface(self):
         """The README, the runtime contract and the skill state one frontier.
@@ -311,8 +336,9 @@ class IdentityTests(unittest.TestCase):
         )
         entry = next(p for p in listing["plugins"] if p["name"] == "dokimasia")
         self.assertEqual(
-            {manifest(".claude-plugin")["version"], manifest(".codex-plugin")["version"]},
-            {VERSION},
+            {manifest(".claude-plugin")["version"], manifest(".codex-plugin")["version"],
+             entry["version"]},
+            {PACKAGE_VERSION},
         )
         self.assertEqual(entry["name"], "dokimasia")
 
@@ -394,8 +420,38 @@ class SelfTestTests(unittest.TestCase):
     def test_a_version_disagreement_would_be_caught(self):
         # The check must have teeth: the comparison the self-test performs is
         # reproduced here over a mutated set, and must fail.
-        declared = {"claude": VERSION, "codex": VERSION, "skill": "0.2.0"}
+        declared = {"SKILL.md": SKILL_VERSION, "EVOLUTION.md": SKILL_VERSION, "command": "0.2.0"}
         self.assertNotEqual(len(set(declared.values())), 1)
+
+    def test_the_self_test_refuses_each_kind_of_disagreement_by_name(self):
+        """Run the real check over a copied plugin with one declaration moved."""
+        import shutil
+
+        cases = {
+            "package": (".codex-plugin/plugin.json", f'"version": "{PACKAGE_VERSION}"', '"version": "9.9.9"'),
+            "skill": ("skills/dokimasia/SKILL.md", f'  version: "{SKILL_VERSION}"', '  version: "9.9.9"'),
+        }
+        for kind, (relative, old, new) in cases.items():
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp) / "repo"
+                copied = root / "plugins" / "dokimasia"
+                shutil.copytree(PLUGIN, copied, ignore=shutil.ignore_patterns("__pycache__"))
+                shutil.copy(ROOT / "PROMISE_MACHINE.md", root / "PROMISE_MACHINE.md")
+                target = copied / relative
+                text = target.read_text(encoding="utf-8")
+                self.assertEqual(text.count(old), 1)
+                target.write_text(text.replace(old, new), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, str(copied / "scripts" / "dokimasia.py"), "selftest"],
+                    capture_output=True, text=True, check=False,
+                )
+                self.assertEqual(result.returncode, 2, result.stdout)
+                self.assertIn(f"the declared {kind} version differs", result.stderr)
+
+    def test_a_package_release_does_not_have_to_move_the_skill_version(self):
+        """The two numbers are separate: the committed tree already differs."""
+        self.assertNotEqual(PACKAGE_VERSION, SKILL_VERSION)
+        self.assertEqual(run("selftest").returncode, 0)
 
 
 class CommandTests(unittest.TestCase):
@@ -440,7 +496,7 @@ class CommandTests(unittest.TestCase):
     def test_the_version_flag_reports_the_declared_version(self):
         result = run("--version")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(VERSION, result.stdout)
+        self.assertIn(SKILL_VERSION, result.stdout)
 
 
 if __name__ == "__main__":
