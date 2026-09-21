@@ -77,7 +77,16 @@ MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # guessing. Bounded because the checkpoint is working state, not a chain.
 MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
-MAX_TIMEOUT_SECONDS = 3600
+# Every real shard reconciliation actually made against the live hosted
+# endpoint (1,539 shards, 2026-09-21) took at most 34 seconds, and every
+# committed example already declares 25. 3,600 was sized for the abandoned
+# blanket trace_filter approach's own worst case, not for a per-request
+# timeout at all, and it let a stalled DNS resolution (see
+# _bounded_request) hide for up to an hour with the CPU idle and no
+# exception ever raised. 60 gives real requests roughly 1.8x the worst
+# measured shard's total time while still failing an actual hang within a
+# minute, not an hour.
+MAX_TIMEOUT_SECONDS = 60
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")

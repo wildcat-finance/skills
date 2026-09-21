@@ -262,6 +262,49 @@ def _close_transport_error(error: urllib.error.URLError) -> None:
         close()
 
 
+def _bounded_request(opener, message: urllib.request.Request, timeout: int, label: str) -> bytes:
+    """Run one HTTP request under a real deadline that covers the whole call.
+
+    `urlopen(..., timeout=timeout)` only reaches a socket that already
+    exists: `socket.create_connection` calls `getaddrinfo` *before* creating
+    one, with no timeout parameter of its own -- read its source. A stalled
+    DNS resolution can hang there past any configured timeout, with the CPU
+    idle and no exception ever raised, which is indistinguishable from a
+    process that is simply still working unless something outside urllib
+    bounds the whole call. Running it in its own thread and bounding that
+    with `join` covers every stage -- resolution, connect, and read -- not
+    only the ones a socket timeout already reaches.
+
+    Python cannot forcibly cancel a running thread. A genuine hang leaves
+    its thread abandoned rather than making this call wait on it; the thread
+    is daemonized so an abandoned one never blocks process exit.
+    """
+    outcome: dict = {}
+
+    def _run() -> None:
+        try:
+            with opener.open(message, timeout=timeout) as response:
+                if response.status != 200:
+                    outcome["error"] = TransportError(f"{label} returned HTTP {response.status}")
+                    return
+                outcome["data"] = response.read(MAX_RAW_COMPONENT_BYTES + 1)
+        except urllib.error.URLError as error:
+            _close_transport_error(error)
+            outcome["error"] = TransportError(f"{label} transport failed")
+
+    worker = threading.Thread(target=_run, daemon=True)
+    worker.start()
+    worker.join(timeout)
+    if worker.is_alive():
+        raise TransportError(
+            f"{label} did not finish within {timeout} seconds -- possibly stalled in DNS "
+            "resolution, which no socket-level timeout reaches"
+        )
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["data"]
+
+
 class HttpsTransport:
     """The hosted network path: HTTPS only, with an optional per-instance bearer.
 
@@ -300,14 +343,7 @@ class HttpsTransport:
             headers=headers,
             method="POST",
         )
-        try:
-            with self._opener.open(message, timeout=self._timeout) as response:
-                if response.status != 200:
-                    raise TransportError(f"{label} returned HTTP {response.status}")
-                return response.read(MAX_RAW_COMPONENT_BYTES + 1)
-        except urllib.error.URLError as error:
-            _close_transport_error(error)
-            raise TransportError(f"{label} transport failed") from error
+        return _bounded_request(self._opener, message, self._timeout, label)
 
 
 def _validate_loopback_endpoint(endpoint: str) -> None:
@@ -368,14 +404,7 @@ class LoopbackHttpTransport:
             headers=dict(REQUEST_HEADERS),
             method="POST",
         )
-        try:
-            with self._opener.open(message, timeout=self._timeout) as response:
-                if response.status != 200:
-                    raise TransportError(f"{label} returned HTTP {response.status}")
-                return response.read(MAX_RAW_COMPONENT_BYTES + 1)
-        except urllib.error.URLError as error:
-            _close_transport_error(error)
-            raise TransportError(f"{label} transport failed") from error
+        return _bounded_request(self._opener, message, self._timeout, label)
 
 
 def transport_from_environment(timeout: int, environ=None):
