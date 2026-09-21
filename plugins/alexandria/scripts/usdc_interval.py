@@ -115,6 +115,16 @@ MAX_COLLECT_BYTES = 512 * 1024 * 1024
 DEFAULT_COLLECT_CONCURRENCY = 4
 MAX_COLLECT_CONCURRENCY = 8
 MAX_RESPONSE_NODES = 2_000_000
+# _bounded_request's own real deadline for one request, independent of a
+# plan's own declared provider.timeout_seconds (bounded separately, much
+# more loosely, by alexandria_lib.interval.MAX_TIMEOUT_SECONDS). Every real
+# shard reconciled against the live hosted endpoint so far (1,539 of them,
+# 2026-09-21) took at most 34 seconds, and every already-committed example
+# already declares 25; a hung request -- most plausibly a stalled DNS
+# resolution, which no socket-level timeout reaches, see _bounded_request --
+# should not need up to an hour, or whatever larger ceiling a plan happens
+# to declare, to reveal itself.
+MAX_REQUEST_SECONDS = 60
 RECEIPTS_DIRECTORY = "receipts"
 ERROR_RECEIPTS = "errors.jsonl"
 RECONCILIATION_DIRECTORY = "reconciliation"
@@ -275,15 +285,25 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
     with `join` covers every stage -- resolution, connect, and read -- not
     only the ones a socket timeout already reaches.
 
+    The deadline is `min(timeout, MAX_REQUEST_SECONDS)`, never the bare
+    plan-declared `timeout`: a plan's own ceiling is validated much more
+    loosely (`alexandria_lib.interval.MAX_TIMEOUT_SECONDS`) than what a
+    single request should realistically ever need, precisely so that an
+    already-authored plan's declared value never has to change -- and
+    changing it would change `plan_digest` and invalidate every checkpoint
+    already bound to that plan. Capping the real wait here, separately,
+    gets a fast, bounded failure without touching the plan at all.
+
     Python cannot forcibly cancel a running thread. A genuine hang leaves
     its thread abandoned rather than making this call wait on it; the thread
     is daemonized so an abandoned one never blocks process exit.
     """
+    bounded = min(timeout, MAX_REQUEST_SECONDS)
     outcome: dict = {}
 
     def _run() -> None:
         try:
-            with opener.open(message, timeout=timeout) as response:
+            with opener.open(message, timeout=bounded) as response:
                 if response.status != 200:
                     outcome["error"] = TransportError(f"{label} returned HTTP {response.status}")
                     return
@@ -294,10 +314,10 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
 
     worker = threading.Thread(target=_run, daemon=True)
     worker.start()
-    worker.join(timeout)
+    worker.join(bounded)
     if worker.is_alive():
         raise TransportError(
-            f"{label} did not finish within {timeout} seconds -- possibly stalled in DNS "
+            f"{label} did not finish within {bounded} seconds -- possibly stalled in DNS "
             "resolution, which no socket-level timeout reaches"
         )
     if "error" in outcome:

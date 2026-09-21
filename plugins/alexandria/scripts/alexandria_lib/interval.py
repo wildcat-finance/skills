@@ -77,16 +77,20 @@ MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # guessing. Bounded because the checkpoint is working state, not a chain.
 MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
-# Every real shard reconciliation actually made against the live hosted
-# endpoint (1,539 shards, 2026-09-21) took at most 34 seconds, and every
-# committed example already declares 25. 3,600 was sized for the abandoned
-# blanket trace_filter approach's own worst case, not for a per-request
-# timeout at all, and it let a stalled DNS resolution (see
-# _bounded_request) hide for up to an hour with the CPU idle and no
-# exception ever raised. 60 gives real requests roughly 1.8x the worst
-# measured shard's total time while still failing an actual hang within a
-# minute, not an hour.
-MAX_TIMEOUT_SECONDS = 60
+# The ceiling a plan's own declared provider.timeout_seconds is validated
+# against -- not how long any one request is actually allowed to run for,
+# which is usdc_interval.MAX_REQUEST_SECONDS, a separate and much smaller
+# real deadline _bounded_request enforces regardless of what a plan
+# declares. Kept at the original 3,600 rather than lowered: plan_digest
+# hashes the whole plan, so lowering this ceiling would force an
+# already-authored, already-checkpointed plan's own declared value down
+# to fit, changing its digest and invalidating every checkpoint already
+# bound to it -- a live run's completed collection and in-progress
+# reconciliation among them, 2026-09-21. A plan's own outer ceiling and
+# the real per-request deadline are different concerns for exactly this
+# reason: one can be conservative and effectively unused; the other is
+# where a hang actually has to be caught.
+MAX_TIMEOUT_SECONDS = 3600
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
