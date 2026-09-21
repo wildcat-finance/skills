@@ -106,23 +106,23 @@ finality or provider independence for the Aave v4 capture: transaction hashes
 are recorded RPC metadata, not a proved header identity, and nothing here
 describes current chain state.
 
-### ALEXANDRIA PRESERVES A WILDCAT V1 INTERVAL
+### ALEXANDRIA PRESERVES BOTH WILDCAT ESTATES
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-v1-interval-v0" digest="4ed11ea3db3bc338f717d3642f08945b47ce9fec62def540e21e49923702a0a3" -->
-[Alexandria](./plugins/alexandria) checks the preserved Wildcat V1 mainnet
-interval, blocks 18,743,513 to 22,074,622 over 16 subjects. Its committed
-manifest, rebuild record and expected values agree on the release the
-collecting host rebuilt from preserved staging.
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="468e9be793db0680fb486d895d413cda5af8b3022c24c2dc9c8b8dc6a7737c41" -->
+[Alexandria](./plugins/alexandria) checks the committed archive manifests,
+rebuild records and expected values for both Wildcat mainnet intervals:
+16 V1 subjects and 137 V2 subjects. Each manifest binds the externally preserved
+staging files by byte count and SHA-256.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexandria --report tmp/demo/alexandria.json
 ```
 
-Over the committed
-`plugins/alexandria/examples/wildcat-v1-interval-v0/staging-manifest.json` and
-`plugins/alexandria/examples/wildcat-v1-interval-v0/rebuild-record.json` it reports
-`record.checked.release_id "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"`.
-This check does not rebuild the release or read its externally preserved staging tree. The collecting host recorded the rebuild from those digest-bound bytes. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
+Over `plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json`,
+the registered operation reports `scope "committed-metadata-only"` and
+`rebuild_performed false`. The [combined demonstration](./plugins/alexandria/examples/wildcat-estates-interval-v0/README.md)
+provides the complete offline rebuild when both external staging trees are present.
+This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate combined build and verify commands require both staging trees. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 

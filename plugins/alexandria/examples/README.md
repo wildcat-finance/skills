@@ -56,3 +56,11 @@ staging files. The offline build reproduces the release once those files are
 available; a separate metadata check needs no archive. The shared Sentinel has
 no recorded logs in either live interval; positive shared-subject attribution
 is also tested with constructed captures.
+
+## Both preserved Wildcat estates
+
+The [combined offline demonstration](wildcat-estates-interval-v0/README.md) rebuilds the 16-subject V1 and
+137-subject V2 captures beside Compound, checks coverage parity and source
+identity, and exercises registry and foreign-subject refusals. Its separate
+`verify-preserved` operation checks committed metadata only. Neither operation
+makes a source-completeness or publisher-identity claim.

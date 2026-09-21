@@ -61,7 +61,7 @@ REPORT_SCHEMA = "shoggoth-demonstration-report/v1"
 PUBLIC_SET = (
     "anamnesis-corpus-demo",
     "lazarus-goldfinch-replay",
-    "alexandria-wildcat-v1-interval-v0",
+    "alexandria-wildcat-estates-interval-v0",
     "dokimasia-wildcat-app-v2-scrutiny",
 )
 PUBLIC_SET_CEILING_MS = 600_000
