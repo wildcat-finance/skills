@@ -363,12 +363,14 @@ def conformance(gen, root: Path, reports: Path, candidate: str, criterion: str) 
                 p.relative_to(runtime).as_posix(): p.read_bytes()
                 for p in runtime.rglob("*") if p.is_file()
             }
-            linked = set()
-            universe = set(payload)
-            prefixes = directory_prefixes(universe)
-            for path, data in payload.items():
-                if path.endswith(".md"):
-                    linked.update(t for k, t in link_targets(path, data, universe, prefixes) if k == "file")
+            # `linked` has to use the same closure `kept_paths` used to decide
+            # what this candidate keeps -- `close_links`, which also pulls
+            # back a directory-shaped link's smallest file when no file
+            # inside it is already kept -- not a direct-file-link-only check.
+            # A narrower check here would call a file "leaked" that the
+            # candidate's own accepted selection legitimately keeps.
+            seed = {p for p in payload if p.endswith(".md")}
+            linked = close_links(seed, payload) - seed
             leaks = [
                 p for p in payload
                 if EXAMPLE.match(p) and not p.endswith(".md")
