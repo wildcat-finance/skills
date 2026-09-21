@@ -1,0 +1,15 @@
+## Step 1, round 1 -- 2026-09-21T20:18:51Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: rights-bound=reviewed; rights-shape=reviewed; private-prose=reviewed; projection-disclosure=reviewed; old-release=reviewed; rebuild-drift=reviewed; source-custody=reviewed; frontier-drift=reviewed; report-custody=reviewed
+
+Not checked: production rights binding, hostile-manifest refusal, replacement release identities and consumer behaviour belong to Steps 2 and 3; the implementation conformance cell remains pending. The Pashov suite is waived because this step produces no Solidity. Timing reports are preserved measurements and were not remeasured. Legal authority, publication and deployment were not established.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the retained direct-suite run in `.hexaemeron/step-1-direct-suite.log` has 5 failures and 2 skips among 312 tests: `test_s11_registry.py` and `test_s14_ledger.py` compare historical #1464 documents with this run's controller files. Step 2 owns their scope-bound repair; this round does not call that invocation green. The required checked runner removes controller state from its snapshot and passed all 10 selected checks: root 2083 tests with 1 skip, Anamnesis 312 tests with 6 skips, and Phylax, Ephoros and Hypomnema exit 0. Evidence: `.hexaemeron/step-1-warden-checks.json`. Independent review reproduced 15 deterministic selection cells, verified the study/design bridge, retained all specimen bytes and all prior ledger bytes outside the new decision paragraph, and exercised a fresh resolver report. Sapheneia's durable-record comparison retained the schema, all 9 risk ids, evidence and limits; declaration `--audit-filter sapheneia:sapheneia`. No fix or Elenchus verdict is claimed.
