@@ -1,0 +1,14 @@
+{
+  "archive_sha256": "b0514d43822cee8e237f0487751ed2adcaa7669caa99fe8f20c738db89ebbfc6",
+  "checked": {
+    "epochs": 137,
+    "reconciliation": "agreed",
+    "release_id": "sha256:d76cce047564818a5ff3ccf1b730ba16fca20a05037f96f870b3e076f9e4ad35",
+    "shard_statuses": {
+      "complete": 3463
+    }
+  },
+  "format": "alexandria-wildcat-v2-rebuild-record/v1",
+  "rebuilt_at": "2026-09-21T12:31:02Z",
+  "rebuilt_by": "the same host that collected the interval"
+}

@@ -38,3 +38,13 @@ method proof, not an interval history.
 synthetic Lazarus fixture in an Alexandria release. Verification reconstructs
 the fixture by digest, reruns Lazarus and accepts only the proved block and
 subjects; the fixture establishes nothing about a real chain.
+
+[`wildcat-v2-interval-v0`](wildcat-v2-interval-v0/README.md) preserves the
+real Wildcat V2 mainnet interval, blocks 21,866,550 to 26,022,093, across all
+137 registry subjects, collected once from two live transports and agreed
+between them on every comparison. Its staging tree is too large to check in
+and is preserved outside this repository, verified by a committed manifest
+that binds the archive's digest to every file inside it; a separate, offline
+check confirms that manifest and the recorded rebuild agree with the pinned
+expectation with no staging tree needed, and `demo.py build` rebuilds the
+release itself once the preserved tree is unpacked locally.

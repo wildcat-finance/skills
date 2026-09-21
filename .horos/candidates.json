@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 9723,
-    "bytes_blob": 28844651,
+    "bytes_blob": 29077907,
     "bytes_generated": 98
   },
   "entries": [
@@ -999,6 +999,20 @@
       "evidence": "no newline in the first 4096 bytes of 64477 bytes",
       "grade": "candidate",
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/logs.jsonl"
+    },
+    {
+      "bytes": 168366,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 168366 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json"
+    },
+    {
+      "bytes": 64890,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 64890 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/registry.json"
     },
     {
       "bytes": 407536,
