@@ -46,7 +46,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "hermes": "0.1.1",
     "hexaemeron": "1.6.70",
     "homologia": "1.1.1",
-    "horos": "0.1.1",
+    "horos": "0.1.5",
     "janus": "0.1.1",
     "lazarus": "1.1.4",
     "lemma": "0.1.4",
