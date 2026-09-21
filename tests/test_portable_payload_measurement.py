@@ -333,5 +333,102 @@ class LinkKeptSafetyTests(unittest.TestCase):
         self.assertEqual(found, set())
 
 
+STUDY_DIR = ROOT / "docs/portable-payload-reserve"
+REPORT_GATES = {
+    "measure-agrees": lambda value: value is True,
+    "class-leaks": lambda value: value == 0,
+    "installed-gates-pass": lambda value: value is True,
+    "room-on-step-tree": lambda value: value >= 794493,
+}
+
+
+class CommittedMeasurementRecordTests(unittest.TestCase):
+    """The frozen `measurement.json` record beside the study (Step 4).
+
+    This is a record of one past `measure --json` run, not a live rerun: no
+    test here compares it with the current tree (study risk `record-currency`).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.record = json.loads((STUDY_DIR / "measurement.json").read_text(encoding="utf-8"))
+
+    def test_schema_commit_shape_and_clean_tree(self):
+        commit = self.record["source_commit"]
+        self.assertEqual(self.record["schema"], SCHEMA)
+        self.assertEqual(len(commit), 40)
+        self.assertTrue(all(c in "0123456789abcdef" for c in commit))
+        self.assertIs(self.record["tree_clean"], True)
+
+    def test_source_commit_is_an_ancestor_of_head(self):
+        result = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            [
+                "git", "-C", str(ROOT), "merge-base", "--is-ancestor",
+                self.record["source_commit"], "HEAD",
+            ],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_own_arithmetic_holds(self):
+        record = self.record
+        self.assertEqual(record["line"], record["cap"] - record["reserve"])
+        self.assertEqual(
+            record["package"]["margin"], record["line"] - record["package"]["bytes"]
+        )
+        self.assertEqual(
+            record["runtime"]["margin"], record["line"] - record["runtime"]["bytes"]
+        )
+        self.assertEqual(
+            record["package"]["bytes"] - record["runtime"]["bytes"],
+            record["manifest_bytes"] + record["outer_bytes"],
+        )
+
+
+class CommittedReportCopyTests(unittest.TestCase):
+    """`docs/portable-payload-reserve/reports/` copies of the `step:4` reports."""
+
+    def test_each_copy_parses_and_passes_its_own_gate(self):
+        for criterion, gate in REPORT_GATES.items():
+            with self.subTest(criterion=criterion):
+                name = f"example-payload-class--{criterion}.json"
+                document = json.loads((STUDY_DIR / "reports" / name).read_text(encoding="utf-8"))
+                self.assertEqual(document["schema"], "protasis-design-report/v1")
+                self.assertEqual(document["criterion"], criterion)
+                self.assertEqual(document["exit"], 0)
+                self.assertTrue(gate(document["value"]), document)
+
+
+class DemonstrationRecordTests(unittest.TestCase):
+    """`demonstration.json`: exactly the three study section 1 observations."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.record = json.loads((STUDY_DIR / "demonstration.json").read_text(encoding="utf-8"))
+
+    def test_exactly_three_observations_with_the_documented_exit_codes(self):
+        observations = self.record["observations"]
+        self.assertEqual([item["id"] for item in observations],
+                          ["positive", "first-negative", "second-negative"])
+        self.assertEqual(
+            [item["exit_codes"] for item in observations], [[0], [1], [0, 1]],
+        )
+        for item in observations:
+            self.assertTrue(item["steps"])
+            for step in item["steps"]:
+                self.assertIn("argv", step)
+                self.assertIn("exit_code", step)
+                self.assertIn("relied_on_output_lines", step)
+
+    def test_controller_and_source_command_are_named(self):
+        self.assertEqual(self.record["controller"], "Fiat")
+        self.assertEqual(self.record["source_command"], "scripts/portable_promise_machine.py")
+
+    def test_claims_nothing_beyond_the_three_observations(self):
+        blob = json.dumps(self.record).lower()
+        for forbidden in ("forecast", "suffic", "hourly", "publisher"):
+            self.assertNotIn(forbidden, blob)
+
+
 if __name__ == "__main__":
     unittest.main()
