@@ -14,12 +14,14 @@ which stays gated on a declared subject set.
 """
 
 from copy import deepcopy
+import concurrent.futures
 import io
 import json
 from pathlib import Path
 import shutil
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest import mock
@@ -120,6 +122,158 @@ class _TraceTransactionTransport:
         )
 
 
+class TargetedTraceConcurrencyTests(unittest.TestCase):
+    """Concurrent reads retain the serial bytes and a bounded request window."""
+
+    def setUp(self):
+        self.state = wildcat.fixture(wildcat.wildcat_v2.VENUE)
+        self.plan = self.state["plan"]
+        self.registry = wildcat.registry()
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.hashes = ["0x" + f"{index:064x}" for index in range(1, 7)]
+        self.logs = [
+            {"transactionHash": value, "blockNumber": "0x1", "transactionIndex": hex(index)}
+            for index, value in enumerate(self.hashes)
+        ]
+        subject = self.plan["subjects"][0]
+        self.table = {
+            value: [{"transactionHash": value, "traceAddress": [], "type": "call",
+                     "action": {"to": subject, "value": hex(index)},
+                     "result": {"output": "0x1234"}}]
+            for index, value in enumerate(self.hashes)
+        }
+
+    def make_owner(self, kind, transport, concurrency):
+        if kind == "collect":
+            return Collector(self.plan, self.root, transport, registry=self.registry,
+                             trace_concurrency=concurrency)
+        return Reconciler(self.plan, self.root, transport, "fixture-second",
+                          registry=self.registry, trace_concurrency=concurrency)
+
+    def fetch(self, owner):
+        if isinstance(owner, Collector):
+            _payload, data, frames = owner._targeted_traces(0, self.logs)
+            return frames, data
+        return owner._second_traces(0, self.hashes)
+
+    def test_out_of_order_completion_preserves_serial_bytes_for_both_paths(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                serial_transport = _TraceTransactionTransport(self.table)
+                expected = self.fetch(self.make_owner(kind, serial_transport, 1))
+                first, second = self.hashes[:2]
+                table = self.table
+
+                class Controlled(_TraceTransactionTransport):
+                    def __init__(self):
+                        super().__init__(table)
+                        self.second_done = threading.Event()
+                        self.lock = threading.Lock()
+                        self.active = self.peak = 0
+                        self.finished = []
+
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        with self.lock:
+                            self.active += 1
+                            self.peak = max(self.peak, self.active)
+                        try:
+                            if tx_hash == first and not self.second_done.wait(5):
+                                raise AssertionError("second request never overlapped the first")
+                            answer = super().request(payload, label)
+                            self.finished.append(tx_hash)
+                            if tx_hash == second:
+                                self.second_done.set()
+                            return answer
+                        finally:
+                            with self.lock:
+                                self.active -= 1
+
+                transport = Controlled()
+                actual = self.fetch(self.make_owner(kind, transport, 2))
+                self.assertEqual(actual, expected)
+                self.assertEqual(transport.peak, 2)
+                self.assertEqual(transport.finished[0], second)
+                self.assertCountEqual([params[0] for _, params, _ in transport.calls], self.hashes)
+                self.assertEqual([params[0] for _, params, _ in serial_transport.calls], self.hashes)
+
+    def test_failure_stops_refilling_and_never_stages_a_partial_trace_result(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                first, second = self.hashes[:2]
+                table = self.table
+                failed = threading.Event()
+                requested = []
+
+                class Failing(_TraceTransactionTransport):
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        requested.append(tx_hash)
+                        if tx_hash == second:
+                            failed.set()
+                            raise usdc_interval.TransportError("fixture transport failed")
+                        if tx_hash == first and not failed.wait(5):
+                            raise AssertionError("failure request never overlapped")
+                        return super().request(payload, label)
+
+                owner = self.make_owner(kind, Failing(table), 2)
+                with mock.patch.object(owner.staging, "record") as record:
+                    with self.assertRaisesRegex(usdc_interval.TransportError, "fixture transport failed"):
+                        self.fetch(owner)
+                record.assert_not_called()
+                self.assertCountEqual(requested, [first, second])
+
+    def test_invalid_trace_concurrency_refuses(self):
+        for kind in ("collect", "reconcile"):
+            for invalid in (0, -1, 17, True, 1.5, "4"):
+                with self.subTest(kind=kind, concurrency=invalid):
+                    with self.assertRaisesRegex(AlexandriaError, "trace concurrency"):
+                        self.make_owner(kind, _TraceTransactionTransport(self.table), invalid)
+
+    def test_one_collectors_trace_cap_is_shared_across_shard_fetches(self):
+        table = self.table
+
+        class Paired(_TraceTransactionTransport):
+            def __init__(self):
+                super().__init__(table)
+                self.barrier = threading.Barrier(2)
+                self.lock = threading.Lock()
+                self.active = self.peak = 0
+
+            def request(self, payload, label):
+                with self.lock:
+                    self.active += 1
+                    self.peak = max(self.peak, self.active)
+                try:
+                    self.barrier.wait(timeout=5)
+                    return super().request(payload, label)
+                finally:
+                    with self.lock:
+                        self.active -= 1
+
+        transport = Paired()
+        owner = self.make_owner("collect", transport, 2)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(owner._targeted_traces, shard, self.logs) for shard in (0, 1)]
+            results = [future.result() for future in futures]
+        self.assertEqual(transport.peak, 2)
+        self.assertEqual(len(transport.calls), 2 * len(self.hashes))
+        self.assertEqual(results[0][2], results[1][2])
+
+    def test_cli_default_and_serial_fallback_are_available_to_both_commands(self):
+        for command in ("collect", "reconcile"):
+            arguments = [command, "--plan", "plan.json", "--staging", "staging"]
+            if command == "reconcile":
+                arguments += ["--provider-class", "fixture-second"]
+            with self.subTest(command=command):
+                self.assertEqual(usdc_interval.parser().parse_args(arguments).trace_concurrency, 4)
+                self.assertEqual(usdc_interval.parser().parse_args(
+                    arguments + ["--trace-concurrency", "1"]
+                ).trace_concurrency, 1)
+
+
 class TargetedTracesSynthesisTests(unittest.TestCase):
     """`Collector._targeted_traces`: one combined record, built from real per-tx calls.
 
@@ -174,13 +328,14 @@ class TargetedTracesSynthesisTests(unittest.TestCase):
         collector = self.collector(transport)
         payload, response, combined = collector._targeted_traces(0, logs_result)
 
-        # Exactly one trace_transaction call per distinct hash, in derivation order.
-        self.assertEqual([params[0] for _method, params, _label in transport.calls], [tx_a, tx_b])
+        # Each hash is requested exactly once; results retain derivation order.
+        self.assertCountEqual([params[0] for _method, params, _label in transport.calls], [tx_a, tx_b])
         self.assertTrue(all(method == "trace_transaction" for method, _p, _l in transport.calls))
 
         # The non-matching frame (to `other_address`) was dropped.
         self.assertEqual(len(combined), 2)
         self.assertTrue(all(frame["action"]["to"] == matching_to for frame in combined))
+        self.assertEqual(combined, [table[tx_a][0], table[tx_b][0]])
 
         # The request honestly names what was actually done -- trace_transaction
         # over the hashes actually derived, never a trace_filter call that never happened.

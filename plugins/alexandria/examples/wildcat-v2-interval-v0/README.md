@@ -74,6 +74,13 @@ of the 3,463 shards carry neither a log nor a targeted trace. Transactions
 without a matching subject log were not traced, so an empty shard does not
 establish that its subjects had no calls or state changes.
 
+`collect` and `reconcile` accept `--trace-concurrency` from 1 to 16, with a
+default of 4. Each batch finishes before the next starts, and results retain
+transaction order even when requests finish out of order. The limit applies
+across one collector's shard workers; shard commits and reconciliation
+checkpoints remain sequential. Use `--trace-concurrency 1` for serial trace
+requests, and also `collect --concurrency 1` for serial shard collection.
+
 The two providers agreed on all 124,200 comparisons the reconciliation made,
 nothing disputed: every shard's boundary-block hash, every preserved log, and
 every preserved targeted-trace identity. That recorded comparison did not

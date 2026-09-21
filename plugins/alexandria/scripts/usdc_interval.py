@@ -115,6 +115,8 @@ MAX_COLLECT_BYTES = 512 * 1024 * 1024
 # thread count.
 DEFAULT_COLLECT_CONCURRENCY = 4
 MAX_COLLECT_CONCURRENCY = 8
+DEFAULT_TRACE_CONCURRENCY = 4
+MAX_TRACE_CONCURRENCY = 16
 MAX_RESPONSE_NODES = 2_000_000
 # _bounded_request's own real deadline for one request, independent of a
 # plan's own declared provider.timeout_seconds (bounded separately, much
@@ -914,14 +916,52 @@ class _FetchedShard:
         self.fetch_seconds = fetch_seconds
 
 
+def _trace_concurrency(value: int) -> int:
+    if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= MAX_TRACE_CONCURRENCY:
+        raise AlexandriaError(
+            f"trace concurrency must be a whole number from 1 to {MAX_TRACE_CONCURRENCY}"
+        )
+    return value
+
+
+def _ordered_trace_results(hashes, ask, concurrency, slots):
+    """Overlap a bounded request window, yielding only in transaction order.
+
+    The owner's slots also bound calls across concurrent collector shards.
+    A failure stops window refill; already running calls settle before the
+    exception escapes. Workers never write a shard or advance a checkpoint.
+    """
+    if concurrency == 1:
+        for tx_hash in hashes:
+            with slots:
+                yield ask(tx_hash)
+        return
+    if not hashes:
+        return
+    def fetch(tx_hash):
+        with slots:
+            return ask(tx_hash)
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(concurrency, len(hashes)))
+    try:
+        for start in range(0, len(hashes), concurrency):
+            pending = [pool.submit(fetch, tx_hash) for tx_hash in hashes[start:start + concurrency]]
+            for future in pending:
+                yield future.result()
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
+
+
 class Collector:
     """One bounded collection over one plan, against one transport."""
 
     def __init__(
         self, plan, staging_root, transport, *, receipts_root=None, registry=None,
-        concurrency=1,
+        concurrency=1, trace_concurrency=DEFAULT_TRACE_CONCURRENCY,
     ) -> None:
         validate_plan(plan)
+        self.trace_concurrency = _trace_concurrency(trace_concurrency)
+        self._trace_slots = threading.BoundedSemaphore(self.trace_concurrency)
         self.plan = plan
         self.registry = registry
         self._held = {}
@@ -1386,7 +1426,7 @@ class Collector:
             )
         hashes = subject_transaction_hashes(logs_result)
         combined = []
-        for tx_hash in hashes:
+        def ask(tx_hash):
             _, _, trace_result = self._ask(
                 shard_index, "traces", "trace_transaction", [tx_hash],
                 label=f"shard {shard_index} traces {tx_hash}",
@@ -1395,6 +1435,11 @@ class Collector:
                 raise AlexandriaError(
                     f"shard {shard_index} trace_transaction {tx_hash} did not return a list"
                 )
+            return trace_result
+
+        for trace_result in _ordered_trace_results(
+            hashes, ask, self.trace_concurrency, self._trace_slots,
+        ):
             combined.extend(frame for frame in trace_result if _matches_subjects(frame, self._subjects))
         identifier = request_identifier(shard_index, "traces")
         payload = request_bytes(identifier, "trace_transaction", hashes)
@@ -1538,8 +1583,13 @@ class Reconciler:
     disagreed and both sets of bytes are kept.
     """
 
-    def __init__(self, plan, staging_root, transport, provider_class, *, registry=None) -> None:
+    def __init__(
+        self, plan, staging_root, transport, provider_class, *, registry=None,
+        trace_concurrency=DEFAULT_TRACE_CONCURRENCY,
+    ) -> None:
         validate_plan(plan)
+        self.trace_concurrency = _trace_concurrency(trace_concurrency)
+        self._trace_slots = threading.BoundedSemaphore(self.trace_concurrency)
         self.plan = plan
         self.registry = registry
         opening_phase(plan, [], registry=registry)
@@ -1616,7 +1666,7 @@ class Reconciler:
         compared -- and kept via `_keep` when the comparison disagrees.
         """
         combined = []
-        for tx_hash in hashes:
+        def ask(tx_hash):
             identifier = request_identifier(shard_index, "traces")
             payload = request_bytes(identifier, "trace_transaction", [tx_hash])
             result, _data = self._second_raw(
@@ -1627,6 +1677,11 @@ class Reconciler:
                     f"shard {shard_index} second-provider trace_transaction {tx_hash} did not "
                     "return a list"
                 )
+            return result
+
+        for result in _ordered_trace_results(
+            hashes, ask, self.trace_concurrency, self._trace_slots,
+        ):
             combined.extend(frame for frame in result if _matches_subjects(frame, self._subjects))
         identifier = request_identifier(shard_index, "traces")
         combined_bytes = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
@@ -3381,6 +3436,14 @@ def parser() -> argparse.ArgumentParser:
         "--registry", type=Path,
         help="the deployment registry, for a venue that plans its opening reads from one",
     )
+    for command in (collect, reconcile):
+        command.add_argument(
+            "--trace-concurrency", type=int, default=DEFAULT_TRACE_CONCURRENCY,
+            help=(
+                f"targeted trace requests in flight, from 1 to {MAX_TRACE_CONCURRENCY} "
+                f"(default {DEFAULT_TRACE_CONCURRENCY}); 1 requests serially"
+            ),
+        )
     build = commands.add_parser("build", help="build the Alexandria release offline")
     build.add_argument("--plan", required=True, type=Path)
     build.add_argument("--staging", required=True, type=Path)
@@ -3419,13 +3482,15 @@ def main(argv=None) -> int:
         transport = transport_from_environment(plan["provider"]["timeout_seconds"])
         if args.command == "reconcile":
             document = Reconciler(
-                plan, args.staging, transport, args.provider_class, registry=registry
+                plan, args.staging, transport, args.provider_class, registry=registry,
+                trace_concurrency=args.trace_concurrency,
             ).reconcile()
             sys.stdout.buffer.write(canonical_bytes(document))
             return 0
         args.staging.mkdir(parents=True, exist_ok=True)
         summary = Collector(
             plan, args.staging, transport, registry=registry, concurrency=args.concurrency,
+            trace_concurrency=args.trace_concurrency,
         ).collect()
         sys.stdout.buffer.write(canonical_bytes(summary))
         return 0
