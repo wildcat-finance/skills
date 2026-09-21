@@ -1,0 +1,35 @@
+{
+  "schema": "wildcat.kickoff-consumer-sources.v1",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "revision": "7952eafa337f5ba1c4f45417ceb154673f629c1c",
+  "files": [
+    {
+      "path": "plugins/alexandria/scripts/alexandria.py",
+      "sha256": "ed87d8cf25eadafaf3af63915edb707461ee4488b386b5b8a7b748cbbc4a505e"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
+      "sha256": "5c38acf22e5c216c52f69a6605bafc7ebf94efe216bb5e3839757110f5a483bb"
+    },
+    {
+      "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
+      "sha256": "b4a1a90e3465e5cbf4380634a261f0637d89efbc027fec4aec4b3dafa7c92437"
+    },
+    {
+      "path": "plugins/alexandria/schemas/address-query-v1.schema.json",
+      "sha256": "89a0e9f18fd7c0030834bb9df2115ec2cba22679dc3405dec004c29902a69437"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/SKILL.md",
+      "sha256": "f73063c5c283a837758000303a2f11291ac714f0bb822630c91378486281ad41"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
+      "sha256": "bbc9ff7623ad57d71d8f22b0c768defc01ebe59572047f4e7e1305d2ed668ef3"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
+      "sha256": "7a993ef04f74ff490a6dc77daecd103c45198eb7680e069f425189ed600ea786"
+    }
+  ]
+}
