@@ -48,6 +48,31 @@ DUPLICATE_LAZARUS_PAYLOADS = (
     "anchors.jsonl", "header.json", "plan.json", "proofs.jsonl",
     "receipt-witness.json", "rpc.jsonl",
 )
+# The one retained complete release; every other file under plugins/*/examples/
+# that is not Markdown is omitted unless a packaged document links it. See
+# docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md.
+LAZARUS_RETAINED_RELEASE = "plugins/lazarus/examples/aave-v4-spoke-v1-release/"
+EXAMPLE_ROOT = re.compile(r"^plugins/[^/]+/examples/")
+# One linear pattern over bounded file bytes: an ordinary Markdown link, with
+# an optional title, no nested or overlapping quantifiers over the same
+# characters. The bracket text, target and title are each capped and refuse a
+# newline, so an unmatched "[" cannot force a scan across the rest of a large
+# or hostile file looking for its "]" -- every real link in this repository's
+# packaged Markdown stays inside these limits by a wide margin. Reused by the
+# link-kept scan below; `transform_portrait_images` matches images with a
+# related, narrower pattern.
+MARKDOWN_LINK = re.compile(
+    r'\[[^\]\n]{0,1000}\]\(([^)\s]{1,1000})(?:\s+"[^"\n]{0,500}")?\)'
+)
+# The regex groups above bound one *match*; nothing bounded the file this
+# reads in *bytes* before this cap existed, so a single enormous packaged
+# Markdown file had no ceiling on the memory or (still-linear) time this scan
+# spent on it. The largest packaged Markdown file today is 272,388 bytes; this
+# leaves comfortable headroom over that, over the >1MB hostile fixture
+# `test_oversized_or_hostile_markdown_link_scan_completes_quickly` already
+# exercises, and stays a small fraction of the whole 25 MiB runtime budget.
+# Same discipline as Phylax's own `TYPESCRIPT_MAX_BYTES` boundary.
+MARKDOWN_LINK_SCAN_MAX_BYTES = 8 * 1024 * 1024
 PORTRAIT_TRANSFORM = "remove-decorative-portrait-images/v1"
 EVALUATION_TRANSFORM = "replay-unchanged-evaluation-prompts/v1"
 EVALUATION_RUN = "docs/promise-machine/obligation-gates/evaluation-run.json"
@@ -198,18 +223,6 @@ PORTABLE_TEST_FILES = (
 
 OMISSIONS = (
     {
-        "pattern": (
-            "plugins/lazarus/examples/aave-v4-spoke-v1/"
-            "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}"
-        ),
-        "reason": (
-            "the complete unchanged fixture remains under "
-            "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture; "
-            "generation checks equal tracked bytes and modes before omitting "
-            "these duplicate payloads; the source demonstration requires a full checkout"
-        ),
-    },
-    {
         "pattern": "assets/characters/*.{png,webp}",
         "reason": "decorative portraits remain in the source checkout",
     },
@@ -263,28 +276,12 @@ OMISSIONS = (
         ),
     },
     {
-        "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
-        "reason": "the large offline trace inputs remain in the full source checkout",
-    },
-    {
-        "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
-        "reason": "the built offline trace release remains in the full source checkout",
-    },
-    {
-        "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
-        "reason": "the offline trace release sources remain in the full source checkout",
-    },
-    {
-        "pattern": (
-            "plugins/tabularium/examples/*-v1/"
-            "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}"
-        ),
+        "pattern": "plugins/*/examples/**",
+        "exceptions": ["**/*.md", LAZARUS_RETAINED_RELEASE + "**"],
         "reason": (
-            "a superseding schema v3 release is built from the v0 release's own "
-            "source bytes, so shipping both payloads would carry the same "
-            "evidence twice; the v1 documents stay and the payload and its "
-            "rebuild demonstration remain in the full source checkout, which is "
-            "where those documents say to run them"
+            "demonstration payloads remain in the full source checkout; "
+            "their documents, every file a packaged document links, and "
+            "the one complete Lazarus release stay"
         ),
     },
 )
@@ -324,42 +321,31 @@ def _tracked_plugin_files(root: Path) -> list[Path]:
     return [Path(raw.decode("utf-8")) for raw in result.stdout.split(b"\0") if raw]
 
 
+def _example_class_matches(relative: Path) -> bool:
+    """True for a non-Markdown file under plugins/*/examples/ outside the
+    retained Lazarus release -- the example-payload-class predicate on its
+    own, independent of any other, unrelated omission rule below."""
+    posix = relative.as_posix()
+    return (
+        EXAMPLE_ROOT.match(posix) is not None
+        and relative.suffix != ".md"
+        and not posix.startswith(LAZARUS_RETAINED_RELEASE)
+    )
+
+
 def _omitted(relative: Path) -> bool:
     parts = relative.parts
+    if _example_class_matches(relative):
+        return True
     if len(parts) < 3 or parts[0] != "plugins":
         return False
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
         return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True
-    if (
-        parts[:4] == ("plugins", "lazarus", "examples", "aave-v4-spoke-v1")
-        and len(parts) == 5
-        and parts[4] in DUPLICATE_LAZARUS_PAYLOADS
-    ):
-        return True
     if parts[:5] == ("plugins", "hexaemeron", "skills", "fiat", "checkpoint-authority") and len(parts) >= 7 and parts[5] in {"fixtures", "native-fixture"}:
         return True
-    if (
-        parts[:3] == ("plugins", "tabularium", "examples")
-        and len(parts) == 5
-        and parts[3].endswith("-v1")
-        and parts[4] in {
-            "capture.json",
-            "coverage.json",
-            "events.jsonl",
-            "rebuild.py",
-            "source.json",
-        }
-    ):
-        return True
-    example = parts[:4] == (
-        "plugins",
-        "alexandria",
-        "examples",
-        "compound-v3-phase0-v0",
-    )
-    return example and len(parts) >= 5 and parts[4] in {"input", "release", "source"}
+    return False
 
 
 def decorative_portrait(relative: Path) -> bool:
@@ -396,6 +382,84 @@ def check_duplicate_fixture_payload(root: Path, tracked: list[Path]) -> None:
             raise PackageError(f"duplicate fixture input differs from retained copy: {source / name}")
 
 
+def _link_kept_examples(root: Path, packaged: set[Path], tracked: list[Path]) -> set[Path]:
+    """Return every example payload a packaged Markdown document links.
+
+    Reads each already-selected Markdown file, up to
+    `MARKDOWN_LINK_SCAN_MAX_BYTES`, and follows its ordinary links with one
+    linear pattern over that file's bytes -- no network, no recursion into a
+    found target's own content. A link is a file candidate
+    only when it resolves, relative to its own document, to a non-Markdown
+    path under `plugins/*/examples/`; everything this finds is handed to the
+    caller, which lets the existing source validation in `_source_candidates`
+    refuse a missing, symlinked or unsafe target the same way it refuses any
+    other candidate path (study section 9;
+    docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md).
+
+    A link naming an existing plain directory is ordinary navigation, not one
+    payload reference, so it never refuses generation on its own; but if the
+    class would otherwise omit every file under that directory, this keeps
+    its single smallest tracked file so the link still resolves inside the
+    package, the same tie-break `.hexaemeron/design/resolve.py` uses.
+    """
+    linked: set[Path] = set()
+    directories: set[str] = set()
+    for relative in sorted(path for path in packaged if path.suffix == ".md"):
+        with (root / relative).open("rb") as handle:
+            data = handle.read(MARKDOWN_LINK_SCAN_MAX_BYTES + 1)
+        if len(data) > MARKDOWN_LINK_SCAN_MAX_BYTES:
+            raise PackageError(
+                "packaged Markdown exceeds the "
+                f"{MARKDOWN_LINK_SCAN_MAX_BYTES}-byte link-scan cap: {relative}"
+            )
+        text = data.decode("utf-8", errors="replace")
+        document_dir = relative.parent.as_posix()
+        for raw in MARKDOWN_LINK.findall(text):
+            link = raw.split("#", 1)[0]
+            if not link or "://" in link or link.startswith(("mailto:", "/")):
+                continue
+            target = posixpath.normpath(posixpath.join(document_dir, link))
+            if not EXAMPLE_ROOT.match(target):
+                continue
+            candidate = root / target
+            if candidate.is_dir() and not candidate.is_symlink():
+                directories.add(target)
+                continue
+            if target.endswith(".md"):
+                continue
+            linked.add(Path(target))
+    if directories:
+        kept_posix = {path.as_posix() for path in packaged} | {path.as_posix() for path in linked}
+        for target in sorted(directories):
+            prefix = target + "/"
+            if any(path.startswith(prefix) for path in kept_posix):
+                continue
+            inside = sorted(
+                (path for path in tracked if path.as_posix().startswith(prefix)),
+                key=lambda path: ((root / path).stat().st_size, path.as_posix()),
+            )
+            if inside:
+                linked.add(inside[0])
+    return linked
+
+
+def _kept_by_link_rows(root: Path, candidates: list[Path]) -> list[dict]:
+    """List every packaged example payload the class predicate would omit.
+
+    Every survivor here was pulled back by `_link_kept_examples`; nothing
+    else adds a path the example-payload-class predicate still matches into
+    `_source_candidates`'s selected set, so this walk of its output is a
+    complete and exact report.
+    """
+    rows = [
+        {"path": relative.as_posix(), "bytes": len((root / relative).read_bytes())}
+        for relative in candidates
+        if _example_class_matches(relative)
+    ]
+    rows.sort(key=lambda row: row["path"])
+    return rows
+
+
 def _source_candidates(root: Path) -> list[Path]:
     """Return the previous package boundary before decorative omission."""
     selected = set(ROOT_FILES)
@@ -406,13 +470,27 @@ def _source_candidates(root: Path) -> list[Path]:
     tracked = _tracked_plugin_files(root)
     check_duplicate_fixture_payload(root, tracked)
     selected.update(path for path in tracked if not _omitted(path))
+    selected.update(_link_kept_examples(root, selected, tracked))
     ordered = sorted(selected, key=lambda path: path.as_posix())
+    # A tracked git path can never have a symlinked directory as an ancestor:
+    # git records a symlink as one blob, never as a tree with children, so
+    # `_tracked_plugin_files` never yields a path underneath one. The
+    # link-kept scan above has no such guarantee -- it reads a Markdown link
+    # and walks the live filesystem, so `plugins/<plugin>/examples` itself
+    # being a committed symlink to a directory outside the checkout would let
+    # an ordinary-looking link name a file the leaf-only `is_symlink` check
+    # below never inspects. Resolve every selected path once and require it
+    # to stay inside the checkout, so an intermediate symlinked directory
+    # refuses generation the same way a symlinked leaf already does.
+    resolved_root = root.resolve()
     for relative in ordered:
         if relative.is_absolute() or ".." in relative.parts:
             raise PackageError(f"unsafe source path: {relative}")
         source = root / relative
         if source.is_symlink() or not source.is_file():
             raise PackageError(f"portable source is absent or not a regular file: {relative}")
+        if not source.resolve().is_relative_to(resolved_root):
+            raise PackageError(f"portable source resolves outside the checkout: {relative}")
     return ordered
 
 
@@ -568,6 +646,7 @@ def expected_files(root: Path, *, enforce_headroom: bool = True) -> tuple[dict[s
     rows = []
     total_bytes = 0
     candidates = _source_candidates(root)
+    linked_rows = _kept_by_link_rows(root, candidates)
     omitted = {path.as_posix() for path in candidates if decorative_portrait(path)}
     omitted_files = []
     for relative in candidates:
@@ -617,14 +696,18 @@ def expected_files(root: Path, *, enforce_headroom: bool = True) -> tuple[dict[s
     rows.sort(key=lambda row: row["path"])
     if enforce_headroom:
         require_byte_headroom(total_bytes)
+    omissions = [dict(entry) for entry in OMISSIONS]
+    example_row = next(entry for entry in omissions if entry["pattern"] == "plugins/*/examples/**")
+    example_row["exceptions"] = list(example_row["exceptions"]) + [row["path"] for row in linked_rows]
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "contract": CONTRACT_ID,
         "generated_by": GENERATOR,
         "file_count": len(rows),
         "total_bytes": total_bytes,
-        "omissions": list(OMISSIONS),
+        "omissions": omissions,
         "omitted_files": omitted_files,
+        "kept_by_link": linked_rows,
         "byte_budget": {
             "cap": MAX_RUNTIME_BYTES,
             "minimum_headroom": MIN_BYTE_HEADROOM,
@@ -973,7 +1056,8 @@ MEASUREMENT_HELP = (
     "file_tripwire, package {bytes, files, margin}, runtime {bytes, files, "
     "margin}, manifest_bytes, outer_bytes, omission_classes, "
     "largest_default_included [{path, bytes}] and kept_by_link [{path, "
-    "bytes}] (kept_by_link stays empty until the example-class step)."
+    "bytes}]: every plugins/*/examples/ payload a packaged Markdown document "
+    "links, and so keeps packaged despite the example-payload-class omission."
 )
 
 
@@ -1000,6 +1084,7 @@ def measure_tree(root: Path, top: int) -> dict:
     manifest_bytes = len(files[manifest_key])
     runtime_bytes = runtime_total_bytes - manifest_bytes
     runtime_files = len(runtime_keys) - 1
+    manifest_document = json.loads(files[manifest_key])
 
     package_bytes = sum(len(data) for data in files.values())
     package_files = len(files)
@@ -1050,7 +1135,7 @@ def measure_tree(root: Path, top: int) -> dict:
         "outer_bytes": outer_bytes,
         "omission_classes": len(OMISSIONS),
         "largest_default_included": largest_default_included,
-        "kept_by_link": [],
+        "kept_by_link": manifest_document["kept_by_link"],
     }
 
 
