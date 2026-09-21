@@ -505,11 +505,11 @@ def capture_runbook(data: bytes) -> tuple[list[dict], dict]:
         offset += len(line.encode())
     if active is not None:
         raise Refusal('unclosed-fence')
-    if not records or len(records) > MAX_COMMANDS:
-        raise Refusal('command-count-bound')
     for record in records:
         # Commands outside step fields (standalone command specimens) remain active.
         record['effective'] = not any(a <= record['offset'] < b for a, b in all_ranges) or any(a <= record['offset'] < b for a, b in active_ranges)
+    if not records or sum(record['effective'] for record in records) > MAX_COMMANDS:
+        raise Refusal('command-count-bound')
     return records, registrations
 
 

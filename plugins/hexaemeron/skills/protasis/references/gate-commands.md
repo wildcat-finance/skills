@@ -128,7 +128,7 @@ and checks both complete source digests. See
 
 ## Bounds and refusals
 
-The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
+The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 effective command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. Superseded Exit and Tests records remain in the captured history without consuming the effective-command allowance. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
 
 CLI source reads require bounded regular files through no-follow path components. Unavailable files, an observed identity change, unsupported parser syntax, malformed or unclosed command fences, unknown placeholders and argument errors refuse. Source observations do not establish atomic namespace protection or a security verdict about the command's behavior.
 
