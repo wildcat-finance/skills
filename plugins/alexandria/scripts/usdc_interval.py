@@ -825,16 +825,19 @@ class _FetchedShard:
     `entries` is `[(name, payload, data, result), ...]` in the plan's
     declared-class order -- the order a strictly sequential collection would
     have written them in. Building this holds nothing the caller must not
-    also hold: it carries no file handle and no lock.
+    also hold: it carries no file handle and no lock. `fetch_seconds` is wall
+    time spent inside `_fetch_shard` alone (network only), reported by the
+    per-shard heartbeat once this shard is written.
     """
 
-    __slots__ = ("index", "shard", "entries", "boundary")
+    __slots__ = ("index", "shard", "entries", "boundary", "fetch_seconds")
 
-    def __init__(self, index, shard, entries, boundary) -> None:
+    def __init__(self, index, shard, entries, boundary, fetch_seconds) -> None:
         self.index = index
         self.shard = shard
         self.entries = entries
         self.boundary = boundary
+        self.fetch_seconds = fetch_seconds
 
 
 class Collector:
@@ -1170,6 +1173,8 @@ class Collector:
             shard = shards[index]
             boundary = None
             logs_result = None
+            shard_counts = {}
+            started = time.monotonic()
             for name, method, params in shard_requests(self.plan, shard):
                 if name == "traces" and self._subjects is not None:
                     payload, data, result = self._targeted_traces(index, logs_result)
@@ -1181,12 +1186,12 @@ class Collector:
                     if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                         raise AlexandriaError(f"shard {index} boundary block carries no hash")
                     boundary = result["hash"]
-                if isinstance(result, list):
-                    counts[name] += len(result)
-                else:
-                    counts[name] += 1
+                count = len(result) if isinstance(result, list) else 1
+                counts[name] += count
+                shard_counts[name] = count
                 self.staging.record(index, name, payload, data)
             self.staging.commit(index, shard["end"], boundary)
+            self._heartbeat(index, shard, shard_counts, time.monotonic() - started)
 
     def _fetch_shard(self, index: int) -> "_FetchedShard":
         """Every request one shard makes, without writing anything to the staging tree.
@@ -1201,6 +1206,7 @@ class Collector:
         entries = []
         boundary = None
         logs_result = None
+        started = time.monotonic()
         for name, method, params in shard_requests(self.plan, shard):
             if name == "traces" and self._subjects is not None:
                 payload, data, result = self._targeted_traces(index, logs_result)
@@ -1213,17 +1219,42 @@ class Collector:
                     raise AlexandriaError(f"shard {index} boundary block carries no hash")
                 boundary = result["hash"]
             entries.append((name, payload, data, result))
-        return _FetchedShard(index=index, shard=shard, entries=entries, boundary=boundary)
+        return _FetchedShard(
+            index=index, shard=shard, entries=entries, boundary=boundary,
+            fetch_seconds=time.monotonic() - started,
+        )
 
     def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
         """Stage and commit one already-fetched shard, in its fetched (plan) order."""
+        shard_counts = {}
         for name, payload, data, result in fetched.entries:
-            if isinstance(result, list):
-                counts[name] += len(result)
-            else:
-                counts[name] += 1
+            count = len(result) if isinstance(result, list) else 1
+            counts[name] += count
+            shard_counts[name] = count
             self.staging.record(fetched.index, name, payload, data)
         self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
+        self._heartbeat(fetched.index, fetched.shard, shard_counts, fetched.fetch_seconds)
+
+    def _heartbeat(self, index: int, shard: dict, shard_counts: dict, fetch_seconds: float) -> None:
+        """One flushed progress line to stderr, right after a shard commits.
+
+        A console line only: it is never staged, never journaled, and reading
+        it establishes nothing `check` or `reconcile` reads -- only a human
+        watching the run. Printed to stderr, not stdout, so a caller that
+        parses `collect`'s stdout (the final JSON summary, written once at
+        exit) never sees it mixed in; `collect ... > collect.log 2>&1 &` then
+        `tail -f collect.log` still shows both together, live, per shard.
+        """
+        total = len(self.plan["shards"])
+        elapsed = time.monotonic() - self._started
+        counted = " ".join(
+            f"{name} {shard_counts.get(name, 0)}" for name in self.classes if name != BOUNDARY_CLASS
+        )
+        print(
+            f"[collect] shard {index + 1}/{total} done | blocks {shard['start']}-{shard['end']} | "
+            f"this shard {fetch_seconds:.1f}s | elapsed {elapsed:.1f}s | {counted}",
+            file=sys.stderr, flush=True,
+        )
 
     def _collect_shards(self, start: int, total: int, counts: dict) -> None:
         """Fetch shards `start` to `total - 1` with a bounded worker pool, ordered commits.
