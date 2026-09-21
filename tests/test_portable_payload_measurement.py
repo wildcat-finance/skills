@@ -333,5 +333,38 @@ class LinkKeptSafetyTests(unittest.TestCase):
         self.assertEqual(found, set())
 
 
+STUDY_DIR = ROOT / "docs/portable-payload-reserve"
+REPORT_GATES = {
+    "measure-agrees": lambda value: value is True,
+    "class-leaks": lambda value: value == 0,
+    "installed-gates-pass": lambda value: value is True,
+    "room-on-step-tree": lambda value: value >= 794493,
+}
+
+
+class CommittedReportCopyTests(unittest.TestCase):
+    """`docs/portable-payload-reserve/reports/` copies of the `step:4` reports."""
+
+    def test_each_copy_parses_and_passes_its_own_gate(self):
+        for criterion, gate in REPORT_GATES.items():
+            with self.subTest(criterion=criterion):
+                name = f"example-payload-class--{criterion}.json"
+                document = json.loads((STUDY_DIR / "reports" / name).read_text(encoding="utf-8"))
+                self.assertEqual(document["schema"], "protasis-design-report/v1")
+                self.assertEqual(document["criterion"], criterion)
+                self.assertEqual(document["exit"], 0)
+                self.assertTrue(gate(document["value"]), document)
+
+    def test_copies_are_byte_identical_to_the_hexaemeron_originals(self):
+        originals = ROOT / ".hexaemeron/reports"
+        for criterion in REPORT_GATES:
+            with self.subTest(criterion=criterion):
+                name = f"example-payload-class--{criterion}.json"
+                self.assertEqual(
+                    (STUDY_DIR / "reports" / name).read_bytes(),
+                    (originals / name).read_bytes(),
+                )
+
+
 if __name__ == "__main__":
     unittest.main()
