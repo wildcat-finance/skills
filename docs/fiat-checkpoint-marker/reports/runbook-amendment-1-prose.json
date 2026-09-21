@@ -1,0 +1,87 @@
+{
+  "schema": "fiat-1755-runbook-amendment-prose/v1",
+  "candidate": "/tmp/fiat1755-runbook-correct-scaffold.md",
+  "prior_sha256": "3883304376895cfe963211b80773575885b68adb39d5ecad994cf418376cc4e6",
+  "candidate_sha256": "346d1a0e136c55ed90ae0fde1b4c58828651f1c1f7a727e02bc62781af207fa7",
+  "prefix_unchanged": true,
+  "sapheneia": "Complete replacement fields, reason, touched step and all current/pending holding verdicts preserved.",
+  "vulgate": "Neutral register; complete candidate retained byte-identically.",
+  "imprimatur": [
+    {
+      "name": "imprimatur-before-vulgate",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "/tmp/fiat1755-runbook-correct-scaffold.md",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "result": {
+        "score": 100.0,
+        "defects": 0,
+        "weighted": 0,
+        "per_1000_words": 0.0,
+        "word_count": 1907,
+        "by_pass": {},
+        "by_family": {},
+        "hits": [],
+        "signals": [],
+        "cadence": {
+          "sentence_count": 133,
+          "mean_sentence_length": 14.3,
+          "length_variance": 44.0,
+          "variance_floor": 25.0,
+          "variance_below_floor": false,
+          "longest_similar_run": 6,
+          "max_allowed_run": 4,
+          "repeated_openers": {
+            "the parent": 4,
+            "tests elenchus": 3,
+            "disciplines phylax": 3,
+            "ephoros retain": 3
+          }
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "name": "imprimatur-final",
+      "argv": [
+        "/home/kethcode/.local/bin/python3.14",
+        "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+        "/tmp/fiat1755-runbook-correct-scaffold.md",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "result": {
+        "score": 100.0,
+        "defects": 0,
+        "weighted": 0,
+        "per_1000_words": 0.0,
+        "word_count": 1907,
+        "by_pass": {},
+        "by_family": {},
+        "hits": [],
+        "signals": [],
+        "cadence": {
+          "sentence_count": 133,
+          "mean_sentence_length": 14.3,
+          "length_variance": 44.0,
+          "variance_floor": 25.0,
+          "variance_below_floor": false,
+          "longest_similar_run": 6,
+          "max_allowed_run": 4,
+          "repeated_openers": {
+            "the parent": 4,
+            "tests elenchus": 3,
+            "disciplines phylax": 3,
+            "ephoros retain": 3
+          }
+        }
+      },
+      "stderr": ""
+    }
+  ]
+}

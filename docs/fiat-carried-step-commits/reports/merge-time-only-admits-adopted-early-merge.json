@@ -1,0 +1,1 @@
+{"candidate": "merge-time-only", "command": "python3 .hexaemeron/design/resolve_carry.py --candidate merge-time-only --criterion admits-adopted-early-merge --out .hexaemeron/design/reports/merge-time-only-admits-adopted-early-merge.json", "criterion": "admits-adopted-early-merge", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

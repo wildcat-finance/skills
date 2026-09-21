@@ -37,6 +37,10 @@ PACKAGE_AUTHORED = (
 PORTABLE_BOUNDARY = ".horos/boundary.json"
 MAX_RUNTIME_BYTES = 25 * 1024 * 1024
 MIN_BYTE_HEADROOM = 5 * 1024 * 1024
+DUPLICATE_LAZARUS_PAYLOADS = (
+    "anchors.jsonl", "header.json", "plan.json", "proofs.jsonl",
+    "receipt-witness.json", "rpc.jsonl",
+)
 PORTRAIT_TRANSFORM = "remove-decorative-portrait-images/v1"
 EVALUATION_TRANSFORM = "replay-unchanged-evaluation-prompts/v1"
 EVALUATION_RUN = "docs/promise-machine/obligation-gates/evaluation-run.json"
@@ -187,6 +191,18 @@ PORTABLE_TEST_FILES = (
 
 OMISSIONS = (
     {
+        "pattern": (
+            "plugins/lazarus/examples/aave-v4-spoke-v1/"
+            "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}"
+        ),
+        "reason": (
+            "the complete unchanged fixture remains under "
+            "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture; "
+            "generation checks equal tracked bytes and modes before omitting "
+            "these duplicate payloads; the source demonstration requires a full checkout"
+        ),
+    },
+    {
         "pattern": "assets/characters/*.{png,webp}",
         "reason": "decorative portraits remain in the source checkout",
     },
@@ -221,6 +237,22 @@ OMISSIONS = (
             "the preserved audit sources and the corpus release built from them are "
             "data the router never reads; they remain in the full source checkout, "
             "where the tests that rebuild and compare them run"
+        ),
+    },
+    {
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+        "reason": (
+            "the checkpoint authority record, signature and replay conformance "
+            "corpora are data the router never reads; only the conformance "
+            "reporters read them, and those run from the full source checkout"
+        ),
+    },
+    {
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
+        "reason": (
+            "the native boundary conformance fixture is data the router never "
+            "reads; only the native conformance reporter reads it, and that runs "
+            "from the full source checkout"
         ),
     },
     {
@@ -294,6 +326,14 @@ def _omitted(relative: Path) -> bool:
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True
     if (
+        parts[:4] == ("plugins", "lazarus", "examples", "aave-v4-spoke-v1")
+        and len(parts) == 5
+        and parts[4] in DUPLICATE_LAZARUS_PAYLOADS
+    ):
+        return True
+    if parts[:5] == ("plugins", "hexaemeron", "skills", "fiat", "checkpoint-authority") and len(parts) >= 7 and parts[5] in {"fixtures", "native-fixture"}:
+        return True
+    if (
         parts[:3] == ("plugins", "tabularium", "examples")
         and len(parts) == 5
         and parts[3].endswith("-v1")
@@ -325,6 +365,30 @@ def decorative_portrait(relative: Path) -> bool:
     )
 
 
+def check_duplicate_fixture_payload(root: Path, tracked: list[Path]) -> None:
+    """Refuse an omission unless its complete release retains the same input."""
+    source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
+    retained = Path("plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture")
+    known = set(tracked)
+    if not any(path.is_relative_to(source) for path in known):
+        return
+    for name in DUPLICATE_LAZARUS_PAYLOADS:
+        pair = (source / name, retained / name)
+        for relative in pair:
+            path = root / relative
+            if relative not in known or not path.is_file() or any(
+                (root / Path(*relative.parts[:end])).is_symlink()
+                for end in range(1, len(relative.parts) + 1)
+            ):
+                raise PackageError(f"duplicate fixture input is absent or linked: {relative}")
+        left, right = (root / relative for relative in pair)
+        if (
+            (left.stat().st_mode & 0o777) != (right.stat().st_mode & 0o777)
+            or left.read_bytes() != right.read_bytes()
+        ):
+            raise PackageError(f"duplicate fixture input differs from retained copy: {source / name}")
+
+
 def _source_candidates(root: Path) -> list[Path]:
     """Return the previous package boundary before decorative omission."""
     selected = set(ROOT_FILES)
@@ -332,7 +396,9 @@ def _source_candidates(root: Path) -> list[Path]:
     selected.update(EVALUATION_FIXTURE_FILES)
     selected.update(SEMANTIC_FIXTURE_FILES)
     selected.update(PORTABLE_TEST_FILES)
-    selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
+    tracked = _tracked_plugin_files(root)
+    check_duplicate_fixture_payload(root, tracked)
+    selected.update(path for path in tracked if not _omitted(path))
     ordered = sorted(selected, key=lambda path: path.as_posix())
     for relative in ordered:
         if relative.is_absolute() or ".." in relative.parts:

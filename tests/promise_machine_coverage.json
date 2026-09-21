@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "0df3176bdcddac1891e1df392335391075dba86087da907a2c94c308b39c474f"
+        "sha256": "9c54d75881a46c50642dc6a36d27bac908cff7ce9767b8289ffda157b4d59dd1"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "a7aa037740b7b6a3493bf431d561978c3782cac61d1749caf8b25eb6b0040ed6"
+        "sha256": "c8ea0b3dfb3718464cc5aad4e709e6eaca5f5bc54af10d1cff430ce958ac0816"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "2d8222c7524113166b7bce4172d1f712232561ff19a53b94a208d089e77fc197"
+        "sha256": "ef180fdb2014b19c9f015c8dbe9cd127cf9bb948057e35e104ee0489bcb7df62"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "37e2f6c1a075b1e045c21b7567b6831bf3039b24b8d83fd18c31c37b17602c77"
+      "sha256": "787018e6fbcccabe91f272996acd731a6902937ee7e6fe9531e6fe1ef5c725ed"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -1347,31 +1347,6 @@
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_verify_replays_report_receipts_and_detects_tampering"
     },
-    "fiat-joined-controller-demonstration-p": {
-      "claim": "The joined demonstration records a source-bound registered Exit and its observed command result.",
-      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
-      "selector": "test_joined_positive_result_is_source_bound"
-    },
-    "fiat-joined-controller-demonstration-m": {
-      "claim": "The joined demonstration preserves bounded refusals for wrong identity, malformed outcomes and stale or legacy records.",
-      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
-      "selector": "test_joined_refusals_preserve_the_declared_boundary"
-    },
-    "fiat-joined-controller-demonstration-s": {
-      "claim": "One shared descriptor settles the declared criteria once and retains one bounded attempt record.",
-      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
-      "selector": "test_joined_shared_descriptors_settle_once"
-    },
-    "fiat-joined-controller-demonstration-o": {
-      "claim": "A deliberately vacuous command may pass structurally while the report leaves semantic sufficiency unclaimed.",
-      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
-      "selector": "test_joined_vacuous_result_keeps_semantic_sufficiency_unclaimed"
-    },
-    "fiat-joined-controller-demonstration-r": {
-      "claim": "Terminal replay reads the settled record without launching an inspection operation.",
-      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
-      "selector": "test_joined_terminal_replay_launches_no_inspection_operation"
-    },
     "fiat-inoculation-m": {
       "claim": "An assigned Step with no guard-manifest set refuses before state, ledger or checkpoint mutation.",
       "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
@@ -1396,6 +1371,31 @@
       "claim": "A changed parent after receipt cannot inherit authority to delegate implementation and leaves controller bytes unchanged.",
       "path": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py",
       "selector": "test_post_receipt_parent_drift_refuses_implementation_delegation"
+    },
+    "fiat-joined-controller-demonstration-m": {
+      "claim": "The joined demonstration preserves bounded refusals for wrong identity, malformed outcomes and stale or legacy records.",
+      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
+      "selector": "test_joined_refusals_preserve_the_declared_boundary"
+    },
+    "fiat-joined-controller-demonstration-o": {
+      "claim": "A deliberately vacuous command may pass structurally while the report leaves semantic sufficiency unclaimed.",
+      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
+      "selector": "test_joined_vacuous_result_keeps_semantic_sufficiency_unclaimed"
+    },
+    "fiat-joined-controller-demonstration-p": {
+      "claim": "The joined demonstration records a source-bound registered Exit and its observed command result.",
+      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
+      "selector": "test_joined_positive_result_is_source_bound"
+    },
+    "fiat-joined-controller-demonstration-r": {
+      "claim": "Terminal replay reads the settled record without launching an inspection operation.",
+      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
+      "selector": "test_joined_terminal_replay_launches_no_inspection_operation"
+    },
+    "fiat-joined-controller-demonstration-s": {
+      "claim": "One shared descriptor settles the declared criteria once and retains one bounded attempt record.",
+      "path": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py",
+      "selector": "test_joined_shared_descriptors_settle_once"
     },
     "fiat-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -4527,7 +4527,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "7633f59421ea1e648e2d1f86b5a268caf60fea7b177525f59b4c70d3d800b35a"
+      "sha256": "81083bb489a4cef91a4c3d8f5c5fe208b5d56fad2e33ed2d31dd4189b8283d27"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -4878,12 +4878,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
-        "sha256": "5f1b56da92d7a1e1516527d860a3a4df246199b77ede64cdc26415390f30d50d"
+        "sha256": "bcba5be665a0dd6cfe5a169c3567c41dd6434771f04e28b1458725309cad609a"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "5f1b56da92d7a1e1516527d860a3a4df246199b77ede64cdc26415390f30d50d"
+        "sha256": "bcba5be665a0dd6cfe5a169c3567c41dd6434771f04e28b1458725309cad609a"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",
@@ -5170,16 +5170,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "negative",
-        "sha256": "5cde1c9c6e5c8ef835c666339d06e3ad25edc788ce149424407bf798f83168d4"
+        "sha256": "889dab185d4fdbabacc7f8f2119d5bf05c8267eb55e5c67ab4a501f11538a2d0"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "positive",
-        "sha256": "5cde1c9c6e5c8ef835c666339d06e3ad25edc788ce149424407bf798f83168d4"
+        "sha256": "889dab185d4fdbabacc7f8f2119d5bf05c8267eb55e5c67ab4a501f11538a2d0"
       },
       "reader": "native-json-v1",
       "selector": "test_restore_from_archive_recreates_repository_and_controller_state",
-      "sha256": "85edbbecc1cb830ee1ccec36bd0ef7f13f31f4a2b7b09b2ac618a593b2e2ebd2",
+      "sha256": "2e608a4898fe24ab91fd94ed109dc576a98147159b33754364a77bcf924518ee",
       "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py"
     },
     "fiat-controller-checkpoint": {
@@ -5298,6 +5298,37 @@
       "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6",
       "source": "plugins/hexaemeron/tests/test_protasis_design_evidence.py"
     },
+    "fiat-final-integration": {
+      "bindings": {
+        "authority": "native_document.fiat_final_integration.authority",
+        "evidence_classes": "native_document.fiat_final_integration.evidence.classes",
+        "evidence_references": "native_document.fiat_final_integration.evidence.references",
+        "exception": "native_document.fiat_final_integration.exception_state",
+        "inspectable_evidence": "native_document.fiat_final_integration.independent_evidence",
+        "promise_id": "native_document.fiat_final_integration.promise",
+        "scope": "native_document.fiat_final_integration.target.scope",
+        "source_digest": "native_document.fiat_final_integration.source.sha256",
+        "subject": "native_document.fiat_final_integration.target.subject",
+        "transition": "native_document.fiat_final_integration.authorised_transition",
+        "unknowns": "native_document.fiat_final_integration.open_unknowns"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
+        "selector": "negative",
+        "sha256": "970006061ccc45668f9b053107bdf0ebbb65ef8030c99e04a4dd23d4fb9c9f87"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
+        "selector": "positive",
+        "sha256": "970006061ccc45668f9b053107bdf0ebbb65ef8030c99e04a4dd23d4fb9c9f87"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
+      "sha256": "149ad2344aa3706c9109eb3e569cd085909c57802d41d9f5e51cbb161a53cb33",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
+    },
     "fiat-joined-controller-demonstration": {
       "bindings": {
         "evidence_classes": "native_document.fiat_joined_controller_demonstration.evidence.classes",
@@ -5326,37 +5357,6 @@
       "selector": "test_joined_positive_result_is_source_bound",
       "sha256": "18cec0703b6b1d552ab27ff8cc82e6344031e91088482612b723a28ebc545765",
       "source": "plugins/hexaemeron/tests/test_fiat_criteria_demonstration.py"
-    },
-    "fiat-final-integration": {
-      "bindings": {
-        "authority": "native_document.fiat_final_integration.authority",
-        "evidence_classes": "native_document.fiat_final_integration.evidence.classes",
-        "evidence_references": "native_document.fiat_final_integration.evidence.references",
-        "exception": "native_document.fiat_final_integration.exception_state",
-        "inspectable_evidence": "native_document.fiat_final_integration.independent_evidence",
-        "promise_id": "native_document.fiat_final_integration.promise",
-        "scope": "native_document.fiat_final_integration.target.scope",
-        "source_digest": "native_document.fiat_final_integration.source.sha256",
-        "subject": "native_document.fiat_final_integration.target.subject",
-        "transition": "native_document.fiat_final_integration.authorised_transition",
-        "unknowns": "native_document.fiat_final_integration.open_unknowns"
-      },
-      "negative": {
-        "field": "source_digest",
-        "finding": "PM095",
-        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
-        "selector": "negative",
-        "sha256": "a671579c5af5d5e0f5330b71efbb0b9f3887bd804b425198bf3bad794aee4703"
-      },
-      "positive": {
-        "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
-        "selector": "positive",
-        "sha256": "a671579c5af5d5e0f5330b71efbb0b9f3887bd804b425198bf3bad794aee4703"
-      },
-      "reader": "native-json-v1",
-      "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
-      "sha256": "149ad2344aa3706c9109eb3e569cd085909c57802d41d9f5e51cbb161a53cb33",
-      "source": "plugins/hexaemeron/tests/test_hexctl.py"
     },
     "fiat-known-failure-inoculation": {
       "bindings": {

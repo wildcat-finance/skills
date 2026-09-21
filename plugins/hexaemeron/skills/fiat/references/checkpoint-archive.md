@@ -220,32 +220,37 @@ Export scans every outer member and, inside the capsule, `state.json`,
 `ledger.jsonl` and every opaque controller file for six patterns. A hit refuses
 with `secret-shaped-member`; nothing is redacted in place.
 
-The two armour forms refuse as blocks. A header is secret-shaped only when key
-material follows it within the scanned window: one whole line of base64 body, or
-the `-----END` marker matching that header. The two witnesses have their own
-reaches: the body has to start within the block lookahead of 1,792 bytes, which
-the armour allowance bounds, and the footer has until the footer reach of 9,984
-bytes, the block lookahead plus the largest key the scan undertakes to reach,
-declared at 8,192 bits. A line ends at a newline character or at the
-two-character escape `\n` that carries one inside a JSON string value, so a key
-held as a JSON string value in `state.json` or on one `ledger.jsonl` line
-carries body lines like any other. The delimiter set is the line feed as a byte,
-as the two-character escape, or as the six-character numeric escape, each
-optionally preceded by a carriage return in the matching form. The numeric
-escapes are `\u000a` for the line feed and `\u000d` before it for the carriage
-return, in either letter case, so a CRLF key refuses raw, escaped and
-numerically escaped alike. A body carrying no line delimiter in any form the
-witness can see, such as a key whose line breaks were stripped rather than
-encoded, refuses on its footer at every size below the declared one. What the
-scan does not reach is a key whose modulus exceeds that declared size, and the
-study states it as residue rather than implying the class is shut. A file naming
-a header in prose or quoting one in a code span supplies neither, so a run can
-archive its own specification text. A key whose footer was truncated still
-carries body lines and still refuses. The four token patterns are
-self-delimiting and refuse on the match alone. The scan reads in bounded chunks
-and carries between them the longest header the six can match plus the footer
-reach, so a block lying across a chunk boundary still refuses; the carry is
-derived from the patterns rather than fixed.
+The two armour forms refuse as blocks. A recognized header requires an
+independent whole line of at least 16 base64 glyphs, starting fewer than 1,792
+bytes after the header, or the bounded material prefix below. The independent
+whole-line rule keeps its existing raw LF and CRLF, short JSON and numeric
+escape delimiters. A matching footer supplies no material evidence.
+
+The prefix skips horizontal edge whitespace and admitted line breaks, and
+permits up to seven armour metadata lines of at most 256 original content
+bytes each. Recognized names are `Version`, `Comment`, `MessageID`, `Hash`,
+`Charset`, `Proc-Type` and `DEK-Info`. It requires at least 16 glyphs from
+`[A-Za-z0-9+/=]`. The first body byte must start fewer than 1,792 original bytes
+after the header end, and all reads remain within the existing 9,984-byte
+lookahead. Raw LF, CRLF and CR, their short JSON escapes, and numeric escapes
+in either hex case are admitted. An escaped solidus counts as one glyph;
+line breaks can join short body segments. Spaces inside ordinary prose stop
+that prefix. Blank lines and edge spaces consume the same bound. Quote
+context and filenames grant no exception. Chunks remain 65,536 bytes and carry
+remains 10,079 bytes.
+
+Empty pairs and the declared ordinary-prose pairs, including both preserved
+public CP3 audit files, pass. The existing whole-line body witness remains
+independently sufficient, including when no footer exists. The four token
+patterns remain unchanged. The prefix also refuses the stripped 16,384-bit
+geometry specimen without extending the lookahead. This establishes neither
+a working 16,384-bit keypair nor recognition of every key size or encoding.
+Fewer than 16 glyphs, unrecognized labels, overlong armour prefixes, encoded
+boundaries, arbitrary Unicode or base64-character escapes, and nested encodings
+remain outside this recognition rule. A long base64-shaped word after a header
+can still refuse, as can the pre-existing whole-line witness near a quoted
+header. This remains a bounded shape detector with false positives and
+recognition limits.
 
 - A PEM private-key block, whose armour label also matches the OpenSSH header.
 - The OpenPGP private-key block, opened by `-----BEGIN PGP PRIVATE KEY BLOCK-----`.
@@ -253,6 +258,15 @@ derived from the patterns rather than fixed.
 - `github_pat_[A-Za-z0-9_]{22,}`.
 - `AKIA[0-9A-Z]{16}`.
 - `xox[baprs]-`.
+
+
+The 2026-09-19 amendment in `docs/fiat-checkpoint-archive-study.md` owns this
+policy change. Fiat 6.68.1 accepts the existing supported controller versions,
+including 6.67.1, under the unchanged archive schemas and admission checks.
+A 6.67.1 inspector can refuse a 6.68.1 archive at controller-version admission;
+for admitted older archives it retains the earlier footer rule. New-reader
+acceptance therefore does not promise old-reader acceptance. Preserve archive
+identities and recorded versions rather than relabelling an older archive.
 
 ## Hostile fixtures
 
@@ -369,3 +383,7 @@ before the code that needs it, not by an edit to this reference.
   to issues #862 and #863.
 - The refusal class each hostile fixture maps to, beyond the classes the
   runbook names per inspector check.
+
+## Marker-repair demonstration
+
+The [issue 1755 native recovery record](../../../../../docs/fiat-checkpoint-marker/native-recovery.md) preserves two signed disposable round trips with the unchanged public CP3 source and synopsis, 21 separately planted material/token refusals and two tampered-carrier refusals. It runs the repository controller's archive, inspect, restore, verify, status and next commands with native OpenPGP and SSH verification; producer GitHub and ref observations remain simulated. The report records restored hashes, unchanged controller bytes, semantic continuation and the six existing budget measurements. Service admission, installation and a separately recorded service retry remain outside that demonstration.

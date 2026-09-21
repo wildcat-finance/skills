@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "bubblewrap-netns",
+  "criterion": "native-verifier-agreement",
+  "value": false,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion native-verifier-agreement --report .hexaemeron/reports/selection/bubblewrap-netns-native-verifier-agreement.json",
+  "exit": 0
+}

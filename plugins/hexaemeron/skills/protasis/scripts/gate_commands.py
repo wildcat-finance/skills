@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
 from datetime import date
 import hashlib
 import importlib.util
@@ -18,12 +19,21 @@ import shlex
 import stat
 
 SCHEMA = "protasis-gate-commands/v1"
-# Released adapters reviewed for replay compatibility. Their sole difference
-# is the test runner's module pin; every current command result must still match.
+# Released adapters reviewed for replay compatibility. Every current command
+# result must still match; the separate runner transition is narrower.
 REPLAY_COMPATIBLE_ADAPTERS = frozenset({
     '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
     'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
+    '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
 })
+# This reviewed pair changes report timestamping, never parser declarations.
+# Keep it separate from adapter-only compatibility: every invocation must match.
+RUNNER_TIMESTAMP_PAIR = (
+    'eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279',
+    'plugins/hexaemeron/tests/run_tests.py',
+    'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
+    'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
+)
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
 MAX_COMMANDS = 64
@@ -567,6 +577,27 @@ def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes) -> di
     }
 
 
+def runner_timestamp_compatible(current: dict, receipt: dict) -> bool:
+    """Compare the whole receipt after the one reviewed source substitution."""
+    adapter, runner, old_source, new_source = RUNNER_TIMESTAMP_PAIR
+    if receipt.get('adapter_sha256') != adapter:
+        return False
+    expected = copy.deepcopy(current)
+    expected['adapter_sha256'] = adapter
+    count = 0
+    for command in expected['commands']:
+        invocations = command.get('invocations')
+        if not invocations:
+            return False
+        for invocation in invocations:
+            cli = invocation['cli']
+            if cli['path'] != runner or cli['sha256'] != new_source:
+                return False
+            cli['sha256'] = old_source
+            count += 1
+    return count > 0 and expected == receipt
+
+
 def replay(root: Path, data: bytes, receipt: dict) -> None:
     # Resolve and check the current destination independently. Stored absolute
     # operands only describe the original inert capture, never execution rights.
@@ -586,5 +617,5 @@ def replay(root: Path, data: bytes, receipt: dict) -> None:
     captured_adapter = receipt.get('adapter_sha256')
     if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
         current['adapter_sha256'] = captured_adapter
-    if current != receipt:
+    if current != receipt and not runner_timestamp_compatible(current, receipt):
         raise Refusal('gate-receipt-drift')

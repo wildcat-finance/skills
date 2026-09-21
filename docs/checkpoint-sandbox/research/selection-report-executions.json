@@ -1,0 +1,62 @@
+[
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion network-four-operations --report .hexaemeron/reports/selection/bubblewrap-netns-network-four-operations.json",
+    "exit": 0,
+    "stdout_sha256": "f8d2b9d907fd27ea1e4ca0916de3b0728b33b43cb7363b967e5733373429e010",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion launch-wall-ms --report .hexaemeron/reports/selection/bubblewrap-netns-launch-wall-ms.json",
+    "exit": 0,
+    "stdout_sha256": "90eb3d51413b3cab6bb3de2978b168bdc4aa1e9a126a4868006543d4f348bf4a",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion policy-bytes --report .hexaemeron/reports/selection/bubblewrap-netns-policy-bytes.json",
+    "exit": 0,
+    "stdout_sha256": "924e66f58be688914ddcd5ec645862800f81ca7648dec6d91a5ae20e1fc7aa7f",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion native-verifier-agreement --report .hexaemeron/reports/selection/bubblewrap-netns-native-verifier-agreement.json",
+    "exit": 0,
+    "stdout_sha256": "79f0fa323c929f1f9a0f7234c96d7c49b49965b231089829aaba6968f497c510",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-netns --criterion bounded-cleanup --report .hexaemeron/reports/selection/bubblewrap-netns-bounded-cleanup.json",
+    "exit": 0,
+    "stdout_sha256": "7545a221b9fa54edff40b3db424de78082cd8d8f1282b27705e1d8ad821f1764",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion network-four-operations --report .hexaemeron/reports/selection/bubblewrap-seccomp-network-four-operations.json",
+    "exit": 0,
+    "stdout_sha256": "ab2122ef93a3b9a2fd0a776c361a150923c02e6dc254d093a57202edd7b94a26",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion launch-wall-ms --report .hexaemeron/reports/selection/bubblewrap-seccomp-launch-wall-ms.json",
+    "exit": 0,
+    "stdout_sha256": "825df6735f60aa8c931677fe148880904da3b91948f3e945d2e0e39c5fb7f285",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion policy-bytes --report .hexaemeron/reports/selection/bubblewrap-seccomp-policy-bytes.json",
+    "exit": 0,
+    "stdout_sha256": "40d54bfb8235001de562566a5c6a40e1ee3cf62c2e53a9229de2d3cfb8b5ba7c",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion native-verifier-agreement --report .hexaemeron/reports/selection/bubblewrap-seccomp-native-verifier-agreement.json",
+    "exit": 0,
+    "stdout_sha256": "fa9f341dc2edc3e331bf4330fe5f39405561fa1ab5ec749276d13c1efe5c8d6c",
+    "stderr": ""
+  },
+  {
+    "command": "python3 .hexaemeron/sources/study/design_report.py --candidate bubblewrap-seccomp --criterion bounded-cleanup --report .hexaemeron/reports/selection/bubblewrap-seccomp-bounded-cleanup.json",
+    "exit": 0,
+    "stdout_sha256": "37d3cccab4fda0d84ce15a5fb63e18f2ebf70be4232fe48a04318b300e66b75e",
+    "stderr": ""
+  }
+]

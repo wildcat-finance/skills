@@ -20,7 +20,8 @@ ROOT = PLUGIN.parents[1]
 SKILL = PLUGIN / "skills" / "homologia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "homologia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "homologia.py"
-VERSION = "1.1.0"
+SKILL_VERSION = "1.1.0"
+PACKAGE_VERSION = "1.1.1"
 DEFERRED_PROMISES = (
     "homologia-mirror-execution",
     "homologia-parity-verdict",
@@ -43,7 +44,7 @@ class ManifestTests(unittest.TestCase):
             (PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         self.assertEqual(manifest["name"], "homologia")
-        self.assertEqual(manifest["version"], VERSION)
+        self.assertEqual(manifest["version"], PACKAGE_VERSION)
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["license"], "Apache-2.0")
 
@@ -52,7 +53,7 @@ class ManifestTests(unittest.TestCase):
             (PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
         self.assertEqual(manifest["name"], "homologia")
-        self.assertEqual(manifest["version"], VERSION)
+        self.assertEqual(manifest["version"], PACKAGE_VERSION)
         interface = manifest["interface"]
         self.assertEqual(interface["displayName"], "Homologia")
         self.assertIn("$homologia", interface["defaultPrompt"])
@@ -71,7 +72,7 @@ class ContractTests(unittest.TestCase):
     def test_the_canonical_skill_states_the_declared_version(self):
         metadata = re.search(r'version:\s*"([^"]+)"', SKILL.read_text(encoding="utf-8"))
         self.assertIsNotNone(metadata)
-        self.assertEqual(metadata.group(1), VERSION)
+        self.assertEqual(metadata.group(1), SKILL_VERSION)
 
     def test_the_canonical_skill_points_at_its_ledger(self):
         self.assertIn("[EVOLUTION.md](EVOLUTION.md)", SKILL.read_text(encoding="utf-8"))
@@ -125,7 +126,7 @@ class IdentityTests(unittest.TestCase):
             (ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
         )
         entry = next(p for p in listing["plugins"] if p["name"] == "homologia")
-        self.assertEqual({claude["version"], codex["version"], entry["version"]}, {VERSION})
+        self.assertEqual({claude["version"], codex["version"], entry["version"]}, {PACKAGE_VERSION})
         self.assertEqual({claude["name"], codex["name"], entry["name"]}, {"homologia"})
 
     def test_a_drifted_installed_root_law_copy_is_detected(self):
@@ -183,7 +184,7 @@ class CommandTests(unittest.TestCase):
     def test_the_version_flag_reports_the_checked_input_generation(self):
         result = run("--version")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(VERSION, result.stdout)
+        self.assertIn(SKILL_VERSION, result.stdout)
         self.assertNotIn("scaffold", result.stdout)
 
 

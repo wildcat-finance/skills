@@ -1,0 +1,62 @@
+{
+  "schema": "fiat-1794-prototype-integration/v1",
+  "scope": "Existing demo invoked with an in-memory experimental backend; real pinned cosign and Bubblewrap execute. Not a product conformance or controller criterion receipt.",
+  "interoperability": {
+    "verifier": {
+      "name": "cosign",
+      "sha256": "4629c757b7618056f8ddd7e2625ae9fdd94c0372a65049520bc7d9df9efc7f71"
+    },
+    "network": "denied",
+    "network_boundary": {
+      "mechanism": "RESEARCH-bubblewrap-seccomp-x86_64",
+      "launcher_sha256": "e318903862396f96de3df57264e0158682b952fd3fb53ac23d876413e7b30f71",
+      "policy_sha256": "8b97e4880f19e22990d9994580127bd38249e9f51594f1e3f63218edcd286412",
+      "probe_sha256": "2ba1b58b6347f412310acecd66f2f6b837efed8591933e2641df5bb302a2acfd",
+      "probe_exit": 0,
+      "probe_operations": 4
+    },
+    "transparency_log": "not-consulted",
+    "cases": [
+      {
+        "id": "valid",
+        "expected_exit": 0,
+        "exit": 0,
+        "agreed": true
+      },
+      {
+        "id": "altered-payload",
+        "expected_exit": 1,
+        "exit": 1,
+        "agreed": true
+      },
+      {
+        "id": "untrusted-key",
+        "expected_exit": 1,
+        "exit": 1,
+        "agreed": true
+      },
+      {
+        "id": "wrong-payload-type",
+        "expected_exit": 1,
+        "exit": 1,
+        "agreed": true
+      },
+      {
+        "id": "double-hashed",
+        "expected_exit": 1,
+        "exit": 1,
+        "agreed": true
+      }
+    ],
+    "agreed": true,
+    "code": "verifiers-agree"
+  },
+  "interoperability_elapsed_ms": 900.848,
+  "leader_exit_cleanup": {
+    "exit": 0,
+    "stdout": "leader-exiting\n",
+    "stderr": "",
+    "elapsed_ms": 40.698,
+    "descendant_lock_released": true
+  }
+}

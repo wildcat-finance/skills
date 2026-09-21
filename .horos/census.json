@@ -1,22 +1,22 @@
 {
   "rows": [
     {
+      "boundary_bytes": 64487,
+      "bytes": 47289070,
+      "files": 1751,
+      "suffix": ".json"
+    },
+    {
+      "boundary_bytes": 1485,
+      "bytes": 26904993,
+      "files": 1236,
+      "suffix": ".md"
+    },
+    {
       "boundary_bytes": 26584973,
       "bytes": 26584973,
       "files": 40,
       "suffix": ".png"
-    },
-    {
-      "boundary_bytes": 1485,
-      "bytes": 26198581,
-      "files": 1205,
-      "suffix": ".md"
-    },
-    {
-      "boundary_bytes": 64487,
-      "bytes": 19636660,
-      "files": 1523,
-      "suffix": ".json"
     },
     {
       "boundary_bytes": 17299058,
@@ -26,20 +26,20 @@
     },
     {
       "boundary_bytes": 73,
-      "bytes": 16421250,
-      "files": 711,
+      "bytes": 17223710,
+      "files": 780,
       "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
-      "bytes": 8098538,
-      "files": 119,
+      "bytes": 8098584,
+      "files": 120,
       "suffix": "(no suffix)"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 5376078,
-      "files": 70,
+      "bytes": 5456633,
+      "files": 71,
       "suffix": ".jsonl"
     },
     {
@@ -56,8 +56,8 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 609753,
-      "files": 86,
+      "bytes": 610041,
+      "files": 87,
       "suffix": ".txt"
     },
     {
@@ -74,21 +74,27 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 67842,
-      "files": 14,
+      "bytes": 85887,
+      "files": 11,
+      "suffix": ".stdout"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 72856,
+      "files": 15,
       "suffix": ".yml"
+    },
+    {
+      "boundary_bytes": 59603,
+      "bytes": 59603,
+      "files": 1,
+      "suffix": ".zip"
     },
     {
       "boundary_bytes": 58214,
       "bytes": 58214,
       "files": 1,
       "suffix": ".webp"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 51075,
-      "files": 10,
-      "suffix": ".stdout"
     },
     {
       "boundary_bytes": 0,
@@ -99,7 +105,7 @@
     {
       "boundary_bytes": 0,
       "bytes": 20046,
-      "files": 10,
+      "files": 11,
       "suffix": ".stderr"
     },
     {
@@ -164,9 +170,15 @@
     },
     {
       "boundary_bytes": 108,
-      "bytes": 630,
-      "files": 3,
+      "bytes": 836,
+      "files": 4,
       "suffix": ".lock"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 749,
+      "files": 4,
+      "suffix": ".pem"
     },
     {
       "boundary_bytes": 0,
@@ -179,6 +191,18 @@
       "bytes": 446,
       "files": 8,
       "suffix": ".tsx"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 392,
+      "files": 1,
+      "suffix": ".bpf"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 239,
+      "files": 1,
+      "suffix": ".gpg"
     },
     {
       "boundary_bytes": 146,
@@ -213,6 +237,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 126705322,
-  "total_files": 4266
+  "total_bytes": 156048508,
+  "total_files": 4608
 }

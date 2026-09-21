@@ -1,8 +1,8 @@
 {
   "counts": {
     "bytes_asset": 138,
-    "bytes_binary": 9723,
-    "bytes_blob": 29874558,
+    "bytes_binary": 10354,
+    "bytes_blob": 56981411,
     "bytes_generated": 98
   },
   "entries": [
@@ -182,11 +182,25 @@
       "path": "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md"
     },
     {
+      "bytes": 41719,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1480-refuse-a-later-step-s-commits-carried-into.synopsis.md"
+    },
+    {
       "bytes": 21929,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1503-attribute-implementation-epochs-by-transact.synopsis.md"
+    },
+    {
+      "bytes": 40490,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1676-publish-checkpoint-authority-protocol-and-r.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -791,6 +805,13 @@
       "path": "docs/agent-instruction-reconciliation/study-evidence/audit-read-inventory.json"
     },
     {
+      "bytes": 392,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/checkpoint-sandbox/linux-feasibility/x86_64-deny-network.bpf"
+    },
+    {
       "bytes": 79048,
       "category": "blob",
       "evidence": "mean line length above 400 in a window at offset 39524",
@@ -803,6 +824,20 @@
       "evidence": "mean line length above 400 in a window at offset 35445",
       "grade": "candidate",
       "path": "docs/fiat-508-residual/amended-runbook.md"
+    },
+    {
+      "bytes": 119058,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 119058 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-implementation-regression.observation.json"
+    },
+    {
+      "bytes": 32212,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 32212 bytes",
+      "grade": "candidate",
+      "path": "docs/fiat-checkpoint-marker/reports/bounded-material-native-archive-roundtrip.observation.json"
     },
     {
       "bytes": 459957,
@@ -1008,18 +1043,60 @@
       "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 81662,
+      "bytes": 78048,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 40831",
+      "evidence": "no newline in the first 4096 bytes of 78048 bytes",
+      "grade": "candidate",
+      "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
+    },
+    {
+      "bytes": 86379,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 43189",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 112610,
+      "bytes": 80555,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 110562",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
-      "path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/demo-history.jsonl"
+    },
+    {
+      "bytes": 114016,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 114016 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/replay-history.json"
+    },
+    {
+      "bytes": 26652920,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 26652920 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/study-workload.json"
+    },
+    {
+      "bytes": 19687,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 19687 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/trust-prefix.json"
+    },
+    {
+      "bytes": 239,
+      "category": "binary",
+      "evidence": "null byte in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/independent-public-key.gpg"
+    },
+    {
+      "bytes": 36041,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 36041 bytes",
+      "grade": "candidate",
+      "path": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-profile.json"
     },
     {
       "bytes": 38122,

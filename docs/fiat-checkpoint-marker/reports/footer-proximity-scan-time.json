@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "footer-proximity",
+  "criterion": "scan-time",
+  "value": 92,
+  "unit": "milliseconds",
+  "command": "python3 .hexaemeron/measure_design.py --candidate footer-proximity --criterion scan-time --report .hexaemeron/reports/footer-proximity-scan-time.json",
+  "exit": 0
+}

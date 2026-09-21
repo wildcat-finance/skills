@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "complete-decoder",
+  "criterion": "peak-allocation",
+  "value": 158877,
+  "unit": "bytes",
+  "command": "python3 .hexaemeron/measure_design.py --candidate complete-decoder --criterion peak-allocation --report .hexaemeron/reports/complete-decoder-peak-allocation.json",
+  "exit": 0
+}
