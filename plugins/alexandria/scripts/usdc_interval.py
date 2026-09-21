@@ -311,6 +311,19 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
         except urllib.error.URLError as error:
             _close_transport_error(error)
             outcome["error"] = TransportError(f"{label} transport failed")
+        except Exception as error:  # noqa: BLE001
+            # Not every failure below urlopen's own retry logic arrives as a
+            # URLError: a read that times out after the connection is already
+            # open can raise a bare TimeoutError straight out of the socket
+            # layer instead (observed for real: a live loopback query timed
+            # out this way and the narrower except above let it escape
+            # uncaught, leaving `outcome` with neither "data" nor "error" and
+            # the caller crashing on a KeyError instead of seeing a refusal).
+            # Caught broadly here so this thread can never finish without
+            # setting one or the other -- label-only, exactly like every
+            # other refusal on this path; see _close_transport_error.
+            _close_transport_error(error)
+            outcome["error"] = TransportError(f"{label} transport failed")
 
     worker = threading.Thread(target=_run, daemon=True)
     worker.start()

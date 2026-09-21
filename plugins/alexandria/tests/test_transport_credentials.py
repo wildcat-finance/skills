@@ -576,6 +576,20 @@ class BoundedRequestTimeoutTests(unittest.TestCase):
         self.assertEqual(json.loads(data)["result"], None)
         self.assertEqual(len(captured), 1)
 
+    def test_a_bare_timeout_error_not_wrapped_in_url_error_is_still_caught(self):
+        """Observed for real: a socket-level read timeout can raise bare TimeoutError,
+        not urllib.error.URLError -- catching only the latter left `outcome` with
+        neither "data" nor "error" set, and the caller crashed on a KeyError instead
+        of seeing a TransportError. Every exception _run() can raise must be caught.
+        """
+        def raise_bare_timeout(_opener, request, timeout=None):
+            raise TimeoutError("timed out")
+
+        with mock.patch.object(urllib.request.OpenerDirector, "open", raise_bare_timeout):
+            transport = HttpsTransport.from_environment(5, {ENDPOINT_ENV: existing.ENDPOINT})
+            with self.assertRaisesRegex(TransportError, "transport failed"):
+                transport.request(b'{"id": 0}', "shard 0 logs")
+
 
 if __name__ == "__main__":
     unittest.main()
