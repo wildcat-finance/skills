@@ -32,18 +32,6 @@ taken here.
   "timeout_seconds": 600,
   "sources": [
     {
-      "id": "plan",
-      "class": "protocol",
-      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json",
-      "sha256": "8a70ebf145668b2fc5db99af6af2d9211d03d3f3282209ab144f9277df772482"
-    },
-    {
-      "id": "registry",
-      "class": "protocol",
-      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/registry.json",
-      "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
-    },
-    {
       "id": "expected",
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/expected.json",
