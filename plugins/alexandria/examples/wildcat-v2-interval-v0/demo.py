@@ -3,7 +3,7 @@
 
 Unlike the smaller USDC demonstration beside this one, the staging tree this
 release was built from is too large to carry in this repository (it holds
-124 files totalling over 200MB): 3,463 shards' worth of `logs` and targeted
+125 files totalling over 200MB): 3,463 shards' worth of `logs` and targeted
 `trace_transaction` journals, an opening-read journal, a checkpoint and a
 reconciliation record, spanning both transports Step 9 collected against.
 That tree is preserved outside this repository and verified by digest --
@@ -15,8 +15,11 @@ rebuilt the release from that tree, checked beside the manifest.
 `build` needs the staging tree unpacked locally and reaches no network itself
 -- it only reads the bytes the two transports already returned. It finds the
 unpacked tree through the `ALEXANDRIA_WILDCAT_V2_STAGING` environment
-variable; without it, it refuses by name rather than silently skipping.
-`verify` re-derives the release identifier, the epoch count, every subject's
+variable; without it, it refuses by name rather than silently skipping. Before
+any rebuild it compares every file under that tree with
+`staging-manifest.json`: a file the manifest does not list, a listed file the
+tree lacks, and a listed file whose byte count or SHA-256 differs each refuse
+by path. `verify` re-derives the release identifier, the epoch count, every subject's
 implementation code digest and the reconciliation status from a directory
 `build` produced, and compares them with `expected.json`. `verify-preserved`
 needs neither the staging tree nor the network: it checks
@@ -27,6 +30,7 @@ against `expected.json` alone.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -60,9 +64,17 @@ PRESERVED_COMPARED = ("epochs", "reconciliation", "release_id", "shard_statuses"
 
 
 def _read(path: Path, label: str):
+    """One committed JSON file, under `load_bytes`'s own control-document bounds.
+
+    The largest file here is the plan, 168,366 bytes and about 14,000 nodes,
+    inside `MAX_CONTROL_BYTES` and `MAX_NODES`, so no wider limit is declared.
+    """
     if not path.is_file() or path.is_symlink():
         raise AlexandriaError(f"the demonstration's {label} is missing at {path}")
-    return load_bytes(path.read_bytes(), label, max_bytes=200_000_000, max_nodes=2_000_000)
+    value = load_bytes(path.read_bytes(), label)
+    if not isinstance(value, dict):
+        raise AlexandriaError(f"the demonstration's {label} is not an object")
+    return value
 
 
 def staging_root() -> Path:
@@ -88,6 +100,102 @@ def staging_root() -> Path:
     return root
 
 
+def _checked_manifest() -> dict:
+    """The staging manifest, refused unless its own figures agree with each other."""
+    manifest = _read(MANIFEST, "staging manifest")
+    if manifest.get("format") != MANIFEST_FORMAT:
+        raise AlexandriaError("the staging manifest has an unknown format")
+    archive = manifest.get("archive")
+    if not isinstance(archive, dict) or "sha256" not in archive or "bytes" not in archive:
+        raise AlexandriaError("the staging manifest's archive entry is incomplete")
+    def valid_digest(value):
+        return isinstance(value, str) and len(value) == 64 and all(
+            character in "0123456789abcdef" for character in value
+        )
+
+    if (
+        not valid_digest(archive["sha256"])
+        or type(archive["bytes"]) is not int or archive["bytes"] < 0
+    ):
+        raise AlexandriaError("the staging manifest's archive digest or byte count is malformed")
+    files = manifest.get("files")
+    if not isinstance(files, list) or not files:
+        raise AlexandriaError("the staging manifest names no files")
+    total_bytes = 0
+    seen_paths = set()
+    for entry in files:
+        for field in ("path", "bytes", "sha256"):
+            if not isinstance(entry, dict) or field not in entry:
+                raise AlexandriaError(f"a staging manifest file entry is missing {field}")
+        path = entry["path"]
+        if (
+            not isinstance(path, str) or not path or path.startswith("/")
+            or any(part in ("", ".", "..") for part in path.split("/")) or "\\" in path
+            or any(ord(character) < 32 for character in path)
+        ):
+            raise AlexandriaError("a staging manifest file entry names an unsafe path")
+        if not isinstance(entry["bytes"], int) or isinstance(entry["bytes"], bool) or entry["bytes"] < 0:
+            raise AlexandriaError(f"the staging manifest's byte count for {path} is not a count")
+        if not valid_digest(entry["sha256"]):
+            raise AlexandriaError(f"the staging manifest's SHA-256 for {path} is malformed")
+        if path in seen_paths:
+            raise AlexandriaError(f"the staging manifest names {path} more than once")
+        seen_paths.add(path)
+        total_bytes += entry["bytes"]
+    if total_bytes != manifest.get("staging_bytes_total"):
+        raise AlexandriaError(
+            "the staging manifest's file sizes do not sum to its declared total"
+        )
+    if len(files) != manifest.get("staging_files_total"):
+        raise AlexandriaError(
+            "the staging manifest's file count does not match its declared total"
+        )
+    return manifest
+
+
+def verify_staging_tree(root: Path, manifest: dict) -> dict:
+    """Compare every file under the unpacked tree with the manifest, before any rebuild.
+
+    Three refusals, each by path and each before a byte of staging is read as
+    input: a file the manifest does not list, a listed file the tree lacks, and
+    a listed file whose byte count or SHA-256 differs. A symlink anywhere under
+    the tree refuses too, because the manifest binds regular files alone.
+    """
+    expected = {entry["path"]: entry for entry in manifest["files"]}
+    present = {}
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            raise AlexandriaError(f"the staging tree holds a symlink at {relative}")
+        if path.is_file():
+            present[relative] = path
+        elif not path.is_dir():
+            raise AlexandriaError(f"the staging tree holds a special file at {relative}")
+    unlisted = sorted(set(present) - set(expected))
+    if unlisted:
+        raise AlexandriaError(
+            f"the staging tree holds {len(unlisted)} file(s) the manifest does not list, "
+            f"first {unlisted[0]}"
+        )
+    missing = sorted(set(expected) - set(present))
+    if missing:
+        raise AlexandriaError(
+            f"the staging tree lacks {len(missing)} file(s) the manifest lists, first {missing[0]}"
+        )
+    total = 0
+    for relative in sorted(expected):
+        entry = expected[relative]
+        size = present[relative].stat().st_size
+        if size != entry["bytes"]:
+            raise AlexandriaError(f"the staging tree's {relative} differs from the manifest")
+        with present[relative].open("rb") as handle:
+            digest = hashlib.file_digest(handle, "sha256").hexdigest()
+        total += size
+        if digest != entry["sha256"]:
+            raise AlexandriaError(f"the staging tree's {relative} differs from the manifest")
+    return {"bytes": total, "files": len(expected)}
+
+
 def build(output: Path) -> dict:
     """Rebuild the release from the preserved staging tree and check it."""
     output = output.absolute()
@@ -96,6 +204,7 @@ def build(output: Path) -> dict:
     plan = _read(PLAN, "interval plan")
     registry = _read(REGISTRY, "pinned venue registry")
     staging = staging_root()
+    verify_staging_tree(staging, _checked_manifest())
 
     output.mkdir(parents=True)
     try:
@@ -149,40 +258,13 @@ def verify_preserved() -> dict:
     manifest or rebuild record fails here by name, rather than only
     surfacing once someone has unpacked the externally preserved archive.
     """
-    manifest = _read(MANIFEST, "staging manifest")
+    manifest = _checked_manifest()
     record = _read(RECORD, "rebuild record")
     expected = _read(EXPECTED, "pinned expectation")
-    if manifest.get("format") != MANIFEST_FORMAT:
-        raise AlexandriaError("the staging manifest has an unknown format")
     if record.get("format") != RECORD_FORMAT:
         raise AlexandriaError("the rebuild record has an unknown format")
 
-    archive = manifest.get("archive")
-    if not isinstance(archive, dict) or "sha256" not in archive or "bytes" not in archive:
-        raise AlexandriaError("the staging manifest's archive entry is incomplete")
-    files = manifest.get("files")
-    if not isinstance(files, list) or not files:
-        raise AlexandriaError("the staging manifest names no files")
-    total_bytes = 0
-    seen_paths = set()
-    for entry in files:
-        for field in ("path", "bytes", "sha256"):
-            if field not in entry:
-                raise AlexandriaError(f"a staging manifest file entry is missing {field}")
-        if entry["path"] in seen_paths:
-            raise AlexandriaError(f"the staging manifest names {entry['path']} more than once")
-        seen_paths.add(entry["path"])
-        total_bytes += entry["bytes"]
-    if total_bytes != manifest.get("staging_bytes_total"):
-        raise AlexandriaError(
-            "the staging manifest's file sizes do not sum to its declared total"
-        )
-    if len(files) != manifest.get("staging_files_total"):
-        raise AlexandriaError(
-            "the staging manifest's file count does not match its declared total"
-        )
-
-    if record.get("archive_sha256") != archive["sha256"]:
+    if record.get("archive_sha256") != manifest["archive"]["sha256"]:
         raise AlexandriaError(
             "the rebuild record binds a different archive than the staging manifest"
         )

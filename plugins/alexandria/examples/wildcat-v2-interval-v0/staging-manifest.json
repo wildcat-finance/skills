@@ -1,8 +1,8 @@
 {
   "archive": {
-    "bytes": 37931213,
+    "bytes": 37920375,
     "format": "tar+zstd",
-    "sha256": "b0514d43822cee8e237f0487751ed2adcaa7669caa99fe8f20c738db89ebbfc6"
+    "sha256": "0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a"
   },
   "files": [
     {
@@ -616,9 +616,14 @@
       "sha256": "de8cdf48ffab54ba55638f25397b19922bce3f61017d0e7ad9dab0aa76b1e581"
     },
     {
-      "bytes": 61534,
+      "bytes": 61627,
       "path": "reconciliation/checkpoint.json",
-      "sha256": "098ca7967720d746c158c37211d3b609fc472db9293b80e4733284b50c027e47"
+      "sha256": "29200b9069d859d8492e1422a7ae27f44dfac722b75209dbe777d85239ab96ba"
+    },
+    {
+      "bytes": 290,
+      "path": "reconciliation/errors.jsonl",
+      "sha256": "fdf5daaa9db1d8fa8ee1e077646d17d415f3c37a8476858781e1853ccecdda95"
     },
     {
       "bytes": 713291,
@@ -627,6 +632,6 @@
     }
   ],
   "format": "alexandria-wildcat-v2-staging-manifest/v1",
-  "staging_bytes_total": 211783933,
-  "staging_files_total": 124
+  "staging_bytes_total": 211784316,
+  "staging_files_total": 125
 }

@@ -11,7 +11,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 The registered record below checks `wildcat-v2-interval-v0`, the preserved
 Wildcat V2 mainnet interval: its committed staging manifest, rebuild record and
 expected values agree offline on the release id the collecting host rebuilt
-once from the preserved tree, which lives outside this repository and is bound
+from the preserved tree, which lives outside this repository and is bound
 by digest. The `credit-history-v0` example stays in the tree and its record
 stays in the history below. The demo frontier bullets keep their baseline
 wording, because the frontier's own job, a preserved USDC interval, is not
@@ -24,48 +24,36 @@ taken here.
   "plugin": "alexandria",
   "status": "real-data",
   "claim_id": "alexandria-wildcat-v2-interval-v0",
-  "claim": "The committed staging manifest, rebuild record and expected values of the preserved Wildcat V2 mainnet interval, blocks 21,866,550 to 26,022,093 over 137 subjects, agree offline on release id sha256:d76cce047564818a5ff3ccf1b730ba16fca20a05037f96f870b3e076f9e4ad35, 137 epochs, 3,463 complete shards and an agreed two-transport reconciliation, and the manifest binds the preserved archive and each of its 124 files by byte count and SHA-256.",
-  "non_claim": "It does not rebuild the release here: the staging tree is preserved outside this repository and the rebuild the record describes ran once, on the collecting host, from the bytes the manifest digests name. It does not establish source authenticity or canonical-chain finality, and the three collateral contracts among the 137 subjects are deployed but not in production.",
+  "claim": "The committed staging manifest, rebuild record and expected values of the preserved Wildcat V2 mainnet interval, blocks 21,866,550 to 26,022,093 over 137 subjects, agree offline on release id sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3, 137 epochs, 3,463 complete shards and an agreed two-transport reconciliation, and the manifest binds the preserved archive and each of its 125 files by byte count and SHA-256.",
+  "non_claim": "It does not rebuild the release here: the staging tree is preserved outside this repository and the rebuild the record describes ran on the collecting host, from the bytes the manifest digests name. It does not establish source authenticity or canonical-chain finality, and the three collateral contracts among the 137 subjects are deployed but not in production.",
   "network": {
     "policy": "denied"
   },
   "timeout_seconds": 600,
   "sources": [
     {
-      "id": "plan",
-      "class": "protocol",
-      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json",
-      "sha256": "8a70ebf145668b2fc5db99af6af2d9211d03d3f3282209ab144f9277df772482"
-    },
-    {
-      "id": "registry",
-      "class": "protocol",
-      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/registry.json",
-      "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
-    },
-    {
       "id": "expected",
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/expected.json",
-      "sha256": "198bd7a1a4474afc3073cdbc0e5d4e3b3b07086bc99fd825c19a7f5d554e70f4"
+      "sha256": "3d30fc07e9d1edc67b588a51f88262c9e1f6e7d7da6d6a06e64060161e0c4124"
     },
     {
       "id": "staging-manifest",
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json",
-      "sha256": "f886d8fe58d6838a02de4bbb35718869b9d2af887e0aa00d9cd6e942496169c8"
+      "sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21"
     },
     {
       "id": "rebuild-record",
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json",
-      "sha256": "9dd6559eb6f9b1b66fe73222517c87b5be7cf96eb69a4891d5bcdc9f4831581f"
+      "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
     },
     {
       "id": "program",
       "class": "repository",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
-      "sha256": "16855925ce086e0e314eb29cc9da08344725c4c330712fe0a956cf79d3904468"
+      "sha256": "a8a0ff53fe1e226df899fb877bd43cf862ab36be0c48e551ba1ec9963434f844"
     }
   ],
   "commands": [
@@ -80,12 +68,12 @@ taken here.
     }
   ],
   "observations": [
-    "verify-preserved: json record.checked.release_id \"sha256:d76cce047564818a5ff3ccf1b730ba16fca20a05037f96f870b3e076f9e4ad35\"",
+    "verify-preserved: json record.checked.release_id \"sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3\"",
     "verify-preserved: json record.checked.epochs 137",
     "verify-preserved: json record.checked.shard_statuses.complete 3463",
     "verify-preserved: json record.checked.reconciliation \"agreed\"",
-    "verify-preserved: json manifest.staging_files_total 124",
-    "verify-preserved: json manifest.archive.sha256 \"b0514d43822cee8e237f0487751ed2adcaa7669caa99fe8f20c738db89ebbfc6\""
+    "verify-preserved: json manifest.staging_files_total 125",
+    "verify-preserved: json manifest.archive.sha256 \"0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a\""
   ],
   "frontier": {
     "version": "alexandria-demo-v0.2.0",
