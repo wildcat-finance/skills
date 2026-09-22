@@ -3,10 +3,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import check_event_schema
 from .core import TabulariumError, jsonl_bytes, loads_json, sha256_bytes
 from .paths import resolve_artifact_path
 from .release_v2 import (
+    adapter_module,
     validate_capture as validate_capture_v2,
+    validate_event_row,
     validate_manifest as validate_manifest_v2,
 )
 
@@ -16,6 +19,7 @@ class VerificationReport:
     release: str
     rows: int
     sha256: str
+    schema_version: int
 
 
 def _artifact_bytes(path, claim, where):
@@ -71,16 +75,17 @@ def _release_artifacts(manifest_path, manifest):
     return source_bytes, capture_bytes, canonical_bytes
 
 
-def _verify_v2(manifest_path, raw_manifest):
-    manifest = validate_manifest_v2(raw_manifest)
+def _verify_release(manifest_path, raw_manifest, schema_version):
+    manifest = validate_manifest_v2(raw_manifest, schema_version)
     source_bytes, capture_bytes, canonical_bytes = _release_artifacts(
         manifest_path, manifest
     )
     source = loads_json(source_bytes, "source")
     capture = loads_json(capture_bytes, "capture manifest")
     adapter_name = manifest["versions"]["adapter"]["name"]
+    module = adapter_module(adapter_name)
     _, mapped = validate_capture_v2(
-        capture, source, source_bytes, expected_adapter=adapter_name
+        capture, source, source_bytes, schema_version, expected_adapter=adapter_name
     )
     if capture["release"] != manifest["release"]:
         raise TabulariumError("capture release does not match coverage manifest")
@@ -98,23 +103,16 @@ def _verify_v2(manifest_path, raw_manifest):
     rows = _parse_jsonl(canonical_bytes)
     if len(rows) != manifest["canonical"]["rows"]:
         raise TabulariumError("canonical row count does not match coverage manifest")
+    # Every row is named and checked here, after the duplicate-key refusal in
+    # loads_json and the path confinement above, and before the byte rebuild
+    # below, so a refusal says which row and field rather than reporting that
+    # the ledger does not rebuild. The artefact digests declared by the
+    # manifest are already checked in _release_artifacts, so this is not the
+    # first comparison of any kind, only the last one before the rebuild.
     selectors = []
     for index, row in enumerate(rows, start=1):
-        if not isinstance(row, dict) or row.get("schema_version") != 2:
-            raise TabulariumError(
-                "canonical row %d does not match canonical event schema v2" % index
-            )
-        provenance = row.get("provenance")
-        if not isinstance(provenance, dict) or provenance.get("adapter") != adapter_name:
-            raise TabulariumError(
-                "canonical row %d provenance does not match its adapter" % index
-            )
-        selector = provenance.get("source_selector")
-        if not isinstance(selector, str) or not selector:
-            raise TabulariumError(
-                "canonical row %d has no source selector" % index
-            )
-        selectors.append(selector)
+        validate_event_row(row, module, schema_version, index)
+        selectors.append(row["provenance"]["source_selector"])
     if len(selectors) != len(set(selectors)):
         raise TabulariumError("canonical ledger has duplicate source selectors")
     expected_selectors = [
@@ -139,6 +137,7 @@ def _verify_v2(manifest_path, raw_manifest):
         release=manifest["release"],
         rows=len(rows),
         sha256=sha256_bytes(canonical_bytes),
+        schema_version=schema_version,
     )
 
 
@@ -152,7 +151,7 @@ def verify(manifest_path):
     raw_manifest = loads_json(manifest_path.read_bytes(), "coverage manifest")
     if not isinstance(raw_manifest, dict):
         raise TabulariumError("coverage manifest is not an object")
-    version = raw_manifest.get("schema_version")
-    if version == 2:
-        return _verify_v2(manifest_path, raw_manifest)
-    raise TabulariumError("unsupported coverage manifest schema version")
+    schema_version = check_event_schema(
+        raw_manifest.get("schema_version"), "coverage manifest schema version"
+    )
+    return _verify_release(manifest_path, raw_manifest, schema_version)

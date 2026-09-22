@@ -182,11 +182,33 @@ CONTRACT = "promise-machine/v1"
 # bytes beyond the reserve and 73 files below the tripwire. These counts
 # belong to that tree; later changes require fresh measurement. The cap,
 # reserve, tripwire and every other omission rule stay unchanged.
+# A sixth raise records the checkpoint authority corpus: 1,534 files,
+# 20,219,205 bytes and 5,995,195 bytes of headroom. The local file tripwire
+# moves to 1,600; the 25 MiB byte cap and five MiB reserve stay unchanged.
+# Required shipped content, omission rules and source bindings stay intact.
+# This does not make the 1,000-file archive and download routes compatible.
+# 2026-09-18: Step 4 of issue #1676 measured 21,187,330 package bytes, 215,810
+# over the maximum the reserve leaves. Omitting the checkpoint authority
+# conformance corpora (`checkpoint-authority/fixtures/**` and
+# `native-fixture/**`, read only by reporters the package already omits) under
+# adr/omit-checkpoint-authority-conformance-corpora-from-the-portable-runtime
+# gives a complete package of 1,510 files and 20,855,576 bytes (5,358,824 bytes
+# below the cap) whose runtime manifest records 1,503 files and 20,392,692
+# total_bytes; the cap, reserve and file tripwire stay unchanged.
+# 2026-09-19: Step 5 of issue #1676 adds the released verifier, its command
+# line and the release manifest. The `checkpoint-authority/fixtures/**`
+# omission already covers the new interoperability corpus. At signed commit
+# 4c45438d562ffecdfe9ca97385a8b00c583c837e the complete package measured
+# 1,517 files and 20,968,483 bytes; its runtime held 1,510 files and 20,503,519
+# bytes. That left 3,037 bytes beyond the 5 MiB reserve and 83 files below the
+# tripwire. These counts belong to that commit; later changes require fresh
+# owner regeneration. The cap, reserve, tripwire and omission rules stay fixed.
 MAX_FILES = 1_600
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
     "plugins/lazarus/examples/aave-v4-spoke-v1/"
     "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",
     "assets/characters/*.{png,webp}",
@@ -195,10 +217,14 @@ EXPECTED_OMISSIONS = {
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
     "plugins/anamnesis/specimens/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+    "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
     "plugins/*/tests/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
+    "plugins/tabularium/examples/*-v1/"
+    "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}",
 }
 PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
@@ -253,6 +279,21 @@ def load_generator():
 
 
 class SkillsShPackageTests(unittest.TestCase):
+    def test_wildcat_demo_payloads_require_full_source_checkout(self):
+        for venue in ("v1", "v2"):
+            relative = Path(f"plugins/alexandria/examples/wildcat-{venue}-interval-v0")
+            source = ROOT / relative
+            installed = RUNTIME / relative
+            for name in ("README.md", "demo.py"):
+                self.assertEqual((source / name).read_bytes(), (installed / name).read_bytes())
+            self.assertTrue((source / "plan.json").is_file())
+            self.assertTrue((source / "expected.json").is_file())
+            self.assertEqual(list(installed.glob("*.json")), [])
+            self.assertFalse((installed / "pre-plan-probes").exists())
+        portable = (ROOT / ".agents/skills/promise-machine/PORTABLE.md").read_text()
+        self.assertIn("Wildcat V1 and V2 interval demonstration payloads", portable)
+        self.assertIn("verify-preserved", portable)
+
     def test_lazarus_keeps_the_complete_release_and_one_payload_copy(self):
         generator = load_generator()
         source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
@@ -547,6 +588,25 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertTrue((example / "rebuild.py").is_file())
         for omitted in ("input", "release", "source"):
             self.assertFalse((example / omitted).exists())
+        # A superseding Tabularium release is built from the v0 release's own
+        # source bytes, so the runtime would otherwise carry the same evidence
+        # twice.  Its documents stay: the skill links them.
+        for release in ("aave-v4-v1", "euler-v1-v1", "euler-v2-v1"):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            self.assertTrue((directory / "README.md").is_file(), release)
+            self.assertTrue((directory / "DATA-DICTIONARY.md").is_file(), release)
+            for omitted in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertFalse((directory / omitted).exists(), release)
+        for release in ("aave-v4-v0", "euler-v1-v0", "euler-v2-v0"):
+            directory = RUNTIME / "plugins/tabularium/examples" / release
+            for kept in (
+                "source.json", "capture.json", "coverage.json", "events.jsonl",
+                "rebuild.py",
+            ):
+                self.assertTrue((directory / kept).is_file(), release)
 
     def test_selected_directory_works_as_an_isolated_copy(self):
         with tempfile.TemporaryDirectory() as raw:

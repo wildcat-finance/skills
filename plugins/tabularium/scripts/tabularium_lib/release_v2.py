@@ -3,12 +3,11 @@
 from datetime import datetime, timezone
 import re
 
+from . import check_event_schema
 from .adapters import aave_v4, euler_v1, euler_v2
 from .core import TabulariumError, safe_integer, sha256_bytes
 
 
-MANIFEST_SCHEMA_VERSION = 2
-EVENT_SCHEMA_VERSION = 2
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 ADAPTERS = {
     aave_v4.ADAPTER: aave_v4,
@@ -93,7 +92,8 @@ def adapter_module(name):
         raise TabulariumError("unsupported release adapter %r" % name) from error
 
 
-def validate_capture(capture, source, source_bytes, expected_adapter=None):
+def validate_capture(capture, source, source_bytes, schema_version, expected_adapter=None):
+    check_event_schema(schema_version, "event schema version")
     capture = _exact(
         capture,
         (
@@ -207,15 +207,17 @@ def validate_capture(capture, source, source_bytes, expected_adapter=None):
         source_meta = _object(source.get("meta"), "Euler V3 response.meta")
         if _utc_timestamp(source_meta.get("timestamp"), "Euler V3 response.meta.timestamp") != captured_at:
             raise TabulariumError("capture timestamp does not match the Euler V3 response")
-    mapped = module.map_source(source, capture)
+    mapped = module.map_source(source, capture, schema_version)
     return module, mapped
 
 
 def make_manifest(release, adapter_name, source_path, source_bytes, capture_path,
-                  capture_bytes, canonical_path, canonical_bytes, capture, mapped):
+                  capture_bytes, canonical_path, canonical_bytes, capture, mapped,
+                  schema_version):
     module = adapter_module(adapter_name)
+    check_event_schema(schema_version, "event schema version")
     return {
-        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "schema_version": schema_version,
         "release": _text(release, "release"),
         "source": {
             "path": source_path,
@@ -243,7 +245,7 @@ def make_manifest(release, adapter_name, source_path, source_bytes, capture_path
             "unsupported_events": mapped.unmapped_counts,
         },
         "versions": {
-            "event_schema": EVENT_SCHEMA_VERSION,
+            "event_schema": schema_version,
             "adapter": {"name": adapter_name, "version": module.ADAPTER_VERSION},
             "mapping_rules": sorted({event["provenance"]["mapping_rule"] for event in mapped.events}),
         },
@@ -259,7 +261,8 @@ def _artifact(value, where):
     return value
 
 
-def validate_manifest(manifest):
+def validate_manifest(manifest, schema_version):
+    check_event_schema(schema_version, "event schema version")
     manifest = _exact(
         manifest,
         (
@@ -268,8 +271,11 @@ def validate_manifest(manifest):
         ),
         "coverage manifest",
     )
-    if safe_integer(manifest["schema_version"], "coverage manifest.schema_version") != 2:
-        raise TabulariumError("unsupported coverage manifest schema version")
+    if safe_integer(manifest["schema_version"], "coverage manifest.schema_version") != schema_version:
+        raise TabulariumError(
+            "coverage manifest.schema_version %r is not the release schema version %d"
+            % (manifest["schema_version"], schema_version)
+        )
     _text(manifest["release"], "coverage manifest.release")
     source = _exact(
         manifest["source"],
@@ -293,14 +299,24 @@ def validate_manifest(manifest):
             _text(key, "coverage event name")
             safe_integer(value, "coverage count")
     versions = _exact(manifest["versions"], ("event_schema", "adapter", "mapping_rules"), "coverage manifest.versions")
-    if safe_integer(versions["event_schema"], "coverage manifest.versions.event_schema") != 2:
-        raise TabulariumError("unsupported event schema version")
+    event_schema = safe_integer(
+        versions["event_schema"], "coverage manifest.versions.event_schema"
+    )
+    check_event_schema(event_schema, "event schema version")
+    if event_schema != schema_version:
+        raise TabulariumError(
+            "coverage manifest.versions.event_schema %d is not coverage manifest.schema_version %d"
+            % (event_schema, schema_version)
+        )
     adapter = _exact(versions["adapter"], ("name", "version"), "coverage manifest.versions.adapter")
     module = adapter_module(adapter["name"])
     if adapter["version"] != module.ADAPTER_VERSION:
         raise TabulariumError("unsupported adapter version")
     if source["evidence_class"] != EVIDENCE_CLASSES[adapter["name"]]:
-        raise TabulariumError("unsupported source evidence class")
+        raise TabulariumError(
+            "coverage manifest.source.evidence_class %r is not in the adapter tuple table"
+            % (source["evidence_class"],)
+        )
     if source["protocol_generation"] != module.PROTOCOL_GENERATION or source["source_api"] != module.SOURCE_API or source["chain"] != module.CHAIN:
         raise TabulariumError("source version fields do not match the adapter")
     rules = versions["mapping_rules"]
@@ -312,3 +328,77 @@ def validate_manifest(manifest):
     if manifest["known_gaps"] != list(KNOWN_GAPS[adapter["name"]]):
         raise TabulariumError("known semantic gaps are incomplete or unsupported")
     return manifest
+
+
+# Every field the canonical-event schema documents require of provenance, so a
+# row that omits one is named here rather than reaching the byte rebuild, where
+# the refusal can only say that the ledger as a whole does not reproduce.
+PROVENANCE_FIELDS = (
+    "adapter",
+    "adapter_version",
+    "protocol_generation",
+    "source_api",
+    "mapping_rule",
+    "source_selector",
+    "source_kind",
+    "source_contract",
+    "source_entity",
+    "source_id",
+    "supporting_selectors",
+)
+
+
+def validate_event_row(row, adapter_module, schema_version, index=1):
+    """Refuse one canonical row by row number and field name.
+
+    The caller supplies the one-based row number so the refusal says which row
+    and which field is wrong instead of leaving the byte comparison to report
+    that the ledger as a whole does not rebuild.
+    """
+
+    check_event_schema(schema_version, "event schema version")
+    where = "canonical row %d" % index
+    if not isinstance(row, dict):
+        raise TabulariumError("%s is not an object" % where)
+    if "schema_version" not in row:
+        raise TabulariumError("%s has no field schema_version" % where)
+    if row["schema_version"] != schema_version:
+        raise TabulariumError(
+            "%s field schema_version is %r, not the release schema version %d"
+            % (where, row["schema_version"], schema_version)
+        )
+    if row.get("venue") != adapter_module.ADAPTER:
+        raise TabulariumError(
+            "%s field venue is %r, which is not in the adapter tuple table"
+            % (where, row.get("venue"))
+        )
+    provenance = row.get("provenance")
+    if not isinstance(provenance, dict):
+        raise TabulariumError("%s field provenance is not an object" % where)
+    for field in PROVENANCE_FIELDS:
+        if field not in provenance:
+            raise TabulariumError("%s has no field provenance.%s" % (where, field))
+    expected = {
+        "adapter": adapter_module.ADAPTER,
+        "adapter_version": adapter_module.ADAPTER_VERSION,
+        "protocol_generation": adapter_module.PROTOCOL_GENERATION,
+        "source_api": adapter_module.SOURCE_API,
+    }
+    for field, value in expected.items():
+        if provenance[field] != value:
+            raise TabulariumError(
+                "%s field provenance.%s is %r, which is not in the adapter tuple table"
+                % (where, field, provenance[field])
+            )
+    rules = {mapping[2] for mapping in adapter_module.MAPPINGS.values()}
+    if provenance["mapping_rule"] not in rules:
+        raise TabulariumError(
+            "%s field provenance.mapping_rule is %r, which is not in the adapter tuple table"
+            % (where, provenance["mapping_rule"])
+        )
+    selector = provenance["source_selector"]
+    if not isinstance(selector, str) or not selector:
+        raise TabulariumError(
+            "%s field provenance.source_selector is not a non-empty string" % where
+        )
+    return row

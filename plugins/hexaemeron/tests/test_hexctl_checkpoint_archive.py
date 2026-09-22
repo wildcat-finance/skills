@@ -268,122 +268,50 @@ ARMOURED_BLOCK_JSON_CARRIED = json.dumps(
 REFERENCE_BLOCK_ANCHOR = "The two armour forms refuse as blocks."
 REFERENCE_BLOCK_END = "\n\n- A PEM private-key block"
 EXPECTED_BLOCK_PARAGRAPH = (
-    "The two armour forms refuse as blocks. A header is secret-shaped "
-    "only when key material follows it within the scanned window: one "
-    "whole line of base64 body, or the `-----END` marker matching that "
-    "header. The two witnesses have their own reaches: the body has to "
-    "start within the block lookahead of 1,792 bytes, which the armour "
-    "allowance bounds, and the footer has until the footer reach of "
-    "9,984 bytes, the block lookahead plus the largest key the scan "
-    "undertakes to reach, declared at 8,192 bits. A line ends at a "
-    "newline character or at the two-character escape `\\n` that carries "
-    "one inside a JSON string value, so a key held as a JSON string "
-    "value in `state.json` or on one `ledger.jsonl` line carries body "
-    "lines like any other. The delimiter set is the line feed as a "
-    "byte, as the two-character escape, or as the six-character numeric "
-    "escape, each optionally preceded by a carriage return in the "
-    "matching form. The numeric escapes are `\\u000a` for the line feed "
-    "and `\\u000d` before it for the carriage return, in either letter "
-    "case, so a CRLF key refuses raw, escaped and numerically escaped "
-    "alike. A body carrying no line delimiter in any form the witness "
-    "can see, such as a key whose line breaks were stripped rather than "
-    "encoded, refuses on its footer at every size below the declared "
-    "one. What the scan does not reach is a key whose modulus exceeds "
-    "that declared size, and the study states it as residue rather than "
-    "implying the class is shut. A file naming a header in prose or "
-    "quoting one in a code span supplies neither, so a run can archive "
-    "its own specification text. A key whose footer was truncated still "
-    "carries body lines and still refuses. The four token patterns are "
-    "self-delimiting and refuse on the match alone. The scan reads in "
-    "bounded chunks and carries between them the longest header the six "
-    "can match plus the footer reach, so a block lying across a chunk "
-    "boundary still refuses; the carry is derived from the patterns "
-    "rather than fixed."
+    'The two armour forms refuse as blocks. A recognized header requires an '
+    'independent whole line of at least 16 base64 glyphs, starting fewer than '
+    '1,792 bytes after the header, or the bounded material prefix below. The '
+    'independent whole-line rule keeps its existing raw LF and CRLF, short JSON '
+    'and numeric escape delimiters. A matching footer supplies no material '
+    'evidence. The prefix skips horizontal edge whitespace and admitted line '
+    'breaks, and permits up to seven armour metadata lines of at most 256 '
+    'original content bytes each. Recognized names are `Version`, `Comment`, '
+    '`MessageID`, `Hash`, `Charset`, `Proc-Type` and `DEK-Info`. It requires at '
+    'least 16 glyphs from `[A-Za-z0-9+/=]`. The first body byte must start fewer '
+    'than 1,792 original bytes after the header end, and all reads remain within '
+    'the existing 9,984-byte lookahead. Raw LF, CRLF and CR, their short JSON '
+    'escapes, and numeric escapes in either hex case are admitted. An escaped '
+    'solidus counts as one glyph; line breaks can join short body segments. '
+    'Spaces inside ordinary prose stop that prefix. Blank lines and edge spaces '
+    'consume the same bound. Quote context and filenames grant no exception. '
+    'Chunks remain 65,536 bytes and carry remains 10,079 bytes. Empty pairs and '
+    'the declared ordinary-prose pairs, including both preserved public CP3 audit '
+    'files, pass. The existing whole-line body witness remains independently '
+    'sufficient, including when no footer exists. The four token patterns remain '
+    'unchanged. The prefix also refuses the stripped 16,384-bit geometry specimen '
+    'without extending the lookahead. This establishes neither a working '
+    '16,384-bit keypair nor recognition of every key size or encoding. Fewer than '
+    '16 glyphs, unrecognized labels, overlong armour prefixes, encoded '
+    'boundaries, arbitrary Unicode or base64-character escapes, and nested '
+    'encodings remain outside this recognition rule. A long base64-shaped word '
+    'after a header can still refuse, as can the pre-existing whole-line witness '
+    'near a quoted header. This remains a bounded shape detector with false '
+    'positives and recognition limits.'
 )
-# Each row is one rule: what study section 4 states, and the words the
-# reference paragraph has to restate it in. Neither side may be absent.
 BLOCK_RULE_PARITY = (
-    (
-        "at least one line of base64 body or a matching `-----END` marker",
-        "one whole line of base64 body, or the `-----END` marker matching "
-        "that header",
-    ),
-    (
-        "a line ends at a newline character or at the two-character escape "
-        "`\\n` that carries one inside a JSON string value",
-        "A line ends at a newline character or at the two-character escape "
-        "`\\n` that carries one inside a JSON string value",
-    ),
-    (
-        "the line feed as a byte, as the two-character escape, or as the "
-        "six-character numeric escape, each optionally preceded by a "
-        "carriage return in the matching form",
-        "The delimiter set is the line feed as a byte, as the two-character "
-        "escape, or as the six-character numeric escape, each optionally "
-        "preceded by a carriage return in the matching form",
-    ),
-    (
-        "in either letter case: `\\u000a` for the line feed and `\\u000d` "
-        "before it for the carriage return",
-        "`\\u000a` for the line feed and `\\u000d` before it for the "
-        "carriage return, in either letter case",
-    ),
-    (
-        "The block lookahead keeps its 1,792 bytes and bounds only where the "
-        "body may start, which is what the armour allowance measures",
-        "the body has to start within the block lookahead of 1,792 bytes, "
-        "which the armour allowance bounds",
-    ),
-    (
-        "A separate footer reach bounds where that header's own footer may "
-        "sit, and is the armour allowance plus the largest key the scan "
-        "undertakes to reach, declared at 8,192 bits, giving 9,984 bytes",
-        "the footer has until the footer reach of 9,984 bytes, the block "
-        "lookahead plus the largest key the scan undertakes to reach, "
-        "declared at 8,192 bits",
-    ),
-    (
-        "a body carrying no delimiter in any spelling is now refused at every "
-        "size below it, because its footer is in reach",
-        "such as a key whose line breaks were stripped rather than encoded, "
-        "refuses on its footer at every size below the declared one",
-    ),
-    (
-        "The residue narrows to a key whose modulus exceeds that declared "
-        "size",
-        "What the scan does not reach is a key whose modulus exceeds that "
-        "declared size, and the study states it as residue",
-    ),
-    (
-        "A document that names a header in prose or inside a code span is "
-        "not a secret",
-        "A file naming a header in prose or quoting one in a code span "
-        "supplies neither",
-    ),
-    (
-        "still catches a key whose footer was truncated",
-        "A key whose footer was truncated still carries body lines and still "
-        "refuses",
-    ),
-    (
-        "The four token patterns are unchanged, because each is "
-        "self-delimiting",
-        "The four token patterns are self-delimiting and refuse on the match "
-        "alone",
-    ),
-    (
-        "The set stays six",
-        "the longest header the six can match plus the footer reach",
-    ),
-    (
-        "the carried window between chunks is derived from the footer reach "
-        "rather than the block lookahead",
-        "carries between them the longest header the six can match plus the "
-        "footer reach",
-    ),
+    ('A matching footer supplies no material evidence.', 'A matching footer supplies no material evidence.'),
+    ('seven armour metadata lines of at most 256 original content bytes each.', 'seven armour metadata lines of at most 256 original content bytes each.'),
+    ('It requires at least 16 glyphs from `[A-Za-z0-9+/=]`.', 'It requires at least 16 glyphs from `[A-Za-z0-9+/=]`.'),
+    ('The first body byte must start fewer than 1,792 original bytes after the header end, and all reads remain within the existing 9,984-byte lookahead.', 'The first body byte must start fewer than 1,792 original bytes after the header end, and all reads remain within the existing 9,984-byte lookahead.'),
+    ('An escaped solidus counts as one glyph; line breaks can join short body segments.', 'An escaped solidus counts as one glyph; line breaks can join short body segments.'),
+    ('Spaces inside ordinary prose stop that prefix.', 'Spaces inside ordinary prose stop that prefix.'),
+    ('Quote context and filenames grant no exception.', 'Quote context and filenames grant no exception.'),
+    ('Chunks remain 65,536 bytes and carry remains 10,079 bytes.', 'Chunks remain 65,536 bytes and carry remains 10,079 bytes.'),
+    ('The four token patterns remain unchanged.', 'The four token patterns remain unchanged.'),
+    ('A long base64-shaped word after a header can still refuse, as can the pre-existing whole-line witness near a quoted header.', 'A long base64-shaped word after a header can still refuse, as can the pre-existing whole-line witness near a quoted header.'),
 )
 
-# A well-formed fingerprint that is not the fixture's, for the proof's
+# A fingerprint with the accepted format but a different key, for the proof's
 # comparison against the set the manifest pins. It is never imported anywhere.
 UNPINNED_FINGERPRINT = "0123456789ABCDEF0123456789ABCDEF01234567"
 
@@ -1278,7 +1206,9 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         is where every other value shared by the two documents is held.
         """
         reference = read(REFERENCE)
-        study = flat(read(STUDY))
+        amendment = read(STUDY).partition("### Amendment -- 2026-09-19\n\n")[2]
+        self.assertTrue(amendment, "the material-recognition amendment is absent")
+        study = flat(amendment)
         paragraph = REFERENCE_BLOCK_ANCHOR + anchored(
             reference,
             REFERENCE_BLOCK_ANCHOR,
@@ -1296,21 +1226,17 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertEqual(2, len(module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS))
         self.assertEqual(4, len(module.CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS))
         self.assertEqual(6, len(module.CHECKPOINT_ARCHIVE_SECRET_PATTERNS))
-        # So are the two reaches and the declared key size it names, since
-        # S2-R7-01 split them: a constant moved without the paragraph, or the
-        # paragraph without the constant, contradicts the other here.
-        footer_reach = getattr(
-            module, "CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", None
-        )
-        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
-        self.assertIsNotNone(footer_reach, "the scan declares no footer reach")
-        self.assertIsNotNone(largest_key, "the scan declares no largest key")
-        self.assertIn(
-            f"block lookahead of {module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD:,} bytes",
-            EXPECTED_BLOCK_PARAGRAPH,
-        )
-        self.assertIn(f"footer reach of {footer_reach:,} bytes", EXPECTED_BLOCK_PARAGRAPH)
-        self.assertIn(f"declared at {largest_key:,} bits", EXPECTED_BLOCK_PARAGRAPH)
+        for name, value in (
+            ("CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD", 1792),
+            ("CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD", 9984),
+            ("CHECKPOINT_ARCHIVE_SECRET_WINDOW", 10079),
+            ("CHECKPOINT_IO_CHUNK", 65536),
+            ("CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE", 256),
+            ("CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES", 7),
+            ("CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS", 16),
+        ):
+            self.assertEqual(value, getattr(module, name))
+            self.assertIn(f"{value:,}", EXPECTED_BLOCK_PARAGRAPH.replace("seven", "7"))
 
     def test_archive_budgets_declare_the_six_measured_limits(self):
         budgets = load_metron().load_budgets(str(BUDGETS))
@@ -1869,6 +1795,7 @@ class SignedRunFixture(HexctlCase):
         super().setUp()
         self.env["GNUPGHOME"] = self.key_home
         self.git("remote", "add", "origin", ORIGIN_URL)
+        self.git("config", "gpg.format", "openpgp")
         self.git("config", "user.signingkey", self.fingerprint)
         self.git("config", "gpg.program", self.tool_paths["gpg"])
         self.fake_refs["main"] = self.head_sha()
@@ -2264,71 +2191,38 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         self.archive()
 
     def test_secret_shaped_member_refuses_before_publish_on_a_truncated_key_block(self):
-        """A block whose `-----END` is gone is still key material.
-
-        The block rule admits two witnesses, the footer and a body line, and a
-        key truncated in transit carries only the second. Reading the footer
-        alone would publish it. The same header with prose after it instead of
-        material publishes, which is the refusal S2-R2-02 recorded: the capsule
-        carries every controller file, and this run's study quotes that header
-        while specifying the scan.
-        """
+        """Truncated material refuses; the former prose-only footer specimen passes."""
         self.to_post_push()
         planted = Path(self.target) / ".hexaemeron" / "notes.txt"
-        # The body witness alone, then the footer witness alone. Each has to
-        # refuse by itself, or dropping the other one goes unnoticed.
+        for name, specimen in (
+            ("whole-line", ARMOURED_BLOCK_TRUNCATED),
+            ("short-cr-prefix", SUBSUMED_PATTERN_SPAN + "\r" + "A\r" * 16),
+        ):
+            with self.subTest(case=name):
+                planted.write_text(specimen, encoding="utf-8")
+                before = self.controller_bytes()
+                result, _ = self.archive(expect=1)
+                self.assertEqual("secret-shaped-member\n", result.stderr)
+                self.assertEqual(before, self.controller_bytes())
+                self.assertFalse(sorted(self.store_root().glob("*/*")))
         footer_only = (
             SUBSUMED_PATTERN_SPAN
             + "\nthis line is not base64\n-----END OPENSSH PRIVATE KEY-----\n"
         )
-        for specimen in (ARMOURED_BLOCK_TRUNCATED, footer_only):
-            with self.subTest(witness=specimen.splitlines()[1]):
-                planted.write_text(specimen, encoding="utf-8")
-                result, _ = self.archive(expect=1)
-                self.assertEqual("secret-shaped-member\n", result.stderr)
-                self.assertFalse(sorted(self.store_root().glob("*/*")))
-        planted.write_text(
-            f"the scan names {SUBSUMED_PATTERN_SPAN} here, and nothing follows it\n",
-            encoding="utf-8",
-        )
+        planted.write_text(footer_only, encoding="utf-8")
         self.archive()
 
-    def test_secret_shaped_member_refuses_an_adjacent_header_and_footer(self):
-        """A header touching its own footer refuses, carrying no key at all.
-
-        The footer witness asks only that a matching footer sit within the
-        footer reach of the header. A document that names both markers on
-        consecutive lines satisfies that with nothing between them, so a member
-        holding the two markers, their line endings and no key material
-        refuses. The test above
-        pins the two witnesses in isolation but always puts a line between the
-        markers, so this shape went undemonstrated until an export of real
-        controller state met it.
-
-        This is the cost of failing closed, not a defect: the rule would have
-        to admit key-shaped content between the markers to tell the two apart,
-        and narrowing it that way is a design change a dated study amendment
-        has to make. What the step owes is that the cost is stated and pinned
-        rather than found by the first person to archive a run whose notes
-        quote a key header.
-        """
+    def test_secret_shaped_member_accepts_an_adjacent_header_and_footer(self):
+        """The 2026-09-19 policy accepts this unchanged empty-pair geometry."""
         self.to_post_push()
         planted = Path(self.target) / ".hexaemeron" / "notes.txt"
         footer = "-----END OPENSSH PRIVATE KEY-----"
         adjacent = SUBSUMED_PATTERN_SPAN + "\n" + footer + "\n"
-        # Nothing but the two markers and their line endings: no base64 line,
-        # no body witness, and so no key.
         self.assertEqual(
             len(SUBSUMED_PATTERN_SPAN) + len(footer) + 2,
             len(adjacent.encode("utf-8")),
         )
         planted.write_text(adjacent, encoding="utf-8")
-        result, _ = self.archive(expect=1)
-        self.assertEqual("secret-shaped-member\n", result.stderr)
-        self.assertFalse(sorted(self.store_root().glob("*/*")))
-        # The header alone is not enough: dropping the footer witness would
-        # leave this refusing too, and the difference is the whole rule.
-        planted.write_text(SUBSUMED_PATTERN_SPAN + "\n", encoding="utf-8")
         self.archive()
 
     def test_archive_export_refuses_oversized_bundle(self):
@@ -2720,23 +2614,20 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         )
         blocks = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS", ())
         self.assertEqual(len(patterns), len(headers))
-        # Both terms are load-bearing. The header term brings a header that
+        # Both terms are required. The header term brings a header that
         # straddles the boundary into one search; the reach term keeps it in
         # the carry while the material the block rule reads lies in the next
         # chunk. A header further back than the sum has its whole decision
         # region inside the chunk it starts in, so nothing beyond the sum is
         # needed and nothing below it is enough.
         #
-        # The reach term is the footer's and not the body's. The block rule
-        # consults both and the footer is the further, so carrying only the
-        # body's lookahead would drop a header whose footer lies in the next
-        # chunk. Holding the two to one figure was S2-R7-01, and asserting the
-        # sum against the smaller of them would let that return unseen.
+        # The historical footer bound now limits the entire material-prefix
+        # read. It still exceeds the first-body-byte bound, so the carry must
+        # preserve the larger reach when the prefix spans a chunk boundary.
         self.assertGreater(
             footer_reach,
             lookahead,
-            "the footer reach has to exceed the body lookahead: a footer sits "
-            "past the whole body, which is the larger distance",
+            "the complete-prefix read bound must exceed the body-start bound",
         )
         self.assertEqual(
             max(len(header) for header in headers) + footer_reach,
@@ -2822,14 +2713,11 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                 self.assertIn(b"\\r\\n", payload)
                 self.assertGreater(payload.index(footer) - opened, lookahead)
                 self.assertNotIn(b"\n", payload[opened : payload.index(footer)])
-                # Since S2-R7-01 the footer reach covers this key, so the
-                # refusal alone no longer shows the carriage return was read.
-                # Assert the body witness fired, which is the half this guard
-                # is for.
+                # The prefix also recognizes this key. Assert the independent
+                # whole-line witness directly to retain its delimiter guard.
                 self.assertTrue(
                     module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(payload),
-                    "the body witness found no line, so a refusal here would "
-                    "be the footer's and this guard would test nothing",
+                    "the independent body witness found no CRLF-delimited line",
                 )
                 self.assertEqual("secret-shaped-member\n", self.scan(payload))
 
@@ -2863,8 +2751,8 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         The key is real and the geometry is asserted: every member here parses
         back to the key it encodes, carries no newline byte and no
         two-character escape inside its body, and has its footer past the
-        lookahead, so the refusal can only come from the numeric escape being
-        read as a delimiter.
+        body-start bound. The direct whole-line assertion below distinguishes
+        that witness from the material prefix added on 2026-09-19.
         """
         module = hexctl_module()
         lookahead = module.CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
@@ -2892,23 +2780,17 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                 self.assertGreater(len(body), lookahead)
                 self.assertNotIn(b"\n", body)
                 self.assertNotIn(b"\\n", body)
-                # The refusal has to come from the numeric escape being read
-                # as a delimiter, and since S2-R7-01 the footer reach covers
-                # this key too, so the scan alone no longer says which witness
-                # fired. Assert the body witness directly.
+                # The prefix also recognizes numeric escapes. Assert the
+                # independent whole-line witness directly to retain its guard.
                 self.assertTrue(
                     module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(payload),
-                    "the body witness found no line, so a refusal here would "
-                    "be the footer's and this guard would test nothing",
+                    "the independent body witness found no numeric-delimited line",
                 )
                 self.assertEqual("secret-shaped-member\n", self.scan(payload))
 
-        # The guard below takes a body with no line delimiter at all. Before
-        # S2-R7-01 that member published and the guard was an expected
-        # failure; the footer reach now covers it and it refuses. The geometry
-        # that made it an escape, a body past the block lookahead with nothing
-        # in it for the witness to read, is still proved here on the same
-        # seeded key, because that is what makes the refusal the footer's.
+        # Retain the original stripped-key geometry: its body exceeds the
+        # first-body-byte bound and supplies no line delimiter. The material
+        # prefix now recognizes the early glyphs without consulting a footer.
         stripped = ('{"deploy_key": "' + pem.replace("\n", "") + '"}').encode("utf-8")
         opened = stripped.index(header) + len(header)
         body = stripped[opened : stripped.index(footer)]
@@ -2918,25 +2800,11 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
     def test_secret_shaped_member_refuses_before_publish_on_a_body_the_witness_cannot_read(
         self,
     ):
-        """S2-R7-01: a body with no delimiter the witness can see still refuses.
+        """Stripped and CR-only bodies retain refusal through the material prefix.
 
-        Two members carry no line delimiter in any form the body witness
-        reads: a key whose line breaks were stripped rather than encoded, and
-        one whose lines end in a carriage return alone, raw or in either
-        escape, because the carriage return is only ever a prefix to a line
-        feed. Both used to publish once the footer was past the lookahead, and
-        the second 2026-09-10 study amendment stated them as residue.
-
-        They are residue no longer, and not because the witness was widened
-        again. The block rule always had a second witness, the footer, and it
-        was simply out of range: one constant served both reaches at 1,792
-        bytes while these footers sit 2,356 to 2,812 past the header at 3,072
-        bits. With the footer reach separated and sized to the largest key the
-        scan undertakes to catch, every one of them refuses on the footer.
-
-        So this asserts the refusal and the reason for it: the body witness
-        finds nothing, which is what made these members escape, and the member
-        refuses anyway.
+        The independent whole-line witness still finds no line in these
+        cases. Historical footer-distance and geometry checks remain below;
+        a footer is no longer needed to establish the refusal.
         """
         module = hexctl_module()
         # Read through `getattr`, as the chunk-boundary guard does: on a tree
@@ -2981,22 +2849,20 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     "the body witness read a line here, so this member is not "
                     "the delimiter-free case this guard is for",
                 )
-                # And within the footer reach, which is what now refuses it.
+                # The historical footer is in reach; the prefix now supplies refusal.
                 self.assertLess(len(body), footer_reach)
                 self.assertEqual("secret-shaped-member\n", self.scan(payload))
 
-        # The geometry twin the residue guard below stands on, held against
-        # the real key here, where a failed precondition is a failure and not
-        # something the expected-failure decorator swallows: the same line
-        # count, and at most four bytes longer.
+        # Keep the geometry twin checked against the real key: the same line
+        # count and at most four bytes longer. The former expected-failure
+        # guard below is now an ordinary refusal assertion.
         twin = rsa_shaped_pem(3072)
         self.assertEqual(pem.count("\n"), twin.count("\n"))
         self.assertIn(len(twin) - len(pem), range(0, 5))
 
-        # The declared largest key is in reach in every spelling a JSON string
-        # value can give its line breaks, including none, so the constant
-        # covers what its name says. Twelve bytes of numeric escape per line
-        # is the longest spelling and the last member here.
+        # Retain the 8,192-bit geometry measurements behind the historical
+        # footer constant. These shapes establish encoded lengths, not valid
+        # larger keypairs. Numeric CRLF is the longest listed line ending.
         largest = rsa_shaped_pem(largest_key)
         for name, ending in LINE_BREAK_SPELLINGS:
             payload = ('{"deploy_key": "' + largest.replace("\n", ending) + '"}').encode(
@@ -3018,35 +2884,23 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         self.assertGreater(len(body), footer_reach + 2048)
         self.assertIsNone(module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(stripped))
 
-    @unittest.expectedFailure
-    def test_secret_shaped_member_refuses_before_publish_on_a_key_past_the_declared_largest(
-        self,
-    ):
-        """The residue the third 2026-09-10 study amendment states, as the
-        refusal the scan does not make.
+    def test_secret_shaped_member_refuses_before_publish_on_a_key_past_the_declared_largest(self):
+        """The formerly expected failure now refuses on its early material prefix.
 
-        A key whose modulus exceeds `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY`,
-        with its line breaks stripped, carries no delimiter the body witness
-        can see and has its footer past the footer reach, so nothing is in
-        view and the member publishes. This test asserts the refusal and is
-        marked as the expected failure it is: `unittest` reports it apart from
-        the tests that ran, the Exit's floor excludes an expected failure by
-        name, and the day the residue closes it becomes an unexpected success,
-        which `run_tests.py` counts as a failed run, so closing the residue is
-        a dated amendment that edits this test rather than a quiet edit.
-
-        The key is the geometry twin from `rsa_shaped_pem` at twice the
-        declared size, because a real key of 16,384 bits takes minutes to
-        search for here. The decorator swallows a failed precondition, so the
-        twin's fidelity to the seeded real key and this member's geometry are
-        proved by the S2-R7-01 guard above and not re-asserted here.
+        This is a 16,384-bit geometry twin, not a working keypair. Its footer is
+        beyond the unchanged read bound; the prefix supplies the refusal.
         """
         module = hexctl_module()
-        largest_key = getattr(module, "CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY", None)
-        self.assertIsNotNone(largest_key, "the scan declares no largest key")
+        largest_key = module.CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY
+        self.assertEqual(8192, largest_key)
         beyond = rsa_shaped_pem(2 * largest_key)
-        stripped = '{"deploy_key": "' + beyond.replace("\n", "") + '"}'
-        self.assertEqual("secret-shaped-member\n", self.scan(stripped.encode("utf-8")))
+        stripped = ('{"deploy_key": "' + beyond.replace("\n", "") + '"}').encode()
+        header = b"-" * 5 + b"BEGIN RSA PRIVATE KEY" + b"-" * 5
+        footer = b"-" * 5 + b"END RSA PRIVATE KEY" + b"-" * 5
+        opened = stripped.index(header) + len(header)
+        self.assertGreater(stripped.index(footer) - opened, module.CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD + 2048)
+        self.assertIsNone(module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(stripped))
+        self.assertEqual("secret-shaped-member\n", self.scan(stripped))
 
     def test_secret_scan_passes_a_member_that_carries_no_header(self):
         module = hexctl_module()
@@ -3063,9 +2917,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
             with self.subTest(header=header):
                 named = f"the scan names `{header}` and nothing follows it.\n"
                 self.assertIsNone(self.scan(named.encode("utf-8")))
-        # The footer witness is the marker matching the header that opened the
-        # block, not any `-----END`. A document quoting a header near an
-        # unrelated end marker is still prose.
+        # An unrelated closing marker adds no material to this prose specimen.
         mismatched = (
             SUBSUMED_PATTERN_SPAN
             + "\nquoted in prose\n-----END PGP PUBLIC KEY BLOCK-----\n"
@@ -3218,7 +3070,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
     a fixture is never built with the code it is testing.
     """
 
-    # -- fixture plumbing -------------------------------------------------
+    # -- fixture helpers --------------------------------------------------
 
     def run_inspect(self, archive_path, sha256, *, scratch=None, expect=1, temp_parent=None):
         args = [
@@ -4018,7 +3870,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
     `merge-base`, `rev-parse` and the rest resolve for real against it.
     """
 
-    # -- fixture plumbing --------------------------------------------------
+    # -- fixture helpers ---------------------------------------------------
 
     def restore_destination(self, name="restore-dest"):
         root = tempfile.mkdtemp(prefix="fiat861-restore-")

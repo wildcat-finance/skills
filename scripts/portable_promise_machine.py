@@ -191,6 +191,10 @@ PORTABLE_TEST_FILES = (
 
 OMISSIONS = (
     {
+        "pattern": "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
+        "reason": "the historical interval demonstration payloads remain in the full source checkout; their documents and entrypoints stay, and both metadata verification and rebuild require that checkout",
+    },
+    {
         "pattern": (
             "plugins/lazarus/examples/aave-v4-spoke-v1/"
             "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}"
@@ -240,6 +244,22 @@ OMISSIONS = (
         ),
     },
     {
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
+        "reason": (
+            "the checkpoint authority record, signature and replay conformance "
+            "corpora are data the router never reads; only the conformance "
+            "reporters read them, and those run from the full source checkout"
+        ),
+    },
+    {
+        "pattern": "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
+        "reason": (
+            "the native boundary conformance fixture is data the router never "
+            "reads; only the native conformance reporter reads it, and that runs "
+            "from the full source checkout"
+        ),
+    },
+    {
         "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
         "reason": "the large offline trace inputs remain in the full source checkout",
     },
@@ -250,6 +270,19 @@ OMISSIONS = (
     {
         "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
         "reason": "the offline trace release sources remain in the full source checkout",
+    },
+    {
+        "pattern": (
+            "plugins/tabularium/examples/*-v1/"
+            "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}"
+        ),
+        "reason": (
+            "a superseding schema v3 release is built from the v0 release's own "
+            "source bytes, so shipping both payloads would carry the same "
+            "evidence twice; the v1 documents stay and the payload and its "
+            "rebuild demonstration remain in the full source checkout, which is "
+            "where those documents say to run them"
+        ),
     },
 )
 
@@ -294,12 +327,34 @@ def _omitted(relative: Path) -> bool:
         return False
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
         return True
+    if (
+        parts[:3] == ("plugins", "alexandria", "examples")
+        and len(parts) >= 5
+        and parts[3] in {"wildcat-v1-interval-v0", "wildcat-v2-interval-v0"}
+        and ((len(parts) == 5 and relative.suffix == ".json") or parts[4] == "pre-plan-probes")
+    ):
+        return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True
     if (
         parts[:4] == ("plugins", "lazarus", "examples", "aave-v4-spoke-v1")
         and len(parts) == 5
         and parts[4] in DUPLICATE_LAZARUS_PAYLOADS
+    ):
+        return True
+    if parts[:5] == ("plugins", "hexaemeron", "skills", "fiat", "checkpoint-authority") and len(parts) >= 7 and parts[5] in {"fixtures", "native-fixture"}:
+        return True
+    if (
+        parts[:3] == ("plugins", "tabularium", "examples")
+        and len(parts) == 5
+        and parts[3].endswith("-v1")
+        and parts[4] in {
+            "capture.json",
+            "coverage.json",
+            "events.jsonl",
+            "rebuild.py",
+            "source.json",
+        }
     ):
         return True
     example = parts[:4] == (

@@ -8,7 +8,7 @@ import tempfile
 
 
 TOOL_DIRECTORIES = ("/usr/bin", "/bin", "/usr/local/bin", "/opt/homebrew/bin")
-SIGNING_TOOLS = ("gpg", "gpgconf")
+SIGNING_TOOLS = ("gpg", "gpgconf", "ssh-keygen")
 
 
 def signing_tool(name):
@@ -21,9 +21,9 @@ def signing_tool(name):
 
 
 @contextmanager
-def native_signing_tools():
+def native_signing_tools(names=("gpg", "gpgconf")):
     """Expose only the selected tools to native verification's nested commands."""
-    tools = {name: signing_tool(name) for name in SIGNING_TOOLS}
+    tools = {name: signing_tool(name) for name in names}
     previous = os.environ.get("PATH")
     with tempfile.TemporaryDirectory(prefix="fixture-tools-") as temporary:
         directory = Path(temporary).resolve()

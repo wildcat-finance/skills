@@ -52,6 +52,8 @@ MAX_PARENT_BLOB_BYTES = 32 * 1024 * 1024
 MAX_PARENT_BLOBS_BYTES = 256 * 1024 * 1024
 MAX_PARENT_GIT_SECONDS = 30
 MAX_PARENT_GIT_REAP_SECONDS = 0.25
+START_FAILURE_DETAIL = "the test command could not be started"
+MAX_START_FAILURE_CAUSE_CHARS = 200
 GUARD_BLOB_KEYS = {"path", "status", "mode", "oid", "bytes", "sha256", "raw"}
 OBJECT_ID_RE = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 LINUX_NO_DESCENDANT_WRAPPER = """\
@@ -215,14 +217,14 @@ class ExecutableBinding:
     def stable(self) -> bool:
         try:
             for containing, name, descriptor, expected in self.directories:
-                if _file_identity(os.fstat(descriptor)) != expected:
+                if _executable_directory_identity(os.fstat(descriptor)) != expected:
                     return False
                 named = (
                     os.lstat(os.path.sep)
                     if containing is None
                     else os.stat(name, dir_fd=containing, follow_symlinks=False)
                 )
-                if _file_identity(named) != expected or not stat.S_ISDIR(named.st_mode):
+                if _executable_directory_identity(named) != expected or not stat.S_ISDIR(named.st_mode):
                     return False
             opened = os.fstat(self.descriptor)
             named = os.stat(
@@ -286,6 +288,17 @@ def _effective_execute_bit(observed: os.stat_result) -> int:
     return stat.S_IXOTH
 
 
+def _executable_directory_identity(observed: os.stat_result) -> tuple[int, ...]:
+    """Bind the directory and its access policy, independent of its entries.
+
+    Sibling creation and an ancestor move can change timestamps, size and link
+    count without changing the held executable. Its own full identity remains
+    required, and every directory name must still reach its held inode.
+    """
+    return (observed.st_dev, observed.st_ino, observed.st_mode,
+            observed.st_uid, observed.st_gid)
+
+
 def _trusted_executable(raw: str) -> ExecutableBinding:
     """Resolve and retain one executable through a no-follow descriptor walk."""
     if os.sep in raw or (os.altsep and os.altsep in raw):
@@ -295,7 +308,9 @@ def _trusted_executable(raw: str) -> ExecutableBinding:
     else:
         candidate = shutil.which(raw, path=_trusted_search_path())
         if candidate is None:
-            raise FileNotFoundError(raw)
+            raise FileNotFoundError(
+                errno.ENOENT, "not found on the trusted search path", raw
+            )
     if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
         raise OSError("safe executable descriptor access is unavailable")
     resolved = Path(candidate).resolve(strict=True)
@@ -320,9 +335,9 @@ def _trusted_executable(raw: str) -> ExecutableBinding:
     try:
         root_named = os.lstat(os.path.sep)
         root_fd = os.open(os.path.sep, directory_flags)
-        root_identity = _file_identity(os.fstat(root_fd))
+        root_identity = _executable_directory_identity(os.fstat(root_fd))
         if (
-            root_identity != _file_identity(root_named)
+            root_identity != _executable_directory_identity(root_named)
             or not stat.S_ISDIR(root_named.st_mode)
         ):
             os.close(root_fd)
@@ -332,8 +347,8 @@ def _trusted_executable(raw: str) -> ExecutableBinding:
         for component in resolved.parts[1:-1]:
             named = os.stat(component, dir_fd=parent_fd, follow_symlinks=False)
             child_fd = os.open(component, directory_flags, dir_fd=parent_fd)
-            identity = _file_identity(os.fstat(child_fd))
-            if identity != _file_identity(named) or not stat.S_ISDIR(named.st_mode):
+            identity = _executable_directory_identity(os.fstat(child_fd))
+            if identity != _executable_directory_identity(named) or not stat.S_ISDIR(named.st_mode):
                 os.close(child_fd)
                 raise OSError("an executable directory was replaced")
             directories.append((parent_fd, component, child_fd, identity))
@@ -1578,6 +1593,26 @@ def _base_result(ref: str, status: str, tests: list[str], detail: str) -> dict:
     return {"ref": ref, "status": status, "tests": tests, "detail": detail}
 
 
+def _start_failure_detail(err: OSError, site: str) -> str:
+    """Name the refusing site and the caught cause after the fixed wording.
+
+    A detail that only said the command could not start hid whether the
+    executable binding or the process start refused, and with which errno.
+    The number is what a person compares against the host; the name is what
+    they search for. An OSError raised here without an errno keeps its
+    message instead.
+    """
+    if err.errno is None:
+        cause = str(err) or type(err).__name__
+    else:
+        name = errno.errorcode.get(err.errno)
+        cause = f"errno {err.errno}" + (f" {name}" if name else "")
+        if err.strerror:
+            cause = f"{cause}: {err.strerror}"
+    cause = " ".join(cause.split())[:MAX_START_FAILURE_CAUSE_CHARS]
+    return f"{START_FAILURE_DETAIL} ({site}; {cause})"
+
+
 def _tail(current: bytes, chunk: bytes) -> bytes:
     return (current + chunk)[-MAX_DIAGNOSTIC_BYTES:]
 
@@ -1763,10 +1798,10 @@ def parent_guard_evidence(
         ]
         try:
             executable = _trusted_executable(resolved_command[0])
-        except OSError:
+        except OSError as err:
             return _base_result(
                 parent, "inconclusive", tests,
-                "the test command could not be started",
+                _start_failure_detail(err, "executable binding"),
             )
         resolved_command[0] = executable.path
         try:
@@ -1791,10 +1826,10 @@ def parent_guard_evidence(
                 run = _run_guard_command(
                     contained_command, tree, timeout, environment
                 )
-            except OSError:
+            except OSError as err:
                 return _base_result(
                     parent, "inconclusive", tests,
-                    "the test command could not be started",
+                    _start_failure_detail(err, "process start"),
                 )
             bindings_stable = contained_command.stable()
         finally:
@@ -1984,9 +2019,10 @@ def check(
         ]
         try:
             executable = _trusted_executable(resolved_command[0])
-        except OSError:
+        except OSError as err:
             return _base_result(
-                ref, "inconclusive", tests, "the test command could not be started"
+                ref, "inconclusive", tests,
+                _start_failure_detail(err, "executable binding"),
             )
         resolved_command[0] = executable.path
         try:
@@ -2013,10 +2049,10 @@ def check(
                 run = _run_guard_command(
                     contained_command, tree, timeout, environment
                 )
-            except OSError:
+            except OSError as err:
                 return _base_result(
                     ref, "inconclusive", tests,
-                    "the test command could not be started",
+                    _start_failure_detail(err, "process start"),
                 )
             bindings_stable = contained_command.stable()
         finally:

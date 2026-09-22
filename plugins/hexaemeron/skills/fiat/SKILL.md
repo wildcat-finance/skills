@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.65.1"
+  version: "6.74.1"
 ---
 
 <p align="center">
@@ -865,6 +865,11 @@ cause. The current step still earns complete live-range local signature,
 GitHub verification, author, and committer evidence under
 `effective_push`. Ancestry supplies none of it and never rewrites the original
 push receipt.
+A waiting branch that gained a commit another step's push receipt owns refuses
+before any write. One bounded native gained-range read per moved tip settles
+that without a GitHub read, an adopted step owns nothing there, an
+unanswerable range refuses as unknown, and `done merge-step` intersects the
+same ownership set with the repaired range it receipts.
 Before the run is recorded as integrated, every primary author its push
 receipts recorded has to remain attributable from the recorded merge, and the
 receipt records which mechanism carried it. The separately recorded committer
@@ -1186,6 +1191,21 @@ separately validates the relative report declaration under the restored root.
 The operand authorizes no command execution at the old root; existing checkpoint
 identity and ledger checks remain the relocation authority.
 
+Study amendments keep the active success-criteria admission on the runbook
+receipt. A study admission committed by an earlier controller remains readable
+only when its history and attempts extend the prior custody and its source
+digests agree. Recovery preserves those committed state and ledger bytes.
+Before a study receipt was committed, recovery checks the exact prior prefix
+named by its pending transaction. Read-only criteria replay may retain a
+reviewed command-adapter identity after complete current gate replay and an
+exact declaration/Exit join comparison. Execution still requires its separate
+current-adapter check or a newly checked amendment.
+
+Amendment preflight accepts a reviewed historical-to-current command-adapter
+change only when every other gate field agrees. The original runbook gate and
+active criteria admission retain their separate identities. Changed source,
+command or report evidence and unknown adapters still refuse.
+
 ## Joined controller demonstration
 
 Step 5 has a separate evidence operation for the successor contract. It runs
@@ -1379,3 +1399,19 @@ receipt.
 - Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync or decision-assignment receipt, a missing or non-replaying sync resolution guard, a missing, stale or non-replaying active decision assignment, a superseded assignment in active ancestry, missing, extra, duplicate or unsorted path acknowledgements, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded primary author carried by nothing, a `## Carried forward` section holding no `carryover` block or a row that disposes of its item in neither a filed issue, an existing issue nor a stated reason, a new `filed` Skills issue whose remote title, labels, opening or body contract does not replay, or integration without explicit delivery authority.
 - Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, inspect and acknowledge the exact sync-risk paths the controller names, rerun its integration-sensitive checks, receipt that revalidation, then resolve declared versions without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, inspect every old-composition/base-advance intersection path, rerun bounded revalidation and supersede the exact active sync with a reason; the old sync and version-resolution receipts remain in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none
+
+## Checkpoint authority conformance
+
+The [record and signature reference](references/checkpoint-authority.md) owns
+the closed Step 2 record inventory, exact byte and key profiles, external
+bootstrap rules and mandatory conformance toolchain. A passing
+`records-and-signatures` report permits only its named design transition.
+Native admission, complete authority replay and release conformance remain
+separate gates; native checkpoint v1 formats remain unchanged.
+
+The released interoperability demonstration retains the macOS network-denial
+policy and supports Linux x86_64 through the packaged Bubblewrap launcher plus
+an inherited seccomp filter. Direct and executed-descendant probes, exact
+policy/tool identity and complete conformance remain required. The reference
+above owns supported profiles, refusals and the separate fixture-validation
+boundary; this does not widen native archive or service containment.

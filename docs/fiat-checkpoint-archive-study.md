@@ -1182,3 +1182,65 @@ back through the inspector and the restore transaction. No step's Entry, Exit,
 Files, Tests or Disciplines field changes.
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-09-19
+
+**What changed.** Issue 1755 replaces the footer-only private-key refusal
+introduced on 2026-09-09 and extended on 2026-09-10. Empty pairs and pairs
+containing only ordinary prose are benign, including the two unchanged public
+CP3 audit files. A matching footer supplies no material evidence. The existing
+whole-line body witness remains independently sufficient, including when no
+footer exists. The four token patterns remain unchanged.
+
+The selected `bounded-material` witness starts after a recognized header,
+skips horizontal edge whitespace and admitted line breaks, and permits up to
+seven armour metadata lines of at most 256 original content bytes each.
+Recognized names are `Version`, `Comment`, `MessageID`, `Hash`, `Charset`,
+`Proc-Type` and `DEK-Info`. It requires at least 16 glyphs from `[A-Za-z0-9+/=]`.
+The first body byte must start fewer than 1,792 original bytes after the header
+end, and all reads remain within the existing 9,984-byte lookahead. Raw LF,
+CRLF and CR, their short JSON escapes, and numeric escapes in either hex case
+are admitted. An escaped solidus counts as one glyph; line breaks can join
+short body segments. Spaces inside ordinary prose stop that prefix. Blank
+lines and edge spaces consume the same bound. Quote context and filenames
+grant no exception. Chunks remain 65,536 bytes and carry remains 10,079 bytes.
+
+The 2026-09-10 residue claim is withdrawn for the specific stripped 16,384-bit
+geometry specimen: its early material prefix now supplies a refusal without
+extending the lookahead. Step 2 must convert that expected failure to an
+ordinary guard and retain the geometry evidence. This observation establishes
+neither a working 16,384-bit keypair nor recognition of every key size or
+encoding. Fewer than 16 glyphs, unrecognized labels, overlong armour prefixes,
+encoded boundaries, arbitrary Unicode or base64-character escapes, and nested
+encodings remain outside this recognition rule. A long base64-shaped word
+after a header can still refuse, as can the pre-existing whole-line witness
+near a quoted header. This remains a bounded shape detector with false
+positives and recognition limits.
+
+**Why.** The released predicate refuses the unchanged public CP3 audit source
+and synopsis. The selection recorded in `docs/fiat-checkpoint-marker-study.md`
+and `docs/fiat-checkpoint-marker/design-evidence.json` compares four candidates
+on 436 refusal and 119 benign specimens. Only `bounded-material` had zero
+missed refusals and zero benign refusals. `footer-proximity` had 117 and 114;
+`whole-lines-only` had 231 and zero; `complete-decoder` had 229 and zero.
+The selected prototype's ceiling of the median of five samples was 196 ms
+against 92 ms for the released predicate over 2,852,105 bytes. Its traced peak
+was 173,277 bytes against 155,656, a 17,621-byte increase. These measurements
+exclude prebuilt inputs, imported modules and process RSS; they establish no
+full-archive latency. Product conformance still owes a same-run comparison at
+no more than four times the released median and below 1,048,576 traced bytes.
+
+**Steps touched.** Issue 1755 Step 1 records this policy before code changes;
+Step 2 changes the shared predicate and retains positive and negative guards;
+Step 3 demonstrates native archive, inspection and restore. The decision home
+is `plugins/hexaemeron/skills/fiat/EVOLUTION.md`, as the repair study's design
+bridge declares. All prior study bytes remain the exact prefix; the public
+audit source and synopsis remain unchanged. All 24 selection cells and eight
+pending conformance cells retain their original evidence. This amendment
+claims no product implementation, parent guard or native archive demonstration.
+
+**Still holding.** Issue 1755 Step 1: entry holds; exit holds. Step 2: entry
+holds; exit holds. Step 3: entry holds; exit holds. Existing schemas, identity,
+digest, signature, version admission, destination controls and native archive
+budgets still apply. Service admission remains with issue 1676; the installed
+release and new-chat refresh must precede a separately recorded service retry.

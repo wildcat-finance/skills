@@ -1,0 +1,33 @@
+{
+  "schema": "fiat-1794-selection-inputs/v1",
+  "files": [
+    {
+      "path": ".hexaemeron/sources/study/selection_probe.py",
+      "sha256": "e51569c894bdb68091a1d6b13b0cd9b83388546a1f07827f19904db3f92fe27d"
+    },
+    {
+      "path": ".hexaemeron/sources/study/selection-probe.json",
+      "sha256": "284bffdadb69f8aab34840cbb855c49ced790b6e5d99bf85877e5de1c964184f"
+    },
+    {
+      "path": ".hexaemeron/sources/linux-feasibility/x86_64-deny-network.bpf",
+      "sha256": "8b97e4880f19e22990d9994580127bd38249e9f51594f1e3f63218edcd286412"
+    },
+    {
+      "path": ".hexaemeron/sources/linux-feasibility/prototype-integration.json",
+      "sha256": "6cf84c59018c3ef0c8b27c470513284438129e2aab2bd6d4f3e21449912dc1fe"
+    },
+    {
+      "path": ".hexaemeron/sources/linux-feasibility/prototype-limits.json",
+      "sha256": "bedf100006ba30041ce7310e03ad4c742b58f8b7d2f4b423a1e9043d82e93bfc"
+    },
+    {
+      "path": ".hexaemeron/sources/linux-feasibility/device-controls.json",
+      "sha256": "e14dcaa808f0a221ed372f2dd97f1fb53b9178375685800c972b3109cde9b4d2"
+    },
+    {
+      "path": ".hexaemeron/sources/study/host-packages.json",
+      "sha256": "cbb68c19a31b9c955975f1cab4be65cf5c50e8f26c2e3ff3d6cbefc3b149d965"
+    }
+  ]
+}

@@ -61,7 +61,7 @@ The source-owned Elenchus declaration supplies the exact command, report format 
 
 The latest complete replacement of a step's Exit or Tests field supplies its effective commands. Superseded commands retain their raw source, offset, digest and `superseded-source` status; their obsolete interfaces are not relabelled as currently valid. Commands outside those fields remain active. This selects effective source within the captured document without changing any earlier runbook bytes.
 
-The result retains `operation_ran:false`. That field states that the declared command did not execute; source parsing and interface checking cannot supply a test result. The full CLI and adapter bytes remain part of replay even when the visible argument declarations have not changed.
+The result retains `operation_ran:false`. That field states that the declared command did not execute; source parsing and interface checking cannot supply a test result. Replay still checks the complete CLI bytes when the visible argument declarations have not changed. New captures bind the full current adapter digest.
 
 After a checkpoint relocation, the receipt keeps its original `source_root` and absolute `execution_argv`. Replay checks that this historical operand still derives from the captured root and unchanged relative report declaration. It independently validates the report destination under the current root, including its path refusals. The stored operand grants no authority to execute at the historical root, and replay does not rewrite the receipt or relax full source matching. Fiat's checkpoint identity and ledger checks own relocation.
 
@@ -71,13 +71,73 @@ Newly initialized runs record `contracts.gate_commands` with `protasis-gate-comm
 
 Legacy runs without that marker retain their earlier contract. They do not receive fabricated validation records, and inserting gate evidence into an unmarked run refuses. This distinction preserves historical receipt bytes without describing them as newly checked interfaces.
 
-Historical gate records retain the exact command text, offset and digest from each captured runbook prefix. Current-interface replay validates the latest effective result against the current CLI and adapter source. A stale source or changed command/report binding cannot silently reuse its prior result. The repair workflow must produce freshly validated evidence through the owning runbook amendment process while keeping prior records intact.
+Historical gate records retain the exact command text, offset and digest from each captured runbook prefix. Current-interface replay validates the latest effective result against the current CLI and adapter source. A stale CLI source outside the reviewed timestamp pair below, or a changed command/report binding, cannot reuse its prior result. Unknown adapter digests also refuse. These changes require freshly validated evidence through the owning runbook amendment process while keeping prior records intact.
+
+Replay also accepts five reviewed, released adapter digests when every other
+field agrees with current validation, subject to the relocation rules above:
+
+| Released source | Adapter SHA-256 |
+| --- | --- |
+| [Hexaemeron 1.6.54](https://github.com/wildcat-finance/skills/blob/41116f4f9901b7b70a22db9f42235af65951957e/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093` |
+| [Hexaemeron 1.6.58](https://github.com/wildcat-finance/skills/blob/04968a0bc5b3636687136661257897ea10e622cf/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6` |
+| [Hexaemeron 1.6.59](https://github.com/wildcat-finance/skills/blob/75e3a0c76faa0dfeb31f84aeff133b37ec3ad0d9/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0` |
+| [Hexaemeron 1.6.69](https://github.com/wildcat-finance/skills/blob/a06cd696cbfade69eeb42a49e91d876550ccdb36/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4` |
+| [Hexaemeron 1.6.71](https://github.com/wildcat-finance/skills/blob/3b49d3825716a6eb349afe1901ab5096f664a9a5/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c` |
+
+The first two sources differ only in the module pin for the Hexaemeron test runner.
+The third adds their reviewed replay rule.
+`REPLAY_COMPATIBLE_ADAPTERS` records this closed compatibility decision. It
+does not admit an unknown adapter or relax CLI, command, argument, declaration,
+report or runbook matching. Replay uses the current validator, executes no old
+adapter, and leaves the historical receipt unchanged. A run whose commands
+still match can therefore retain its post-push checkpoint boundary without an
+amendment. Adding another digest requires review of that released source and
+regression evidence; equality of visible arguments alone does not suffice.
+This compatibility rule governs the gate receipt only. Success-criteria
+admission and execution retain their separate checks.
+
+Hexaemeron 1.6.69 and 1.6.71 are also reviewed for replay. Their adapter sources
+differ only in moving the command-count check after effective-field selection.
+Every previously accepted command result must still match byte for byte; newly
+accepted documents require a fresh capture. Fiat's read-only criteria replay
+separately checks the declaration and complete join against the retained gate,
+and this compatibility result does not authorize a command execution.
 
 Inspect the current boundary with plain `hexctl status` or `hexctl status --field gate_command_status`. The separate field reports `legacy`, `awaiting-runbook`, `current`, `stale-or-invalid` or `pending-amendment`; a pending amendment reports `validation:not-complete`. It is a derived observation, not a new state field or a full-status JSON mutation. Inspection does not clear a refusal or complete an interrupted amendment.
 
+## Reviewed runner timestamp transition
+
+A second, narrower rule addresses the completed #1676 run. Its five runner
+commands remain identical after the published descriptor timestamp repair,
+but the full runner source digest changed. The repair checks descriptor
+support and stamps the completed report through its held descriptor. It does
+not change parser declarations.
+
+`RUNNER_TIMESTAMP_PAIR` admits only this exact pair:
+
+- Captured adapter: `eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279`.
+- CLI path: `plugins/hexaemeron/tests/run_tests.py`.
+- Captured CLI: `ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b`.
+- Current CLI: `c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8`.
+
+Every command must have at least one invocation, and every invocation must use
+that runner and current digest. The complete comparison substitutes only the
+captured adapter and runner digests. Every other field, including declarations,
+arguments, report derivation, raw command bytes and runbook digest, must match.
+Mixed commands, empty or superseded command records and unknown source pairs
+refuse. Even a comment-only source change falls outside this pair.
+
+Fresh captures retain the current source digests. Replay leaves historical
+receipts unchanged and executes no captured command or old adapter. This rule
+establishes interface compatibility for one reviewed source transition; it does
+not turn earlier execution evidence into a test of the new runner. The
+regression reconstructs the old runner by removing only the timestamp repair
+and checks both complete source digests. See
+[skills#1773](https://github.com/wildcat-finance/skills/issues/1773).
+
 ## Bounds and refusals
 
-The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
+The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 effective command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. Superseded Exit and Tests records remain in the captured history without consuming the effective-command allowance. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
 
 CLI source reads require bounded regular files through no-follow path components. Unavailable files, an observed identity change, unsupported parser syntax, malformed or unclosed command fences, unknown placeholders and argument errors refuse. Source observations do not establish atomic namespace protection or a security verdict about the command's behavior.
 

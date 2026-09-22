@@ -376,6 +376,61 @@ class RefusalTests(unittest.TestCase):
         )
         self.assertIn("sundial", derived.phase_ids)
 
+    def test_a_plugin_at_the_cap_still_reads_beside_bytecode_caches(self):
+        """Real entries at the cap plus a lint run's caches must still read.
+
+        The observed failure: running a bundled Python lint from the tree
+        writes `__pycache__` under `plugins/<id>/skills`, and those
+        directories counted toward the entry cap on a diff that touched
+        nothing under `plugins/`. The tree here holds exactly the cap in real
+        entries, so a cache that counted would be the one entry over. One
+        real entry more must still refuse, or the cap has been loosened
+        rather than the caches skipped.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            skills = root / "plugins" / "quarry" / "skills"
+            planted = sum(
+                len(directories) + len(files)
+                for _, directories, files in os.walk(skills)
+            )
+            for index in range(shoggoth_topology.MAX_SKILLS_PER_PLUGIN - planted):
+                (skills / f"filler-{index:04d}").touch()
+            for cache in (skills / "__pycache__", skills / "granite" / "__pycache__"):
+                cache.mkdir()
+                (cache / "module.cpython-312.pyc").write_bytes(b"\x00")
+
+            derived = self._read(root)
+
+            (skills / "one-real-entry-too-many").touch()
+            with self.assertRaises(shoggoth_topology.TopologyError) as caught:
+                self._read(root)
+        self.assertEqual(derived.counts()["governed"], 6)
+        self.assertEqual(caught.exception.code, "tree-oversized")
+        self.assertEqual(
+            caught.exception.detail, shoggoth_topology.MAX_SKILLS_PER_PLUGIN + 1
+        )
+
+    def test_a_bytecode_cache_cannot_trip_the_entry_cap(self):
+        """However many files it holds, `__pycache__` never reaches the walk.
+
+        The cap counted 13 real `__pycache__` directories and their contents
+        cumulatively across one plugin's whole skill tree; this puts far more
+        than the cap inside a single one and asserts the walk still succeeds,
+        because the name is dropped before the walk ever lists what is
+        inside it.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plant(root, self.specimen["plugins"])
+            cache = root / "plugins" / "quarry" / "skills" / "__pycache__"
+            cache.mkdir()
+            for index in range(shoggoth_topology.MAX_SKILLS_PER_PLUGIN + 50):
+                (cache / f"module-{index:04d}.pyc").touch()
+            derived = self._read(root)
+        self.assertEqual(derived.counts()["governed"], 6)
+
     def test_skill_tree_depth_is_bounded(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

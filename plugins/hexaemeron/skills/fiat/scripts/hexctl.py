@@ -38,6 +38,7 @@ human-facing goes to plain text or stderr.
 """
 
 import argparse
+import ast
 import contextlib
 import ctypes
 import datetime
@@ -511,6 +512,15 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.63.1",
         "fiat-v6.64.1",
         "fiat-v6.65.1",
+        "fiat-v6.66.1",
+        "fiat-v6.67.1",
+        "fiat-v6.68.1",
+        "fiat-v6.69.1",
+        "fiat-v6.70.1",
+        "fiat-v6.71.1",
+        "fiat-v6.72.1",
+        "fiat-v6.73.1",
+        "fiat-v6.74.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -949,14 +959,11 @@ CHECKPOINT_ARCHIVE_SECRET_BLOCK_PATTERNS = (
     re.compile(rb"-----BEGIN (?:" + CHECKPOINT_ARCHIVE_SECRET_LABEL + rb" )?PRIVATE KEY-----"),
     re.compile(rb"-----BEGIN PGP PRIVATE KEY BLOCK-----"),
 )
-"""The two armour headers, which refuse only with key material after them.
+"""Recognized headers need an independent body line or a material prefix.
 
-These match a header and nothing more, so on their own they cannot tell a key
-from a document that names one. The study's second 2026-09-09 amendment settles
-that: these two forms count as secret-shaped only as a block, meaning the header
-plus at least one line of base64 body or its matching `-----END` marker. A
-header named in prose or quoted in a code span is not a secret, which is what
-lets a run archive its own specification text.
+The 2026-09-19 study amendment removes footer-only evidence: public audit
+quotations carried matching markers without any key material. No filename,
+quote or Markdown context exempts bytes from either remaining witness.
 """
 CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS = (
     re.compile(rb"ghp_[A-Za-z0-9]{36}"),
@@ -1016,17 +1023,10 @@ that reads only the carriage-return byte stops one escape short of the line
 feed behind it, so a CRLF key in a JSON string value published while an
 otherwise identical line-feed key refused. That was S2-R4-02.
 
-The second 2026-09-10 amendment adds the numeric escapes. `\\u000a` is as
-legal a JSON spelling of a line feed as `\\n`, `json.loads` returns the same
-key from either, and the hex digits may be written in either case, so a
-witness that read only the two-character form let a key through on the choice
-of escape. That was S2-R6-01. The third 2026-09-10 amendment closed the
-residue this set alone leaves. A body carrying no line delimiter in any of these forms,
-such as a key whose line breaks were stripped rather than encoded, is refused
-on its footer, which the separate footer reach of 9,984 bytes puts in view for
-every key up to the declared largest of 8,192 bits. What the set still does not
-see is a key whose modulus exceeds that declared size, and the study states
-that residue rather than implying the class is shut.
+The second 2026-09-10 amendment adds the numeric escapes. The independent
+whole-line witness keeps that delimiter set. The material-prefix witness
+also reads CR-only forms, short segments and escaped solidi, as required by
+the 2026-09-19 amendment.
 """
 CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
     rb"(?:\A|(?<=\x0a)|(?<=\\n)|(?<=\\u000[aA]))"
@@ -1037,9 +1037,9 @@ CHECKPOINT_ARCHIVE_SECRET_BODY = re.compile(
 
 The line rather than a run: a bare run of base64 characters is also what a
 SHA-256 digest, a commit id and half the identifiers in this repository look
-like, and a document quoting an armour header near one of those is exactly the
-false refusal the amendment removes. A body line is the whole line, so prose
-around a header never supplies one.
+like. Requiring a whole line limits matches on surrounding prose. A quoted
+header near such a line can still refuse, including a line holding a digest;
+this independent witness does not interpret prose.
 
 Both delimiters are zero-width, so a match still starts at the body's first
 byte and the lookahead comparison against the header below is unchanged. The
@@ -1053,71 +1053,40 @@ a line that begins after it, and a lookbehind naming only the byte and the
 two-character escape would find the first body line and none after it.
 """
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE = 256
-"""The longest line the scan will read between a header and the key material.
-
-RFC 4880 armour puts optional `Version`, `Comment`, `MessageID`, `Hash` and
-`Charset` lines after the header, and a `Comment` is free text; PEM and OpenSSH
-put none. This bounds one of them.
-"""
+"""Maximum original content bytes in one admitted metadata line."""
 CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES = 7
-"""How many such lines: the five armour headers, one blank line, one body line."""
+"""Maximum admitted metadata lines; blank lines consume the byte allowance."""
 CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD = (
     CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE * CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES
 )
-"""Bytes after a header in which the body has to start.
-
-This bounds where the key material begins, which is what the armour lines
-above measure. It is not how far the footer may sit, because the footer sits
-past the whole body and the body is the larger distance by an order of
-magnitude; `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD` below carries that.
-"""
+"""The first body byte must start fewer than 1,792 bytes after its header."""
 CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY = 8192
-"""The largest RSA modulus, in bits, whose footer the scan undertakes to reach.
+"""Retained historical allowance used to derive the unchanged scan window.
 
-Measured on keys generated in process, as the distance from the end of the
-header to the start of the footer, in the worst spelling a JSON string value
-can give a line break, the twelve bytes of two numeric escapes: 1,900 bytes at
-2,048 bits, 2,812 at 3,072, 3,732 at 4,096 and 7,380 at 8,192. The reach below
-covers the largest of those with room, and a key beyond this size is stated
-residue rather than a silent gap.
+This value originally bounded footer reach. It is no longer a key-size claim:
+the material prefix can reject a larger or truncated body without a footer.
 """
 CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD = (
     CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD + CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY
 )
-"""Bytes after a header in which that header's own footer has to appear.
+"""The retained 9,984-byte maximum read after a header, including the prefix.
 
-The armour allowance plus the largest body, because the two distances compose:
-the body may start anywhere inside the armour lines, and then runs its own
-length before the footer.
-
-Separating this from the block lookahead is S2-R7-01. While the two were one
-constant at 1,792 bytes, the footer of any key of 3,072 bits or more lay out of
-reach -- 2,356 to 2,812 bytes past the header at 3,072 bits and 3,132 to 3,732
-at 4,096 -- so for exactly the sizes in use the block rule had only its body
-witness and no second one. Each spelling of a line break the body witness could
-not read was therefore a complete bypass rather than a degradation, which is
-what produced S2-R4-02 and S2-R6-01 in successive rounds. Over the 164 paths
-and 7,717,110 bytes this run's own export scans, best of five, the scan takes
-42.07 ms at the old 1,792 and 39.07 ms at 8,192 and refuses none of them at
-either, so the reach costs no measurable time and adds no false refusal.
+The historical name remains for existing bindings; no footer is a witness.
 """
 CHECKPOINT_ARCHIVE_SECRET_WINDOW = (
     max(map(len, CHECKPOINT_ARCHIVE_SECRET_HEADERS))
     + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
 )
-"""Bytes carried between scan chunks: the longest header plus its lookahead.
+"""Carry the longest header plus the maximum read so chunk splits keep both."""
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK = re.compile(
+    rb"\\u000[dD]\\u000[aA]|\\r\\n|\r\n|\\u000[aAdD]|\\[nr]|[\r\n]"
+)
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_RUN = re.compile(rb"[A-Za-z0-9+/=]+")
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_ARMOUR = re.compile(
+    rb"(?:Version|Comment|MessageID|Hash|Charset|Proc-Type|DEK-Info):[^\n]*\n"
+)
+CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS = 16
 
-Derived rather than declared, so a pattern whose header outgrows the carry
-cannot be added without moving it. Both terms are load-bearing. A match of n
-bytes that straddles a boundary leaves at most n - 1 of them in the chunk
-before it, so the header term brings the whole header into one search. Block
-semantics then need the bytes after it as well, and a header sitting more than
-the lookahead before the end of a chunk would otherwise be dropped from the
-carry while its body lies in the next chunk, so the carry has to cover the
-header and everything the block decision reads after it. That is the footer
-reach rather than the block lookahead, because the footer is the further of
-the two the decision consults.
-"""
 CHECKPOINT_ARCHIVE_README = """Fiat checkpoint archive
 
 This archive carries one Fiat run at one accepted boundary: the controller
@@ -14185,9 +14154,56 @@ def capture_success_criteria(base_dir: str, state: dict,
 
 
 def success_criteria_admission(state: dict) -> dict | None:
-    return as_dict(as_dict(state.get("receipts")).get("runbook")).get(
-        "success_criteria"
-    )
+    receipts = as_dict(state.get("receipts"))
+    runbook = as_dict(receipts.get("runbook"))
+    study = as_dict(receipts.get("study"))
+    current = runbook.get("success_criteria")
+    historical = study.get("success_criteria")
+    if historical is None:
+        return current
+    # Older study amendments stored their admission on the study receipt.
+    # Read that committed history without moving it or rewriting its ledger.
+    if not isinstance(current, dict) or not isinstance(historical, dict):
+        die("success criteria study custody has no matching runbook admission", 1)
+    left = _criteria_history(historical)
+    right = _criteria_history(current)
+    amendments = left["amendments"]
+    study_amendments = study.get("amendments")
+    if (
+        not amendments
+        or amendments[-1].get("kind") != "study"
+        or not isinstance(study_amendments, list)
+        or not any(as_dict(row).get("success_criteria_amendment") == amendments[-1]
+                   for row in study_amendments)
+    ):
+        die("success criteria study custody has no matching amendment", 1)
+    older, newer = (historical, current)
+    if len(left["versions"]) > len(right["versions"]):
+        older, newer = newer, older
+        left, right = right, left
+    for key in ("versions", "amendments"):
+        if right[key][:len(left[key])] != left[key]:
+            die("success criteria study and runbook histories diverge", 1)
+    for admission, history in ((older, left), (newer, right)):
+        if any(admission.get(key) != history["versions"][-1][key]
+               for key in ("study_sha256", "runbook_sha256", "join")):
+            die("success criteria admission differs from its history", 1)
+    if len(left["versions"]) == len(right["versions"]) and (
+        _criteria_admission_projection(older) != _criteria_admission_projection(newer)
+    ):
+        die("success criteria admissions disagree at the same version", 1)
+    prior_attempts, attempts = older.get("attempts", []), newer.get("attempts", [])
+    if (
+        not isinstance(prior_attempts, list) or not isinstance(attempts, list)
+        or attempts[:len(prior_attempts)] != prior_attempts
+    ):
+        die("success criteria study custody loses recorded attempts", 1)
+    if (
+        newer.get("study_sha256") != study.get("sha256")
+        or newer.get("runbook_sha256") != runbook.get("sha256")
+    ):
+        die("success criteria study custody has stale source digests", 1)
+    return newer
 
 
 def _criteria_attempts(state: dict) -> list:
@@ -14302,11 +14318,57 @@ def _criteria_amendment_candidate(
     return updated, updated_history["amendments"][-1]
 
 
+def _criteria_recovery_admission(
+    base_dir: str, study: bytes, runbook: bytes, admission: dict, gate: dict
+) -> dict:
+    """Rejoin source bytes to the gate already checked by recovery preflight."""
+    adapter = criteria_execution_module()
+    bound_gate = admission.get("gate_commands")
+    if bound_gate != gate:
+        # A study amendment can refresh its criteria adapter while the separate
+        # runbook gate keeps its original bytes. Admit only the reviewed adapter
+        # substitution; every source, command and report field must still match.
+        gate_adapter = gate_commands_module()
+        current_adapter = hashlib.sha256(Path(gate_adapter.__file__).read_bytes()).hexdigest()
+        if (
+            not isinstance(bound_gate, dict)
+            or not isinstance(gate.get("adapter_sha256"), str)
+            or gate.get("adapter_sha256") not in gate_adapter.REPLAY_COMPATIBLE_ADAPTERS
+            or bound_gate.get("adapter_sha256") != current_adapter
+            or {**gate, "adapter_sha256": current_adapter} != bound_gate
+        ):
+            raise adapter.Refusal("recovery-admission-drift")
+        gate = bound_gate
+    parser, _ = adapter.adapters(Path(base_dir).resolve())
+    if gate.get("artifact_sha256") != hashlib.sha256(runbook).hexdigest():
+        raise adapter.Refusal("recovery-gate-source")
+    declaration = parser.parse(study)
+    joined = parser.join(declaration, runbook, command_records=gate.get("commands"))
+    if declaration is None or joined is None:
+        raise adapter.Refusal("success-criteria-missing")
+    joined["adapter_sha256"] = gate.get("adapter_sha256")
+    current = {
+        "schema": adapter.ADMISSION_SCHEMA,
+        "gate_commands": gate,
+        "declaration": declaration,
+        "declaration_sha256": parser.declaration_digest(declaration),
+        "join": joined,
+        "operation_ran": False,
+        "study_sha256": hashlib.sha256(study).hexdigest(),
+        "runbook_sha256": hashlib.sha256(runbook).hexdigest(),
+    }
+    if _criteria_admission_projection(admission) != current:
+        raise adapter.Refusal("recovery-admission-drift")
+    return current
+
+
 def verify_success_criteria(base_dir: str, state: dict,
                             initial_entry: dict | None,
                             runbook_event: dict | None,
                             execution_events: list[dict],
-                            amendment_events: list[dict] | None = None) -> None:
+                            amendment_events: list[dict] | None = None,
+                            *, recovery_gate: dict | None = None,
+                            historical_study: bytes | None = None) -> None:
     """Replay admission, amendments and attempts without executing commands."""
     marker = as_dict(state.get("contracts")).get("success_criteria")
     original = as_dict(
@@ -14356,23 +14418,53 @@ def verify_success_criteria(base_dir: str, state: dict,
             "study_sha256": baseline["study_sha256"],
             "runbook_sha256": baseline["runbook_sha256"],
         })
+        if as_dict(state.get("contracts")).get("gate_commands"):
+            # Gate replay checks this independent receipt against the original
+            # runbook bytes. Keep that gate with the criteria baseline; the
+            # current admission, including its current gate, is checked below.
+            baseline_gate = as_dict(runbook_event).get("gate_commands")
+            if (
+                not isinstance(baseline_gate, dict)
+                or baseline_gate.get("artifact_sha256") != baseline["runbook_sha256"]
+            ):
+                die("success criteria baseline has no matching runbook gate", 1)
+            baseline_projection["gate_commands"] = baseline_gate
         if event_projection != baseline_projection:
             die("success criteria baseline admission disagrees with its ledger event", 1)
-    study = receipted_source(base_dir, state, "study")
+    if historical_study is None:
+        study = receipted_source(base_dir, state, "study")
+    else:
+        expected = as_dict(as_dict(state.get("receipts")).get("study")).get("sha256")
+        if hashlib.sha256(historical_study).hexdigest() != expected:
+            die("success criteria historical study differs from its receipt", 1)
+        study = {"text": decoded_source(historical_study, "historical study")}
     runbook = receipted_source(base_dir, state, "runbook")
     if study is None or runbook is None:
         die("success criteria admission has no receipted source", 1)
     adapter = criteria_execution_module()
+    gate = gate_commands_module()
     try:
-        current = adapter.validate_admission(
-            Path(base_dir).resolve(), study["text"].encode(),
-            runbook["text"].encode(),
-        {
-            key: value for key, value in receipt.items()
-            if key not in {"attempts", "history"}
-        },
-        )
-    except (adapter.Refusal, OSError, ValueError) as exc:
+        if recovery_gate is not None:
+            # Only amendment preflight supplies this checked historical gate.
+            # Candidate capture and final verification still check fresh CLI
+            # source before an amendment can complete.
+            current = _criteria_recovery_admission(
+                base_dir, study["text"].encode(), runbook["text"].encode(),
+                receipt, recovery_gate,
+            )
+        elif as_dict(receipt.get("gate_commands")).get("adapter_sha256") in gate.REPLAY_COMPATIBLE_ADAPTERS:
+            bound_gate = receipt["gate_commands"]
+            gate.replay(Path(base_dir).resolve(), runbook["text"].encode(), bound_gate)
+            current = _criteria_recovery_admission(
+                base_dir, study["text"].encode(), runbook["text"].encode(),
+                receipt, bound_gate,
+            )
+        else:
+            current = adapter.validate_admission(
+                Path(base_dir).resolve(), study["text"].encode(),
+                runbook["text"].encode(), _criteria_admission_projection(receipt),
+            )
+    except (adapter.Refusal, gate.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission does not replay: {exc}", 1)
     if current.get("operation_ran") is not False:
         die("success criteria admission claims an executed operation", 1)
@@ -14693,6 +14785,136 @@ def cmd_run_exit(args) -> None:
     print(json.dumps(result, sort_keys=True))
 
 
+UNREGISTERED_BINDINGS_REFUSAL = "unregistered-cli-module-bindings"
+GATE_AMENDMENT_RECOVERY = "submit a freshly validated runbook amendment"
+BRIEF_BYTES_MAX = 1024 * 1024
+
+
+def registered_module_skew(base_dir: str, state: dict, adapter=None) -> list[dict]:
+    """Registered CLI modules in the target tree that this controller's pin rejects.
+
+    `MODULE_BINDINGS` pins one AST digest per registered module, and a digest is
+    a property of a commit. Each entry therefore says whether the module's bytes
+    still equal the run's recorded starting commit: `unchanged` means nobody
+    edited it inside the run, so the pin was taken at another commit; `changed`
+    means the run's own tree moved it; `unknown` means the comparison could not
+    be made. The check reads and parses only; it runs no module.
+    """
+    if adapter is None:
+        adapter = gate_commands_module()
+    root = Path(base_dir).resolve()
+    starting = state.get("base")
+    if not isinstance(starting, str) or COMMIT_RE.fullmatch(starting) is None:
+        starting = None
+    skew = []
+    for path, builder in sorted(adapter.REGISTRY.items()):
+        if path not in adapter.MODULE_BINDINGS:
+            continue
+        try:
+            data = adapter.read_source(root, path)
+            adapter.parser_bindings(ast.parse(data, filename=path), builder, path)
+        except adapter.Refusal as exc:
+            if str(exc) != UNREGISTERED_BINDINGS_REFUSAL:
+                continue
+        except (OSError, ValueError, SyntaxError, RecursionError):
+            continue
+        else:
+            continue
+        since_base = "unknown"
+        if starting is not None:
+            returncode, recorded = bounded_run(base_dir, "git", ["cat-file", "-p", f"{starting}:{path}"])
+            if returncode == 0:
+                since_base = "unchanged" if hashlib.sha256(recorded).digest() == hashlib.sha256(data).digest() else "changed"
+        skew.append({"module": path, "since_base": since_base})
+    return skew
+
+
+def recorded_controller(base_dir: str, state: dict) -> dict:
+    """The controller this run recorded: init's currency and any delegated brief's plugin root."""
+    currency = as_dict(as_dict(state.get("receipts")).get("controller_currency"))
+    version = currency.get("ledger_version")
+    roots = []
+    for name in sorted(glob.glob(os.path.join(base_dir, STATE_DIR_NAME, "briefs", "*.json"))):
+        try:
+            if os.path.getsize(name) > BRIEF_BYTES_MAX:
+                continue
+            with open(name, encoding="utf-8") as handle:
+                brief = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        plugin = brief.get("plugin_root") if isinstance(brief, dict) else None
+        if isinstance(plugin, str) and plugin and plugin not in roots:
+            roots.append(plugin)
+    return {
+        "version": version if isinstance(version, str) and version else None,
+        "plugin_roots": roots,
+    }
+
+
+def gate_source_recovery(base_dir: str, state: dict, skew: list[dict]) -> dict:
+    """Cause and recovery for a stale gate source, read from the module skew alone.
+
+    A module unchanged since the starting commit cannot be repaired by a runbook
+    amendment: the amendment path touches neither the adapter nor the module.
+    That case names the controller the run recorded instead.
+    """
+    unchanged = [item["module"] for item in skew if item["since_base"] == "unchanged"]
+    changed = [item["module"] for item in skew if item["since_base"] == "changed"]
+    starting = state.get("base")
+    if not unchanged:
+        if changed:
+            return {
+                "cause": "module-edited-in-run",
+                "recovery": f"registered module {', '.join(changed)} changed inside the run "
+                            f"since its starting commit {starting}; {GATE_AMENDMENT_RECOVERY}",
+            }
+        if skew:
+            return {
+                "cause": "module-pin-unverified",
+                "recovery": f"registered module {', '.join(item['module'] for item in skew)} fails "
+                            f"this controller's MODULE_BINDINGS pin and could not be compared with "
+                            f"the starting commit; {GATE_AMENDMENT_RECOVERY}",
+            }
+        return {"cause": None, "recovery": GATE_AMENDMENT_RECOVERY}
+    recorded = recorded_controller(base_dir, state)
+    here = plugin_root()
+    current = ledger_version(os.path.join(here, "skills", "fiat", "EVOLUTION.md")) or "unknown version"
+    named = recorded["version"] or "the controller recorded at init"
+    if recorded["version"]:
+        named += " at init"
+    others = [root for root in recorded["plugin_roots"] if root != here]
+    if others:
+        named += f" (plugin_root {others[-1]} in its delegated briefs)"
+    return {
+        "cause": "controller-pin-skew",
+        "recovery": f"registered module {', '.join(unchanged)} is unchanged since the run's "
+                    f"starting commit {starting} yet fails this controller's MODULE_BINDINGS pin, "
+                    f"so this controller ({current} at {here}) and the run's tree were pinned at "
+                    f"different commits; drive the run with the controller it recorded, {named}, "
+                    f"reinstalling or rebuilding that version from {starting} if no copy remains, "
+                    f"rather than amending the runbook",
+    }
+
+
+def gate_source_refusal(base_dir: str, state: dict, adapter, reason: str) -> str:
+    recovery = GATE_AMENDMENT_RECOVERY
+    if reason == UNREGISTERED_BINDINGS_REFUSAL:
+        recovery = gate_source_recovery(base_dir, state, registered_module_skew(base_dir, state, adapter))["recovery"]
+    return f"gate source stale or invalid: {reason}; {recovery}"
+
+
+def gate_stale_status(base_dir: str, state: dict) -> dict:
+    """The `status` view of a stale gate source, computed without mutation."""
+    skew = registered_module_skew(base_dir, state)
+    diagnosis = gate_source_recovery(base_dir, state, skew)
+    view = {"status": "stale-or-invalid", "recovery": "inspect verify output; " + diagnosis["recovery"]}
+    if diagnosis["cause"] is not None:
+        view["cause"] = diagnosis["cause"]
+    if skew:
+        view["modules"] = skew
+    return view
+
+
 def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
                          runbook_event: dict | None, amendment_events: list,
                          *, allow_source_drift: bool = False, historical_source: bytes | None = None) -> None:
@@ -14741,7 +14963,7 @@ def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
         try:
             adapter.replay(Path(base_dir).resolve(), data, stored[-1])
         except (adapter.Refusal, OSError, ValueError) as exc:
-            die(f"gate source stale or invalid: {exc}; submit a freshly validated runbook amendment", 1)
+            die(gate_source_refusal(base_dir, state, adapter, str(exc)), 1)
 
 
 def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: bool = True,
@@ -14782,8 +15004,25 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
         return
     verify_run_anchor(base_dir, state, entries[0])
     study = as_dict(as_dict(state.get("receipts")).get("study"))
+    historical_study = None
     if study.get("sha256"):
-        receipted_source(base_dir, state, "study")
+        pending_study = pending_amendments(base_dir).get("study")
+        if pending_study is not None and study["sha256"] == pending_study["amendment"].get("prior_sha256"):
+            _, candidate = read_bounded_source(base_dir, study["artifact"], "study recovery source")
+            if hashlib.sha256(candidate).hexdigest() != study["sha256"]:
+                amendment = pending_study["amendment"]
+                if (
+                    state_fingerprint(state) != pending_study["state_before_sha256"]
+                    or hashlib.sha256(candidate).hexdigest() != amendment.get("new_sha256")
+                    or pending_study["artifact"] != study["artifact"]
+                ):
+                    die("pending study recovery source does not match its transaction", 1)
+                boundary, _, _ = _study_amendment_boundary(
+                    decoded_source(candidate, "study recovery source"), study["sha256"]
+                )
+                historical_study = candidate.decode("utf-8")[:boundary].encode("utf-8")
+        if historical_study is None:
+            receipted_source(base_dir, state, "study")
     receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     if not receipt:
         return
@@ -14803,6 +15042,11 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     verify_success_criteria(
         base_dir, state, entries[0], events[-1] if events else None, criteria_events,
         criteria_amendments,
+        recovery_gate=(
+            as_dict(amendments[-1] if amendments else receipt).get("gate_commands")
+            if allow_source_drift else None
+        ),
+        historical_study=historical_study,
     )
 
 
@@ -18392,7 +18636,9 @@ def refuse_unreceipted_run_branch_movement(
     )
 
 
-def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> None:
+def refuse_rewritten_stack(
+    base_dir: str, state: dict, current_step: int
+) -> dict[str, str]:
     """Refuse when a waiting branch no longer contains its receipted head.
 
     Equality is the zero-query path. A moved tip receives one bounded native
@@ -18403,8 +18649,15 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
 
     A step whose branch cannot be read is reported rather than skipped: an absent
     downstream branch during integration is not a normal state.
+
+    Returns the waiting-branch tips this walk read, branch name to observed
+    tip, so ``refuse_carried_step_commits`` reads only the branches the map
+    lacks and no tip is read twice in one command (audit finding S2-R1-01).
+    The current step is never read here: its branch may legitimately differ
+    from its receipt after audit-branch fast-forwards.
     """
     merged = as_dict(state.get("integrate")).get("merged") or []
+    tips: dict[str, str] = {}
     nonancestors, unknown, unreadable = [], [], []
     for step in state["steps"]:
         number = step["n"]
@@ -18420,6 +18673,7 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
+        tips[branch] = tip
         if tip == recorded:
             continue
         if len(recorded) < 40:
@@ -18476,6 +18730,248 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
             "stack, and do not import GitHub's public key to make the signature "
             "check pass."
         )
+    return tips
+
+
+def receipt_owned_commits(state: dict) -> dict[str, int]:
+    """Map each commit a push receipt owns to the step that receipted it.
+
+    Ownership is read from push receipts alone, never from a branch: a step
+    owns its ``verified_commits``, or only its ``head_commit`` when the receipt
+    predates that list. A step whose receipt records ``early_merge`` owns
+    nothing here, because its commits already sit inside the branch below it
+    by an adoption the run receipted (issue 1021). Merged steps keep their
+    ownership: their commits are ancestors of every higher recorded head and
+    so never appear in a higher step's gained range.
+    """
+    owned: dict[str, int] = {}
+    for step in state["steps"]:
+        push_receipt = as_dict(step["receipts"].get("push"))
+        if not push_receipt or as_dict(push_receipt.get("early_merge")):
+            continue
+        commits = push_receipt.get("verified_commits")
+        if not (isinstance(commits, list) and commits):
+            head = push_receipt.get("head_commit")
+            commits = [head] if isinstance(head, str) and head else []
+        for commit in commits:
+            if not isinstance(commit, str) or not COMMIT_RE.fullmatch(commit):
+                die(
+                    f"step {step['n']} push receipt names a commit that is not a "
+                    "full SHA; receipt ownership cannot be established from it"
+                )
+            owned.setdefault(commit, step["n"])
+    return owned
+
+
+def _native_gained_range(
+    base_dir: str, recorded: str, tip: str
+) -> list[str] | None:
+    """The commits ``recorded..tip`` from native local objects, or ``None``.
+
+    One bounded native child through ``bounded_probe`` with the pinned
+    ``_native_git_executable`` and ``_native_relation_environment``: scrubbed
+    environment, ``--no-replace-objects``, no lazy fetch, the ``GIT_TIMEOUT``
+    and ``GIT_OUTPUT_MAX`` bounds, and at most ``GIT_PATHS_MAX`` commits
+    admitted. ``bounded_probe`` rather than ``_native_relation_git`` because
+    the latter refuses through ``die`` on a failed child, and this reader's
+    caller owns the one refusal line: a start failure, timeout, output cap,
+    non-zero status, more than ``GIT_PATHS_MAX`` lines, or a line that is not
+    a full SHA all return ``None`` with nothing printed, and the caller says
+    the range is unknown without claiming a cause. Nothing is fetched.
+    """
+    pair = f"{recorded}..{tip}"
+    status, raw, failure = bounded_probe(
+        base_dir,
+        _native_git_executable(),
+        [
+            "--no-replace-objects",
+            "rev-list",
+            f"--max-count={GIT_PATHS_MAX + 1}",
+            pair,
+        ],
+        environment=_native_relation_environment(),
+        output_max=GIT_OUTPUT_MAX,
+        timeout=GIT_TIMEOUT,
+    )
+    if failure is not None or status != 0:
+        return None
+    try:
+        lines = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        return None
+    if len(lines) > GIT_PATHS_MAX:
+        return None
+    if any(not COMMIT_RE.fullmatch(line) for line in lines):
+        return None
+    return lines
+
+
+def carried_step_observation(
+    base_dir: str,
+    state: dict,
+    current_step: int,
+    tips: dict[str, str] | None = None,
+    *,
+    report: bool = False,
+    waiting_only: bool = False,
+) -> dict:
+    """Observe every unmerged step's gained range against receipt ownership.
+
+    The one reader behind ``refuse_carried_step_commits`` and the ``CARRY:``
+    lines of ``status``. ``tips`` carries the branch tips a caller already
+    read, as ``refuse_rewritten_stack`` returns them; only a branch the map
+    lacks is read here, through ``remote_branch_tip``, and the completed map
+    is returned so the caller reads no tip twice. A moved tip has its gained
+    range ``<recorded>..<tip>`` enumerated once with ``_native_gained_range``;
+    an equal tip asks Git nothing.
+
+    Returns ``{"tips", "carried", "unknown"}``. A ``carried`` entry names the
+    step, its role, branch, recorded head, observed tip, the first carried
+    commit in rev-list order and the step whose push receipt owns it. An
+    ``unknown`` entry names a step whose range could not be enumerated, or,
+    with ``report`` set, whose tip could not be read (its ``tip`` is ``None``)
+    or whose abbreviated recorded head resolves to no native commit (its
+    ``tip`` is the observed tip and the pair is reported as an unknown range).
+    Without ``report`` those two reads refuse through their own single ``die``
+    line, as they did before ``status`` shared this reader; ``status`` sets
+    ``report`` because it reports and refuses nothing, the way its ``STACK:``
+    line treats the run branch.
+    ``waiting_only`` leaves the current step out: ``done merge-step`` checks
+    the step being merged over the exact repaired range its receipt
+    enumerates, so it reads nothing here that ``refuse_rewritten_stack`` did
+    not already read.
+    """
+    merged = as_dict(state.get("integrate")).get("merged") or []
+    owned = receipt_owned_commits(state)
+    tips = dict(tips or {})
+    carried, unknown = [], []
+    for step in state["steps"]:
+        number = step["n"]
+        if number in merged or (waiting_only and number == current_step):
+            continue
+        push_receipt = as_dict(step["receipts"].get("push"))
+        recorded = push_receipt.get("head_commit")
+        if not recorded:
+            continue
+        branch = step_branch_name(state, step)
+        role = "the step being merged" if number == current_step else "a waiting step"
+        entry = {
+            "step": number,
+            "role": role,
+            "branch": branch,
+            "recorded": recorded,
+            "tip": None,
+        }
+        try:
+            if branch not in tips:
+                tips[branch] = remote_branch_tip(
+                    base_dir, branch, f"step {number} branch tip"
+                )
+            tip = tips[branch]
+            if tip == recorded:
+                continue
+            # The tip is in hand from here on, so a receipt whose abbreviated
+            # head resolves to no native commit reports its range as unknown
+            # rather than claiming the tip could not be read (S3-R1-01).
+            entry["tip"] = tip
+            if len(recorded) < 40:
+                recorded = _native_relation_commit(
+                    base_dir, recorded, f"step {number} recorded push head"
+                )
+                entry["recorded"] = recorded
+                if tip == recorded:
+                    continue
+        except SystemExit:
+            if not report:
+                raise
+            unknown.append(entry)
+            continue
+        gained = _native_gained_range(base_dir, recorded, tip)
+        if gained is None:
+            unknown.append(entry)
+            continue
+        for commit in gained:
+            owner = owned.get(commit)
+            if owner is not None and owner != number:
+                carried.append({**entry, "commit": commit, "owner": owner})
+                break
+    return {"tips": tips, "carried": carried, "unknown": unknown}
+
+
+def describe_carried_step(entry: dict) -> str:
+    """One line naming a carried step: the observation, the commit, its owner."""
+    return (
+        f"step {entry['step']} ({entry['role']}, '{entry['branch']}') recorded "
+        f"head {entry['recorded']} and observed tip {entry['tip']}; the first "
+        f"carried commit in rev-list order is {entry['commit']}, owned by step "
+        f"{entry['owner']}'s push receipt"
+    )
+
+
+def describe_unknown_carry(entry: dict) -> str:
+    """One line saying what could not be answered about a step's gained range."""
+    if entry["tip"] is None:
+        return (
+            f"step {entry['step']} ({entry['role']}, '{entry['branch']}') "
+            f"recorded head {entry['recorded']}; its tip could not be read, so "
+            "whether it carries another step's commit is unknown"
+        )
+    return (
+        f"step {entry['step']} ({entry['role']}, '{entry['branch']}') recorded "
+        f"head {entry['recorded']} and observed tip {entry['tip']}; the range "
+        f"{entry['recorded']}..{entry['tip']} is unknown"
+    )
+
+
+def refuse_carried_step_commits(
+    base_dir: str,
+    state: dict,
+    current_step: int,
+    tips: dict[str, str] | None = None,
+    *,
+    waiting_only: bool = False,
+) -> dict[str, str]:
+    """Refuse when an unmerged step branch gained a commit another step owns.
+
+    ``refuse_rewritten_stack`` admits any moved waiting tip whose receipted
+    head is still an ancestor, and a later step's branch merged into a lower
+    step's branch has exactly that shape, so the carried commits would be
+    receipted as the lower step's work at ``done merge-step``. This guard reads
+    every unmerged step, the current step included, through
+    ``carried_step_observation``: ``tips`` is the map ``refuse_rewritten_stack``
+    returned, so the waiting branches it read are not read again and a healthy
+    ``next`` costs one read here, the current step's. ``done merge-step``
+    passes ``waiting_only`` and adds no read: the step being merged is
+    intersected with the same ownership set over the exact repaired range
+    ``pr_base..remote_head`` its receipt enumerates. The completed map is
+    returned for the caller's later use. A gained range holding a commit that
+    another step's push receipt owns refuses before any state or ledger write;
+    a range that could not be enumerated refuses as unknown and names the
+    exact pair. The design and its alternatives are recorded in
+    ``docs/decisions/drafts/refuse-receipted-commits-carried-into-a-lower-step-branch.md``.
+    """
+    observed = carried_step_observation(
+        base_dir, state, current_step, tips, waiting_only=waiting_only
+    )
+    if observed["unknown"]:
+        die(
+            "a step branch has an unknown gained range: "
+            + "; ".join(describe_unknown_carry(entry) for entry in observed["unknown"])
+            + ". The commits it gained could not be enumerated from bounded "
+            "native local objects, so the answer is unknown rather than clean; "
+            "nothing was fetched and no cause is claimed. Restore readable "
+            "native objects and repository history, then retry."
+        )
+    if observed["carried"]:
+        die(
+            "a step branch gained a commit another step's push receipt owns: "
+            + "; ".join(describe_carried_step(entry) for entry in observed["carried"])
+            + ". The controller does not claim which operation moved the "
+            "branch. A later step's receipted commits reach the run branch "
+            "only through that step's own merge; land the stack from branches "
+            "holding only their own commits, and do not receipt this merge."
+        )
+    return observed["tips"]
 
 
 def done_merge_step(args, state: dict) -> None:
@@ -18499,7 +18995,13 @@ def done_merge_step(args, state: dict) -> None:
             f"('{pending['branch']}') is next, not step {args.step}"
         )
     refuse_unreceipted_run_branch_movement(args.dir, state, args.merge_commit)
-    refuse_rewritten_stack(args.dir, state, args.step)
+    tips = refuse_rewritten_stack(args.dir, state, args.step)
+    # Before `inspect_pull_request`: a carry into a waiting branch refuses
+    # here with no GitHub read made, from the tips already in hand. The step
+    # being merged is checked below over the exact range its receipt repairs.
+    refuse_carried_step_commits(
+        args.dir, state, args.step, tips, waiting_only=True
+    )
     step = state["steps"][args.step - 1]
     require_receipted_final_green(args.dir, state, step, "merging a step")
     push_receipt = as_dict(step["receipts"].get("push"))
@@ -18586,6 +19088,23 @@ def done_merge_step(args, state: dict) -> None:
             remote_head,
             f"step {step['n']} merge-time push repair",
         )
+        # The range about to be receipted as this step's work is the range
+        # just enumerated; a commit in it that another step's push receipt
+        # owns refuses before `effective_push` exists, with no process added.
+        owned = receipt_owned_commits(state)
+        for repaired_sha in repaired_local:
+            owner = owned.get(repaired_sha)
+            if owner is not None and owner != args.step:
+                die(
+                    f"the repaired range {pr_base}..{remote_head} for step "
+                    f"{args.step} ('{pending['branch']}') holds {repaired_sha}, the "
+                    f"first commit in it owned by step {owner}'s push receipt. "
+                    "The controller does not claim which operation moved the "
+                    "branch. A later step's receipted commits reach the run "
+                    "branch only through that step's own merge; land the stack "
+                    "from branches holding only their own commits, and do not "
+                    "receipt this merge."
+                )
         # The recorded push attribution describes the head this repair replaced,
         # so it is re-derived here rather than carried forward stale.
         repaired_github, repaired_attribution = verified_github_attribution(
@@ -20254,7 +20773,7 @@ def _recover_study_amendment(
         die("study receipt amendments history must be an array", 1)
     _apply_study_amendment_receipt(receipt, amendment)
     if criteria_candidate is not None:
-        receipt["success_criteria"] = criteria_candidate
+        state["receipts"]["runbook"]["success_criteria"] = criteria_candidate
     _commit_or_complete_study_amendment(base_dir, state, amendment)
     verify_run(base_dir, allow_pending_amendment=True)
     clear_study_amendment_pending(base_dir)
@@ -20339,7 +20858,7 @@ def cmd_amend_study(args) -> None:
     _replace_study_bytes(canonical_path, candidate)
     _apply_study_amendment_receipt(receipt, amendment)
     if criteria_candidate is not None:
-        receipt["success_criteria"] = criteria_candidate
+        state["receipts"]["runbook"]["success_criteria"] = criteria_candidate
     commit(args.dir, state, "amend:study", amendment)
     verify_run(args.dir, allow_pending_amendment=True)
     clear_study_amendment_pending(args.dir)
@@ -26564,40 +27083,90 @@ def _checkpoint_archive_elapsed_ms(started: float) -> int:
     return max(0, int((time.monotonic() - started) * 1000))
 
 
+def _checkpoint_archive_material_prefix(data: bytes, start: int) -> bool:
+    """Recognize a bounded body prefix independently of a closing marker.
+
+    The study selected this lexical witness rather than a complete decoder:
+    truncated keys and bodies without a footer still need to refuse. Original
+    byte offsets govern every limit, including encoded line delimiters.
+    """
+    stop = min(len(data), start + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD)
+    raw = data[start:stop]
+    pos = 0
+    armour_count = 0
+    while pos < len(raw):
+        while pos < len(raw) and raw[pos] in b" \t":
+            pos += 1
+        line_break = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.match(raw, pos)
+        if line_break:
+            pos = line_break.end()
+            continue
+        tail = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.sub(
+            b"\n", raw[pos:pos + CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE + 12]
+        )
+        armour = CHECKPOINT_ARCHIVE_SECRET_PREFIX_ARMOUR.match(tail)
+        if armour:
+            original_break = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.search(raw, pos)
+            if (
+                original_break is None
+                or original_break.start() - pos > CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINE
+            ):
+                return False
+            armour_count += 1
+            if armour_count > CHECKPOINT_ARCHIVE_SECRET_ARMOUR_LINES:
+                return False
+            pos = original_break.end()
+            continue
+        break
+    if pos >= CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD:
+        return False
+    count = 0
+    while pos < len(raw):
+        escaped = False
+        run = CHECKPOINT_ARCHIVE_SECRET_PREFIX_RUN.match(raw, pos)
+        if run:
+            count += run.end() - pos
+            pos = run.end()
+            if count >= CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS:
+                return True
+        elif raw[pos:pos + 2] == b"\\/":
+            escaped = True
+            count += 1
+            pos += 2
+            if count >= CHECKPOINT_ARCHIVE_SECRET_PREFIX_GLYPHS:
+                return True
+        else:
+            return False
+        end_of_segment = pos
+        while pos < len(raw) and raw[pos] in b" \t":
+            pos += 1
+        line_break = CHECKPOINT_ARCHIVE_SECRET_PREFIX_BREAK.match(raw, pos)
+        if line_break:
+            pos = line_break.end()
+            while pos < len(raw) and raw[pos] in b" \t":
+                pos += 1
+            continue
+        if raw[pos:pos + 2] == b"\\/":
+            if pos != end_of_segment:
+                return False
+            continue
+        if (
+            escaped
+            and pos == end_of_segment
+            and CHECKPOINT_ARCHIVE_SECRET_PREFIX_RUN.match(raw, pos)
+        ):
+            continue
+        return False
+    return False
+
+
 def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
-    """Whether these bytes carry one of the study's six secret shapes.
+    """Apply the shared token, independent whole-line and material-prefix rules.
 
-    A token match is the whole answer. An armour header is only half of one:
-    the study's second 2026-09-09 amendment requires the block, so the header
-    refuses only when its own `-----END` marker or a whole line of base64 body
-    follows it. The two have their own reaches and the difference is the point.
-    A body has to *start* within `CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD`,
-    which the armour lines bound. A footer sits past the whole body, so it has
-    until `CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD`, which adds the largest
-    body the scan undertakes to reach. Holding both to the armour figure was
-    S2-R7-01: it put the footer of every key of 3,072 bits or more out of
-    range, leaving the body witness as the only witness for exactly the sizes
-    in use. The footer is derived from the header that matched rather than
-    looked for generically, so a `-----BEGIN RSA PRIVATE KEY-----` is not
-    completed by an unrelated `-----END CERTIFICATE-----` further down the
-    file.
-
-    A body line ends at a line feed as a byte, as the two-character escape or
-    as the six-character numeric escape in either letter case, and at the
-    carriage return that may precede it in the matching form. The study's
-    third 2026-09-09 amendment requires the escape, its first 2026-09-10
-    amendment the carriage return and its second the numeric escapes: a key
-    carried as a JSON string value supplies no newline byte, and past the
-    lookahead it supplies no footer either, so before those three the block
-    rule published it. A body with no line delimiter in any of these forms
-    refuses on its footer alone, which since S2-R7-01 the footer reach
-    actually covers up to `CHECKPOINT_ARCHIVE_SECRET_LARGEST_KEY` bits. The
-    residue that remains is a key larger than that.
-
-    The body positions are found once for the whole buffer and then walked with
-    one forward index per pattern, because `finditer` yields matches in
-    increasing order. Searching the lookahead separately for every header would
-    make a member of repeated headers cost work in the square of their count.
+    Footer proximity alone rejected two preserved public audit files. The
+    2026-09-19 amendment replaces it with the selected bounded prefix while
+    retaining each earlier token and whole-line refusal. Whole-line positions
+    are indexed once per buffer, so repeated headers do not rescan that buffer.
     """
     for pattern in CHECKPOINT_ARCHIVE_SECRET_TOKEN_PATTERNS:
         if pattern.search(data):
@@ -26612,13 +27181,11 @@ def _checkpoint_archive_secret_shaped(data: bytes) -> bool:
         for match in pattern.finditer(data):
             start = match.end()
             body_limit = start + CHECKPOINT_ARCHIVE_SECRET_BLOCK_LOOKAHEAD
-            footer_limit = start + CHECKPOINT_ARCHIVE_SECRET_FOOTER_LOOKAHEAD
-            footer = b"-----END " + match.group(0)[len(b"-----BEGIN ") :]
-            if data.find(footer, start, footer_limit) != -1:
-                return True
             while index < len(bodies) and bodies[index] < start:
                 index += 1
             if index < len(bodies) and bodies[index] < body_limit:
+                return True
+            if _checkpoint_archive_material_prefix(data, start):
                 return True
     return False
 
@@ -26850,6 +27417,17 @@ def _checkpoint_archive_signature_format(base_dir: str) -> str:
     return value
 
 
+def _checkpoint_archive_fingerprint_valid(signature_format: str, fingerprint: str) -> bool:
+    """Match the native verifier's fingerprint encoding for this format."""
+    if signature_format == "openpgp":
+        return re.fullmatch(r"[0-9A-F]{40}(?:[0-9A-F]{24})?", fingerprint) is not None
+    if signature_format == "ssh":
+        # SHA-256 uses 43 unpadded base64 characters; the last one's low two
+        # bits are zero. Preserve case: base64 is not hexadecimal.
+        return re.fullmatch(r"SHA256:[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]", fingerprint) is not None
+    return False
+
+
 def _checkpoint_archive_verifier_argv(argv: list[str]) -> list[str]:
     """One Git argv with the native verifier programs pinned ahead of it."""
     pinned = [item for setting in SIGNATURE_VERIFIER_CONFIG for item in ("-c", setting)]
@@ -27064,7 +27642,7 @@ def _checkpoint_archive_proof(base_dir: str, state: dict, step: dict, members: s
     fingerprints: list[str] = []
     for commit_sha in commits:
         _, fingerprint, _ = _checkpoint_archive_commit_read(base_dir, commit_sha, None)
-        if not re.fullmatch(r"[0-9A-F]{40}(?:[0-9A-F]{24})?", fingerprint):
+        if not _checkpoint_archive_fingerprint_valid(signature_format, fingerprint):
             _checkpoint_archive_refuse("signature-unverified")
         if fingerprint not in fingerprints:
             fingerprints.append(fingerprint)
@@ -27150,23 +27728,35 @@ def _checkpoint_archive_proof(base_dir: str, state: dict, step: dict, members: s
 def _checkpoint_archive_ssh_material(base_dir: str, members: str) -> str:
     """Carry the repository's own allowed-signers file as the SSH key material."""
     status, data = bounded_run(
-        base_dir, "git", ["config", "--get", "gpg.ssh.allowedSignersFile"]
+        base_dir, "git", ["config", "--null", "--path", "--get", "gpg.ssh.allowedSignersFile"]
     )
-    if status != 0:
+    if status != 0 or not data.endswith(b"\0") or data.count(b"\0") != 1:
         _checkpoint_archive_refuse("signature-unverified")
-    source = data.decode("utf-8", "replace").strip()
+    try:
+        source = data[:-1].decode("utf-8")
+    except UnicodeDecodeError:
+        _checkpoint_archive_refuse("signature-unverified")
     if not source:
         _checkpoint_archive_refuse("signature-unverified")
-    resolved = _checkpoint_archive_guarded(
-        "signature-unverified",
-        lambda: scoped_path(base_dir, source, "checkpoint archive allowed signers"),
-    )
-    try:
-        with open(resolved, "rb") as handle:
-            payload = handle.read(CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX + 1)
-    except OSError:
-        _checkpoint_archive_refuse("signature-unverified")
-    if not payload or len(payload) > CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX:
+    # Git permits a trust store outside the worktree. Expand Git's pathname
+    # syntax above, then capture one stable public file without following links.
+    # Keep source components: folding alias/.. before opening alias would skip
+    # the no-follow check and could capture a different file from Git's path.
+    components = os.path.join(os.path.abspath(base_dir), source).split(os.sep)[1:]
+
+    def capture():
+        label = "checkpoint archive allowed signers"
+        directory = _guard_open_directory(os.path.sep, components[:-1], label, create=False)
+        try:
+            payload, _ = _guard_read_leaf(
+                directory, components[-1], label, limit=CHECKPOINT_ARCHIVE_ENTRY_BYTES_MAX
+            )
+            return payload
+        finally:
+            os.close(directory)
+
+    payload = _checkpoint_archive_guarded("signature-unverified", capture)
+    if not payload:
         _checkpoint_archive_refuse("signature-unverified")
     _checkpoint_archive_write_member(
         members, CHECKPOINT_ARCHIVE_SIGNERS_ENTRY, payload
@@ -28209,7 +28799,11 @@ def _checkpoint_inspect_signatures(
     fingerprints = signer["fingerprints"]
     key_path = signer["key_path"]
     key_bytes = captured.get(key_path)
-    if not isinstance(fingerprints, list) or key_bytes is None:
+    if (
+        not isinstance(fingerprints, list)
+        or any(not _checkpoint_archive_fingerprint_valid(fmt, value) for value in fingerprints)
+        or key_bytes is None
+    ):
         _checkpoint_archive_refuse("signature-unverified")
     keys_dir = os.path.join(scratch, "keys")
     disk_key_path = os.path.join(keys_dir, os.path.basename(key_path))
@@ -28896,7 +29490,10 @@ def cmd_next(args) -> None:
         # carry a sync the controller has not receipted yet, and `done sync-run`
         # owns that topology, so the check stops when the stack does.
         landed = refuse_unreceipted_run_branch_movement(args.dir, state)
-        refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
+        tips = refuse_rewritten_stack(args.dir, state, directive.get("step") or 0)
+        refuse_carried_step_commits(
+            args.dir, state, directive.get("step") or 0, tips
+        )
         if landed is not None:
             # The directed merge has landed and only its receipt is owed. The
             # directive says so and carries the exact receipt, so an operator
@@ -29224,7 +29821,7 @@ def cmd_status(args) -> None:
             gate_recovery_preflight(args.dir, state, allow_source_drift=False)
             gate_status = {"status": "current" if as_dict(state.get("receipts")).get("runbook") else "awaiting-runbook", "validation": "interface-only"}
         except SystemExit:
-            gate_status = {"status": "stale-or-invalid", "recovery": "inspect verify output; submit a freshly validated runbook amendment"}
+            gate_status = gate_stale_status(args.dir, state)
     if success_criteria_contract(state):
         admission = success_criteria_admission(state)
         if admission is None:
@@ -29462,6 +30059,17 @@ def cmd_status(args) -> None:
         movement = unreceipted_run_branch_movement(args.dir, state)
         if movement is not None:
             print(f"STACK: {describe_run_branch_movement(movement)}")
+        # The same reader `next` refuses with, in report mode: one line per
+        # carried step, an unknown answer printed as unknown, nothing refused.
+        merged_steps = as_dict(state.get("integrate")).get("merged") or []
+        unmerged = [step["n"] for step in state["steps"] if step["n"] not in merged_steps]
+        carry = carried_step_observation(
+            args.dir, state, unmerged[0] if unmerged else 0, report=True
+        )
+        for entry in carry["carried"]:
+            print(f"CARRY: {describe_carried_step(entry)}")
+        for entry in carry["unknown"]:
+            print(f"CARRY: {describe_unknown_carry(entry)}")
         sync = as_dict(as_dict(state.get("integrate")).get("sync"))
         product = as_dict(sync.get("product_evidence"))
         revalidation = as_dict(sync.get("revalidation"))

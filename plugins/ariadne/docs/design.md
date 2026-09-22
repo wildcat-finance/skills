@@ -78,6 +78,7 @@ verifier and one envelope format without sharing a schema.
 | `verify.py` | verification | The report: gates, signature state, and what went unchecked |
 | `registry.py` | dispatch | Type URI to predicate module |
 | `predicates/solidity_release.py` | predicate | The Solidity release predicate |
+| `predicates/checkpoint_authority.py` | predicate | The checkpoint authority record predicate, over a release copy of the owner's closed schema |
 | `capture/foundry.py` | adapter | A Foundry build read into that predicate |
 | `deltas.py` | comparison | ABI, method identifier and storage comparisons |
 | `replay.py` | execution | Re-running the commands a statement marks deterministic |

@@ -1,0 +1,71 @@
+{
+  "action": "aave-v4.borrow",
+  "amounts": [
+    {
+      "asset": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "base_units": "3000000000",
+      "kind": "assets_drawn"
+    },
+    {
+      "asset": null,
+      "base_units": "2944261184",
+      "kind": "shares"
+    }
+  ],
+  "chain": "ethereum-mainnet",
+  "event_family": "borrowing",
+  "id": "tabularium:ethereum-mainnet:aave-v4:0xc47474f973eccd0f86f7b0b3318e9cb375d5bb96a4d1619410dbfcc69d022510:244:aave-v4.borrow.v2",
+  "instrument": {
+    "id": "0x94e7a5dcbe816e498b89ab752661904e2f56c485",
+    "type": "aave-v4-spoke"
+  },
+  "native_record": {
+    "address": "0x94e7a5dcbe816e498b89ab752661904e2f56c485",
+    "blockHash": "0x0b941b3acc7aa3294b774b38ba3e5963036a67f6a3d3894840691fc658cff341",
+    "blockNumber": "0x18a85d1",
+    "blockTimestamp": "0x6a91cf0f",
+    "data": "0x00000000000000000000000000000000000000000000000000000000af7ddc4000000000000000000000000000000000000000000000000000000000b2d05e00",
+    "logIndex": "0xf4",
+    "removed": false,
+    "topics": [
+      "0xef18174796a5d2f91d51dc5e907a4d7867bbd6e800f6225168e0453d581d0dcd",
+      "0x0000000000000000000000000000000000000000000000000000000000000007",
+      "0x000000000000000000000000b657fc66899531521ce38dcfcae8a0623ec0590f",
+      "0x000000000000000000000000b657fc66899531521ce38dcfcae8a0623ec0590f"
+    ],
+    "transactionHash": "0xc47474f973eccd0f86f7b0b3318e9cb375d5bb96a4d1619410dbfcc69d022510",
+    "transactionIndex": "0x2c"
+  },
+  "parties": [
+    {
+      "address": "0xb657fc66899531521ce38dcfcae8a0623ec0590f",
+      "role": "borrower"
+    }
+  ],
+  "provenance": {
+    "adapter": "aave-v4",
+    "adapter_version": "2.0.0",
+    "mapping_rule": "aave-v4.borrow.v2",
+    "protocol_generation": "aave-v4",
+    "source_api": "ethereum-json-rpc",
+    "source_contract": "0x94e7a5dcbe816e498b89ab752661904e2f56c485",
+    "source_entity": "logs",
+    "source_id": "0xc47474f973eccd0f86f7b0b3318e9cb375d5bb96a4d1619410dbfcc69d022510:244",
+    "source_kind": "consensus-log",
+    "supporting_selectors": [
+      "eth_call[to=0x94e7a5dcbe816e498b89ab752661904e2f56c485,getReserve(7)]",
+      "eth_call[to=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,symbol()]",
+      "eth_call[to=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48,decimals()]"
+    ]
+  },
+  "schema_version": 3,
+  "transaction": {
+    "block_hash": "0x0b941b3acc7aa3294b774b38ba3e5963036a67f6a3d3894840691fc658cff341",
+    "block_number": 25855441,
+    "hash": "0xc47474f973eccd0f86f7b0b3318e9cb375d5bb96a4d1619410dbfcc69d022510",
+    "log_index": 244,
+    "timestamp": "1787940623",
+    "transaction_index": 44
+  },
+  "venue": "aave-v4"
+}

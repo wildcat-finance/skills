@@ -1,0 +1,4 @@
+step 2 recorded head 8ee730285d05792b3d965a5f6bfc6c3b3a7e3932
+step 2 observed tip  0ad5317e7acb39d061e47531a9f8b0836388041b
+step 3 recorded head 9b02af5f56f9296a58decb10b1974e931e57bab1
+admitted: refuse_rewritten_stack returned for a waiting branch that gained step 3's receipted commits

@@ -11,6 +11,11 @@ spec = importlib.util.spec_from_file_location('registered_gate_tests', SOURCE)
 gates = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gates)
 CLI = 'scripts/verify.py'
+RELEASED_ADAPTERS = (
+    '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
+    '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
+    'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
+)
 PROGRAM = '''import argparse
 from pathlib import Path
 
@@ -68,6 +73,50 @@ class RunbookRegistrationTests(unittest.TestCase):
             gates.validate(self.root, data)
         with self.assertRaises(gates.Refusal):
             gates.replay(self.root, self.book(), receipt)
+
+    def test_released_adapter_replays_unchanged_local_interface_without_rewriting(self):
+        marker = self.root / 'executed'
+        self.path.write_text(PROGRAM + '\nPath(' + repr(str(marker)) + ').touch()\n')
+        data = self.book('--count 2')
+        current = gates.validate(self.root, data)
+        self.assertEqual(current['adapter_sha256'], gates.digest(SOURCE.read_bytes()))
+        for adapter in RELEASED_ADAPTERS:
+            receipt = copy.deepcopy(current)
+            receipt['adapter_sha256'] = adapter
+            before = copy.deepcopy(receipt)
+            with self.subTest(adapter=adapter):
+                gates.replay(self.root, data, receipt)
+                self.assertEqual(receipt, before)
+                self.assertFalse(marker.exists())
+                self.assertFalse(receipt['operation_ran'])
+
+    def test_released_adapter_still_refuses_source_and_receipt_drift(self):
+        data = self.book('--count 2')
+        current = gates.validate(self.root, data)
+        for adapter in RELEASED_ADAPTERS:
+            receipt = copy.deepcopy(current)
+            receipt['adapter_sha256'] = adapter
+            for field, value in (('artifact_sha256', '0' * 64), ('operation_ran', True)):
+                altered = copy.deepcopy(receipt)
+                altered[field] = value
+                with self.subTest(adapter=adapter, field=field), self.assertRaises(gates.Refusal):
+                    gates.replay(self.root, data, altered)
+            altered = copy.deepcopy(receipt)
+            altered['commands'][0]['invocations'][0]['argv'][-1] = '1'
+            with self.subTest(adapter=adapter, field='argv'), self.assertRaises(gates.Refusal):
+                gates.replay(self.root, data, altered)
+            self.path.write_text(PROGRAM + '\n# changed source\n')
+            with self.subTest(adapter=adapter, field='source'), self.assertRaisesRegex(gates.Refusal, 'registered-source-drift'):
+                gates.replay(self.root, data, receipt)
+            self.path.write_text(PROGRAM)
+
+    def test_unknown_and_malformed_adapter_identities_refuse(self):
+        data = self.book()
+        for adapter in ('0' * 64, '', None, [], {}):
+            receipt = gates.validate(self.root, data)
+            receipt['adapter_sha256'] = adapter
+            with self.subTest(adapter=adapter), self.assertRaises(gates.Refusal):
+                gates.replay(self.root, data, receipt)
 
     def test_append_only_registration_replacement_and_retirement(self):
         data = self.book()
@@ -136,7 +185,19 @@ class RunbookRegistrationTests(unittest.TestCase):
             other = Path(other).resolve()
             (other / CLI).parent.mkdir()
             (other / CLI).write_bytes(self.path.read_bytes())
-            gates.replay(other, data, receipt)
+            for adapter in (receipt['adapter_sha256'], *RELEASED_ADAPTERS):
+                historical = copy.deepcopy(receipt)
+                historical['adapter_sha256'] = adapter
+                with self.subTest(adapter=adapter):
+                    gates.replay(other, data, historical)
+                    altered = copy.deepcopy(historical)
+                    altered['commands'][0]['invocations'][0]['execution_argv'][-1] = str(other / '.hexaemeron/reports/result.json')
+                    with self.assertRaises(gates.Refusal):
+                        gates.replay(other, data, altered)
+            (other / '.hexaemeron').mkdir(exist_ok=True)
+            (other / '.hexaemeron/reports').symlink_to(self.root, target_is_directory=True)
+            with self.assertRaises(gates.Refusal):
+                gates.replay(other, data, historical)
         altered = copy.deepcopy(receipt)
         altered['commands'][0]['invocations'][0]['cli']['sha256'] = '0' * 64
         with self.assertRaises(gates.Refusal):

@@ -415,17 +415,53 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.65.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.74.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.65.1")
-        self.assertIn("skills#1273", current["evidence"])
-        self.assertIn("successor-controller demonstration", current["change"])
-        self.assertIn("does not claim semantic criterion sufficiency", current["change"])
+        self.assertEqual(current["version"], "fiat-v6.74.1")
+        self.assertEqual(current["axis"], "generation")
+        self.assertEqual(current["revision"], "delegated-task-identity")
+        self.assertEqual(current["digest"], "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1")
+        self.assertIn("test_gate_commands.py", current["evidence"])
+        self.assertIn("every other gate field agrees", current["change"])
+        study = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.73.1")
+        self.assertIn("preserves attempts", study["change"])
+        prior = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.72.1")
+        self.assertIn("separately receipted runbook gate", prior["change"])
+        linux = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.71.1")
+        self.assertIn("skills#1794", linux["evidence"])
+        self.assertIn("bubblewrap-seccomp", linux["change"])
+        protocol = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.70.1")
+        self.assertIn("skills#1676", protocol["evidence"])
+        self.assertIn("record inventory", protocol["change"])
+        material = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.69.1")
+        self.assertIn("skills#1755", material["evidence"])
+        self.assertIn("bounded material prefix", material["change"])
+        carried = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.68.1")
+        self.assertIn("skills#1480", carried["evidence"])
+        self.assertIn(
+            "refuse an unmerged step branch whose gained range holds a commit",
+            carried["change"],
+        )
+        self.assertIn("a step whose push receipt records an early merge is excluded", carried["change"])
+        self.assertIn("A cherry-picked copy under a new SHA is out of scope", carried["change"])
+        self.assertIn("held target stay unchanged", carried["change"])
         self.assertIn("held target stay unchanged", current["change"])
+        isolation = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.67.1")
+        self.assertIn("skills#1742", isolation["evidence"])
+        self.assertIn("unsigned-fixture-not-admitted", isolation["change"])
+        self.assertIn("held target stay unchanged", isolation["change"])
+        signing = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.66.1")
+        self.assertIn("skills#1738", signing["evidence"])
+        self.assertIn("canonical SSH fingerprints", signing["change"])
+        self.assertIn("held target stay unchanged", signing["change"])
+        demonstration = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.65.1")
+        self.assertIn("skills#1273", demonstration["evidence"])
+        self.assertIn("successor-controller demonstration", demonstration["change"])
+        self.assertIn("does not claim semantic criterion sufficiency", demonstration["change"])
         integration = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.63.1")
         self.assertIn("skills#1665", integration["evidence"])
         self.assertIn("terminal replay pins that ref privately", integration["change"])
@@ -670,7 +706,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v6.13.1")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v6.17.1")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "success-criteria-evidence-join")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
@@ -737,7 +773,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "elenchus" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.7.0")
+        self.assertEqual(field(ledger, "Current version"), "elenchus-v1.9.0")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(
             field(ledger, "Frontier revision"), "observed-failure-root-cause"
