@@ -1,0 +1,140 @@
+{
+  "schema": "store-input-update/v1",
+  "observed_at": "2026-09-22T07:41:01.592502+00:00",
+  "issue": "https://github.com/wildcat-finance/skills/issues/1489",
+  "status": "blocked-on-named-inputs",
+  "producer": {
+    "agent": "Codex",
+    "task_id": "01a0c7eb-9a5a-7272-af4c-5987a37c1540",
+    "review": "producer self-review; independent review pending"
+  },
+  "source_revision": "dedcc6462051f32ab0b43eb52c400754d77b7e14",
+  "public_sources": [
+    {
+      "path": "plugins/alexandria/examples/wildcat-estates-interval-v0/README.md",
+      "bytes": 2286,
+      "sha256": "1c785fc9a1144acc6c2760035cedc3ea068b117847830c0dab5edb2819446d68"
+    },
+    {
+      "path": "plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json",
+      "bytes": 22684,
+      "sha256": "02e38bdd23ddf7e005760bcdfa9e841401613add08330757037eda37c47372fb"
+    },
+    {
+      "path": "plugins/alexandria/docs/wildcat-interval/proof.md",
+      "bytes": 5283,
+      "sha256": "fa2424a58d66b98bde78cf03822bae30f50c133dbb5369853f7c2f0c831caaf2"
+    }
+  ],
+  "previous_record": {
+    "path": "store.md",
+    "sha256": "eff0628f5559bcd40012c5a2e82cee2715bf1e1bbce692f5f16754df9764007a",
+    "observed_at": "2026-09-19T17:30:41Z",
+    "treatment": "Preserved unchanged; this dated update supersedes its live status."
+  },
+  "provider": {
+    "name": "Cloudflare R2",
+    "decision": "User instruction on 2026-09-22: We expect to use R2.",
+    "account_bucket_mapping": null,
+    "policy": "https://github.com/wildcat-finance/miskatonic/issues/1",
+    "operator": null,
+    "backup_operator": null,
+    "numeric_budget_approval": null,
+    "r2_deployed": false
+  },
+  "selected_research_capture": {
+    "targets": [
+      "wildcat-v1-ethereum-mainnet",
+      "wildcat-v2-ethereum-mainnet"
+    ],
+    "producer_issue": "https://github.com/wildcat-finance/skills/issues/1731",
+    "producer_delivery": "https://github.com/wildcat-finance/skills/pull/1838",
+    "coverage": "Bounded intervals; public delivery proof retains gaps and trace-selection limits.",
+    "releases": [
+      {
+        "version": "v1",
+        "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+        "manifest_sha256": "a8d675d23c31e44c6c6960245a2f640b4a669e58b4cec16a350ccf859b6ee591",
+        "components": 109,
+        "component_bytes": 19977545,
+        "largest_component_bytes": 4461512,
+        "component_access_classes": [
+          "public"
+        ],
+        "component_redistribution_classes": [
+          "permitted"
+        ]
+      },
+      {
+        "version": "v2",
+        "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+        "manifest_sha256": "219d72f940b667c829b04f232bbebf7ee83020139faadc1ac88883c7241156f7",
+        "components": 127,
+        "component_bytes": 242499892,
+        "largest_component_bytes": 25079138,
+        "component_access_classes": [
+          "public"
+        ],
+        "component_redistribution_classes": [
+          "permitted"
+        ]
+      }
+    ]
+  },
+  "historical_size_test": {
+    "evidence_class": "block-pinned subgraph archive",
+    "selection": "Candidate for the greater-than-8-GiB storage test only; not the Miskatonic reference corpus.",
+    "full_archive_verified": false,
+    "greater_than_8_gib_verified": false,
+    "historical_343_component_census_verified": false,
+    "owner": "https://github.com/wildcat-finance/miskatonic/issues/3"
+  },
+  "retrieval_rehearsal": {
+    "store": "Existing private GitHub archive storage",
+    "private_evidence": "https://github.com/wildcat-finance/miskatonic/issues/2#issuecomment-5772853797",
+    "verified_staging_files": 232,
+    "verified_staging_bytes": 230449582,
+    "archive_sha256_checks": "passed for both Wildcat archives",
+    "member_checks": "passed for all declared members",
+    "missing_object_http_status": 404,
+    "anonymous_known_object_http_status": 404,
+    "denial_scope": "Only anonymous denial for a known existing private object; no named collaborator-denial claim.",
+    "corrupt_copy_checks": "Both altered archive copies rejected by digest comparison before consumption.",
+    "offline_build_exit_code": 0,
+    "offline_verify_exit_code": 0,
+    "network_boundary": "Repository demonstration refuses Python socket construction; no OS network isolation claimed",
+    "r2_retrieval_tested": false
+  },
+  "blockers": [
+    {
+      "issue": "https://github.com/wildcat-finance/miskatonic/issues/1",
+      "scope": "Account, operators, policy and numeric budget decisions; blocks R2 provisioning."
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/miskatonic/issues/2",
+      "scope": "R2 deployment and bounded retrieval, isolation and recovery proof; shared store input for #1489 and #1380."
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/miskatonic/issues/3",
+      "scope": "Historical subgraph archive identity and size census for #1373 via #1489; does not block the Wildcat pilot or #1380."
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/miskatonic/issues/4",
+      "scope": "Source-matched admission and disclosure rows; future customer inputs do not block accepted private chain-data rows."
+    }
+  ],
+  "dokimasia": {
+    "recorded_identities": "inputs.json in the unchanged 2026-09-19 register",
+    "primary_inputs_retrieved": false,
+    "source_permission_owner": "https://github.com/wildcat-finance/skills/issues/1380",
+    "shared_store_blocker": "https://github.com/wildcat-finance/miskatonic/issues/2",
+    "requires_historical_aave_recovery": false
+  },
+  "rights": {
+    "initial_miskatonic_audience": "Internal only under the recorded 2026-09-19 user instruction.",
+    "manifest_declarations": "Both Wildcat releases declare public/permitted. This is not export authority; source decisions must resolve any required supersession without editing sealed bytes.",
+    "issue_1364_applicability": "Delivered for a separate Anamnesis audit corpus; removed as a blanket blocker for #1489 and #1373.",
+    "public_export_authorised": false
+  },
+  "completion": "Issue #1489 remains open. This update records findings, proposals and dependencies; no R2 deployment, paid provisioning, workbook recovery or independent acceptance is claimed."
+}

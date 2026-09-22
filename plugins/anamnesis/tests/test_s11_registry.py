@@ -39,9 +39,8 @@ SCRIPT = PLUGIN_ROOT / "skills/anamnesis/scripts/anamnesis.py"
 RUNNER = PLUGIN_ROOT / "tests/elenchus.py"
 FIXTURE = PLUGIN_ROOT / "tests/fixtures/unknown-mapper-policy.json"
 
-# The receipted bytes of the three documents this step commits. A digest here
-# and the comparison against `.hexaemeron/` below say the same thing; only this
-# one can still say it once the run worktree is gone.
+# The archived run receipted these three documents. Their pins remain valid
+# even when another issue owns the current controller directory.
 PINNED_DIGESTS = {
     PLUGIN_ROOT / "docs/resolved-mapper-study.md":
         "9f60a85d4a6ab37500cae74e7872d436aa39ca9d841d4bab2a84af1607ec6b9d",
@@ -60,8 +59,6 @@ REPORTS = RECORD_HOME / "reports"
 RESOLVER = REPORTS / "resolve.py"
 STUDY = PLUGIN_ROOT / "docs/resolved-mapper-study.md"
 RUNBOOK = PLUGIN_ROOT / "docs/resolved-mapper-runbook.md"
-RUN_STUDY = WORKTREE / ".hexaemeron/study.md"
-RUN_RUNBOOK = WORKTREE / ".hexaemeron/runbook.md"
 
 SELECTED = "registry-and-synopsis-mapper"
 SELECTION_RULE = "unique-frontier"
@@ -81,8 +78,8 @@ STEPS = tuple(range(1, 15))
 # The registry entry both shipped corpora declare, and the shipped release ids
 # that move if a resolved entry is not byte-identical to the declaration.
 DECLARED = {"name": "warden-audit-round-markdown", "version": "1"}
-PILOT_RELEASE = "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf"
-ESTATE_RELEASE = "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3"
+PILOT_RELEASE = "4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f"
+ESTATE_RELEASE = "b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2"
 
 # What the parent commit did with the fixture below, recorded here because the
 # guard's whole claim is a change in that behaviour.
@@ -209,9 +206,8 @@ class TheCommittedDesignRecordIsWhatTheRunSelected(unittest.TestCase):
         # beside these reports is that file, byte for byte, so the reports stay
         # reproducible from the repository after the run worktree is gone.
         self.assertTrue(RESOLVER.exists())
-        run_copy = WORKTREE / ".hexaemeron/reports/resolve.py"
-        if run_copy.exists():
-            self.assertEqual(RESOLVER.read_bytes(), run_copy.read_bytes())
+        self.assertEqual(hashlib.sha256(RESOLVER.read_bytes()).hexdigest(),
+                         "af4e2a632d85a62504cebf80842da22f79bee9015e6f7b349befe7d2880d2ae7")
 
     def test_the_four_pending_cells_block_step_three_and_name_a_resolver(self) -> None:
         self.assertEqual(len(self.pending), 4)
@@ -239,27 +235,17 @@ class TheCommittedDesignRecordIsWhatTheRunSelected(unittest.TestCase):
                 self.assertFalse((RECORD_HOME / cell["report"]).exists())
 
     def test_the_committed_documents_match_their_pinned_digests(self) -> None:
-        """The byte-identity claim, checked where there is no controller.
-
-        The comparison below reads `.hexaemeron/`, which exists only inside the
-        run's own worktree, so it skipped everywhere else and skipped in CI. A
-        claim nothing checks after the worktree is archived is not a claim. The
-        digests are the same bytes the controller receipted, recorded here so
-        the check survives the run. Step 4 re-syncs the documents after any
-        amendment and moves these three values with them.
-        """
+        """Check archived evidence without borrowing another run's controller."""
         for path, digest in PINNED_DIGESTS.items():
             with self.subTest(document=path.name):
                 self.assertEqual(
                     hashlib.sha256(path.read_bytes()).hexdigest(), digest)
 
     def test_the_committed_documents_equal_the_run_artefacts(self) -> None:
-        """And where the controller is present, that the pins track it."""
-        for committed, artefact in ((STUDY, RUN_STUDY), (RUNBOOK, RUN_RUNBOOK)):
-            with self.subTest(document=committed.name):
-                if not artefact.exists():
-                    self.skipTest(f"{artefact} is not in this checkout")
-                self.assertEqual(committed.read_bytes(), artefact.read_bytes())
+        """The owning run is archived; another controller cannot attest its bytes."""
+        for committed in (STUDY, RUNBOOK):
+            self.assertEqual(hashlib.sha256(committed.read_bytes()).hexdigest(),
+                             PINNED_DIGESTS[committed])
 
     def test_the_step_runner_admits_every_step_from_one_to_fourteen(self) -> None:
         self.assertEqual(runner.STEPS, STEPS)

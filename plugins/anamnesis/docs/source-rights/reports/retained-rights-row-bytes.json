@@ -1,0 +1,9 @@
+{
+  "candidate": "retained-rights",
+  "command": "python3 .hexaemeron/reports/resolve.py retained-rights row-bytes --out .hexaemeron/reports/retained-rights-row-bytes.json",
+  "criterion": "row-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 2332
+}

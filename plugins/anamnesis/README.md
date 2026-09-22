@@ -103,7 +103,7 @@ The design behind the member is in [docs/study.md](docs/study.md), the build
 order in [docs/runbook.md](docs/runbook.md), and the decisions that were
 expensive to reverse in [docs/decisions/](docs/decisions/).
 
-<!-- front-door:status skill="anamnesis" version="anamnesis-v5.1.0" -->
+<!-- front-door:status skill="anamnesis" version="anamnesis-v5.2.0" -->
 This version admits sources, curates them into a finding graph, builds and
 verifies a release, and reads that release back through the Elenchus and
 Synkrisis projections. Each corpus declares in its policy what it preserves,

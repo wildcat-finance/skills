@@ -1,0 +1,289 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "manifest-only",
+      "summary": "Retain basis and decision digest but preserve the old release preimage."
+    },
+    {
+      "id": "full-rights",
+      "summary": "Retain the complete rights object and bind the six source fields."
+    },
+    {
+      "id": "retained-rights",
+      "summary": "Retain basis and decision digest without rights prose and bind six source fields."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "rights-bound",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 12,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "private-prose",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "bytes",
+      "comparator": "equals",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "row-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "probe-ms",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "ids-moved",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 3,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "repeatable",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "implementation",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "elenchus",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "manifest-only",
+      "criterion": "rights-bound",
+      "state": "fail",
+      "report": {
+        "path": "reports/manifest-only-rights-bound.json",
+        "sha256": "e4f90c6753591d59454328f435ca1aa34ec3484a6972e7a7c2c95a3dda9f2c52"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "private-prose",
+      "state": "pass",
+      "report": {
+        "path": "reports/manifest-only-private-prose.json",
+        "sha256": "35405e01dd856cbd5128fcac7c3a0047a564a1dde41e9960dc6bc63c8ff0564b"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/manifest-only-row-bytes.json",
+        "sha256": "2fa61dcf74a906fb93be766b94c8ce364d65e21fe4c34ec5d4518e39daa30832"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "probe-ms",
+      "state": "pass",
+      "report": {
+        "path": "reports/manifest-only-probe-ms.json",
+        "sha256": "c4db7674741c8a8baf315225884a2b8fea9873f9e87dcb054d6c0fb5270d95a9"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "ids-moved",
+      "state": "fail",
+      "report": {
+        "path": "reports/manifest-only-ids-moved.json",
+        "sha256": "5313d121ac4ffd85850c399f01b1ae679e53eb82d2551a707fe9658ad8583135"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "repeatable",
+      "state": "pass",
+      "report": {
+        "path": "reports/manifest-only-repeatable.json",
+        "sha256": "8296deef061cf1c44a252c58f22ceaeeb43a5363e2c8e55986b7e40854bf83ab"
+      }
+    },
+    {
+      "candidate": "manifest-only",
+      "criterion": "implementation",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/reports/resolve.py manifest-only implementation --out .hexaemeron/reports/manifest-only-implementation.json",
+      "report": "reports/manifest-only-implementation.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "rights-bound",
+      "state": "pass",
+      "report": {
+        "path": "reports/full-rights-rights-bound.json",
+        "sha256": "e1895e9fdfd0c40fc4874854a93663dec181dadb4e9ec510ed7e6c64c0db4abb"
+      }
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "private-prose",
+      "state": "fail",
+      "report": {
+        "path": "reports/full-rights-private-prose.json",
+        "sha256": "cc5427b53ea184a0b1c28578685c0bfbc2d8ec6d94079805f3c9314135190905"
+      }
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/full-rights-row-bytes.json",
+        "sha256": "569703d37f6b8bdffaa0ac5079a6116860cb9740c5f1571032dfe72f79613221"
+      }
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "probe-ms",
+      "state": "pass",
+      "report": {
+        "path": "reports/full-rights-probe-ms.json",
+        "sha256": "02fd37c769abf8a9de71eb49bbbc723caa5e2190108688a3aeb3bcab7a57affc"
+      }
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "ids-moved",
+      "state": "pass",
+      "report": {
+        "path": "reports/full-rights-ids-moved.json",
+        "sha256": "c8cd236306e848b49324300257ae2319ab7b49ea4b4d9c50368e4be292d7e21c"
+      }
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "repeatable",
+      "state": "pass",
+      "report": {
+        "path": "reports/full-rights-repeatable.json",
+        "sha256": "9ebbbb5d56928e67ddc3b169484aa787f49845e65b50562fef7224872911115e"
+      }
+    },
+    {
+      "candidate": "full-rights",
+      "criterion": "implementation",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/reports/resolve.py full-rights implementation --out .hexaemeron/reports/full-rights-implementation.json",
+      "report": "reports/full-rights-implementation.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "rights-bound",
+      "state": "pass",
+      "report": {
+        "path": "reports/retained-rights-rights-bound.json",
+        "sha256": "3edd0a10727565272cd32e37cebdd376d7149ebb8eb69b8acd4f85375c4206f9"
+      }
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "private-prose",
+      "state": "pass",
+      "report": {
+        "path": "reports/retained-rights-private-prose.json",
+        "sha256": "4d54c3315b1873f7c2c94ce3079c7bfa6333e4699059544ed5e102d38a2a0b4f"
+      }
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "reports/retained-rights-row-bytes.json",
+        "sha256": "9192c3687ae130733c4986ad5cb24e4181f9c7596ec4dabde45bb64397e7a0cf"
+      }
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "probe-ms",
+      "state": "pass",
+      "report": {
+        "path": "reports/retained-rights-probe-ms.json",
+        "sha256": "3c6ff8290aa3f04ec17790ad9dff0ddde25b38ed62779ce7c5c99d2c7b15c846"
+      }
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "ids-moved",
+      "state": "pass",
+      "report": {
+        "path": "reports/retained-rights-ids-moved.json",
+        "sha256": "12d40d6d40cb51259c0de78b03d1c0cc9827de6584d916e20556831cde56c787"
+      }
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "repeatable",
+      "state": "pass",
+      "report": {
+        "path": "reports/retained-rights-repeatable.json",
+        "sha256": "64ae6c1b030e45ab8d0224f0c91e799adbbd09bc96f3cc8e0b1e3cda4b2d2548"
+      }
+    },
+    {
+      "candidate": "retained-rights",
+      "criterion": "implementation",
+      "state": "pending",
+      "resolver": "python3 .hexaemeron/reports/resolve.py retained-rights implementation --out .hexaemeron/reports/retained-rights-implementation.json",
+      "report": "reports/retained-rights-implementation.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "retained-rights",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

@@ -86,13 +86,13 @@ class ArchiveSigningCases:
         keys = Path(self.key_root)
         hidden = keys.with_name(keys.name + "-hidden")
         if self.signature_format == "openpgp":
-            # Stop the fixture agent before moving its socket directory;
-            # otherwise the next signer can connect while the old agent exits.
-            subprocess.run(
+            # Moving a live agent's home can make it exit during the next signing.
+            stopped = subprocess.run(
                 [self.tool_paths["gpgconf"], "--homedir", self.key_home,
                  "--kill", "gpg-agent"],
-                check=True, capture_output=True, timeout=10,
+                capture_output=True, text=True, timeout=10,
             )
+            self.assertEqual(0, stopped.returncode, stopped.stderr)
         keys.rename(hidden)
         try:
             inspected = json.loads(self.native_checkpoint(
@@ -241,6 +241,14 @@ class CheckpointOpenPgpSigningTests(ArchiveSigningCases, SignedRunFixture):
             capture_output=True, timeout=10,
         )
         self.assertEqual(0, verified.returncode, verified.stderr)
+
+
+    def commit_signed(self, message, *, amend=False):
+        try:
+            return super().commit_signed(message, amend=amend)
+        except subprocess.CalledProcessError as error:
+            diagnostic = (error.stderr or b"").decode("utf-8", errors="replace")
+            self.fail(f"fixture signing exited {error.returncode}: {diagnostic}")
 
 
 class CheckpointSshSigningTests(ArchiveSigningCases, SshSignedRunFixture):

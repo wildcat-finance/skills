@@ -240,6 +240,13 @@ OMISSIONS = (
         ),
     },
     {
+        "pattern": "plugins/anamnesis/docs/source-rights/**",
+        "reason": (
+            "retained-rights delivery studies, evidence and reproduction records "
+            "remain in the full source checkout beside the corpus specimens"
+        ),
+    },
+    {
         "pattern": "plugins/anamnesis/specimens/**",
         "reason": (
             "the preserved audit sources and the corpus release built from them are "
@@ -343,6 +350,8 @@ def _omitted(relative: Path) -> bool:
         and len(parts) >= 5
         and parts[4:] != ("README.md",)
     ):
+        return True
+    if parts[:4] == ("plugins", "anamnesis", "docs", "source-rights"):
         return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True

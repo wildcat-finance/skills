@@ -56,6 +56,12 @@ the corpora their conformance reporters read. If a selected operation needs one
 of the omitted surfaces, stop and use a full checkout of
 `wildcat-finance/skills`; absence does not authorise a substitute claim.
 
+Anamnesis retained-rights delivery records under
+`plugins/anamnesis/docs/source-rights/` also remain in the full source checkout,
+beside the omitted corpus specimens. Reproducing that delivery evidence needs
+the full checkout. The installed canonical skill, schemas and runtime commands
+remain present.
+
 The complete Lazarus Aave v4 v1 fixture remains under
 `runtime/plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/`, inside its
 unchanged preservation release. The package omits six duplicate payload files

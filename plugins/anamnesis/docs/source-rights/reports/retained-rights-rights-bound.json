@@ -1,0 +1,9 @@
+{
+  "candidate": "retained-rights",
+  "command": "python3 .hexaemeron/reports/resolve.py retained-rights rights-bound --out .hexaemeron/reports/retained-rights-rights-bound.json",
+  "criterion": "rights-bound",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 12
+}
