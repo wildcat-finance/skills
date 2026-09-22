@@ -163,6 +163,25 @@ class PreparedHarnessManifestTests(unittest.TestCase):
             )
             self.assertEqual(checker.parse_log(path), (2, 0, 0))
 
+    def test_parent_red_summary_is_parsed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "forge.log"
+            path.write_text(
+                "Encountered a total of 2 failing tests, 4 tests succeeded\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(checker.parse_parent_red_log(path), (4, 2))
+
+    def test_parent_green_summary_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "forge.log"
+            path.write_text(
+                "Ran 1 test suite: 1 tests passed, 0 failed, 0 skipped\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(checker.EvidenceError, "missing-parent-red-summary"):
+                checker.parse_parent_red_log(path)
+
     def test_executed_compiler_profile_passes(self) -> None:
         checker.validate_profile_data(profile_data("v2-a70f297f"), "v2-a70f297f")
 

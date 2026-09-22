@@ -30,6 +30,10 @@ SUMMARY_PATTERNS = (
         r"(?P<failed>[0-9]+) failed, (?P<skipped>[0-9]+) skipped"
     ),
 )
+PARENT_RED_PATTERN = re.compile(
+    r"Encountered a total of (?P<failed>[0-9]+) failing tests, "
+    r"(?P<passed>[0-9]+) tests succeeded"
+)
 MAX_JSON = 2 * 1024 * 1024
 MAX_LOG = 32 * 1024 * 1024
 SIGNER = "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
@@ -355,6 +359,17 @@ def parse_log(path: Path) -> tuple[int, int, int]:
     return tuple(int(final.group(name)) for name in ("passed", "failed", "skipped"))
 
 
+def parse_parent_red_log(path: Path) -> tuple[int, int]:
+    if path.stat().st_size > MAX_LOG:
+        raise EvidenceError(f"log-too-large:{path.name}")
+    text = path.read_text(encoding="utf-8", errors="strict")
+    matches = list(PARENT_RED_PATTERN.finditer(text))
+    if not matches:
+        raise EvidenceError(f"missing-parent-red-summary:{path.name}")
+    final = matches[-1]
+    return int(final.group("passed")), int(final.group("failed"))
+
+
 def validate_profile_data(data: dict[str, Any], expected_id: str) -> None:
     expected = GROUPS[expected_id]["profile"]
     actual = {
@@ -411,12 +426,14 @@ def validate_restricted(
             raise EvidenceError(f"{expected_id}:profile-report-digest")
         validate_profile_data(profile_data, expected_id)
         runner_binary = row["runner_binary"]
-        if expected_id == "v2-c7be4039":
-            binary_path = safe_leaf(restricted_root, runner_binary)
-            if sha256(binary_path.read_bytes()) != HISTORICAL_RUNNER["binary_sha256"]:
-                raise EvidenceError(f"{expected_id}:historical-runner-digest")
-        elif runner_binary is not None:
-            raise EvidenceError(f"{expected_id}:unexpected-runner-binary")
+        if not isinstance(runner_binary, str):
+            raise EvidenceError(f"{expected_id}:missing-runner-binary")
+        binary_path = safe_leaf(restricted_root, runner_binary)
+        expected_runner = (
+            HISTORICAL_RUNNER if expected_id == "v2-c7be4039" else CURRENT_RUNNER
+        )
+        if sha256(binary_path.read_bytes()) != expected_runner["binary_sha256"]:
+            raise EvidenceError(f"{expected_id}:runner-binary-digest")
         counts = parse_log(test_log)
         if counts != (row["passed"], row["failed"], row["skipped"]):
             raise EvidenceError(f"{expected_id}:log-counts")
@@ -471,6 +488,14 @@ def validate_restricted(
             path = safe_leaf(restricted_root, row[path_field])
             if sha256(path.read_bytes()) != row[digest_field]:
                 raise EvidenceError(f"regression-digest:{row['id']}:{path_field}")
+        parent_report = safe_leaf(restricted_root, row["parent_report"])
+        prepared_report = safe_leaf(restricted_root, row["prepared_report"])
+        _, parent_failures = parse_parent_red_log(parent_report)
+        if parent_failures <= 0:
+            raise EvidenceError(f"regression-parent-not-red:{row['id']}")
+        prepared_passed, prepared_failed, prepared_skipped = parse_log(prepared_report)
+        if prepared_passed <= 0 or prepared_failed != 0 or prepared_skipped != 0:
+            raise EvidenceError(f"regression-prepared-not-green:{row['id']}")
 
 
 def write_report(path: Path, report: dict[str, Any]) -> None:
