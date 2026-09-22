@@ -1,0 +1,112 @@
+{
+  "aggregate_ms": 76,
+  "ceiling_ms": null,
+  "correlation_id": "5678bf35f4d47cc0",
+  "demonstrations": [
+    {
+      "claim": "The pilot audit specimen admits, curates and projects offline from preserved producer bytes.",
+      "claim_id": "anamnesis-corpus-demo",
+      "demo_version": "anamnesis-demo-v0.7.0",
+      "directory": "plugins/anamnesis/skills/anamnesis",
+      "network": {
+        "enforcement": "python-site-hook",
+        "policy": "denied"
+      },
+      "non_claim": "It does not establish that the corpus is complete, that any finding is real, or that any remediation is correct.",
+      "plugin": "anamnesis",
+      "programs": [
+        {
+          "evidence": "verified",
+          "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+          "sha256": "793e7eb69704d35727eedb3a0a658234b0b060523eefb9538f23bb7837505e9f"
+        }
+      ],
+      "record_sha256": "51d801e50c7e94c54061d1b0a5f920ad87a64a8aea80c2889b45d6d57431c708",
+      "refusal": null,
+      "repetitions": [
+        {
+          "commands": [
+            {
+              "argv": [
+                "python3",
+                "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+                "demo",
+                "--specimen",
+                "plugins/anamnesis/specimens/pilot"
+              ],
+              "children_max_rss_bytes": 31096832,
+              "duration_ms": 76,
+              "escaped_group": false,
+              "exit": 0,
+              "expect_exit": 0,
+              "id": "run",
+              "network_attempt": false,
+              "observations": [
+                "run: line \"1. two fresh builds agree on 4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f across 7 components\"",
+                "run: line \"2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\"",
+                "run: line \"3. Elenchus analogues for severity high: 2; verdict None\"",
+                "run: line \"4. Synkrisis cohort cohort:4fb98a0684cd4704: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
+              ],
+              "refusal": null,
+              "stderr_bytes": 0,
+              "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "stderr_tail": "",
+              "stdout_bytes": 493,
+              "stdout_sha256": "e284a7ad7bfc36e527e530a795b8750ff3c34226ecf87a74cf01d5314c64e3db",
+              "stdout_tail": "1. two fresh builds agree on 4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f across 7 components\n2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\n3. Elenchus analogues for severity high: 2; verdict None\n4. Synkrisis cohort cohort:4fb98a0684cd4704: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\n5. baseline, not a threshold: 0.01s wall clock, peak resident 31096832 bytes. No budget is declared for either, so neither gates.\n",
+              "timed_out": false,
+              "timeout_ms": 600000,
+              "truncated": false
+            }
+          ],
+          "duration_ms": 76,
+          "index": 1
+        }
+      ],
+      "result": "verified",
+      "skill": "anamnesis",
+      "slowest_ms": 76,
+      "sources": [
+        {
+          "class": "audit",
+          "evidence": "verified",
+          "id": "input",
+          "path": "plugins/anamnesis/specimens/pilot/policy.json",
+          "sha256": "5de0d04c338776fd29cc6e27a902fac498a1335700dce1eae7b364ba67cf8901"
+        },
+        {
+          "class": "repository",
+          "evidence": "verified",
+          "id": "program",
+          "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+          "sha256": "793e7eb69704d35727eedb3a0a658234b0b060523eefb9538f23bb7837505e9f"
+        }
+      ],
+      "status": "real-data",
+      "timeout_seconds": 600
+    }
+  ],
+  "interpreter": {
+    "executable": "/opt/homebrew/opt/python@3.14/bin/python3.14",
+    "pinned": "3.14.6",
+    "version": "3.14.6"
+  },
+  "platform": {
+    "machine": "arm64",
+    "release": "25.5.0",
+    "system": "Darwin"
+  },
+  "refusals": [],
+  "repeat": 1,
+  "schema": "shoggoth-demonstration-report/v1",
+  "selection": {
+    "claim_ids": [
+      "anamnesis-corpus-demo"
+    ],
+    "count": 1,
+    "mode": "record"
+  },
+  "slowest_ms": 76,
+  "status": "verified",
+  "work_root_removed": true
+}

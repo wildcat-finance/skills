@@ -127,7 +127,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "5146462e7fb98ef7995b5edba57dfa76035d03d6daedb154e91846e6cda0e1ef",
+        "semantic_sha256": "742e7abb6597b3f0ae639336ac74822960dded47fa43889e909f74add5686fa8",
         "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
       },
       "entry": null,
