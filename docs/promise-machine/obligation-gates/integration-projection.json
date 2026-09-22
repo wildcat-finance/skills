@@ -582,7 +582,7 @@
     {
       "bytes": 291087,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "ad9d83a36b034d9dd45d486ef0725e3243119a69494dd1f7211ea88138e1329a"
+      "sha256": "486a79e9b1bc99f82bd422136a6eda3a46d7f782f810b40cf32298b8bdd9e234"
     },
     {
       "bytes": 54854,
@@ -612,7 +612,7 @@
     {
       "bytes": 3231,
       "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
-      "sha256": "6bafe78edae13528b1bf516dad076be14c87c141dcaa9770cc8dcd82af79acda"
+      "sha256": "9bba6a9193509a3263259f028d9d73db872f79627503d2f575437c1967abd32e"
     }
   ],
   "issue": "wildcat-finance/skills#884",

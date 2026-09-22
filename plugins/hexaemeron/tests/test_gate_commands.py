@@ -610,7 +610,7 @@ class GateReceiptTests(HexctlCase):
         self.run_ctl('status')
         self.run_ctl('next')
 
-    def test_released_criteria_admission_replays_before_fresh_study_amendment(self):
+    def test_released_criteria_admission_replays_through_consecutive_amendments(self):
         import hashlib
         from unittest.mock import patch
         self.current_run(with_criteria=True)
@@ -648,6 +648,50 @@ class GateReceiptTests(HexctlCase):
         self.assertEqual([path.read_bytes() for path in paths], before)
         self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate())
         self.run_ctl('verify')
+
+        state = self.state()
+        original_gate = copy.deepcopy(state['receipts']['runbook']['gate_commands'])
+        active = hexctl_module().success_criteria_admission(state)
+        self.assertNotEqual(original_gate['adapter_sha256'],
+                            active['gate_commands']['adapter_sha256'])
+        module = hexctl_module()
+        study_bytes = Path(self.target, 'study.md').read_bytes()
+        runbook_bytes = Path(self.target, runbook).read_bytes()
+        for field in ('adapter_sha256', 'source_root', 'artifact_sha256', 'commands',
+                      'operation_ran'):
+            with self.subTest(corrupted_gate_field=field):
+                forged = copy.deepcopy(active)
+                value = forged['gate_commands'][field]
+                forged['gate_commands'][field] = (
+                    [] if isinstance(value, list) else True if isinstance(value, bool)
+                    else '0' * 64)
+                with self.assertRaisesRegex(ValueError, '^recovery-admission-drift$'):
+                    module._criteria_recovery_admission(
+                        self.target, study_bytes, runbook_bytes, forged, original_gate)
+        for unknown in ('0' * 64, [], {}):
+            with self.subTest(unknown_prior=unknown):
+                unknown_prior = {**original_gate, 'adapter_sha256': unknown}
+                with self.assertRaisesRegex(ValueError, '^recovery-admission-drift$'):
+                    module._criteria_recovery_admission(
+                        self.target, study_bytes, runbook_bytes, active, unknown_prior)
+        candidate = self.write('runbook-after-adapter-refresh.md',
+                               Path(self.target, runbook).read_text()
+                               + self.runbook_amendment(
+                                   verdicts='Step 1: entry holds; exit holds.',
+                                   what='Complete replacement Files: file.py and evidence.md.',
+                                   touched='Step 1.'))
+        previous_events = paths[1].read_bytes()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate(
+            'second-study.md', 'Retain the reviewed command.'))
+        self.run_ctl('verify')
+        self.run_ctl('status')
+        self.run_ctl('next')
+        self.assertEqual(self.state()['receipts']['runbook']['gate_commands'], original_gate)
+        self.assertTrue(paths[1].read_bytes().startswith(previous_events))
+        active = hexctl_module().success_criteria_admission(self.state())
+        self.assertEqual([row['kind'] for row in active['history']['amendments']],
+                         ['study', 'runbook', 'study'])
 
     def legacy_study_criteria_pending(self):
         import argparse

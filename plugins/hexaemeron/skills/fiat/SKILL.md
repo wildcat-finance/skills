@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.73.1"
+  version: "6.74.1"
 ---
 
 <p align="center">
@@ -1200,6 +1200,11 @@ named by its pending transaction. Read-only criteria replay may retain a
 reviewed command-adapter identity after complete current gate replay and an
 exact declaration/Exit join comparison. Execution still requires its separate
 current-adapter check or a newly checked amendment.
+
+Amendment preflight accepts a reviewed historical-to-current command-adapter
+change only when every other gate field agrees. The original runbook gate and
+active criteria admission retain their separate identities. Changed source,
+command or report evidence and unknown adapters still refuse.
 
 ## Joined controller demonstration
 
