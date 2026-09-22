@@ -216,6 +216,7 @@ EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
     "plugins/*/audit/**",
+    "plugins/anamnesis/docs/source-rights/**",
     "plugins/anamnesis/specimens/**",
     "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
     "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
@@ -547,6 +548,8 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(missing, [])
 
     def test_declared_omissions_are_absent(self):
+        self.assertTrue((ROOT / "plugins/anamnesis/docs/source-rights/results.md").is_file())
+        self.assertFalse((RUNTIME / "plugins/anamnesis/docs/source-rights").exists())
         for plugin in sorted((RUNTIME / "plugins").iterdir()):
             if not plugin.is_dir():
                 continue

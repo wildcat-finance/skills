@@ -74,7 +74,7 @@ command writes a report to a path that must not already exist.
 
 ### ANAMNESIS REBUILDS A PRESERVED AUDIT CORPUS
 
-<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="a862e3b018241f9e30f45404d1a83957a9185fa3fc1ed540b042baa7c9448a07" -->
+<!-- front-door:demo skill="anamnesis" claim="anamnesis-corpus-demo" digest="51d801e50c7e94c54061d1b0a5f920ad87a64a8aea80c2889b45d6d57431c708" -->
 [Anamnesis](./plugins/anamnesis) admits, curates and projects preserved audit
 specimens from the producer's own bytes, and the mapper a curation policy
 declares now selects the implementation that reads each source rather than
