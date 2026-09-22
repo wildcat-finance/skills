@@ -17,12 +17,12 @@ That every Skills contributor row and every merged Wave Atlas pull-request
 author returned by GitHub was placed in exactly one of three outcomes: ranked,
 excluded with a named reason, or a refusal. That each ranked login is a
 syntactically valid GitHub login, is absent from the runtime-host set that
-`hexctl.py` declares, is not the Shoggoth's account and is not the repository
-owner. A login qualifies through either a resolved Skills commit with a bounded
-non-host authorship sample or an authored, merged Wave Atlas pull request. The
-order is Skills commits descending, then merged pull requests across both
-repositories descending, then login ascending. Both artefacts on disk match
-that computation byte for byte when `--check` exits zero.
+`hexctl.py` declares, is not one of the Shoggoth's declared accounts and is not
+the repository owner. A login qualifies through either a resolved Skills commit
+with a bounded non-host authorship sample or an authored, merged Wave Atlas
+pull request. The order is Skills commits descending, then merged pull requests
+across both repositories descending, then login ascending. Both artefacts on
+disk match that computation byte for byte when `--check` exits zero.
 
 ## Evidence classes
 
@@ -53,16 +53,18 @@ declared permissions.
 
 ## Refuses
 
-An account type other than `User` or `Bot`. A `Bot` absent from the declared
-host set, because a host name that does not exist yet cannot be classified and
-must not be ranked. A merged pull request without a classifiable author. A login
-failing the GitHub login grammar. A repository argument carrying query syntax
-or a duplicate repository source. Any API read that fails, including a rate
-limit, which it names along with whether a token would help. A host set that has
-diverged from `hexctl.py`'s declaration, in either direction. An excluded login
-reaching the ranked output. A `README.md` that is absent or not UTF-8. A
-contributors, closed-pull-request or closed-issue read that would silently
-truncate.
+An account type other than `User` or `Bot`, on a login the declared host set
+does not name. A `Bot` that is neither in the declared host set nor one of the
+Shoggoth's declared accounts, because a host name that does not exist yet
+cannot be classified and must not be ranked. A merged pull request without a
+classifiable author. A `User` login failing the GitHub login grammar, once the
+runtime-host, Shoggoth-account and repository-owner exclusions have been
+applied. A repository argument carrying query syntax or a duplicate repository
+source. Any API read that fails, including a rate limit, which it names along
+with whether a token would help. A host set that has diverged from
+`hexctl.py`'s declaration, in either direction. An excluded login reaching the
+ranked output. A `README.md` that is absent or not UTF-8. A contributors,
+closed-pull-request or closed-issue read that would silently truncate.
 
 ## Recovery
 

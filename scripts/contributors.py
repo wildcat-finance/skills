@@ -80,12 +80,13 @@ LOGIN_RE = re.compile(r"\A[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
 # derived from the history, so it is named here rather than inferred.
 EXCLUDED_MAINTAINERS = frozenset({"laurenceday"})
 
-# The Shoggoth account is a legitimate Git author and GitHub contributor, and
-# it is still not a human being thanked for helping. It is deliberately NOT in
-# the runtime-host set, which names the software that executed work rather
-# than an actor who contributed it. Different reason, different set, different
-# message. Neither exclusion decides whether anyone's signed commit is valid.
-AGENT_LOGINS = frozenset({"shoggoth-wildcat"})
+# The Shoggoth's own accounts: its user account and its delivery App. Each is
+# a legitimate Git author and GitHub contributor, and neither is a human being
+# thanked for helping. They are deliberately NOT in the runtime-host set, which
+# names the software that executed work rather than an actor who contributed
+# it. Different reason, different set, different message. Neither exclusion
+# decides whether anyone's signed commit is valid.
+AGENT_LOGINS = frozenset({"shoggoth-wildcat", "shoggoth-wildcat-labs[bot]"})
 
 REPOSITORY = "wildcat-finance/skills"
 WAVE_ATLAS_REPOSITORY = "wildcat-finance/shoggoth-wave-atlas"
@@ -326,18 +327,18 @@ def exclusion_reason(login, kind, excluded=EXCLUDED_MAINTAINERS):
     """Classify one account, returning a reason only when it is excluded."""
     if is_host_login(login):
         return "runtime host identity"
+    if kind not in ("User", "Bot"):
+        raise Stop(f"unknown identity: {login!r} has account type {kind!r}, not User or Bot")
+    if login in AGENT_LOGINS:
+        return "Shoggoth agent identity, not a human contributor"
     if kind == "Bot":
-        # ADR-016 records that the mechanical set does not cover unfamiliar
-        # future host names. Ranking one would put a runtime in a file that
-        # thanks people, so an unrecognised bot stops the run by name.
+        # ADR-019 stops the run by name on an identity that matches no
+        # exclusion category and is not resolvable as a human account. Ranking
+        # one would put a runtime in a file that thanks people.
         raise Stop(
             f"unknown identity: {login!r} is a Bot that is not in the host set; "
             "extend HOST_PR_LOGINS in hexctl.py and here, then rerun"
         )
-    if kind != "User":
-        raise Stop(f"unknown identity: {login!r} has account type {kind!r}, not User or Bot")
-    if login in AGENT_LOGINS:
-        return "Shoggoth agent identity, not a human contributor"
     if login in excluded:
         return "repository owner, excluded by decision"
     if not valid_login(login):
@@ -742,9 +743,9 @@ def render_contributors(payload):
         "`wildcat-finance/skills`. The merged-PR column combines authored, merged",
         "pull requests in that repository and `wildcat-finance/shoggoth-wave-atlas`.",
         "A merged Atlas PR qualifies its human author even with no Skills commit.",
-        "Runtime hosts, the repository owner and the Shoggoth are excluded. ADR-016",
-        "makes the Shoggoth the author of governed agent work, which is not the same",
-        "as being a person who helped.",
+        "Runtime hosts, the repository owner and the Shoggoth's own accounts are",
+        "excluded from this list. ADR-019 records these three exclusion categories.",
+        "Exclusion does not decide whether a signed commit is valid.",
         "",
         "It does not establish who wrote which line, who else worked on a pull",
         "request, how much judgement a commit carried, or anything about a",

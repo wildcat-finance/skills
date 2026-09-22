@@ -116,15 +116,15 @@ checker cannot emit and that nobody named.
 
 Each digest is checked byte for byte by the currency guard.
 
-- `PROMISE_MACHINE.md`, SHA-256 `74b35742ffad37a442d7204c2b9b60ed87776884245c52eddbc79ac889d292b7`, 31943 bytes
+- `PROMISE_MACHINE.md`, SHA-256 `c1cc8d56ea0055ecdcc0fba4ee381c0a2fedd66bb169dc15994b90d6179a9a63`, 32153 bytes
 - `tests/promise_machine_obligations.json`, SHA-256 `384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f`, 9630 bytes
-- `tests/promise_machine_coverage.json`, SHA-256 `c301139fe39f1b431da2bbea9ed0e2525b88daaf733b41d923fa02124ee63910`, 291087 bytes
-- `tests/promise_machine_id_history.json`, SHA-256 `e1c9918ee131e9bd0a320649e4034982664c8f24483c33f56d447df708395651`, 54854 bytes
+- `tests/promise_machine_coverage.json`, SHA-256 `a0be38f44089b07a09f2a7b2a1abde019b430d8b785dc013d0f75582e01d5d86`, 291034 bytes
+- `tests/promise_machine_id_history.json`, SHA-256 `cffb3c011f913100080abd13ef685ce85bcb5da60d42baf472dd766b8f103867`, 54854 bytes
 - `tests/fixtures/promise-machine/composition/cases.json`, SHA-256 `c61a73c33b75377c95870c342a63af4130f92d71017b33a80b0bfed12db54142`, 26778 bytes
 - `tests/fixtures/promise-machine/history/cases.json`, SHA-256 `9051ac6c291330f527705177bffa70985657ec7f96707b7a9349d4e574cfc3f0`, 685 bytes
 - `tests/fixtures/promise-machine/upstream-provenance/cases.json`, SHA-256 `f60821b1edf450d47a581f12562c13e1931c2b09c960bce2fb8a0b1767c154cf`, 935 bytes
 - `docs/promise-machine/obligation-gates/evaluation-answers.json`, SHA-256 `3ebdb3a8e7b86dc7fd8c7be77acd72632b966c107aa2034668702e96e12b8855`, 1911 bytes
-- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `1479ff692252cb40e28b70e73bf90ab7a8f1fa024be873d436ca5c36a6cb79a1`, 3231 bytes
+- `docs/promise-machine/obligation-gates/evaluation-run.json`, SHA-256 `2151d25917799e50785451bbd5ab25d6c4587257593b7169f54723da72051b7b`, 3231 bytes
 
 ## When a gate stops the line
 

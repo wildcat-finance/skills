@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Dokimasia: what did a release leave unexamined?
 
-The scaffold ships the command surface, the self-test behind it, and nothing
-else. `selftest` proves that the packaging, the contract and the ledger agree
-on one version, that the installed law copy has not drifted, and that every
-unbuilt verb refuses. Every other verb refuses by name and says which runbook
-step owes it, because a verb that returned zero here would read as a scrutiny
-that found nothing to report.
+`selftest` checks that both host manifests agree on one package version and
+that the canonical contract, the ledger and the command surface agree on one
+skill version. It also checks that the installed law copy has not drifted and
+that any declared unbuilt verb refuses. Every currently declared verb is built.
 """
 
 from __future__ import annotations
@@ -36,7 +34,7 @@ LEDGER = PLUGIN / "skills" / "dokimasia" / "EVOLUTION.md"
 INSTALLED_LAW = PLUGIN / "PROMISE_MACHINE.md"
 ROOT_LAW = REPOSITORY / "PROMISE_MACHINE.md"
 
-VERSION = "3.1.0"
+VERSION = "3.2.0"
 CANDIDATE = "inventory-first"
 CRITERION = "scaffold-contract-check"
 REPORT_SCHEMA = "protasis-design-report/v1"
@@ -65,30 +63,38 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def declared_versions() -> dict[str, str]:
-    """Every place this plugin states a version, keyed by where it said it."""
-    found: dict[str, str] = {}
+def declared_versions() -> dict[str, dict[str, str]]:
+    """Every place this plugin states a version, grouped by what the number names.
+
+    The package version is the delivery number both host manifests carry. The
+    skill version is the governed label the contract, the ledger and the
+    command surface carry. The two move for different reasons: a package
+    release follows any change to the plugin's tree, a regenerated law copy
+    included, while the label moves only as VERSIONING.md allows. Each group
+    has to agree within itself and nothing compares one group with the other.
+    """
+    package: dict[str, str] = {}
     for host in (".claude-plugin", ".codex-plugin"):
         manifest = json.loads(read_text(PLUGIN / host / "plugin.json"))
-        found[host] = manifest["version"]
+        package[host] = manifest["version"]
+    skill_versions: dict[str, str] = {}
     skill = FRONTMATTER_VERSION.search(read_text(SKILL))
     if skill is None:
         raise SelfTestError("the canonical contract declares no frontmatter version")
-    found["SKILL.md"] = skill.group("value")
+    skill_versions["SKILL.md"] = skill.group("value")
     ledger = LEDGER_VERSION.search(read_text(LEDGER))
     if ledger is None:
         raise SelfTestError("the ledger declares no current version")
-    found["EVOLUTION.md"] = ledger.group("value")
-    found["command"] = VERSION
-    return found
+    skill_versions["EVOLUTION.md"] = ledger.group("value")
+    skill_versions["command"] = VERSION
+    return {"package": package, "skill": skill_versions}
 
 
-def check_one_version() -> None:
-    found = declared_versions()
-    distinct = sorted(set(found.values()))
-    if len(distinct) != 1:
-        detail = ", ".join(f"{where}={value}" for where, value in sorted(found.items()))
-        raise SelfTestError(f"the declared version differs: {detail}")
+def check_declared_versions() -> None:
+    for kind, found in declared_versions().items():
+        if len(set(found.values())) != 1:
+            detail = ", ".join(f"{where}={value}" for where, value in sorted(found.items()))
+            raise SelfTestError(f"the declared {kind} version differs: {detail}")
 
 
 def check_installed_law() -> None:
@@ -172,7 +178,7 @@ def write_report(
 def selftest(report: str | None, candidate: str | None = None,
              criterion: str | None = None) -> int:
     try:
-        check_one_version()
+        check_declared_versions()
         check_installed_law()
         check_every_unbuilt_verb_refuses()
         if report is not None:
