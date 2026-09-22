@@ -1,0 +1,1 @@
+{"candidate": "floor-then-tighten", "command": "python3 .hexaemeron/design/probe.py --candidate floor-then-tighten --criterion operation-ms --out .hexaemeron/design/reports/floor-then-tighten-operation-ms.json", "criterion": "operation-ms", "exit": 0, "schema": "protasis-design-report/v1", "unit": "milliseconds", "value": 88}

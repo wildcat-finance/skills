@@ -1,0 +1,1 @@
+{"candidate": "threshold-amendment", "command": "python3 .hexaemeron/design/probe.py --candidate threshold-amendment --criterion ledger-bytes-added --out .hexaemeron/design/reports/threshold-amendment-ledger-bytes-added.json", "criterion": "ledger-bytes-added", "exit": 0, "schema": "protasis-design-report/v1", "unit": "bytes", "value": 1747}

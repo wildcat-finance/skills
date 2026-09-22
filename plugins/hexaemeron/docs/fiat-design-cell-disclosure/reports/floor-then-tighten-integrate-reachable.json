@@ -1,0 +1,1 @@
+{"candidate": "floor-then-tighten", "command": "python3 .hexaemeron/design/probe.py --candidate floor-then-tighten --criterion integrate-reachable --out .hexaemeron/design/reports/floor-then-tighten-integrate-reachable.json", "criterion": "integrate-reachable", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": false}

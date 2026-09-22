@@ -1,0 +1,1 @@
+{"candidate": "floor-then-tighten", "command": "python3 .hexaemeron/design/probe.py --candidate floor-then-tighten --criterion legacy-state-untouched --out .hexaemeron/design/reports/floor-then-tighten-legacy-state-untouched.json", "criterion": "legacy-state-untouched", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

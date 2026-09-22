@@ -1,0 +1,1 @@
+{"candidate": "halt-as-today", "command": "python3 .hexaemeron/design/probe.py --candidate halt-as-today --criterion locked-threshold-governs --out .hexaemeron/design/reports/halt-as-today-locked-threshold-governs.json", "criterion": "locked-threshold-governs", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

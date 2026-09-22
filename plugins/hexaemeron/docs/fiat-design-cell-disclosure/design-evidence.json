@@ -1,0 +1,402 @@
+{
+  "candidates": [
+    {
+      "id": "halt-as-today",
+      "summary": "Fail closed as today: the due cell refuses D008, the operator halts with a free-text reason and lands the stack by hand."
+    },
+    {
+      "id": "threshold-amendment",
+      "summary": "Make the cell amendable: an append-only sidecar lowers the criterion threshold after the data is in and the cell is re-resolved against it."
+    },
+    {
+      "id": "floor-then-tighten",
+      "summary": "Declare the cell at a floor threshold at done study and tighten it by a later step's append-only amendment."
+    },
+    {
+      "id": "disclosed-refusal",
+      "summary": "Record a refusal: a closed disclosure binds the failing report to the locked threshold, the integration transition admits the cell as disclosed, and done integrate requires the matching row in the run pull request body."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "record-and-reports-unchanged",
+      "kind": "gate",
+      "owner": "hypomnema",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "locked-threshold-governs",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "failed-cell-on-ledger",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "integrate-reachable",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-state-untouched",
+      "kind": "gate",
+      "owner": "fiat",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "ledger-bytes-added",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "operation-ms",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "refusal-guards-green",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "halt-as-today",
+      "criterion": "record-and-reports-unchanged",
+      "report": {
+        "path": "design/reports/halt-as-today-record-and-reports-unchanged.json",
+        "sha256": "2f7202ec2e48dbaa6759360805ed674bb8edd23e48c70263b6b3d4b31bee285b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "halt-as-today",
+      "criterion": "locked-threshold-governs",
+      "report": {
+        "path": "design/reports/halt-as-today-locked-threshold-governs.json",
+        "sha256": "073bb87a576a641dbfbab923589d7f221483071f566980680fd258a56725f836"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "halt-as-today",
+      "criterion": "failed-cell-on-ledger",
+      "report": {
+        "path": "design/reports/halt-as-today-failed-cell-on-ledger.json",
+        "sha256": "9a092b08c3045ec8f0764486b41e4df13113a91f470d4b7b4d435945321edcfe"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "halt-as-today",
+      "criterion": "integrate-reachable",
+      "report": {
+        "path": "design/reports/halt-as-today-integrate-reachable.json",
+        "sha256": "ad802317c746fa3bccaede816121f55be3de1a9ef341749da557a22a20358a97"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "halt-as-today",
+      "criterion": "legacy-state-untouched",
+      "report": {
+        "path": "design/reports/halt-as-today-legacy-state-untouched.json",
+        "sha256": "f12ebe007df51c0c35181aba6458ae0bf46cfa08893940955673a34af7600697"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "halt-as-today",
+      "criterion": "ledger-bytes-added",
+      "report": {
+        "path": "design/reports/halt-as-today-ledger-bytes-added.json",
+        "sha256": "8b7f44ac7498840236db7353ea2b0992e1ddf0759da59f61d2838bcc4634f978"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "halt-as-today",
+      "criterion": "operation-ms",
+      "report": {
+        "path": "design/reports/halt-as-today-operation-ms.json",
+        "sha256": "6ef849f5a0a202cf42ae29017ff986e54bc560861910564e3c9f1029fdf1cae6"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "halt-as-today",
+      "criterion": "refusal-guards-green",
+      "report": "design/reports/halt-as-today-refusal-guards-green.json",
+      "resolver": "python3 plugins/hexaemeron/skills/protasis/scripts/design_report.py --candidate halt-as-today --criterion refusal-guards-green --unit boolean --value-from-exit --out .hexaemeron/design/reports/halt-as-today-refusal-guards-green.json -- python3 -m unittest plugins.hexaemeron.tests.test_hexctl_design_disclosure",
+      "state": "pending"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "record-and-reports-unchanged",
+      "report": {
+        "path": "design/reports/threshold-amendment-record-and-reports-unchanged.json",
+        "sha256": "bf5538a180191a8f5a20c27818b132bc11ae99a8f4094ba9481e52478d12920e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "locked-threshold-governs",
+      "report": {
+        "path": "design/reports/threshold-amendment-locked-threshold-governs.json",
+        "sha256": "09ecbb83671dc51408701c2d1a4256d3c03392821bee4d00adad1b366b586153"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "failed-cell-on-ledger",
+      "report": {
+        "path": "design/reports/threshold-amendment-failed-cell-on-ledger.json",
+        "sha256": "a214c824a796cc60ed5b0cb2277a590dee6d9b751cee9f33a665264d134510e2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "integrate-reachable",
+      "report": {
+        "path": "design/reports/threshold-amendment-integrate-reachable.json",
+        "sha256": "0cc64bc5c29027a0be78dd6f2e7d1819abd9e2d11fe550bab5141ee94a01feda"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "legacy-state-untouched",
+      "report": {
+        "path": "design/reports/threshold-amendment-legacy-state-untouched.json",
+        "sha256": "b3c8272bb302f4daf3395983637ab2ec113c1c956e5ec9ceb79bba739f88d056"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "ledger-bytes-added",
+      "report": {
+        "path": "design/reports/threshold-amendment-ledger-bytes-added.json",
+        "sha256": "528d736a757d0eec3373165981db1b54bfcd68a4722c7777f8129670a50f7872"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "threshold-amendment",
+      "criterion": "operation-ms",
+      "report": {
+        "path": "design/reports/threshold-amendment-operation-ms.json",
+        "sha256": "496fdefb4b9edce440115e96c9b15afe6ec2337bbd67c4ec772ba682eac055b7"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "threshold-amendment",
+      "criterion": "refusal-guards-green",
+      "report": "design/reports/threshold-amendment-refusal-guards-green.json",
+      "resolver": "python3 plugins/hexaemeron/skills/protasis/scripts/design_report.py --candidate threshold-amendment --criterion refusal-guards-green --unit boolean --value-from-exit --out .hexaemeron/design/reports/threshold-amendment-refusal-guards-green.json -- python3 -m unittest plugins.hexaemeron.tests.test_hexctl_design_disclosure",
+      "state": "pending"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "record-and-reports-unchanged",
+      "report": {
+        "path": "design/reports/floor-then-tighten-record-and-reports-unchanged.json",
+        "sha256": "b2c295e585590ecf028cb6d4fd140505850e986acfa99aca264bdf1a4ef3cf61"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "locked-threshold-governs",
+      "report": {
+        "path": "design/reports/floor-then-tighten-locked-threshold-governs.json",
+        "sha256": "1da3cda6514321d98fca6b0be86a1118bd29e9ef6305f5ac367fcc55eb6ba764"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "failed-cell-on-ledger",
+      "report": {
+        "path": "design/reports/floor-then-tighten-failed-cell-on-ledger.json",
+        "sha256": "1a050bb289bb05db56393b4dc6a0bfed287f15d21772e2f68657e30eb9f1e9de"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "integrate-reachable",
+      "report": {
+        "path": "design/reports/floor-then-tighten-integrate-reachable.json",
+        "sha256": "8076a892c4b152b59869726c32fa415f64db42a6441818efd1b721049832b096"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "legacy-state-untouched",
+      "report": {
+        "path": "design/reports/floor-then-tighten-legacy-state-untouched.json",
+        "sha256": "73801906c8c4de64d7e0f35ca1cda18f9252f2cd64b6119d5aef394637fd1d09"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "ledger-bytes-added",
+      "report": {
+        "path": "design/reports/floor-then-tighten-ledger-bytes-added.json",
+        "sha256": "77b0cb420b3794dc953b79dc72c24ce74301ee5b30451ffce8aa883f3c742615"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "floor-then-tighten",
+      "criterion": "operation-ms",
+      "report": {
+        "path": "design/reports/floor-then-tighten-operation-ms.json",
+        "sha256": "15deb3ce7f6da2807e42569257a231b9c0e109f00080b790bfc65e09fdf2dcd8"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "floor-then-tighten",
+      "criterion": "refusal-guards-green",
+      "report": "design/reports/floor-then-tighten-refusal-guards-green.json",
+      "resolver": "python3 plugins/hexaemeron/skills/protasis/scripts/design_report.py --candidate floor-then-tighten --criterion refusal-guards-green --unit boolean --value-from-exit --out .hexaemeron/design/reports/floor-then-tighten-refusal-guards-green.json -- python3 -m unittest plugins.hexaemeron.tests.test_hexctl_design_disclosure",
+      "state": "pending"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "record-and-reports-unchanged",
+      "report": {
+        "path": "design/reports/disclosed-refusal-record-and-reports-unchanged.json",
+        "sha256": "c2082cff4700f0c889de0883d0e2238cd6b978a3cf341cdc334074ff2bd66aac"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "locked-threshold-governs",
+      "report": {
+        "path": "design/reports/disclosed-refusal-locked-threshold-governs.json",
+        "sha256": "ea950631058e24fddfda363f4ec90303ac3890393d6064ea408ec86387ecb15b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "failed-cell-on-ledger",
+      "report": {
+        "path": "design/reports/disclosed-refusal-failed-cell-on-ledger.json",
+        "sha256": "e3a27db7f9e688289cf41ba6bb8326995ee9736f6cb93b5337dbd16ba6ec2440"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "integrate-reachable",
+      "report": {
+        "path": "design/reports/disclosed-refusal-integrate-reachable.json",
+        "sha256": "7a2a0f4ae0bc85db7df25951c402fd463a14097f845fa7591f2e2761de38a1d9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "legacy-state-untouched",
+      "report": {
+        "path": "design/reports/disclosed-refusal-legacy-state-untouched.json",
+        "sha256": "43450a4e3a721ceaac6edb267ffc0b782c26b67dbd03853c7b6bf8ad1761bcbf"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "ledger-bytes-added",
+      "report": {
+        "path": "design/reports/disclosed-refusal-ledger-bytes-added.json",
+        "sha256": "17a0545b80870607114df02838d6468a0d8a4c15ccf209a439af543463d89a13"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "disclosed-refusal",
+      "criterion": "operation-ms",
+      "report": {
+        "path": "design/reports/disclosed-refusal-operation-ms.json",
+        "sha256": "571c96f771a4a1a3d14c5a4bbaf5a7db7b5170db693bc43e577b88286bd509f2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "disclosed-refusal",
+      "criterion": "refusal-guards-green",
+      "report": "design/reports/disclosed-refusal-refusal-guards-green.json",
+      "resolver": "python3 plugins/hexaemeron/skills/protasis/scripts/design_report.py --candidate disclosed-refusal --criterion refusal-guards-green --unit boolean --value-from-exit --out .hexaemeron/design/reports/disclosed-refusal-refusal-guards-green.json -- python3 -m unittest plugins.hexaemeron.tests.test_hexctl_design_disclosure",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "disclosed-refusal",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
