@@ -208,6 +208,7 @@ MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/ariadne/examples/wildcat-datasets-v0/** (except README.md)",
     "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
     "plugins/lazarus/examples/aave-v4-spoke-v1/"
     "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",

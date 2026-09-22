@@ -1,0 +1,618 @@
+{
+  "estates": [
+    {
+      "archive": {
+        "availability": "external; access is required separately",
+        "bytes": 4323015,
+        "format": "tar+zstd",
+        "location": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-capture-narrow/preserved-staging.tar.zst",
+        "sha256": "25322e603679a24a4d9410f24aca07696cdf83ed0349b9f86b900d246b76a687"
+      },
+      "capture_evidence": {
+        "bytes": 13668,
+        "encoded_bytes": 3777,
+        "encoded_sha256": "5c81d32cc79233ac9c70daf26640e63dd2ee4044ee9e9b17c3670eeff23ea868",
+        "encoding": "gzip",
+        "path": "inputs/v1/capture-evidence.json.gz",
+        "sha256": "0c7953fe327d5dc16f42c4141efc84578b71681bc8a3e1655268408c1ca609fb"
+      },
+      "components": 109,
+      "estate": "v1",
+      "expected": {
+        "bytes": 2218,
+        "encoded_bytes": 1257,
+        "encoded_sha256": "2978be41a95c3ff4dd42282b7e742b9fd57c72716846486bad3f339a58e93703",
+        "encoding": "gzip",
+        "path": "inputs/v1/expected.json.gz",
+        "sha256": "a8fd1d7e785fec89ab4f9a5668b3f20a1bc275413bf42433c2c1ca2d3b2839cb"
+      },
+      "interval": {
+        "end": "22074622",
+        "start": "18743513"
+      },
+      "manifest": {
+        "bytes": 518501,
+        "encoded_bytes": 19381,
+        "encoded_sha256": "2740db8dcc1ccfb36b8aaac09aade0fdc66c22cd9a0ba025a985880ef10a293e",
+        "encoding": "gzip",
+        "path": "inputs/v1/manifest.json.gz",
+        "sha256": "a8d675d23c31e44c6c6960245a2f640b4a669e58b4cec16a350ccf859b6ee591"
+      },
+      "observed_rebuild": {
+        "argv": [
+          "python3",
+          "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
+          "build",
+          "--output",
+          "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v1-rebuild"
+        ],
+        "environment": {
+          "ALEXANDRIA_WILDCAT_V1_STAGING": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-capture-narrow/staging"
+        },
+        "exit": 0,
+        "python": "3.14.6",
+        "record": "inputs/observations/rebuild-recovery.json",
+        "report": "inputs/observations/v1-rebuild.txt",
+        "runtime_commit": "104f6f82c390003fb61039d3023d07c1abe05086"
+      },
+      "original_collection": {
+        "argv_status": "recorded in capture evidence",
+        "evidence": {
+          "bytes": 13668,
+          "encoded_bytes": 3777,
+          "encoded_sha256": "5c81d32cc79233ac9c70daf26640e63dd2ee4044ee9e9b17c3670eeff23ea868",
+          "encoding": "gzip",
+          "path": "inputs/v1/capture-evidence.json.gz",
+          "sha256": "0c7953fe327d5dc16f42c4141efc84578b71681bc8a3e1655268408c1ca609fb"
+        },
+        "registry": {
+          "bytes": 9224,
+          "encoded_bytes": 2661,
+          "encoded_sha256": "1f57482935f5706e0e5fead5a904888edbd7deae69930d4867839eea8c439201",
+          "encoding": "gzip",
+          "path": "inputs/v1/registry.json.gz",
+          "sha256": "4d773fde78573e1ca47ed70e3e5025d8fce3c16b55eeb362c223ea2577280bd3"
+        }
+      },
+      "plan": {
+        "bytes": 54730,
+        "encoded_bytes": 6227,
+        "encoded_sha256": "da0f285928c29b564a6d831bbafcbb840103e815d65b7b52cca213e323247608",
+        "encoding": "gzip",
+        "path": "inputs/v1/plan.json.gz",
+        "sha256": "cad23fb022e9c331793d207553de7aab6ae6e46379c757b35361932c1772dbd7"
+      },
+      "rebuild_record": {
+        "bytes": 2876,
+        "encoded_bytes": 1197,
+        "encoded_sha256": "79f8d7abe229bb831ff591db8a514fd3f287efc991dc9c87a4b9776ff83657e0",
+        "encoding": "gzip",
+        "path": "inputs/v1/rebuild-record.json.gz",
+        "sha256": "501b719983c3502ce68d55a02a7cd0f72bcc5de7bc11a64ba512b751e977fc83"
+      },
+      "registry": {
+        "bytes": 9224,
+        "encoded_bytes": 2661,
+        "encoded_sha256": "1f57482935f5706e0e5fead5a904888edbd7deae69930d4867839eea8c439201",
+        "encoding": "gzip",
+        "path": "inputs/v1/registry.json.gz",
+        "sha256": "4d773fde78573e1ca47ed70e3e5025d8fce3c16b55eeb362c223ea2577280bd3"
+      },
+      "release_bytes": 20496046,
+      "release_environment": "ARIADNE_WILDCAT_V1_RELEASE",
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "release_location": "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v1-rebuild/release",
+      "shared_subject_comparison": {
+        "bytes": 1171,
+        "encoded_bytes": 516,
+        "encoded_sha256": "a401f7a8414c349a56bef3b836d2be78dfc0a23625398c71e61e31290dab8f48",
+        "encoding": "gzip",
+        "path": "inputs/v1/shared-subject-comparison.json.gz",
+        "sha256": "4430a1955e85d1f3ce8fcf770b1bc8da47f6f930fd36eb6dedc90c0c317dcd2b"
+      },
+      "signature_status": "unsigned",
+      "staging_manifest": {
+        "bytes": 17665,
+        "encoded_bytes": 5469,
+        "encoded_sha256": "dc3ac7b2fd8c75d92649438da52fe84d8410fe3f33c5ef81b098afd405726004",
+        "encoding": "gzip",
+        "path": "inputs/v1/staging-manifest.json.gz",
+        "sha256": "00752ca3ffaad58de7e8930e3acc58cf0b91b45d4546704988951fcd60c40faf"
+      },
+      "subjects": 110
+    },
+    {
+      "archive": {
+        "availability": "external; access is required separately",
+        "bytes": 37920375,
+        "format": "tar+zstd",
+        "location": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step9-repair-20260921/replacement-staging.tar.zst",
+        "sha256": "0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a"
+      },
+      "components": 127,
+      "estate": "v2",
+      "expected": {
+        "bytes": 16498,
+        "encoded_bytes": 8783,
+        "encoded_sha256": "3b782199663f84c3def9ac5e14690b91c6ff51792a42e98ec0346e962886703a",
+        "encoding": "gzip",
+        "path": "inputs/v2/expected.json.gz",
+        "sha256": "3d30fc07e9d1edc67b588a51f88262c9e1f6e7d7da6d6a06e64060161e0c4124"
+      },
+      "interval": {
+        "end": "26022093",
+        "start": "21866550"
+      },
+      "manifest": {
+        "bytes": 222159,
+        "encoded_bytes": 19034,
+        "encoded_sha256": "ed3e78cd8d65ed69f9f4ac2b2638336e3433ac1235aaeff13fb692013f5c6798",
+        "encoding": "gzip",
+        "path": "inputs/v2/manifest.json.gz",
+        "sha256": "219d72f940b667c829b04f232bbebf7ee83020139faadc1ac88883c7241156f7"
+      },
+      "observed_rebuild": {
+        "argv": [
+          "python3",
+          "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
+          "build",
+          "--output",
+          "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v2-rebuild"
+        ],
+        "environment": {
+          "ALEXANDRIA_WILDCAT_V2_STAGING": "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v2-staging"
+        },
+        "exit": 0,
+        "python": "3.14.6",
+        "record": "inputs/observations/rebuild-recovery.json",
+        "report": "inputs/observations/v2-rebuild-restored.txt",
+        "runtime_commit": "104f6f82c390003fb61039d3023d07c1abe05086"
+      },
+      "original_collection": {
+        "argv_status": "not established by the preserved collection record",
+        "evidence": {
+          "bytes": 15701,
+          "encoded_bytes": 4777,
+          "encoded_sha256": "f1445a38fcd086bf613f6dd6a7a50e7fd90b322d794dfbb820fe7829b334ca2d",
+          "encoding": "gzip",
+          "path": "inputs/v2/rebuild-record.json.gz",
+          "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
+        },
+        "registry": {
+          "bytes": 64890,
+          "encoded_bytes": 13811,
+          "encoded_sha256": "2dced3361e7268994a12f555bc9e2deeba857fcd1efac55e50880a4a8a618598",
+          "encoding": "gzip",
+          "path": "inputs/v2/registry.json.gz",
+          "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
+        }
+      },
+      "plan": {
+        "bytes": 168366,
+        "encoded_bytes": 31498,
+        "encoded_sha256": "19fb25cf26e65c14b2760caa22805450c2579a19ccb6cc1d8304ad4b58104ee5",
+        "encoding": "gzip",
+        "path": "inputs/v2/plan.json.gz",
+        "sha256": "8a70ebf145668b2fc5db99af6af2d9211d03d3f3282209ab144f9277df772482"
+      },
+      "rebuild_record": {
+        "bytes": 15701,
+        "encoded_bytes": 4777,
+        "encoded_sha256": "f1445a38fcd086bf613f6dd6a7a50e7fd90b322d794dfbb820fe7829b334ca2d",
+        "encoding": "gzip",
+        "path": "inputs/v2/rebuild-record.json.gz",
+        "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
+      },
+      "registry": {
+        "bytes": 64890,
+        "encoded_bytes": 13811,
+        "encoded_sha256": "2dced3361e7268994a12f555bc9e2deeba857fcd1efac55e50880a4a8a618598",
+        "encoding": "gzip",
+        "path": "inputs/v2/registry.json.gz",
+        "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
+      },
+      "release_bytes": 242722051,
+      "release_environment": "ARIADNE_WILDCAT_V2_RELEASE",
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "release_location": "/Users/c0rtexzer0/.codex/worktrees/95b4/Wildcat Skills/tmp/fiat-evidence/fiat-1374/v2-rebuild/release",
+      "signature_status": "unsigned",
+      "staging_manifest": {
+        "bytes": 20784,
+        "encoded_bytes": 6433,
+        "encoded_sha256": "68f21872c9aa0e1a68f0659889012d93177276dee0537dadb7cedf4701ecea75",
+        "encoding": "gzip",
+        "path": "inputs/v2/staging-manifest.json.gz",
+        "sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21"
+      },
+      "subjects": 128
+    }
+  ],
+  "files": [
+    {
+      "bytes": 3103,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/inputs.json",
+      "sha256": "67ef586c8ad3cf4a183bb5e654abe8385ae72ed64e2ea9e2930a81ed6cc14f55"
+    },
+    {
+      "bytes": 1616,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/rebuild-recovery.json",
+      "sha256": "08fe94e9d9abf6a3dec08b2f43fe2b5a1620e33b4ec5ff3df642ff5ac9c3d78f"
+    },
+    {
+      "bytes": 2066,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v1-check.txt",
+      "sha256": "23be6ea42ef1ce6178598a5b30b4fdc6ffb09a6c9e2dd1b851baf02ebf857e23"
+    },
+    {
+      "bytes": 2116,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v1-rebuild.txt",
+      "sha256": "451e65b26bfeec5969e83d13630e94460f22b3edded0dde5e0b922531c724da7"
+    },
+    {
+      "bytes": 72,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v1-verify.txt",
+      "sha256": "01a2cc9b32595c09f9399b1687876bc610b362f2e889324b1c7b63c163e5815e"
+    },
+    {
+      "bytes": 15620,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v2-check.txt",
+      "sha256": "8b862e888ffe5fae1cabaa6eb5c0a9982ff2f624de8e7e37ea94e83fc2830f8f"
+    },
+    {
+      "bytes": 113,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v2-rebuild-repeat.txt",
+      "sha256": "802adf278ea8edd92bd7aedcf9782d73f52af913d9f869c25eef629950a9654c"
+    },
+    {
+      "bytes": 15670,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v2-rebuild-restored.txt",
+      "sha256": "98e470a4ca22a826b7eea97cb3d9e4454f36ec611bd889d78f0f216c43a7423c"
+    },
+    {
+      "bytes": 113,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v2-rebuild.txt",
+      "sha256": "802adf278ea8edd92bd7aedcf9782d73f52af913d9f869c25eef629950a9654c"
+    },
+    {
+      "bytes": 72,
+      "kind": "observed-input-evidence",
+      "path": "inputs/observations/v2-verify.txt",
+      "sha256": "a0009abedcd2cdaff25fc0e92666e37ccc655ff87d3f67184d373558347541bb"
+    },
+    {
+      "bytes": 3777,
+      "kind": "original-collection-provenance",
+      "path": "inputs/v1/capture-evidence.json.gz",
+      "sha256": "5c81d32cc79233ac9c70daf26640e63dd2ee4044ee9e9b17c3670eeff23ea868"
+    },
+    {
+      "bytes": 1257,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v1/expected.json.gz",
+      "sha256": "2978be41a95c3ff4dd42282b7e742b9fd57c72716846486bad3f339a58e93703"
+    },
+    {
+      "bytes": 19381,
+      "kind": "release-manifest",
+      "path": "inputs/v1/manifest.json.gz",
+      "sha256": "2740db8dcc1ccfb36b8aaac09aade0fdc66c22cd9a0ba025a985880ef10a293e"
+    },
+    {
+      "bytes": 6227,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v1/plan.json.gz",
+      "sha256": "da0f285928c29b564a6d831bbafcbb840103e815d65b7b52cca213e323247608"
+    },
+    {
+      "bytes": 1197,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v1/rebuild-record.json.gz",
+      "sha256": "79f8d7abe229bb831ff591db8a514fd3f287efc991dc9c87a4b9776ff83657e0"
+    },
+    {
+      "bytes": 2661,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v1/registry.json.gz",
+      "sha256": "1f57482935f5706e0e5fead5a904888edbd7deae69930d4867839eea8c439201"
+    },
+    {
+      "bytes": 516,
+      "kind": "original-collection-provenance",
+      "path": "inputs/v1/shared-subject-comparison.json.gz",
+      "sha256": "a401f7a8414c349a56bef3b836d2be78dfc0a23625398c71e61e31290dab8f48"
+    },
+    {
+      "bytes": 5469,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v1/staging-manifest.json.gz",
+      "sha256": "dc3ac7b2fd8c75d92649438da52fe84d8410fe3f33c5ef81b098afd405726004"
+    },
+    {
+      "bytes": 8783,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v2/expected.json.gz",
+      "sha256": "3b782199663f84c3def9ac5e14690b91c6ff51792a42e98ec0346e962886703a"
+    },
+    {
+      "bytes": 19034,
+      "kind": "release-manifest",
+      "path": "inputs/v2/manifest.json.gz",
+      "sha256": "ed3e78cd8d65ed69f9f4ac2b2638336e3433ac1235aaeff13fb692013f5c6798"
+    },
+    {
+      "bytes": 31498,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v2/plan.json.gz",
+      "sha256": "19fb25cf26e65c14b2760caa22805450c2579a19ccb6cc1d8304ad4b58104ee5"
+    },
+    {
+      "bytes": 4777,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v2/rebuild-record.json.gz",
+      "sha256": "f1445a38fcd086bf613f6dd6a7a50e7fd90b322d794dfbb820fe7829b334ca2d"
+    },
+    {
+      "bytes": 13811,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v2/registry.json.gz",
+      "sha256": "2dced3361e7268994a12f555bc9e2deeba857fcd1efac55e50880a4a8a618598"
+    },
+    {
+      "bytes": 6433,
+      "kind": "accepted-capture-metadata",
+      "path": "inputs/v2/staging-manifest.json.gz",
+      "sha256": "68f21872c9aa0e1a68f0659889012d93177276dee0537dadb7cedf4701ecea75"
+    },
+    {
+      "bytes": 4648,
+      "kind": "accepted-specification",
+      "path": "spec/design-evidence.json",
+      "sha256": "4a3752781473722557fb05ab13b5f20223dbf199e2d711e0a7e790fd5287f0bb"
+    },
+    {
+      "bytes": 37041,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/audit-synopsis-check.txt",
+      "sha256": "9af9b09e5a511ac65974c8b5474b2332c3c2477b7942ae44abd52a5475a6650f"
+    },
+    {
+      "bytes": 2397,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/full-release-all-files.json",
+      "sha256": "0e3c13c1199e9c3b214b63cfde8e420b4a930983c94af0d32ce384088df7a990"
+    },
+    {
+      "bytes": 2405,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/full-release-bad-count-refused.json",
+      "sha256": "424e6f8a5652ae336ae2a11a4ef72a5dde78c1ad8801f075da841a4b69cc77cd"
+    },
+    {
+      "bytes": 2404,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/full-release-capture-time.json",
+      "sha256": "eb5af86869da9c0aa9ba4648e9ffb97e77cc4a241e595fb542bb060cfcd9398f"
+    },
+    {
+      "bytes": 2406,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/full-release-existing-interface.json",
+      "sha256": "173ddba28f59fa215a9f3d486eea23aeaee67de37e2ac595567170f5139a8c56"
+    },
+    {
+      "bytes": 2400,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/full-release-listing-bytes.json",
+      "sha256": "6de4a40c6c4faf4888f7724d8b49410ddd9f49a82cff0061a09e93da4e84a8d7"
+    },
+    {
+      "bytes": 2399,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/manifest-only-all-files.json",
+      "sha256": "b2afcf04ec12a0cb0c39972253148ec73a4d75a3659825d52ec7bb34f523d0f7"
+    },
+    {
+      "bytes": 2406,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/manifest-only-bad-count-refused.json",
+      "sha256": "3bcc382cfa1f76f589ec7fea99ccbd9db69cb117c5b68fd58e9b8dc328ebb20f"
+    },
+    {
+      "bytes": 2403,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/manifest-only-capture-time.json",
+      "sha256": "a30ed729d84e5dbf130e557111410c3b4f92d2ec3b00e29d4da554ea15d7a457"
+    },
+    {
+      "bytes": 2407,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/manifest-only-existing-interface.json",
+      "sha256": "95d093d16e27c9b42fa4edc4f250e62af87c9f0703c154d8bceabf041fd398ea"
+    },
+    {
+      "bytes": 2399,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/manifest-only-listing-bytes.json",
+      "sha256": "883f84a16e971d6448ffa74b662fad4037e9e896868517d7140683fefca729c6"
+    },
+    {
+      "bytes": 3471,
+      "kind": "observed-design-evidence",
+      "path": "spec/design-reports/observations.json",
+      "sha256": "b9c9b4a77e189644b95b1862cb4ca3492c34d3ff2878af66f1597d19439552db"
+    },
+    {
+      "bytes": 14436,
+      "kind": "accepted-specification",
+      "path": "spec/runbook.md",
+      "sha256": "1b44a351f5f980b0b1787916bd84d629e90aabc14b4d35b324f96fadc7dcb2d0"
+    },
+    {
+      "bytes": 20214,
+      "kind": "accepted-specification",
+      "path": "spec/study.md",
+      "sha256": "ec6813cf12117daad4e8790f786fdc6076261193b545e109cdadeb456b43fb6f"
+    }
+  ],
+  "metadata_decoded_limit_bytes": 1048576,
+  "producer_sources": [
+    {
+      "bytes": 12504,
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
+      "sha256": "f64b5a355f52354f3762d90a498c25a096a27113a77732d37e0bade2d0f8e1f3"
+    },
+    {
+      "bytes": 13994,
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
+      "sha256": "a8a0ff53fe1e226df899fb877bd43cf862ab36be0c48e551ba1ec9963434f844"
+    },
+    {
+      "bytes": 4107,
+      "path": "plugins/alexandria/scripts/alexandria.py",
+      "sha256": "ed87d8cf25eadafaf3af63915edb707461ee4488b386b5b8a7b748cbbc4a505e"
+    },
+    {
+      "bytes": 474,
+      "path": "plugins/alexandria/scripts/alexandria_lib/__init__.py",
+      "sha256": "395e002b81302df0eb4d4f01f22636e29de9c0e1796cf831251bc20c97981b49"
+    },
+    {
+      "bytes": 7361,
+      "path": "plugins/alexandria/scripts/alexandria_lib/canonical.py",
+      "sha256": "717ecd24247a01c66bc2e671cab507eb703054b33d313e7bdeb90faa7522d30b"
+    },
+    {
+      "bytes": 26278,
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_phase0.py",
+      "sha256": "b2e95f627c882ac1edbb4c3e181273711a69c01dea4bab638acdd6813322fc93"
+    },
+    {
+      "bytes": 9361,
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
+      "sha256": "f01dfff7c51aa5178fde9fff478a0dc37cc04b14d71a78dc84617ae26206094a"
+    },
+    {
+      "bytes": 16763,
+      "path": "plugins/alexandria/scripts/alexandria_lib/derivation.py",
+      "sha256": "5e9c0f4fc3e408cd7a9e53e959dd3c8abf34204d8c94521afb8eb6c49ba5bbeb"
+    },
+    {
+      "bytes": 148,
+      "path": "plugins/alexandria/scripts/alexandria_lib/errors.py",
+      "sha256": "becef7552a937ece3a603982e78a79fd2ee4d4e9d94326d7d9c5d7e953de1bdd"
+    },
+    {
+      "bytes": 18854,
+      "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
+      "sha256": "b4a1a90e3465e5cbf4380634a261f0637d89efbc027fec4aec4b3dafa7c92437"
+    },
+    {
+      "bytes": 95812,
+      "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
+      "sha256": "fe6b3cd499f42df532771a68804c2fb45ab4352c0611e357dc6a4abeda63bc31"
+    },
+    {
+      "bytes": 812,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/__init__.py",
+      "sha256": "7a3675805923ad801834b2cc4a72be07192ea8489e6973ac5ff5f9856bb92afa"
+    },
+    {
+      "bytes": 10027,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/aave_v4.py",
+      "sha256": "63c0878a44c7638c37776050babb91568d47d979f21ba7ae867b07aa48aec761"
+    },
+    {
+      "bytes": 10918,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py",
+      "sha256": "8bc2b645d36b22979b0c830f45719ed9ce1a9482c63d25ee85dba7f1ff26158c"
+    },
+    {
+      "bytes": 4050,
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
+      "sha256": "88c21eacf49cc0b8499bf78403bafabcd86015a5821b49f1a17304c3058028b7"
+    },
+    {
+      "bytes": 6631,
+      "path": "plugins/alexandria/scripts/alexandria_lib/paths.py",
+      "sha256": "a9341a3a62591685fd496174611d31a76136053ff9305f242d803a26664e2f0b"
+    },
+    {
+      "bytes": 6335,
+      "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
+      "sha256": "797f99e0563c5e91f6d8c73c20ef64a251ef606e93caf69404e1224309fe7892"
+    },
+    {
+      "bytes": 8825,
+      "path": "plugins/alexandria/scripts/alexandria_lib/proof_backed.py",
+      "sha256": "7d42566bced0997c9bff4180793f9913d635c5744ed538fcd7f0bf24a6bbc982"
+    },
+    {
+      "bytes": 8894,
+      "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
+      "sha256": "5c38acf22e5c216c52f69a6605bafc7ebf94efe216bb5e3839757110f5a483bb"
+    },
+    {
+      "bytes": 27102,
+      "path": "plugins/alexandria/scripts/alexandria_lib/release.py",
+      "sha256": "b5749b475b0935bf73ee4150f54db97ca82cd41536d12b35f4a0b03055c51c31"
+    },
+    {
+      "bytes": 13410,
+      "path": "plugins/alexandria/scripts/alexandria_lib/rows.py",
+      "sha256": "09c9275283a739426a54e4ef640a395a7e053b1660db8fdea65155a8bf7c8632"
+    },
+    {
+      "bytes": 13765,
+      "path": "plugins/alexandria/scripts/alexandria_lib/statement.py",
+      "sha256": "c4a09e828fb684c9065f2dab17533795c5e1687f3794711633e350427a75486f"
+    },
+    {
+      "bytes": 1214,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/__init__.py",
+      "sha256": "3e83db7dc9bfa772a9c246d6158f33e120f3eba2baba2acf0b24a76dd5acc49f"
+    },
+    {
+      "bytes": 1402,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/compound_v3.py",
+      "sha256": "68d4f6ab42fc61cb6b00ac156af9e71b34483f9296387ca1a44839751df8f250"
+    },
+    {
+      "bytes": 26530,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v1.py",
+      "sha256": "207e5d437654c1254ae5f31bd7ae37ea0a69464c0847b6afe1fa0f77bfa27e3d"
+    },
+    {
+      "bytes": 30724,
+      "path": "plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v2.py",
+      "sha256": "c357ac4e3d8f397d5a864930dabce3b0f5d00a559c1efe50c00b71491a759e6d"
+    },
+    {
+      "bytes": 35563,
+      "path": "plugins/alexandria/scripts/alexandria_lib/wildcat_registry.py",
+      "sha256": "cf0e6f8de2100b8bab94b8acb4b809838e1fef735643eb8025465173863e2e89"
+    },
+    {
+      "bytes": 173829,
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "sha256": "28d682da45fe61dd9be4d551e4b7c639e4d5ca5e2fb4532c4de64ae862c719db"
+    }
+  ],
+  "schema": "ariadne-wildcat-datasets-inputs/v1",
+  "scope": [
+    "wildcat-v1",
+    "wildcat-v2"
+  ],
+  "selected_design": "full-release",
+  "signature_status": "unsigned",
+  "source_revision": "104f6f82c390003fb61039d3023d07c1abe05086",
+  "verification_boundary": "These pins check committed metadata consistency. External archive and release verification belongs to the retained observed commands; metadata checks perform no new rebuild."
+}

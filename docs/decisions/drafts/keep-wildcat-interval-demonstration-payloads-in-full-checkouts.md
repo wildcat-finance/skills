@@ -34,3 +34,24 @@ must be run from a full checkout. Package checks verify retained documents
 and programs, omitted payloads and the complete package budget. The 1,600-file
 tripwire remains fixed. This is a distribution repair for the failed merge
 composition; it changes neither Alexandria's capture contract nor its frontier.
+## Extension: Ariadne dataset demonstration, 2026-09-22
+
+Issue 1374 preserves both captures as Ariadne dataset inputs. The accepted
+base package is 20,945,776 bytes, leaving 25,744 bytes below the unchanged
+20,971,520-byte boundary. Exact specification copies alone exceed that space.
+Lossless gzip of metadata still produces a 21,255,473-byte complete package.
+These measurements include the manifest and outer package files.
+
+Extend the omission to exactly `plugins/ariadne/examples/wildcat-datasets-v0/`,
+except its README. Keep every file in the source repository. The retained
+README names the full checkout required for both metadata verification and
+the demonstration and links to its source evidence. Core Ariadne capture,
+verifier and schema runtime files remain installed. The manifest declares
+this boundary, and a regression checks the exact omitted subtree, retained
+runtime and complete package against the unchanged budget.
+
+Keeping the demonstration program without its inputs would leave an installed
+entrypoint that cannot run. Raising the cap or reducing its reserve would
+remove the existing protection. Neither is needed when the complete example
+remains available in the full checkout. This extension changes no dataset
+semantics, evidence bytes or skill frontier.
