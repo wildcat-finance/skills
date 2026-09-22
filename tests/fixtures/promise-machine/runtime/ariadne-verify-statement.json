@@ -8,7 +8,7 @@
             "id": "promise-owner:ariadne-verify-statement",
             "reference": {
               "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
-              "sha256": "b7807da1399412dd0c35f4ebbc0606964107cffb66a012a078d2fa368c75c40a"
+              "sha256": "bb08f803d1e2f14a507e90b4db03c635a6ad285ea8553ab3e1362a90e33c2c7a"
             }
           },
           "binding": {
@@ -53,7 +53,7 @@
           "id": "promise-owner:ariadne-verify-statement",
           "reference": {
             "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
-            "sha256": "b7807da1399412dd0c35f4ebbc0606964107cffb66a012a078d2fa368c75c40a"
+            "sha256": "bb08f803d1e2f14a507e90b4db03c635a6ad285ea8553ab3e1362a90e33c2c7a"
           }
         },
         "evidence_classes": [
@@ -99,7 +99,7 @@
             "id": "promise-owner:ariadne-verify-statement",
             "reference": {
               "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
-              "sha256": "b7807da1399412dd0c35f4ebbc0606964107cffb66a012a078d2fa368c75c40a"
+              "sha256": "bb08f803d1e2f14a507e90b4db03c635a6ad285ea8553ab3e1362a90e33c2c7a"
             }
           },
           "binding": {
@@ -144,7 +144,7 @@
           "id": "promise-owner:ariadne-verify-statement",
           "reference": {
             "path": "plugins/ariadne/skills/ariadne/EVOLUTION.md",
-            "sha256": "b7807da1399412dd0c35f4ebbc0606964107cffb66a012a078d2fa368c75c40a"
+            "sha256": "bb08f803d1e2f14a507e90b4db03c635a6ad285ea8553ab3e1362a90e33c2c7a"
           }
         },
         "evidence_classes": [

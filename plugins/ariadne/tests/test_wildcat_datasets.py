@@ -237,3 +237,216 @@ class WildcatMetadataTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# The real demonstrations are required delivery evidence; these small specimens
+# exercise hostile inputs independently of the external archives.
+import copy
+import importlib.util
+import os
+import shutil
+import socket
+import tempfile
+from unittest.mock import patch
+
+DEMO_SPEC = importlib.util.spec_from_file_location('wildcat_dataset_demo', EXAMPLE / 'demo.py')
+DEMO = importlib.util.module_from_spec(DEMO_SPEC)
+DEMO_SPEC.loader.exec_module(DEMO)
+
+
+class WildcatAdapterTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.metadata = DEMO.load_inputs()
+
+    def specimen(self):
+        release = self.root / 'release'
+        release.mkdir()
+        data = b'{"records":[{"number":1},{"number":2}]}\n'
+        (release / 'data.json').write_bytes(data)
+        return release, [{'path': 'data.json', 'sha256': DEMO.sha(data), 'bytes': len(data),
+                          'record_count': 2, 'selector': '/records'}]
+
+    def test_selector_count_is_derived_from_array(self):
+        root, rows = self.specimen()
+        self.assertEqual(DEMO.check_release(root, rows), root)
+        rows[0]['record_count'] = 3
+        with self.assertRaisesRegex(DEMO.DemoError, 'selector record count mismatch'):
+            DEMO.check_release(root, rows)
+
+    def test_non_array_selector_cannot_count_as_record(self):
+        root, rows = self.specimen()
+        data = b'{"records":{"number":1}}'
+        (root / 'data.json').write_bytes(data)
+        rows[0].update(bytes=len(data), sha256=DEMO.sha(data), record_count=1)
+        with self.assertRaisesRegex(DEMO.DemoError, 'selector record count mismatch'):
+            DEMO.check_release(root, rows)
+
+    def test_missing_extra_and_changed_file_refuse(self):
+        root, rows = self.specimen()
+        source = (root / 'data.json').read_bytes()
+        (root / 'extra').write_bytes(b'')
+        with self.assertRaisesRegex(DEMO.DemoError, 'file inventory mismatch'):
+            DEMO.check_release(root, rows)
+        (root / 'extra').unlink()
+        (root / 'data.json').unlink()
+        (root / 'different').write_bytes(source)
+        with self.assertRaisesRegex(DEMO.DemoError, 'file inventory mismatch'):
+            DEMO.check_release(root, rows)
+        (root / 'different').rename(root / 'data.json')
+        (root / 'data.json').write_bytes(source.replace(b'1', b'9'))
+        with self.assertRaisesRegex(DEMO.DemoError, 'file digest mismatch'):
+            DEMO.check_release(root, rows)
+
+    def test_wrong_manifest_bytes_refuse(self):
+        root, rows = self.specimen()
+        (root / 'data.json').write_bytes(b'{}')
+        with self.assertRaisesRegex(DEMO.DemoError, 'size mismatch'):
+            DEMO.check_release(root, rows)
+
+    def test_manifest_identity_count_and_selector_refuse(self):
+        estate = self.metadata['estates'][0]
+        original = DEMO.metadata_document(estate['manifest'])
+        mutations = [
+            (lambda m: m.update(release_id='sha256:' + '0' * 64), 'release identity'),
+            (lambda m: m['components'].pop(), 'subject inventory'),
+            (lambda m: m['captures'][0]['coverage']['collections'][0].update(selector='/made-up'), 'unsupported count'),
+            (lambda m: m['captures'][0]['coverage'].update(record_count=True), 'conflicting record counts'),
+            (lambda m: m['components'][0].update(object_path='../escape'), 'unsafe relative path'),
+            (lambda m: m['components'][0].update(sha256='sha256:' + '0' * 64), 'path and digest'),
+        ]
+        for mutate, message in mutations:
+            with self.subTest(message=message):
+                manifest = copy.deepcopy(original)
+                mutate(manifest)
+                with self.assertRaisesRegex(DEMO.DemoError, message):
+                    DEMO.release_rows(estate, manifest)
+
+    def test_unsafe_relative_paths_refuse(self):
+        for value in ('../file', '/file', 'a//b', 'a/./b', 'a\\b', ''):
+            with self.subTest(value=value), self.assertRaises(DEMO.DemoError):
+                DEMO.relative(value)
+
+    def test_symlink_root_parent_and_file_refuse(self):
+        root, rows = self.specimen()
+        link = self.root / 'link'
+        link.symlink_to(root, target_is_directory=True)
+        with self.assertRaisesRegex(DEMO.DemoError, 'symlink'):
+            DEMO.check_release(link, rows)
+        with self.assertRaisesRegex(DEMO.DemoError, 'symlink'):
+            DEMO.safe_path(link / 'data.json')
+        (root / 'data.json').unlink()
+        (root / 'data.json').symlink_to(self.root / 'missing')
+        with self.assertRaisesRegex(ValueError, 'symlink'):
+            DEMO.check_release(root, rows)
+
+    def test_fifo_refuses_before_open(self):
+        path = self.root / 'fifo'
+        os.mkfifo(path)
+        with self.assertRaisesRegex(DEMO.DemoError, 'regular file'):
+            DEMO.read_bytes(path, 10)
+
+    def test_metadata_size_and_encoding_refuse(self):
+        ref = self.metadata['estates'][0]['manifest']
+        for field, value in [('bytes', True), ('bytes', 1048577), ('encoded_bytes', 0),
+                             ('encoded_sha256', '0' * 64), ('sha256', '0' * 64),
+                             ('encoding', 'unknown'), ('path', '../escape')]:
+            with self.subTest(field=field), self.assertRaises(DEMO.DemoError):
+                DEMO.metadata_document(dict(ref, **{field: value}))
+
+    def test_existing_destination_is_unchanged(self):
+        root, _ = self.specimen()
+        before = (root / 'data.json').read_bytes()
+        with self.assertRaisesRegex(DEMO.DemoError, 'already exists'):
+            DEMO.write_outputs(root, {'data.json': b'wrong'})
+        self.assertEqual((root / 'data.json').read_bytes(), before)
+
+    def test_output_alias_refuses_before_capture(self):
+        v1 = self.root / 'v1'
+        v2 = self.root / 'v2'
+        v1.mkdir()
+        v2.mkdir()
+        env = {'ARIADNE_WILDCAT_V1_RELEASE': str(v1), 'ARIADNE_WILDCAT_V2_RELEASE': str(v2)}
+        with patch.dict(os.environ, env), patch.object(DEMO, 'observed_outputs', side_effect=AssertionError('capture ran')):
+            with self.assertRaisesRegex(DEMO.DemoError, 'alias or containment'):
+                DEMO.main(['build', '--output', str(v1 / 'output')])
+            with self.assertRaisesRegex(DEMO.DemoError, 'alias or containment'):
+                DEMO.main(['verify', '--output', str(self.root)])
+
+    def test_complete_reports_and_real_coverage_mutations(self):
+        for estate in ('v1', 'v2'):
+            statement = DEMO.read_json((EXAMPLE / 'preserved' / estate / 'statement.json').read_bytes())
+            report = DEMO.report_for(statement)
+            self.assertTrue(report.ok)
+            self.assertEqual(len(report.gates), 10)
+            self.assertFalse(report.document.signed)
+            self.assertEqual(report.unchecked, [])
+            for mutation in ('missing-gap', 'missing-reason', 'outside-bound'):
+                result = DEMO.report_for(DEMO.coverage_mutation(statement, mutation))
+                self.assertEqual([g.name for g in result.gates if not g.passed], ['coverage'])
+
+    def test_incomplete_output_and_forged_gate_report_refuse(self):
+        root = self.root / 'output'
+        expected = {'verify.json': b'{"ok":false}\n', 'statement.json': b'{}\n'}
+        DEMO.write_outputs(root, expected)
+        DEMO.compare_outputs(root, expected)
+        (root / 'verify.json').write_bytes(b'{"ok":true}\n')
+        with self.assertRaisesRegex(DEMO.DemoError, 'output content mismatch'):
+            DEMO.compare_outputs(root, expected)
+        (root / 'verify.json').unlink()
+        with self.assertRaisesRegex(DEMO.DemoError, 'output inventory mismatch'):
+            DEMO.compare_outputs(root, expected)
+
+    def test_preserved_verification_does_not_read_external_releases(self):
+        with patch.dict(os.environ, {}, clear=True), patch.object(DEMO, 'check_release', side_effect=AssertionError('external read')):
+            outputs = DEMO.preserved_outputs(self.metadata)
+            DEMO.compare_outputs(EXAMPLE / 'preserved', outputs)
+            self.assertEqual(DEMO.main(['verify-preserved']), 0)
+
+    def test_modified_preserved_statement_and_report_refuse(self):
+        replica = self.root / 'example'
+        shutil.copytree(EXAMPLE, replica, ignore=shutil.ignore_patterns('__pycache__'))
+        statement_path = replica / 'preserved/v1/statement.json'
+        original = DEMO.read_json(statement_path.read_bytes())
+        for mutate, message in [
+            (lambda s: s['predicate']['dataset_subjects'][0].update(record_count=999), 'subject or input'),
+            (lambda s: s['predicate']['producer'].update(tool='invented'), 'producer'),
+            (lambda s: s['predicate']['claims'][0].update(detail='invented'), 'claims'),
+            (lambda s: s['predicate']['coverage']['gaps'].clear(), 'coverage'),
+            (lambda s: s['predicate']['deltas'].update(reason='invented'), 'first-release'),
+        ]:
+            with self.subTest(message=message):
+                candidate = copy.deepcopy(original)
+                mutate(candidate)
+                statement_path.write_bytes(DEMO.encoded(candidate))
+                with patch.object(DEMO, 'EXAMPLE', replica), self.assertRaisesRegex(DEMO.DemoError, message):
+                    DEMO.preserved_outputs(self.metadata)
+        statement_path.write_bytes(DEMO.encoded(original))
+        report = replica / 'preserved/v2/verify.json'
+        report.write_text('{"ok":true}')
+        with patch.object(DEMO, 'EXAMPLE', replica):
+            with self.assertRaisesRegex(DEMO.DemoError, 'content mismatch: v2/verify.json'):
+                DEMO.compare_outputs(replica / 'preserved', DEMO.preserved_outputs(self.metadata))
+
+    def test_socket_guard_observes_and_refuses_attempt(self):
+        def attempts_socket(*args):
+            socket.socket()
+        with patch.object(DEMO, 'build_estate', attempts_socket):
+            with self.assertRaisesRegex(DEMO.DemoError, 'socket use refused'):
+                DEMO.observed_outputs(self.metadata, {'v1': self.root, 'v2': self.root})
+
+    def test_unsigned_null_baselines_and_full_inventories(self):
+        for estate in self.metadata['estates']:
+            name = estate['estate']
+            statement = DEMO.read_json((EXAMPLE / 'preserved' / name / 'statement.json').read_bytes())
+            body = statement['predicate']
+            self.assertEqual(len(body['dataset_subjects']), estate['subjects'])
+            self.assertEqual(len(statement['subject']), estate['subjects'] + 1)
+            self.assertIsNone(body['deltas']['baseline'])
+            self.assertIn('separate estates', body['deltas']['reason'])
+            coverage = DEMO.read_json((EXAMPLE / 'preserved' / name / 'coverage.json').read_bytes())
+            manifest = DEMO.metadata_document(estate['manifest'])
+            self.assertEqual(coverage['captures'], manifest['captures'])
+            self.assertEqual(coverage['components'], manifest['components'])
