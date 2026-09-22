@@ -1,0 +1,9 @@
+{
+  "candidate": "full-rights",
+  "command": "python3 .hexaemeron/reports/resolve.py full-rights private-prose --out .hexaemeron/reports/full-rights-private-prose.json",
+  "criterion": "private-prose",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 1696
+}
