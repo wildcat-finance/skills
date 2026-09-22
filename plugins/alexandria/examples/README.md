@@ -48,3 +48,11 @@ that binds the archive's digest to every file inside it; a separate, offline
 check confirms that manifest and the recorded rebuild agree with the pinned
 expectation with no staging tree needed, and `demo.py build` rebuilds the
 release itself once the preserved tree is unpacked locally.
+
+[`wildcat-v1-interval-v0`](wildcat-v1-interval-v0/README.md) preserves mainnet
+blocks 18,743,513 to 22,074,622 for all 16 V1 subjects, in 667 complete shards
+with 4,325 agreed comparisons. Its manifest binds 107 externally preserved
+staging files. The offline build reproduces the release once those files are
+available; a separate metadata check needs no archive. The shared Sentinel has
+no recorded logs in either live interval; positive shared-subject attribution
+is also tested with constructed captures.

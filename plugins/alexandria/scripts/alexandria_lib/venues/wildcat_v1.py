@@ -59,8 +59,8 @@ from ..wildcat_registry import subject_entries, validate_v1_registry as validate
 
 VENUE = "wildcat-v1"
 EPOCH_MODEL = "immutable-code"
-# Empty until a collected interval is checked in under its own deployment name.
-PRESERVED_DEPLOYMENTS = frozenset()
+# The checked example binds this collected staging tree by digest.
+PRESERVED_DEPLOYMENTS = frozenset({"wildcat-v1-archcontroller"})
 # A capture's coverage holds at most 256 gap sentences, and the one kind of
 # gap here that could scale with the subject set is bounded by name, then one
 # counted sentence, so the gaps this venue owes stay bounded whatever the
