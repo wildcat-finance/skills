@@ -80,6 +80,12 @@ from a full checkout; rebuilding additionally requires the private staging
 archives. Collector, verifier and schema runtime files are retained. See
 `adr/keep-wildcat-interval-demonstration-payloads-in-full-checkouts`.
 
+The Ariadne `plugins/ariadne/examples/wildcat-datasets-v0/` example retains
+only its README in this package. Both metadata verification and its full
+demonstration require the source checkout. All example evidence stays in that
+checkout; core Ariadne capture, verifier and schema runtime files remain here.
+The same distribution decision above records this extension.
+
 Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
 directories also remain in the source checkout. Their inline Markdown images
 and quoted HTML `img` references are removed only from packaged copies. The

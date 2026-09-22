@@ -20,3 +20,26 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 | `ariadne-v3.2.0` | evolution | `grounded-agent-predicate` | `b10c4ad6cea26758db83ad6ca08f833244d9a950849247cf984603c59b7e25ef` | [grounded-agent statement](../../examples/aave-v4-demo-v0-agent.json), [offline demonstration](../../examples/grounded_agent_demo.py) | Closes the grounded-agent-predicate frontier. Ariadne now ships its fifth registered predicate with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path over an existing `berean-release/v1` tree. The demonstration verifies the statement, changes one policy byte and proves the `release-digest` check refuses it. No evidenced predicate frontier remains, so the ledger closes mature. |
 | `ariadne-v3.3.0` | generation | `grounded-agent-predicate` | `b10c4ad6cea26758db83ad6ca08f833244d9a950849247cf984603c59b7e25ef` | [skills#844](https://github.com/wildcat-finance/skills/issues/844) | A repository URL carrying more than one `@` before its host no longer keeps its credential: `https://a@user:token@host/p` was recorded as `https://user:token@host/p` and is now recorded as `https://host/p`. A `key=value` capture flag that gives one key twice is refused instead of keeping the last value. The grounded-agent frontier revision, digest, status, current frontier and held job remain byte-identical. |
 | `ariadne-v3.4.0` | generation | `grounded-agent-predicate` | `b10c4ad6cea26758db83ad6ca08f833244d9a950849247cf984603c59b7e25ef` | [skills#1676](https://github.com/wildcat-finance/skills/issues/1676), [checkpoint authority predicate](../../docs/checkpoint-authority.md) | Adds the sixth registered predicate, `https://wildcat.finance/attestations/checkpoint-authority/v1`, over a release copy of the owner's nineteen closed checkpoint authority record shapes. It checks explicit digest roles, typed evidence references, timestamp recoverability, predecessor/parent/head relations and copy/coverage inventories, and reports signature authentication, native execution, storage observations, complete journal replay and current eligibility as unchecked. Checkout parity tests hold the copied schema and result vocabulary to the owner; no cross-plugin runtime import is introduced, and the predicate has no capture path because the checkpoint authority service produces and signs its records. The grounded-agent frontier revision, digest, status, current frontier and held job remain byte-identical. |
+
+## Wildcat dataset binding decision
+
+Issue 1374 selects `full-release`: one unsigned dataset statement binds every
+file of each accepted Wildcat estate. The
+[accepted study](https://github.com/wildcat-finance/skills/blob/main/plugins/ariadne/examples/wildcat-datasets-v0/spec/study.md) and
+[design record](https://github.com/wildcat-finance/skills/blob/main/plugins/ariadne/examples/wildcat-datasets-v0/spec/design-evidence.json)
+fix this choice. `manifest-only` would bind one file per estate and omit the
+109 V1 and 127 V2 component subjects. Its smaller listing fails the all-files
+requirement, so its measured speed cannot select it.
+
+The caller will use the existing dataset interface and preserve exact source
+scopes, counts, access labels and gap strings. Semantic omissions will receive
+one reasoned gap across the declared interval, with the complete source
+inventory bound separately. This conservative projection prevents a fully
+swept block interval from being read as complete evidence; it does not mean
+every block was unread. Shard-partition notes will remain partition notes.
+The alternative of an empty gap list would hide limits such as targeted-trace
+exclusions and unknown deployment blocks.
+
+Step 1 ships the specification and input metadata only. Step 2 supplies the
+statements, verifier results and generation row. The mature frontier and its
+held job remain unchanged.
