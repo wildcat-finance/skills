@@ -8,10 +8,10 @@ description: >
   Clearpool derivation, disposable indexing, address queries and a checked-in
   offline demonstration, unsigned in-toto release statements, a bounded
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
-  collector with transaction-position implementation epochs and a preserved
-  live Ethereum mainnet capture are available.
+  collector with per-subject implementation epochs and preserved Compound,
+  Wildcat V1 and Wildcat V2 mainnet intervals are available.
 metadata:
-  version: "3.5.0"
+  version: "3.6.0"
 ---
 
 <p align="center">
@@ -216,7 +216,7 @@ The separate `capture` subcommand is networked. It requires
 and collects only the fixed corpus. Do not describe the result as an interval
 history, chain proof or independent finality check.
 
-## Collect an Ethereum USDC interval
+## Collect a declared lending interval
 
 Four commands, of which the first two reach a network:
 
@@ -229,12 +229,15 @@ python3 "$SKILL_DIR/../../scripts/usdc_interval.py" build --plan plan.json --sta
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" check release
 ```
 
-`collect` walks a declared block interval of the Ethereum USDC Comet in bounded
-shards, over the evidence classes the plan declares, binding its end boundary
+`collect` dispatches on the plan's registered venue: Compound v3, Wildcat V1
+or Wildcat V2. Compound keeps its single proxy plan; a v2 plan names the exact
+subject set its pinned venue registry admits. It walks bounded shards over
+the evidence classes the plan declares, binding its end boundary
 under the plan's named finality policy before it asks for anything. It reads its
 endpoint from `ALEXANDRIA_COMPOUND_RPC_URL` alone and writes it nowhere, and
-sends exactly two headers, `Content-Type` and a constant `User-Agent` built from
-the package version, so no request can carry a credential. A checkpoint is
+sends `Content-Type` and a constant `User-Agent` built from the package version.
+An explicitly configured bearer credential may be supplied through the supported
+HTTPS transport; it never enters the plan, journal or diagnostic text. A checkpoint is
 written only after a shard's bytes are fsynced, so a killed run resumes to
 byte-identical journals; when a remembered boundary hash has changed, the run
 rewinds to the deepest one that still matches, and refuses a reorg deeper than
@@ -243,9 +246,9 @@ interval's first block, the implementation slot at that block and at each
 upgrade block, and each implementation's runtime code -- into a fourth
 `epoch-evidence` journal under the same checkpoint rule, so a `finalized` or
 `safe` plan now earns that finality class on every evidence scope with both
-boundary hashes bound. Every refused response leaves a receipt naming the code,
-the shard, the unresolved range and the provider class, and copying nothing the
-provider or the transport said.
+boundary hashes bound. Structured failure receipts name the code, shard, unresolved range and provider
+class without copying provider or transport text. CLI error strings may instead
+name only a read or shard; they do not universally include the provider class.
 
 `reconcile` runs the finished interval past a second provider and records
 agreement or dispute over boundary hashes, ordered transaction hashes and every
@@ -270,6 +273,16 @@ ordinary log inside the upgrade transaction, an upgrade in the interval's first
 block and two upgrades in one block refuse. A v1 release keeps its block-only
 meaning, and an owner is an inference from the announcement's position, not
 proof of the emitting implementation.
+
+Wildcat releases carry one epoch table per subject, checked against that
+venue's registry and preserved code. A subject with no sourced deployment block
+uses preserved first-code evidence and retains the deployment-block gap.
+Each subject has its own epoch ceiling; the estate's sum is not the limit.
+Both mainnet captures use traces selected by matching subject logs, so a
+transaction with no such log is outside their trace coverage. Bounded concurrent
+requests share one global cap; completed shards alone advance the checkpoint.
+The [combined demonstration](../../examples/wildcat-estates-interval-v0/README.md)
+rebuilds both estates and Compound without opening a Python socket.
 
 Read [the collector document](../../docs/usdc-interval-collector.md) for the
 finality, epoch and reconciliation boundaries, run

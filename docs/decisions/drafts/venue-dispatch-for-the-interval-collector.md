@@ -357,3 +357,14 @@ ambiguity (for example, by dating the deployment transaction against each
 candidate's tree more precisely) replaces the equivalence note rather than
 this decision, and a genuinely sourceless subject still routes through the
 gap mechanism this decision leaves untouched.
+
+## Completed estate dispatch
+
+Accepted, 2026-09-22. The earlier sections describe the steps that introduced
+each decision. The final table registers `compound-v3`, `wildcat-v1` and
+`wildcat-v2`; both Wildcat venues now admit their preserved deployments.
+The plan-version, deployment-provenance and shared-subject decisions above
+apply together. The [combined proof](../../../plugins/alexandria/docs/wildcat-interval/proof.md)
+rebuilds both real captures and checks every source identity against the pinned
+records, while retaining the V1 checkout caveat and 12 missing deployment blocks.
+The per-subject epoch decision is recorded in the Alexandria evolution ledger.

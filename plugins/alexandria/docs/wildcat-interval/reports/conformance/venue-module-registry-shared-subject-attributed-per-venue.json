@@ -1,0 +1,9 @@
+{
+  "candidate": "venue-module-registry",
+  "command": "python3 .hexaemeron/design/conformance.py shared-subject-attributed-per-venue --candidate venue-module-registry",
+  "criterion": "shared-subject-attributed-per-venue",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

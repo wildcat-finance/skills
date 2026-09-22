@@ -500,3 +500,23 @@ the v1 scope. A v2 reconstruction has its own identifier,
   Phase 1.
 - No market other than the Ethereum mainnet USDC Comet. The other 27 markets at
   the registry pin are each a declared gap.
+
+## Wildcat estate delivery
+
+The registered `wildcat-v1` and `wildcat-v2` modules use the same collector,
+builder and checker as `compound-v3`. Their version-2 plans name 16 and 137
+subjects. Each subject's epochs begin at its own established deployment or
+preserved first-code position, with a per-subject ceiling. Unknown venues,
+registry-format disagreement and a changed registry pin refuse by name.
+The [whole offline proof](wildcat-interval/proof.md) binds both retained captures,
+Compound compatibility, the eight conformance reports and the collection timings.
+
+The production runs use targeted `trace_transaction` reads for transactions
+with matching subject logs. They make no claim about logless transactions.
+The paired subject Sentinel has zero preserved logs in both intervals; constructed
+positive tests are labelled separately. Provider agreement is not a chain proof.
+
+Correction recorded 2026-09-22: the historical Step 8 claim that every error
+string names a provider class was too broad. Structured error and reconciliation
+records carry `provider_class`; a CLI error can name only its read or shard.
+The previous audit and specification remain unchanged as historical records.
